@@ -15,8 +15,7 @@
 */
 
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType, PrimitiveType,
-  PrimitiveTypes,
+  BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType,
 } from '@salto-io/adapter-api'
 import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, XML_ATTRIBUTE_PREFIX } from '../constants'
 
@@ -69,34 +68,26 @@ const lightningComponentBundlePropertyType = new ObjectType({
     [`${XML_ATTRIBUTE_PREFIX}type`]: {
       type: BuiltinTypes.STRING,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           values: ['Boolean', 'Integer', 'String', 'Color', 'Date', 'DateTime'],
           // eslint-disable-next-line @typescript-eslint/camelcase
           enforce_value: false,
         }),
-        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
   },
   path: [...subTypesPath, 'LightningComponentBundleProperty'],
 })
 
-const lightningComponentBundleSupportedFormFactorTypeType = new PrimitiveType({
-  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactorType'),
-  primitive: PrimitiveTypes.STRING,
-  annotations: {
-    [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
-  },
-  path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactorType'],
-})
-
 const lightningComponentBundleSupportedFormFactorType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactor'),
   fields: {
     [`${XML_ATTRIBUTE_PREFIX}type`]: {
-      type: lightningComponentBundleSupportedFormFactorTypeType,
+      type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
       },
     },
   },
@@ -125,17 +116,6 @@ const lightningComponentBundleTargetConfigType = new ObjectType({
     supportedFormFactors: { type: lightningComponentBundleSupportedFormFactorsType },
   },
   path: [...subTypesPath, 'LightningComponentBundleTargetConfig'],
-})
-
-const caseSubjectOptionType = new PrimitiveType({
-  elemID: new ElemID(SALESFORCE, 'CaseSubjectOption'),
-  primitive: PrimitiveTypes.STRING,
-  annotations: {
-    [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-      values: ['SocialPostSource', 'SocialPostContent', 'BuildCustom'],
-    }),
-  },
-  path: [...subTypesPath, 'CaseSubjectOption'],
 })
 
 export const allMissingSubTypes = [
@@ -203,7 +183,6 @@ export const allMissingSubTypes = [
   lightningComponentBundlePropertyType,
   lightningComponentBundleSupportedFormFactorsType,
   lightningComponentBundleSupportedFormFactorType,
-  lightningComponentBundleSupportedFormFactorTypeType,
 ]
 
 const typesPath = [SALESFORCE, TYPES_PATH]
@@ -299,8 +278,13 @@ export const allMissingTypes = [
     elemID: new ElemID(SALESFORCE, 'SocialCustomerServiceSettings'),
     fields: {
       caseSubjectOption: {
-        type: caseSubjectOptionType,
-        annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: ['SocialPostSource', 'SocialPostContent', 'BuildCustom'],
+          }),
+        },
       },
       enableSocialApprovals: { type: BuiltinTypes.BOOLEAN },
       enableSocialCaseAssignmentRules: { type: BuiltinTypes.BOOLEAN },

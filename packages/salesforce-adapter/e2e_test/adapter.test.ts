@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
-  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
+  isInstanceElement, isReferenceExpression, ReferenceExpression, CORE_ANNOTATIONS,
   TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
 } from '@salto-io/adapter-api'
 import {
@@ -24,7 +24,7 @@ import {
   findObjectType, naclCase,
 } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { testHelpers } from '../index'
 import * as constants from '../src/constants'
@@ -71,7 +71,17 @@ import {
 
 const { makeArray } = collections.array
 const { PROFILE_METADATA_TYPE } = constants
+const { isDefined } = lowerDashValues
 
+const extractReferenceTo = (annotations: Values): (string | undefined)[] => (
+  makeArray(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).map(
+    (ref: ReferenceExpression | string): string | undefined => (
+      isReferenceExpression(ref)
+        ? ref.elemId.typeName
+        : ref
+    )
+  )
+)
 
 describe('Salesforce adapter E2E with real account', () => {
   let client: SalesforceClient
@@ -170,7 +180,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         // Test lookup reference_to annotation
         expect(
-          lead.fields.OwnerId.annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]
+          extractReferenceTo(lead.fields.OwnerId.annotations)
         ).toEqual(['Group', 'User'])
 
         // Test lookup allow_lookup_record_deletion annotation
@@ -1256,7 +1266,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testLookup = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Lookup label')
-        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Opportunity'])
+        expect(extractReferenceTo(annotations)).toEqual(['Opportunity'])
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         const lookupFilter = annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
         expect(lookupFilter).toBeDefined()
@@ -1283,7 +1293,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testMasterDetail = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('MasterDetail label')
-        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Case'])
+        expect(extractReferenceTo(annotations)).toEqual(['Case'])
         expect(annotations[constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL])
           .toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ])
@@ -1566,19 +1576,33 @@ describe('Salesforce adapter E2E with real account', () => {
             },
           })
 
-          // Resolve GVS valueSetName reference expression
-          const normalizeGVSReference = (ref: ReferenceExpression): string | undefined => {
-            const elem = findElement(result, ref.elemId)
-            return elem ? apiName(elem) : undefined
+          // Resolve reference expression before deploy
+          const normalizeReference = (
+            ref: ReferenceExpression | string | undefined
+          ): string | undefined => {
+            if (isReferenceExpression(ref)) {
+              const elem = findElement(result, ref.elemId)
+              return elem
+                // adding fallback for partially-resolved elements
+                ? apiName(elem) || elem.elemID.typeName
+                : undefined
+            }
+            return ref
           }
-          Object.values(newCustomObject.fields)
-            .filter(f => f.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]
-              instanceof ReferenceExpression)
-            .forEach(f => {
-              f.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME] = normalizeGVSReference(
-                f.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]
-              )
-            })
+
+          const potentialReferenceAnnotations = [
+            constants.VALUE_SET_FIELDS.VALUE_SET_NAME,
+            constants.FIELD_ANNOTATIONS.REFERENCE_TO,
+          ]
+          potentialReferenceAnnotations.forEach(annotationName => {
+            Object.values(newCustomObject.fields)
+              .filter(f => makeArray(f.annotations[annotationName]).some(isReferenceExpression))
+              .forEach(f => {
+                f.annotations[annotationName] = Array.isArray(f.annotations[annotationName])
+                  ? f.annotations[annotationName].map(normalizeReference).filter(isDefined)
+                  : normalizeReference(f.annotations[annotationName])
+              })
+          })
 
           await removeElementIfAlreadyExists(client, customFieldsObject)
           post = await createElement(adapter, newCustomObject)
@@ -2386,7 +2410,9 @@ describe('Salesforce adapter E2E with real account', () => {
           annotations: {
             [constants.API_NAME]: lookupFieldApiFullName,
             [constants.LABEL]: fieldName,
-            [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
+            [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: [
+              'Case',
+            ],
           },
         } },
         annotations: {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, Element, isObjectType, InstanceElement, ReferenceExpression,
+  Element, InstanceElement, ReferenceExpression,
   isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -23,40 +23,8 @@ import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { groupByAPIName, ApiNameMapping } from './instance_references'
 import { FOREIGN_KEY_DOMAIN } from '../constants'
-import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
-
-/**
- * Convert foreign-key-domain annotations to reference expressions using the known metadata types.
- *
- * @param elements      The fetched elements
- * @param typeToElemID  Known element ids by metadata type
- */
-const convertAnnotationsToReferences = (
-  elements: Element[],
-  typeToElemID: Record<string, ElemID>,
-): void => {
-  const resolveTypeReference = (ref: string | ReferenceExpression):
-    string | ReferenceExpression => {
-    if (_.isString(ref)) {
-      const referenceElemId = typeToElemID[ref]
-      if (referenceElemId !== undefined) {
-        return new ReferenceExpression(referenceElemId)
-      }
-    }
-    return ref
-  }
-
-  elements
-    .filter(isObjectType)
-    .flatMap(obj => Object.values(obj.fields))
-    .filter(field => field.annotations[FOREIGN_KEY_DOMAIN] !== undefined)
-    .forEach(field => {
-      field.annotations[FOREIGN_KEY_DOMAIN] = field.annotations[FOREIGN_KEY_DOMAIN]
-        .map(resolveTypeReference)
-    })
-}
 
 /**
  * Resolve references using the mapping genrated from the Salesforce DescribeValueType API.
@@ -91,23 +59,12 @@ const resolveReferences = (
   }) ?? instance.value
 }
 
-export const apiNameToElemID = (elements: Element[]): Record<string, ElemID> => (
-  Object.fromEntries(
-    elements
-      .filter(isObjectType)
-      .map(e => [apiName(e), e.elemID])
-  )
-)
-
 /**
  * Use annotations generated from the DescribeValueType API foreignKeyDomain data to resolve
  * names into reference expressions.
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const typeToElemID = apiNameToElemID(elements)
-    convertAnnotationsToReferences(elements, typeToElemID)
-
     const apiNameToElemIDs = groupByAPIName(elements)
     elements.filter(isInstanceElement).forEach(instance => {
       resolveReferences(instance, apiNameToElemIDs)

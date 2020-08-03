@@ -34,7 +34,7 @@ const { REFERENCE_TO } = FIELD_ANNOTATIONS
 const convertAnnotationsToReferences = (
   elements: Element[],
   typeToElemID: Record<string, ElemID>,
-  annotationName: string,
+  annotationNames: string[],
 ): void => {
   const resolveTypeReference = (ref: string | ReferenceExpression):
     string | ReferenceExpression => {
@@ -50,10 +50,11 @@ const convertAnnotationsToReferences = (
   elements
     .filter(isObjectType)
     .flatMap((obj: ObjectType) => Object.values(obj.fields))
-    .filter((field: Field) => field.annotations[annotationName] !== undefined)
+    .filter((field: Field) => annotationNames.some(name => field.annotations[name] !== undefined))
     .forEach((field: Field): void => {
-      field.annotations[annotationName] = makeArray(field.annotations[annotationName])
-        .map(resolveTypeReference)
+      annotationNames.filter(name => field.annotations[name] !== undefined).forEach(name => {
+        field.annotations[name] = makeArray(field.annotations[name]).map(resolveTypeReference)
+      })
     })
 }
 
@@ -71,8 +72,7 @@ export const apiNameToElemID = (elements: Element[]): Record<string, ElemID> => 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const typeToElemID = apiNameToElemID(elements)
-    convertAnnotationsToReferences(elements, typeToElemID, REFERENCE_TO)
-    convertAnnotationsToReferences(elements, typeToElemID, FOREIGN_KEY_DOMAIN)
+    convertAnnotationsToReferences(elements, typeToElemID, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
   },
 })
 

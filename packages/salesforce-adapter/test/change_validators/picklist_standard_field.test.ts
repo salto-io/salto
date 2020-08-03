@@ -100,7 +100,7 @@ describe('picklist standard field change validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('should have error for non-picklist standard field', async () => {
+    it('should have no error for non-picklist standard field', async () => {
       const beforeField = createField(Types.primitiveDataTypes.Text, 'Standard')
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)

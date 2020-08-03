@@ -96,6 +96,7 @@ describe('cli e2e', () => {
   let newObjectApiName: string
   let newObjectStandardFieldRelativePath: string
   let newObjectAnnotationsRelativePath: string
+  let newObjectCustomFieldRelativePath: string
 
   const ROLE = 'Role'
   let client: SalesforceClient
@@ -118,6 +119,7 @@ describe('cli e2e', () => {
     newObjectApiName = `${newObjectElemName}${SALESFORCE_CUSTOM_SUFFIX}`
     newObjectStandardFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
     newObjectAnnotationsRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}Annotations.nacl`
+    newObjectCustomFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}CustomFields.nacl`
     tmpNaclFileRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
 
     process.env[SALTO_HOME_VAR] = homePath
@@ -341,6 +343,7 @@ describe('cli e2e', () => {
       await rm(fullPath(tmpNaclFileRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
       await rm(fullPath(newObjectStandardFieldRelativePath))
+      await rm(fullPath(newObjectCustomFieldRelativePath))
       // We have to run preview first, otherwise the last plan won't be updated
       lastPlan.clear()
       await runPreview(fetchOutputDir)

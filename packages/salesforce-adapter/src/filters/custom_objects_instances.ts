@@ -64,6 +64,8 @@ const getReferenceTo = (field: Field): string[] =>
 
 const buildQueryString = (type: ObjectType, ids?: string[]): string => {
   const selectStr = Object.values(type.fields)
+    // the "queryable" annotation defaults to true when missing
+    .filter(field => field.annotations[FIELD_ANNOTATIONS.QUERYABLE] !== false)
     .map(field => {
       if (isNameField(field)) {
         return Object.keys((field.type as ObjectType).fields).join(',')

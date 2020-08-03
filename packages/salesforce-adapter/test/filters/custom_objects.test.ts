@@ -298,6 +298,46 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.NumberField.type.elemID.name).toBe('Number')
     })
 
+    it('should add fields from metadata if they are missing in the sobject', async () => {
+      mockSingleSObject('Lead', [
+        {
+          name: 'NumberField',
+          type: 'double',
+          label: 'Numero',
+          nillable: true,
+        },
+      ])
+      const leadInstance = new InstanceElement(
+        CUSTOM_OBJECT,
+        new ObjectType(
+          {
+            elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT),
+            annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+          },
+        ),
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'Lead',
+          fields: [
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
+              [INSTANCE_TYPE_FIELD]: 'Checkbox',
+              [INSTANCE_REQUIRED_FIELD]: 'false',
+            },
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'WhoKnows',
+            },
+          ],
+        },
+      )
+      result.push(leadInstance)
+      await filter().onFetch(result)
+
+      const lead = findElements(result, 'Lead').pop() as ObjectType
+      expect(lead.fields.NumberField.type.elemID.name).toBe('Number')
+      expect(lead.fields.ExtraSalt.type.elemID.name).toBe('Checkbox')
+      expect(lead.fields.WhoKnows.type.elemID.name).toBe('Unknown')
+    })
+
     it('should fetch sobject with apiName and metadataType service ids', async () => {
       mockSingleSObject('Lead', [])
       await filter().onFetch(result)

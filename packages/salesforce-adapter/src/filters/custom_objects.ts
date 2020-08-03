@@ -205,7 +205,7 @@ export const transformFieldAnnotations = (
   instanceFieldValues: Values,
   parentName: string
 ): Values => {
-  // Ignores typeless/unknown typed instances
+  // Ignores instances without a defined type
   if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
     return {}
   }
@@ -249,20 +249,61 @@ const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFro
     transformObjectAnnotationValues(instance, annotationTypesFromInstance))
 }
 
+const createFieldFromMetadataInstance = (
+  customObject: ObjectType,
+  field: Values,
+  instanceName: string,
+): Field => {
+  let fieldValues = field
+  if (!fieldValues[INSTANCE_TYPE_FIELD]) {
+    fieldValues = { [INSTANCE_TYPE_FIELD]: FIELD_TYPE_NAMES.UNKNOWN, ...fieldValues }
+  }
+  const annotations = transformFieldAnnotations(
+    fieldValues,
+    instanceName,
+  )
+  annotations[FIELD_ANNOTATIONS.QUERYABLE] = false
+  annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
+  annotations[FIELD_ANNOTATIONS.CREATABLE] = false
+
+  return new Field(
+    customObject,
+    fieldValues[INSTANCE_FULL_NAME_FIELD],
+    getFieldType(getFieldName(fieldValues)),
+    annotations,
+  )
+}
+
 const mergeCustomObjectWithInstance = (
-  customObject: ObjectType, fieldNameToFieldAnnotations: Record<string, Values>,
-  instance: InstanceElement, annotationTypesFromInstance: TypeMap
+  customObject: ObjectType, instance: InstanceElement, annotationTypesFromInstance: TypeMap
 ): void => {
-  _(customObject.fields).forEach(field => {
-    Object.assign(field.annotations, transformFieldAnnotations(
-      fieldNameToFieldAnnotations[apiName(field, true)] || {},
-      instance.value[INSTANCE_FULL_NAME_FIELD]
-    ))
-    if (field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-      && field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]) {
-      delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  const instanceFields = makeArray(instance.value.fields)
+  const fieldByApiName = _.mapKeys(customObject.fields, field => apiName(field, true))
+  const instanceName = instance.value[INSTANCE_FULL_NAME_FIELD]
+
+  instanceFields.forEach(values => {
+    const fieldName = values[INSTANCE_FULL_NAME_FIELD]
+    if (fieldByApiName[fieldName] !== undefined) {
+      // extend annotations from metadata API
+      Object.assign(fieldByApiName[fieldName].annotations, transformFieldAnnotations(
+        values,
+        instanceName
+      ))
+    } else {
+      // doesn't exist in SOAP - initialize from metadata API
+      const field = createFieldFromMetadataInstance(customObject, values, instanceName)
+      if (apiName(field) !== undefined) {
+        log.debug(`Extending SObject ${apiName(customObject)} with field ${fieldName} from metadata API`)
+        customObject.fields[fieldName] = field
+      }
     }
   })
+
+  Object.values(customObject.fields).filter(field => (
+    field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+    && field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  )).forEach(field => delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+
   transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
 }
 
@@ -335,7 +376,7 @@ const createFromInstance = (instance: InstanceElement,
   const instanceFields = makeArray(instance.value.fields)
   instanceFields
     .forEach((field: Values) => {
-      const fieldFullName = naclCase(field[INSTANCE_FULL_NAME_FIELD])
+      const fieldFullName = field[INSTANCE_FULL_NAME_FIELD]
       object.fields[fieldFullName] = new Field(object, fieldFullName,
         getFieldType(getFieldName(field)), transformFieldAnnotations(field, objectName))
     })
@@ -383,12 +424,8 @@ const createFromSObjectsAndInstances = (
     if (!instance) {
       return [object]
     }
-    const fieldNameToFieldAnnotations = _(makeArray(instance.value.fields))
-      .map(field => [field[INSTANCE_FULL_NAME_FIELD], field])
-      .fromPairs()
-      .value()
     mergeCustomObjectWithInstance(
-      object, fieldNameToFieldAnnotations, instance, custom
+      object, instance, custom
         ? typesFromInstance.customAnnotationTypes
         : typesFromInstance.standardAnnotationTypes
     )

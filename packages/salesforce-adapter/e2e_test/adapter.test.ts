@@ -124,6 +124,9 @@ describe('Salesforce adapter E2E with real account', () => {
         )
         expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.Name.elemID)
         expect(lead.fields.OwnerId.type.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
+        expect(lead.fields.HasOptedOutOfEmail.type.elemID).toEqual(
+          Types.primitiveDataTypes.Unknown.elemID
+        )
 
         // Test label
         expect(lead.fields.Name.annotations[constants.LABEL]).toBe('Full Name')

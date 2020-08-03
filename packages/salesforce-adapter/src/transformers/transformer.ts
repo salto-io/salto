@@ -352,6 +352,7 @@ export class Types {
     [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
     [FIELD_ANNOTATIONS.CREATABLE]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.UPDATEABLE]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.QUERYABLE]: BuiltinTypes.BOOLEAN,
   }
 
   // Type mapping for custom objects
@@ -564,6 +565,13 @@ export class Types {
         [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: Types.rollupSummaryFilterItemsType,
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: Types.rollupSummaryOperationType,
+      },
+    }),
+    Unknown: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.UNKNOWN),
+      primitive: PrimitiveTypes.STRING,
+      annotationTypes: {
+        ...Types.commonAnnotationTypes,
       },
     }),
   }
@@ -817,6 +825,7 @@ export const toCustomField = (
     API_NAME,
     FIELD_ANNOTATIONS.CREATABLE,
     FIELD_ANNOTATIONS.UPDATEABLE,
+    FIELD_ANNOTATIONS.QUERYABLE,
   ]
 
   const annotationsToSkip = [
@@ -1108,9 +1117,11 @@ export const getSObjectFieldElement = (
       )
     )
   }
+  // mark all fields from the SOAP API as queryable (internal annotation)
+  annotations[FIELD_ANNOTATIONS.QUERYABLE] = true
 
   // System fields besides name should be hidden and not be creatable, updateable nor required
-  // Because they differ between envs and should not be editted through salto
+  // Because they differ between envs and should not be edited through salto
   // Name is an exception because it's editable and should be visible to the user
   if (!field.nameField && systemFields.includes(field.name)) {
     annotations[CORE_ANNOTATIONS.HIDDEN] = true

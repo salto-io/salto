@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, getChangeElement } from '@salto-io/adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
-import { API_NAME } from '../../src/constants'
+import { API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { id } from '../../src/filters/utils'
 
@@ -26,6 +26,20 @@ describe('SalesforceAdapter filters', () => {
     annotations: { [API_NAME]: 'Bla__c' },
   })
 
+  const instanceToDeploy = new InstanceElement(
+    'deployMe',
+    new ObjectType({
+      elemID: new ElemID('bla', 'Bla__c'),
+      annotations: {
+        [API_NAME]: 'Bla__c',
+        [METADATA_TYPE]: 'ApexClass',
+      },
+    }),
+    {
+      [INSTANCE_FULL_NAME_FIELD]: 'deployMe',
+    }
+  )
+
   let adapter: SalesforceAdapter
 
   const createAdapter = (
@@ -33,7 +47,7 @@ describe('SalesforceAdapter filters', () => {
   ): SalesforceAdapter => mockAdapter({ adapterParams: { filterCreators } }).adapter
 
   describe('when filter methods are implemented', () => {
-    let filter: FilterWith<'onFetch' | 'onAdd' | 'onUpdate' | 'onRemove'>
+    let filter: FilterWith<'onFetch' | 'onAdd' | 'onUpdate' | 'onRemove' | 'onPreDeploy'>
 
     beforeEach(() => {
       filter = {
@@ -41,6 +55,7 @@ describe('SalesforceAdapter filters', () => {
         onAdd: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
         onUpdate: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
         onRemove: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
+        onPreDeploy: jest.fn(),
       }
 
       adapter = createAdapter([() => filter])
@@ -70,6 +85,41 @@ describe('SalesforceAdapter filters', () => {
       const { mock } = filter.onRemove as jest.Mock
       expect(mock.calls.length).toBe(1)
       expect(id(mock.calls[0][0])).toEqual(id(object))
+    })
+
+    it('should call preDeploy inner aspects upon add', async () => {
+      await adapter.deploy({
+        groupID: instanceToDeploy.elemID.getFullName(),
+        changes: [{ action: 'add', data: { after: instanceToDeploy } }],
+      })
+      const { mock } = filter.onPreDeploy as jest.Mock
+      expect(mock.calls.length).toBe(1)
+      expect(id(mock.calls[0][0])).toEqual(id(instanceToDeploy))
+    })
+
+    it('should not modify the returned instance upon preDeploy', async () => {
+      filter.onPreDeploy = jest.fn()
+        .mockImplementationOnce((inst: InstanceElement) => { inst.value = { bla: 'val' } })
+      const deployResult = await adapter.deploy({
+        groupID: instanceToDeploy.elemID.getFullName(),
+        changes: [{ action: 'add', data: { after: instanceToDeploy } }],
+      })
+
+      const changedInstance = getChangeElement(deployResult.appliedChanges[0]) as InstanceElement
+      expect(changedInstance.value).toEqual(instanceToDeploy.value)
+    })
+
+    it('should call preDeploy inner aspects upon update', async () => {
+      await adapter.deploy({
+        groupID: instanceToDeploy.elemID.getFullName(),
+        changes: [{
+          action: 'modify',
+          data: { before: instanceToDeploy, after: instanceToDeploy.clone() },
+        }],
+      })
+      const { mock } = filter.onPreDeploy as jest.Mock
+      expect(mock.calls.length).toBe(1)
+      expect(id(mock.calls[0][0])).toEqual(id(instanceToDeploy))
     })
 
     it('should call inner aspects upon update', async () => {

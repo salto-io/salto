@@ -495,8 +495,19 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async deployInstance(instance: InstanceElement, deletion = false): Promise<void> {
+    const getValuesToDeploy = async (): Promise<Values> => {
+      if (deletion) {
+        return instance.value
+      }
+      // apply onPreDeploy filters on a cloned instance so it'll be sent to the client
+      // but won't be persisted to the NaCLs
+      const clonedInstance = instance.clone()
+      await this.filtersRunner.onPreDeploy(clonedInstance)
+      return clonedInstance.value
+    }
+
     const zip = await toMetadataPackageZip(apiName(instance), metadataType(instance),
-      instance.value, deletion)
+      await getValuesToDeploy(), deletion)
     if (zip) {
       await this.client.deploy(zip)
     } else {

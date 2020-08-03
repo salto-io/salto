@@ -205,7 +205,7 @@ export const transformFieldAnnotations = (
   instanceFieldValues: Values,
   parentName: string
 ): Values => {
-  // Ignores typeless/unknown typed instances
+  // Ignores instances without a defined type
   if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
     return {}
   }
@@ -254,11 +254,12 @@ const createFieldFromMetadataInstance = (
   field: Values,
   instanceName: string,
 ): Field => {
-  if (!field[INSTANCE_TYPE_FIELD]) {
-    field[INSTANCE_TYPE_FIELD] = FIELD_TYPE_NAMES.UNKNOWN
+  let fieldValues = field
+  if (!fieldValues[INSTANCE_TYPE_FIELD]) {
+    fieldValues = { [INSTANCE_TYPE_FIELD]: FIELD_TYPE_NAMES.UNKNOWN, ...fieldValues }
   }
   const annotations = transformFieldAnnotations(
-    field,
+    fieldValues,
     instanceName,
   )
   annotations[FIELD_ANNOTATIONS.QUERYABLE] = false
@@ -267,8 +268,8 @@ const createFieldFromMetadataInstance = (
 
   return new Field(
     customObject,
-    field[INSTANCE_FULL_NAME_FIELD],
-    getFieldType(getFieldName(field)),
+    fieldValues[INSTANCE_FULL_NAME_FIELD],
+    getFieldType(getFieldName(fieldValues)),
     annotations,
   )
 }

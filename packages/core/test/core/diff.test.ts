@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { merger, pathIndex } from '@salto-io/workspace'
-import { createRestoreChanges } from '../../src/core/restore'
+import { merger } from '@salto-io/workspace'
+import { createDiffChanges } from '../../src/core/diff'
 
 const { mergeElements } = merger
-const { createPathIndex } = pathIndex
 
-describe('restore', () => {
+describe('diff', () => {
   const nestedType = new ObjectType({
     elemID: new ElemID('salto', 'nested'),
     fields: {
@@ -123,24 +122,22 @@ describe('restore', () => {
   const singlePathInstMerged = allElement[2].clone()
   const multiPathInstMerged = allElement[3].clone()
 
-  const index = createPathIndex(elementfragments)
-
   describe('with no changes', () => {
-    it('should not create changes ws and the state are the same', async () => {
-      const changes = await createRestoreChanges(allElement, allElement, index)
+    it('should not create changes toElements and the fromElements are the same', async () => {
+      const changes = await createDiffChanges(allElement, allElement)
       expect(changes).toHaveLength(0)
     })
   })
 
   describe('with changes', () => {
     const singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
-    const wsElements = [
+    const toElements = [
       singlePathObjMerged,
       multiPathInstMerged,
       singlePathInstMerged,
     ]
     singlePathInstMergedAfter.value.nested.str = 'modified'
-    const stateElements = [
+    const beforeElements = [
       multiPathObjMerged,
       singlePathInstMergedAfter,
       multiPathInstMerged,
@@ -148,33 +145,51 @@ describe('restore', () => {
     describe('without filters', () => {
       let changes: DetailedChange[]
       beforeAll(async () => {
-        changes = await createRestoreChanges(wsElements, stateElements, index)
+        changes = await createDiffChanges(toElements, beforeElements)
       })
 
       it('should create all changes', () => {
-        expect(changes).toHaveLength(4)
+        expect(changes).toHaveLength(3)
       })
 
-      it('should create add changes for elements which are only in the state with proper path', () => {
+      it('should create add changes for elements which are only in the fromElements', () => {
         const addChanges = changes.filter(c => c.action === 'add')
-        expect(addChanges).toHaveLength(2)
+        expect(addChanges).toHaveLength(1)
         addChanges.forEach(change => expect(change.id).toEqual(multiPathObjMerged.elemID))
-        const changePaths = addChanges.map(change => change.path)
-        expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'anno'])
-        expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'fields'])
       })
-      it('should create remove changes for elements which are only in the workspace with proper path', () => {
+      it('should create remove changes for elements which are only in the workspace', () => {
         const removeChange = changes.find(c => c.action === 'remove')
         expect(removeChange).toBeDefined()
         expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
         expect(removeChange?.path).toBeUndefined()
       })
-      it('should create remove changes for elements which have different values in the state and ws with proper path', () => {
+      it('should create remove changes for elements which have different values in the fromElements and toElements', () => {
         const modifyChange = changes.find(c => c.action === 'modify')
         expect(modifyChange).toBeDefined()
         expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
           .createNestedID('nested').createNestedID('str'))
-        expect(modifyChange?.path).toEqual(['salto', 'inst', 'simple'])
+      })
+    })
+    describe('with filters', () => {
+      let changes: DetailedChange[]
+      const nestedID = singlePathInstMerged.elemID
+        .createNestedID('nested')
+        .createNestedID('str')
+      beforeAll(async () => {
+        const filters = [
+          new RegExp(singlePathObjMerged.elemID.getFullName()),
+          new RegExp(nestedID.getFullName()),
+        ]
+        changes = await createDiffChanges(toElements, beforeElements, filters)
+      })
+      it('should filter out changes that did not pass any of the filters', () => {
+        expect(changes).toHaveLength(2)
+      })
+      it('should create changes for elements that pass top level filters', () => {
+        expect(changes.find(c => c.id.isEqual(singlePathObjMerged.elemID))).toBeTruthy()
+      })
+      it('should create partial changes for elements that pass nested filters', () => {
+        expect(changes.find(c => c.id.isEqual(nestedID))).toBeTruthy()
       })
     })
   })

@@ -53,26 +53,30 @@ type MultiEnvState = {
   mergeErrors: MergeError[]
 }
 
+type MultiEnvSource = NaclFilesSource & {
+  getAll: (env?: string) => Promise<Element[]>
+}
+
 const buildMultiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
   initState?: Promise<MultiEnvState>
-): NaclFilesSource => {
+): MultiEnvSource => {
   const primarySource = (): NaclFilesSource => sources[primarySourceName]
   const commonSource = (): NaclFilesSource => sources[commonSourceName]
   const secondarySources = (): Record<string, NaclFilesSource> => (
     _.omit(sources, [primarySourceName, commonSourceName])
   )
 
-  const getActiveSources = (): Record<string, NaclFilesSource> => ({
-    [primarySourceName]: sources[primarySourceName],
+  const getActiveSources = (env?: string): Record<string, NaclFilesSource> => ({
+    [primarySourceName]: env === undefined ? sources[primarySourceName] : sources[env],
     [commonSourceName]: sources[commonSourceName],
   })
 
-  const buildMutiEnvState = async (): Promise<MultiEnvState> => {
+  const buildMutiEnvState = async (env?: string): Promise<MultiEnvState> => {
     const allActiveElements = _.flatten(await Promise.all(
-      _.values(getActiveSources()).map(s => s.getAll())
+      _.values(getActiveSources(env)).map(s => s.getAll())
     ))
     const { errors, merged } = mergeElements(allActiveElements)
     applyInstancesDefaults(merged.filter(isInstanceElement))
@@ -169,7 +173,10 @@ const buildMultiEnvSource = (
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]
     ),
-    getAll: async (): Promise<Element[]> => _.values((await getState()).elements),
+    getAll: async (env?: string): Promise<Element[]> => (env === undefined
+      ? _.values((await getState()).elements)
+      // When we get an env override we don't want to keep that state
+      : _.values((await buildMutiEnvState(env)).elements)),
     listNaclFiles: async (): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (
@@ -268,4 +275,4 @@ export const multiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-): NaclFilesSource => buildMultiEnvSource(sources, primarySourceName, commonSourceName)
+): MultiEnvSource => buildMultiEnvSource(sources, primarySourceName, commonSourceName)

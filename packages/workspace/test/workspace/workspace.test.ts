@@ -135,13 +135,48 @@ describe('workspace', () => {
   describe('loaded elements', () => {
     let workspace: Workspace
     let elemMap: Record<string, Element>
+    const state = {
+      getAll: () => [new ObjectType({
+        elemID: new ElemID('salesforce', 'hidden'),
+        annotations: {
+          _hidden: true,
+        },
+      })],
+    } as unknown as State
     beforeAll(async () => {
-      workspace = await createWorkspace()
+      workspace = await createWorkspace(undefined, state)
       elemMap = getElemMap(await workspace.elements())
     })
     it('should contain types from all files', () => {
       expect(elemMap).toHaveProperty(['salesforce.lead'])
       expect(elemMap).toHaveProperty(['multi.loc'])
+      expect(elemMap).toHaveProperty(['salesforce.hidden'])
+    })
+    it('should be merged', () => {
+      const lead = elemMap['salesforce.lead'] as ObjectType
+      expect(_.keys(lead.fields)).toHaveLength(5)
+    })
+  })
+
+  describe('loaded elements without hidden types', () => {
+    let workspace: Workspace
+    let elemMap: Record<string, Element>
+    const state = {
+      getAll: () => [new ObjectType({
+        elemID: new ElemID('salesforce', 'hidden'),
+        annotations: {
+          _hidden: true,
+        },
+      })],
+    } as unknown as State
+    beforeAll(async () => {
+      workspace = await createWorkspace(undefined, state)
+      elemMap = getElemMap(await workspace.elements(false))
+    })
+    it('should contain types from all files', () => {
+      expect(elemMap).toHaveProperty(['salesforce.lead'])
+      expect(elemMap).toHaveProperty(['multi.loc'])
+      expect(elemMap).not.toHaveProperty(['salesforce.hidden'])
     })
     it('should be merged', () => {
       const lead = elemMap['salesforce.lead'] as ObjectType

@@ -13,23 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { YargsCommandBuilder } from '../command_builder'
-import fetchBuilder from './fetch'
-import deployBuilder from './deploy'
-import initBuilder from './init'
-import servicesBuilder from './services'
-import envsBuilder from './env'
-import restoreBuilder from './restore'
-import diffBuilder from './diff'
+import _ from 'lodash'
 
-
-// The order of the builders determines order of appearance in help text
-export default [
-  initBuilder,
-  fetchBuilder,
-  deployBuilder,
-  restoreBuilder,
-  servicesBuilder,
-  envsBuilder,
-  diffBuilder,
-] as YargsCommandBuilder[]
+export const createRegexFilters = (
+  inputFilters: string[]
+): {filters: RegExp[]; invalidFilters: string[]} => {
+  const [validFilters, invalidFilters] = _.partition(inputFilters, filter => {
+    try {
+      return new RegExp(filter)
+    } catch (e) {
+      return false
+    }
+  })
+  const filters = validFilters.map(filter => new RegExp(filter))
+  return { filters, invalidFilters }
+}

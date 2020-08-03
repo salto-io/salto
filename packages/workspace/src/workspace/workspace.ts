@@ -68,7 +68,7 @@ export type Workspace = {
   uid: string
   name: string
 
-  elements: () => Promise<ReadonlyArray<Element>>
+  elements: (includeHidden?: boolean, env?: string) => Promise<ReadonlyArray<Element>>
   state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
@@ -135,12 +135,13 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
     currentEnv(), elementsSources.commonSourceName)
 
-  const elements = async (): Promise<ReadonlyArray<Element>> => (
-    addHiddenValuesAndHiddenTypes(
-      await naclFilesSource.getAll(),
+  const elements = async (includeHidden = true, env?: string): Promise<ReadonlyArray<Element>> => {
+    const visibleElements = await naclFilesSource.getAll(env)
+    return includeHidden ? addHiddenValuesAndHiddenTypes(
+      visibleElements,
       await state().getAll(),
-    )
-  )
+    ) : visibleElements
+  }
 
   // Determine if change is new type addition (add action)
   const isChangeNewHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'

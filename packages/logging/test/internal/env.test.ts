@@ -145,4 +145,32 @@ describe('env', () => {
       })
     })
   })
+
+  describe('globalLogTags', () => {
+    describe('when the env variable is not defined', () => {
+      it('should return undefined', () => {
+        expect(config({}).globalTags).toBeUndefined()
+      })
+    })
+
+    describe('when the env variable is an empty string', () => {
+      it('should return undefined', () => {
+        expect(config({ globalLogTags: '' }).globalTags).toBeUndefined()
+      })
+    })
+
+    describe('when the env variable is defined and non-empty', () => {
+      it('should return the definition', () => {
+        expect(config({ SALTO_LOG_GLOBAL_TAGS: '{"requestId":20}' }).globalTags).toEqual({ requestId: 20 })
+      })
+    })
+
+    describe('when the env variable is defined and non-empty and error', () => {
+      it('should return the definition', () => {
+        expect(
+          () => config({ SALTO_LOG_GLOBAL_TAGS: '{requestId":20}' }).globalTags
+        ).toThrow(new ValidationError('Invalid globalLogTags given'))
+      })
+    })
+  })
 })

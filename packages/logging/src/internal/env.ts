@@ -15,6 +15,7 @@
 */
 import { validateLogLevel } from './level'
 import { Config, validateFormat } from './config'
+import { toGlobalTags } from './log-tags'
 
 export type Env = { [key: string]: string | undefined }
 
@@ -39,5 +40,6 @@ export const config = (env: Env): Partial<Config> => {
     namespaceFilter: envKey('NS', s => s),
     format: envKey('FORMAT', validateFormat),
     colorize: envKey('COLOR', toBoolean),
+    globalTags: envKey('GLOBAL_TAGS', toGlobalTags),
   }
 }

@@ -73,6 +73,27 @@ Object specified after formatting arguments will be included in the log's JSON o
 log.error('This message has extra', { extra: true })
 ```
 
+#### Assigning log tags per namespace logger
+
+Assigning tags to future log message from any logger with the same namespace. In order to empty assigned tags,
+simply run the function with undefined.
+
+```typescript
+log.assignTags({ requestId: '5', contextData: '4' })
+log.assignTags(undefined) // Empties all assigned tags
+```
+
+#### Assigning log tags globally
+
+Assigning tags to future log message from all loggers. In order to empty assigned tags, simply run the function with undefined.
+
+```typescript
+log.globalAssignTags({ requestId: '5', contextData: '4' })
+log.globalAssignTags(undefined) // Empties all assigned tags
+```
+
+
+
 ## Configuring the loggers
 
 The configuration can be changed via env vars.
@@ -152,6 +173,19 @@ SALTO_LOG_COLOR=true
 Override colorization in output.
 
 Default: `''` - colorize if writing to stdout and the stream supports color.
+
+### `globalTags: LogTags | null`
+
+Environment variable:
+
+```bash
+SALTO_LOG_GLOBAL_TAGS='{"requestId":20}'
+```
+
+Add tags to all log messages. When configuring this variable via the CLI, make sure this variable is a JSON.
+
+Default: {} - Doesn't add any tags to log messages. 
+
 
 ## <a name="configure_API"></a>setting the logging from the programmatic API
 

@@ -16,6 +16,7 @@
 
 import _ from 'lodash'
 import { byName as colorsByName } from './colors'
+import { ValidationError } from './common'
 
 export type LogTags = {
   [key: string]: unknown
@@ -34,4 +35,12 @@ export const formatLogTags = (logTags: LogTags, baseKeys: string[]): string => {
   return Object.keys(tagsWithoutBaseKeys)
     .map(logTagKey => formatLogTag(logTagKey, logTags[logTagKey]))
     .join(' ')
+}
+
+export const toGlobalTags = (s: string): LogTags => {
+  try {
+    return JSON.parse(s)
+  } catch (e) {
+    throw new ValidationError('Invalid globalLogTags given')
+  }
 }

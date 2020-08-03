@@ -27,7 +27,8 @@ export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 
 export type BaseLogger = {
   log(level: LogLevel, ...rest: Parameters<LogMethod>): ReturnType<LogMethod>
-  child(logTags: LogTags): BaseLogger
+  assignGlobalTags(logTags?: LogTags): void
+  assignTags(logTags?: LogTags): void
 }
 
 export type BaseLoggerMaker = (namespace: Namespace, tags? : LogTags) => BaseLogger
@@ -110,7 +111,7 @@ export const logger = (
   }))
 }
 
-export type LoggerRepo = ((namespace: NamespaceOrModule) => Logger) & {
+export type LoggerRepo = ((namespace: NamespaceOrModule, ...namespaceTags: string[]) => Logger) & {
   setMinLevel(level: LogLevel): void
   readonly config: Readonly<Config>
   end(): Promise<void>
@@ -131,8 +132,8 @@ export const loggerRepo = (
   )
 
   const getLogger = (
-    namespace: NamespaceOrModule
-  ): Logger => loggers.get(namespaceNormalizer(namespace))
+    namespace: NamespaceOrModule, ...namespaceTags: string[]
+  ): Logger => loggers.get(namespaceNormalizer(namespace, namespaceTags))
 
   const result = Object.assign(getLogger, {
     setMinLevel(level: LogLevel): void {

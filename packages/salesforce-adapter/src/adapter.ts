@@ -85,6 +85,9 @@ export const DEFAULT_FILTERS = [
   workflowFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   customObjectsFilter,
+  // referenceAnnotations should run before foreignLeyReferences, custom_object_instances,
+  // custom_object_instances_references
+  referenceAnnotations,
   // customObjectsInstancesFilter depends on customObjectsFilter
   customObjectsInstancesFilter,
   removeFieldsFilter,
@@ -112,9 +115,6 @@ export const DEFAULT_FILTERS = [
   convertListsFilter,
   convertTypeFilter,
   instanceReferences,
-  // should run after custom_object_instances for now
-  referenceAnnotations,
-  // foreignLeyReferences should come after referenceAnnotations
   foreignKeyReferences,
   // hideTypesFilter should come before customObjectsSplitFilter
   hideTypesFilter,

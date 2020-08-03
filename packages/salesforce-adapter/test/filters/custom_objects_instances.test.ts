@@ -19,6 +19,7 @@ import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_objects_instances'
+import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
 import mockAdapter from '../adapter'
 import {
   LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
@@ -37,6 +38,7 @@ describe('Custom Object Instances filter', () => {
   let client: SalesforceClient
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
+  let refAnnotationFilter: FilterType
 
   const NAME_FROM_GET_ELEM_ID = 'getElemIDPrefix'
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
@@ -199,6 +201,7 @@ describe('Custom Object Instances filter', () => {
           ],
         } }
     ) as FilterType
+    refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: {} }) as FilterType
     basicQueryImplementation = jest.fn().mockImplementation(async () => (
       {
         totalSize: 2,
@@ -227,6 +230,8 @@ describe('Custom Object Instances filter', () => {
         notConfiguredObj, includedNameSpaceObj, includedInAnotherNamespaceObj,
         includedObject, excludedObject, excludeOverrideObject,
       ]
+      // run the reference annotation filter to resolve the REFERENCE_TO references
+      await refAnnotationFilter.onFetch(elements)
       await filter.onFetch(elements)
     })
 
@@ -333,6 +338,8 @@ describe('Custom Object Instances filter', () => {
 
     beforeEach(async () => {
       elements = [simpleObject, objWithNameField, objWithAddressField, objNotInNamespace]
+      // run the reference annotation filter to resolve the REFERENCE_TO references
+      await refAnnotationFilter.onFetch(elements)
       await filter.onFetch(elements)
     })
 
@@ -512,6 +519,8 @@ describe('Custom Object Instances filter', () => {
         refToObject, refToFromNamespaceObject, refFromAndToObject,
         namespacedRefFromObject, emptyRefToObject,
       ]
+      // run the reference annotation filter to resolve the REFERENCE_TO references
+      await refAnnotationFilter.onFetch(elements)
       await filter.onFetch(elements)
     })
 
@@ -649,6 +658,8 @@ describe('Custom Object Instances filter', () => {
         grandparentObject, parentObject, grandsonObject, orphanObject,
         pricebookEntryObject, SBQQCustomActionObject, refFromObject, refToObject,
       ]
+      // run the reference annotation filter to resolve the REFERENCE_TO references
+      await refAnnotationFilter.onFetch(elements)
       await filter.onFetch(elements)
     })
 

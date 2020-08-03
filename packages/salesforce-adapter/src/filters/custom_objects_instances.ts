@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, isObjectType, Field, isPrimitiveType } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, isObjectType, Field, isPrimitiveType, isReferenceExpression } from '@salto-io/adapter-api'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
@@ -59,8 +59,13 @@ const isReferenceField = (field: Field): boolean =>
   && (Types.primitiveDataTypes.MasterDetail.isEqual(field.type)
   || Types.primitiveDataTypes.Lookup.isEqual(field.type)))
 
-const getReferenceTo = (field: Field): string[] =>
-  makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
+const getReferenceToTypeNames = (field: Field): string[] =>
+  makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
+    .map(ref => (
+      isReferenceExpression(ref)
+        ? ref.elemId.typeName
+        : ref
+    ))
 
 const buildQueryString = (type: ObjectType, ids?: string[]): string => {
   const selectStr = Object.values(type.fields)
@@ -129,7 +134,7 @@ const typesRecordsToInstances = (
       if (!isReferenceField(field)) {
         return fieldValue.toString()
       }
-      const referencedTypeNames = getReferenceTo(field)
+      const referencedTypeNames = getReferenceToTypeNames(field)
       return referencedTypeNames.map(typeName => {
         const rec = recordByIdAndType[typeName] !== undefined
           ? recordByIdAndType[typeName][fieldValue] : undefined
@@ -219,7 +224,7 @@ const getTargetRecordIds = (
       .filter(isReferenceField)
       .map(field => [
         field.name,
-        getReferenceTo(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
+        getReferenceToTypeNames(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
       ])
   )
   return records.flatMap(record =>

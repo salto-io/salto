@@ -20,6 +20,7 @@ import {
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
+import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
 import mockAdapter from '../adapter'
 import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
@@ -28,6 +29,7 @@ describe('Custom Object Instances References filter', () => {
   let client: SalesforceClient
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
+  let refAnnotationFilter: FilterType
 
   const refFromName = 'refFrom'
   const refToName = 'refToName'
@@ -97,6 +99,7 @@ describe('Custom Object Instances References filter', () => {
             [API_NAME]: 'LookupExample',
             referenceTo: [
               refToName,
+              'invalidName',
             ],
           },
         },
@@ -121,10 +124,11 @@ describe('Custom Object Instances References filter', () => {
       },
     }))
     filter = filterCreator({ client, config: {} }) as FilterType
+    refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: {} }) as FilterType
   })
 
   describe('lookup ref to', () => {
-    let elements: Element[]
+    let originalElements: Element[]
     const refFromValues = {
       Id: '1234',
       LookupExample: 'refToId',
@@ -163,7 +167,7 @@ describe('Custom Object Instances References filter', () => {
         Id: 'masterToId',
       },
     )
-    const originalElements = [
+    const elements = [
       refFromObj,
       refToObj,
       masterObj,
@@ -172,8 +176,14 @@ describe('Custom Object Instances References filter', () => {
       masterToInstance,
       refFromEmptyRefsInstance,
     ]
+    let resolvedRefFromObj: Element
     beforeAll(async () => {
-      elements = originalElements.map(e => e.clone())
+      // must clone in this direction to avoid breaking the link from instances to objects
+      originalElements = elements.map(e => e.clone())
+      // run the reference annotation filter to resolve the REFERENCE_TO references
+      await refAnnotationFilter.onFetch(elements)
+      // resolvedRefFromObj has reference expressions for REFERENCE_TO instead of strings
+      resolvedRefFromObj = elements[0].clone()
       await filter.onFetch(elements)
     })
 
@@ -181,7 +191,7 @@ describe('Custom Object Instances References filter', () => {
       expect(elements.length).toEqual(originalElements.length)
 
       // object types
-      expect(elements.find(e => e.elemID.isEqual(refFromElemID))).toMatchObject(refFromObj)
+      expect(elements.find(e => e.elemID.isEqual(refFromElemID))).toMatchObject(resolvedRefFromObj)
       expect(elements.find(e => e.elemID.isEqual(refToElemID))).toMatchObject(refToObj)
       expect(elements.find(e => e.elemID.isEqual(masterElemID))).toMatchObject(masterObj)
 

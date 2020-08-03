@@ -19,6 +19,7 @@ import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import {
   Element, isInstanceElement, Values, ObjectType, Field, isPrimitiveType, InstanceElement,
   ReferenceExpression,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { isCustomObject, Types, apiName } from '../transformers/transformer'
@@ -55,9 +56,13 @@ const replaceReferenceValues = (
     if (_.isUndefined(field) || !shouldReplace(field)) {
       return value
     }
-    const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+    const refTo = makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
     const refTarget = refTo
-      .map(typeName => instancesByType[typeName]?.[value])
+      .map(typeRef => (
+        isReferenceExpression(typeRef)
+          ? instancesByType[typeRef.elemId.typeName]?.[value]
+          : instancesByType[typeRef]?.[value]
+      ))
       .filter(lowerdashValues.isDefined)
       .pop()
     return refTarget === undefined ? value : new ReferenceExpression(refTarget.elemID)

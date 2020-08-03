@@ -14,5 +14,5 @@
 * limitations under the License.
 */
 export { parse, SourceRange, parseElemID, ParseError, ParseResult } from './parse'
-export { dumpElements, dumpElemID } from './dump'
+export { dumpElements, dumpElemID, dumpValues } from './dump'
 export { SourceMap } from './source_map'

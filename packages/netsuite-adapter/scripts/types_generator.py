@@ -558,12 +558,12 @@ should_be_list = {
     'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction',
     'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction',
     'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction',
-
 }
 
 field_name_to_type_name = {
     'addressForm_addressTemplate': 'fieldTypes.cdata',
     'dataset_definition': 'fieldTypes.cdata',
+    'dataset_dependencies_dependency': 'new ListType(BuiltinTypes.STRING)',
     'workbook_definition': 'fieldTypes.cdata',
     'workflow_initcondition_formula': 'fieldTypes.cdata',
     'workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_formula': 'fieldTypes.cdata',

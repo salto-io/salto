@@ -65,6 +65,7 @@ import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
 import hideTypesFilter from './filters/hide_types'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
+import xmlAttributesFilter from './filters/xml_attributes'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
   getConfigFromConfigChanges,
@@ -105,6 +106,7 @@ export const DEFAULT_FILTERS = [
   valueSetFilter,
   globalValueSetFilter,
   staticResourceFileExtFilter,
+  xmlAttributesFilter,
   // customObjectTranslationFilter and recordTypeFilter depends on customObjectsFilter
   customObjectTranslationFilter,
   recordTypeFilter,
@@ -499,8 +501,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async deployInstance(instance: InstanceElement, deletion = false): Promise<void> {
-    const zip = await toMetadataPackageZip(apiName(instance), metadataType(instance),
-      instance.value, deletion)
+    const zip = await toMetadataPackageZip(instance, deletion)
     if (zip) {
       await this.client.deploy(zip)
     } else {

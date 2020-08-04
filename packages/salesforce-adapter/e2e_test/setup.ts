@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import { MetadataInfo } from 'jsforce'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import * as constants from '../src/constants'
 import { CustomField, ProfileInfo } from '../src/client/types'
 import { toMetadataPackageZip } from '../src/transformers/xml_transformer'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import { objectExists } from './utils'
+import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 
 
 export const gvsName = 'TestGlobalValueSet'
@@ -87,7 +89,7 @@ export const auraInstanceValues = {
   type: 'Component',
 }
 
-export const lightningComponentBundleInstanceValues = {
+const lightningComponentBundleInstanceValues = {
   [constants.INSTANCE_FULL_NAME_FIELD]: 'testLightningComponentBundle',
   apiVersion: 49,
   isExposed: true,
@@ -895,25 +897,39 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
 
   const verifyApexPageAndClassExist = async (): Promise<void> => {
     await client.deploy(await toMetadataPackageZip(
-      'ApexClassForProfile',
-      'ApexClass',
-      {
-        apiVersion: API_VERSION,
-        content: "public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}",
-        fullName: 'ApexClassForProfile',
-      },
+      new InstanceElement(
+        'ApexClassForProfile',
+        new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, 'ApexClass'),
+          annotations: {
+            [constants.METADATA_TYPE]: 'ApexClass',
+          },
+        }),
+        {
+          apiVersion: API_VERSION,
+          content: "public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}",
+          fullName: 'ApexClassForProfile',
+        }
+      ),
       false,
     ) as Buffer)
 
     await client.deploy(await toMetadataPackageZip(
-      'ApexPageForProfile',
-      'ApexPage',
-      {
-        apiVersion: API_VERSION,
-        content: '<apex:page>Created by e2e test for profile test!</apex:page>',
-        fullName: 'ApexPageForProfile',
-        label: 'ApexPageForProfile',
-      },
+      new InstanceElement(
+        'ApexPageForProfile',
+        new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, 'ApexPage'),
+          annotations: {
+            [constants.METADATA_TYPE]: 'ApexPage',
+          },
+        }),
+        {
+          apiVersion: API_VERSION,
+          content: '<apex:page>Created by e2e test for profile test!</apex:page>',
+          fullName: 'ApexPageForProfile',
+          label: 'ApexPageForProfile',
+        }
+      ),
       false,
     ) as Buffer)
   }
@@ -938,27 +954,52 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
 
   const verifyAuraDefinitionBundleExists = async (): Promise<void> => {
     await client.deploy(await toMetadataPackageZip(
-      'TestAuraDefinitionBundle',
-      'AuraDefinitionBundle',
-      auraInstanceValues,
+      new InstanceElement(
+        'TestAuraDefinitionBundle',
+        new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, 'AuraDefinitionBundle'),
+          annotations: {
+            [constants.METADATA_TYPE]: 'AuraDefinitionBundle',
+          },
+        }),
+        auraInstanceValues
+      ),
       false,
     ) as Buffer)
   }
 
+  const targetConfigsType = allMissingSubTypes.find(sunType => sunType.elemID.isEqual(new ElemID(constants.SALESFORCE, 'TargetConfigs'))) as ObjectType
   const verifyLightningComponentBundleExists = async (): Promise<void> => {
     await client.deploy(await toMetadataPackageZip(
-      'testLightningComponentBundle',
-      'LightningComponentBundle',
-      lightningComponentBundleInstanceValues,
+      new InstanceElement(
+        'testLightningComponentBundle',
+        new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, 'LightningComponentBundle'),
+          fields: {
+            targetConfigs: { type: targetConfigsType },
+          },
+          annotations: {
+            [constants.METADATA_TYPE]: 'LightningComponentBundle',
+          },
+        }),
+        lightningComponentBundleInstanceValues
+      ),
       false,
     ) as Buffer)
   }
 
   const verifyStaticResourceExists = async (): Promise<void> => {
     await client.deploy(await toMetadataPackageZip(
-      'TestStaticResource',
-      'StaticResource',
-      staticResourceInstanceValues,
+      new InstanceElement(
+        'TestStaticResource',
+        new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, 'StaticResource'),
+          annotations: {
+            [constants.METADATA_TYPE]: 'StaticResource',
+          },
+        }),
+        staticResourceInstanceValues
+      ),
       false,
     ) as Buffer)
   }

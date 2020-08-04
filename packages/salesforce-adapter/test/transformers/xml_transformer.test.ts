@@ -23,10 +23,10 @@ import { fromRetrieveResult, toMetadataPackageZip, MetadataValues } from '../../
 import {
   INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE,
 } from '../../src/constants'
-import { apiName, metadataType } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
+import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 
 
 describe('XML Transformer', () => {
@@ -57,8 +57,7 @@ describe('XML Transformer', () => {
         },
       )
 
-      const zip = toMetadataPackageZip(apiName(assignmentRuleInstance),
-        metadataType(assignmentRuleInstance), assignmentRuleInstance.value, false)
+      const zip = toMetadataPackageZip(assignmentRuleInstance, false)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -119,16 +118,10 @@ describe('XML Transformer', () => {
         },
       )
 
-      const zip = toMetadataPackageZip(apiName(apexClassInstance), metadataType(apexClassInstance),
-        apexClassInstance.value, false)
+      const zip = toMetadataPackageZip(apexClassInstance, false)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
-      const zipWithHidden = toMetadataPackageZip(
-        apiName(apexClassWithHiddenContentInstance),
-        metadataType(apexClassWithHiddenContentInstance),
-        apexClassWithHiddenContentInstance.value,
-        false,
-      )
+      const zipWithHidden = toMetadataPackageZip(apexClassWithHiddenContentInstance, false)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -187,8 +180,7 @@ describe('XML Transformer', () => {
         },
       )
 
-      const zip = toMetadataPackageZip(apiName(emailFolderInstance),
-        metadataType(emailFolderInstance), emailFolderInstance.value, false)
+      const zip = toMetadataPackageZip(emailFolderInstance, false)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -214,57 +206,66 @@ describe('XML Transformer', () => {
     })
 
     describe('lightning component bundle', () => {
-      const lightningComponentBundleValues = {
-        [INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
-        apiVersion: 47.0,
-        lwcResources: {
-          lwcResource: [
-            {
-              source: '// some javascript content',
-              filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
-            },
-            {
-              source: '// some html content',
-              filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
-            },
-          ],
-        },
-        targetConfigs: {
-          targetConfig: [
-            {
-              objects: [
-                {
-                  object: 'Contact',
-                },
-              ],
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              attr_targets: 'lightning__RecordPage',
-            },
-            {
-              supportedFormFactors: {
-                supportedFormFactor: [
+      const targetConfigsType = allMissingSubTypes.find(sunType => sunType.elemID.isEqual(new ElemID(SALESFORCE, 'TargetConfigs'))) as ObjectType
+      const lightningComponentBundleInstance = new InstanceElement(
+        'myLightningComponentBundle',
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'LightningComponentBundle'),
+          fields: {
+            targetConfigs: { type: targetConfigsType },
+          },
+          annotations: {
+            [METADATA_TYPE]: 'LightningComponentBundle',
+          },
+        }),
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
+          apiVersion: 47.0,
+          lwcResources: {
+            lwcResource: [
+              {
+                source: '// some javascript content',
+                filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
+              },
+              {
+                source: '// some html content',
+                filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
+              },
+            ],
+          },
+          targetConfigs: {
+            targetConfig: [
+              {
+                objects: [
                   {
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    attr_type: 'Small',
+                    object: 'Contact',
                   },
                 ],
+                targets: 'lightning__RecordPage',
               },
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              attr_targets: 'lightning__AppPage,lightning__HomePage',
-            },
-          ],
-        },
-        targets: {
-          target: [
-            'lightning__AppPage',
-            'lightning__RecordPage',
-            'lightning__HomePage',
-          ],
-        },
-      }
+              {
+                supportedFormFactors: {
+                  supportedFormFactor: [
+                    {
+                      type: 'Small',
+                    },
+                  ],
+                },
+                targets: 'lightning__AppPage,lightning__HomePage',
+              },
+            ],
+          },
+          targets: {
+            target: [
+              'lightning__AppPage',
+              'lightning__RecordPage',
+              'lightning__HomePage',
+            ],
+          },
+        }
+      )
 
-      const zip = toMetadataPackageZip('myLightningComponentBundle', 'LightningComponentBundle',
-        lightningComponentBundleValues, false)
+      const zip = toMetadataPackageZip(lightningComponentBundleInstance, false)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -323,23 +324,31 @@ describe('XML Transformer', () => {
     })
 
     describe('aura definition bundle', () => {
-      const auraValues = {
-        [INSTANCE_FULL_NAME_FIELD]: 'myAuraDefinitionBundle',
-        SVGContent: '// some svg content',
-        apiVersion: 47,
-        controllerContent: '// some controller content',
-        description: 'myAuraDefinitionBundle description',
-        designContent: '// some design content',
-        documentationContent: '// some documentation content',
-        helperContent: '// some helper content',
-        markup: '// some markup content',
-        rendererContent: '// some renderer content',
-        styleContent: '// some style content',
-        type: 'Component',
-      }
+      const auraInstance = new InstanceElement(
+        'myAuraDefinitionBundle',
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'AuraDefinitionBundle'),
+          annotations: {
+            [METADATA_TYPE]: 'AuraDefinitionBundle',
+          },
+        }),
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'myAuraDefinitionBundle',
+          SVGContent: '// some svg content',
+          apiVersion: 47,
+          controllerContent: '// some controller content',
+          description: 'myAuraDefinitionBundle description',
+          designContent: '// some design content',
+          documentationContent: '// some documentation content',
+          helperContent: '// some helper content',
+          markup: '// some markup content',
+          rendererContent: '// some renderer content',
+          styleContent: '// some style content',
+          type: 'Component',
+        }
+      )
 
-      const zip = toMetadataPackageZip('myAuraDefinitionBundle', 'AuraDefinitionBundle',
-        auraValues, false)
+      const zip = toMetadataPackageZip(auraInstance, false)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -450,8 +459,7 @@ describe('XML Transformer', () => {
         },
       )
 
-      const zip = toMetadataPackageZip(apiName(apexClassInstance), metadataType(apexClassInstance),
-        apexClassInstance.value, true)
+      const zip = toMetadataPackageZip(apexClassInstance, true)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -495,8 +503,7 @@ describe('XML Transformer', () => {
         },
       )
 
-      const zip = toMetadataPackageZip(apiName(emailFolderInstance),
-        metadataType(emailFolderInstance), emailFolderInstance.value, true)
+      const zip = toMetadataPackageZip(emailFolderInstance, true)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -521,14 +528,22 @@ describe('XML Transformer', () => {
     })
 
     describe('lightning component bundle', () => {
-      const lightningComponentBundleValues = {
-        [INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
-        apiVersion: 47.0,
-        content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
-      }
+      const lightningComponentBundleInstance = new InstanceElement(
+        'myLightningComponentBundle',
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'LightningComponentBundle'),
+          annotations: {
+            [METADATA_TYPE]: 'LightningComponentBundle',
+          },
+        }),
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
+          apiVersion: 47.0,
+          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
+        }
+      )
 
-      const zip = toMetadataPackageZip('myLightningComponentBundle', 'LightningComponentBundle',
-        lightningComponentBundleValues, true)
+      const zip = toMetadataPackageZip(lightningComponentBundleInstance, true)
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {

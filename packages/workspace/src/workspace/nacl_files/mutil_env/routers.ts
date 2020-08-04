@@ -375,7 +375,7 @@ const addToSource = async (
       )
     }
     const after = mergeResult.merged[0] as ChangeDataType
-    return detailedCompare(before, after)
+    return detailedCompare(before, after, true)
   })))
   return _.flatten(
     await Promise.all(fullChanges.map(change => seperateChangeByFiles(change, originSource)))

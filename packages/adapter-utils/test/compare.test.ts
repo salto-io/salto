@@ -179,59 +179,64 @@ describe('detailedCompare', () => {
       },
     })
 
-    const changes = detailedCompare(before, after)
-    it('should create add changes for values that were only present in the after object', () => {
-      expect(hasChange(
-        changes,
-        'add',
-        after.elemID.createNestedID('annotation', 'after')
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'add',
-        after.elemID.createNestedID('attr', 'after')
-      )).toBeTruthy()
+    describe('without field changes', () => {
+      const changes = detailedCompare(before, after)
+      it('should create add changes for values that were only present in the after object', () => {
+        expect(hasChange(
+          changes,
+          'add',
+          after.elemID.createNestedID('annotation', 'after')
+        )).toBeTruthy()
+        expect(hasChange(
+          changes,
+          'add',
+          after.elemID.createNestedID('attr', 'after')
+        )).toBeTruthy()
+      })
+      it('should create remove changes for values that were only present in the before object', () => {
+        expect(hasChange(
+          changes,
+          'remove',
+          after.elemID.createNestedID('annotation', 'before')
+        )).toBeTruthy()
+        expect(hasChange(
+          changes,
+          'remove',
+          after.elemID.createNestedID('attr', 'before')
+        )).toBeTruthy()
+      })
+      it('should create modify changes for values that were only present both objects', () => {
+        expect(hasChange(
+          changes,
+          'modify',
+          after.elemID.createNestedID('annotation', 'modify')
+        )).toBeTruthy()
+        expect(hasChange(
+          changes,
+          'modify',
+          after.elemID.createNestedID('attr', 'modify')
+        )).toBeTruthy()
+      })
     })
-    it('should create remove changes for values that were only present in the before object', () => {
-      expect(hasChange(
-        changes,
-        'remove',
-        after.elemID.createNestedID('annotation', 'before')
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'remove',
-        after.elemID.createNestedID('attr', 'before')
-      )).toBeTruthy()
-    })
-    it('should create modify changes for values that were only present both objects', () => {
-      expect(hasChange(
-        changes,
-        'modify',
-        after.elemID.createNestedID('annotation', 'modify')
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'modify',
-        after.elemID.createNestedID('attr', 'modify')
-      )).toBeTruthy()
-    })
-    it('should identify field changes, and create changes with the field id', () => {
-      expect(hasChange(
-        changes,
-        'modify',
-        after.fields.modify.elemID.createNestedID('modify')
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'add',
-        after.fields.after.elemID
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'remove',
-        before.fields.before.elemID
-      )).toBeTruthy()
+    describe('with field changes', () => {
+      const changes = detailedCompare(before, after, true)
+      it('should identify field changes, and create changes with the field id', () => {
+        expect(hasChange(
+          changes,
+          'modify',
+          after.fields.modify.elemID.createNestedID('modify')
+        )).toBeTruthy()
+        expect(hasChange(
+          changes,
+          'add',
+          after.fields.after.elemID
+        )).toBeTruthy()
+        expect(hasChange(
+          changes,
+          'remove',
+          before.fields.before.elemID
+        )).toBeTruthy()
+      })
     })
   })
 

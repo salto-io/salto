@@ -117,8 +117,8 @@ describe('demote command', () => {
     })
 
     it('should print deployment to console', () => {
-      expect(cliOutput.stdout.content).toContain('Moving the selected elements out of the common folder')
-      expect(cliOutput.stdout.content).toContain('Done moving the selected elements.')
+      expect(cliOutput.stdout.content).toContain('Demoting the selected elements.')
+      expect(cliOutput.stdout.content).toContain('Done demoting elements.')
     })
   })
 

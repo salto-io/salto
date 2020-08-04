@@ -117,8 +117,8 @@ describe('promote command', () => {
     })
 
     it('should print deployment to console', () => {
-      expect(cliOutput.stdout.content).toContain('Moving the selected elements to the common folder.')
-      expect(cliOutput.stdout.content).toContain('Done moving the selected elements.')
+      expect(cliOutput.stdout.content).toContain('Promoting the selected elements.')
+      expect(cliOutput.stdout.content).toContain('Done promoting elements.')
     })
   })
 

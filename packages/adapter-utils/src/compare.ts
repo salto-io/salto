@@ -93,7 +93,8 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
 
 export const detailedCompare = (
   before: ChangeDataType,
-  after: ChangeDataType
+  after: ChangeDataType,
+  createFieldChanges = false
 ): DetailedChange[] => {
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
@@ -148,7 +149,7 @@ export const detailedCompare = (
     before.annotations, after.annotations
   )
 
-  const fieldChanges = isObjectType(before) && isObjectType(after)
+  const fieldChanges = createFieldChanges && isObjectType(before) && isObjectType(after)
     ? getFieldsChanges(before, after)
     : []
   return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges]

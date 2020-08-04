@@ -159,14 +159,16 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
   return getChangeElement(result.appliedChanges[0]) as T
 }
 
-export const createElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
-  element: InstanceElement | ObjectType): Promise<void> => {
-  await createElement(adapter, element)
+export const createElementAndVerify = async <T extends InstanceElement | ObjectType> (
+  adapter: SalesforceAdapter, client: SalesforceClient, element: T,
+): Promise<T> => {
+  const result = await createElement(adapter, element)
   if (isInstanceElement(element) && isCustomObject(element.type)) {
     expect(await getRecordOfInstance(client, element)).toBeDefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeDefined()
   }
+  return result
 }
 
 export const createAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,

@@ -54,18 +54,9 @@ import {
 } from './utils'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
-  accountApiName,
-  auraInstanceValues,
-  CUSTOM_FIELD_NAMES,
-  customObjectAddFieldsName,
-  customObjectWithFieldsName,
-  gvsName,
-  lightningComponentBundleInstanceValues,
-  lwcHtmlResourceContent,
-  lwcJsResourceContent,
-  removeCustomObjectsWithVariousFields,
-  staticResourceInstanceValues,
-  summaryFieldName,
+  accountApiName, auraInstanceValues, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
+  customObjectWithFieldsName, gvsName, lwcHtmlResourceContent, lwcJsResourceContent,
+  removeCustomObjectsWithVariousFields, staticResourceInstanceValues, summaryFieldName,
   verifyElementsExist,
 } from './setup'
 
@@ -2727,8 +2718,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
-            await client.deploy(await toMetadataPackageZip(apiName(instance),
-              metadataType(instance), instance.value, true) as Buffer)
+            await client.deploy(await toMetadataPackageZip(instance, true) as Buffer)
           }
         }
 
@@ -2918,13 +2908,18 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('types that support also CRUD-Based calls', () => {
         const updateInstance = async (instance: InstanceElement, updatedFieldPath: string[],
-          updatedValue: string): Promise<void> => {
+          updatedValue: string): Promise<InstanceElement> => {
           const after = instance.clone()
           _.set(after.value, updatedFieldPath, updatedValue)
-          await adapter.deploy({
+          const deployResult = await adapter.deploy({
             groupID: instance.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: instance, after } }],
           })
+          if (deployResult.errors.length > 0) {
+            if (deployResult.errors.length === 1) throw deployResult.errors[0]
+            throw new Error(`Failed updating instance ${instance.elemID.getFullName()} with errors: ${deployResult.errors}`)
+          }
+          return getChangeElement(deployResult.appliedChanges[0]) as InstanceElement
         }
 
         const verifyUpdateInstance = async (instance: InstanceElement, updatedFieldPath: string[],
@@ -3177,8 +3172,9 @@ describe('Salesforce adapter E2E with real account', () => {
             lwcInstance = await createInstance(
               client,
               {
-                ...lightningComponentBundleInstanceValues,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
+                apiVersion: 49,
+                isExposed: true,
                 lwcResources: {
                   lwcResource: [
                     {
@@ -3191,26 +3187,62 @@ describe('Salesforce adapter E2E with real account', () => {
                     },
                   ],
                 },
+                targetConfigs: {
+                  targetConfig: [
+                    {
+                      objects: [
+                        {
+                          object: 'Contact',
+                        },
+                      ],
+                      targets: 'lightning__RecordPage',
+                    },
+                    {
+                      supportedFormFactors: {
+                        supportedFormFactor: [
+                          {
+                            type: 'Small',
+                          },
+                        ],
+                      },
+                      targets: 'lightning__AppPage,lightning__HomePage',
+                    },
+                  ],
+                },
+                targets: {
+                  target: [
+                    'lightning__AppPage',
+                    'lightning__RecordPage',
+                    'lightning__HomePage',
+                  ],
+                },
               },
-              'LightningComponentBundle'
+            findObjectType(result, new ElemID(constants.SALESFORCE, 'LightningComponentBundle')) as ObjectType
             )
             await removeElementIfAlreadyExists(client, lwcInstance)
           })
 
           it('should create LightningComponentBundle instance', async () => {
-            await createElementAndVerify(adapter, client, lwcInstance)
+            const createdInstance = await createElementAndVerify(adapter, client, lwcInstance)
+            // verify the xml attribute fields have no XML_ATTRIBUTE_PREFIX in the NaCL result
+            expect(createdInstance.value.targetConfigs.targetConfig[0].targets)
+              .toEqual('lightning__RecordPage')
           })
 
           it('should update LightningComponentBundle instance', async () => {
             const updatedValue = '// UPDATED'
-            await updateInstance(lwcInstance, ['lwcResources', 'lwcResource', '0', 'source'],
-              updatedValue)
+            const updatedInstance = await updateInstance(lwcInstance,
+              ['lwcResources', 'lwcResource', '0', 'source'], updatedValue)
             const instanceInfo = await getMetadataFromElement(client, lwcInstance)
             expect(instanceInfo).toBeDefined()
             const lwcResources = _.get(instanceInfo, ['lwcResources', 'lwcResource'])
             const updatedResource = makeArray(lwcResources).find(lwcResource =>
               lwcResource.filePath === 'lwc/myLightningComponentBundle/myLightningComponentBundle.js')
             expect(updatedResource.source).toEqual(Buffer.from(updatedValue).toString('base64'))
+
+            // verify the xml attribute fields have no XML_ATTRIBUTE_PREFIX in the NaCL result
+            expect(updatedInstance.value.targetConfigs.targetConfig[0].targets)
+              .toEqual('lightning__RecordPage')
           })
 
           it('should remove LightningComponentBundle instance', async () => {

@@ -17,7 +17,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType,
 } from '@salto-io/adapter-api'
-import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, XML_ATTRIBUTE_PREFIX } from '../constants'
+import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, IS_ATTRIBUTE } from '../constants'
 
 const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 
@@ -32,43 +32,72 @@ const lightningComponentBundleObjectType = new ObjectType({
 const lightningComponentBundlePropertyType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleProperty'),
   fields: {
-    [`${XML_ATTRIBUTE_PREFIX}datasource`]: {
+    datasource: {
       type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
-    },
-    [`${XML_ATTRIBUTE_PREFIX}default`]: {
-      type: BuiltinTypes.STRING,
-    },
-    [`${XML_ATTRIBUTE_PREFIX}description`]: {
-      type: BuiltinTypes.STRING,
-    },
-    [`${XML_ATTRIBUTE_PREFIX}label`]: {
-      type: BuiltinTypes.STRING,
-    },
-    [`${XML_ATTRIBUTE_PREFIX}max`]: {
-      type: BuiltinTypes.NUMBER,
-    },
-    [`${XML_ATTRIBUTE_PREFIX}min`]: {
-      type: BuiltinTypes.NUMBER,
-    },
-    [`${XML_ATTRIBUTE_PREFIX}name`]: {
-      type: BuiltinTypes.STRING,
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [IS_ATTRIBUTE]: true,
       },
     },
-    [`${XML_ATTRIBUTE_PREFIX}placeholder`]: {
+    default: {
       type: BuiltinTypes.STRING,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
     },
-    [`${XML_ATTRIBUTE_PREFIX}required`]: {
-      type: BuiltinTypes.BOOLEAN,
-    },
-    [`${XML_ATTRIBUTE_PREFIX}role`]: {
+    description: {
       type: BuiltinTypes.STRING,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
     },
-    [`${XML_ATTRIBUTE_PREFIX}type`]: {
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
+    },
+    max: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
+    },
+    min: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
+    },
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
+        [IS_ATTRIBUTE]: true,
+      },
+    },
+    placeholder: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
+    },
+    required: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
+    },
+    role: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
+    },
+    type: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [IS_ATTRIBUTE]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           values: ['Boolean', 'Integer', 'String', 'Color', 'Date', 'DateTime'],
           // eslint-disable-next-line @typescript-eslint/camelcase
@@ -83,11 +112,12 @@ const lightningComponentBundlePropertyType = new ObjectType({
 const lightningComponentBundleSupportedFormFactorType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactor'),
   fields: {
-    [`${XML_ATTRIBUTE_PREFIX}type`]: {
+    type: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
+        [IS_ATTRIBUTE]: true,
       },
     },
   },
@@ -105,11 +135,17 @@ const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
 const lightningComponentBundleTargetConfigType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleTargetConfig'),
   fields: {
-    [`${XML_ATTRIBUTE_PREFIX}targets`]: {
+    targets: {
       type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
     },
-    [`${XML_ATTRIBUTE_PREFIX}configurationEditor`]: {
+    configurationEditor: {
       type: BuiltinTypes.STRING,
+      annotations: {
+        [IS_ATTRIBUTE]: true,
+      },
     },
     objects: { type: new ListType(lightningComponentBundleObjectType) },
     property: { type: lightningComponentBundlePropertyType },

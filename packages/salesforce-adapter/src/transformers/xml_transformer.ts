@@ -18,17 +18,25 @@ import parser from 'fast-xml-parser'
 import { MetadataInfo, RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { Values, StaticFile } from '@salto-io/adapter-api'
+import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import {
+  MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues,
+} from '@salto-io/adapter-utils'
 import { API_VERSION } from '../client/client'
 import {
-  INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
+  INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
 } from '../constants'
+import { apiName, metadataType } from './transformer'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 
 const log = logger(module)
+
+export const metadataTypesWithAttributes = [
+  'LightningComponentBundle',
+]
 
 const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'
@@ -445,17 +453,53 @@ const addInstanceFiles = (zip: JSZip, instanceName: string, type: string, values
 const isSupportedType = (typeName: string): boolean =>
   hasZipProps(typeName) || isComplexType(typeName)
 
-export const toMetadataPackageZip = async (instanceName: string, typeName: string,
-  instanceValues: Values, deletion: boolean): Promise<Buffer | undefined> => {
+const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => {
+  const allAttributesPaths = new Set<string>()
+  const createPathsSetCallback: TransformFunc = ({ value, field, path }) => {
+    if (path && field && field.annotations[IS_ATTRIBUTE]) {
+      allAttributesPaths.add(path.getFullName())
+    }
+    return value
+  }
+
+  transformValues({
+    values: instance.value,
+    type: instance.type,
+    transformFunc: createPathsSetCallback,
+    pathID: instance.elemID,
+    strict: false,
+  })
+
+  const addAttributePrefixFunc: MapKeyFunc = ({ key, pathID }) => {
+    if (pathID && allAttributesPaths.has(pathID.getFullName())) {
+      return XML_ATTRIBUTE_PREFIX + key
+    }
+    return key
+  }
+
+  return mapKeysRecursive(instance.value, addAttributePrefixFunc, instance.elemID)
+}
+
+// Create values with the XML_ATTRIBUTE_PREFIX for xml attributes fields
+const getValuesToDeploy = (instance: InstanceElement): Values => {
+  if (!metadataTypesWithAttributes.includes(metadataType(instance))) {
+    return instance.value
+  }
+  return cloneValuesWithAttributePrefixes(instance)
+}
+
+export const toMetadataPackageZip = async (instance: InstanceElement, deletion: boolean):
+  Promise<Buffer | undefined> => {
+  const typeName = metadataType(instance)
   if (!isSupportedType(typeName)) {
     log.warn('Deploying instances of type %s is not supported', typeName)
     return undefined
   }
   const zip = new JSZip()
   if (deletion) {
-    addDeletionFiles(zip, instanceName, typeName)
+    addDeletionFiles(zip, apiName(instance), typeName)
   } else {
-    addInstanceFiles(zip, instanceName, typeName, instanceValues)
+    addInstanceFiles(zip, apiName(instance), typeName, getValuesToDeploy(instance))
   }
 
   return zip.generateAsync({ type: 'nodebuffer' })

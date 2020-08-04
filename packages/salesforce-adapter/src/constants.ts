@@ -118,6 +118,7 @@ export const HAS_META_FILE = 'hasMetaFile'
 export const FOLDER_TYPE = 'folderType'
 export const IS_FOLDER = 'isFolder'
 export const FOREIGN_KEY_DOMAIN = 'foreignKeyDomain'
+export const IS_ATTRIBUTE = 'isAttribute'
 
 // Salesforce annotations
 export const LABEL = 'label'

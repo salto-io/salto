@@ -1,0 +1,414 @@
+2020-08-04T07:20:19.457Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:19.458Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:20.517Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:20:20.517Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 101 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to log only 100 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:20:20.517Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:20:20.517Z info cli/workspace/workspace applying 0 changes to state only
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 0 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace 
+2020-08-04T07:20:20.517Z info cli/workspace/workspace applying 0 changes to state only
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 0 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace 
+2020-08-04T07:20:20.517Z error cli/workspace/workspace err
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:20:20.517Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:20:20.517Z debug cli/workspace/workspace Total size of the workspace is undefined bytes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:20:20.517Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:20:20.517Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:20:20.517Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:20:20.517Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:20:20.517Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:20:20.517Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:20:20.517Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:20:19.453Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:19.454Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:19.429Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:19.430Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:19.326Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:19.326Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:19.327Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:19.327Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:21.033Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.040Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.045Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.049Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.051Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.055Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:19.400Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:20.815Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:21.133Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.138Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.142Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:21.147Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:20:19.401Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:21.011Z debug cli/commands/deploy running deploy command on '' [force=true, dryRun=false, detailedPlan=false]
+2020-08-04T07:20:21.027Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=false, detailedPlan=false]
+2020-08-04T07:20:21.029Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=false, detailedPlan=false]
+2020-08-04T07:20:21.031Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=true, detailedPlan=false]
+2020-08-04T07:20:21.033Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=true, detailedPlan=true]
+2020-08-04T07:20:21.038Z debug cli/commands/deploy running deploy command on 'errorDir' [force=true, dryRun=false, detailedPlan=false]
+2020-08-04T07:20:21.039Z debug cli/commands/deploy running deploy command on '' [force=true, dryRun=false, detailedPlan=false]
+2020-08-04T07:20:20.815Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:19.412Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:20.751Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:19.414Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:21.136Z debug cli/commands/restore running restore command on '' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:21.139Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:21.140Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:20:21.162Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:21.163Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:20:21.163Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=inactive, services=salesforce
+2020-08-04T07:20:21.164Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:20:21.164Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=true, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:21.167Z debug cli/commands/restore running restore command on 'exist-on-error' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:21.171Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:21.180Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=true, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:21.180Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:20:20.751Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:21.857Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:21.858Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:21.970Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:21.971Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:22.073Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:22.073Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:22.126Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:22.126Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:21.997Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:22.418Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:21.997Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:22.507Z debug cli/commands/fetch running fetch command on '' [force=true, interactive=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:22.508Z debug cli/commands/fetch running fetch command on 'valid-ws' [force=true, interactive=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:22.527Z debug cli/commands/fetch fetch had [object Object] merge errors
+2020-08-04T07:20:22.527Z debug cli/commands/fetch fetch had [object Object] merge errors
+2020-08-04T07:20:22.528Z debug cli/commands/fetch running fetch command on 'valid-ws' [force=true, interactive=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:20:22.528Z debug cli/commands/fetch running fetch command on 'valid-ws' [force=true, interactive=false, mode=default], environment=inactive, services=salesforce
+2020-08-04T07:20:22.418Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:20:22.284Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:20:22.284Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:20.411Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:20.411Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:20.467Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:20.468Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:20.316Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:20.317Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:21.291Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:21.296Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:21.303Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:20.492Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:20.493Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:21.310Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:21.313Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:21.315Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:20.447Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:20.448Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:21.372Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:21.381Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:21.386Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:21.395Z info cli/cli CLI started. Version: version 0.1.20, branch new_fetch_modes, hash 39bb5044
+2020-08-04T07:21:20.743Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:21.375Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:20.743Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:21.481Z debug cli/commands/deploy running deploy command on '' [force=true, dryRun=false, detailedPlan=false]
+2020-08-04T07:21:21.490Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=false, detailedPlan=false]
+2020-08-04T07:21:21.493Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=false, detailedPlan=false]
+2020-08-04T07:21:21.496Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=true, detailedPlan=false]
+2020-08-04T07:21:21.499Z debug cli/commands/deploy running deploy command on '' [force=false, dryRun=true, detailedPlan=true]
+2020-08-04T07:21:21.525Z debug cli/commands/deploy running deploy command on 'errorDir' [force=true, dryRun=false, detailedPlan=false]
+2020-08-04T07:21:21.545Z debug cli/commands/deploy running deploy command on '' [force=true, dryRun=false, detailedPlan=false]
+2020-08-04T07:21:21.375Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:20.384Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:21.142Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:20.384Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:21.486Z debug cli/commands/restore running restore command on '' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:21.489Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:21.500Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:21:21.507Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:21.507Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:21:21.508Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=inactive, services=salesforce
+2020-08-04T07:21:21.508Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:21:21.511Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=true, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:21.536Z debug cli/commands/restore running restore command on 'exist-on-error' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:21.542Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=false, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:21.545Z debug cli/commands/restore running restore command on 'valid-ws' [force=true, interactive=true, dryRun=false, detailedPlan=false, listPlannedChanges=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:21.546Z debug cli/commands/restore Total size of the workspace is 0 bytes
+2020-08-04T07:21:21.143Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:21.946Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:21.946Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:21.979Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:21.979Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:22.188Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:21:22.188Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 101 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to log only 100 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:21:22.188Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:21:22.188Z info cli/workspace/workspace applying 0 changes to state only
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 0 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace 
+2020-08-04T07:21:22.188Z info cli/workspace/workspace applying 0 changes to state only
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 0 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace 
+2020-08-04T07:21:22.188Z error cli/workspace/workspace err
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:21:22.188Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:21:22.188Z debug cli/workspace/workspace Total size of the workspace is undefined bytes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:21:22.188Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:21:22.188Z debug cli/workspace/workspace finished updating workspace
+2020-08-04T07:21:22.188Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:21:22.188Z info cli/workspace/workspace going to update workspace with 2 changes
+2020-08-04T07:21:22.188Z info cli/workspace/workspace | salesforce.adapter
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [32m+[39m dummy
+2020-08-04T07:21:22.188Z info cli/workspace/workspace [31m-[39m dummy2
+2020-08-04T07:21:22.188Z warn cli/workspace/workspace [1mError BLA[22m
+2020-08-04T07:21:22.197Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:22.197Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:22.455Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:22.455Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:22.115Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:22.574Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:22.115Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:22.651Z debug cli/commands/fetch running fetch command on '' [force=true, interactive=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:22.653Z debug cli/commands/fetch running fetch command on 'valid-ws' [force=true, interactive=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:22.670Z debug cli/commands/fetch fetch had [object Object] merge errors
+2020-08-04T07:21:22.670Z debug cli/commands/fetch fetch had [object Object] merge errors
+2020-08-04T07:21:22.671Z debug cli/commands/fetch running fetch command on 'valid-ws' [force=true, interactive=false, mode=default], environment=undefined, services=salesforce
+2020-08-04T07:21:22.672Z debug cli/commands/fetch running fetch command on 'valid-ws' [force=true, interactive=false, mode=default], environment=inactive, services=salesforce
+2020-08-04T07:21:22.574Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file
+2020-08-04T07:21:22.786Z debug netsuite-adapter/client/client Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing
+2020-08-04T07:21:22.786Z debug netsuite-adapter/client/client If you want to use Netsuite adapter follow the instructions in the README file

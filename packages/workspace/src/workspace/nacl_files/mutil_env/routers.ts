@@ -152,7 +152,7 @@ const createMergeableChange = async (
   }
 }
 
-export const routeOveride = async (
+export const routeOverride = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -201,7 +201,7 @@ export const routeAlign = async (
   }
 }
 
-export const routeFetch = async (
+export const routeDefault = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -209,7 +209,7 @@ export const routeFetch = async (
 ): Promise<RoutedChanges> => {
   // All add changes to the current active env specific folder unless
   // sec sources are empty - we only have 1 env so adds should go to common.
-  // Howver - if we have only one env and the user moved the top level element to be
+  // However - if we have only one env and the user moved the top level element to be
   // env specific - we respect that and add the change to the env.
   if (change.action === 'add') {
     const primTopLevelElement = await primarySource.get(change.id.createTopLevelParentID().parent)
@@ -357,8 +357,8 @@ export const routeChanges = async (
     switch (mode) {
       case 'isolated': return routeIsolated(c, primarySource, commonSource, secondarySources)
       case 'align': return routeAlign(c, primarySource)
-      case 'overide': return routeOveride(c, primarySource, commonSource, secondarySources)
-      default: return routeFetch(c, primarySource, commonSource, secondarySources)
+      case 'override': return routeOverride(c, primarySource, commonSource, secondarySources)
+      default: return routeDefault(c, primarySource, commonSource, secondarySources)
     }
   }))
 

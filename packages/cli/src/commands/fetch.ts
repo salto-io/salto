@@ -29,6 +29,7 @@ import { Workspace, nacl } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
+import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
 import { progressOutputer, outputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
@@ -64,11 +65,12 @@ type ShouldUpdateConfigFunc = (
   change: PlanItem
 ) => Promise<boolean>
 
+
 export type FetchCommandArgs = {
   workspace: Workspace
   force: boolean
   interactive: boolean
-  inputIsolated: boolean
+  mode: nacl.RoutingMode
   cliTelemetry: CliTelemetry
   output: CliOutput
   fetch: FetchFunc
@@ -77,36 +79,14 @@ export type FetchCommandArgs = {
   shouldCalcTotalSize: boolean
   stateOnly: boolean
   inputServices?: string[]
-  inputAlign: boolean
-  inputOveride: boolean
-}
-
-const getUpdateMode = (
-  inputIsolated: boolean,
-  inputOveride: boolean,
-  inputAlign: boolean
-): nacl.RoutingMode => {
-  if ([inputIsolated, inputOveride, inputAlign].filter(i => i).length > 1) {
-    throw new Error('Can only provide one fetch mode flag.')
-  }
-  if (inputIsolated) {
-    return 'isolated'
-  }
-  if (inputOveride) {
-    return 'overide'
-  }
-  if (inputAlign) {
-    return 'align'
-  }
-  return 'default'
 }
 
 export const fetchCommand = async (
   {
-    workspace, force, interactive, inputIsolated = false,
+    workspace, force, interactive, mode,
     getApprovedChanges, shouldUpdateConfig, inputServices,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
-    stateOnly, inputAlign, inputOveride,
+    stateOnly,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
@@ -158,7 +138,6 @@ export const fetchCommand = async (
     updatingStateEmitter.emit('failed')
     return false
   }
-  const mode = getUpdateMode(inputIsolated, inputOveride, inputAlign)
   const fetchResult = await fetch(
     workspace,
     fetchProgress,
@@ -241,17 +220,15 @@ export const command = (
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputIsolated: boolean,
+  mode: nacl.RoutingMode,
   shouldCalcTotalSize: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
   stateOnly = false,
-  inputAlign = false,
-  inputOveride = false
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
+      interactive}, mode=${mode}], environment=${inputEnvironment}, services=${inputServices}`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output,
@@ -271,11 +248,9 @@ export const command = (
       getApprovedChanges: cliGetApprovedChanges,
       shouldUpdateConfig: cliShouldUpdateConfig,
       inputServices,
-      inputIsolated,
+      mode,
       shouldCalcTotalSize,
       stateOnly,
-      inputAlign,
-      inputOveride,
     })
   },
 })
@@ -283,11 +258,8 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
-  isolated: boolean
   stateOnly: boolean
-  overide: boolean
-  align: boolean
-} & ServicesArgs & EnvironmentArgs
+} & FetchModeArgs & ServicesArgs & EnvironmentArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
 const fetchBuilder = createCommandBuilder({
@@ -309,29 +281,6 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
-      isolated: {
-        alias: ['t'],
-        describe: 'Restrict fetch from modifying common configuration '
-          + '(might result in changes in other env folders)',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      align: {
-        alias: ['a'],
-        describe: 'Align the current environment with the current common configuration by '
-        + 'ignoring changes to the common folder',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      overide: {
-        alias: ['o'],
-        describe: 'Fetch new values to the common folder directly.',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
       'state-only': {
         alias: ['st'],
         describe: 'Fetch remote changes to the state file without mofifying the NaCL files. ',
@@ -342,7 +291,7 @@ const fetchBuilder = createCommandBuilder({
     },
   },
 
-  filters: [servicesFilter, environmentFilter],
+  filters: [servicesFilter, environmentFilter, fetchModeFilter],
 
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command(
@@ -352,13 +301,11 @@ const fetchBuilder = createCommandBuilder({
       input.telemetry,
       output,
       spinnerCreator,
-      input.args.isolated,
+      input.args.mode,
       input.config.shouldCalcTotalSize,
       input.args.services,
       input.args.env,
       input.args.stateOnly,
-      input.args.align,
-      input.args.overide
     )
   },
 })

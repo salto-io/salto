@@ -41,7 +41,7 @@ const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
 
-export type RoutingMode = 'isolated' | 'default' | 'align' | 'overide'
+export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
 const PARSE_CONCURRENCY = 20

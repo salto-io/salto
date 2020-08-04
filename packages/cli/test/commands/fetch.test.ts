@@ -83,7 +83,7 @@ describe('fetch command', () => {
           config: { services },
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, false, true, services)
+        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, 'default', true, services)
           .execute()
       })
 
@@ -110,7 +110,7 @@ describe('fetch command', () => {
           mockTelemetry,
           cliOutput,
           spinnerCreator,
-          false,
+          'default',
           true,
           services,
         ).execute()
@@ -197,12 +197,10 @@ describe('fetch command', () => {
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
-            inputIsolated: false,
+            mode: 'default',
             shouldCalcTotalSize: true,
             inputServices: services,
             stateOnly: false,
-            inputAlign: false,
-            inputOveride: false,
           })
         })
         it('should start at least one step', () => {
@@ -231,11 +229,9 @@ describe('fetch command', () => {
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
-            inputIsolated: false,
+            mode: 'default',
             shouldCalcTotalSize: true,
             stateOnly: false,
-            inputAlign: false,
-            inputOveride: false,
           })
         })
         it('should not update workspace', () => {
@@ -276,11 +272,9 @@ describe('fetch command', () => {
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockShouldUpdateConfig,
-            inputIsolated: false,
+            mode: 'default',
             shouldCalcTotalSize: true,
             stateOnly: false,
-            inputAlign: false,
-            inputOveride: false,
           }
         })
 
@@ -325,12 +319,9 @@ describe('fetch command', () => {
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
-              inputIsolated: false,
+              mode: 'default',
               shouldCalcTotalSize: true,
-
               stateOnly: false,
-              inputAlign: false,
-              inputOveride: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -355,13 +346,10 @@ describe('fetch command', () => {
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
-              inputIsolated: true,
+              mode: 'isolated',
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
-
               stateOnly: false,
-              inputAlign: false,
-              inputOveride: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -386,12 +374,10 @@ describe('fetch command', () => {
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
-              inputIsolated: false,
+              mode: 'align',
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
               stateOnly: false,
-              inputAlign: true,
-              inputOveride: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -416,43 +402,17 @@ describe('fetch command', () => {
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
-              inputIsolated: false,
+              mode: 'override',
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
               stateOnly: false,
-              inputAlign: false,
-              inputOveride: true,
             })
             expect(result).toBe(CliExitCode.Success)
           })
           it('should forward override mode', () => {
             const calls = findWsUpdateCalls(workspaceName)
             expect(calls).toHaveLength(1)
-            expect(calls[0].slice(2)).toEqual([changes, 'overide'])
-          })
-        })
-        describe('when called with multiple flags', () => {
-          const workspaceName = 'with-multiple'
-          let workspace: Workspace
-          it('should throw an error', async () => {
-            workspace = mockWorkspace(undefined, workspaceName)
-            mockTelemetry = mocks.getMockTelemetry()
-            return expect(fetchCommand({
-              workspace,
-              force: true,
-              interactive: false,
-              inputServices: services,
-              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
-              output: cliOutput,
-              fetch: mockFetchWithChanges,
-              getApprovedChanges: mockEmptyApprove,
-              inputIsolated: false,
-              shouldUpdateConfig: mockUpdateConfig,
-              shouldCalcTotalSize: true,
-              stateOnly: false,
-              inputAlign: true,
-              inputOveride: true,
-            })).rejects.toThrow()
+            expect(calls[0].slice(2)).toEqual([changes, 'override'])
           })
         })
         describe('when called with state only', () => {
@@ -471,13 +431,11 @@ describe('fetch command', () => {
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
-                inputIsolated: true,
+                mode: 'default',
                 shouldUpdateConfig: mockUpdateConfig,
                 shouldCalcTotalSize: true,
-
                 stateOnly: true,
-                inputAlign: false,
-                inputOveride: false,
+
               })
             })
             it('should return OK status when state is updated', () => {
@@ -502,13 +460,10 @@ describe('fetch command', () => {
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
-                inputIsolated: true,
+                mode: 'default',
                 shouldUpdateConfig: mockUpdateConfig,
                 shouldCalcTotalSize: true,
-
                 stateOnly: true,
-                inputAlign: false,
-                inputOveride: false,
               })
             })
             it('should return AppError status when state is updated', () => {
@@ -535,12 +490,9 @@ describe('fetch command', () => {
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
-              inputIsolated: false,
+              mode: 'default',
               shouldCalcTotalSize: true,
-
               stateOnly: false,
-              inputAlign: false,
-              inputOveride: false,
             })
           })
           it('should deploy all changes', () => {
@@ -568,12 +520,9 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                inputIsolated: false,
+                mode: 'default',
                 shouldCalcTotalSize: true,
-
                 stateOnly: false,
-                inputAlign: false,
-                inputOveride: false,
               })
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls).toHaveLength(1)
@@ -598,12 +547,9 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                inputIsolated: false,
+                mode: 'default',
                 shouldCalcTotalSize: true,
-
                 stateOnly: false,
-                inputAlign: false,
-                inputOveride: false,
               })
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls).toHaveLength(1)
@@ -628,12 +574,9 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                inputIsolated: false,
+                mode: 'default',
                 shouldCalcTotalSize: true,
-
                 stateOnly: false,
-                inputAlign: false,
-                inputOveride: false,
               })
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls).toHaveLength(1)
@@ -656,12 +599,9 @@ describe('fetch command', () => {
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                inputIsolated: false,
+                mode: 'default',
                 shouldCalcTotalSize: true,
-
                 stateOnly: false,
-                inputAlign: false,
-                inputOveride: false,
               })
               expect(cliOutput.stderr.content).toContain('Error')
               const calls = findWsUpdateCalls(workspaceName)
@@ -703,11 +643,9 @@ describe('fetch command', () => {
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
-            inputIsolated: false,
+            mode: 'default',
             shouldCalcTotalSize: true,
             stateOnly: false,
-            inputAlign: false,
-            inputOveride: false,
           })
         })
         it('should succeed', () => {
@@ -734,7 +672,7 @@ describe('fetch command', () => {
         mockTelemetry,
         cliOutput,
         spinnerCreator,
-        false,
+        'default',
         true,
         services,
       ).execute()
@@ -750,7 +688,7 @@ describe('fetch command', () => {
         mockTelemetry,
         cliOutput,
         spinnerCreator,
-        false,
+        'default',
         true,
         services,
         mocks.withEnvironmentParam,

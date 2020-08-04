@@ -171,7 +171,7 @@ describe('default fetch routing', () => {
       data: { before: commonObj, after: commonObj },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -432,14 +432,14 @@ describe('align fetch routing', () => {
   })
 })
 
-describe('overide fetch routing', () => {
+describe('override fetch routing', () => {
   it('should route add changes to common', async () => {
     const change: DetailedChange = {
       action: 'add',
       data: { after: newObj },
       id: newObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -452,7 +452,7 @@ describe('overide fetch routing', () => {
       data: { before: commonObj, after: commonObj },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -464,7 +464,7 @@ describe('overide fetch routing', () => {
       data: { before: envObj, after: envObj },
       id: envObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
@@ -476,7 +476,7 @@ describe('overide fetch routing', () => {
       data: { before: sharedObject, after: sharedObject },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
     const commonChangeBeforeElement = routedChanges.commonSource
@@ -499,7 +499,7 @@ describe('overide fetch routing', () => {
       data: { before: commonObj },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -511,7 +511,7 @@ describe('overide fetch routing', () => {
       data: { before: envObj },
       id: envObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
@@ -523,7 +523,7 @@ describe('overide fetch routing', () => {
       data: { before: sharedObject },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
     const commonChangeElement = routedChanges.commonSource
@@ -541,7 +541,7 @@ describe('overide fetch routing', () => {
       data: { after: newField },
       id: newField.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
@@ -554,7 +554,7 @@ describe('overide fetch routing', () => {
       data: { after: newField },
       id: newField.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -567,7 +567,7 @@ describe('overide fetch routing', () => {
       data: { after: newField },
       id: newField.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'overide')
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)

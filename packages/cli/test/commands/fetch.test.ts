@@ -418,6 +418,22 @@ describe('fetch command', () => {
         describe('when called with state only', () => {
           const workspaceName = 'with-state-only'
           let workspace: Workspace
+          describe('should error if mode is not default', () => {
+            it('should throw an error', () => expect(fetchCommand({
+              workspace,
+              force: true,
+              interactive: false,
+              inputServices: services,
+              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+              output: cliOutput,
+              fetch: mockFetchWithChanges,
+              getApprovedChanges: mockEmptyApprove,
+              mode: 'align',
+              shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
+              stateOnly: true,
+            })).rejects.toThrow())
+          })
           describe('when state is updated', () => {
             beforeAll(async () => {
               mockTelemetry = mocks.getMockTelemetry()
@@ -435,7 +451,6 @@ describe('fetch command', () => {
                 shouldUpdateConfig: mockUpdateConfig,
                 shouldCalcTotalSize: true,
                 stateOnly: true,
-
               })
             })
             it('should return OK status when state is updated', () => {

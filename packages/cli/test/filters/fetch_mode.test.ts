@@ -55,35 +55,35 @@ describe('fetch mode filter', () => {
     })
 
     describe('when the align flag is provided', () => {
-        beforeEach(async () => {
-          await runCli('t --align')
-        })
-        it('mode should be align', () => {
-          expect(buildFunc.mock.calls[0][0].args.mode).toEqual('align')
-        })
+      beforeEach(async () => {
+        await runCli('t --align')
+      })
+      it('mode should be align', () => {
+        expect(buildFunc.mock.calls[0][0].args.mode).toEqual('align')
+      })
     })
 
     describe('when the override flag is provided', () => {
-        beforeEach(async () => {
-          await runCli('t --override')
-        })
-        it('mode should be override', () => {
-          expect(buildFunc.mock.calls[0][0].args.mode).toEqual('override')
-        })
+      beforeEach(async () => {
+        await runCli('t --override')
+      })
+      it('mode should be override', () => {
+        expect(buildFunc.mock.calls[0][0].args.mode).toEqual('override')
+      })
     })
 
     describe('when the isolated flag is provided', () => {
-        beforeEach(async () => {
-          await runCli('t --isolated')
-        })
-        it('mode should be isolated', () => {
-          expect(buildFunc.mock.calls[0][0].args.mode).toEqual('isolated')
-        })
+      beforeEach(async () => {
+        await runCli('t --isolated')
+      })
+      it('mode should be isolated', () => {
+        expect(buildFunc.mock.calls[0][0].args.mode).toEqual('isolated')
+      })
     })
 
     describe('when called with multiple flags', () => {
       beforeEach(async () => {
-        out = await runCli(`t --align --isolated`)
+        out = await runCli('t --align --isolated')
       })
 
       it('should fail with environment not configured', async () => {

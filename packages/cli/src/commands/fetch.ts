@@ -138,6 +138,9 @@ export const fetchCommand = async (
     updatingStateEmitter.emit('failed')
     return false
   }
+  if (stateOnly && mode !== 'default') {
+    throw new Error('The state only flag can only be used in default mode')
+  }
   const fetchResult = await fetch(
     workspace,
     fetchProgress,

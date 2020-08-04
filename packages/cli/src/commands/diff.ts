@@ -27,6 +27,7 @@ import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace
 import Prompts from '../prompts'
 import { formatDetailedChanges, formatInvalidFilters, formatStepStart, formatStepCompleted, header } from '../formatter'
 import { outputLine } from '../outputer'
+import { createRegexFilters } from '../convertors'
 
 const log = logger(module)
 
@@ -42,20 +43,6 @@ type DiffArgs = {
 type DiffParsedCliInput = ParsedCliInput<DiffArgs>
 
 // TODO - move to formatter.ts
-
-const createRegexFilters = (
-  inputFilters: string[]
-): {filters: RegExp[]; invalidFilters: string[]} => {
-  const [validFilters, invalidFilters] = _.partition(inputFilters, filter => {
-    try {
-      return new RegExp(filter)
-    } catch (e) {
-      return false
-    }
-  })
-  const filters = validFilters.map(filter => new RegExp(filter))
-  return { filters, invalidFilters }
-}
 
 const printDiff = (
   changes: LocalChange[],

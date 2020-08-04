@@ -53,7 +53,7 @@ type MultiEnvState = {
   mergeErrors: MergeError[]
 }
 
-type MultiEnvSource = NaclFilesSource & {
+type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   getAll: (env?: string) => Promise<Element[]>
 }
 

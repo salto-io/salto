@@ -367,6 +367,8 @@ const addToSource = async (
       before,
       wrappedElement,
     ])
+    // We should't have errors since before and wrapped elements are from common/env
+    // so they should be mergeable
     if (mergeResult.errors.length > 0) {
       throw new Error(
         `Failed to move ${gids.map(id => id.getFullName())} Can not move unmergable element fragments.`

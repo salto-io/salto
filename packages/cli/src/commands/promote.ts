@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { convertToIDs } from '../converters'
+import { convertToIDSelectors } from '../convertors'
 import { servicesFilter } from '../filters/services'
 import { EnvironmentArgs } from './env'
 import { ParsedCliInput, CliOutput, SpinnerCreator, CliExitCode, CliCommand, CliTelemetry } from '../types'
@@ -24,7 +24,7 @@ import { environmentFilter } from '../filters/env'
 import { getCliTelemetry } from '../telemetry'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { formatStepStart, formatStepFailed, formatInvalidID, formatStepCompleted } from '../formatter'
+import { formatStepStart, formatStepFailed, formatInvalidID as formatInvalidIDSelectors, formatStepCompleted } from '../formatter'
 import { outputLine } from '../outputer'
 
 const log = logger(module)
@@ -47,9 +47,9 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running promote command on '${workspaceDir}' [environment=${inputEnvironment}, inputSelectors=${inputSelectors}`)
-    const { ids, invalidIds } = convertToIDs(inputSelectors)
-    if (!_.isEmpty(invalidIds)) {
-      output.stdout.write(formatStepFailed(formatInvalidID(invalidIds)))
+    const { ids, invalidSelectors } = convertToIDSelectors(inputSelectors)
+    if (!_.isEmpty(invalidSelectors)) {
+      output.stdout.write(formatStepFailed(formatInvalidIDSelectors(invalidSelectors)))
       return CliExitCode.UserInputError
     }
 
@@ -88,11 +88,11 @@ export const command = (
 const promoteBuilder = createCommandBuilder({
   options: {
     command: 'promote [selectors..]',
-    description: 'promote the selected elements and share them between all envs',
+    description: 'Promote the specific environment elements to a shared between all environments.',
     keyed: {
       force: {
         alias: ['f'],
-        describe: 'promote the elements even if the workspace is invalid.',
+        describe: 'Promote the elements even if the workspace is invalid.',
         boolean: true,
         default: false,
         demandOption: false,

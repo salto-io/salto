@@ -217,8 +217,8 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Finished calculating the difference between ${toEnv} and ${fromEnv}.`
 
   public static readonly DIFF_CALC_DIFF_FAIL = 'Calculating diff failed!'
-  public static readonly PROMOTE_START = 'Moving the selected elements to the common folder.'
-  public static readonly PROMOTE_FINISHED = 'Done moving the selected elements.'
+  public static readonly PROMOTE_START = 'Promoting the selected elements.'
+  public static readonly PROMOTE_FINISHED = 'Done promoting elements.'
   public static readonly PROMOTE_FAILED = (
     error: string
   ): string => `Failed to move the selected elements to the common folder: ${error}`
@@ -227,8 +227,8 @@ ${Prompts.SERVICE_ADD_HELP}`
     invalidIds: string
   ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
 
-  public static readonly DEMOTE_START = 'Moving the selected elements out of the common folder.'
-  public static readonly DEMOTE_FINISHED = 'Done moving the selected elements.'
+  public static readonly DEMOTE_START = 'Demoting the selected elements.'
+  public static readonly DEMOTE_FINISHED = 'Done demoting elements.'
   public static readonly DEMOTE_FAILED = (
     error: string
   ): string => `Failed to move the selected elements out of the common folder: ${error}`

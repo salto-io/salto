@@ -15,9 +15,8 @@
 */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { convertToIDs } from '../converters'
+import { convertToIDSelectors } from '../convertors'
 import { servicesFilter } from '../filters/services'
-import { EnvironmentArgs } from './env'
 import { ParsedCliInput, CliOutput, SpinnerCreator, CliExitCode, CliCommand, CliTelemetry } from '../types'
 import { createCommandBuilder } from '../command_builder'
 import { environmentFilter } from '../filters/env'
@@ -29,13 +28,6 @@ import { outputLine } from '../outputer'
 
 const log = logger(module)
 
-type DemoteArgs = {
-    force: boolean
-    selectors: string[]
-  } & EnvironmentArgs
-
-type DemoteParsedCliInput = ParsedCliInput<DemoteArgs>
-
 export const command = (
   workspaceDir: string,
   cliTelemetry: CliTelemetry,
@@ -43,13 +35,12 @@ export const command = (
   spinnerCreator: SpinnerCreator,
   force: boolean,
   inputSelectors: string[],
-  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.debug(`running demote command on '${workspaceDir}' [environment=${inputEnvironment}, inputSelectors=${inputSelectors}`)
-    const { ids, invalidIds } = convertToIDs(inputSelectors)
-    if (!_.isEmpty(invalidIds)) {
-      output.stdout.write(formatStepFailed(formatInvalidID(invalidIds)))
+    log.debug(`running demote command on '${workspaceDir}', inputSelectors=${inputSelectors}`)
+    const { ids, invalidSelectors } = convertToIDSelectors(inputSelectors)
+    if (!_.isEmpty(invalidSelectors)) {
+      output.stdout.write(formatStepFailed(formatInvalidID(invalidSelectors)))
       return CliExitCode.UserInputError
     }
 
@@ -60,7 +51,6 @@ export const command = (
         force,
         printStateRecency: true,
         spinnerCreator,
-        sessionEnv: inputEnvironment,
       }
     )
     if (errored) {
@@ -85,14 +75,21 @@ export const command = (
   },
 })
 
-const demoteeBuilder = createCommandBuilder({
+type DemoteArgs = {
+  force: boolean
+  selectors: string[]
+}
+
+type DemoteParsedCliInput = ParsedCliInput<DemoteArgs>
+
+const demoteBuilder = createCommandBuilder({
   options: {
     command: 'demote [selectors..]',
-    description: 'demote the selected elements from the current shared status and move them back to the environments',
+    description: 'Demote the selected elements to a not be shared between environments status.',
     keyed: {
       force: {
         alias: ['f'],
-        describe: 'demote the elements even if the workspace is invalid.',
+        describe: 'Demote the elements even if the workspace is invalid.',
         boolean: true,
         default: false,
         demandOption: false,
@@ -114,9 +111,8 @@ const demoteeBuilder = createCommandBuilder({
       spinnerCreator,
       input.args.force,
       input.args.selectors,
-      input.args.env
     )
   },
 })
 
-export default demoteeBuilder
+export default demoteBuilder

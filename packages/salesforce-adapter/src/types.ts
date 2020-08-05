@@ -155,7 +155,9 @@ export const configType = new ObjectType({
             excludeObjects: [
               'SBQQ__ContractedPrice__c',
               'SBQQ__Quote__c',
+              'SBQQ__QuoteDocument__c',
               'SBQQ__QuoteLine__c',
+              'SBQQ__QuoteLineGroup__c',
               'SBQQ__Subscription__c',
               'SBQQ__SubscribedAsset__c',
               'SBQQ__SubscribedQuoteLine__c',
@@ -163,6 +165,9 @@ export const configType = new ObjectType({
               'SBQQ__SubscriptionConsumptionSchedule__c',
               'SBQQ__WebQuote__c',
               'SBQQ__WebQuoteLine__c',
+              'SBQQ__QuoteLineCosumptionSchedule__c',
+              'SBQQ__QuoteLineConsumptionsRate__c',
+              'SBQQ__InstallProcessorLog__c',
             ],
             allowReferenceTo: [
               'Product2',

@@ -48,6 +48,7 @@ const typeToAdditionalNameFields: Record<TypeName, string[]> = {
   PricebookEntry: ['Pricebook2Id'],
   // eslint-disable-next-line @typescript-eslint/camelcase
   SBQQ__CustomAction__c: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c'],
+  Product2: ['ProductCode'],
 }
 
 const isNameField = (field: Field): boolean =>

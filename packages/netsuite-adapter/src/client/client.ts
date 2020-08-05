@@ -407,7 +407,7 @@ export default class NetsuiteClient {
     await withLimitedConcurrency( // limit the number of open promises
       typeNames.map(typeName => async () => {
         try {
-          log.debug(`About to fetch objects of type: ${typeName}`)
+          log.debug(`Starting to fetch objects of type: ${typeName}`)
           await this.runImportObjectsCommand(typeName, executor)
           log.debug(`Fetched objects of type: ${typeName}`)
         } catch (e) {
@@ -435,12 +435,12 @@ export default class NetsuiteClient {
     const failedPaths: string[] = []
     const operationResults = (await Promise.all(
       fileCabinetTopLevelFolders
-        .filter(folderName => filePathRegexSkipList.every(regex => !regex.test(folderName)))
-        .map(async folderName =>
-          this.executeProjectAction(COMMANDS.LIST_FILES, { folder: folderName }, executor)
+        .filter(folder => filePathRegexSkipList.every(regex => !regex.test(folder)))
+        .map(folder =>
+          this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor)
             .catch(() => {
-              log.debug(`Adding ${folderName} path to skip list`)
-              failedPaths.push(folderName)
+              log.debug(`Adding ${folder} path to skip list`)
+              failedPaths.push(folder)
               return undefined
             }))
     )).filter(values.isDefined)

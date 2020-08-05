@@ -39,6 +39,10 @@ describe('namespace', () => {
           expect(normalizeNamespace(module))
             .toEqual('logging/test/internal/namespace.test')
         })
+        it('should return the correct namespace with extra fragments', () => {
+          expect(normalizeNamespace(module, ['foo', 'bar']))
+            .toEqual('logging/test/internal/namespace.test/foo/bar')
+        })
       })
 
       describe('when the id property is a number', () => {
@@ -47,11 +51,20 @@ describe('namespace', () => {
             expect(normalizeNamespace({ id: 12 }))
               .toEqual('logging/test/internal/namespace.test')
           })
+          it('should return the correct namespace with extra fragments', () => {
+            expect(normalizeNamespace({ id: 12 }, ['foo', 'bar']))
+              .toEqual('logging/test/internal/namespace.test/foo/bar')
+          })
         })
 
         describe('when the lastLibraryFilename is not found in the stack', () => {
           it('should return the id as string', () => {
             expect(namespaceNormalizer('NOSUCHFILENAME')({ id: 12 })).toEqual('12')
+          })
+          it('should return the id as string with more fragments', () => {
+            expect(
+              namespaceNormalizer('NOSUCHFILENAME')({ id: 12 }, ['foo', 'bar'])
+            ).toEqual('12/foo/bar')
           })
         })
       })
@@ -60,6 +73,9 @@ describe('namespace', () => {
     describe('when a string is specified', () => {
       it('should return its name as a string', () => {
         expect(normalizeNamespace('my-namespace')).toEqual('my-namespace')
+      })
+      it('should return its name as a string with more fragments', () => {
+        expect(normalizeNamespace('my-namespace', ['foo', 'bar'])).toEqual('my-namespace/foo/bar')
       })
     })
   })

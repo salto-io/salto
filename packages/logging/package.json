@@ -31,6 +31,7 @@
   "dependencies": {
     "@salto-io/lowerdash": "0.1.20",
     "chalk": "^2.4.2",
+    "fast-safe-stringify": "^2.0.7",
     "lodash": "^4.17.19",
     "logform": "^2.1.2",
     "minimatch": "^3.0.4",

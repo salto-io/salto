@@ -18,6 +18,7 @@ import { Minimatch } from 'minimatch'
 import { validateOneOf } from './common'
 import { LogLevel } from './level'
 import { Namespace } from './namespace'
+import { LogTags } from './log-tags'
 
 export type Format = 'json' | 'text'
 export const FORMATS: ReadonlyArray<Format> = Object.freeze(['json', 'text'])
@@ -31,6 +32,7 @@ export type Config = {
   format: Format
   namespaceFilter: NamespaceFilter | string
   colorize: boolean | null
+  globalTags: LogTags
 }
 
 export const DEFAULT_CONFIG: Readonly<Config> = Object.freeze({
@@ -39,6 +41,7 @@ export const DEFAULT_CONFIG: Readonly<Config> = Object.freeze({
   format: 'text',
   namespaceFilter: '*',
   colorize: null,
+  globalTags: {},
 })
 
 export const stringToNamespaceFilter = (filter: string): NamespaceFilter => {

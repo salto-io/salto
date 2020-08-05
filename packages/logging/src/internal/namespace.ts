@@ -24,6 +24,7 @@ export type LoggingModule = {
 }
 
 export type Namespace = string
+export type NamespaceFragment = string
 
 export type NamespaceOrModule = Namespace | LoggingModule
 
@@ -68,20 +69,29 @@ const fromFilename = (
 
 export type NamespaceNormalizer = (
   namespace: NamespaceOrModule,
+  namespaceFragments?: NamespaceFragment[]
 ) => Namespace
 
 export const namespaceNormalizer = (
   lastLibraryFilename: string
-): NamespaceNormalizer => namespaceOrModule => {
+): NamespaceNormalizer => (namespaceOrModule, namespaceFragments) => {
+  const uniteNamespaceFragments = (s: NamespaceFragment): Namespace =>
+    [
+      s,
+      ...namespaceFragments || [],
+    ]
+      .filter(x => x)
+      .join('/')
+
   if (typeof namespaceOrModule === 'string') {
-    return namespaceOrModule // it's an explicit namespace - best case!
+    return uniteNamespaceFragments(namespaceOrModule) // it's an explicit namespace - best case!
   }
 
   const { id } = namespaceOrModule
 
   if (typeof id === 'string') {
     // id is the filename
-    return fromFilename(id)
+    return uniteNamespaceFragments(fromFilename(id))
   }
 
   // id is an arbitrary number by webpack, can't use it.
@@ -89,9 +99,9 @@ export const namespaceNormalizer = (
   const callerFilename = stack.extractCallerFilename(new Error(), lastLibraryFilename)
 
   if (callerFilename !== undefined) {
-    return fromFilename(callerFilename)
+    return uniteNamespaceFragments(fromFilename(callerFilename))
   }
 
   // last resort - not very meaningful
-  return String(id)
+  return uniteNamespaceFragments(String(id))
 }

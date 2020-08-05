@@ -20,8 +20,8 @@ import { logger } from '@salto-io/logging'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
-  ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
-  CORE_ANNOTATIONS, TypeElement, Change, isRemovalDiff, isModificationDiff, isAdditionDiff,
+  ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionDiff,
+  CORE_ANNOTATIONS, TypeElement, Change, isRemovalDiff, isModificationDiff, isListType,
 } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 

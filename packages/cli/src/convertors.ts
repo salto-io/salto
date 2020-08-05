@@ -43,4 +43,3 @@ export const createRegexFilters = (
   const filters = validFilters.map(filter => new RegExp(filter))
   return { filters, invalidFilters }
 }
-

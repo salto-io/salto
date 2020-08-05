@@ -44,17 +44,18 @@ describe('config', () => {
     expect(new RegExp(expectedNewFailedFileRegex).test('//path//to//file.js')).toBe(false)
   })
 
-  it('should return updated currentConfig when having suggestions and the currentConfig is empty', () => {
-    expect(getConfigFromConfigChanges(true, [newFailedType], [newFailedFilePath], {}))
-      .toEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          [TYPES_TO_SKIP]: [newFailedType],
-          [FILE_PATHS_REGEX_SKIP_LIST]: [expectedNewFailedFileRegex],
-          [FETCH_ALL_TYPES_AT_ONCE]: false,
-        }
-      ))
+  it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
+    const configFromConfigChanges = getConfigFromConfigChanges(true, [newFailedType],
+      [newFailedFilePath], {}) as InstanceElement
+    expect(configFromConfigChanges.isEqual(new InstanceElement(
+      ElemID.CONFIG_NAME,
+      configType,
+      {
+        [TYPES_TO_SKIP]: [newFailedType],
+        [FILE_PATHS_REGEX_SKIP_LIST]: [expectedNewFailedFileRegex],
+        [FETCH_ALL_TYPES_AT_ONCE]: false,
+      }
+    ))).toBe(true)
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {

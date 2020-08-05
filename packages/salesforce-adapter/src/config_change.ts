@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, configType, SalesforceConfig } from './types'
 import * as constants from './constants'
@@ -71,7 +71,7 @@ export const getConfigFromConfigChanges = (
   return new InstanceElement(
     ElemID.CONFIG_NAME,
     configType,
-    {
+    _.pickBy({
       metadataTypesSkippedList: metadataTypesSkippedList
         .concat(currentMetadataTypesSkippedList),
       instancesRegexSkippedList: instancesRegexSkippedList
@@ -80,6 +80,6 @@ export const getConfigFromConfigChanges = (
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
       enableHideTypesInNacls: currentConfig.enableHideTypesInNacls,
       dataManagement: currentConfig.dataManagement,
-    }
+    }, values.isDefined)
   )
 }

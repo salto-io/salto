@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction,
@@ -84,7 +84,7 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
   return new InstanceElement(
     ElemID.CONFIG_NAME,
     configType,
-    {
+    _.pickBy({
       [TYPES_TO_SKIP]: makeArray(currentConfig[TYPES_TO_SKIP])
         .concat(makeArray(suggestions[TYPES_TO_SKIP])),
       [FILE_PATHS_REGEX_SKIP_LIST]: makeArray(currentConfig[FILE_PATHS_REGEX_SKIP_LIST])
@@ -92,6 +92,6 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
       [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE]
         ?? currentConfig[FETCH_ALL_TYPES_AT_ONCE],
       [SDF_CONCURRENCY_LIMIT]: currentConfig[SDF_CONCURRENCY_LIMIT],
-    }
+    }, values.isDefined)
   )
 }

@@ -96,7 +96,7 @@ export const formatWorkspaceErrors = async (
 ): Promise<string> => (
   (await Promise.all(
     wu(errors)
-    .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
+      .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
       .map(err => workspace.transformError(err))
       .map(async err => formatWorkspaceError(await err))
   )).join('\n')

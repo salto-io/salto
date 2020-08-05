@@ -15,7 +15,7 @@
 */
 import { restore, LocalChange, Tags } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
-import { Workspace } from '@salto-io/workspace'
+import { Workspace, nacl } from '@salto-io/workspace'
 import { EOL } from 'os'
 import _ from 'lodash'
 import { ServicesArgs, servicesFilter } from '../filters/services'
@@ -30,6 +30,7 @@ import Prompts from '../prompts'
 import { formatChangesSummary, formatDetailedChanges, formatRestoreFinish, formatInvalidFilters, formatStepStart, formatStepCompleted, formatStepFailed, header } from '../formatter'
 import { outputLine } from '../outputer'
 import { createRegexFilters } from '../convertors'
+import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
 
 const log = logger(module)
 
@@ -39,9 +40,8 @@ type RestoreArgs = {
     dryRun: boolean
     detailedPlan: boolean
     listPlannedChanges: boolean
-    isolated: boolean
     filters: string[]
-  } & ServicesArgs & EnvironmentArgs
+  } & ServicesArgs & EnvironmentArgs & FetchModeArgs
 
 type RestoreParsedCliInput = ParsedCliInput<RestoreArgs>
 
@@ -78,7 +78,7 @@ export const command = (
   cliTelemetry: CliTelemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputIsolated: boolean,
+  mode: nacl.RoutingMode,
   shouldCalcTotalSize: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
@@ -105,7 +105,7 @@ export const command = (
       workspace,
       output,
       changesToApply,
-      inputIsolated,
+      mode
     )
     if (success) {
       outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), output)
@@ -125,7 +125,7 @@ export const command = (
     async execute(): Promise<CliExitCode> {
       log.debug(`running restore command on '${workspaceDir}' [force=${force}, interactive=${
         interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
-        listPlannedChanges}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
+        listPlannedChanges}, mode=${mode}], environment=${inputEnvironment}, services=${inputServices}`)
 
       const { filters, invalidFilters } = createRegexFilters(inputFilters)
       if (!_.isEmpty(invalidFilters)) {
@@ -236,7 +236,7 @@ const restoreBuilder = createCommandBuilder({
     },
   },
 
-  filters: [servicesFilter, environmentFilter],
+  filters: [servicesFilter, environmentFilter, fetchModeFilter],
 
   async build(
     input: RestoreParsedCliInput,
@@ -255,7 +255,7 @@ const restoreBuilder = createCommandBuilder({
       getCliTelemetry(input.telemetry, 'restore'),
       output,
       spinnerCreator,
-      input.args.isolated,
+      input.args.mode,
       input.config.shouldCalcTotalSize,
       input.args.services,
       input.args.env,

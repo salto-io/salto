@@ -25,10 +25,11 @@ import {
   Telemetry,
   PlanItem,
 } from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
+import { Workspace, nacl } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
+import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
 import { progressOutputer, outputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
@@ -38,11 +39,10 @@ import {
 } from '../types'
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader,
-  formatFetchFinish, formatApproveIsolatedModePrompt, formatStateChanges,
+  formatFetchFinish, formatStateChanges,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
-  shouldUpdateConfig as cliShouldUpdateConfig,
-  cliApproveIsolatedMode } from '../callbacks'
+  shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
 import {
   loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace,
 } from '../workspace/workspace'
@@ -65,91 +65,27 @@ type ShouldUpdateConfigFunc = (
   change: PlanItem
 ) => Promise<boolean>
 
-type ApproveIsolatedModeFunc = (
-  newServices: string[],
-  oldServices: string[],
-  inputIsolated: boolean
-) => Promise<boolean>
 
 export type FetchCommandArgs = {
   workspace: Workspace
   force: boolean
   interactive: boolean
-  inputIsolated: boolean
+  mode: nacl.RoutingMode
   cliTelemetry: CliTelemetry
   output: CliOutput
   fetch: FetchFunc
   getApprovedChanges: ApproveChangesFunc
   shouldUpdateConfig: ShouldUpdateConfigFunc
-  approveIsolatedMode: ApproveIsolatedModeFunc
   shouldCalcTotalSize: boolean
   stateOnly: boolean
   inputServices?: string[]
 }
 
-const shouldRecommendIsolatedModeForNewServices = (
-  servicesNewOnlyInCurrentEnv: string[],
-  existingOrNewToAllEnvsServices: string[],
-  envNames: readonly string[],
-  isolatedOveride?: boolean
-): boolean => {
-  if (_.isEmpty(servicesNewOnlyInCurrentEnv)) return false
-  if (envNames.length <= 1) return false
-  if (!_.isEmpty(existingOrNewToAllEnvsServices) && isolatedOveride) return true
-  if (_.isEmpty(existingOrNewToAllEnvsServices) && !isolatedOveride) return true
-  return false
-}
-
-const getRelevantServicesAndIsolatedMode = async (
-  inputServices: string[],
-  workspace: Workspace,
-  inputIsolated: boolean,
-  force: boolean,
-  approveIsolatedMode: ApproveIsolatedModeFunc,
-  bindedOutputLine: (text: string) => void
-): Promise<{services: string[]; isolated: boolean}> => {
-  const envNames = workspace.envs()
-  const currentEnvServices = await workspace.state().existingServices()
-  const otherEnvsServices = _(await Promise.all(envNames
-    .filter(env => env !== workspace.currentEnv()).map(
-      env => workspace.state(env).existingServices()
-    ))).flatten().uniq().value()
-
-  const [servicesNewOnlyInCurrentEnv, existingOrNewToAllEnvsServices] = _.partition(
-    inputServices,
-    service => !currentEnvServices.includes(service) && otherEnvsServices.includes(service)
-  )
-  // We have a first fetch of a service in a multi-env setup.
-  // The recommended practice here is to initiate the new service
-  // by making an isolated fetch for the new services only.
-  if (!force && shouldRecommendIsolatedModeForNewServices(
-    servicesNewOnlyInCurrentEnv,
-    existingOrNewToAllEnvsServices,
-    envNames,
-    inputIsolated
-  )) {
-    bindedOutputLine(formatApproveIsolatedModePrompt(
-      servicesNewOnlyInCurrentEnv,
-      existingOrNewToAllEnvsServices,
-      inputIsolated
-    ))
-    if (await approveIsolatedMode(
-      servicesNewOnlyInCurrentEnv,
-      existingOrNewToAllEnvsServices,
-      inputIsolated
-    )) {
-      return { services: servicesNewOnlyInCurrentEnv, isolated: true }
-    }
-  }
-
-  return { services: inputServices, isolated: inputIsolated }
-}
-
 export const fetchCommand = async (
   {
-    workspace, force, interactive, inputIsolated = false,
+    workspace, force, interactive, mode,
     getApprovedChanges, shouldUpdateConfig, inputServices,
-    cliTelemetry, output, fetch, approveIsolatedMode, shouldCalcTotalSize,
+    cliTelemetry, output, fetch, shouldCalcTotalSize,
     stateOnly,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
@@ -202,20 +138,13 @@ export const fetchCommand = async (
     updatingStateEmitter.emit('failed')
     return false
   }
-
-  const { services, isolated } = await getRelevantServicesAndIsolatedMode(
-    inputServices || [...workspace.services()],
-    workspace,
-    inputIsolated,
-    force,
-    approveIsolatedMode,
-    bindedOutputline
-  )
-
+  if (stateOnly && mode !== 'default') {
+    throw new Error('The state only flag can only be used in default mode')
+  }
   const fetchResult = await fetch(
     workspace,
     fetchProgress,
-    services,
+    inputServices,
   )
   if (fetchResult.success === false) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
@@ -274,7 +203,7 @@ export const fetchCommand = async (
       shouldCalcTotalSize,
       output,
       changes,
-      isIsolated: isolated,
+      mode,
       approveChangesCallback: getApprovedChanges,
       applyProgress: fetchProgress,
     })
@@ -294,15 +223,15 @@ export const command = (
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputIsolated: boolean,
+  mode: nacl.RoutingMode,
   shouldCalcTotalSize: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
-  stateOnly = false
+  stateOnly = false,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
+      interactive}, mode=${mode}], environment=${inputEnvironment}, services=${inputServices}`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output,
@@ -321,9 +250,8 @@ export const command = (
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
       shouldUpdateConfig: cliShouldUpdateConfig,
-      approveIsolatedMode: cliApproveIsolatedMode,
       inputServices,
-      inputIsolated,
+      mode,
       shouldCalcTotalSize,
       stateOnly,
     })
@@ -333,9 +261,8 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
-  isolated: boolean
   stateOnly: boolean
-} & ServicesArgs & EnvironmentArgs
+} & FetchModeArgs & ServicesArgs & EnvironmentArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
 const fetchBuilder = createCommandBuilder({
@@ -357,14 +284,6 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
-      isolated: {
-        alias: ['t'],
-        describe: 'Restrict fetch from modifying common configuration '
-          + '(might result in changes in other env folders)',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
       'state-only': {
         alias: ['st'],
         describe: 'Fetch remote changes to the state file without mofifying the NaCL files. ',
@@ -375,7 +294,7 @@ const fetchBuilder = createCommandBuilder({
     },
   },
 
-  filters: [servicesFilter, environmentFilter],
+  filters: [servicesFilter, environmentFilter, fetchModeFilter],
 
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command(
@@ -385,11 +304,11 @@ const fetchBuilder = createCommandBuilder({
       input.telemetry,
       output,
       spinnerCreator,
-      input.args.isolated,
+      input.args.mode,
       input.config.shouldCalcTotalSize,
       input.args.services,
       input.args.env,
-      input.args.stateOnly
+      input.args.stateOnly,
     )
   },
 })

@@ -195,7 +195,7 @@ describe('workspace', () => {
         dummyChanges.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
-      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, undefined)
+      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
     })
 
@@ -206,7 +206,7 @@ describe('workspace', () => {
         changes.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
-      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, undefined)
+      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, 'default')
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
     })
 
@@ -218,7 +218,7 @@ describe('workspace', () => {
         dummyChanges.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBe(false)
-      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, undefined)
+      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
     })
   })
@@ -248,7 +248,7 @@ describe('workspace', () => {
       const res = await applyChangesToWorkspace({
         workspace: mockWs,
         changes,
-        isIsolated: false,
+        mode: 'default',
         force: true,
         shouldCalcTotalSize: true,
         workspaceTags: {},
@@ -267,7 +267,7 @@ describe('workspace', () => {
       const res = await applyChangesToWorkspace({
         workspace: mockWs,
         changes,
-        isIsolated: false,
+        mode: 'default',
         force: true,
         shouldCalcTotalSize: false,
         workspaceTags: {},
@@ -283,7 +283,7 @@ describe('workspace', () => {
       await applyChangesToWorkspace({
         workspace: mockWs,
         changes,
-        isIsolated: false,
+        mode: 'default',
         force: false,
         shouldCalcTotalSize: false,
         workspaceTags: {},
@@ -300,7 +300,7 @@ describe('workspace', () => {
       await applyChangesToWorkspace({
         workspace: mockWs,
         changes,
-        isIsolated: false,
+        mode: 'default',
         force: true,
         shouldCalcTotalSize: false,
         workspaceTags: {},
@@ -316,7 +316,7 @@ describe('workspace', () => {
       await applyChangesToWorkspace({
         workspace: mockWs,
         changes,
-        isIsolated: false,
+        mode: 'default',
         force: true,
         shouldCalcTotalSize: false,
         workspaceTags: {},

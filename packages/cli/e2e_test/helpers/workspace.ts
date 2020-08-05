@@ -150,7 +150,7 @@ export const runFetch = async (
     telemetry,
     mockCliOutput(),
     mockSpinnerCreator([]),
-    isolated,
+    isolated ? 'isolated' : 'override',
     true,
     services,
     inputEnvironment,

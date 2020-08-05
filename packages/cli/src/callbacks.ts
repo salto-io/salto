@@ -25,7 +25,7 @@ import { StateRecency } from '@salto-io/workspace'
 import {
   formatFetchChangeForApproval, formatShouldContinueWithWarning, formatCancelCommand,
   formatCredentialsHeader, formatConfigFieldInput, formatShouldAbortWithValidationError,
-  formatConfigChangeNeeded, formatShouldCancelWithOldState, formatWordsSeries,
+  formatConfigChangeNeeded, formatShouldCancelWithOldState,
   formatShouldCancelWithNonexistentState, formatDetailedChanges,
 } from './formatter'
 import Prompts from './prompts'
@@ -165,7 +165,3 @@ export const getEnvName = async (currentName = 'env1'): Promise<string> => {
   }]
   return (await inquirer.prompt(questions))[currentName]
 }
-
-export const cliApproveIsolatedMode = async (newServices: string[]): Promise<boolean> => (
-  getUserBooleanInput(Prompts.APPROVE_ISOLATED_RECOMMENDATION(formatWordsSeries(newServices)))
-)

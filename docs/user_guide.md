@@ -7,8 +7,8 @@ Salto allows you to manage your business applications' configuration in code. By
 Salto consists of 3 main components:
 
 1. The NaCl language — a declarative configuration language (follows the syntax of [hcl](https://github.com/hashicorp/hcl/tree/hcl2)), specifically designed to describe the configuration of modern business applications.
-2. The salto command line interface — a tool which uses NaCl files to manage the configuration of business applications, with operations such as `deploy` (to deploy configuration changes to a business application) and `fetch` (to fetch the latest state of a business application into NaCl files). This tool is composed of a core processing engine, and various adapters to interact with the different business applications.
-3. The salto vs-code extension — An extension to the popular vs-code IDE to easily interact with NaCl files.
+2. The Salto command line interface — a tool which uses NaCl files to manage the configuration of business applications, with operations such as `deploy` (to deploy configuration changes to a business application) and `fetch` (to fetch the latest state of a business application into NaCl files). This tool is composed of a core processing engine, and various adapters to interact with the different business applications.
+3. The Salto vs-code extension — An extension to the popular vs-code IDE to easily interact with NaCl files.
 
 Currently, Salto supports the following business applications:
 
@@ -61,7 +61,7 @@ Please refer to [https://github.com/salto-io/salto](https://github.com/salto-io/
 
 We will walk you through `initiating` a new Salto `workspace`, adding a service to it, `fetching` the current configuration from the service, making a change to it and `deploying` the change back to the service. 
 
-This quick start guide assumes you have credentials for a `Salesforce` dev account (for the sake of the example). If not, either do the relevant adaptations for the business application you would like to interact with, or open a Salesforce developer account at <LINK>.
+This quick start guide assumes you have credentials for a `Salesforce` dev account (for the sake of the example). If not, either do the relevant adaptations for the business application you would like to interact with, or open a Salesforce developer account at [https://developer.salesforce.com/signup](https://developer.salesforce.com/signup).
 
 ### Create a new Salto workspace
 
@@ -75,7 +75,7 @@ cd quickstart
 salto init
 ```
 
-This will create a new directory named `quickstart` in your home directory which will serve as the `workspace` for this project. Inside this directory, a `salto.config` directory was created, with some salto configuration files — no need to worry about these for now. Also, you probably noticed that `salto init` prompted for a name for the "first environment", you can just accept the default for now.
+This will create a new directory named `quickstart` in your home directory which will serve as the `workspace` for this project. Inside this directory, a `salto.config` directory was created, with some Salto configuration files — no need to worry about these for now. Also, you probably noticed that `salto init` prompted for a name for the "first environment", you can just accept the default for now.
 
 ### Add a new service to the workspace
 
@@ -90,7 +90,7 @@ This command will prompt you to enter the credentials for your account, please d
 
 ### Fetch the configuration from your business application to the workspace
 
-Now, we will fetch the current configuration of the connected salto account into this workspace by running:
+Now, we will fetch the current configuration of the connected Salto account into this workspace by running:
 
 ```shell
 salto fetch
@@ -129,7 +129,7 @@ You can also run `salto fetch` again, to fetch some changes which were auto-gene
 
 ## Using Salto with Git
 
-Typically, a Salto workspace maps to a Git repository. Once you have an initial Salto workspace, you would usually run `git init` to create a new git repository. Then you would run `git add .` to add all the currently fetched files (note that your salto state-files will be saved in the repo!) and `git commit` to record the baseline of your workspace to the repository.
+Typically, a Salto workspace maps to a Git repository. Once you have an initial Salto workspace, you would usually run `git init` to create a new git repository. Then you would run `git add .` to add all the currently fetched files (note that your Salto state-files will be saved in the repo!) and `git commit` to record the baseline of your workspace to the repository.
 
 From now on, you can use standard Git commands to record changes, create feature-branches for development work, revert to old versions, compare versions, etc. If you use a platform like GitHub, you can also utilize features like pull requests to perform code reviews and enforce checks on your repository (see [here](https://help.github.com/en/github/administering-a-repository/configuring-protected-branches)).
 
@@ -218,7 +218,7 @@ In Salto, `environments` are first-level citizens, which also enable the encapsu
 - Salto calculates the `common` configuration of all the environments, as well as the `environment-specific` configuration.
 - A `fetch` operation can work in `isolated mode` , when it will not modify common configuration, or in standard (non-isolated) mode when it will recalculate the common configuration. As a rule of thumb, `isolated mode` should be used when running fetch for the first time on a new service in an environment, and in standard mode when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
-Now, let's follow a common scenario of adding two environments to salto:
+Now, let's follow a common scenario of adding two environments to Salto:
 ```shell
 salto init
 ```
@@ -353,7 +353,7 @@ The following flags are available for all commands:
 
 The workspace is structured as follows:
 
-- `salto.config` — all workspace specific internal salto files, including configuration and state files. See [Salto Configuration](salto_configuration.md) for more details.
+- `salto.config` — all workspace specific internal Salto files, including configuration and state files. See [Salto Configuration](salto_configuration.md) for more details.
 - Directory per adapter, named after the adapter (e.g. Salesforce, NetSuite) — NaCl definitions which are **common** across all defined environments which are configured per that adapter.
 - Directory for [Static Files](#static-files) (`static-resources`).
 - envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. 

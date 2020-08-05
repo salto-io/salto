@@ -25,7 +25,7 @@ import type {
   OperationResult,
 } from '@salto-io/suitecloud-cli'
 
-import { collections, decorators, hash, promises } from '@salto-io/lowerdash'
+import { collections, decorators, hash, promises, values } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
@@ -106,6 +106,11 @@ const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 export const SDF_PATH_SEPARATOR = '/'
+export const fileCabinetTopLevelFolders = [
+  `${SDF_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
+  `${SDF_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
+  `${SDF_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
+]
 
 const baseExecutionPath = os.tmpdir()
 
@@ -283,12 +288,14 @@ export default class NetsuiteClient {
           parentdirectory: getRootCLIPath(),
         },
       })
-    NetsuiteClient.verifySuccessfulOperation(operationResult)
+    NetsuiteClient.verifySuccessfulOperation(operationResult, COMMANDS.CREATE_PROJECT)
     return projectName
   }
 
-  private static verifySuccessfulOperation(operationResult: OperationResult): void {
+  private static verifySuccessfulOperation(operationResult: OperationResult, commandName: string):
+    void {
     if (SDKOperationResultUtils.hasErrors(operationResult)) {
+      log.error(`SDF command ${commandName} has failed.`)
       throw Error(SDKOperationResultUtils.getErrorMessagesString(operationResult))
     }
   }
@@ -301,7 +308,7 @@ export default class NetsuiteClient {
         runInInteractiveMode: false,
         arguments: commandArguments,
       }))
-    NetsuiteClient.verifySuccessfulOperation(operationResult)
+    NetsuiteClient.verifySuccessfulOperation(operationResult, commandName)
     return operationResult
   }
 
@@ -400,7 +407,7 @@ export default class NetsuiteClient {
     await withLimitedConcurrency( // limit the number of open promises
       typeNames.map(typeName => async () => {
         try {
-          log.debug(`About to objects of type: ${typeName}`)
+          log.debug(`Starting to fetch objects of type: ${typeName}`)
           await this.runImportObjectsCommand(typeName, executor)
           log.debug(`Fetched objects of type: ${typeName}`)
         } catch (e) {
@@ -423,14 +430,24 @@ export default class NetsuiteClient {
     }, executor)
   }
 
-  private async listFilePaths(executor: CommandActionExecutorType): Promise<string[]> {
-    const TOP_LEVEL_FOLDER_NAMES = [`${SDF_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
-      `${SDF_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`, `${SDF_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`]
-    const operationResults = _.flatten(await Promise.all(
-      TOP_LEVEL_FOLDER_NAMES.map(async folderName =>
-        this.executeProjectAction(COMMANDS.LIST_FILES, { folder: folderName }, executor))
-    ))
-    return _.flatten(operationResults.map(operationResult => makeArray(operationResult.data)))
+  private async listFilePaths(executor: CommandActionExecutorType, filePathRegexSkipList: RegExp[]):
+    Promise<{ listedPaths: string[]; failedPaths: string[] }> {
+    const failedPaths: string[] = []
+    const operationResults = (await Promise.all(
+      fileCabinetTopLevelFolders
+        .filter(folder => filePathRegexSkipList.every(regex => !regex.test(folder)))
+        .map(folder =>
+          this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor)
+            .catch(() => {
+              log.debug(`Adding ${folder} path to skip list`)
+              failedPaths.push(folder)
+              return undefined
+            }))
+    )).filter(values.isDefined)
+    return {
+      listedPaths: operationResults.flatMap(operationResult => makeArray(operationResult.data)),
+      failedPaths,
+    }
   }
 
   private async importFiles(filePaths: string[], executor: CommandActionExecutorType):
@@ -499,7 +516,8 @@ export default class NetsuiteClient {
       }))
 
     const project = await this.initProject()
-    const filePathsToImport = (await this.listFilePaths(project.executor))
+    const listFilesResults = await this.listFilePaths(project.executor, filePathRegexSkipList)
+    const filePathsToImport = listFilesResults.listedPaths
       .filter(path => filePathRegexSkipList.every(regex => !regex.test(path)))
     const importFilesResults = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
@@ -517,7 +535,7 @@ export default class NetsuiteClient {
     await NetsuiteClient.deleteProject(project.projectName)
     return {
       elements,
-      failedPaths: importFilesResults.failedPaths,
+      failedPaths: [...listFilesResults.failedPaths, ...importFilesResults.failedPaths],
     }
   }
 

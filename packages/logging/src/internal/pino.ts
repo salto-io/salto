@@ -32,14 +32,13 @@ import {
 import { BaseLoggerRepo, BaseLoggerMaker } from './logger'
 import { LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config } from './config'
-import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isLogTagValueType } from './log-tags'
+import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, formatLogTagValue } from './log-tags'
 
 const toPinoLogLevel = (level: LogLevel | 'none'): LevelWithSilent => (
   level === 'none' ? 'silent' : level
 )
 
 const MESSAGE_KEY = 'message'
-const EXCESS_LOG_ARGS_KEY = 'excessArgs'
 
 type FormatterBaseInput = {
   level: number
@@ -47,7 +46,7 @@ type FormatterBaseInput = {
   time: string
   name: string
   stack?: string
-  [EXCESS_LOG_ARGS_KEY]: {
+  excessArgs: {
     [key: string]: unknown
   }
   type?: 'Error'
@@ -56,7 +55,7 @@ type FormatterBaseInput = {
 type FormatterInput = FormatterBaseInput & Record<string, unknown>
 
 const formatterBaseKeys: (keyof FormatterBaseInput)[] = [
-  'level', MESSAGE_KEY, 'time', 'name', 'stack', 'type', EXCESS_LOG_ARGS_KEY,
+  'level', MESSAGE_KEY, 'time', 'name', 'stack', 'type', 'excessArgs',
 ]
 const excessDefaultPinoKeys = ['hostname', 'pid']
 
@@ -72,26 +71,13 @@ const formatError = (input: FormatterInput): string => [
   format(Object.fromEntries(customKeys(input).map(k => [k, input[k]]))),
 ].join(EOL)
 
-const formatExcessArg = (arg: unknown, i: number): LogTags => {
-  const toArgKey = (): string => `arg${i}`
-  if (typeof arg === 'object') {
-    if (Object.values(arg as object).every(isLogTagValueType)) {
-      return arg as LogTags
-    }
-    return { [toArgKey()]: safeStringify(arg) }
-  }
-  if (isLogTagValueType(arg)) return { [toArgKey()]: arg } as LogTags
-  return { [toArgKey()]: safeStringify(arg) }
-}
+const formatExcessArg = (value: unknown, i: number): [string, string] => [
+  `arg${i}`,
+  isPrimitiveType(value) ? formatLogTagValue(value) : safeStringify(value),
+]
 
-const formatExcessArgs = (excessArgs?: unknown[]): LogTags => (excessArgs
-  ? excessArgs.reduce(
-    (
-      formattedExcessArgs, currentArg, i
-    ) => Object.assign(formattedExcessArgs, formatExcessArg(currentArg, i)),
-    {}
-  ) as LogTags
-  : {})
+const formatExcessArgs = (excessArgs?: unknown[]): LogTags =>
+  Object.fromEntries((excessArgs || []).map(formatExcessArg))
 
 
 const textFormat = (
@@ -101,7 +87,7 @@ const textFormat = (
   const level = pino.levels.labels[levelNumber] as LogLevel
   const inputWithExcessArgs = { ...input,
     ...formatExcessArgs(
-    input[EXCESS_LOG_ARGS_KEY] as unknown as unknown[]
+    input.excessArgs as unknown as unknown[]
     ) }
   const formattedLogTags = formatLogTags(
     inputWithExcessArgs,
@@ -152,7 +138,9 @@ const toStream = (
     : consoleToStream(consoleStream)
 )
 
-const formatJsonLog = (object: object): object => {
+type JsonLogObject = Record<string, unknown> & { excessArgs: unknown[] }
+
+const formatJsonLog = (object: JsonLogObject): Record<string, unknown> => {
   const {
     excessArgs, ...logJson
   } = object as object & { excessArgs: unknown[]}
@@ -181,7 +169,7 @@ export const loggerRepo = (
       level: (level: string) => ({ level: level.toLowerCase() }),
       log: (object: object) => {
         // When config is text leave the formatting for prettifier.
-        if (config.format === 'json') return formatJsonLog(object)
+        if (config.format === 'json') return formatJsonLog(object as JsonLogObject)
         return object
       },
       bindings: (bindings: pino.Bindings) => _.omit(bindings, [...excessDefaultPinoKeys]),
@@ -211,7 +199,7 @@ export const loggerRepo = (
         const logArgs = unconsumedArgs.length
           ? [
             // mark excessArgs for optional formatting later
-            { [EXCESS_LOG_ARGS_KEY]: unconsumedArgs },
+            { excessArgs: unconsumedArgs },
             formatted,
           ]
           : [formatted]

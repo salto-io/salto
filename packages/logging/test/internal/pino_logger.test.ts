@@ -95,12 +95,12 @@ describe('pino based logger', () => {
 
         it('should write the message to the file', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
-          expect(line).toContain(`error ${NAMESPACE} extra=stuff hello1 { world: true }`)
+          expect(line).toContain(`error ${NAMESPACE} arg0={"extra":"stuff"} hello1 { world: true }`)
         })
 
         it('should write the second message after a newline', () => {
           expect(line2).toMatch(TIMESTAMP_REGEX)
-          expect(line2).toContain(`warn ${NAMESPACE} extra=stuff hello2 { world: true }`)
+          expect(line2).toContain(`warn ${NAMESPACE} arg0={"extra":"stuff"} hello2 { world: true }`)
         })
 
         it('should append to file on subsequent runs', async () => {
@@ -669,13 +669,13 @@ describe('pino based logger', () => {
           level: 'warn',
           message: 'where is extra args object foo',
           arg0: 'moo',
-          extra: 'should be in log',
-          arg2: true,
-          arg3: 'string with "bad chars"\t\n',
+          arg1: '{"extra":"should be in log"}',
+          arg2: 'true',
+          arg3: '"string with \\"bad chars\\"\\t\\n"',
         })
       })
 
-      it('verify object was extended with excess args - no format needed', async () => {
+      it('verify object was extended with excess args another', async () => {
         logger.warn('where is mix object %s', 'foo', { moo: 'moo' }, { extra: 'shouldnt be in log' });
         [line] = consoleStream.contents().split(EOL)
         jsonLine = JSON.parse(line)
@@ -683,8 +683,8 @@ describe('pino based logger', () => {
           time: expect.stringMatching(TIMESTAMP_REGEX),
           level: 'warn',
           message: 'where is mix object foo',
-          moo: 'moo',
-          extra: 'shouldnt be in log',
+          arg0: '{"moo":"moo"}',
+          arg1: '{"extra":"shouldnt be in log"}',
         })
       })
     })

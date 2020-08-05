@@ -589,3 +589,8 @@ export const formatInvalidFilters = (invalidFilters: string[]): string => [
   formatSimpleError(Prompts.INVALID_FILTERS(formatWordsSeries(invalidFilters))),
   emptyLine(),
 ].join('\n')
+
+export const formatInvalidID = (invalidIds: string[]): string => [
+  formatSimpleError(Prompts.INVALID_IDS(formatWordsSeries(invalidIds))),
+  emptyLine(),
+].join('\n')

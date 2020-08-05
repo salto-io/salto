@@ -64,7 +64,6 @@ export default class Prompts {
   public static readonly DID_YOU_MEAN = 'Did you mean'
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
-
   public static initFailed(msg: string): string {
     return `Could not initiate workspace: ${msg}\n`
   }
@@ -218,4 +217,19 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Finished calculating the difference between ${toEnv} and ${fromEnv}.`
 
   public static readonly DIFF_CALC_DIFF_FAIL = 'Calculating diff failed!'
+  public static readonly PROMOTE_START = 'Promoting the selected elements.'
+  public static readonly PROMOTE_FINISHED = 'Done promoting elements.'
+  public static readonly PROMOTE_FAILED = (
+    error: string
+  ): string => `Failed to move the selected elements to the common folder: ${error}`
+
+  public static readonly INVALID_IDS = (
+    invalidIds: string
+  ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
+
+  public static readonly DEMOTE_START = 'Demoting the selected elements.'
+  public static readonly DEMOTE_FINISHED = 'Done demoting elements.'
+  public static readonly DEMOTE_FAILED = (
+    error: string
+  ): string => `Failed to move the selected elements out of the common folder: ${error}`
 }

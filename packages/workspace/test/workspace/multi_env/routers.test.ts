@@ -17,7 +17,14 @@ import _ from 'lodash'
 import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { routeChanges } from '../../../src/workspace/nacl_files/mutil_env/routers'
+import { routeChanges, routePromote, routeDemote } from '../../../src/workspace/nacl_files/mutil_env/routers'
+
+
+const hasChanges = (
+  changes: DetailedChange[],
+  lookup: {action: string; id: ElemID}[]
+): boolean => _.every(lookup.map(changeToFind => changes
+  .find(c => changeToFind.id.isEqual(c.id) && changeToFind.action === c.action)))
 
 const objectElemID = new ElemID('salto', 'object')
 const commonField = { name: 'commonField', type: BuiltinTypes.STRING }
@@ -523,5 +530,425 @@ describe('compact routing', () => {
       },
       path: ['test', 'path'],
     })
+  })
+})
+
+describe('track', () => {
+  const onlyInEnvObj = new ObjectType({
+    elemID: new ElemID('salto', 'onlyInEnvObj'),
+    fields: {
+      str: {
+        type: BuiltinTypes.STRING,
+      },
+      num: {
+        type: BuiltinTypes.NUMBER,
+      },
+    },
+    annotations: {
+      str: 'STR',
+    },
+  })
+
+  const splitObjEnv = new ObjectType({
+    elemID: new ElemID('salto', 'splitObj'),
+    fields: {
+      envField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          here: {
+            we: {
+              go: 'again',
+            },
+          },
+        },
+      },
+      splitField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          env: 'ENV',
+        },
+      },
+    },
+    annotationTypes: {
+      env: BuiltinTypes.STRING,
+    },
+    annotations: {
+      env: 'ENV',
+      split: {
+        env: 'ENV',
+      },
+    },
+  })
+
+  const splitObjCommon = new ObjectType({
+    elemID: new ElemID('salto', 'splitObj'),
+    fields: {
+      commonField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          here: {
+            we: {
+              go: 'again',
+            },
+          },
+        },
+      },
+      splitField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          common: 'COMMON',
+        },
+      },
+    },
+    annotationTypes: {
+      common: BuiltinTypes.STRING,
+    },
+    annotations: {
+      common: 'COMMON',
+      split: {
+        common: 'COMMON',
+      },
+    },
+  })
+
+  const multiFileInstaceDefault = new InstanceElement('split', onlyInEnvObj, {
+    default: 'DEFAULT',
+  })
+  const multiFileInstaceOther = new InstanceElement('split', onlyInEnvObj, {
+    other: 'OTHER',
+  })
+  const multiFileInstace = new InstanceElement('split', onlyInEnvObj, {
+    other: 'OTHER',
+    default: 'DEFAULT',
+  })
+
+  const inSecObject = new ObjectType({
+    elemID: new ElemID('salto', 'inSec'),
+  })
+  const primaryElements = [onlyInEnvObj, splitObjEnv, multiFileInstace, inSecObject]
+  const secondaryElements = [inSecObject]
+  const commonElements = [splitObjCommon]
+
+  const primarySrc = createMockNaclFileSource(
+    primaryElements,
+    {
+      'default.nacl': [onlyInEnvObj, splitObjEnv, multiFileInstaceDefault, inSecObject],
+      'other.nacl': [multiFileInstaceOther],
+    }
+  )
+  const commonSrc = createMockNaclFileSource(commonElements, { 'default.nacl': commonElements })
+  const secondarySources = {
+    sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
+  }
+
+  it('should move an entire element which does not exists in the common', async () => {
+    const changes = await routePromote(
+      [onlyInEnvObj.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(0)
+    const primaryChange = changes.primarySource && changes.primarySource[0]
+    const commonChange = changes.commonSource && changes.commonSource[0]
+    expect(primaryChange?.id).toEqual(onlyInEnvObj.elemID)
+    expect(primaryChange?.action).toEqual('remove')
+    expect(commonChange?.id).toEqual(onlyInEnvObj.elemID)
+    expect(commonChange?.action).toEqual('add')
+    expect(commonChange?.data).toEqual({ after: onlyInEnvObj })
+  })
+
+  it('should create detailed changes when an element fragment is present in the common source', async () => {
+    const changes = await routePromote(
+      [splitObjEnv.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.commonSource).toHaveLength(5)
+    expect(hasChanges(changes.commonSource || [], [
+      { action: 'add', id: splitObjEnv.elemID.createNestedID('annotation', 'env') },
+      { action: 'add', id: splitObjEnv.elemID.createNestedID('attr', 'split', 'env') },
+      { action: 'add', id: splitObjEnv.elemID.createNestedID('attr', 'env') },
+      { action: 'add', id: splitObjEnv.fields.envField.elemID },
+      { action: 'add', id: splitObjEnv.fields.splitField.elemID.createNestedID('env') },
+    ])).toBeTruthy()
+  })
+
+  it('should wrap nested ids in an object when moving nested ids of an element with no common fragment', async () => {
+    const changes = await routePromote(
+      [
+        onlyInEnvObj.fields.str.elemID,
+        onlyInEnvObj.elemID.createNestedID('attr', 'str'),
+      ],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(2)
+    expect(changes.commonSource).toHaveLength(1)
+    expect(hasChanges(changes.commonSource || [], [
+      { action: 'add', id: onlyInEnvObj.elemID },
+    ])).toBeTruthy()
+  })
+
+  it('should create detailed changes without wrappingt the element if the element has fragments in common', async () => {
+    const changes = await routePromote(
+      [
+        splitObjEnv.fields.envField.elemID,
+        splitObjEnv.elemID.createNestedID('attr', 'env'),
+      ],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(2)
+    expect(changes.commonSource).toHaveLength(2)
+    expect(hasChanges(changes.commonSource || [], [
+      { action: 'add', id: splitObjEnv.fields.envField.elemID },
+      { action: 'add', id: splitObjEnv.elemID.createNestedID('attr', 'env') },
+    ])).toBeTruthy()
+  })
+
+  it('should maintain file structure when moving an element to common', async () => {
+    const changes = await routePromote(
+      [multiFileInstace.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.commonSource).toHaveLength(2)
+    expect(changes.commonSource).toEqual([
+      { action: 'add',
+        id: multiFileInstace.elemID,
+        path: ['default'],
+        data: { after: multiFileInstaceDefault } },
+      { action: 'add',
+        id: multiFileInstace.elemID,
+        path: ['other'],
+        data: { after: multiFileInstaceOther } },
+    ])
+  })
+
+  it('should delete the elements in all secondrary envs as well', async () => {
+    const changes = await routePromote(
+      [inSecObject.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+  })
+})
+
+describe('untrack', () => {
+  const onlyInCommon = new ObjectType({
+    elemID: new ElemID('salto', 'onlyInCommonObj'),
+    fields: {
+      str: {
+        type: BuiltinTypes.STRING,
+      },
+      num: {
+        type: BuiltinTypes.NUMBER,
+      },
+    },
+    annotations: {
+      str: 'STR',
+    },
+  })
+
+  const splitObjEnv = new ObjectType({
+    elemID: new ElemID('salto', 'splitObj'),
+    fields: {
+      envField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          here: {
+            we: {
+              go: 'again',
+            },
+          },
+        },
+      },
+      splitField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          env: 'ENV',
+        },
+      },
+    },
+    annotationTypes: {
+      env: BuiltinTypes.STRING,
+    },
+    annotations: {
+      env: 'ENV',
+      split: {
+        env: 'ENV',
+      },
+    },
+  })
+
+  const splitObjCommon = new ObjectType({
+    elemID: new ElemID('salto', 'splitObj'),
+    fields: {
+      commonField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          here: {
+            we: {
+              go: 'again',
+            },
+          },
+        },
+      },
+      splitField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          common: 'COMMON',
+        },
+      },
+    },
+    annotationTypes: {
+      common: BuiltinTypes.STRING,
+    },
+    annotations: {
+      common: 'COMMON',
+      split: {
+        common: 'COMMON',
+      },
+    },
+  })
+
+  const missingFromPrimCommon = new InstanceElement('missingPrim', onlyInCommon, {
+    common: 'COMMON',
+  })
+
+  const missingFromPrimSec = new InstanceElement('missingPrim', onlyInCommon, {
+    sec: 'SEC',
+  })
+
+  const multiFileCommon = new InstanceElement('multiFile', onlyInCommon, {
+    default: 'DEAFULT',
+    other: 'OTHER',
+  })
+
+  const multiFileCommonDefault = new InstanceElement('multiFile', onlyInCommon, {
+    default: 'DEAFULT',
+  })
+
+  const multiFileCommonOther = new InstanceElement('multiFile', onlyInCommon, {
+    other: 'OTHER',
+  })
+
+
+  const primaryElements = [splitObjEnv]
+  const secondaryElements = [splitObjEnv, missingFromPrimSec]
+  const commonElements = [onlyInCommon, splitObjCommon, missingFromPrimCommon, multiFileCommon]
+
+  const primarySrc = createMockNaclFileSource(
+    primaryElements,
+    {
+      'default.nacl': primaryElements,
+    }
+  )
+  const commonSrc = createMockNaclFileSource(commonElements, {
+    'default.nacl': [onlyInCommon, splitObjCommon, missingFromPrimCommon, multiFileCommonDefault],
+    'other.nacl': [multiFileCommonOther],
+  })
+  const secondarySources = {
+    sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
+  }
+
+  it('should move add element which is only in common to all envs', async () => {
+    const changes = await routeDemote(
+      [onlyInCommon.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+    expect(changes.primarySource).toEqual(changes.secondarySources?.sec)
+    expect(hasChanges(changes.primarySource || [], [
+      { action: 'add', id: onlyInCommon.elemID },
+    ])).toBeTruthy()
+  })
+
+  it('should create detailed changes for elements which are in common and have env fragments', async () => {
+    const changes = await routeDemote(
+      [splitObjEnv.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.primarySource).toHaveLength(5)
+    expect(changes.secondarySources?.sec).toHaveLength(5)
+    expect(changes.primarySource).toEqual(changes.secondarySources?.sec)
+    expect(hasChanges(changes.primarySource || [], [
+      { action: 'add', id: splitObjCommon.elemID.createNestedID('annotation', 'common') },
+      { action: 'add', id: splitObjCommon.elemID.createNestedID('attr', 'split', 'common') },
+      { action: 'add', id: splitObjCommon.elemID.createNestedID('attr', 'common') },
+      { action: 'add', id: splitObjCommon.fields.commonField.elemID },
+      { action: 'add', id: splitObjCommon.fields.splitField.elemID.createNestedID('common') },
+    ])).toBeTruthy()
+  })
+
+  it('should create a different set of detailed changes accodrding the data in the actual env', async () => {
+    const changes = await routeDemote(
+      [missingFromPrimCommon.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+    expect(hasChanges(changes.primarySource || [], [
+      { action: 'add', id: missingFromPrimCommon.elemID },
+    ])).toBeTruthy()
+    expect(hasChanges(changes.secondarySources?.sec ?? [], [
+      { action: 'add', id: missingFromPrimCommon.elemID.createNestedID('common') },
+    ])).toBeTruthy()
+  })
+
+  it('should wrap nested ids if the target env does not have the top level element', async () => {
+    const changes = await routeDemote(
+      [onlyInCommon.elemID.createNestedID('attr', 'str')],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+    expect(changes.primarySource).toEqual(changes.secondarySources?.sec)
+    expect(hasChanges(changes.primarySource || [], [
+      { action: 'add', id: onlyInCommon.elemID },
+    ])).toBeTruthy()
+  })
+
+  it('should maitain file structure', async () => {
+    const changes = await routeDemote(
+      [multiFileCommon.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.primarySource).toHaveLength(2)
+    expect(changes.secondarySources?.sec).toHaveLength(2)
+    expect(changes.primarySource).toEqual(changes.secondarySources?.sec)
+    expect(changes.primarySource).toEqual([
+      { action: 'add', id: multiFileCommon.elemID, path: ['default'], data: { after: multiFileCommonDefault } },
+      { action: 'add', id: multiFileCommon.elemID, path: ['other'], data: { after: multiFileCommonOther } },
+    ])
   })
 })

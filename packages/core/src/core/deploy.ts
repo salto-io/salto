@@ -18,10 +18,9 @@ import {
   AdapterOperations, getChangeElement, Change, isRemovalDiff, DetailedChange,
   ChangeDataType, isAdditionOrModificationDiff,
 } from '@salto-io/adapter-api'
-import { setPath } from '@salto-io/adapter-utils'
+import { setPath, detailedCompare } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from './plan'
-import { detailedCompare } from './plan/plan_item'
 
 const deployAction = async (
   planItem: PlanItem,

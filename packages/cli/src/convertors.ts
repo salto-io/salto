@@ -13,7 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
+
+export const convertToIDSelectors = (
+  selectors: string[]
+): {ids: ElemID[]; invalidSelectors: string[]} => {
+  const [validSelectors, invalidSelectors] = _.partition(selectors, selector => {
+    try {
+      return ElemID.fromFullName(selector)
+    } catch (e) {
+      return false
+    }
+  })
+  const ids = validSelectors.map(id => ElemID.fromFullName(id))
+  return { ids, invalidSelectors }
+}
 
 export const createRegexFilters = (
   inputFilters: string[]

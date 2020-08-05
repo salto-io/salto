@@ -249,6 +249,9 @@ export const mockLoadWorkspace = (name: string): Workspace =>
       existingServices: jest.fn().mockResolvedValue(['salesforce', 'hubspot']),
     })),
     fetchedServices: jest.fn().mockResolvedValue([]),
+    promote: jest.fn().mockResolvedValue(undefined),
+    demote: jest.fn().mockResolvedValue(undefined),
+    flush: jest.fn().mockResolvedValue(undefined),
   } as unknown as Workspace)
 
 export const withoutEnvironmentParam = 'active'

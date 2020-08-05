@@ -18,6 +18,7 @@ import {
   Namespace,
   NamespaceOrModule,
   namespaceNormalizer as createNamespaceNormalizer,
+  NamespaceFragment,
 } from './namespace'
 import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'
@@ -111,7 +112,9 @@ export const logger = (
   }))
 }
 
-export type LoggerRepo = ((namespace: NamespaceOrModule, ...namespaceTags: string[]) => Logger) & {
+export type LoggerRepo = (
+  (namespace: NamespaceOrModule, ...namespaceFragments: NamespaceFragment[]) => Logger
+  ) & {
   setMinLevel(level: LogLevel): void
   readonly config: Readonly<Config>
   end(): Promise<void>
@@ -132,8 +135,8 @@ export const loggerRepo = (
   )
 
   const getLogger = (
-    namespace: NamespaceOrModule, ...namespaceTags: string[]
-  ): Logger => loggers.get(namespaceNormalizer(namespace, namespaceTags))
+    namespace: NamespaceOrModule, ...namespaceFragments: NamespaceFragment[]
+  ): Logger => loggers.get(namespaceNormalizer(namespace, namespaceFragments))
 
   const result = Object.assign(getLogger, {
     setMinLevel(level: LogLevel): void {

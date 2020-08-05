@@ -169,7 +169,7 @@ describe('env', () => {
       it('should return the definition', () => {
         expect(
           () => config({ SALTO_LOG_GLOBAL_TAGS: '{requestId":20}' }).globalTags
-        ).toThrow(new ValidationError('Invalid globalLogTags given'))
+        ).toThrow(new ValidationError('Invalid LogTags given'))
       })
     })
   })

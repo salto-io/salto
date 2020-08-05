@@ -15,32 +15,52 @@
 */
 
 import _ from 'lodash'
+import safeStringify from 'fast-safe-stringify'
 import { byName as colorsByName } from './colors'
 import { ValidationError } from './common'
 
-export type LogTags = {
-  [key: string]: unknown
-}
+export type LogTags = Record<string, string | number | boolean | undefined>
 
 export const LOG_TAGS_COLOR = colorsByName.Olive
 
-const formatLogTag = (key: string, logTag: unknown): string => {
-  if (typeof logTag === 'number') return `${key}-${logTag.toString()}`
-  if (typeof logTag === 'string') return `${key}-${logTag}`
-  return `${key}-${JSON.stringify(logTag)}`
+const stringifyIfNecessary = (s: string): string => {
+  try { // If string is already stringified, don't stringify again
+    JSON.parse(s)
+    return s
+  } catch (e) {
+    return s.match(/^.*(\n|\t|").*$/) ? safeStringify(s) : s
+  }
 }
 
-export const formatLogTags = (logTags: LogTags, baseKeys: string[]): string => {
+const formatLogTag = (key: string, value: unknown): string => {
+  if (typeof value === 'number') return `${key}=${value.toString()}`
+  if (typeof value === 'string') return `${key}=${stringifyIfNecessary(value)}`
+  if (typeof value === 'boolean') return `${key}=${value.toString()}`
+  return ''
+}
+
+export const isLogTagValueType = (value: unknown): boolean =>
+  typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean'
+
+export const formatLogTags = (logTags: Record<string, unknown>, baseKeys: string[]): string => {
   const tagsWithoutBaseKeys = _.omit(logTags, ...baseKeys)
   return Object.keys(tagsWithoutBaseKeys)
     .map(logTagKey => formatLogTag(logTagKey, logTags[logTagKey]))
     .join(' ')
 }
 
-export const toGlobalTags = (s: string): LogTags => {
+export const toTags = (s: string): LogTags => {
   try {
     return JSON.parse(s)
   } catch (e) {
-    throw new ValidationError('Invalid globalLogTags given')
+    throw new ValidationError('Invalid LogTags given')
   }
+}
+
+export const mergeLogTags = (currentTags: LogTags, newTags: LogTags): LogTags => {
+  const mergedTags = { ...currentTags, ...newTags }
+  Object.keys(mergedTags).forEach(
+    key => mergedTags[key] === undefined && delete mergedTags[key]
+  )
+  return mergedTags
 }

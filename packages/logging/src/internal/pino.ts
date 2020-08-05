@@ -18,6 +18,7 @@ import { format, promisify } from 'util'
 import { createWriteStream } from 'fs'
 import { EOL } from 'os'
 import pino, { LevelWithSilent, DestinationStream } from 'pino'
+import safeStringify from 'fast-safe-stringify'
 // Workaround - pino in browser doesn't include pino.stdTimeFunctions
 // @ts-ignore
 import { isoTime } from 'pino/lib/time'
@@ -31,14 +32,13 @@ import {
 import { BaseLoggerRepo, BaseLoggerMaker } from './logger'
 import { LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config } from './config'
-import { LogTags, formatLogTags, LOG_TAGS_COLOR } from './log-tags'
+import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isLogTagValueType } from './log-tags'
 
 const toPinoLogLevel = (level: LogLevel | 'none'): LevelWithSilent => (
   level === 'none' ? 'silent' : level
 )
 
 const MESSAGE_KEY = 'message'
-const MIX_LOG_PARAMTER_KEY = 'mix'
 const EXCESS_LOG_ARGS_KEY = 'excessArgs'
 
 type FormatterBaseInput = {
@@ -47,7 +47,6 @@ type FormatterBaseInput = {
   time: string
   name: string
   stack?: string
-  [MIX_LOG_PARAMTER_KEY]: unknown
   [EXCESS_LOG_ARGS_KEY]: {
     [key: string]: unknown
   }
@@ -57,7 +56,7 @@ type FormatterBaseInput = {
 type FormatterInput = FormatterBaseInput & Record<string, unknown>
 
 const formatterBaseKeys: (keyof FormatterBaseInput)[] = [
-  'level', MESSAGE_KEY, 'time', 'name', 'stack', 'type', EXCESS_LOG_ARGS_KEY, MIX_LOG_PARAMTER_KEY,
+  'level', MESSAGE_KEY, 'time', 'name', 'stack', 'type', EXCESS_LOG_ARGS_KEY,
 ]
 const excessDefaultPinoKeys = ['hostname', 'pid']
 
@@ -73,12 +72,41 @@ const formatError = (input: FormatterInput): string => [
   format(Object.fromEntries(customKeys(input).map(k => [k, input[k]]))),
 ].join(EOL)
 
+const formatExcessArg = (arg: unknown, i: number): LogTags => {
+  const toArgKey = (): string => `arg${i}`
+  if (typeof arg === 'object') {
+    if (Object.values(arg as object).every(isLogTagValueType)) {
+      return arg as LogTags
+    }
+    return { [toArgKey()]: safeStringify(arg) }
+  }
+  if (isLogTagValueType(arg)) return { [toArgKey()]: arg } as LogTags
+  return { [toArgKey()]: safeStringify(arg) }
+}
+
+const formatExcessArgs = (excessArgs?: unknown[]): LogTags => (excessArgs
+  ? excessArgs.reduce(
+    (
+      formattedExcessArgs, currentArg, i
+    ) => Object.assign(formattedExcessArgs, formatExcessArg(currentArg, i)),
+    {}
+  ) as LogTags
+  : {})
+
+
 const textFormat = (
   { colorize }: { colorize: boolean }
 ): Formatter => input => {
   const { level: levelNumber, name, message, time: timeJson } = input
   const level = pino.levels.labels[levelNumber] as LogLevel
-  const formattedLogTags = formatLogTags(input, [...formatterBaseKeys, ...excessDefaultPinoKeys])
+  const inputWithExcessArgs = { ...input,
+    ...formatExcessArgs(
+    input[EXCESS_LOG_ARGS_KEY] as unknown as unknown[]
+    ) }
+  const formattedLogTags = formatLogTags(
+    inputWithExcessArgs,
+    [...formatterBaseKeys, ...excessDefaultPinoKeys]
+  )
   return [
     JSON.parse(timeJson),
     colorize ? chalk.hex(levelToHexColor(level))(level) : level,
@@ -125,14 +153,11 @@ const toStream = (
 )
 
 const formatJsonLog = (object: object): object => {
-  const objectWithoutExcess = _.omit(object, [EXCESS_LOG_ARGS_KEY, ...excessDefaultPinoKeys])
   const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mix, ...logJson
-  } = objectWithoutExcess as object & { mix: unknown; excessArgs: unknown[]}
-  if (!mix) return logJson
-  const formatMix = typeof mix === 'object' ? mix : { [`${MIX_LOG_PARAMTER_KEY}`]: mix }
-  return { ...logJson, ...formatMix }
+    excessArgs, ...logJson
+  } = object as object & { excessArgs: unknown[]}
+  const formattedExcessArgs = formatExcessArgs(excessArgs)
+  return { ...logJson, ...formattedExcessArgs }
 }
 
 export const loggerRepo = (
@@ -164,7 +189,9 @@ export const loggerRepo = (
     messageKey: MESSAGE_KEY,
   }, stream)
 
-  const tagsByNamespace: Record<string, LogTags> = {}
+  const tagsByNamespace = new collections.map.DefaultMap<string, LogTags>(
+    () => config.globalTags
+  )
   const childrenByNamespace = new collections.map.DefaultMap<string, pino.Logger>(
     (namespace: string) => rootPinoLogger.child({ name: namespace })
   )
@@ -173,19 +200,19 @@ export const loggerRepo = (
     const pinoLoggerWithoutTags = childrenByNamespace.get(namespace)
     return {
       log(level: LogLevel, message: string | Error, ...args: unknown[]): void {
-        const namespaceTags = tagsByNamespace[namespace] || {}
-        const pinoLogger = pinoLoggerWithoutTags.child({ ...namespaceTags, ...config.globalTags })
+        const namespaceTags = tagsByNamespace.get(namespace)
+        const pinoLogger = pinoLoggerWithoutTags.child(
+          { ...namespaceTags, ...config.globalTags }
+        )
         const [formatted, unconsumedArgs] = typeof message === 'string'
           ? formatMessage(message, ...args)
           : [message, args]
 
         const logArgs = unconsumedArgs.length
           ? [
-            // mark "mix" object for optional formatting later
-            { [MIX_LOG_PARAMTER_KEY]: unconsumedArgs[0] },
-            formatted,
             // mark excessArgs for optional formatting later
-            { [EXCESS_LOG_ARGS_KEY]: unconsumedArgs.slice(1) },
+            { [EXCESS_LOG_ARGS_KEY]: unconsumedArgs },
+            formatted,
           ]
           : [formatted]
 
@@ -194,11 +221,11 @@ export const loggerRepo = (
       },
       assignGlobalTags(logTags?: LogTags): void {
         if (!logTags) config.globalTags = {}
-        else config.globalTags = { ...config.globalTags, ...logTags }
+        else config.globalTags = mergeLogTags(config.globalTags, logTags)
       },
       assignTags(logTags?: LogTags): void {
-        if (!logTags) tagsByNamespace[namespace] = {}
-        else tagsByNamespace[namespace] = { ...tagsByNamespace[namespace], ...logTags }
+        if (!logTags) tagsByNamespace.set(namespace, {})
+        else tagsByNamespace.set(namespace, mergeLogTags(tagsByNamespace.get(namespace), logTags))
       },
     }
   }

@@ -540,7 +540,6 @@ describe('multi env tests', () => {
         await Promise.all([
           env1NaclFileName(),
           env2NaclFileName(),
-          commonNaclFileName(),
         ].map(async filename => {
           const element = (await getNaclFileElements(filename))[0]
           expect(isObjectType(element)).toBeTruthy()

@@ -795,15 +795,15 @@ public class MyClass${index} {
       let result: FetchResult
       let config: InstanceElement
 
-      beforeEach(async () => {
-        connection.describeGlobal.mockImplementation(async () => ({ sobjects: [] }))
-        connection.metadata.describe.mockResolvedValue(mockDescribeResult(
+      const mockFailures = (connectionMock: MockInterface<Connection>): void => {
+        connectionMock.describeGlobal.mockImplementation(async () => ({ sobjects: [] }))
+        connectionMock.metadata.describe.mockResolvedValue(mockDescribeResult(
           { xmlName: 'MetadataTest1' },
           { xmlName: 'MetadataTest2' },
           { xmlName: 'InstalledPackage' },
           { xmlName: 'Report', inFolder: true },
         ))
-        connection.metadata.describeValueType.mockImplementation(
+        connectionMock.metadata.describeValueType.mockImplementation(
           async (typeName: string) => {
             if (typeName.endsWith('Report')) {
               return mockDescribeValueResult({
@@ -818,7 +818,7 @@ public class MyClass${index} {
             return mockDescribeValueResult({ valueTypeFields: [] })
           }
         )
-        connection.metadata.list.mockImplementation(
+        connectionMock.metadata.list.mockImplementation(
           async inQuery => {
             const query = collections.array.makeArray(inQuery)[0]
             const { type } = query
@@ -837,9 +837,9 @@ public class MyClass${index} {
             return fullName === undefined ? [] : [mockFileProperties({ fullName, type })]
           }
         )
-        connection.metadata.read.mockRejectedValue(new SFError('sf:UNKNOWN_EXCEPTION'))
+        connectionMock.metadata.read.mockRejectedValue(new SFError('sf:UNKNOWN_EXCEPTION'))
 
-        connection.metadata.retrieve.mockReturnValue(mockRetrieveResult({
+        connectionMock.metadata.retrieve.mockReturnValue(mockRetrieveResult({
           messages: [{
             fileName: 'unpackaged/package.xml',
             problem: 'Metadata API received improper input.'
@@ -848,16 +848,13 @@ public class MyClass${index} {
               + 'type:InstalledPackage and file name:Test2.',
           }],
         }))
+      }
 
+      it('should return correct config when orig config has values', async () => {
+        mockFailures(connection)
         result = await adapter.fetch()
         config = result?.updatedConfig?.config as InstanceElement
-      })
-
-      it('should return config upon errors', () => {
         expect(config).toBeDefined()
-      })
-
-      it('should return correct config', () => {
         expect(config.value).toEqual(
           {
             [INSTANCES_REGEX_SKIPPED_LIST]: [
@@ -871,6 +868,30 @@ public class MyClass${index} {
             [MAX_CONCURRENT_RETRIEVE_REQUESTS]: testMaxConcurrentRetrieveRequests,
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
             [ENABLE_HIDE_TYPES_IN_NACLS]: testEnableHideTypesInNacls,
+          }
+        )
+      })
+
+      it('should return correct config when original config is empty', async () => {
+        const { connection: connectionMock, adapter: adapterMock } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            metadataAdditionalTypes: [],
+            config: {},
+          },
+        })
+        mockFailures(connectionMock)
+
+        result = await adapterMock.fetch()
+        config = result?.updatedConfig?.config as InstanceElement
+        expect(config.value).toEqual(
+          {
+            [INSTANCES_REGEX_SKIPPED_LIST]: [
+              '^Report.testFolder$',
+              '^InstalledPackage.Test2$',
+              '^MetadataTest1.instance1$',
+            ],
+            [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2'],
           }
         )
       })

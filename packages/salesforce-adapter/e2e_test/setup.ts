@@ -89,7 +89,7 @@ export const auraInstanceValues = {
   type: 'Component',
 }
 
-const lightningComponentBundleInstanceValues = {
+export const lightningComponentBundleInstanceValues = {
   [constants.INSTANCE_FULL_NAME_FIELD]: 'testLightningComponentBundle',
   apiVersion: 49,
   isExposed: true,
@@ -113,20 +113,17 @@ const lightningComponentBundleInstanceValues = {
             object: 'Contact',
           },
         ],
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        attr_targets: 'lightning__RecordPage',
+        targets: 'lightning__RecordPage',
       },
       {
         supportedFormFactors: {
           supportedFormFactor: [
             {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              attr_type: 'Small',
+              type: 'Small',
             },
           ],
         },
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        attr_targets: 'lightning__AppPage,lightning__HomePage',
+        targets: 'lightning__AppPage,lightning__HomePage',
       },
     ],
   },

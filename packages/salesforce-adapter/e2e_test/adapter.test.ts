@@ -55,9 +55,9 @@ import {
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
   accountApiName, auraInstanceValues, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
-  customObjectWithFieldsName, gvsName, lwcHtmlResourceContent, lwcJsResourceContent,
-  removeCustomObjectsWithVariousFields, staticResourceInstanceValues, summaryFieldName,
-  verifyElementsExist,
+  customObjectWithFieldsName, gvsName, lightningComponentBundleInstanceValues,
+  lwcHtmlResourceContent, lwcJsResourceContent, removeCustomObjectsWithVariousFields,
+  staticResourceInstanceValues, summaryFieldName, verifyElementsExist,
 } from './setup'
 
 const { makeArray } = collections.array
@@ -3181,9 +3181,8 @@ describe('Salesforce adapter E2E with real account', () => {
             lwcInstance = await createInstance(
               client,
               {
+                ...lightningComponentBundleInstanceValues,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
-                apiVersion: 49,
-                isExposed: true,
                 lwcResources: {
                   lwcResource: [
                     {
@@ -3196,37 +3195,8 @@ describe('Salesforce adapter E2E with real account', () => {
                     },
                   ],
                 },
-                targetConfigs: {
-                  targetConfig: [
-                    {
-                      objects: [
-                        {
-                          object: 'Contact',
-                        },
-                      ],
-                      targets: 'lightning__RecordPage',
-                    },
-                    {
-                      supportedFormFactors: {
-                        supportedFormFactor: [
-                          {
-                            type: 'Small',
-                          },
-                        ],
-                      },
-                      targets: 'lightning__AppPage,lightning__HomePage',
-                    },
-                  ],
-                },
-                targets: {
-                  target: [
-                    'lightning__AppPage',
-                    'lightning__RecordPage',
-                    'lightning__HomePage',
-                  ],
-                },
               },
-            findObjectType(result, new ElemID(constants.SALESFORCE, 'LightningComponentBundle')) as ObjectType
+              findObjectType(result, new ElemID(constants.SALESFORCE, 'LightningComponentBundle')) as ObjectType
             )
             await removeElementIfAlreadyExists(client, lwcInstance)
           })

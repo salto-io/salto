@@ -232,6 +232,14 @@ describe('multi env source', () => {
         'envField',
       ])
     })
+    it('should return all elements for not the primary env', async () => {
+      const elements = await source.getAll('inactive')
+      expectToContainAllItems(
+        elements.map(e => e.elemID),
+        [commonElemID, inactiveElemID, objectElemID]
+      )
+      expect(elements).not.toContain(envObject)
+    })
   })
   describe('getTotalSize', () => {
     it('should return the total size of all the sources', async () => {

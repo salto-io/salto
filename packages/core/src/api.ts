@@ -52,6 +52,7 @@ import {
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
+import { createDiffChanges } from './core/diff'
 
 const log = logger(module)
 
@@ -239,13 +240,13 @@ export const fetch: FetchFunc = async (
   }
 }
 
-export type RestoreChange = Omit<FetchChange, 'pendingChange'>
+export type LocalChange = Omit<FetchChange, 'pendingChange'>
 
 export const restore = async (
   workspace: Workspace,
   servicesFilters?: string[],
   idFilters: RegExp[] = [],
-): Promise<RestoreChange[]> => {
+): Promise<LocalChange[]> => {
   log.debug('restore starting..')
   const fetchServices = servicesFilters ?? workspace.services()
   const stateElements = filterElementsByServices(
@@ -264,6 +265,27 @@ export const restore = async (
     idFilters,
   )
   return changes.map(change => ({ change, serviceChange: change }))
+}
+
+export const diff = async (
+  workspace: Workspace,
+  toEnv: string,
+  includeHidden = false,
+  useState = false,
+  servicesFilters?: string[],
+  idFilters: RegExp[] = [],
+): Promise<LocalChange[]> => {
+  const diffServices = servicesFilters ?? workspace.services()
+  const toElements = useState
+    ? await workspace.state().getAll()
+    : await workspace.elements(includeHidden)
+  const fromElements = useState
+    ? await workspace.state(toEnv).getAll()
+    : await workspace.elements(includeHidden, toEnv)
+  const fromServiceElements = filterElementsByServices(fromElements, diffServices)
+  const toServiceElements = filterElementsByServices(toElements, diffServices)
+  const diffChanges = await createDiffChanges(toServiceElements, fromServiceElements, idFilters)
+  return diffChanges.map(change => ({ change, serviceChange: change }))
 }
 
 class AdapterInstallError extends Error {

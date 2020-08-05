@@ -245,9 +245,9 @@ export const mockLoadWorkspace = (name: string): Workspace =>
       message: 'Error',
       severity: 'Error',
     }),
-    state: () => ({
+    state: jest.fn().mockImplementation(() => ({
       existingServices: jest.fn().mockResolvedValue(['salesforce', 'hubspot']),
-    }),
+    })),
     fetchedServices: jest.fn().mockResolvedValue([]),
   } as unknown as Workspace)
 

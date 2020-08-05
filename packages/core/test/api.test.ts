@@ -36,7 +36,6 @@ import {
   addHiddenValuesAndHiddenTypes,
 } from '@salto-io/workspace/dist/src/workspace/hidden_values'
 import * as api from '../src/api'
-
 import * as plan from '../src/core/plan'
 import * as fetch from '../src/core/fetch'
 import adapterCreators from '../src/core/adapters/creators'
@@ -80,17 +79,17 @@ const mockWorkspace = ({
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
-    elements: async () => Promise.resolve(
+    elements: jest.fn().mockImplementation(async () => Promise.resolve(
       addHiddenValuesAndHiddenTypes(
         elements,
         await state.getAll()
       )
-    ),
+    )),
     name,
     envs: () => ['default'],
     currentEnv: 'default',
     services: () => SERVICES,
-    state: () => state,
+    state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),
     flush: jest.fn(),
     servicesCredentials: jest.fn().mockResolvedValue({ [mockService]: mockConfigInstance }),
@@ -109,6 +108,13 @@ jest.mock('../src/core/restore', () => ({
     action: 'add',
     data: { after: 'value' },
     path: ['path'],
+  }]),
+}))
+
+jest.mock('../src/core/diff', () => ({
+  createDiffChanges: jest.fn().mockResolvedValue([{
+    action: 'add',
+    data: { after: 'value' },
   }]),
 }))
 
@@ -458,6 +464,28 @@ describe('api.ts', () => {
       const changes = await api.restore(ws)
       expect(changes).toHaveLength(1)
       expect(_.keys(changes[0])).toEqual(['change', 'serviceChange'])
+    })
+  })
+
+  describe('diff', () => {
+    const ws = mockWorkspace({ name: 'diff' })
+    it('should return changes', async () => {
+      const changes = await api.diff(ws, 'other', false, false)
+      expect(changes).toHaveLength(1)
+      expect(ws.elements).toHaveBeenCalledWith(false)
+      expect(ws.elements).toHaveBeenCalledWith(false, 'other')
+    })
+    it('should get the data from state when the state flag is true', async () => {
+      const changes = await api.diff(ws, 'other', false, true)
+      expect(changes).toHaveLength(1)
+      expect(ws.state).toHaveBeenCalledWith()
+      expect(ws.state).toHaveBeenCalledWith('other')
+    })
+    it('should get hidden types when flag is true', async () => {
+      const changes = await api.diff(ws, 'other', false, true)
+      expect(changes).toHaveLength(1)
+      expect(ws.elements).toHaveBeenCalledWith(false)
+      expect(ws.elements).toHaveBeenCalledWith(false, 'other')
     })
   })
 })

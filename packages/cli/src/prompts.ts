@@ -201,4 +201,21 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly INVALID_FILTERS = (
     invalidFilters: string
   ): string => `Failed to created element ID filters for: ${invalidFilters}. Invalid Regex provided.`
+
+  public static readonly DIFF_CALC_DIFF_START = (
+    toEnv: string,
+    fromEnv: string
+  ): string => `Calculating the difference between ${toEnv} and ${fromEnv}.`
+
+  public static readonly DIFF_CALC_DIFF_RESULT_HEADER = (
+    toEnv: string,
+    fromEnv: string
+  ): string => `The following changes are needed to bring ${toEnv} up to date with ${fromEnv}:`
+
+  public static readonly DIFF_CALC_DIFF_FINISH = (
+    toEnv: string,
+    fromEnv: string
+  ): string => `Finished calculating the difference between ${toEnv} and ${fromEnv}.`
+
+  public static readonly DIFF_CALC_DIFF_FAIL = 'Calculating diff failed!'
 }

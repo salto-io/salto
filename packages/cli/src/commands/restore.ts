@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { restore, RestoreChange, Tags } from '@salto-io/core'
+import { restore, LocalChange, Tags } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { EOL } from 'os'
@@ -29,6 +29,7 @@ import { getApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
 import { formatChangesSummary, formatDetailedChanges, formatRestoreFinish, formatInvalidFilters, formatStepStart, formatStepCompleted, formatStepFailed, header } from '../formatter'
 import { outputLine } from '../outputer'
+import { createRegexFilters } from '../convertors'
 
 const log = logger(module)
 
@@ -44,23 +45,8 @@ type RestoreArgs = {
 
 type RestoreParsedCliInput = ParsedCliInput<RestoreArgs>
 
-// TODO - move to formatter.ts
 
-const createRegexFilters = (
-  inputFilters: string[]
-): {filters: RegExp[]; invalidFilters: string[]} => {
-  const [validFilters, invalidFilters] = _.partition(inputFilters, filter => {
-    try {
-      return new RegExp(filter)
-    } catch (e) {
-      return false
-    }
-  })
-  const filters = validFilters.map(filter => new RegExp(filter))
-  return { filters, invalidFilters }
-}
-
-const printRestorePlan = (changes: RestoreChange[], detailed: boolean, output: CliOutput): void => {
+const printRestorePlan = (changes: LocalChange[], detailed: boolean, output: CliOutput): void => {
   outputLine(EOL, output)
   outputLine(header(Prompts.RESTORE_CALC_DIFF_RESULT_HEADER), output)
   if (changes.length > 0) {
@@ -98,8 +84,8 @@ export const command = (
   inputEnvironment?: string,
   inputFilters: string[] = []
 ): CliCommand => {
-  const applyRestoreChangesToWorkspace = async (
-    changes: RestoreChange[],
+  const applyLocalChangesToWorkspace = async (
+    changes: LocalChange[],
     workspace: Workspace,
     workspaceTags: Tags,
   ): Promise<boolean> => {
@@ -182,7 +168,7 @@ export const command = (
         return CliExitCode.Success
       }
 
-      const updatingWsSucceeded = await applyRestoreChangesToWorkspace(
+      const updatingWsSucceeded = await applyLocalChangesToWorkspace(
         changes,
         workspace,
         workspaceTags,

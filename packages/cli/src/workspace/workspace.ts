@@ -92,17 +92,15 @@ export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusE
 
 export const formatWorkspaceErrors = async (
   workspace: Workspace,
-  errorsAndWarnings: readonly SaltoError[],
-): Promise<string> => {
-  const errors = errorsAndWarnings.filter(e => e.severity === 'Error')
-  const errorsToDisplay = _.isEmpty(errors) ? errorsAndWarnings : errors
-  return (await Promise.all(
-    wu(errorsToDisplay)
-      .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
+  errors: Iterable<SaltoError>,
+): Promise<string> => (
+  (await Promise.all(
+    wu(errors)
+    .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
       .map(err => workspace.transformError(err))
       .map(async err => formatWorkspaceError(await err))
   )).join('\n')
-}
+)
 
 const printWorkspaceErrors = async (
   status: WorkspaceStatusErrors['status'],

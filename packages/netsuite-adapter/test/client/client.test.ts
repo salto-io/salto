@@ -19,8 +19,8 @@ import osPath from 'path'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, {
   ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomTypeInfo,
-  FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX, FolderCustomizationInfo, SDF_PATH_SEPARATOR,
-  TemplateCustomTypeInfo,
+  fileCabinetTopLevelFolders, FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX,
+  FolderCustomizationInfo, SDF_PATH_SEPARATOR, TemplateCustomTypeInfo,
 } from '../../src/client/client'
 
 
@@ -310,14 +310,31 @@ describe('netsuite client', () => {
       expect(rmMock).toHaveBeenCalledTimes(0)
     })
 
-    it('should fail when LIST_FILES has failed', async () => {
+    it('should return failed paths when LIST_FILES has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_FILES) {
           return Promise.resolve({ status: 'ERROR' })
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.importFileCabinetContent([])).rejects.toThrow()
+      const { elements, failedPaths } = await client.importFileCabinetContent([])
+      expect(elements).toHaveLength(0)
+      expect(failedPaths).toEqual(fileCabinetTopLevelFolders)
+    })
+
+    it('should not call listFiles for folders in skip list', async () => {
+      mockExecuteAction.mockResolvedValue(Promise.resolve({ status: 'SUCCESS' }))
+      const { elements, failedPaths } = await client
+        .importFileCabinetContent([new RegExp(fileCabinetTopLevelFolders[0])])
+
+      expect(mockExecuteAction).toHaveBeenCalledTimes(5)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importFilesCommandMatcher)
+      expect(elements).toHaveLength(0)
+      expect(failedPaths).toHaveLength(0)
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -360,7 +377,7 @@ describe('netsuite client', () => {
       expect(failedPaths).toHaveLength(0)
     })
 
-    it('should succeed when importFiles when failing to import a certain file', async () => {
+    it('should succeed to importFiles when failing to import a certain file', async () => {
       const failedPath = 'error'
       const filesPathResult = [
         MOCK_FILE_PATH,

@@ -20,7 +20,7 @@ import {
   AdapterOperations, ChangeGroup, DeployResult, isInstanceChange, isObjectTypeChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import {
-  resolveValues, restoreValues,
+  resolveChangeElement, restoreChangeElement,
 } from '@salto-io/adapter-utils'
 import {
   SaveResult, MetadataInfo, FileProperties, UpsertResult, MetadataObject,
@@ -415,16 +415,59 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
+    const getMainElemChange = (elemChanges: ReadonlyArray<Change>): Change => {
+      const mainElemChange = elemChanges.find(
+        change => getChangeElement(change).elemID.isTopLevel()
+      )
+      if (mainElemChange !== undefined) {
+        return mainElemChange
+      }
+      // No changes on the top level element, we have to find the before and after objects
+      // This is temporary code until we change the internal implementation of the adapter to
+      // handle changes without relying on getting the top level elements
+      const getBeforeAndAfterElements = (): { before: ObjectType; after: ObjectType } => {
+        const updateChange = elemChanges.filter(isFieldChange).filter(isModificationDiff).pop()
+        if (updateChange !== undefined) {
+          return { before: updateChange.data.before.parent, after: updateChange.data.after.parent }
+        }
+        const removeChanges = elemChanges.filter(isFieldChange).filter(isRemovalDiff)
+        const removedFields = removeChanges.map(change => change.data.before.name)
+        const addChanges = elemChanges.filter(isFieldChange).filter(isAdditionDiff)
+        const addedFields = addChanges.map(change => change.data.after.name)
+        const before = removeChanges.length !== 0
+          ? removeChanges[0].data.before.parent
+          : new ObjectType({
+            ...addChanges[0].data.after.parent,
+            fields: _.omit(addChanges[0].data.after.parent.fields, addedFields),
+          })
+        const after = addChanges.length !== 0
+          ? addChanges[0].data.after.parent
+          : new ObjectType({
+            ...removeChanges[0].data.before.parent,
+            fields: _.omit(removeChanges[0].data.before.parent.fields, removedFields),
+          })
+        return { before, after }
+      }
+      return { action: 'modify', data: getBeforeAndAfterElements() }
+    }
+    const resolvedChanges = changeGroup.changes
+      .map(change => resolveChangeElement(change, getLookUpName))
     const changeByElem = _.groupBy(
-      changeGroup.changes,
+      resolvedChanges,
       change => getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName(),
     )
     const results = await Promise.all(
       Object.values(changeByElem)
-        .map(elemChanges => this.deployElementChanges(elemChanges))
+        .map(elemChanges => this.deployElementChanges(elemChanges, getMainElemChange(elemChanges)))
     )
+    const sourceElements = _.keyBy(
+      Object.values(changeByElem).map(change => getChangeElement(getMainElemChange(change))),
+      changeElement => changeElement.elemID.getFullName(),
+    )
+    const appliedChanges = _.flatten(results.map(res => res.appliedChanges))
+      .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
     return {
-      appliedChanges: _.flatten(results.map(res => res.appliedChanges)),
+      appliedChanges,
       errors: _.flatten(results.map(res => res.errors)),
     }
   }
@@ -437,13 +480,12 @@ export default class SalesforceAdapter implements AdapterOperations {
    * @throws error in case of failure
    */
   private async add<T extends InstanceElement | ObjectType>(element: T): Promise<T> {
-    const resolved = resolveValues(element, getLookUpName)
-    const post = isObjectType(resolved)
-      ? await this.addObject(resolved)
-      : await this.addInstance(resolved as InstanceElement)
+    const post = isObjectType(element)
+      ? await this.addObject(element)
+      : await this.addInstance(element as InstanceElement)
 
     await this.filtersRunner.onAdd(post)
-    return restoreValues(element, post as T, getLookUpName)
+    return post as T
   }
 
   /**
@@ -515,20 +557,19 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration()
   private async remove(element: Element): Promise<void> {
-    const resolved = resolveValues(element, getLookUpName)
-    const type = metadataType(resolved)
-    if (isInstanceElement(resolved) && isCustomObject(resolved.type)) {
+    const type = metadataType(element)
+    if (isInstanceElement(element) && isCustomObject(element.type)) {
       await this.client.bulkLoadOperation(
-        apiName(resolved.type),
+        apiName(element.type),
         'delete',
-        instancesToDeleteRecords([resolved]),
+        instancesToDeleteRecords([element]),
       )
-    } else if (isInstanceElement(resolved) && this.metadataToDeploy.includes(type)) {
-      await this.deployInstance(resolved, true)
-    } else if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
-      await this.client.delete(type, apiName(resolved))
+    } else if (isInstanceElement(element) && this.metadataToDeploy.includes(type)) {
+      await this.deployInstance(element, true)
+    } else if (!(isInstanceElement(element) && this.metadataTypesToSkipMutation.includes(type))) {
+      await this.client.delete(type, apiName(element))
     }
-    await this.filtersRunner.onRemove(resolved)
+    await this.filtersRunner.onRemove(element)
   }
 
   /**
@@ -541,19 +582,13 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration()
   private async update<T extends InstanceElement | ObjectType>(before: T, after: T,
     changes: ReadonlyArray<Change>): Promise<T> {
-    const resBefore = resolveValues(before, getLookUpName)
-    const resAfter = resolveValues(after, getLookUpName)
-    const resChanges = changes.map(c => ({
-      action: c.action,
-      data: _.mapValues(c.data, (x => resolveValues(x, getLookUpName))),
-    })) as ReadonlyArray<Change<Field | ObjectType>>
-    const result = isObjectType(resBefore) && isObjectType(resAfter)
-      ? await this.updateObject(resBefore, resAfter, resChanges)
-      : await this.updateInstance(resBefore as InstanceElement, resAfter as InstanceElement)
+    const result = isObjectType(before) && isObjectType(after)
+      ? await this.updateObject(before, after, changes as ReadonlyArray<Change<Field | ObjectType>>)
+      : await this.updateInstance(before as InstanceElement, after as InstanceElement)
 
     // Aspects should be updated once all object related properties updates are over
-    await this.filtersRunner.onUpdate(resBefore, result, resChanges)
-    return restoreValues(after, result as T, getLookUpName)
+    await this.filtersRunner.onUpdate(before, result, changes)
+    return result as T
   }
 
   /**
@@ -720,43 +755,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       .map(field => apiName(field)))
   }
 
-  private async deployElementChanges(elemChanges: ReadonlyArray<Change>): Promise<DeployResult> {
-    const getMainElemChange = (): Change => {
-      const mainElemChange = elemChanges.find(
-        change => getChangeElement(change).elemID.isTopLevel()
-      )
-      if (mainElemChange !== undefined) {
-        return mainElemChange
-      }
-      // No changes on the top level element, we have to find the before and after objects
-      // This is temporary code until we change the internal implementation of the adapter to
-      // handle changes without relying on getting the top level elements
-      const getBeforeAndAfterElements = (): { before: ObjectType; after: ObjectType } => {
-        const updateChange = elemChanges.filter(isFieldChange).filter(isModificationDiff).pop()
-        if (updateChange !== undefined) {
-          return { before: updateChange.data.before.parent, after: updateChange.data.after.parent }
-        }
-        const removeChanges = elemChanges.filter(isFieldChange).filter(isRemovalDiff)
-        const removedFields = removeChanges.map(change => change.data.before.name)
-        const addChanges = elemChanges.filter(isFieldChange).filter(isAdditionDiff)
-        const addedFields = addChanges.map(change => change.data.after.name)
-        const before = removeChanges.length !== 0
-          ? removeChanges[0].data.before.parent
-          : new ObjectType({
-            ...addChanges[0].data.after.parent,
-            fields: _.omit(addChanges[0].data.after.parent.fields, addedFields),
-          })
-        const after = addChanges.length !== 0
-          ? addChanges[0].data.after.parent
-          : new ObjectType({
-            ...removeChanges[0].data.before.parent,
-            fields: _.omit(removeChanges[0].data.before.parent.fields, removedFields),
-          })
-        return { before, after }
-      }
-      return { action: 'modify', data: getBeforeAndAfterElements() }
-    }
-    const mainChange = getMainElemChange()
+  private async deployElementChanges(
+    elemChanges: ReadonlyArray<Change>,
+    mainChange: Change
+  ): Promise<DeployResult> {
     if (!(isInstanceChange(mainChange) || isObjectTypeChange(mainChange))) {
       return {
         appliedChanges: [],

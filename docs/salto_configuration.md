@@ -2,7 +2,7 @@
 
 # Configuration files
 
-This document details some of the various ways to configure the salto tool itself.
+This document details some of the various ways to configure the Salto tool itself.
 
 ## Workspace configuration
 

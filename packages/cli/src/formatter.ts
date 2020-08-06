@@ -556,23 +556,13 @@ export const formatFinishedLoading = (envName?: string): string => (
     : Prompts.FINISHED_LOADING
 )
 
-export const formatApproveIsolatedModePrompt = (
-  newServices: string[],
-  oldServices: string[],
-  isolatedInput: boolean
-): string => {
-  if (_.isEmpty(oldServices)) {
-    return Prompts.ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION
-  }
-  return isolatedInput
-    ? Prompts.NEW_SERVICES_ISOLATED_RECOMMENDATION(
-      formatWordsSeries(newServices),
-    )
-    : Prompts.ONLY_NEW_SERVICES_ISOLATED_RECOMMENDATION(
-      formatWordsSeries(newServices),
-      formatWordsSeries(oldServices)
-    )
-}
+export const formatApproveIsolateCurrentEnvPrompt = (envName: string): string => (
+  Prompts.ISOLATE_FIRST_ENV_RECOMMENDATION(envName)
+)
+
+export const formatDoneIsolatingCurrentEnv = (envName: string): string => (
+  Prompts.DONE_ISOLATING_FIRST_ENV(envName)
+)
 
 export const formatStateChanges = (
   numOfChanges: number

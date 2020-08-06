@@ -104,6 +104,10 @@ const loadNaclFileSource = (
   return naclFilesSource(naclFilesStore, cache, staticFileSource)
 }
 
+const getEnvPath = (baseDir: string, env: string): string => (
+  path.resolve(baseDir, ENVS_PREFIX, env)
+)
+
 export const loadLocalElementsSources = (baseDir: string, localStorage: string,
   envs: ReadonlyArray<string>): EnvironmentsSources => ({
   commonSourceName: COMMON_ENV_PREFIX,
@@ -113,7 +117,7 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
         env,
         {
           naclFiles: loadNaclFileSource(
-            path.resolve(baseDir, ENVS_PREFIX, env),
+            getEnvPath(baseDir, env),
             path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
           ),
           state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, env)),
@@ -135,6 +139,11 @@ const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined>
   }
   const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
   return parentDir ? locateWorkspaceRoot(parentDir) : undefined
+}
+
+export const envFolderExists = async (workspaceDir: string, env: string): Promise<boolean> => {
+  const baseDir = await locateWorkspaceRoot(path.resolve(workspaceDir))
+  return (baseDir !== undefined) && exists(getEnvPath(baseDir, env))
 }
 
 const credentialsSource = (localStorage: string): cs.ConfigSource =>

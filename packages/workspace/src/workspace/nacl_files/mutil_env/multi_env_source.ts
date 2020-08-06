@@ -57,6 +57,7 @@ type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   getAll: (env?: string) => Promise<Element[]>
   promote: (ids: ElemID[]) => Promise<void>
   demote: (ids: ElemID[]) => Promise<void>
+  demoteAll: () => Promise<void>
 }
 
 const buildMultiEnvSource = (
@@ -78,7 +79,7 @@ const buildMultiEnvSource = (
 
   const buildMutiEnvState = async (env?: string): Promise<MultiEnvState> => {
     const allActiveElements = _.flatten(await Promise.all(
-      _.values(getActiveSources(env)).map(s => s.getAll())
+      _.values(getActiveSources(env)).map(s => (s ? s.getAll() : []))
     ))
     const { errors, merged } = mergeElements(allActiveElements)
     applyInstancesDefaults(merged.filter(isInstanceElement))
@@ -183,6 +184,17 @@ const buildMultiEnvSource = (
     return applyRoutedChanges(routedChanges)
   }
 
+  const demoteAll = async (): Promise<void> => {
+    const commonFileSource = commonSource()
+    const routedChanges = await routeDemote(
+      await commonFileSource.list(),
+      primarySource(),
+      commonFileSource,
+      secondarySources(),
+    )
+    return applyRoutedChanges(routedChanges)
+  }
+
   const flush = async (): Promise<void> => {
     await Promise.all([
       primarySource().flush(),
@@ -197,6 +209,7 @@ const buildMultiEnvSource = (
     flush,
     promote,
     demote,
+    demoteAll,
     list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]

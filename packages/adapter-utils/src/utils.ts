@@ -19,9 +19,9 @@ import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
-  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
+  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
-  CORE_ANNOTATIONS, TypeElement,
+  CORE_ANNOTATIONS, TypeElement, Change, isRemovalDiff, isModificationDiff, isAdditionDiff,
 } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 
@@ -251,8 +251,12 @@ export type GetLookupNameFuncArgs = {
 }
 export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Value
 
-export const resolveValues = <T extends Element>(element: T, getLookUpName: GetLookupNameFunc):
-  T => {
+export type ResolveValuesFunc = <T extends Element>(
+  element: T,
+  getLookUpName: GetLookupNameFunc
+) => T
+
+export const resolveValues: ResolveValuesFunc = (element, getLookUpName) => {
   const valuesReplacer: TransformFunc = ({ value, field, path }) => {
     if (isReferenceExpression(value)) {
       return getLookUpName({
@@ -274,11 +278,13 @@ export const resolveValues = <T extends Element>(element: T, getLookUpName: GetL
   })
 }
 
-export const restoreValues = <T extends Element>(
+export type RestoreValuesFunc = <T extends Element>(
   source: T,
   targetElement: T,
   getLookUpName: GetLookupNameFunc
-): T => {
+) => T
+
+export const restoreValues: RestoreValuesFunc = (source, targetElement, getLookUpName) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
   const createPathMapCallback: TransformFunc = ({ value, path }) => {
@@ -320,6 +326,71 @@ export const restoreValues = <T extends Element>(
     transformFunc: restoreValuesFunc,
     strict: false,
   })
+}
+
+export const restoreChangeElement = (
+  change: Change,
+  sourceElements: Record<string, ChangeDataType>,
+  getLookUpName: GetLookupNameFunc,
+  restoreValuesFunc = restoreValues,
+): Change => {
+  if (isRemovalDiff(change)) {
+    return {
+      ...change,
+      data: {
+        before: restoreValuesFunc(
+          sourceElements[change.data.before.elemID.getFullName()], change.data.before, getLookUpName
+        ),
+      },
+    }
+  }
+  if (isModificationDiff(change)) {
+    return {
+      ...change,
+      data: {
+        before: restoreValuesFunc(
+          sourceElements[change.data.before.elemID.getFullName()], change.data.before, getLookUpName
+        ),
+        after: restoreValuesFunc(
+          sourceElements[change.data.after.elemID.getFullName()], change.data.after, getLookUpName
+        ),
+      },
+    }
+  }
+  if (isAdditionDiff(change)) {
+    return {
+      ...change,
+      data: {
+        after: restoreValuesFunc(
+          sourceElements[change.data.after.elemID.getFullName()], change.data.after, getLookUpName
+        ),
+      },
+    }
+  }
+  return change
+}
+
+export const resolveChangeElement = (
+  change: Change,
+  getLookUpName: GetLookupNameFunc,
+  resolveValuesFunc = resolveValues,
+): Change => {
+  if (isRemovalDiff(change)) {
+    return { ...change, data: { before: resolveValuesFunc(change.data.before, getLookUpName) } }
+  }
+  if (isModificationDiff(change)) {
+    return {
+      ...change,
+      data: {
+        before: resolveValuesFunc(change.data.before, getLookUpName),
+        after: resolveValuesFunc(change.data.after, getLookUpName),
+      },
+    }
+  }
+  if (isAdditionDiff(change)) {
+    return { ...change, data: { after: resolveValuesFunc(change.data.after, getLookUpName) } }
+  }
+  return change
 }
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (

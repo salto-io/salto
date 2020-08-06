@@ -17,12 +17,11 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType,
-  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, Element,
-  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile,
-  isReferenceExpression, isStaticFile,
+  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, isReferenceExpression,
+  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isStaticFile,
 } from '@salto-io/adapter-api'
 import {
-  TransformFunc, naclCase, transformValues, GetLookupNameFunc, transformElement,
+  TransformFunc, naclCase, transformValues, GetLookupNameFunc, transformElement, ResolveValuesFunc,
 } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -1064,9 +1063,7 @@ export const getLookUpName: GetLookupNameFunc = ({ ref }) =>
 // are always assumed to be text files.
 // TODO: the encoding should be specified on the static file itself instead of assumed here
 // so resolving static files would be generic and this adapter specific function can be removed
-export const resolveValues = <T extends Element>(
-  element: T, getLookUpNameFunc: GetLookupNameFunc
-): T => {
+export const resolveValues: ResolveValuesFunc = (element, getLookUpNameFunc) => {
   const transformFunc: TransformFunc = ({ value }) => {
     if (isReferenceExpression(value)) {
       return getLookUpNameFunc({ ref: value })

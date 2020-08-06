@@ -445,17 +445,17 @@ def format_inner_types_defs(top_level_type_name, inner_type_name_to_def):
 # and thus we order it on the type definition so the adapter will be able to sort the values based on that order
 def order_types_fields(type_name_to_types_defs):
     type_name_to_fields_order = {
-        'addressForm': ['scriptid', 'standard', 'name', 'mainFields', 'addressTemplate', 'countries'],
+        'addressForm': ['scriptid', 'standard', 'name', 'mainFields', 'customCode', 'addressTemplate', 'countries'],
         'addressForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
-            'storedWithRecord', 'mainFields', 'tabs', 'quickViewFields', 'actionbar', 'useForPopup',
-             'editingInList'], # customCode & buttons fields are intentionally omitted as it seems that they do not exist and if they are sent to SDF they cause errors no matter in which order
+            'storedWithRecord', 'mainFields', 'tabs', 'customCode', 'quickViewFields', 'actionbar','useForPopup',
+             'editingInList'], # buttons field is intentionally omitted as it seems that it does not exist and if it is sent to SDF it causes errors no matter in which order
         'entryForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
         'transactionForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
-            'storedWithRecord', 'mainFields', 'tabs', 'quickViewFields', 'actionbar', 'disclaimer',
-            'address', 'allowAddMultiple', 'printingType'], # customCode & buttons fields are intentionally omitted as it seems that they do not exist and if they are sent to SDF they cause errors no matter in which order
+            'storedWithRecord', 'mainFields', 'tabs', 'customCode', 'quickViewFields', 'actionbar', 'disclaimer',
+            'address', 'allowAddMultiple', 'printingType'], # buttons field is intentionally omitted as it seems that it does not exist and if it is sent to SDF it causes errors no matter in which order
         'transactionForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'transactionForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
         'transactionForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup']

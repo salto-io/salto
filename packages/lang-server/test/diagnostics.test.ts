@@ -75,7 +75,9 @@ describe('diagnostics', () => {
     const workspace = new EditorWorkspace('bla', baseWs)
     const diag = (await getDiagnostics(workspace))['/parse_error.nacl']
     expect(diag).toHaveLength(1)
-    expect(diag[0].severity).toEqual('Error')
+    const error = diag[0]
+    expect(error.severity).toEqual('Error')
+    expect(error.msg).toEqual('Blabla')
   })
   it('should return wanrnings when there are no errors', async () => {
     baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors(
@@ -84,6 +86,8 @@ describe('diagnostics', () => {
     const workspace = new EditorWorkspace('bla', baseWs)
     const diag = (await getDiagnostics(workspace))['/parse_error.nacl']
     expect(diag).toHaveLength(1)
-    expect(diag[0].severity).toEqual('Warning')
+    const error = diag[0]
+    expect(error.severity).toEqual('Warning')
+    expect(error.msg).toEqual('Blabla')
   })
 })

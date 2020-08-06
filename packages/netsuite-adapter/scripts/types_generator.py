@@ -452,16 +452,17 @@ def order_types_fields(type_name_to_types_defs):
         'addressForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
             'storedWithRecord', 'mainFields', 'tabs', 'customCode', 'quickViewFields', 'actionbar','useForPopup',
-             'editingInList'], # buttons field is intentionally omitted as it seems that it does not exist and if it is sent to SDF it causes errors no matter in which order
+             'editingInList', 'buttons'], # Not sure where buttons field should be located. In case it exists it might fail to deploy but it's preferred that it'll fail than it will delete the existing value without letting the user to know.
         'entryForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
         'transactionForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
             'storedWithRecord', 'mainFields', 'tabs', 'customCode', 'quickViewFields', 'actionbar', 'disclaimer',
-            'address', 'allowAddMultiple', 'printingType'], # buttons field is intentionally omitted as it seems that it does not exist and if it is sent to SDF it causes errors no matter in which order
+            'address', 'allowAddMultiple', 'emailMessageTemplate', 'printingType', 'totalBox', 'linkedForms', 'roles', 'preferences', 'buttons'], # Not sure where buttons field should be located. In case it exists it might fail to deploy but it's preferred that it'll fail than it will delete the existing value without letting the user to know.
         'transactionForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'transactionForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
-        'transactionForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup']
+        'transactionForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
+        'transactionForm_linkedForms_linkedForm': ['type', 'form']
     }
 
     for type_name, fields_order in type_name_to_fields_order.items():
@@ -474,7 +475,10 @@ def order_types_fields(type_name_to_types_defs):
         field_name_to_def = dict((field[NAME], field) for field in type_def_fields)
         ordered_fields = []
         for field_name in fields_order:
-            ordered_fields.append(field_name_to_def[field_name])
+            if (field_name in field_name_to_def):
+                ordered_fields.append(field_name_to_def[field_name])
+            else:
+                logging.warning('Field {0} is not defined in type {1} definition'.format(field_name, type_name))
         type_def[FIELDS] = ordered_fields
 
 

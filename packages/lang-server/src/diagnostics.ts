@@ -37,8 +37,13 @@ export const getDiagnostics = async (
     (await workspace.listNaclFiles())
       .map(filename => [filename, []])
   )
+  const errors = Array.from(wu((await workspace.errors()).all())
+    .filter(e => e.severity === 'Error')
+    .slice(0, MAX_WORKSPACE_ERRORS))
+  const errorsAndWarnings = (await workspace.errors()).all()
+  const errorsToDisplay = _.isEmpty(errors) ? errorsAndWarnings : errors
   const workspaceErrors = await Promise.all(
-    wu((await workspace.errors()).all())
+    wu(errorsToDisplay)
       .slice(0, MAX_WORKSPACE_ERRORS)
       .map(err => workspace.transformError(err))
       .map(async errPromise => {

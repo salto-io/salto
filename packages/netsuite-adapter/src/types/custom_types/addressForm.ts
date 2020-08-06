@@ -25,6 +25,24 @@ import { fieldTypes } from '../field_types'
 export const addressFormInnerTypes: ObjectType[] = []
 
 const addressFormElemID = new ElemID(constants.NETSUITE, 'addressForm')
+const addressForm_customCodeElemID = new ElemID(constants.NETSUITE, 'addressForm_customCode')
+
+const addressForm_customCode = new ObjectType({
+  elemID: addressForm_customCodeElemID,
+  annotations: {
+  },
+  fields: {
+    scriptFile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
+      },
+    }, /* Original description: This field must reference a .js file. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
+})
+
+addressFormInnerTypes.push(addressForm_customCode)
+
 const addressForm_mainFields_defaultFieldGroup_fields_fieldElemID = new ElemID(constants.NETSUITE, 'addressForm_mainFields_defaultFieldGroup_fields_field')
 
 const addressForm_mainFields_defaultFieldGroup_fields_field = new ObjectType({
@@ -299,6 +317,11 @@ export const addressForm = new ObjectType({
     },
     mainFields: {
       type: addressForm_mainFields,
+      annotations: {
+      },
+    },
+    customCode: {
+      type: addressForm_customCode,
       annotations: {
       },
     },

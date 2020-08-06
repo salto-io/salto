@@ -3238,6 +3238,12 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
+    field: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
@@ -3273,11 +3279,6 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    field: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
-      annotations: {
-      },
-    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -3395,6 +3396,12 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
+    field: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     displaytype: {
       type: enums.workflowaction_displaytype,
       annotations: {
@@ -3436,11 +3443,6 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    field: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
-      annotations: {
-      },
-    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -3553,6 +3555,12 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
+    field: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
@@ -3588,11 +3596,6 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    field: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
-      annotations: {
-      },
-    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -5373,16 +5376,17 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
+    field: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    field: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
-      annotations: {
-      },
-    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -5418,6 +5422,12 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
+    field: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     displaytype: {
       type: enums.workflowaction_displaytype,
       annotations: {
@@ -5429,11 +5439,6 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    field: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
-      annotations: {
-      },
-    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -5464,16 +5469,17 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
+    field: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    field: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
-      annotations: {
-      },
-    }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {

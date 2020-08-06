@@ -313,12 +313,12 @@ export const itemnumbercustomfield = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     sourcefilterby: {
-      type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    }, /* Original description: For information about possible values, see generic_standard_field. */
+    }, /* Original description: This field accepts references to the itemnumbercustomfield custom type.   For information about other possible values, see generic_standard_field. */
     sourcefrom: {
-      type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
+      type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */

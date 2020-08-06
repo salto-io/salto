@@ -32,7 +32,7 @@ const transactionForm_actionbar_buttons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */,
+      type: enums.transactionform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -168,7 +168,7 @@ const transactionForm_actionbar_menu_menuitem = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */,
+      type: enums.transactionform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -249,7 +249,7 @@ const transactionForm_buttons_standardButtons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */,
+      type: enums.transactionform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -1020,7 +1020,7 @@ const transactionForm_tabs_tab_subItems_subList = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */,
+      type: enums.transactionform_sublistid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -1054,7 +1054,7 @@ const transactionForm_tabs_tab_subItems_subLists_subList = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */,
+      type: enums.transactionform_sublistid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -1495,10 +1495,9 @@ export const transactionForm = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
     standard: {
-      type: BuiltinTypes.STRING /* Original type was enums.transactionform_standard but it can also be STANDARDOPPORTUNITY */,
+      type: enums.transactionform_standard,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see transactionform_standard. */
     name: {
@@ -1534,6 +1533,11 @@ export const transactionForm = new ObjectType({
     },
     tabs: {
       type: transactionForm_tabs,
+      annotations: {
+      },
+    },
+    customCode: {
+      type: transactionForm_customCode,
       annotations: {
       },
     },

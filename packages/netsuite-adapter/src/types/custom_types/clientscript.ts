@@ -496,6 +496,11 @@ const clientscript_scriptdeployments_scriptdeployment = new ObjectType({
       annotations: {
       },
     }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
+    alllocalizationcontexts: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is T. */
     executioncontext: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {

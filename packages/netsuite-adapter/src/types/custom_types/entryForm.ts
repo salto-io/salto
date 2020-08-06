@@ -32,7 +32,7 @@ const entryForm_actionbar_buttons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be SAVEBASELINE */,
+      type: enums.entryform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -168,7 +168,7 @@ const entryForm_actionbar_menu_menuitem = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be ADDMATRIX */,
+      type: enums.entryform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -249,7 +249,7 @@ const entryForm_buttons_standardButtons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be APPROVERETURN */,
+      type: enums.entryform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -1345,10 +1345,9 @@ export const entryForm = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
     standard: {
-      type: BuiltinTypes.STRING /* Original type was enums.entryform_standard but it can also be STANDARDCUSTOMRECORD_2663_ENTITY_BANK_DETAILSFORM */,
+      type: enums.entryform_standard,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see entryform_standard. */
     name: {
@@ -1384,6 +1383,11 @@ export const entryForm = new ObjectType({
     },
     tabs: {
       type: entryForm_tabs,
+      annotations: {
+      },
+    },
+    customCode: {
+      type: entryForm_customCode,
       annotations: {
       },
     },

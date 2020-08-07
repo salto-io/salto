@@ -20,7 +20,9 @@ import { Element, InstanceElement,
 import { fetch, FetchChange, FetchProgressEvents, StepEmitter, FetchFunc } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
+import * as fetchCmd from '../../src/commands/fetch'
 import { command, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
+import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
@@ -671,6 +673,165 @@ describe('fetch command', () => {
           expect(cliOutput.stderr.content).toContain('test merge error')
         })
       })
+    })
+  })
+  describe('multienv - new service in env, with existing common elements', () => {
+    const mockTelemetry: mocks.MockTelemetry = mocks.getMockTelemetry()
+    const workspaceDir = 'valid-ws'
+    beforeEach(() => {
+      mockLoadWorkspace.mockResolvedValue({
+        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, true),
+        errored: false,
+        stateRecencies: [{ serviceName: 'salesforce', status: 'Nonexistent' }],
+      })
+      jest.spyOn(fetchCmd, 'fetchCommand').mockImplementationOnce(() => Promise.resolve(
+        CliExitCode.Success
+      ))
+    })
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+    it('should prompt to change mode, and continue as-is on "no"', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+        () => Promise.resolve('no')
+      )
+      await command(
+        workspaceDir,
+        false, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'default',
+        true,
+        services,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).toHaveBeenCalledTimes(1)
+      expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
+      expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
+    })
+    it('should prompt to change mode, and change to "align" on "yes"', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+        () => Promise.resolve('yes')
+      )
+      await command(
+        workspaceDir,
+        false, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'override',
+        true,
+        services,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).toHaveBeenCalledTimes(1)
+      expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
+      expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('align')
+    })
+    it('should prompt to change mode, and cancel on "cancel operation"', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+        () => Promise.resolve('cancel operation')
+      )
+      await command(
+        workspaceDir,
+        false, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'default',
+        true,
+        services,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).toHaveBeenCalledTimes(1)
+      expect(fetchCmd.fetchCommand).not.toHaveBeenCalled()
+    })
+    it('should not prompt if running with force=true', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+        () => Promise.resolve('no')
+      )
+      await command(
+        workspaceDir,
+        true, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'override',
+        true,
+        services,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
+      expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('override')
+    })
+    it('should not prompt if already ran service', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+        () => Promise.resolve('no')
+      )
+      mockLoadWorkspace.mockResolvedValue({
+        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, true),
+        errored: false,
+        stateRecencies: [{ serviceName: 'salesforce', status: 'Valid' }],
+      })
+      await command(
+        workspaceDir,
+        false, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'default',
+        true,
+        services,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
+      expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
+    })
+    it('should not prompt if mode is align', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+        () => Promise.resolve('no')
+      )
+      await command(
+        workspaceDir,
+        false, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'align',
+        true,
+        services,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
+      expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('align')
+    })
+    it('should not prompt if nothing is under common', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementation(
+        () => Promise.resolve('no')
+      )
+      mockLoadWorkspace.mockResolvedValue({
+        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, false),
+        errored: false,
+        stateRecencies: [{ serviceName: 'salesforce', status: 'Nonexistent' }],
+      })
+      await command(
+        workspaceDir,
+        false, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'default',
+        true,
+        services,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
+      expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
     })
   })
   describe('Verify using env command', () => {

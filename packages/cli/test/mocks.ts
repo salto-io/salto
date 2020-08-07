@@ -224,7 +224,12 @@ export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => ({
   strings: () => errors.map(err => err.message),
 })
 
-export const mockLoadWorkspace = (name: string, envs = ['active', 'inactive'], isEmpty = false): Workspace =>
+export const mockLoadWorkspace = (
+  name: string,
+  envs = ['active', 'inactive'],
+  isEmpty = false,
+  hasServiceElements = true,
+): Workspace =>
   ({
     uid: '123',
     name,
@@ -235,6 +240,7 @@ export const mockLoadWorkspace = (name: string, envs = ['active', 'inactive'], i
     hasErrors: () => jest.fn().mockResolvedValue(false),
     errors: () => jest.fn().mockResolvedValue(mockErrors([])),
     isEmpty: jest.fn().mockResolvedValue(isEmpty),
+    hasServiceElements: jest.fn().mockResolvedValue(hasServiceElements),
     getTotalSize: jest.fn().mockResolvedValue(0),
     addEnvironment: jest.fn(),
     deleteEnvironment: jest.fn(),
@@ -267,6 +273,7 @@ export const mockLoadWorkspaceEnvironment = (
     return {
       workspace: ({}) as unknown as Workspace,
       errored: true,
+      stateRecencies: [],
     }
   }
   if (sessionEnv === withEnvironmentParam) {
@@ -276,6 +283,7 @@ export const mockLoadWorkspaceEnvironment = (
         currentEnv: () => withEnvironmentParam,
       },
       errored: false,
+      stateRecencies: [],
     }
   }
   return {
@@ -284,6 +292,7 @@ export const mockLoadWorkspaceEnvironment = (
       currentEnv: () => withoutEnvironmentParam,
     },
     errored: false,
+    stateRecencies: [],
   }
 }
 

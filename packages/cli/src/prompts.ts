@@ -134,6 +134,12 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
       Date.now() - date.getTime()
     ).humanize()} ago.`
 
+  public static readonly FETCH_SHOULD_ALIGN_FETCH_MODE = (
+    fetchMode: string
+  ): string => `It is recommended to fetch in 'align' mode when fetching an existing service for the first time in a new environment - do you want to chang the fetch mode from '${fetchMode}' to 'align'?`
+
+  public static readonly FETCH_CHANGING_FETCH_MODE_TO_ALIGN = 'Changing fetch mode to \'align\''
+  public static readonly FETCH_NOT_CHANGING_FETCH_MODE = 'Ok, not changing fetch mode'
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`

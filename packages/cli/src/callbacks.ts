@@ -25,8 +25,9 @@ import { StateRecency } from '@salto-io/workspace'
 import {
   formatFetchChangeForApproval, formatShouldContinueWithWarning, formatCancelCommand,
   formatCredentialsHeader, formatConfigFieldInput, formatShouldAbortWithValidationError,
-  formatConfigChangeNeeded, formatShouldCancelWithOldState,
-  formatShouldCancelWithNonexistentState, formatDetailedChanges,
+  formatConfigChangeNeeded, formatShouldCancelWithOldState, formatShouldChangeFetchMode,
+  formatShouldCancelWithNonexistentState, formatDetailedChanges, formatChangingFetchMode,
+  formatNotChangingFetchMode,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -37,6 +38,25 @@ export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
     message: prompt,
     type: 'confirm',
   }
+  const answers = await inquirer.prompt(question)
+  return answers.userInput
+}
+
+type YesNoCancelAnswer = 'yes' | 'no' | 'cancel operation'
+
+export const getUserYesNoCancelInput = async (prompt: string): Promise<YesNoCancelAnswer> => {
+  const question = {
+    type: 'expand',
+    choices: [
+      { key: 'y', value: 'yes' },
+      { key: 'n', value: 'no' },
+      { key: 'c', value: 'cancel operation' },
+    ],
+    default: 0,
+    name: 'userInput',
+    message: prompt,
+  }
+
   const answers = await inquirer.prompt(question)
   return answers.userInput
 }
@@ -52,6 +72,20 @@ export const shouldCancelInCaseOfNoRecentState = async (
     stdout.write(formatCancelCommand)
   }
   return shouldCancel
+}
+
+export const getFetchModeChangeAction = async (
+  fetchMode: string,
+  { stdout }: CliOutput
+): Promise<YesNoCancelAnswer> => {
+  const prompt = formatShouldChangeFetchMode(fetchMode)
+  const answer = await getUserYesNoCancelInput(prompt)
+  stdout.write({
+    yes: formatChangingFetchMode,
+    no: formatNotChangingFetchMode,
+    'cancel operation': formatCancelCommand,
+  }[answer])
+  return answer
 }
 
 export const shouldContinueInCaseOfWarnings = async (numWarnings: number,

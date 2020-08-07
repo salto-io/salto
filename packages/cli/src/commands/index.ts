@@ -23,7 +23,7 @@ import restoreBuilder from './restore'
 import diffBuilder from './diff'
 import promoteBuilder from './promote'
 import demoteBuilder from './demote'
-
+import copyBuilder from './copy'
 
 // The order of the builders determines order of appearance in help text
 export default [
@@ -36,4 +36,5 @@ export default [
   promoteBuilder,
   demoteBuilder,
   diffBuilder,
+  copyBuilder,
 ] as YargsCommandBuilder[]

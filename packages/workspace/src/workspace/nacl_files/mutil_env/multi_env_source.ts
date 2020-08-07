@@ -25,7 +25,7 @@ import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 
 import { mergeElements, MergeError } from '../../../merger'
-import { routeChanges, RoutedChanges, routePromote, routeDemote } from './routers'
+import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
 import { Errors } from '../../errors'
 
@@ -58,6 +58,7 @@ type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   promote: (ids: ElemID[]) => Promise<void>
   demote: (ids: ElemID[]) => Promise<void>
   demoteAll: () => Promise<void>
+  copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
 }
 
 const buildMultiEnvSource = (
@@ -183,6 +184,17 @@ const buildMultiEnvSource = (
     )
     return applyRoutedChanges(routedChanges)
   }
+  const copyTo = async (ids: ElemID[], targetEnvs: string[] = []): Promise<void> => {
+    const targetSources = _.isEmpty(targetEnvs)
+      ? secondarySources()
+      : _.pick(secondarySources(), targetEnvs)
+    const routedChanges = await routeCopyTo(
+      ids,
+      primarySource(),
+      targetSources,
+    )
+    return applyRoutedChanges(routedChanges)
+  }
 
   const demoteAll = async (): Promise<void> => {
     const commonFileSource = commonSource()
@@ -210,6 +222,7 @@ const buildMultiEnvSource = (
     promote,
     demote,
     demoteAll,
+    copyTo,
     list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]

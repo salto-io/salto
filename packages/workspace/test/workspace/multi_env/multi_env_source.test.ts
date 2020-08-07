@@ -19,6 +19,7 @@ import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { multiEnvSource, ENVS_PREFIX } from '../../../src/workspace/nacl_files/mutil_env/multi_env_source'
+import * as routers from '../../../src/workspace/nacl_files/mutil_env/routers'
 import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
@@ -334,6 +335,24 @@ describe('multi env source', () => {
   describe('applyInstancesDefaults', () => {
     it('should call applyInstancesDefaults', () => {
       expect(utils.applyInstancesDefaults).toHaveBeenCalled()
+    })
+  })
+  describe('copyTo', () => {
+    it('should route a copy to the proper env sources when specified', async () => {
+      const ids = [new ElemID('salto', 'Account')]
+      jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
+        () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
+      )
+      await source.copyTo(ids, ['inactive'])
+      expect(routers.routeCopyTo).toHaveBeenCalledWith(ids, envSource, { inactive: inactiveSource })
+    })
+    it('should route a copy to all env sources when not specified', async () => {
+      const ids = [new ElemID('salto', 'Account')]
+      jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
+        () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
+      )
+      await source.copyTo(ids)
+      expect(routers.routeCopyTo).toHaveBeenCalledWith(ids, envSource, { inactive: inactiveSource })
     })
   })
 })

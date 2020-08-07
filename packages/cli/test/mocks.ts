@@ -258,6 +258,7 @@ export const mockLoadWorkspace = (
     promote: jest.fn().mockResolvedValue(undefined),
     demote: jest.fn().mockResolvedValue(undefined),
     demoteAll: jest.fn().mockResolvedValue(undefined),
+    copyTo: jest.fn().mockResolvedValue(undefined),
     flush: jest.fn().mockResolvedValue(undefined),
   } as unknown as Workspace)
 

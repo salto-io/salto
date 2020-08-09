@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value,
+  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -43,8 +43,8 @@ import {
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-  COMPOUND_FIELDS_SOAP_TYPE_NAMES, FOLDER_TYPE, HAS_META_FILE, FOLDER_CONTENT_TYPE,
-  CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN, XML_ATTRIBUTE_PREFIX,
+  COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
+  XML_ATTRIBUTE_PREFIX,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -1165,8 +1165,51 @@ export const createInstanceServiceIds = (
   }
 }
 
-export const createInstanceElement = (values: Values, type: ObjectType,
-  namespacePrefix?: string): InstanceElement => {
+export type MetadataTypeAnnotations = {
+  [METADATA_TYPE]: string
+  hasMetaFile?: boolean
+  folderType?: string
+  folderContentType?: string
+  suffix?: string
+  dirName?: string
+}
+
+const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeElement> = {
+  [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
+  hasMetaFile: BuiltinTypes.BOOLEAN,
+  folderType: BuiltinTypes.STRING,
+  folderContentType: BuiltinTypes.STRING,
+  suffix: BuiltinTypes.STRING,
+  dirName: BuiltinTypes.STRING,
+}
+
+export type MetadataObjectType = ObjectType & {
+  annotations: ObjectType['annotations'] & MetadataTypeAnnotations
+  annotationTypes: ObjectType['annotationTypes'] & typeof metadataAnnotationTypes
+}
+
+export const isMetadataObjectType = (elem: Element): elem is MetadataObjectType => (
+  isObjectType(elem) && elem.annotations[METADATA_TYPE] !== undefined
+)
+
+export type MetadataValues = MetadataInfo & Values
+
+export type MetadataInstanceElement = InstanceElement & {
+  type: MetadataObjectType
+  value: MetadataValues
+}
+
+export const isMetadataInstanceElement = (
+  inst: InstanceElement
+): inst is MetadataInstanceElement => (
+  isMetadataObjectType(inst.type) && inst.value[INSTANCE_FULL_NAME_FIELD] !== undefined
+)
+
+export const createInstanceElement = (
+  values: MetadataValues,
+  type: ObjectType,
+  namespacePrefix?: string,
+): MetadataInstanceElement => {
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
   const getPackagePath = (): string[] => {
     if (namespacePrefix) {
@@ -1192,25 +1235,7 @@ export const createInstanceElement = (values: Values, type: ObjectType,
     values,
     [...getPackagePath(), RECORDS_PATH,
       type.isSettings ? SETTINGS_PATH : typeName, naclCase(fullName)],
-  )
-}
-
-type MetadataTypeAnnotations = {
-  [METADATA_TYPE]: string
-  [HAS_META_FILE]?: boolean
-  [FOLDER_TYPE]?: string
-  [FOLDER_CONTENT_TYPE]?: string
-  suffix?: string
-  dirName?: string
-}
-
-const metadataAnnotationTypes = {
-  [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
-  [HAS_META_FILE]: BuiltinTypes.BOOLEAN,
-  [FOLDER_TYPE]: BuiltinTypes.STRING,
-  [FOLDER_CONTENT_TYPE]: BuiltinTypes.STRING,
-  suffix: BuiltinTypes.STRING,
-  dirName: BuiltinTypes.STRING,
+  ) as MetadataInstanceElement
 }
 
 type CreateMetadataTypeParams = {
@@ -1225,13 +1250,13 @@ type CreateMetadataTypeParams = {
 export const createMetadataTypeElements = async ({
   name, fields, knownTypes = new Map(), baseTypeNames, client,
   isSettings = false, annotations = {},
-}: CreateMetadataTypeParams): Promise<ObjectType[]> => {
+}: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
     return []
   }
 
-  const element = Types.get(name, false, isSettings) as ObjectType
+  const element = Types.get(name, false, isSettings) as MetadataObjectType
   knownTypes.set(name, element)
   const isTopLevelType = baseTypeNames.has(name) || annotations.folderContentType !== undefined
   element.annotationTypes = _.clone(metadataAnnotationTypes)

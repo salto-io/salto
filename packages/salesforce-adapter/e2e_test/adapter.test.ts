@@ -39,7 +39,7 @@ import {
   TopicsForObjectsInfo,
 } from '../src/client/types'
 import {
-  Types, metadataType, apiName, formulaTypeName,
+  Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataTypeAnnotations,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import {
@@ -2703,7 +2703,7 @@ describe('Salesforce adapter E2E with real account', () => {
           return client.retrieve(retrieveRequest)
         }
 
-        const findInstance = async (instance: InstanceElement):
+        const findInstance = async (instance: MetadataInstanceElement):
           Promise<MetadataInfo | undefined> => {
           const type = metadataType(instance)
           const retrieveResult = await retrieve(type, apiName(instance))
@@ -2716,7 +2716,7 @@ describe('Salesforce adapter E2E with real account', () => {
           const instances = await fromRetrieveResult(
             retrieveResult,
             fileProps,
-            new Set(instance.type.annotations[constants.HAS_META_FILE] ? [type] : []),
+            new Set(instance.type.annotations.hasMetaFile ? [type] : []),
             new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
           )
           return instances
@@ -2725,7 +2725,7 @@ describe('Salesforce adapter E2E with real account', () => {
             .pop()
         }
 
-        const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
+        const removeIfAlreadyExists = async (instance: MetadataInstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
             await client.deploy(await toMetadataPackageZip(instance, true) as Buffer)
           }
@@ -2734,7 +2734,7 @@ describe('Salesforce adapter E2E with real account', () => {
         const getContentFromStaticFileOrString = (content: string | StaticFile): string => (
           isStaticFile(content) ? (content.content as Buffer).toString() : content)
 
-        const verifyCreateInstance = async (instance: InstanceElement): Promise<void> => {
+        const verifyCreateInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           await createElement(adapter, instance)
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
@@ -2742,7 +2742,7 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(content.includes('Created')).toBeTruthy()
         }
 
-        const verifyUpdateInstance = async (instance: InstanceElement): Promise<void> => {
+        const verifyUpdateInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           const after = instance.clone()
           const contentString = getContentFromStaticFileOrString(after.value.content).replace('Created', 'Updated')
           after.value.content = isStaticFile(after.value.content)
@@ -2760,16 +2760,18 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(getContentFromStaticFileOrString(_.get(instanceInfo, 'content')).includes('Updated')).toBeTruthy()
         }
 
-        const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
+        const verifyRemoveInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           await removeElement(adapter, instance)
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeUndefined()
         }
 
         const createInstanceElement = (
-          fullName: string, typeName: string, content: string | Value, typeAnnotations: Values = {},
-        ):
-          InstanceElement => {
+          fullName: string,
+          typeName: string,
+          content: string | Value,
+          typeAnnotations: Partial<MetadataTypeAnnotations> = {},
+        ): MetadataInstanceElement => {
           const objectType = new ObjectType({
             elemID: new ElemID(constants.SALESFORCE, typeName),
             annotations: {
@@ -2785,7 +2787,7 @@ describe('Salesforce adapter E2E with real account', () => {
               apiVersion: API_VERSION,
               content,
             }
-          )
+          ) as MetadataInstanceElement
         }
 
         describe('apex class manipulation', () => {
@@ -2794,7 +2796,7 @@ describe('Salesforce adapter E2E with real account', () => {
               filepath: 'ApexClass.cls',
               content: Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'),
             }),
-            { [constants.HAS_META_FILE]: true })
+            { hasMetaFile: true })
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexClassInstance)
@@ -2825,7 +2827,7 @@ describe('Salesforce adapter E2E with real account', () => {
               filepath: 'MyApexTrigger.trigger',
               content: Buffer.from('trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}'),
             }),
-            { [constants.HAS_META_FILE]: true })
+            { hasMetaFile: true })
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexTriggerInstance)
@@ -2856,7 +2858,7 @@ describe('Salesforce adapter E2E with real account', () => {
               filepath: 'ApexPage.page',
               content: Buffer.from('<apex:page>Created by e2e test!</apex:page>'),
             }),
-            { [constants.HAS_META_FILE]: true })
+            { hasMetaFile: true })
           apexPageInstance.value.label = 'MyApexPage'
 
           beforeAll(async () => {
@@ -2888,7 +2890,7 @@ describe('Salesforce adapter E2E with real account', () => {
               filepath: 'MyApexComponent.component',
               content: Buffer.from('<apex:component >Created by e2e test!</apex:component>'),
             }),
-            { [constants.HAS_META_FILE]: true })
+            { hasMetaFile: true })
           apexComponentInstance.value.label = 'MyApexComponent'
 
           beforeAll(async () => {

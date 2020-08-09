@@ -19,6 +19,7 @@ import { Logger } from '@salto-io/logging'
 import {
   Pool, dynamoDbRepo, RenewedLease, Lease,
 } from '@salto-io/persistent-pool'
+import humanizeDuration from 'humanize-duration'
 import REPO_PARAMS from '../repo_params'
 import createEnvUtils from '../process_env'
 import { SuspendCredentialsError } from '../types'
@@ -48,7 +49,7 @@ const LEASE_PARAMS: Parameters<Pool['waitForLease']> = [
   retryStrategies.intervals({ maxRetries: 40, interval: 1000 * 15 }),
 ]
 
-export default <TCreds extends {}>(
+const creds = <TCreds extends {}>(
   spec: CredsSpec<TCreds>,
   env: NodeJS.ProcessEnv,
   logger: Logger,
@@ -110,3 +111,21 @@ export default <TCreds extends {}>(
     ? fromPool()
     : Promise.resolve(fromEnv())
 }
+
+export default <TCreds extends {}> (
+  credsSpec: CredsSpec<TCreds>,
+  logger: Logger,
+  credsLeaseUpdateInterval = 30000,
+): Promise<CredsLease<TCreds>> =>
+  creds(
+    credsSpec,
+    process.env,
+    logger,
+    new IntervalScheduler(
+      (id, startTime) => {
+        const duration = humanizeDuration(Date.now() - startTime.getTime(), { round: true })
+        logger.warn('Still leasing credentials (%s): %s', duration, id)
+      },
+      credsLeaseUpdateInterval,
+    )
+  )

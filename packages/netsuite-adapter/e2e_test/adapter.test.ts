@@ -33,7 +33,7 @@ describe('Netsuite adapter E2E with real account', () => {
   })
 
   afterAll(async () => {
-    if (credentialsLease.return) {
+    if (credentialsLease?.return) {
       await credentialsLease.return()
     }
   })

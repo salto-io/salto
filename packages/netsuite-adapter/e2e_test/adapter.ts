@@ -15,8 +15,7 @@
 */
 
 import { logger } from '@salto-io/logging'
-import { creds, CredsLease, IntervalScheduler } from '@salto-io/e2e-credentials-store'
-import humanizeDuration from 'humanize-duration'
+import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import NetsuiteClient, { Credentials } from '../src/client/client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
 import { NetsuiteConfig } from '../src/config'
@@ -27,7 +26,6 @@ import { credsSpec } from './jest_environment'
 
 
 const log = logger(module)
-const CRED_LEASE_UPDATE_INTERVAL = 30 * 1000
 
 type Opts = {
   adapterParams?: Partial<NetsuiteAdapterParams>
@@ -48,15 +46,4 @@ export const realAdapter = ({ adapterParams, credentials }: Opts, config?: Netsu
   return { client, adapter }
 }
 
-export const credsLease = (): Promise<CredsLease<Credentials>> => creds(
-  credsSpec(),
-  process.env,
-  log,
-  new IntervalScheduler(
-    (id, startTime) => {
-      const duration = humanizeDuration(Date.now() - startTime.getTime(), { round: true })
-      log.warn('Still leasing credentials (%s): %s', duration, id)
-    },
-    CRED_LEASE_UPDATE_INTERVAL,
-  )
-)
+export const credsLease = (): Promise<CredsLease<Credentials>> => creds(credsSpec(), log)

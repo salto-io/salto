@@ -36,7 +36,6 @@
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^3.15.0",
     "he": "^1.2.0",
-    "humanize-duration": "^3.22.0",
     "lodash": "^4.17.19",
     "wu": "^2.1.0"
   },

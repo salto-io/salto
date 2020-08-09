@@ -107,11 +107,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     entries: Iterable<[NodeId, Set<NodeId>]>
   ): collections.map.DefaultMap<NodeId, Set<NodeId>> {
     const result = new collections.map.DefaultMap<NodeId, Set<NodeId>>(() => new Set<NodeId>())
-    for (const [id, deps] of entries) {
-      for (const dep of deps) {
-        result.get(dep).add(id)
-      }
-    }
+    wu(entries).forEach(([id, deps]) => deps.forEach(dep => result.get(dep).add(id)))
     return result
   }
 

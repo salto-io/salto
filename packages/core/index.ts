@@ -17,7 +17,7 @@ export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
 export { ItemStatus } from './src/core/deploy'
-export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
+export { getAdaptersCredentialsTypes, getDefaultAdapterConfig } from './src/core/adapters/adapters'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
   CACHE_DIR_NAME,

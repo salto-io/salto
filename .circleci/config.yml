@@ -118,7 +118,7 @@ jobs:
 
       - run:
           name: Run unit tests
-          command: yarn test --reporters=default --reporters=jest-junit
+          command: yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
 

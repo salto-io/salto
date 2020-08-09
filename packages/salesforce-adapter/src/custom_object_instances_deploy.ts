@@ -33,7 +33,7 @@ const modifyOperation = 'update'
 const removalOperation = 'delete'
 
 
-// TODO: Extract this somewhere cause this is a duplicate
+// TODO: Extract this when we split adapter.ts cause this is a duplicate
 const validateApiName = (prevElement: Element, newElement: Element): void => {
   if (apiName(prevElement) !== apiName(newElement)) {
     throw Error(
@@ -123,7 +123,7 @@ export const deployCustomObjectInstancesGroup = async (
         successResultIds.includes(instance.value[constants.CUSTOM_OBJECT_ID_FIELD]))
       await Promise.all(successInstances.map(async element => filtersRunner.onRemove(element)))
       return {
-        appliedChanges: changeGroup.changes,
+        appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
         errors: errorMessages.map(error => new Error(error)),
       }
     }

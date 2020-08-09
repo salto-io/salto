@@ -13,23 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, ElemID, ServiceIds } from '@salto-io/adapter-api'
-
-// TODO: export to common test utils package
-export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
+import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 
 export const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
   ElemID => new ElemID(adapterName, name)
-
-export const toChange = ({ before, after }: ChangeParams): Change => {
-  if (before !== undefined && after !== undefined) {
-    return { action: 'modify', data: { before, after } }
-  }
-  if (before !== undefined) {
-    return { action: 'remove', data: { before } }
-  }
-  if (after !== undefined) {
-    return { action: 'add', data: { after } }
-  }
-  throw new Error('must provide before or after')
-}

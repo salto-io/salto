@@ -550,12 +550,12 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch('Value "wrongValue2" is not valid')
+          expect(errors[0].message).toMatch('Value is not valid')
           expect(errors[0].message).toMatch('expected one of: "str"')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
 
           expect(errors[1]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[1].message).toMatch('Value "wrongValue" is not valid')
+          expect(errors[1].message).toMatch('Value is not valid')
           expect(errors[1].message).toMatch('expected one of: "restriction1", "restriction2"')
           expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
         }
@@ -572,7 +572,7 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(1)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch('Value "wrong" is not valid')
+          expect(errors[0].message).toMatch('Value is not valid')
           expect(errors[0].message).toMatch('expected one of: "val1", "val2"')
           expect(errors[0].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'temp')
@@ -750,7 +750,7 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
-        expect(errors[0].message).toMatch('Invalid value type for string: 1')
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should return error on bad str primitive type with list', () => {
@@ -758,7 +758,7 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
-        expect(errors[0].message).toMatch('Invalid value type for string: ["str1","str2"]')
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should return error on bad str primitive type with object', () => {
@@ -774,7 +774,7 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatnum'))
-        expect(errors[0].message).toMatch('Invalid value type for number: "str"')
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for number$'))
       })
 
       it('should return error on bad bool primitive type', () => {

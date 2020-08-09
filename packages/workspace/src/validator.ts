@@ -19,9 +19,8 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile, isPrimitiveValue,
+  isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -65,8 +64,6 @@ ValidationError[] => {
   return []
 }
 
-const shouldPrintValue = (value: Value): boolean => makeArray(value).every(isPrimitiveValue)
-
 export class InvalidValueValidationError extends ValidationError {
   readonly value: Value
   readonly fieldName: string
@@ -76,15 +73,13 @@ export class InvalidValueValidationError extends ValidationError {
     { elemID, value, fieldName, expectedValue }:
       { elemID: ElemID; value: Value; fieldName: string; expectedValue: unknown }
   ) {
-    const actualValueStr = shouldPrintValue(value) ? ` ${safeJsonStringify(value)}` : ''
     const expectedValueStr = _.isArray(expectedValue)
       ? `one of: ${(expectedValue as []).map(v => `"${v}"`).join(', ')}`
       : `"${expectedValue}"`
 
     super({
       elemID,
-      error: `Value${actualValueStr} is not valid for field ${fieldName}`
-        + ` expected ${expectedValueStr}`,
+      error: `Value is not valid for field ${fieldName} expected ${expectedValueStr}`,
       severity: 'Warning',
     })
     this.value = value
@@ -306,10 +301,9 @@ export class InvalidValueTypeValidationError extends ValidationError {
   readonly type: TypeElement
 
   constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: TypeElement }) {
-    const valueStr = shouldPrintValue(value) ? `: ${safeJsonStringify(value)}` : ''
     super({
       elemID,
-      error: `Invalid value type for ${type.elemID.getFullName()}${valueStr}`,
+      error: `Invalid value type for ${type.elemID.getFullName()}`,
       severity: 'Warning',
     })
 

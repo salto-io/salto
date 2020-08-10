@@ -149,7 +149,7 @@ jobs:
 
   e2e_test:
     docker:
-      - image: circleci/node:12.16
+      - image: saltolabs/salto-e2e:latest
 
     resource_class: large
     working_directory: /mnt/ramdisk/project

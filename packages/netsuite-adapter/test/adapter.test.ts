@@ -16,7 +16,7 @@
 
 import {
   ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement,
-  ServiceIds, ReferenceExpression, ObjectType, BuiltinTypes,
+  ReferenceExpression, ObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -33,6 +33,7 @@ import {
 } from '../src/client/client'
 import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
+import { mockGetElemIdFunc } from './utils'
 
 jest.mock('../src/client/sdf_root_cli_path', () => ({
   getRootCLIPath: jest.fn().mockReturnValue('path/to/cli'),
@@ -42,9 +43,6 @@ jest.mock('../src/config', () => ({
   ...jest.requireActual('../src/config'),
   getConfigFromConfigChanges: jest.fn(),
 }))
-
-const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
-  ElemID => new ElemID(adapterName, name)
 
 const onFetchMock = jest.fn().mockImplementation(_arg => undefined)
 const firstDummyFilter: FilterCreator = () => ({

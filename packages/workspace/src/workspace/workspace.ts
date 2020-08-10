@@ -108,6 +108,7 @@ export type Workspace = {
   getStateRecency(services: string): Promise<StateRecency>
   promote(ids: ElemID[]): Promise<void>
   demote(ids: ElemID[]): Promise<void>
+  demoteAll(): Promise<void>
 }
 
 // common source has no state
@@ -288,7 +289,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       )
     )),
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
-      const isNaclFilesSourceEmpty = _.isEmpty(await naclFilesSource.getAll())
+      const isNaclFilesSourceEmpty = !naclFilesSource || _.isEmpty(await naclFilesSource.getAll())
       return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
     setNaclFiles: naclFilesSource.setNaclFiles,
@@ -302,6 +303,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getElements: naclFilesSource.getElements,
     promote: naclFilesSource.promote,
     demote: naclFilesSource.demote,
+    demoteAll: naclFilesSource.demoteAll,
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

@@ -159,26 +159,19 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly RENAME_ENV = (currentEnvName: string, newEnvName: string): string =>
     `Renamed environment - ${currentEnvName} -> ${newEnvName}`
 
-  public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
-    + ' It is recommended to perform first fetch of an environment in isolated mode.'
+  public static readonly ISOLATE_FIRST_ENV_RECOMMENDATION = (
+    existingEnv: string
+  ): string => 'This action will add a second environment to the workspace.'
+    + ` It is recommended to move environment ${existingEnv} out of the common configuration before proceeding.`
 
-  public static readonly NEW_SERVICES_ISOLATED_RECOMMENDATION = (
-    servicesNames: string,
-  ): string => `The current fetch command is running for the first time for ${servicesNames}.`
-     + ' It is recommended to perform first fetch of a service in isolated mode, without fetching other services.'
+  public static readonly DONE_ISOLATING_FIRST_ENV = (
+    existingEnv: string
+  ): string => `Done moving environment ${existingEnv} out of the common configuration.`
 
-
-  public static readonly ONLY_NEW_SERVICES_ISOLATED_RECOMMENDATION = (
-    newServicesNames: string,
-    oldServicesNames: string
-  ): string => `The current fetch command is running for the first time for ${newServicesNames} in isolated mode.`
-    + ` This will also fetch ${oldServicesNames} in strict mode and may result in unwanted changes to `
-    + ' other environments.\n'
-    + `It is recommended to run this fetch as an isolated fetch only for ${newServicesNames}`
-
-  public static readonly APPROVE_ISOLATED_RECOMMENDATION = (
-    newServicesNames: string
-  ): string => `Would you like to switch to isolated mode and fetch ${newServicesNames}? (Answer No to continue without switching)`
+  public static readonly APPROVE_ISOLATE_BEFORE_MULTIENV_RECOMMENDATION = (
+    existingEnv: string
+  ): string => `Would you like to isolate the configuration for ${existingEnv} before adding the new environment?`
+    + ' (Answer No to continue without changes)'
 
   public static readonly STATE_ONLY_UPDATE_START = (
     numOfChanges: number

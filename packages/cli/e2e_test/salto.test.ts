@@ -38,6 +38,9 @@ import {
   verifyObject, runEmptyPreview, runSalesforceLogin,
   runPreview,
   cleanup as workspaceHelpersCleanup,
+  runCreateEnv,
+  runDeleteEnv,
+  runSetEnv,
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
@@ -366,6 +369,39 @@ describe('cli e2e', () => {
     })
     afterAll(async () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
+    })
+  })
+
+  describe('multi-env after initial fetch', () => {
+    // Note: this test relies on the existence of the salesforce folder from an earlier fetch,
+    // and should be run after all non-multienv tests have completed
+    beforeAll(() => {
+      jest.spyOn(callbacksImpl, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(
+        () => Promise.resolve(true)
+      )
+    })
+    afterEach(async () => {
+      await runSetEnv(fetchOutputDir, 'default')
+      try {
+        await runDeleteEnv(fetchOutputDir, 'env2')
+      } catch (err) {} // eslint-disable-line no-empty
+      jest.clearAllMocks()
+    })
+
+    it('should not prompt when creating env with force=true', async () => {
+      await runCreateEnv(fetchOutputDir, 'env2', true)
+      expect(await exists(`${fetchOutputDir}/salesforce`)).toBe(true)
+      expect(await exists(`${fetchOutputDir}/envs/default/salesforce`)).toBe(false)
+      expect(await exists(`${fetchOutputDir}/envs/env2`)).toBe(false)
+      expect(callbacksImpl.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
+    })
+
+    it('should move everything to the first env when isolating before 2nd env', async () => {
+      await runCreateEnv(fetchOutputDir, 'env2')
+      expect(await exists(`${fetchOutputDir}/envs/default/salesforce`)).toBe(true)
+      expect(await exists(`${fetchOutputDir}/salesforce`)).toBe(false)
+      expect(await exists(`${fetchOutputDir}/envs/env2`)).toBe(false)
+      expect(callbacksImpl.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalled()
     })
   })
 })

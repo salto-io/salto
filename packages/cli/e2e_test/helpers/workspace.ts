@@ -125,12 +125,20 @@ export const runInit = async (
   }
 }
 
-export const runCreateEnv = async (workspaceDir: string, envName: string): Promise<void> => {
-  await envCommand(workspaceDir, 'create', mockCliOutput(), envName).execute()
+export const runCreateEnv = async (
+  workspaceDir: string,
+  envName: string,
+  force?: boolean,
+): Promise<void> => {
+  await envCommand(workspaceDir, 'create', mockCliOutput(), envName, undefined, force).execute()
 }
 
 export const runSetEnv = async (workspaceDir: string, envName: string): Promise<void> => {
   await envCommand(workspaceDir, 'set', mockCliOutput(), envName).execute()
+}
+
+export const runDeleteEnv = async (workspaceDir: string, envName: string): Promise<void> => {
+  await envCommand(workspaceDir, 'delete', mockCliOutput(), envName).execute()
 }
 
 export const getCurrentEnv = async (workspaceDir: string): Promise<string> => {

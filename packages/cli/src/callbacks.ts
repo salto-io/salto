@@ -165,3 +165,7 @@ export const getEnvName = async (currentName = 'env1'): Promise<string> => {
   }]
   return (await inquirer.prompt(questions))[currentName]
 }
+
+export const cliApproveIsolateBeforeMultiEnv = async (existingEnv: string): Promise<boolean> => (
+  getUserBooleanInput(Prompts.APPROVE_ISOLATE_BEFORE_MULTIENV_RECOMMENDATION(existingEnv))
+)

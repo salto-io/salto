@@ -14,17 +14,20 @@
 * limitations under the License.
 */
 import * as core from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
+import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/env'
 
 jest.mock('@salto-io/core')
 describe('env commands', () => {
-  const mockLoadWorkspace = core.loadLocalWorkspace as jest.Mock
-  mockLoadWorkspace.mockImplementation(baseDir => mocks.mockLoadWorkspace(baseDir))
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
 
   beforeEach(async () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(
+      baseDir => Promise.resolve(mocks.mockLoadWorkspace(baseDir))
+    )
   })
 
   describe('create environment command', () => {
@@ -82,6 +85,77 @@ describe('env commands', () => {
       await command('.', 'rename', cliOutput, 'inactive', 'new-inactive').execute()
       expect(cliOutput.stdout.content.search('inactive')).toBeGreaterThan(0)
       expect(cliOutput.stdout.content.search('new-inactive')).toBeGreaterThan(0)
+    })
+  })
+
+  describe('create multiple environments', () => {
+    let lastWorkspace: Workspace
+    beforeEach(() => {
+      jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(baseDir => {
+        lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1'])
+        return Promise.resolve(lastWorkspace)
+      })
+      jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(
+        () => Promise.resolve(false)
+      )
+      jest.spyOn(core, 'envFolderExists').mockImplementation(() => Promise.resolve(false))
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should prompt on 2nd environment creation, and do nothing if false', async () => {
+      await command('.', 'create', cliOutput, 'me2').execute()
+      expect(cliOutput.stdout.content.search('me2')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledWith('me1')
+      expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+    })
+
+    it('should prompt on 2nd environment creation, and isolate if true', async () => {
+      jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementationOnce(
+        () => Promise.resolve(true)
+      )
+
+      await command('.', 'create', cliOutput, 'me2').execute()
+      expect(cliOutput.stdout.content.search('me2')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledWith('me1')
+      expect(lastWorkspace.demoteAll).toHaveBeenCalled()
+    })
+
+    it('should not prompt on 2nd environment creation if  workspace is empty', async () => {
+      jest.spyOn(core, 'loadLocalWorkspace').mockImplementationOnce(baseDir => {
+        lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1'], true)
+        return Promise.resolve(lastWorkspace)
+      })
+
+      await command('.', 'create', cliOutput, 'me2').execute()
+      expect(cliOutput.stdout.content.search('me2')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
+      expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+    })
+
+    it('should not prompt on 2nd environment creation if env1 folder exists', async () => {
+      jest.spyOn(core, 'envFolderExists').mockImplementationOnce(() => Promise.resolve(true))
+
+      await command('.', 'create', cliOutput, 'me2').execute()
+      expect(cliOutput.stdout.content.search('me2')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
+      expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+    })
+
+    it('should not prompt on 3rd environment creation', async () => {
+      jest.spyOn(core, 'loadLocalWorkspace').mockImplementationOnce(baseDir => {
+        lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1', 'me2'], true)
+        return Promise.resolve(lastWorkspace)
+      })
+
+      await command('.', 'create', cliOutput, 'me3').execute()
+      expect(cliOutput.stdout.content.search('me3')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
+      expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
     })
   })
 })

@@ -536,7 +536,7 @@ describe('multi env tests', () => {
       })
 
 
-      it('should update the attributes added in the deploy in the proper file', async () => {
+      it('should update the attributes added in the deploy in the proper env file', async () => {
         await Promise.all([
           env1NaclFileName(),
           env2NaclFileName(),
@@ -551,6 +551,19 @@ describe('multi env tests', () => {
           expect(obj.annotationTypes.apiName).toBeDefined()
           expect(obj.annotationTypes.metadataType).toBeDefined()
         }))
+      })
+
+      it('should not update common with the attributes added in the deploy', async () => {
+        const filename = commonNaclFileName()
+        const element = (await getNaclFileElements(filename))[0]
+        expect(isObjectType(element)).toBeTruthy()
+        const obj = element as ObjectType
+        expect(obj.fields.alpha.annotations.apiName).toBeUndefined()
+        expect(obj.fields.alpha.annotations.apiName).toBeUndefined()
+        expect(obj.annotations.metadataType).toBeUndefined()
+        expect(obj.annotations.apiName).toBeUndefined()
+        expect(obj.annotationTypes.apiName).toBeUndefined()
+        expect(obj.annotationTypes.metadataType).toBeUndefined()
       })
     })
 

@@ -87,4 +87,51 @@ describe('DefaultMap', () => {
       })
     })
   })
+
+  describe('getOrUndefined', () => {
+    let subject: DefaultMap<string, {}>
+    let initDefault: jest.Mock<{}>
+    const initDefaultValue = {}
+    let result: {} | undefined
+
+    beforeEach(() => {
+      initDefault = jest.fn(() => initDefaultValue)
+      subject = new DefaultMap<string, {}>(initDefault)
+    })
+
+    describe('when the key exists', () => {
+      const v = {}
+
+      beforeEach(() => {
+        subject.set('x', v)
+        result = subject.getOrUndefined('x')
+      })
+
+      it('should return it', () => {
+        expect(result).toBe(v)
+      })
+
+      it('should not call the initDefault function', () => {
+        expect(initDefault).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('when the key does not exist', () => {
+      beforeEach(() => {
+        result = subject.getOrUndefined('x')
+      })
+
+      it('should not call the initDefault function', () => {
+        expect(initDefault).not.toHaveBeenCalled()
+      })
+
+      it('should return undefined', () => {
+        expect(result).toBeUndefined()
+      })
+
+      it('should not add the key to the map', () => {
+        expect(subject.has('x')).toBeFalsy()
+      })
+    })
+  })
 })

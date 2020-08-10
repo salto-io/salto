@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import glob from 'glob'
 import { Plan, telemetrySender, preview, loadLocalWorkspace } from '@salto-io/core'
 import { parser, Workspace } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
-import glob from 'glob'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
@@ -34,6 +34,33 @@ import { command as servicesCommand } from '../../src/commands/services'
 import { command as initCommand } from '../../src/commands/init'
 import { command as envCommand } from '../../src/commands/env'
 import { getCliTelemetry } from '../../src/telemetry'
+
+declare global {
+  // eslint-disable-next-line
+  module jest {
+    interface Matchers<R> {
+      toExist(): jest.CustomMatcherResult
+    }
+  }
+}
+
+const quote = (s: string): string => `"${s}"`
+const filenameList = (l: string[]): string => l.map(quote).join(', ')
+
+expect.extend({
+  toExist: function toExist(this: jest.MatcherContext, pattern: string) {
+    const resolved = glob.sync(pattern)
+    const pass = resolved.length !== 0
+    return {
+      pass,
+      message: () => `file ${quote(pattern)} ${
+        pass
+          ? `exists${resolved.length > 1 || pattern !== resolved[0] ? `: ${filenameList(resolved)}` : ''}`
+          : 'does not exist'
+      }`,
+    }
+  },
+})
 
 export type ReplacementPair = [string | RegExp, string]
 
@@ -281,11 +308,3 @@ export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, 
   })
   return object
 }
-
-export const ensureFilesExist = (filePathes: string[]): boolean => (
-  _.every(filePathes.map(filename => !_.isEmpty(glob.sync(filename))))
-)
-
-export const ensureFilesDontExist = (filePathes: string[]): boolean => (
-  _.every(filePathes.map(filename => _.isEmpty(glob.sync(filename))))
-)

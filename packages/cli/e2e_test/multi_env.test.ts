@@ -24,7 +24,6 @@ import { isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
 import {
-  ensureFilesExist,
   runInit,
   runSetEnv,
   runFetch,
@@ -32,7 +31,6 @@ import {
   runAddSalesforceService,
   runCreateEnv,
   runDeploy,
-  ensureFilesDontExist,
   getNaclFileElements,
   cleanup as workspaceHelpersCleanup,
   getCurrentEnv,
@@ -223,12 +221,10 @@ describe('multi env tests', () => {
       await runAddSalesforceService(baseDir, getSalesforceCredsInstance(env2Creds))
     })
 
-    it('should create proper env structure', async () => {
-      expect(ensureFilesExist([
-        workspaceConfigFilePath(),
-        adapterConfigsFilePath(),
-        workspaceUserConfigFilePath(),
-      ])).toBeTruthy()
+    it('should create proper env structure', () => {
+      expect(workspaceConfigFilePath()).toExist()
+      expect(adapterConfigsFilePath()).toExist()
+      expect(workspaceUserConfigFilePath()).toExist()
     })
   })
 
@@ -246,37 +242,29 @@ describe('multi env tests', () => {
 
     describe('create correct file structure', () => {
       it('should place common elements in the common folder', () => {
-        expect(ensureFilesExist([
-          path.join(commonObjectDir(), naclNameToSFName(commonObjName)),
-          path.join(commonInstanceDir(), `${commonInstName}.nacl`),
-        ])).toBeTruthy()
+        expect(path.join(commonObjectDir(), naclNameToSFName(commonObjName))).toExist()
+        expect(path.join(commonInstanceDir(), `${commonInstName}.nacl`)).toExist()
       })
 
       it('should place env unique elements in the env folder', () => {
-        expect(ensureFilesExist([
-          env1ObjFilePath(),
-          env2ObjFilePath(),
-          env1InstFilePath(),
-          env2InstFilePath(),
-        ])).toBeTruthy()
+        expect(env1ObjFilePath()).toExist()
+        expect(env2ObjFilePath()).toExist()
+        expect(env1InstFilePath()).toExist()
+        expect(env2InstFilePath()).toExist()
 
-        expect(ensureFilesDontExist([
-          path.join(env2ObjectDir(), naclNameToSFName(env1ObjName)),
-          path.join(env1ObjectDir(), naclNameToSFName(env2ObjName)),
-          path.join(env1InstanceDir(), `${env2InstName}.nacl`),
-          path.join(env2InstanceDir(), `${env1InstName}.nacl`),
-        ])).toBeTruthy()
+        expect(path.join(env2ObjectDir(), naclNameToSFName(env1ObjName))).not.toExist()
+        expect(path.join(env1ObjectDir(), naclNameToSFName(env2ObjName))).not.toExist()
+        expect(path.join(env1InstanceDir(), `${env2InstName}.nacl`)).not.toExist()
+        expect(path.join(env2InstanceDir(), `${env1InstName}.nacl`),).not.toExist()
       })
 
       it('should split common elements with diffs between common and env folders', () => {
-        expect(ensureFilesExist([
-          commonWithDiffCommonFilePath(),
-          commonInstWithDiffCommonFilePath(),
-          commonWithDiffEnv1FilePath(),
-          commonWithDiffEnv2FilePath(),
-          commonInstWithDiffEnv1FilePath(),
-          commonInstWithDiffEnv2FilePath(),
-        ])).toBeTruthy()
+        expect(commonWithDiffCommonFilePath()).toExist()
+        expect(commonInstWithDiffCommonFilePath()).toExist()
+        expect(commonWithDiffEnv1FilePath()).toExist()
+        expect(commonWithDiffEnv2FilePath()).toExist()
+        expect(commonInstWithDiffEnv1FilePath()).toExist()
+        expect(commonInstWithDiffEnv2FilePath()).toExist()
       })
     })
 
@@ -323,17 +311,13 @@ describe('multi env tests', () => {
       })
 
       it('should add the fetched element to the common folder', () => {
-        expect(ensureFilesExist([
-          path.join(commonObjectDir(), naclNameToSFName(objToSyncFromServiceName)),
-          path.join(commonInstanceDir(), `${instToSyncFromServiceName}.nacl`),
-        ])).toBeTruthy()
+        expect(path.join(commonObjectDir(), naclNameToSFName(objToSyncFromServiceName))).toExist()
+        expect(path.join(commonInstanceDir(), `${instToSyncFromServiceName}.nacl`)).toExist()
 
-        expect(ensureFilesDontExist([
-          path.join(env1ObjectDir(), naclNameToSFName(objToSyncFromServiceName)),
-          path.join(env2ObjectDir(), naclNameToSFName(objToSyncFromServiceName)),
-          path.join(env1InstanceDir(), `${instToSyncFromServiceName}.nacl`),
-          path.join(env2InstanceDir(), `${instToSyncFromServiceName}.nacl`),
-        ])).toBeTruthy()
+        expect(path.join(env1ObjectDir(), naclNameToSFName(objToSyncFromServiceName))).not.toExist()
+        expect(path.join(env2ObjectDir(), naclNameToSFName(objToSyncFromServiceName))).not.toExist()
+        expect(path.join(env1InstanceDir(), `${instToSyncFromServiceName}.nacl`)).not.toExist()
+        expect(path.join(env2InstanceDir(), `${instToSyncFromServiceName}.nacl`)).not.toExist()
       })
 
       it('should have empty preview for the env from which the element was fetched', () => {
@@ -384,25 +368,23 @@ describe('multi env tests', () => {
         afterDeleteFetchPlan = await runPreviewGetPlan(baseDir)
       })
 
-      it('should remove the elements from the nacl files in the common folder', async () => {
-        expect(ensureFilesDontExist([
-          path.join(commonObjectDir(), naclNameToSFName(commonObjName)),
-          path.join(commonInstanceDir(), `${commonInstName}.nacl`),
-          path.join(commonObjectDir(), naclNameToSFName(objToSyncFromServiceName)),
-          path.join(commonInstanceDir(), `${instToSyncFromServiceName}.nacl`),
-          commonWithDiffCommonFilePath(),
-          commonInstWithDiffCommonFilePath(),
-        ])).toBeTruthy()
+      it('should remove the elements from the nacl files in the common folder', () => {
+        expect(path.join(commonObjectDir(), naclNameToSFName(commonObjName))).not.toExist()
+        expect(path.join(commonInstanceDir(), `${commonInstName}.nacl`)).not.toExist()
+        expect(
+          path.join(commonObjectDir(), naclNameToSFName(objToSyncFromServiceName))
+        ).not.toExist()
+        expect(path.join(commonInstanceDir(), `${instToSyncFromServiceName}.nacl`)).not.toExist()
+        expect(commonWithDiffCommonFilePath()).not.toExist()
+        expect(commonInstWithDiffCommonFilePath()).not.toExist()
       })
-      it('should remove the elements from the nacl files in the env folder', async () => {
-        expect(ensureFilesDontExist([
-          env1ObjFilePath(),
-          env1InstFilePath(),
-          commonWithDiffEnv1FilePath(),
-          commonInstWithDiffEnv1FilePath(),
-        ])).toBeTruthy()
+      it('should remove the elements from the nacl files in the env folder', () => {
+        expect(env1ObjFilePath()).not.toExist()
+        expect(env1InstFilePath()).not.toExist()
+        expect(commonWithDiffEnv1FilePath()).not.toExist()
+        expect(commonInstWithDiffEnv1FilePath()).not.toExist()
       })
-      it('should have empty preview after fetching the delete changes', async () => {
+      it('should have empty preview after fetching the delete changes', () => {
         expect(afterDeleteFetchPlan?.size).toBe(0)
       })
     })

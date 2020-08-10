@@ -555,13 +555,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration()
   private async remove(element: Element): Promise<void> {
     const type = metadataType(element)
-    if (isInstanceOfCustomObject(element)) {
-      await this.client.bulkLoadOperation(
-        apiName(element.type),
-        'delete',
-        instancesToDeleteRecords([element]),
-      )
-    } else if (isInstanceElement(element) && this.metadataToDeploy.includes(type)) {
+    if (isInstanceElement(element) && this.metadataToDeploy.includes(type)) {
       await this.deployInstance(element, true)
     } else if (!(isInstanceElement(element) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(element))

@@ -44,7 +44,7 @@ export const buildLocalStaticFilesCache = (
       if (!await exists(cacheDir)) {
         await mkdirp(cacheDir)
       }
-      replaceContents(currentCacheFile, safeJsonStringify((await cache)))
+      await replaceContents(currentCacheFile, safeJsonStringify((await cache)))
     },
     clear: async () => {
       await rm(currentCacheFile)

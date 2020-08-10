@@ -61,6 +61,7 @@ export const isSubDirectory = (
 export const isEmptyDir = async (
   dirPath: string
 ): Promise<boolean> => (await readDir(dirPath)).length === 0
+isEmptyDir.notFoundAsUndefined = notFoundAsUndefined(isEmptyDir)
 
 export const exists = async (
   filename: string

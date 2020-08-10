@@ -19,7 +19,6 @@ import {
   ReferenceExpression, PrimitiveType, PrimitiveTypes,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -551,12 +550,12 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch('Value "wrongValue2" is not valid')
+          expect(errors[0].message).toMatch('Value is not valid')
           expect(errors[0].message).toMatch('expected one of: "str"')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
 
           expect(errors[1]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[1].message).toMatch('Value "wrongValue" is not valid')
+          expect(errors[1].message).toMatch('Value is not valid')
           expect(errors[1].message).toMatch('expected one of: "restriction1", "restriction2"')
           expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
         }
@@ -573,7 +572,7 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(1)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch('Value "wrong" is not valid')
+          expect(errors[0].message).toMatch('Value is not valid')
           expect(errors[0].message).toMatch('expected one of: "val1", "val2"')
           expect(errors[0].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'temp')
@@ -751,6 +750,23 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
+      })
+
+      it('should return error on bad str primitive type with list', () => {
+        extInst.value.flatstr = ['str1', 'str2']
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
+      })
+
+      it('should return error on bad str primitive type with object', () => {
+        extInst.value.flatstr = { obj: 'str' }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should return error on bad num primitive type', () => {
@@ -758,6 +774,7 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatnum'))
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for number$'))
       })
 
       it('should return error on bad bool primitive type', () => {
@@ -965,7 +982,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(objVarElemId)
-        expect(errors[0].message).toMatch(`${safeJsonStringify({ key: 'val' })}`)
+        expect(errors[0].message).toMatch('Value is not valid for field objVar')
       })
       it('should return error when the value is a reference to an element', () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
@@ -974,6 +991,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
+        expect(errors[0].message).toMatch('Value is not valid for field instVar')
         expect(errors[0].message).toMatch('a primitive')
       })
       it('should return error when the value is a reference to an object', () => {
@@ -984,6 +1002,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
+        expect(errors[0].message).toMatch('Value is not valid for field instVar')
         expect(errors[0].message).toMatch('a primitive')
       })
       it('should return error when the value is an unresolved reference', () => {

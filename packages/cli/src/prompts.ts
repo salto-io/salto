@@ -180,6 +180,13 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Would you like to isolate the configuration for ${existingEnv} before adding the new environment?`
     + ' (Answer No to continue without changes)'
 
+    public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
+    + ' It is recommended to perform first fetch of an environment in isolated mode.'
+
+  public static readonly APPROVE_ISOLATED_RECOMMENDATION = (
+    newServicesNames: string
+  ): string => `Would you like to switch to isolated mode and fetch ${newServicesNames}? (Answer No to continue without switching)`
+
   public static readonly STATE_ONLY_UPDATE_START = (
     numOfChanges: number
   ): string => `Applying ${numOfChanges} changes to the state. Workspace will not be updated.`
@@ -227,9 +234,27 @@ ${Prompts.SERVICE_ADD_HELP}`
     invalidIds: string
   ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
 
+  public static readonly INVALID_ENV_TARGET_CURRENT = 'The current environment cannot be a target environment'
+  public static readonly UNKNOWN_TARGET_ENVS = (
+    unknownEnvs: string[]
+  ): string => (unknownEnvs.length === 1
+    ? `Unknown target environment: ${unknownEnvs[0]}`
+    : `Unknown target environments: ${unknownEnvs?.join(' ')}`)
+
   public static readonly DEMOTE_START = 'Demoting the selected elements.'
   public static readonly DEMOTE_FINISHED = 'Done demoting elements.'
   public static readonly DEMOTE_FAILED = (
     error: string
   ): string => `Failed to move the selected elements out of the common folder: ${error}`
+
+  public static readonly COPY_TO_ENV_START = (
+    targetEnvs: string[] = []
+  ): string => `Copying the selected elements to ${
+    targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
+  }.`
+
+  public static readonly COPY_TO_ENV_FINISHED = 'Done copying elements.'
+  public static readonly COPY_TO_ENV_FAILED = (
+    error: string
+  ): string => `Failed to copy the selected elements to the target environments: ${error}`
 }

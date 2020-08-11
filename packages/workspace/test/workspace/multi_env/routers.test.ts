@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { routeChanges, routePromote, routeDemote } from '../../../src/workspace/nacl_files/mutil_env/routers'
+import { routeChanges, routePromote, routeDemote, routeCopyTo } from '../../../src/workspace/nacl_files/mutil_env/routers'
 
 
 const hasChanges = (
@@ -989,7 +989,7 @@ describe('track', () => {
     ])).toBeTruthy()
   })
 
-  it('should create detailed changes without wrappingt the element if the element has fragments in common', async () => {
+  it('should create detailed changes without wrapping the element if the element has fragments in common', async () => {
     const changes = await routePromote(
       [
         splitObjEnv.fields.envField.elemID,
@@ -1243,6 +1243,180 @@ describe('untrack', () => {
     expect(changes.primarySource).toEqual([
       { action: 'add', id: multiFileCommon.elemID, path: ['default'], data: { after: multiFileCommonDefault } },
       { action: 'add', id: multiFileCommon.elemID, path: ['other'], data: { after: multiFileCommonOther } },
+    ])
+  })
+})
+
+describe('copyTo', () => {
+  const onlyInEnv1Obj = new ObjectType({
+    elemID: new ElemID('salto', 'onlyInEnvObj'),
+    fields: {
+      str: {
+        type: BuiltinTypes.STRING,
+      },
+      num: {
+        type: BuiltinTypes.NUMBER,
+      },
+    },
+    annotations: {
+      str: 'STR',
+    },
+  })
+
+  const splitObjEnv1 = new ObjectType({
+    elemID: new ElemID('salto', 'splitObj'),
+    fields: {
+      e1Field: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          here: {
+            we: {
+              go: 'again',
+            },
+          },
+        },
+      },
+      splitField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          env: 'ENV',
+        },
+      },
+    },
+  })
+
+  const splitObjEnv2 = new ObjectType({
+    elemID: new ElemID('salto', 'splitObj'),
+    fields: {
+      e2Field: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          here: {
+            we: {
+              go: 'again',
+            },
+          },
+        },
+      },
+      splitField: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          common: 'COMMON',
+        },
+      },
+    },
+  })
+
+  const multiFileInstaceDefault = new InstanceElement('split', onlyInEnv1Obj, {
+    default: 'DEFAULT',
+  })
+  const multiFileInstaceOther = new InstanceElement('split', onlyInEnv1Obj, {
+    other: 'OTHER',
+  })
+  const multiFileInstace = new InstanceElement('split', onlyInEnv1Obj, {
+    other: 'OTHER',
+    default: 'DEFAULT',
+  })
+
+  const inSecObject = new ObjectType({
+    elemID: new ElemID('salto', 'inSec'),
+  })
+  const primaryElements = [onlyInEnv1Obj, splitObjEnv1, multiFileInstace, inSecObject]
+  const secondaryElements = [splitObjEnv2, inSecObject]
+
+  const primarySrc = createMockNaclFileSource(
+    primaryElements,
+    {
+      'default.nacl': [onlyInEnv1Obj, splitObjEnv1, multiFileInstaceDefault, inSecObject],
+      'other.nacl': [multiFileInstaceOther],
+    }
+  )
+  const secondarySources = {
+    sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
+  }
+
+  it('should copy an entire element which does not exist in the target env', async () => {
+    const changes = await routeCopyTo(
+      [onlyInEnv1Obj.elemID],
+      primarySrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(0)
+    expect(changes.commonSource).toHaveLength(0)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+    const secondaryChange = changes.secondarySources?.sec && changes.secondarySources?.sec[0]
+    expect(secondaryChange?.id).toEqual(onlyInEnv1Obj.elemID)
+    expect(secondaryChange?.action).toEqual('add')
+    expect(secondaryChange?.data).toEqual({ after: onlyInEnv1Obj })
+  })
+
+  it('should create detailed changes when an element fragment is present in the target env', async () => {
+    const changes = await routeCopyTo(
+      [splitObjEnv1.elemID],
+      primarySrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(0)
+    expect(changes.commonSource).toHaveLength(0)
+    expect(changes.secondarySources?.sec).toHaveLength(4)
+    expect(hasChanges(changes.secondarySources?.sec || [], [
+      { action: 'remove', id: splitObjEnv2.fields.e2Field.elemID },
+      { action: 'add', id: splitObjEnv1.fields.e1Field.elemID },
+      { action: 'remove', id: splitObjEnv2.fields.splitField.elemID.createNestedID('common') },
+      { action: 'add', id: splitObjEnv2.fields.splitField.elemID.createNestedID('env') },
+    ])).toBeTruthy()
+  })
+
+  it('should wrap nested ids in an object when copying nested ids of an element'
+      + ' with no fragment in the target env', async () => {
+    const changes = await routeCopyTo(
+      [
+        onlyInEnv1Obj.fields.str.elemID,
+        onlyInEnv1Obj.elemID.createNestedID('attr', 'str'),
+      ],
+      primarySrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(0)
+    expect(changes.commonSource).toHaveLength(0)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+    expect(hasChanges(changes.secondarySources?.sec || [], [
+      { action: 'add', id: onlyInEnv1Obj.elemID },
+    ])).toBeTruthy()
+  })
+
+  it('should add nested fields for existing objects', async () => {
+    const changes = await routeCopyTo(
+      [splitObjEnv1.fields.e1Field.elemID],
+      primarySrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(0)
+    expect(changes.commonSource).toHaveLength(0)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+    expect(hasChanges(changes.secondarySources?.sec || [], [
+      { action: 'add', id: splitObjEnv1.fields.e1Field.elemID },
+    ])).toBeTruthy()
+  })
+
+  it('should maintain file structure when copying an element to target env', async () => {
+    const changes = await routeCopyTo(
+      [multiFileInstace.elemID],
+      primarySrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(0)
+    expect(changes.commonSource).toHaveLength(0)
+    expect(changes.secondarySources?.sec).toHaveLength(2)
+    expect(changes.secondarySources?.sec).toEqual([
+      { action: 'add',
+        id: multiFileInstace.elemID,
+        path: ['default'],
+        data: { after: multiFileInstaceDefault } },
+      { action: 'add',
+        id: multiFileInstace.elemID,
+        path: ['other'],
+        data: { after: multiFileInstaceOther } },
     ])
   })
 })

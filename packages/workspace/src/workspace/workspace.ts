@@ -110,6 +110,7 @@ export type Workspace = {
   promote(ids: ElemID[]): Promise<void>
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
+  copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
 }
 
 // common source has no state
@@ -310,6 +311,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     promote: naclFilesSource.promote,
     demote: naclFilesSource.demote,
     demoteAll: naclFilesSource.demoteAll,
+    copyTo: naclFilesSource.copyTo,
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

@@ -14,16 +14,15 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { collections } from '@salto-io/lowerdash'
 import {
-  Change, ChangeGroupIdFunction, getChangeElement, InstanceElement,
+  Change, ChangeGroupIdFunction, getChangeElement, InstanceElement, ChangeEntry,
 } from '@salto-io/adapter-api'
 import { apiName, isInstanceOfCustomObject } from './transformers/transformer'
 
 export const getInstancesOfCustomObjectChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const isInstanceOfCustomObjectChange = (
-    change: [collections.set.SetId, Change]
-  ): change is [collections.set.SetId, Change<InstanceElement>] => {
+    change: ChangeEntry
+  ): change is ChangeEntry<InstanceElement> => {
     const changeElement = getChangeElement(change[1])
     return isInstanceOfCustomObject(changeElement)
   }

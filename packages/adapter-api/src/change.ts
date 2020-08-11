@@ -25,8 +25,11 @@ import { Values, Value } from './values'
 export { ActionName }
 
 export type ChangeDataType = ObjectType | InstanceElement | Field | PrimitiveType
+export type AdditionChange<T> = AdditionDiff<T>
+export type ModificationChange<T> = ModificationDiff<T>
+export type RemovalChange<T> = RemovalDiff<T>
 export type Change<T = ChangeDataType> =
-  AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>
+  AdditionChange<T> | ModificationChange<T> | RemovalChange<T>
 
 export const isModificationDiff = <T>(change: Change<T>): change is ModificationDiff<T> =>
   change.action === 'modify'

@@ -13,31 +13,33 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
-import { Change, isAdditionDiff, isRemovalDiff, isModificationDiff, ChangeDataType } from './change'
+import {
+  Change, isAdditionDiff, isRemovalDiff, isModificationDiff, ChangeDataType, ModificationChange,
+  AdditionChange, RemovalChange,
+} from './change'
 import { ChangeId } from './dependency_changer'
 
 export type ChangeGroupId = string
 
-export type ChangeGroup = {
+export type ChangeGroup<ChangeType = Change<ChangeDataType>> = {
   groupID: ChangeGroupId
-  changes: ReadonlyArray<Change>
+  changes: ReadonlyArray<ChangeType>
 }
 
 export type ChangeGroupIdFunction = (changes: Map<ChangeId, Change>) =>
   Promise<Map<ChangeId, ChangeGroupId>>
 
-export const isAdditionGroup = (
-  changeGroup: ChangeGroup
-): changeGroup is { groupID: ChangeGroupId; changes: AdditionDiff<ChangeDataType>[] } =>
-  (changeGroup.changes.every(change => isAdditionDiff(change)))
+export const isAdditionGroup = <T>(
+  changeGroup: ChangeGroup<Change<T>>
+): changeGroup is ChangeGroup<AdditionChange<T>> =>
+    (changeGroup.changes.every(change => isAdditionDiff(change)))
 
-export const isRemovalGroup = (
-  changeGroup: ChangeGroup
-): changeGroup is { groupID: ChangeGroupId; changes: RemovalDiff<ChangeDataType>[] } =>
-  (changeGroup.changes.every(change => isRemovalDiff(change)))
+export const isRemovalGroup = <T>(
+  changeGroup: ChangeGroup<Change<T>>
+): changeGroup is ChangeGroup<RemovalChange<T>> =>
+    (changeGroup.changes.every(change => isRemovalDiff(change)))
 
-export const isModificationGroup = (
-  changeGroup: ChangeGroup
-): changeGroup is { groupID: ChangeGroupId; changes: ModificationDiff<ChangeDataType>[] } =>
-  (changeGroup.changes.every(change => isModificationDiff(change)))
+export const isModificationGroup = <T>(
+  changeGroup: ChangeGroup<Change<T>>
+): changeGroup is ChangeGroup<ModificationChange<T>> =>
+    (changeGroup.changes.every(change => isModificationDiff(change)))

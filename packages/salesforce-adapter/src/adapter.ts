@@ -31,9 +31,9 @@ import { decorators, collections } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
-  toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
-  metadataType, createMetadataTypeElements, instancesToDeleteRecords,
-  defaultApiName, getLookUpName, isMetadataObjectType, isInstanceOfCustomObject,
+  toCustomField, toCustomObject, apiName, Types, toMetadataInfo,
+  metadataType, createMetadataTypeElements, createInstanceElement,
+  defaultApiName, getLookUpName, isMetadataObjectType,
 } from './transformers/transformer'
 import { toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -453,14 +453,15 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
     const resolvedChanges = changeGroup.changes
       .map(change => resolveChangeElement(change, getLookUpName))
+    const resolvedChangeGroup = { groupID: changeGroup.groupID, changes: resolvedChanges }
     const changeByElem = _.groupBy(
       resolvedChanges,
       change => getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName(),
     )
     let results: DeployResult[]
-    if (isCustomObjectInstancesGroup(changeGroup)) {
+    if (isCustomObjectInstancesGroup(resolvedChangeGroup)) {
       results = [await deployCustomObjectInstancesGroup(
-        { groupID: changeGroup.groupID, changes: resolvedChanges },
+        resolvedChangeGroup,
         this.client,
         this.filtersRunner,
       )]

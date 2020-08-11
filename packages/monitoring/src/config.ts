@@ -102,10 +102,16 @@ const validateNotificationTypeConfig = (config: Config): void => {
   }
 }
 
+const validateTelemetryConfig = (config: Config): void => {
+  if (_.isUndefined(config.telemetry)) {
+    throw new Error('telemetry config is required')
+  }
+}
+
 export const getTelemetry = (config: Config): Telemetry => telemetrySender(
   config.telemetry,
   {
-    installationID: config.telemetry.id,
+    installationID: config.telemetry.id ?? 'default',
     app: 'monitoring',
     sessionID: uuidv4(),
   }
@@ -115,6 +121,7 @@ export const validateConfig = (config: Config): void => {
   validateRegex(config)
   validateTriggerNames(config)
   validateNotificationTypeConfig(config)
+  validateTelemetryConfig(config)
 }
 
 export const readConfigFile = async (filePath: string): Promise<Config> => {

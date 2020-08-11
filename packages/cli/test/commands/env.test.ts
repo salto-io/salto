@@ -125,7 +125,27 @@ describe('env commands', () => {
       expect(lastWorkspace.demoteAll).toHaveBeenCalled()
     })
 
-    it('should not prompt on 2nd environment creation if  workspace is empty', async () => {
+    it('should not prompt if force=true and acceptSuggestions=false, and do nothing', async () => {
+      await command('.', 'create', cliOutput, 'me2', undefined, true).execute()
+      expect(cliOutput.stdout.content.search('me2')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
+      expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+    })
+
+    it('should isolate without prompting if acceptSuggestions=true', async () => {
+      await command('.', 'create', cliOutput, 'me2', undefined, undefined, true).execute()
+      expect(cliOutput.stdout.content.search('me2')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
+      expect(lastWorkspace.demoteAll).toHaveBeenCalled()
+    })
+    it('should isolate without prompting if acceptSuggestions=true and force=true', async () => {
+      await command('.', 'create', cliOutput, 'me2', undefined, true, true).execute()
+      expect(cliOutput.stdout.content.search('me2')).toBeGreaterThan(0)
+      expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
+      expect(lastWorkspace.demoteAll).toHaveBeenCalled()
+    })
+
+    it('should not prompt on 2nd environment creation if workspace is empty', async () => {
       jest.spyOn(core, 'loadLocalWorkspace').mockImplementationOnce(baseDir => {
         lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1'], true)
         return Promise.resolve(lastWorkspace)

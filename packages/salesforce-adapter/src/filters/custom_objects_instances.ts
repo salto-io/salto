@@ -25,7 +25,7 @@ import {
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds } from '../transformers/transformer'
-import { getNamespace, getNamespaceFromString } from './utils'
+import { getNamespace } from './utils'
 import { DataManagementConfig } from '../types'
 
 const { mapValuesAsync } = promises.object
@@ -310,15 +310,16 @@ const getBaseTypesNames = (
   customObjectNames: string[],
   configs: DataManagementConfig[]
 ): string[] => {
-  const groupedIncludeNamespaces = configs.flatMap(config => makeArray(config.includeNamespaces))
-  const groupedIncludeObjects = configs.flatMap(config => makeArray(config.includeObjects))
-  const groupedExcludeObjects = configs.flatMap(config => makeArray(config.excludeObjects))
-  return customObjectNames.filter(customObjectName => {
-    const namespace = getNamespaceFromString(customObjectName)
-    return ((namespace !== undefined && groupedIncludeNamespaces.includes(namespace))
-      || groupedIncludeObjects.includes(customObjectName))
-      && !groupedExcludeObjects.includes(customObjectName)
-  })
+  const groupedIncludeObjects = configs
+    .flatMap(config => makeArray(config.includeObjects))
+    .map(e => new RegExp(e))
+  const groupedExcludeObjects = configs
+    .flatMap(config => makeArray(config.excludeObjects))
+    .map(e => new RegExp(e))
+  return customObjectNames
+    .filter(customObjectName =>
+      (groupedIncludeObjects.some(objRegex => objRegex.test(customObjectName))
+      && !groupedExcludeObjects.some(objRejex => objRejex.test(customObjectName))))
 }
 
 const getAllowReferencedTypesNames = (

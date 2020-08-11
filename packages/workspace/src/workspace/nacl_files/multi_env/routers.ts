@@ -44,7 +44,7 @@ const filterByFile = async (
     .filter(e => resolvePath(e, id) !== undefined))
 )
 
-const seperateChangeByFiles = async (
+const separateChangeByFiles = async (
   change: DetailedChange,
   source: NaclFilesSource
 ): Promise<DetailedChange[]> => Promise.all(
@@ -292,7 +292,7 @@ export const routeIsolated = async (
               (await projectChange(
                 createAddChange(currentCommonElement, change.id, pathHint), source
               )
-              ).map(projectedChange => seperateChangeByFiles(projectedChange, commonSource))
+              ).map(projectedChange => separateChangeByFiles(projectedChange, commonSource))
             )
           ),
         ])
@@ -466,7 +466,7 @@ const addToSource = async ({
     const after = mergeResult.merged[0] as ChangeDataType
     return detailedCompare(before, after, true)
   })))
-  return (await Promise.all(fullChanges.map(change => seperateChangeByFiles(
+  return (await Promise.all(fullChanges.map(change => separateChangeByFiles(
     change,
     change.action === 'remove' ? targetSource : originSource
   )))).flat()

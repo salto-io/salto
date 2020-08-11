@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ElemID, Field, ObjectType, PrimitiveType,
+  ChangeError, ElemID, Field, ObjectType, PrimitiveType, toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import unknownFieldValidator from '../../src/change_validators/unknown_field'
 import { API_NAME } from '../../src/constants'
-import { toChange } from '../utils'
 
 
 describe('unknown field change validator', () => {

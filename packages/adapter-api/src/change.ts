@@ -68,3 +68,18 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
     id: ElemID
     path?: string[]
   }
+
+export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
+
+export const toChange = ({ before, after }: ChangeParams): Change => {
+  if (before !== undefined && after !== undefined) {
+    return { action: 'modify', data: { before, after } }
+  }
+  if (before !== undefined) {
+    return { action: 'remove', data: { before } }
+  }
+  if (after !== undefined) {
+    return { action: 'add', data: { after } }
+  }
+  throw new Error('Must provide before or after')
+}

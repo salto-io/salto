@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Change, ObjectType, isObjectType, ElemID, getChangeElement, ChangeDataType,
+  Change, ObjectType, isObjectType, ElemID, getChangeElement,
 } from '@salto-io/adapter-api'
 import { Group, DataNodeMap } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from '../../src/core/plan'
@@ -54,17 +54,3 @@ export const getFirstPlanItem = (plan: Plan): PlanItem =>
 export const getChange = (item: PlanItem, elemID: ElemID): Change =>
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   wu(item.changes()).find(change => getChangeElement(change).elemID.isEqual(elemID))!
-
-export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
-export const toChange = ({ before, after }: ChangeParams): Change => {
-  if (before !== undefined && after !== undefined) {
-    return { action: 'modify', data: { before, after } }
-  }
-  if (before !== undefined) {
-    return { action: 'remove', data: { before } }
-  }
-  if (after !== undefined) {
-    return { action: 'add', data: { after } }
-  }
-  throw new Error('must provide before or after')
-}

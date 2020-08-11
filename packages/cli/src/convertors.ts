@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID } from '@salto-io/adapter-api'
+import { regex } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
 export const convertToIDSelectors = (
@@ -33,13 +34,10 @@ export const convertToIDSelectors = (
 export const createRegexFilters = (
   inputFilters: string[]
 ): {filters: RegExp[]; invalidFilters: string[]} => {
-  const [validFilters, invalidFilters] = _.partition(inputFilters, filter => {
-    try {
-      return new RegExp(filter)
-    } catch (e) {
-      return false
-    }
-  })
+  const [validFilters, invalidFilters] = _.partition(
+    inputFilters,
+    filter => regex.isValidRegex(filter)
+  )
   const filters = validFilters.map(filter => new RegExp(filter))
   return { filters, invalidFilters }
 }

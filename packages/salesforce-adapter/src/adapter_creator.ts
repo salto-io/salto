@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter,
@@ -39,25 +39,18 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 SalesforceConfig => {
-  const validateRegularExpressions = (regularExpressions: string[]): void => {
+  const validateRegularExpressions = (listName: string, regularExpressions: string[]): void => {
     const invalidRegularExpressions = regularExpressions
-      .filter(regex => {
-        try {
-          RegExp(regex)
-          return false
-        } catch (e) {
-          return true
-        }
-      })
+      .filter(strRegex => !regex.isValidRegex(strRegex))
     if (!_.isEmpty(invalidRegularExpressions)) {
-      const errMessage = `Failed to load config due to an invalid ${INSTANCES_REGEX_SKIPPED_LIST} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
+      const errMessage = `Failed to load config due to an invalid ${listName} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
       log.error(errMessage)
       throw Error(errMessage)
     }
   }
 
   const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
-  validateRegularExpressions(instancesRegexSkippedList)
+  validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
   const adapterConfig = {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),

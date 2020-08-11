@@ -74,7 +74,7 @@ export const shouldCancelInCaseOfNoRecentState = async (
   return shouldCancel
 }
 
-export const getFetchModeChangeAction = async (
+export const getChangeToAlignAction = async (
   fetchMode: string,
   { stdout }: CliOutput
 ): Promise<YesNoCancelAnswer> => {

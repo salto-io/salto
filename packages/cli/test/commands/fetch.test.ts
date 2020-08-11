@@ -696,7 +696,7 @@ describe('fetch command', () => {
     })
 
     it('should prompt to change mode, and continue as-is on "no"', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
       await command(
@@ -710,12 +710,12 @@ describe('fetch command', () => {
         services,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).toHaveBeenCalledTimes(1)
+      expect(callbacks.getChangeToAlignAction).toHaveBeenCalledTimes(1)
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
     })
     it('should prompt to change mode, and change to "align" on "yes"', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('yes')
       )
       await command(
@@ -729,12 +729,12 @@ describe('fetch command', () => {
         services,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).toHaveBeenCalledTimes(1)
+      expect(callbacks.getChangeToAlignAction).toHaveBeenCalledTimes(1)
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('align')
     })
     it('should prompt to change mode, and cancel on "cancel operation"', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('cancel operation')
       )
       await command(
@@ -748,11 +748,11 @@ describe('fetch command', () => {
         services,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).toHaveBeenCalledTimes(1)
+      expect(callbacks.getChangeToAlignAction).toHaveBeenCalledTimes(1)
       expect(fetchCmd.fetchCommand).not.toHaveBeenCalled()
     })
     it('should not prompt if running with force=true', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
       await command(
@@ -766,12 +766,12 @@ describe('fetch command', () => {
         services,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('override')
     })
     it('should not prompt if already ran service', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
       mockLoadWorkspace.mockResolvedValue({
@@ -790,12 +790,12 @@ describe('fetch command', () => {
         services,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
     })
     it('should not prompt if mode is align', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
       await command(
@@ -809,12 +809,12 @@ describe('fetch command', () => {
         services,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('align')
     })
     it('should not prompt if nothing is under common', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementation(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementation(
         () => Promise.resolve('no')
       )
       mockLoadWorkspace.mockResolvedValue({
@@ -833,13 +833,13 @@ describe('fetch command', () => {
         services,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
     })
 
     it('should not prompt if only one of the services is new', async () => {
-      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+      jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
       mockLoadWorkspace.mockResolvedValue({
@@ -860,7 +860,7 @@ describe('fetch command', () => {
         true,
       ).execute()
 
-      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('override')
     })

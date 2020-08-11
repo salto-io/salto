@@ -228,7 +228,7 @@ export const mockLoadWorkspace = (
   name: string,
   envs = ['active', 'inactive'],
   isEmpty = false,
-  hasServiceElements = true,
+  hasElementsInServices = true,
 ): Workspace =>
   ({
     uid: '123',
@@ -240,7 +240,7 @@ export const mockLoadWorkspace = (
     hasErrors: () => jest.fn().mockResolvedValue(false),
     errors: () => jest.fn().mockResolvedValue(mockErrors([])),
     isEmpty: jest.fn().mockResolvedValue(isEmpty),
-    hasServiceElements: jest.fn().mockResolvedValue(hasServiceElements),
+    hasElementsInServices: jest.fn().mockResolvedValue(hasElementsInServices),
     getTotalSize: jest.fn().mockResolvedValue(0),
     addEnvironment: jest.fn(),
     deleteEnvironment: jest.fn(),

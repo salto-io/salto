@@ -44,7 +44,7 @@ import {
 import {
   getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig,
-  getFetchModeChangeAction,
+  getChangeToAlignAction,
 } from '../callbacks'
 import {
   loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace,
@@ -232,7 +232,7 @@ const shouldRecommendAlignMode = async (
 
   return (
     newlyAddedServices.every(recency => recency.status === 'Nonexistent')
-    && workspace.hasServiceElements(newlyAddedServices.map(recency => recency.serviceName))
+    && workspace.hasElementsInServices(newlyAddedServices.map(recency => recency.serviceName))
   )
 }
 
@@ -263,7 +263,7 @@ export const command = (
 
     let useAlignMode = false
     if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, inputServices)) {
-      const userChoice = await getFetchModeChangeAction(mode, output)
+      const userChoice = await getChangeToAlignAction(mode, output)
       if (userChoice === 'cancel operation') {
         log.info('Canceling operation based on user input')
         return CliExitCode.UserInputError

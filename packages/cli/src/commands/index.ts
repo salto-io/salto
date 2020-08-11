@@ -33,7 +33,7 @@ export default [
   restoreBuilder,
   servicesBuilder,
   envsBuilder,
-  diffBuilder,
   promoteBuilder,
   demoteBuilder,
+  diffBuilder,
 ] as YargsCommandBuilder[]

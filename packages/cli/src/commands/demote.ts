@@ -85,7 +85,7 @@ type DemoteParsedCliInput = ParsedCliInput<DemoteArgs>
 const demoteBuilder = createCommandBuilder({
   options: {
     command: 'demote [selectors..]',
-    description: 'Demote the selected elements to a not be shared between environments status.',
+    description: 'Demote the selected elements to not be shared between environments.',
     keyed: {
       force: {
         alias: ['f'],

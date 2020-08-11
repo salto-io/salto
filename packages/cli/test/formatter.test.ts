@@ -21,7 +21,7 @@ import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
-  formatChangeErrors, formatConfigChangeNeeded } from '../src/formatter'
+  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
@@ -334,6 +334,18 @@ describe('formatter', () => {
     })
   })
 
+  describe('formatShouldChangeFetchModeToAlign', () => {
+    let formattedString: string
+    const fetchMode = 'override'
+    beforeAll(() => {
+      formattedString = formatShouldChangeFetchModeToAlign(fetchMode)
+    })
+
+    it('should contain the fetch modes', () => {
+      expect(formattedString).toContain(fetchMode)
+      expect(formattedString).toContain('align')
+    })
+  })
   describe('workspace error format with source fragments', () => {
     let formattedErrors: string
     beforeEach(() => {

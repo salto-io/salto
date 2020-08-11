@@ -79,6 +79,7 @@ export type Workspace = {
     Promise<Readonly<Record<string, InstanceElement>>>
 
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
+  hasElementsInServices(serviceNames: string[]): Promise<boolean>
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
@@ -292,6 +293,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       const isNaclFilesSourceEmpty = !naclFilesSource || _.isEmpty(await naclFilesSource.getAll())
       return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
+    hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (
+      (await naclFilesSource.list()).some(
+        elemId => serviceNames.includes(elemId.adapter)
+      )
+    ),
     setNaclFiles: naclFilesSource.setNaclFiles,
     updateNaclFiles,
     removeNaclFiles: naclFilesSource.removeNaclFiles,

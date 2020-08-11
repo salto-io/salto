@@ -19,7 +19,7 @@ import wu from 'wu'
 import { FetchChange, Tags, loadLocalWorkspace, StepEmitter } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Workspace, nacl } from '@salto-io/workspace'
+import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
   formatFinishedLoading, formatWorkspaceAbort } from '../formatter'
@@ -42,6 +42,7 @@ const isError = (e: SaltoError): boolean => (e.severity === 'Error')
 export type LoadWorkspaceResult = {
   workspace: Workspace
   errored: boolean
+  stateRecencies: StateRecency[]
 }
 type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 type WorkspaceStatusErrors = {
@@ -167,19 +168,19 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     && !_.isEmpty(invalidRecencies) && status !== 'Error') {
     const shouldCancel = await shouldCancelInCaseOfNoRecentState(invalidRecencies, cliOutput)
     if (shouldCancel) {
-      return { workspace, errored: true }
+      return { workspace, errored: true, stateRecencies }
     }
   }
   // Handle warnings/errors
   await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), cliOutput)
   if (status === 'Warning' && !force) {
     const shouldContinue = await shouldContinueInCaseOfWarnings(errors.length, cliOutput)
-    return { workspace, errored: !shouldContinue }
+    return { workspace, errored: !shouldContinue, stateRecencies }
   }
   if (status === 'Error') {
     cliOutput.stdout.write(formatWorkspaceAbort(errors.length))
   }
-  return { workspace, errored: status === 'Error' }
+  return { workspace, errored: status === 'Error', stateRecencies }
 }
 
 export const updateStateOnly = async (ws: Workspace,

@@ -15,9 +15,7 @@
 */
 import {
   ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
-  StaticFile,
 } from '@salto-io/adapter-api'
-import { MetadataInfo } from 'jsforce'
 import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
@@ -180,7 +178,3 @@ export const configType = new ObjectType({
     },
   },
 })
-
-export interface MetadataInfoWithStaticFile extends MetadataInfo {
- content: StaticFile
-}

@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { RetrieveResult, FileProperties } from 'jsforce'
-import { fromRetrieveResult, toMetadataPackageZip, MetadataValues } from '../../src/transformers/xml_transformer'
+import { fromRetrieveResult, toMetadataPackageZip } from '../../src/transformers/xml_transformer'
 import {
   INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE,
 } from '../../src/constants'
@@ -27,6 +27,7 @@ import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
+import { MetadataValues } from '../../src/transformers/transformer'
 
 
 describe('XML Transformer', () => {

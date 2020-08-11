@@ -27,6 +27,7 @@ import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject, instancesToUpdateRecords,
   getValueTypeFieldElement, createMetadataTypeElements, getLookUpName,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
+  isMetadataObjectType, isMetadataInstanceElement,
 } from '../../src/transformers/transformer'
 import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
@@ -1526,6 +1527,44 @@ describe('transformer', () => {
       METADATA_TYPES_TO_RENAME.forEach((_value, key) => {
         const elemId: ElemID = Types.getElemId(key, false, undefined)
         expect(elemId.name).toEqual(METADATA_TYPES_TO_RENAME.get(key))
+      })
+    })
+  })
+  describe('metadata type guards', () => {
+    const mdType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'test'),
+      annotations: { [METADATA_TYPE]: 'test' },
+    })
+    const nonMdType = new ObjectType({ elemID: new ElemID(SALESFORCE, 'test2') })
+    describe('isMetadataObjectType', () => {
+      it('should return true for metadata object types', () => {
+        expect(isMetadataObjectType(mdType)).toBeTruthy()
+      })
+      it('should return false for other object types', () => {
+        expect(isMetadataObjectType(nonMdType)).toBeFalsy()
+      })
+    })
+    describe('isMetadataInstanceElement', () => {
+      it('should return true for metadata instances', () => {
+        expect(isMetadataInstanceElement(new InstanceElement(
+          'test',
+          mdType,
+          { [INSTANCE_FULL_NAME_FIELD]: 'test' },
+        ))).toBeTruthy()
+      })
+      it('should return false for instance of non metadata types', () => {
+        expect(isMetadataInstanceElement(new InstanceElement(
+          'test',
+          nonMdType,
+          { [INSTANCE_FULL_NAME_FIELD]: 'test' },
+        ))).toBeFalsy()
+      })
+      it('should return false for instances without a fullName', () => {
+        expect(isMetadataInstanceElement(new InstanceElement(
+          'test',
+          mdType,
+          {},
+        ))).toBeFalsy()
       })
     })
   })

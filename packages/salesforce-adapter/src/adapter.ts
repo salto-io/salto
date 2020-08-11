@@ -33,7 +33,7 @@ import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, createMetadataTypeElements, instancesToUpdateRecords, instancesToDeleteRecords,
-  defaultApiName, getLookUpName, isCustomObject, instancesToCreateRecords,
+  defaultApiName, getLookUpName, isCustomObject, instancesToCreateRecords, isMetadataObjectType,
 } from './transformers/transformer'
 import { toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -73,7 +73,6 @@ import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { retrieveMetadataInstances } from './fetch'
-import { IS_FOLDER } from './constants'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -836,7 +835,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       knownTypes,
       baseTypeNames,
       client: this.client,
-      annotations: { hasMetaFile: typeInfo.metaFile ? true : undefined, folderType },
+      annotations: {
+        hasMetaFile: typeInfo.metaFile ? true : undefined,
+        folderType,
+        suffix: typeInfo.suffix,
+        dirName: typeInfo.directoryName,
+      },
     })
     const folderTypes = folderType === undefined
       ? []
@@ -846,7 +850,11 @@ export default class SalesforceAdapter implements AdapterOperations {
         knownTypes,
         baseTypeNames,
         client: this.client,
-        annotations: { hasMetaFile: true, isFolder: true },
+        annotations: {
+          hasMetaFile: true,
+          folderContentType: typeInfo.xmlName,
+          dirName: typeInfo.directoryName,
+        },
       })
     return [...mainTypes, ...folderTypes]
   }
@@ -878,8 +886,11 @@ export default class SalesforceAdapter implements AdapterOperations {
     const typeInfos = await typeInfoPromise
     const topLevelTypeNames = typeInfos.map(info => info.xmlName)
     const topLevelTypes = (await types)
-      .filter(isObjectType)
-      .filter(t => topLevelTypeNames.includes(apiName(t)) || t.annotations[IS_FOLDER] === true)
+      .filter(isMetadataObjectType)
+      .filter(t => (
+        topLevelTypeNames.includes(apiName(t))
+        || t.annotations.folderContentType !== undefined
+      ))
 
     const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(
       topLevelTypes,

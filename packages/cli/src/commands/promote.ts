@@ -88,7 +88,7 @@ export const command = (
 const promoteBuilder = createCommandBuilder({
   options: {
     command: 'promote [selectors..]',
-    description: 'Promote the specific environment elements to a shared between all environments.',
+    description: 'Promote the specific environment elements to be shared between all environments.',
     keyed: {
       force: {
         alias: ['f'],

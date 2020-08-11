@@ -691,6 +691,10 @@ describe('fetch command', () => {
     afterEach(() => {
       jest.clearAllMocks()
     })
+    afterAll(() => {
+      jest.restoreAllMocks()
+    })
+
     it('should prompt to change mode, and continue as-is on "no"', async () => {
       jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
         () => Promise.resolve('no')

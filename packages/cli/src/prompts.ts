@@ -180,13 +180,6 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Would you like to isolate the configuration for ${existingEnv} before adding the new environment?`
     + ' (Answer No to continue without changes)'
 
-    public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
-    + ' It is recommended to perform first fetch of an environment in isolated mode.'
-
-  public static readonly APPROVE_ISOLATED_RECOMMENDATION = (
-    newServicesNames: string
-  ): string => `Would you like to switch to isolated mode and fetch ${newServicesNames}? (Answer No to continue without switching)`
-
   public static readonly STATE_ONLY_UPDATE_START = (
     numOfChanges: number
   ): string => `Applying ${numOfChanges} changes to the state. Workspace will not be updated.`

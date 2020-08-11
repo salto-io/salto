@@ -473,7 +473,7 @@ export const formatShouldCancelWithNonexistentState = warn(
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 
-export const formatShouldChangeFetchMode = (
+export const formatShouldChangeFetchModeToAlign = (
   fetchMode: string
 ): string => warn(Prompts.FETCH_SHOULD_ALIGN_FETCH_MODE(fetchMode))
 export const formatChangingFetchMode = header(`${Prompts.FETCH_CHANGING_FETCH_MODE_TO_ALIGN}\n`)

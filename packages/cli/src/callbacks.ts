@@ -25,7 +25,7 @@ import { StateRecency } from '@salto-io/workspace'
 import {
   formatFetchChangeForApproval, formatShouldContinueWithWarning, formatCancelCommand,
   formatCredentialsHeader, formatConfigFieldInput, formatShouldAbortWithValidationError,
-  formatConfigChangeNeeded, formatShouldCancelWithOldState, formatShouldChangeFetchMode,
+  formatConfigChangeNeeded, formatShouldCancelWithOldState, formatShouldChangeFetchModeToAlign,
   formatShouldCancelWithNonexistentState, formatDetailedChanges, formatChangingFetchMode,
   formatNotChangingFetchMode,
 } from './formatter'
@@ -78,7 +78,7 @@ export const getFetchModeChangeAction = async (
   fetchMode: string,
   { stdout }: CliOutput
 ): Promise<YesNoCancelAnswer> => {
-  const prompt = formatShouldChangeFetchMode(fetchMode)
+  const prompt = formatShouldChangeFetchModeToAlign(fetchMode)
   const answer = await getUserYesNoCancelInput(prompt)
   stdout.write({
     yes: formatChangingFetchMode,

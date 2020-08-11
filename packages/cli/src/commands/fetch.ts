@@ -225,13 +225,15 @@ const shouldRecommendAlignMode = async (
   inputServices?: string[],
 ): Promise<boolean> => {
   const newlyAddedServices = stateRecencies
-    .filter(recency => recency.status === 'Nonexistent')
     .filter(recency => (
-      !Array.isArray(inputServices)
+      inputServices === undefined
       || inputServices.includes(recency.serviceName)
     ))
-    .map(recency => recency.serviceName)
-  return (newlyAddedServices.length > 0) && workspace.hasServiceElements(newlyAddedServices)
+
+  return (
+    newlyAddedServices.every(recency => recency.status === 'Nonexistent')
+    && workspace.hasServiceElements(newlyAddedServices.map(recency => recency.serviceName))
+  )
 }
 
 export const command = (

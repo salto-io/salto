@@ -21,7 +21,7 @@ import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
-  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchMode } from '../src/formatter'
+  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
@@ -334,11 +334,11 @@ describe('formatter', () => {
     })
   })
 
-  describe('formatShouldChangeFetchMode', () => {
+  describe('formatShouldChangeFetchModeToAlign', () => {
     let formattedString: string
     const fetchMode = 'override'
     beforeAll(() => {
-      formattedString = formatShouldChangeFetchMode(fetchMode)
+      formattedString = formatShouldChangeFetchModeToAlign(fetchMode)
     })
 
     it('should contain the fetch modes', () => {

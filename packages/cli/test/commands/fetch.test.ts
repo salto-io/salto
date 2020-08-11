@@ -833,7 +833,35 @@ describe('fetch command', () => {
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
     })
+
+    it('should not prompt if only one of the services is new', async () => {
+      jest.spyOn(callbacks, 'getFetchModeChangeAction').mockImplementationOnce(
+        () => Promise.resolve('no')
+      )
+      mockLoadWorkspace.mockResolvedValue({
+        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, false),
+        errored: false,
+        stateRecencies: [
+          { serviceName: 'salesforce', status: 'Nonexistent' },
+          { serviceName: 'netsuite', status: 'Valid' },
+        ],
+      })
+      await command(
+        workspaceDir,
+        false, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        'override',
+        true,
+      ).execute()
+
+      expect(callbacks.getFetchModeChangeAction).not.toHaveBeenCalled()
+      expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
+      expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('override')
+    })
   })
+
   describe('Verify using env command', () => {
     const mockTelemetry: mocks.MockTelemetry = mocks.getMockTelemetry()
     const workspaceDir = 'valid-ws'

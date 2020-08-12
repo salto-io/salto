@@ -38,6 +38,9 @@ describe('Custom Object Instances filter', () => {
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
 
+  const createNamespaceRegexFromString = (namespace: string): string =>
+    `${namespace}__.*`
+
   const NAME_FROM_GET_ELEM_ID = 'getElemIDPrefix'
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
@@ -152,24 +155,31 @@ describe('Custom Object Instances filter', () => {
         config: {
           dataManagement: [
             {
-              name: 'enabledWithNamespace',
+              name: 'enabledWithNamespaceRegex',
               enabled: true,
               isNameBasedID: false,
-              includeNamespaces: [testNamespace],
-              excludeObjects: [excludeObjectName],
+              includeObjects: [
+                createNamespaceRegexFromString(testNamespace),
+              ],
+              excludeObjects: ['^TestNamespace__Exclude.*'],
             },
             {
-              name: 'disabledWithNamespace',
+              name: 'disabledWithNamespaceRegex',
               enabled: false,
               isNameBasedID: false,
-              includeNamespaces: [disabledNamespace],
+              includeObjects: [
+                createNamespaceRegexFromString(disabledNamespace),
+              ],
             },
             {
-              name: 'enabledWithNamespaceAndObject',
+              name: 'enabledWithNamespaceRegexAndObject',
               enabled: true,
               isNameBasedID: false,
-              includeNamespaces: [anotherNamespace],
-              includeObjects: [includeObjectName, excludeOverrideObjectName],
+              includeObjects: [
+                createNamespaceRegexFromString(anotherNamespace),
+                includeObjectName,
+                excludeOverrideObjectName,
+              ],
             },
             {
               name: 'enabledWithExcludeObject',
@@ -181,18 +191,23 @@ describe('Custom Object Instances filter', () => {
               name: 'enabledWithNameID',
               enabled: true,
               isNameBasedID: true,
-              includeNamespaces: [nameBasedNamespace],
-              includeObjects: ['PricebookEntry', 'SBQQ__CustomAction__c'],
+              includeObjects: [
+                createNamespaceRegexFromString(nameBasedNamespace),
+                'PricebookEntry',
+                'SBQQ__CustomAction__c',
+              ],
               allowReferenceTo: [refToObjectName],
             },
             {
               name: 'enabledWithReferenceTo',
               enabled: true,
               isNameBasedID: false,
-              includeNamespaces: [refFromNamespace],
-              includeObjects: [refFromAndToObjectName],
+              includeObjects: [
+                createNamespaceRegexFromString(refFromNamespace),
+                refFromAndToObjectName,
+              ],
               allowReferenceTo: [
-                refToObjectName, refToFromNamespaceObjectName,
+                refToObjectName, '^RefFromNamespace__RefTo.*',
                 refFromAndToObjectName, emptyRefToObjectName,
               ],
             },
@@ -238,14 +253,14 @@ describe('Custom Object Instances filter', () => {
         expect(notConfiguredObjInstances.length).toEqual(0)
       })
 
-      it('should fetch for namespace configured objects', () => {
+      it('should fetch for regex configured objects', () => {
         const includedNameSpaceObjInstances = elements.filter(
           e => isInstanceElement(e) && e.type === includedNameSpaceObj
         ) as InstanceElement[]
         expect(includedNameSpaceObjInstances.length).toEqual(2)
       })
 
-      it('should fetch for namespace configured objects in another conf object', () => {
+      it('should fetch for regex configured objects in another conf object', () => {
         const includedInAnotherNamespaceObjInstances = elements.filter(
           e => isInstanceElement(e) && e.type === includedInAnotherNamespaceObj
         ) as InstanceElement[]
@@ -259,7 +274,7 @@ describe('Custom Object Instances filter', () => {
         expect(includedObjectInstances.length).toEqual(2)
       })
 
-      it('should not fetch for object from a configured namespace whose excluded specifically', () => {
+      it('should not fetch for object from a configured regex whose excluded specifically', () => {
         const excludedObjectInstances = elements.filter(
           e => isInstanceElement(e) && e.type === excludedObject
         ) as InstanceElement[]
@@ -307,7 +322,7 @@ describe('Custom Object Instances filter', () => {
     })
   })
 
-  describe('When some CustomObjects are from the namespace', () => {
+  describe('When some CustomObjects fit the configured regex (namespace)', () => {
     let elements: Element[]
     const simpleName = `${testNamespace}__simple__c`
     const simpleObject = createCustomObject(simpleName)
@@ -336,7 +351,7 @@ describe('Custom Object Instances filter', () => {
       await filter.onFetch(elements)
     })
 
-    it('should add instances per namespaced object', () => {
+    it('should add instances per catched by regex object', () => {
       // 2 new instances per namespaced object because of TestCustomRecords's length
       expect(elements.length).toEqual(10)
       expect(elements.filter(e => isInstanceElement(e)).length).toEqual(6)

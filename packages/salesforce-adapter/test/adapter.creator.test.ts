@@ -89,5 +89,47 @@ describe('SalesforceAdapter creator', () => {
       )
       expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
     })
+
+    it('should throw an error when creating adapter with invalid regex in dataManagement.includeObjects', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: [{
+          name: 'test',
+          enabled: true,
+          isNameBasedID: true,
+          includeObjects: ['\\'],
+        }] },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+    })
+
+    it('should throw an error when creating adapter with invalid regex in dataManagement.excludeObjects', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: [{
+          name: 'test',
+          enabled: true,
+          isNameBasedID: true,
+          excludeObjects: ['\\'],
+        }] },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+    })
+
+    it('should throw an error when creating adapter with invalid regex in dataManagement.allowReferenceTo', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: [{
+          name: 'test',
+          enabled: true,
+          isNameBasedID: true,
+          allowReferenceTo: ['\\'],
+        }] },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+    })
   })
 })

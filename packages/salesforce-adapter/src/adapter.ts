@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isModificationChange, isFieldChange,
+  TypeElement, ObjectType, InstanceElement, isModificationChange, isFieldChange, ChangeDataType,
   isRemovalChange, isAdditionChange, Field, Element, isObjectType, isInstanceElement,
   Change, getChangeElement, isField, isElement, ElemIdGetter, Values, FetchResult,
   AdapterOperations, ChangeGroup, DeployResult, isInstanceChange, isObjectTypeChange,
@@ -160,6 +160,14 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
     )
   }
 }
+
+const groupChangesByTopLevelName = (
+  changes: ReadonlyArray<Change<ChangeDataType>>
+): Record<string, Change<ChangeDataType>[]> =>
+  _.groupBy(
+    changes,
+    change => getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName(),
+  )
 
 export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
@@ -451,13 +459,11 @@ export default class SalesforceAdapter implements AdapterOperations {
       }
       return { action: 'modify', data: getBeforeAndAfterElements() }
     }
+
     const resolvedChanges = changeGroup.changes
       .map(change => resolveChangeElement(change, getLookUpName))
     const resolvedChangeGroup = { groupID: changeGroup.groupID, changes: resolvedChanges }
-    const changeByElem = _.groupBy(
-      resolvedChanges,
-      change => getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName(),
-    )
+    const resolvedByElem = groupChangesByTopLevelName(resolvedChanges)
     let results: DeployResult[]
     if (isCustomObjectInstancesGroup(resolvedChangeGroup)) {
       results = [await deployCustomObjectInstancesGroup(
@@ -467,13 +473,14 @@ export default class SalesforceAdapter implements AdapterOperations {
       )]
     } else {
       results = await Promise.all(
-        Object.values(changeByElem)
+        Object.values(resolvedByElem)
           .map(elemChanges =>
             this.deployElementChanges(elemChanges, getMainElemChange(elemChanges)))
       )
     }
+    const changesByElem = groupChangesByTopLevelName(changeGroup.changes)
     const sourceElements = _.keyBy(
-      Object.values(changeByElem).map(change => getChangeElement(getMainElemChange(change))),
+      Object.values(changesByElem).map(change => getChangeElement(getMainElemChange(change))),
       changeElement => changeElement.elemID.getFullName(),
     )
     const appliedChanges = _.flatten(results.map(res => res.appliedChanges))

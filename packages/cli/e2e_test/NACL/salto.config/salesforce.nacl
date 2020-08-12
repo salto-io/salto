@@ -13,10 +13,8 @@ salesforce {
   maxConcurrentRetrieveRequests = 3
   maxItemsInRetrieveRequest = 2500
   enableHideTypesInNacls = false
-  dataManagement = [
-    {
-      name = "CPQ"
-      enabled = false
+  dataManagement = {
+      isNameBasedID = true
       includeObjects = [
         "^SBQQ__.*",
         "Product2",
@@ -24,6 +22,5 @@ salesforce {
       excludeObjects = [
         "SBQQ__Quote__c",
       ]
-    },
-  ]
+  }
 }

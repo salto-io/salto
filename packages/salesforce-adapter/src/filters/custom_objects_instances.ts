@@ -308,61 +308,44 @@ const getAllInstances = async (
 
 const getBaseTypesNames = (
   customObjectNames: string[],
-  configs: DataManagementConfig[]
+  config: DataManagementConfig
 ): string[] => {
-  const groupedIncludeObjects = configs
-    .flatMap(config => makeArray(config.includeObjects))
-    .map(e => new RegExp(e))
-  const groupedExcludeObjects = configs
-    .flatMap(config => makeArray(config.excludeObjects))
-    .map(e => new RegExp(e))
+  const includeObjectsRegexes = makeArray(config.includeObjects).map(e => new RegExp(e))
+  const excludeObjectsRegexes = makeArray(config.excludeObjects).map(e => new RegExp(e))
   return customObjectNames
     .filter(customObjectName =>
-      (groupedIncludeObjects.some(objRegex => objRegex.test(customObjectName))
-      && !groupedExcludeObjects.some(objRejex => objRejex.test(customObjectName))))
+      (includeObjectsRegexes.some(objRegex => objRegex.test(customObjectName))
+      && !excludeObjectsRegexes.some(objRejex => objRejex.test(customObjectName))))
 }
 
 const getAllowReferencedTypesNames = (
   customObjectNames: string[],
-  configs: DataManagementConfig[]
+  config: DataManagementConfig
 ): string[] => {
-  const allowReferencesToRegexes = configs
-    .flatMap(config => makeArray(config.allowReferenceTo))
-    .filter(isDefined)
-    .map(e => new RegExp(e))
-  const baseObjectNames = getBaseTypesNames(customObjectNames, configs)
+  const allowReferencesToRegexes = makeArray(config.allowReferenceTo).map(e => new RegExp(e))
+  const baseObjectNames = getBaseTypesNames(customObjectNames, config)
   return customObjectNames.filter(customObjectName =>
     allowReferencesToRegexes.some(objRegex => objRegex.test(customObjectName))
     && !baseObjectNames.includes(customObjectName))
-}
-
-const getNameBasedObjectNames = (
-  customObjectNames: string[],
-  configs: DataManagementConfig[]
-): string[] => {
-  const nameBasedConfigs = configs.filter(config => config.isNameBasedID)
-  return [
-    ...getBaseTypesNames(customObjectNames, nameBasedConfigs),
-    ...getAllowReferencedTypesNames(customObjectNames, nameBasedConfigs),
-  ]
 }
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const customObjects = elements.filter(isObjectType).filter(isCustomObject)
     const customObjectNames = customObjects.map(customObject => apiName(customObject))
-    const dataManagementConfigs = config.dataManagement || []
-    const enabledConfigs = dataManagementConfigs
-      .filter(dataManagementConfig => dataManagementConfig.enabled)
-    const baseTypesNames = getBaseTypesNames(customObjectNames, enabledConfigs)
+    if (config.dataManagement === undefined) {
+      return
+    }
+    const baseTypesNames = getBaseTypesNames(customObjectNames, config.dataManagement)
     if (baseTypesNames.length === 0) {
       return
     }
     const allowReferencedTypesNames = getAllowReferencedTypesNames(
       customObjectNames,
-      enabledConfigs
+      config.dataManagement
     )
-    const nameBasedTypesNames = getNameBasedObjectNames(customObjectNames, enabledConfigs)
+    const nameBasedTypesNames = config.dataManagement.isNameBasedID
+      ? [...baseTypesNames, ...allowReferencedTypesNames] : []
     const instances = await getAllInstances(
       client,
       customObjects.filter(co => baseTypesNames.includes(apiName(co))),

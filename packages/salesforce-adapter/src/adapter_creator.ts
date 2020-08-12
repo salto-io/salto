@@ -47,18 +47,17 @@ SalesforceConfig => {
     }
   }
 
-  const validateDataManagement = (dataManagementConfigs: DataManagementConfig[]): void => {
-    dataManagementConfigs.forEach(dataManagementConfig => {
+  const validateDataManagement = (dataManagementConfig: DataManagementConfig | undefined): void => {
+    if (dataManagementConfig !== undefined) {
       validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
       validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
       validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
-    })
+    }
   }
 
   const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
   validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
-  const dataManagementConfigs = makeArray(config?.value?.dataManagement)
-  validateDataManagement(dataManagementConfigs)
+  validateDataManagement(config?.value?.dataManagement)
   const adapterConfig = {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),

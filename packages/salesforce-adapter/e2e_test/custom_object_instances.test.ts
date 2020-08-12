@@ -40,14 +40,10 @@ describe('custom object instances e2e', () => {
   let credLease: CredsLease<Credentials>
 
   const filtersContext = {
-    dataManagement: [
-      {
-        name: 'testDataManagementConfig',
-        enabled: true,
-        isNameBasedID: false,
-        includeObjects: [productTwoMetadataName],
-      },
-    ],
+    dataManagement: {
+      isNameBasedID: false,
+      includeObjects: [productTwoMetadataName],
+    },
   }
   beforeAll(async () => {
     credLease = await testHelpers().credentials()

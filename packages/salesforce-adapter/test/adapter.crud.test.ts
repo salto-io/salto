@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS,
+  ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression,
   createRestriction, DeployResult, getChangeElement, isAdditionChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
@@ -262,13 +262,12 @@ describe('SalesforceAdapter CRUD', () => {
         customObject,
         {
           Name: 'anotherInstanceName',
-          NotCreatable: 'DontSendMeOnCreate',
+          AnotherField: new ReferenceExpression(mockElemID, 'Type'),
         }
       )
 
       describe('when request succeeds', () => {
         beforeEach(async () => {
-          // result = await createElement(adapter, instance)
           result = await adapter.deploy({
             groupID: 'add_Test_instances',
             changes: [
@@ -291,7 +290,8 @@ describe('SalesforceAdapter CRUD', () => {
           expect(mockBulkLoad.mock.calls[0][3][0].NotCreatable).toBeUndefined()
           expect(mockBulkLoad.mock.calls[0][3][1].Name).toBeDefined()
           expect(mockBulkLoad.mock.calls[0][3][1].Name).toEqual('anotherInstanceName')
-          expect(mockBulkLoad.mock.calls[0][3][1].NotCreatable).toBeUndefined()
+          expect(mockBulkLoad.mock.calls[0][3][1].AnotherField).toBeDefined()
+          expect(mockBulkLoad.mock.calls[0][3][1].AnotherField).toEqual('Type')
         })
 
         it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {
@@ -317,6 +317,10 @@ describe('SalesforceAdapter CRUD', () => {
           // Should add result Id
           expect(secondChangeElement.value.Id).toBeDefined()
           expect(secondChangeElement.value.Id).toEqual('newId')
+
+          // Reference should stay a referece
+          expect(secondChangeElement.value.AnotherField)
+            .toEqual(new ReferenceExpression(mockElemID, 'Type'))
         })
       })
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, getChangeElement, InstanceElement, isAdditionDiff, isModificationDiff, isObjectType, isRemovalDiff, ChangeError, ChangeValidator, ActionName, isInstanceChange } from '@salto-io/adapter-api'
+import { Element, getChangeElement, InstanceElement, isAdditionChange, isModificationChange, isObjectType, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { apiName, isCustom, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR } from '../constants'
@@ -56,12 +56,12 @@ const isInstalledPackageVersionChange = (
 
 const changeValidator: ChangeValidator = async changes => {
   const addRemoveErrors = changes
-    .filter(change => isAdditionDiff(change) || isRemovalDiff(change))
+    .filter(change => isAdditionChange(change) || isRemovalChange(change))
     .filter(change => hasNamespace(getChangeElement(change)))
     .map(change => packageChangeError(change.action, getChangeElement(change)))
 
   const removeObjectWithPackageFieldsErrors = changes
-    .filter(isRemovalDiff)
+    .filter(isRemovalChange)
     .map(getChangeElement)
     .filter(isObjectType)
     .filter(obj => !hasNamespace(obj) && _.some(Object.values(obj.fields).map(hasNamespace)))
@@ -73,7 +73,7 @@ const changeValidator: ChangeValidator = async changes => {
 
   const packageVersionChangeErrors = changes
     .filter(isInstanceChange)
-    .filter(isModificationDiff)
+    .filter(isModificationChange)
     .filter(change => isInstalledPackageVersionChange(change.data))
     .map(change => packageChangeError(
       change.action,

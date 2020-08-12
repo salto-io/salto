@@ -21,6 +21,7 @@ import {
 import _ from 'lodash'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
 import changeValidator from './change_validator'
+import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
 import {
   configType, credentialsType, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig,
@@ -87,5 +88,6 @@ export const adapter: Adapter = {
   configType,
   deployModifiers: {
     changeValidator,
+    getChangeGroupIds,
   },
 }

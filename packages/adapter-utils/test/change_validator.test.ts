@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, ChangeError, ObjectType, ElemID, Change } from '@salto-io/adapter-api'
+import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange } from '@salto-io/adapter-api'
 import { createChangeValidator } from '../src/change_validator'
-import { mockFunction, MockFunction, toChange } from './common'
+import { mockFunction, MockFunction } from './common'
 
 describe('change_validator', () => {
   const testElem = new ObjectType({ elemID: new ElemID('test', 'type') })

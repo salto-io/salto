@@ -66,6 +66,9 @@ export const metadataType = (element: Element): string => {
 export const isCustomObject = (element: Element): boolean =>
   metadataType(element) === CUSTOM_OBJECT
 
+export const isInstanceOfCustomObject = (element: Element): element is InstanceElement =>
+  isInstanceElement(element) && isCustomObject(element.type)
+
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
 

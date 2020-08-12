@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeElement, Change, isRemovalDiff, DetailedChange,
-  ChangeDataType, isAdditionOrModificationDiff,
+  AdapterOperations, getChangeElement, Change, isRemovalChange, DetailedChange,
+  ChangeDataType, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { setPath, detailedCompare } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -60,7 +60,7 @@ const applyDetailedChanges = (
   detailedChanges: DetailedChange[],
 ): void => {
   detailedChanges.forEach(detailedChange => {
-    const data = isRemovalDiff(detailedChange) ? undefined : detailedChange.data.after
+    const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
     setPath(planElement, detailedChange.id, data)
   })
 }
@@ -71,7 +71,7 @@ const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>
     changeElement => changeElement.elemID.getFullName()
   )
   appliedChanges
-    .filter(isAdditionOrModificationDiff)
+    .filter(isAdditionOrModificationChange)
     .map(getChangeElement)
     .forEach(updatedElement => {
       const planElement = planElementById[updatedElement.elemID.getFullName()]

@@ -274,7 +274,7 @@ describe('fetch', () => {
       })
 
       it('shouldn not remove hidden values from changes', () => {
-        // changes.forEach(c => expect(isModificationDiff(c.change)).toEqual(true))
+        // changes.forEach(c => expect(isModificationChange(c.change)).toEqual(true))
         expect(changes.some(c => (getChangeElement(c.change)) === hiddenChangedVal))
           .toBeTruthy()
       })

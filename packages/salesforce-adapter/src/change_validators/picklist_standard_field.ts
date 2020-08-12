@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeDataType, ChangeError, Field, getChangeElement, isModificationDiff, ChangeValidator,
+  ChangeDataType, ChangeError, Field, getChangeElement, isModificationChange, ChangeValidator,
 } from '@salto-io/adapter-api'
 import { apiName, isCustom } from '../transformers/transformer'
 import { isPicklistField, isStandardValueSetPicklistField } from '../filters/value_set'
@@ -36,7 +36,7 @@ const createChangeError = (field: Field): ChangeError =>
  */
 const changeValidator: ChangeValidator = async changes => (
   changes
-    .filter(isModificationDiff)
+    .filter(isModificationChange)
     .map(getChangeElement)
     .filter(shouldCreateChangeError)
     .map(createChangeError)

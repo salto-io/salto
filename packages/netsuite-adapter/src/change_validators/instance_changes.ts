@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import {
-  isInstanceElement, ChangeValidator, getChangeElement, isAdditionOrModificationDiff,
+  isInstanceElement, ChangeValidator, getChangeElement, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 
 const changeValidator: ChangeValidator = async changes => (
   changes
-    .filter(isAdditionOrModificationDiff)
+    .filter(isAdditionOrModificationChange)
     .map(getChangeElement)
     .filter(elem => !isInstanceElement(elem))
     .map(({ elemID }) => ({

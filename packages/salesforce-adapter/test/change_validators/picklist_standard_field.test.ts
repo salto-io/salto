@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ElemID, Field, ObjectType, PrimitiveType, ReferenceExpression,
+  ChangeError, ElemID, Field, ObjectType, PrimitiveType, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import picklistStandardFieldValidator from '../../src/change_validators/picklist_standard_field'
 import {
   API_NAME, FIELD_ANNOTATIONS, SALESFORCE, VALUE_SET_FIELDS,
 } from '../../src/constants'
-import { toChange } from '../utils'
 
 
 describe('picklist standard field change validator', () => {

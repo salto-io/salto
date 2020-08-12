@@ -13,11 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import serviceIdsChangesValidator from '../../src/change_validators/service_ids_changes'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'
-import { toChange } from '../utils'
 
 
 describe('customization type change validator', () => {

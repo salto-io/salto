@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { DataNodeMap, DiffGraph, DiffNode } from '@salto-io/dag'
 import {
   ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
-  ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationDiff, isField,
+  ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 
@@ -111,7 +111,7 @@ export const filterInvalidChanges = async (
       return validAfterElementsMap[elem.elemID.getFullName()]
     }
     const replaceAfterElement = <T extends DiffNode<ChangeDataType>>(change: T): T => {
-      if (isAdditionOrModificationDiff(change)) {
+      if (isAdditionOrModificationChange(change)) {
         const after = getValidAfter(getChangeElement(change)) ?? change.data.after
         return { ...change, data: { ...change.data, after } }
       }

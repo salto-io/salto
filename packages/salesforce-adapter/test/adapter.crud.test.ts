@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction, DeployResult, getChangeElement,
+  createRestriction, DeployResult, getChangeElement, isAdditionChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult as JSForceDeployResult, DeployDetails,
@@ -42,6 +42,7 @@ describe('SalesforceAdapter CRUD', () => {
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const mockInstanceName = 'Instance'
+  const anotherMockInstanceName = 'AnotherInstance'
 
   const getDeployResult = (
     success: boolean, details?: DeployDetails[]
@@ -65,9 +66,17 @@ describe('SalesforceAdapter CRUD', () => {
       success,
     })
 
-  const getBulkLoadMock = (success: boolean): jest.Mock<Batch> =>
+  const getBulkLoadMock = (mode: string): jest.Mock<Batch> =>
     (jest.fn().mockImplementation(
       (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+        const isError = (index: number): boolean => {
+          if (mode === 'fail') {
+            return true
+          }
+          // For partial mode return error every 2nd index
+          return mode === 'partial' && (index % 2) === 0
+        }
+
         const loadEmitter = new EventEmitter()
         loadEmitter.on('newListener', (_event, _listener) => {
           // This is a workaround to call emit('close')
@@ -76,10 +85,10 @@ describe('SalesforceAdapter CRUD', () => {
           setTimeout(() => loadEmitter.emit('close'), 0)
         })
         return {
-          then: () => (Promise.resolve(input?.map(i => ({
-            id: i.Id || 'newId',
-            success,
-            errors: success ? [] : ['Error message'],
+          then: () => (Promise.resolve(input?.map((res, index) => ({
+            id: res.Id || 'newId',
+            success: !isError(index),
+            errors: isError(index) ? ['Error message'] : [],
           })))),
           job: loadEmitter,
         }
@@ -121,7 +130,7 @@ describe('SalesforceAdapter CRUD', () => {
       complete: () => Promise.resolve(getDeployResult(true)),
     }))
     connection.metadata.deploy = mockDeploy
-    mockBulkLoad = getBulkLoadMock(true)
+    mockBulkLoad = getBulkLoadMock('success')
     connection.bulk.load = mockBulkLoad
   })
 
@@ -210,79 +219,244 @@ describe('SalesforceAdapter CRUD', () => {
     })
 
     describe('for instances of custom objects', () => {
-      const instance = new InstanceElement(
-        mockInstanceName,
-        new ObjectType({
-          elemID: mockElemID,
-          fields: {
-            Id: { type: BuiltinTypes.STRING },
-            Name: {
-              type: BuiltinTypes.STRING,
-              annotations: {
-                [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
-              },
-            },
-            NotCreatable: {
-              type: BuiltinTypes.STRING,
-              annotations: {
-                [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
-              },
+      let result: DeployResult
+      const customObject = new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          Id: { type: BuiltinTypes.STRING },
+          Name: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
-          annotationTypes: {},
-          annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
-        }),
+          NotCreatable: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
+            },
+          },
+          AnotherField: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+        },
+        annotationTypes: {},
+        annotations: {
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.API_NAME]: 'Type',
+        },
+      })
+      const instance = new InstanceElement(
+        mockInstanceName,
+        customObject,
         {
           Name: 'instanceName',
           NotCreatable: 'DontSendMeOnCreate',
         }
       )
+      const anotherInstance = new InstanceElement(
+        anotherMockInstanceName,
+        customObject,
+        {
+          Name: 'anotherInstanceName',
+          NotCreatable: 'DontSendMeOnCreate',
+        }
+      )
 
       describe('when request succeeds', () => {
-        let result: InstanceElement
         beforeEach(async () => {
-          result = await createElement(adapter, instance)
+          // result = await createElement(adapter, instance)
+          result = await adapter.deploy({
+            groupID: 'add_Test_instances',
+            changes: [
+              { action: 'add', data: { after: instance } },
+              { action: 'add', data: { after: anotherInstance } },
+            ],
+          })
         })
 
         it('should call load operation with the right records', () => {
           expect(mockBulkLoad.mock.calls.length).toBe(1)
           expect(mockBulkLoad.mock.calls[0].length).toBe(4)
-          expect(mockBulkLoad.mock.calls[0][0]).toBe('CustomObject')
+          expect(mockBulkLoad.mock.calls[0][0]).toBe('Type')
           expect(mockBulkLoad.mock.calls[0][1]).toBe('insert')
 
-          // Record
-          expect(mockBulkLoad.mock.calls[0][3].length).toBe(1)
+          // Records
+          expect(mockBulkLoad.mock.calls[0][3].length).toBe(2)
           expect(mockBulkLoad.mock.calls[0][3][0].Name).toBeDefined()
           expect(mockBulkLoad.mock.calls[0][3][0].Name).toEqual('instanceName')
           expect(mockBulkLoad.mock.calls[0][3][0].NotCreatable).toBeUndefined()
+          expect(mockBulkLoad.mock.calls[0][3][1].Name).toBeDefined()
+          expect(mockBulkLoad.mock.calls[0][3][1].Name).toEqual('anotherInstanceName')
+          expect(mockBulkLoad.mock.calls[0][3][1].NotCreatable).toBeUndefined()
         })
 
-        it('Should add new instance with Id', async () => {
-          expect(result).toBeInstanceOf(InstanceElement)
-          expect(result.elemID).toEqual(instance.elemID)
-          expect(result.value.Name).toBeDefined()
-          expect(result.value.Name).toBe('instanceName')
+        it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {
+          expect(result.errors).toHaveLength(0)
+          expect(result.appliedChanges).toHaveLength(2)
+
+          // First instance
+          expect(getChangeElement(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
+          const firstChangeElement = getChangeElement(result.appliedChanges[0]) as InstanceElement
+          expect(firstChangeElement.elemID).toEqual(instance.elemID)
+          expect(firstChangeElement.value.Name).toBeDefined()
+          expect(firstChangeElement.value.Name).toBe('instanceName')
           // Should add result Id
-          expect(result.value.Id).toBeDefined()
-          expect(result.value.Id).toEqual('newId')
+          expect(firstChangeElement.value.Id).toBeDefined()
+          expect(firstChangeElement.value.Id).toEqual('newId')
+
+          // 2nd instance
+          expect(getChangeElement(result.appliedChanges[1])).toBeInstanceOf(InstanceElement)
+          const secondChangeElement = getChangeElement(result.appliedChanges[1]) as InstanceElement
+          expect(secondChangeElement.elemID).toEqual(anotherInstance.elemID)
+          expect(secondChangeElement.value.Name).toBeDefined()
+          expect(secondChangeElement.value.Name).toBe('anotherInstanceName')
+          // Should add result Id
+          expect(secondChangeElement.value.Id).toBeDefined()
+          expect(secondChangeElement.value.Id).toEqual('newId')
+        })
+      })
+
+      describe('When load partially fails', () => {
+        beforeEach(async () => {
+          connection.bulk.load = getBulkLoadMock('partial')
+          result = await adapter.deploy({
+            groupID: 'add_Test_instances',
+            changes: [
+              { action: 'add', data: { after: instance } },
+              { action: 'add', data: { after: anotherInstance } },
+            ],
+          })
+        })
+
+        it('should have one error', () => {
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0]).toEqual(new Error('Error message'))
+        })
+
+        it('should have one applied add change', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(isAdditionChange(result.appliedChanges[0])).toBeTruthy()
+          const changeElement = getChangeElement(result.appliedChanges[0])
+          expect(changeElement).toBeDefined()
+          expect(isInstanceElement(changeElement)).toBeTruthy()
+          expect(changeElement.elemID).toEqual(anotherInstance.elemID)
         })
       })
 
       describe('When load fails', () => {
-        let result: DeployResult
+        describe('remove', () => {
+          beforeEach(async () => {
+            connection.bulk.load = getBulkLoadMock('fail')
+            result = await adapter.deploy({
+              groupID: instance.elemID.getFullName(),
+              changes: [{ action: 'remove', data: { before: instance } }],
+            })
+          })
 
-        beforeEach(async () => {
-          connection.bulk.load = getBulkLoadMock(false)
-
-          result = await adapter.deploy({
-            groupID: instance.elemID.getFullName(),
-            changes: [{ action: 'add', data: { after: instance } }],
+          it('should return an error', () => {
+            expect(result.errors).toHaveLength(1)
+            expect(result.errors[0]).toEqual(new Error('Error message'))
+            expect(result.appliedChanges).toHaveLength(0)
           })
         })
 
-        it('should return an error', () => {
+        describe('add', () => {
+          beforeEach(async () => {
+            connection.bulk.load = getBulkLoadMock('fail')
+            result = await adapter.deploy({
+              groupID: instance.elemID.getFullName(),
+              changes: [{ action: 'add', data: { after: instance } }],
+            })
+          })
+
+          it('should return an error', () => {
+            expect(result.errors).toHaveLength(1)
+            expect(result.errors[0]).toEqual(new Error('Error message'))
+            expect(result.appliedChanges).toHaveLength(0)
+          })
+        })
+
+        describe('modify', () => {
+          beforeEach(async () => {
+            connection.bulk.load = getBulkLoadMock('fail')
+            result = await adapter.deploy({
+              groupID: instance.elemID.getFullName(),
+              changes: [{ action: 'modify', data: { before: instance, after: instance } }],
+            })
+          })
+
+          it('should return an error', () => {
+            expect(result.errors).toHaveLength(1)
+            expect(result.errors[0]).toEqual(new Error('Error message'))
+            expect(result.appliedChanges).toHaveLength(0)
+          })
+        })
+      })
+
+      describe('when group has more than one action', () => {
+        it('should return with an error', async () => {
+          result = await adapter.deploy({
+            groupID: 'multipleActionsGroup',
+            changes: [
+              { action: 'add', data: { after: instance } },
+              { action: 'remove', data: { before: anotherInstance } },
+            ],
+          })
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Error message'))
+          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group must have one action'))
+        })
+      })
+
+      describe('when group has more than one type', () => {
+        const instanceOfAnotherType = new InstanceElement(
+          'diffTypeInstance',
+          new ObjectType({
+            elemID: new ElemID('anotherType'),
+            annotations: {
+              [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+              [constants.API_NAME]: 'anotherType',
+            },
+          })
+        )
+
+        it('should fail on add', async () => {
+          result = await adapter.deploy({
+            groupID: 'badGroup',
+            changes: [
+              { action: 'add', data: { after: instance } },
+              { action: 'add', data: { after: instanceOfAnotherType } },
+            ],
+          })
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type but got: Type,anotherType'))
+        })
+
+        it('should fail on remove', async () => {
+          result = await adapter.deploy({
+            groupID: 'badGroup',
+            changes: [
+              { action: 'remove', data: { before: instance } },
+              { action: 'remove', data: { before: instanceOfAnotherType } },
+            ],
+          })
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type but got: Type,anotherType'))
+        })
+
+        it('should fail on modify', async () => {
+          result = await adapter.deploy({
+            groupID: 'badGroup',
+            changes: [
+              { action: 'modify', data: { before: instance, after: instance } },
+              { action: 'modify', data: { before: instanceOfAnotherType, after: instanceOfAnotherType } },
+            ],
+          })
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type but got: Type,anotherType'))
         })
       })
     })
@@ -749,7 +923,10 @@ describe('SalesforceAdapter CRUD', () => {
               Name: { type: BuiltinTypes.STRING },
             },
             annotationTypes: {},
-            annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
+            annotations: {
+              [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+              [constants.API_NAME]: 'Test',
+            },
           }),
           {
             Id: 'DeleteId',
@@ -763,7 +940,7 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should call the connection methods correctly', async () => {
           expect(mockBulkLoad.mock.calls.length).toBe(1)
-          expect(mockBulkLoad.mock.calls[0][0]).toBe('CustomObject')
+          expect(mockBulkLoad.mock.calls[0][0]).toBe('Test')
           expect(mockBulkLoad.mock.calls[0][1]).toBe('delete')
 
           // Record
@@ -1029,7 +1206,10 @@ describe('SalesforceAdapter CRUD', () => {
           },
         },
         annotationTypes: {},
-        annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
+        annotations: {
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.API_NAME]: 'Test',
+        },
       })
       const oldInstance = new InstanceElement(
         mockInstanceName,
@@ -1065,7 +1245,7 @@ describe('SalesforceAdapter CRUD', () => {
         it('should call load operation with the right records', () => {
           expect(mockBulkLoad.mock.calls.length).toBe(1)
           expect(mockBulkLoad.mock.calls[0].length).toBe(4)
-          expect(mockBulkLoad.mock.calls[0][0]).toBe('CustomObject')
+          expect(mockBulkLoad.mock.calls[0][0]).toBe('Test')
           expect(mockBulkLoad.mock.calls[0][1]).toBe('update')
 
           // Record

@@ -18,15 +18,9 @@ import {
 } from './elements'
 import { ElemID } from './element_id'
 import { Change } from './change'
-import { DependencyChanger, ChangeId } from './dependency_changer'
+import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError } from './error'
-
-export type ChangeGroupId = string
-
-export type ChangeGroup = {
-  groupID: ChangeGroupId
-  changes: ReadonlyArray<Change>
-}
+import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 
 export interface FetchResult {
   elements: Element[]
@@ -60,9 +54,6 @@ export type AdapterInstallResult = {
   success: boolean
   errors: string[]
 }
-
-export type ChangeGroupIdFunction = (changes: Map<ChangeId, Change>) =>
-  Promise<Map<ChangeId, ChangeGroupId>>
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

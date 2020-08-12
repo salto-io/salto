@@ -15,7 +15,7 @@
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, LABEL, OBJECTS_PATH } from '../src/constants'
-import { getInstancesOfCustomObjectChangeGroupIds } from '../src/group_changes'
+import { getChangeGroupIds } from '../src/group_changes'
 
 describe('Group Instance of CustomObject changes', () => {
   const customObjectName = 'objectName'
@@ -89,7 +89,7 @@ describe('Group Instance of CustomObject changes', () => {
   const differentModifyInstance = new InstanceElement('differentModifyInstance', differentCustomObject)
 
   beforeAll(async () => {
-    changeGroupIds = await getInstancesOfCustomObjectChangeGroupIds(new Map([
+    changeGroupIds = await getChangeGroupIds(new Map([
       [addInstance.elemID.getFullName(), toChange({ after: addInstance })],
       [anotherAddInstance.elemID.getFullName(), toChange({ after: anotherAddInstance })],
       [differentAddInstance.elemID.getFullName(), toChange({ after: differentAddInstance })],

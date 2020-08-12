@@ -432,7 +432,7 @@ describe('SalesforceAdapter CRUD', () => {
             ],
           })
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type'))
+          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type but got: Type,anotherType'))
         })
 
         it('should fail on remove', async () => {
@@ -444,7 +444,7 @@ describe('SalesforceAdapter CRUD', () => {
             ],
           })
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type'))
+          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type but got: Type,anotherType'))
         })
 
         it('should fail on modify', async () => {
@@ -456,7 +456,7 @@ describe('SalesforceAdapter CRUD', () => {
             ],
           })
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type'))
+          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type but got: Type,anotherType'))
         })
       })
     })

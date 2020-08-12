@@ -17,9 +17,10 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import {
   ChangeGroup, getChangeElement, DeployResult, Change,
-  InstanceElement, isAdditionGroup, isRemovalGroup, isModificationGroup, isInstanceChange,
-  ChangeGroupId, ModificationChange, RemovalChange, AdditionChange,
+  InstanceElement, isAdditionGroup, isRemovalGroup,
+  ChangeGroupId, ModificationChange, isModificationGroup,
 } from '@salto-io/adapter-api'
+import { BatchResultInfo } from 'jsforce-types'
 import {
   isInstanceOfCustomObject, instancesToCreateRecords, apiName, instancesToDeleteRecords,
   instancesToUpdateRecords,
@@ -30,42 +31,30 @@ import { Filter } from './filter'
 
 const { isDefined } = values
 
-const validateSingleTypedGroup = (changeGroup: {
-  groupID: ChangeGroupId
-  changes: ReadonlyArray<Change<InstanceElement>>
-}): void => {
-  const instances = changeGroup.changes.map(change => getChangeElement(change))
-  if (instances.length === 0) {
-    return
-  }
-  const instancesType = apiName(instances[0].type)
-  if (!instances.every(instance => apiName(instance.type) === instancesType)) {
-    throw new Error('Custom Object Instances change group should have a single type')
-  }
-}
+const getErrorMessagesFromResults = (results: BatchResultInfo[]): string[] =>
+  results
+    .filter(result => !result.success)
+    .flatMap(erroredResult => erroredResult.errors)
+    .filter(isDefined)
 
-const deployAdditionGroup = async (
-  changeGroup: ChangeGroup<AdditionChange<InstanceElement>>,
+const deployAddInstances = async (
+  instances: InstanceElement[],
   client: SalesforceClient,
   filtersRunner: Required<Filter>,
 ): Promise<DeployResult> => {
-  validateSingleTypedGroup(changeGroup)
-  const instances = changeGroup.changes.map(change => getChangeElement(change))
-  const result = await client.bulkLoadOperation(
+  const results = await client.bulkLoadOperation(
     apiName(instances[0].type),
     'insert',
     instancesToCreateRecords(instances)
   )
   const successInstances = instances
-    .filter((_instance, index) => result[index] !== undefined && result[index].success)
+    .filter((_instance, index) => results[index]?.success)
   successInstances.forEach((instance, index) => {
-    instance.value[constants.CUSTOM_OBJECT_ID_FIELD] = result[index].id
+    instance.value[constants.CUSTOM_OBJECT_ID_FIELD] = results[index].id
   })
-  const errors = result
-    .filter(r => !r.success)
-    .flatMap(erroredResult => erroredResult.errors).filter(isDefined)
+  const errors = getErrorMessagesFromResults(results)
   await Promise.all(
-    successInstances.map(async postInstance => filtersRunner.onAdd(postInstance))
+    successInstances.map(postInstance => filtersRunner.onAdd(postInstance))
   )
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'add', data: { after: instance } })),
@@ -73,40 +62,33 @@ const deployAdditionGroup = async (
   }
 }
 
-const deployRemovalGroup = async (
-  removalInstGroup: ChangeGroup<RemovalChange<InstanceElement>>,
+const deployRemoveInstances = async (
+  instances: InstanceElement[],
   client: SalesforceClient,
   filtersRunner: Required<Filter>,
 ): Promise<DeployResult> => {
-  validateSingleTypedGroup(removalInstGroup)
-  const instances = removalInstGroup.changes.map(change => getChangeElement(change))
   const results = await client.bulkLoadOperation(
     apiName(instances[0].type),
     'delete',
     instancesToDeleteRecords(instances),
   )
   const successResultIds = results.filter(result => result.success).map(result => result.id)
-  const errorMessages = results
-    .filter(result => !result.success)
-    .flatMap(erroredResult => erroredResult.errors)
-    .filter(isDefined)
+  const errorMessages = getErrorMessagesFromResults(results)
   const successInstances = instances.filter(instance =>
     successResultIds.includes(instance.value[constants.CUSTOM_OBJECT_ID_FIELD]))
-  await Promise.all(successInstances.map(async element => filtersRunner.onRemove(element)))
+  await Promise.all(successInstances.map(element => filtersRunner.onRemove(element)))
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
     errors: errorMessages.map(error => new Error(error)),
   }
 }
 
-const deployModifyGroup = async (
-  modifyInstGroup: ChangeGroup<ModificationChange<InstanceElement>>,
+const deployModifyChanges = async (
+  changes: Readonly<ModificationChange<InstanceElement>[]>,
   client: SalesforceClient,
   filtersRunner: Required<Filter>,
 ): Promise<DeployResult> => {
-  validateSingleTypedGroup(modifyInstGroup)
-  const changesData = modifyInstGroup.changes
-    .filter(isInstanceChange)
+  const changesData = changes
     .map(change => change.data)
   const instancesType = apiName(changesData[0].after.type)
   const [validData, diffApiNameData] = _.partition(
@@ -120,17 +102,14 @@ const deployModifyGroup = async (
     instancesToUpdateRecords(afters)
   )
   const successResultIds = results.filter(result => result.success).map(result => result.id)
-  const resultsErrorMessages = results
-    .filter(result => !result.success)
-    .flatMap(erroredResult => erroredResult.errors)
-    .filter(isDefined)
+  const resultsErrorMessages = getErrorMessagesFromResults(results)
   const successData = validData
     .filter(changeData =>
       successResultIds.includes(apiName(changeData.after)))
   await Promise.all(
     successData
-      .map(async changeData =>
-        filtersRunner.onUpdate(changeData.before, changeData.after, modifyInstGroup.changes))
+      .map(changeData =>
+        filtersRunner.onUpdate(changeData.before, changeData.after, changes))
   )
   const diffApiNameErrors = diffApiNameData.map(data => new Error(`Failed to update as api name prev=${apiName(
     data.before
@@ -157,14 +136,19 @@ export const deployCustomObjectInstancesGroup = async (
   filtersRunner: Required<Filter>,
 ): Promise<DeployResult> => {
   try {
+    const instances = changeGroup.changes.map(change => getChangeElement(change))
+    const instanceTypes = [...new Set(instances.map(inst => apiName(inst.type)))]
+    if (instanceTypes.length > 1) {
+      throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
+    }
     if (isAdditionGroup(changeGroup)) {
-      return await deployAdditionGroup(changeGroup, client, filtersRunner)
+      return await deployAddInstances(instances, client, filtersRunner)
     }
     if (isRemovalGroup(changeGroup)) {
-      return await deployRemovalGroup(changeGroup, client, filtersRunner)
+      return await deployRemoveInstances(instances, client, filtersRunner)
     }
     if (isModificationGroup(changeGroup)) {
-      return await deployModifyGroup(changeGroup, client, filtersRunner)
+      return await deployModifyChanges(changeGroup.changes, client, filtersRunner)
     }
     return {
       appliedChanges: [],

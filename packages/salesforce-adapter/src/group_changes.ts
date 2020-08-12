@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { apiName, isInstanceOfCustomObject } from './transformers/transformer'
 
-export const getInstancesOfCustomObjectChangeGroupIds: ChangeGroupIdFunction = async changes => {
+export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const isInstanceOfCustomObjectChange = (
     change: ChangeEntry
   ): change is ChangeEntry<InstanceElement> => {

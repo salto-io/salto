@@ -20,6 +20,10 @@ import { credsLease, realAdapter } from './adapter'
 import { FetchResult } from '../../adapter-api/src/adapter'
 import { getAllTypes } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
+import { InstanceElement } from '../../adapter-api/src/elements'
+import {
+  FETCH_ALL_TYPES_AT_ONCE, FILE_PATHS_REGEX_SKIP_LIST, TYPES_TO_SKIP,
+} from '../src/constants'
 
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
@@ -43,11 +47,23 @@ describe('Netsuite adapter E2E with real account', () => {
 
   let fetchResult: FetchResult
 
+  const validateConfigSuggestions = (updatedConfig?: InstanceElement): void => {
+    if (updatedConfig === undefined) {
+      // As expected
+      return
+    }
+    // Due to a known SDF bug, sometimes we fail to fetch all types at once but succeed when trying
+    // to fetch type by type. In this case we wouldn't like to fail the test
+    expect(updatedConfig.value?.[FILE_PATHS_REGEX_SKIP_LIST]).toHaveLength(0)
+    expect(updatedConfig.value?.[TYPES_TO_SKIP]).toHaveLength(0)
+    expect(updatedConfig.value?.[FETCH_ALL_TYPES_AT_ONCE]).toBe(false)
+  }
+
   describe('Initial fetch', () => {
     it('should fetch account successfully', async () => {
       fetchResult = await adapter.fetch()
       expect(fetchResult.elements.length).toBeGreaterThan(getAllTypes().length)
-      expect(fetchResult.updatedConfig).toBeUndefined()
+      validateConfigSuggestions(fetchResult.updatedConfig?.config)
     })
   })
 })

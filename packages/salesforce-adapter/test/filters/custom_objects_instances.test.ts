@@ -161,7 +161,7 @@ describe('Custom Object Instances filter', () => {
               includeObjects: [
                 createNamespaceRegexFromString(testNamespace),
               ],
-              excludeObjects: [excludeObjectName],
+              excludeObjects: ['^TestNamespace__Exclude.*'],
             },
             {
               name: 'disabledWithNamespaceRegex',
@@ -207,7 +207,7 @@ describe('Custom Object Instances filter', () => {
                 refFromAndToObjectName,
               ],
               allowReferenceTo: [
-                refToObjectName, refToFromNamespaceObjectName,
+                refToObjectName, '^RefFromNamespace__RefTo.*',
                 refFromAndToObjectName, emptyRefToObjectName,
               ],
             },

@@ -23,9 +23,7 @@ import SalesforceClient, { Credentials, validateCredentials } from './client/cli
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
-import {
-  configType, credentialsType, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig,
-} from './types'
+import { configType, credentialsType, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, DataManagementConfig, DATA_MANAGEMENT } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -49,8 +47,24 @@ SalesforceConfig => {
     }
   }
 
+  const validateDataManagement = (dataManagementConfigs: DataManagementConfig[]): void => {
+    dataManagementConfigs.forEach(dataManagementConfig => {
+      if (Array.isArray(dataManagementConfig.includeObjects)) {
+        validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, dataManagementConfig.includeObjects)
+      }
+      if (Array.isArray(dataManagementConfig.excludeObjects)) {
+        validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, dataManagementConfig.excludeObjects)
+      }
+      if (Array.isArray(dataManagementConfig.allowReferenceTo)) {
+        validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, dataManagementConfig.allowReferenceTo)
+      }
+    })
+  }
+
   const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
   validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
+  const dataManagementConfigs = makeArray(config?.value?.dataManagement)
+  validateDataManagement(dataManagementConfigs)
   const adapterConfig = {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),

@@ -327,7 +327,9 @@ const getAllowReferencedTypesNames = (
   configs: DataManagementConfig[]
 ): string[] => {
   const allowReferencesToRegexes = configs
-    .flatMap(config => makeArray(config.allowReferenceTo)).filter(isDefined).map(e => new RegExp(e))
+    .flatMap(config => makeArray(config.allowReferenceTo))
+    .filter(isDefined)
+    .map(e => new RegExp(e))
   const baseObjectNames = getBaseTypesNames(customObjectNames, configs)
   return customObjectNames.filter(customObjectName =>
     allowReferencesToRegexes.some(objRegex => objRegex.test(customObjectName))

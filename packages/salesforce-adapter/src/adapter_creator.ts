@@ -49,15 +49,9 @@ SalesforceConfig => {
 
   const validateDataManagement = (dataManagementConfigs: DataManagementConfig[]): void => {
     dataManagementConfigs.forEach(dataManagementConfig => {
-      if (Array.isArray(dataManagementConfig.includeObjects)) {
-        validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, dataManagementConfig.includeObjects)
-      }
-      if (Array.isArray(dataManagementConfig.excludeObjects)) {
-        validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, dataManagementConfig.excludeObjects)
-      }
-      if (Array.isArray(dataManagementConfig.allowReferenceTo)) {
-        validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, dataManagementConfig.allowReferenceTo)
-      }
+      validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
+      validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
+      validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
     })
   }
 

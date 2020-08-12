@@ -147,7 +147,9 @@ export const configType = new ObjectType({
             name: 'CPQ',
             enabled: false,
             isNameBasedID: true,
-            includeNamespaces: ['SBQQ'],
+            includeObjects: [
+              '^SBQQ__.*',
+            ],
             excludeObjects: [
               'SBQQ__ContractedPrice__c',
               'SBQQ__Quote__c',

@@ -34,10 +34,7 @@ export const convertToIDSelectors = (
 export const createRegexFilters = (
   inputFilters: string[]
 ): {filters: RegExp[]; invalidFilters: string[]} => {
-  const [validFilters, invalidFilters] = _.partition(
-    inputFilters,
-    filter => regex.isValidRegex(filter)
-  )
+  const [validFilters, invalidFilters] = _.partition(inputFilters, regex.isValidRegex)
   const filters = validFilters.map(filter => new RegExp(filter))
   return { filters, invalidFilters }
 }

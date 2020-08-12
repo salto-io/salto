@@ -17,10 +17,8 @@ salesforce {
     {
       name = "CPQ"
       enabled = false
-      includeNamespaces = [
-        "SBQQ",
-      ]
       includeObjects = [
+        "^SBQQ__.*",
         "Product2",
       ]
       excludeObjects = [

@@ -61,11 +61,15 @@ const maybeIsolateExistingEnv = async (
   workspace: Workspace,
   workspaceDir: string,
   force?: boolean,
+  acceptSuggestions?: boolean,
 ): Promise<void> => {
-  if (!force && await shouldRecommendToIsolateCurrentEnv(workspace, workspaceDir)) {
+  if (
+    (!force || acceptSuggestions)
+    && await shouldRecommendToIsolateCurrentEnv(workspace, workspaceDir)
+  ) {
     const existingEnv = workspace.envs()[0]
     outputLine(output, formatApproveIsolateCurrentEnvPrompt(existingEnv))
-    if (await cliApproveIsolateBeforeMultiEnv(existingEnv)) {
+    if (acceptSuggestions || await cliApproveIsolateBeforeMultiEnv(existingEnv)) {
       await isolateExistingEnvironments(workspace)
       outputLine(output, formatDoneIsolatingCurrentEnv(existingEnv))
     }
@@ -78,8 +82,9 @@ const createEnvironment = async (
   workspace: Workspace,
   workspaceDir: string,
   force?: boolean,
+  acceptSuggestions?: boolean,
 ): Promise<CliExitCode> => {
-  await maybeIsolateExistingEnv(output, workspace, workspaceDir, force)
+  await maybeIsolateExistingEnv(output, workspace, workspaceDir, force, acceptSuggestions)
 
   await workspace.addEnvironment(envName)
   await setEnvironment(envName, output, workspace)
@@ -134,6 +139,7 @@ export const command = (
   envName?: string,
   newEnvName?: string,
   force?: boolean,
+  acceptSuggestions?: boolean,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     if (namesRequiredCommands.includes(commandName)
@@ -153,7 +159,14 @@ export const command = (
     const workspace = await loadLocalWorkspace(workspaceDir)
     switch (commandName) {
       case 'create':
-        return createEnvironment(envName as string, output, workspace, workspaceDir, force)
+        return createEnvironment(
+          envName as string,
+          output,
+          workspace,
+          workspaceDir,
+          force,
+          acceptSuggestions,
+        )
       case 'delete':
         return deleteEnvironment(envName as string, output, workspace)
       case 'set':
@@ -175,6 +188,7 @@ interface EnvsArgs {
   name: string
   [NEW_ENV_NAME]: string
   force: boolean
+  acceptSuggestions: boolean
 }
 
 type EnvsParsedCliInput = ParsedCliInput<EnvsArgs>
@@ -206,10 +220,26 @@ const envsBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      // will also be available as acceptSuggestions because of camel-case-expansion
+      'accept-suggestions': {
+        alias: ['y'],
+        describe: 'Accept all correction suggestions without prompting',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
     },
   },
   async build(input: EnvsParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, output, input.args.name, input.args[NEW_ENV_NAME], input.args.force)
+    return command(
+      '.',
+      input.args.command,
+      output,
+      input.args.name,
+      input.args[NEW_ENV_NAME],
+      input.args.force,
+      input.args.acceptSuggestions,
+    )
   },
 })
 

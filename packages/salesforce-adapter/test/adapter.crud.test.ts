@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction, DeployResult, getChangeElement, isAdditionDiff, isInstanceElement,
+  createRestriction, DeployResult, getChangeElement, isAdditionChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult as JSForceDeployResult, DeployDetails,
@@ -339,7 +339,7 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should have one applied add change', () => {
           expect(result.appliedChanges).toHaveLength(1)
-          expect(isAdditionDiff(result.appliedChanges[0])).toBeTruthy()
+          expect(isAdditionChange(result.appliedChanges[0])).toBeTruthy()
           const changeElement = getChangeElement(result.appliedChanges[0])
           expect(changeElement).toBeDefined()
           expect(isInstanceElement(changeElement)).toBeTruthy()

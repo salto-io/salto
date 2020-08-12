@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeError, isModificationDiff, InstanceElement, ChangeValidator, isInstanceChange } from '@salto-io/adapter-api'
+import { ChangeError, isModificationChange, InstanceElement, ChangeValidator, isInstanceChange } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { getLookUpName, resolveValues } from '../transformers/transformer'
 import { OBJECTS_NAMES, FORM_FIELDS, MARKETING_EMAIL_FIELDS, CONTACT_PROPERTY_FIELDS } from '../constants'
@@ -57,7 +57,7 @@ const changeValidator: ChangeValidator = async changes => (
   _.flatten(await Promise.all(
     changes
       .filter(isInstanceChange)
-      .filter(isModificationDiff)
+      .filter(isModificationChange)
       .map(change => getReadonlyValidationError(change.data.before, change.data.after))
   ))
 )

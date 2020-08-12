@@ -15,14 +15,14 @@
 */
 import {
   BuiltinTypes, ChangeError,
-  ChangeValidator, getChangeElement, InstanceElement, isInstanceChange, isModificationDiff,
+  ChangeValidator, getChangeElement, InstanceElement, isInstanceChange, isModificationChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { isCustomType, isFileCabinetType } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
   _.flatten(changes
-    .filter(isModificationDiff)
+    .filter(isModificationChange)
     .filter(isInstanceChange)
     .filter(change => {
       const instance = getChangeElement(change) as InstanceElement

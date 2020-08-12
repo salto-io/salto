@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isModificationDiff, isFieldChange,
-  isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
+  TypeElement, ObjectType, InstanceElement, isModificationChange, isFieldChange,
+  isRemovalChange, isAdditionChange, Field, Element, isObjectType, isInstanceElement,
   Change, getChangeElement, isField, isElement, ElemIdGetter, Values, FetchResult,
   AdapterOperations, ChangeGroup, DeployResult, isInstanceChange, isObjectTypeChange,
 } from '@salto-io/adapter-api'
@@ -427,13 +427,13 @@ export default class SalesforceAdapter implements AdapterOperations {
       // This is temporary code until we change the internal implementation of the adapter to
       // handle changes without relying on getting the top level elements
       const getBeforeAndAfterElements = (): { before: ObjectType; after: ObjectType } => {
-        const updateChange = elemChanges.filter(isFieldChange).filter(isModificationDiff).pop()
+        const updateChange = elemChanges.filter(isFieldChange).filter(isModificationChange).pop()
         if (updateChange !== undefined) {
           return { before: updateChange.data.before.parent, after: updateChange.data.after.parent }
         }
-        const removeChanges = elemChanges.filter(isFieldChange).filter(isRemovalDiff)
+        const removeChanges = elemChanges.filter(isFieldChange).filter(isRemovalChange)
         const removedFields = removeChanges.map(change => change.data.before.name)
-        const addChanges = elemChanges.filter(isFieldChange).filter(isAdditionDiff)
+        const addChanges = elemChanges.filter(isFieldChange).filter(isAdditionChange)
         const addedFields = addChanges.map(change => change.data.after.name)
         const before = removeChanges.length !== 0
           ? removeChanges[0].data.before.parent
@@ -595,7 +595,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     validateApiName(before, after)
     const clonedObject = after.clone()
     changes
-      .filter(isAdditionDiff)
+      .filter(isAdditionChange)
       .map(getChangeElement)
       .filter(isField)
       .map(fieldChange => clonedObject.fields[fieldChange.name])
@@ -614,15 +614,15 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
-      this.deleteCustomFields(fieldChanges.filter(isRemovalDiff).map(getChangeElement)),
+      this.deleteCustomFields(fieldChanges.filter(isRemovalChange).map(getChangeElement)),
       // Retrieve the custom fields for addition and than create them
       this.createFields(fieldChanges
-        .filter(isAdditionDiff)
+        .filter(isAdditionChange)
         .filter(c => !this.systemFields.includes(getChangeElement(c).name))
         .map(c => clonedObject.fields[c.data.after.name])),
       // Update the remaining fields that were changed
       this.updateFields(fieldChanges
-        .filter(isModificationDiff)
+        .filter(isModificationChange)
         .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
       this.updateObjectAnnotations(before, clonedObject, changes),

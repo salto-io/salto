@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType, ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement, isAdditionOrRemovalDiff, isFieldChange } from '@salto-io/adapter-api'
+import { Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType, ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement, isAdditionOrRemovalChange, isFieldChange } from '@salto-io/adapter-api'
 import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
@@ -159,13 +159,13 @@ const removeRedundantFieldChanges = (
       const group = graph.getData(key)
       const objTypeAddOrRemove = new Set(
         wu(group.items.values())
-          .filter(isAdditionOrRemovalDiff)
+          .filter(isAdditionOrRemovalChange)
           .map(getChangeElement)
           .filter(isObjectType)
           .map(obj => obj.elemID.getFullName())
       )
       const isRedundantFieldChange = (change: Change<ChangeDataType>): boolean => (
-        isAdditionOrRemovalDiff(change)
+        isAdditionOrRemovalChange(change)
         && isFieldChange(change)
         && objTypeAddOrRemove.has(getChangeElement(change).parent.elemID.getFullName())
       )

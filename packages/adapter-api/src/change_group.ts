@@ -13,10 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Change, isAdditionDiff, isRemovalDiff, isModificationDiff, ChangeDataType, ModificationChange,
-  AdditionChange, RemovalChange,
-} from './change'
+import { Change, isAdditionChange, isRemovalChange, isModificationChange, ChangeDataType, ModificationChange, AdditionChange, RemovalChange } from './change'
 import { ChangeId } from './dependency_changer'
 
 export type ChangeGroupId = string
@@ -32,14 +29,14 @@ export type ChangeGroupIdFunction = (changes: Map<ChangeId, Change>) =>
 export const isAdditionGroup = <T>(
   changeGroup: ChangeGroup<Change<T>>
 ): changeGroup is ChangeGroup<AdditionChange<T>> =>
-    (changeGroup.changes.every(change => isAdditionDiff(change)))
+    (changeGroup.changes.every(change => isAdditionChange(change)))
 
 export const isRemovalGroup = <T>(
   changeGroup: ChangeGroup<Change<T>>
 ): changeGroup is ChangeGroup<RemovalChange<T>> =>
-    (changeGroup.changes.every(change => isRemovalDiff(change)))
+    (changeGroup.changes.every(change => isRemovalChange(change)))
 
 export const isModificationGroup = <T>(
   changeGroup: ChangeGroup<Change<T>>
 ): changeGroup is ChangeGroup<ModificationChange<T>> =>
-    (changeGroup.changes.every(change => isModificationDiff(change)))
+    (changeGroup.changes.every(change => isModificationChange(change)))

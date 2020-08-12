@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeError, InstanceElement, Value, isReferenceExpression, ChangeValidator, isInstanceChange, isAdditionOrModificationDiff } from '@salto-io/adapter-api'
+import { ChangeError, InstanceElement, Value, isReferenceExpression, ChangeValidator, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -64,7 +64,7 @@ const changeValidator: ChangeValidator = async changes => (
   _.flatten(await Promise.all(
     changes
       .filter(isInstanceChange)
-      .filter(isAdditionOrModificationDiff)
+      .filter(isAdditionOrModificationChange)
       .map(change => getFormInstanceFieldErrorsFromAfter(change.data.after))
   ))
 )

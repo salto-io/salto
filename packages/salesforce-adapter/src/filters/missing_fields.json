@@ -1906,5 +1906,145 @@
         "isList": true
       }
     ]
+  },
+  {
+    "id": "AccountInsightsSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableAccountInsights"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "IoTSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableIoT"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ObjectLinkingSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableObjectLinking"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "AccountIntelligenceSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableAccountLogos",
+          "enableAutomatedAccountFields",
+          "enableNewsStories"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "AutomatedContactSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableAddContactAutomatically",
+          "enableAddContactRoleAutomatically",
+          "enableAddContactRoleWithSuggestion",
+          "enableAddContactWithSuggestion"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ChatterAnswerSettings",
+    "fields": [
+      {
+        "boolean": [
+          "emailFollowersOnBestAnswer",
+          "emailFollowersOnReply",
+          "emailOwnerOnPrivateReply",
+          "emailOwnerOnReply",
+          "enableAnswerViaEmail",
+          "enableChatterAnswers",
+          "enableFacebookSSO",
+          "enableInlinePublisher",
+          "enableReputation",
+          "enableRichTextEditor",
+          "facebookAuthProvider",
+          "showInPortals"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ChatterEmailMdSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableChatterDigestEmailsApiOnly",
+          "enableChatterEmailAttachment",
+          "enableCollaborationEmail",
+          "enableDisplayAppDownloadBadges",
+          "enableEmailReplyToChatter",
+          "enableEmailToChatter"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "MapAndLocationSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableAddressAutoComplete",
+          "enableMapsAndLocation"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "PredictionBuilderSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enablePredictionBuilder",
+          "isPredictionBuilderStarted"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "CaseClassificationSettings",
+    "fields": [
+      {
+        "boolean": [
+          "caseClassificationRecommendations",
+          "reRunAttributeBasedRules",
+          "runAssignmentRules"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "SocialCustomerServiceSettings",
+    "fields": [
+      {
+        "boolean": [
+          "enableSocialApprovals",
+          "enableSocialCaseAssignmentRules",
+          "enableSocialCustomerService",
+          "enableSocialPersonaHistoryTracking",
+          "enableSocialPostHistoryTracking",
+          "enableSocialReceiveParentPost"
+        ]
+      }
+    ]
   }
 ]

@@ -47,7 +47,7 @@ import {
   XML_ATTRIBUTE_PREFIX,
 } from '../constants'
 import SalesforceClient from '../client/client'
-import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
+import { allMissingSubTypes } from './salesforce_types'
 
 const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
@@ -706,8 +706,8 @@ export class Types {
     })
   }
 
-  static getAllMissingTypes(): TypeElement[] {
-    return [...allMissingTypes, ...allMissingSubTypes]
+  static getAllMissingTypes(): ObjectType[] {
+    return allMissingSubTypes
   }
 
   static getAnnotationTypes(): TypeElement[] {

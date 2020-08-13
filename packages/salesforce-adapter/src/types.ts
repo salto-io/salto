@@ -31,14 +31,12 @@ export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: RegExp[]
   [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
-  [DATA_MANAGEMENT]?: DataManagementConfig[]
+  [DATA_MANAGEMENT]?: DataManagementConfig
   [SYSTEM_FIELDS]?: string[]
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
 }
 
 export type DataManagementConfig = {
-  name: string
-  enabled: boolean
   isNameBasedID: boolean
   includeObjects?: string[]
   excludeObjects?: string[]
@@ -51,7 +49,7 @@ export type SalesforceConfig = {
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
-  [DATA_MANAGEMENT]?: DataManagementConfig[]
+  [DATA_MANAGEMENT]?: DataManagementConfig
 }
 
 export type ConfigChangeSuggestion = {
@@ -81,13 +79,7 @@ export const credentialsType = new ObjectType({
 const dataManagementType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, DATA_MANAGEMENT),
   fields: {
-    name: {
-      type: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-    enabled: {
+    isNameBasedID: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -140,41 +132,7 @@ export const configType = new ObjectType({
       },
     },
     [DATA_MANAGEMENT]: {
-      type: new ListType(dataManagementType),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          {
-            name: 'CPQ',
-            enabled: false,
-            isNameBasedID: true,
-            includeObjects: [
-              '^SBQQ__.*',
-            ],
-            excludeObjects: [
-              'SBQQ__ContractedPrice__c',
-              'SBQQ__Quote__c',
-              'SBQQ__QuoteDocument__c',
-              'SBQQ__QuoteLine__c',
-              'SBQQ__QuoteLineGroup__c',
-              'SBQQ__Subscription__c',
-              'SBQQ__SubscribedAsset__c',
-              'SBQQ__SubscribedQuoteLine__c',
-              'SBQQ__SubscriptionConsumptionRate__c',
-              'SBQQ__SubscriptionConsumptionSchedule__c',
-              'SBQQ__WebQuote__c',
-              'SBQQ__WebQuoteLine__c',
-              'SBQQ__QuoteLineCosumptionSchedule__c',
-              'SBQQ__QuoteLineConsumptionsRate__c',
-              'SBQQ__InstallProcessorLog__c',
-            ],
-            allowReferenceTo: [
-              'Product2',
-              'Pricebook2',
-              'PricebookEntry',
-            ],
-          },
-        ],
-      },
+      type: dataManagementType,
     },
   },
 })

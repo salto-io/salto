@@ -94,12 +94,10 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: [{
-          name: 'test',
-          enabled: true,
+        { dataManagement: {
           isNameBasedID: true,
           includeObjects: ['\\'],
-        }] },
+        } },
       )
       expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
     })
@@ -108,12 +106,10 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: [{
-          name: 'test',
-          enabled: true,
+        { dataManagement: {
           isNameBasedID: true,
           excludeObjects: ['\\'],
-        }] },
+        } },
       )
       expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
     })
@@ -122,12 +118,10 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: [{
-          name: 'test',
-          enabled: true,
+        { dataManagement: {
           isNameBasedID: true,
           allowReferenceTo: ['\\'],
-        }] },
+        } },
       )
       expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
     })

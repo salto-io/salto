@@ -52,6 +52,7 @@ SalesforceConfig => {
       validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
       validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
       validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
+      // TODO: Add validation to the ID settings overrides keys
     }
   }
 

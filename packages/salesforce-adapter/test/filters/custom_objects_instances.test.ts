@@ -99,6 +99,14 @@ describe('Custom Object Instances filter', () => {
   ): ObjectType => {
     const namespace = getNamespaceFromString(name)
     const basicFields = {
+      Id: {
+        type: stringType,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: false,
+          [LABEL]: 'Id',
+          [API_NAME]: 'Id',
+        },
+      },
       Name: {
         type: stringType,
         annotations: {
@@ -181,6 +189,9 @@ describe('Custom Object Instances filter', () => {
                 refFromAndToObjectName,
                 emptyRefToObjectName,
               ],
+              saltoIDSettings: {
+                defaultIdFields: [],
+              },
             },
           },
         }
@@ -236,6 +247,9 @@ describe('Custom Object Instances filter', () => {
                 refFromAndToObjectName,
                 emptyRefToObjectName,
               ],
+              saltoIDSettings: {
+                defaultIdFields: ['Id'],
+              },
             },
           },
         }
@@ -370,7 +384,7 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should call query with the object fields', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${simpleName}`)
+          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${simpleName}`)
         })
 
         it('should create instances according to results', () => {
@@ -404,7 +418,7 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should call query with the object fields', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT FirstName,LastName,Salutation,TestField FROM ${withNameName}`)
+          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,FirstName,LastName,Salutation,TestField FROM ${withNameName}`)
         })
 
         it('should create instances according to results', () => {
@@ -444,7 +458,7 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should call query with the object fields', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField,OtherAddress FROM ${withAddressName}`)
+          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,OtherAddress FROM ${withAddressName}`)
         })
 
         it('should create instances according to results', () => {
@@ -542,14 +556,14 @@ describe('Custom Object Instances filter', () => {
 
       it('should query refTo by ids according to references values', () => {
         // The query should be split according to MAX_IDS_PER_INSTANCES_QUERY
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','badId')`)
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToObjectName} WHERE Id IN ('abcdefg')`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','badId')`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('abcdefg')`)
       })
 
       it('should qeuery all namespaced/included objects not by id', () => {
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToFromNamespaceObjectName}`)
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField,Parent,Pricebook2Id FROM ${namespacedRefFromName}`)
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField,Parent,Pricebook2Id FROM ${refFromAndToObjectName}`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToFromNamespaceObjectName}`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${namespacedRefFromName}`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${refFromAndToObjectName}`)
       })
     })
 
@@ -575,6 +589,13 @@ describe('Custom Object Instances filter', () => {
               allowReferenceTo: [
                 refToObjectName,
               ],
+              saltoIDSettings: {
+                defaultIdFields: ['##autoDetectedParentFields##', 'Name'],
+                overrides: [
+                  { objectsRegex: 'PricebookEntry', idFields: ['Pricebook2Id', 'Name'] },
+                  { objectsRegex: 'SBQQ__CustomAction__c', idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
+                ],
+              },
             },
           },
         }

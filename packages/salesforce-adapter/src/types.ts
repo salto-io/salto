@@ -36,11 +36,22 @@ export type FilterContext = {
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
 }
 
+type ObjectIdSettings = {
+  objectsRegex: string
+  idFields: string[]
+}
+
+export type SaltoIDSettings = {
+  defaultIdFields: string[]
+  overrides?: ObjectIdSettings[]
+}
+
 export type DataManagementConfig = {
   isNameBasedID: boolean
   includeObjects?: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
+  saltoIDSettings: SaltoIDSettings
 }
 
 export type SalesforceConfig = {
@@ -76,18 +87,49 @@ export const credentialsType = new ObjectType({
   },
 })
 
-const dataManagementType = new ObjectType({
-  elemID: new ElemID(constants.SALESFORCE, DATA_MANAGEMENT),
+const objectIdSettings = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
   fields: {
-    isNameBasedID: {
-      type: BuiltinTypes.BOOLEAN,
+    objectsRegex: {
+      type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
+    idFields: {
+      type: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  },
+})
+
+const saltoIDSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoIDSettings'),
+  fields: {
+    defaultIdFields: {
+      type: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    overrides: { type: new ListType(objectIdSettings) },
+  },
+})
+
+const dataManagementType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, DATA_MANAGEMENT),
+  fields: {
     includeObjects: { type: new ListType(BuiltinTypes.STRING) },
     excludeObjects: { type: new ListType(BuiltinTypes.STRING) },
     allowReferenceTo: { type: new ListType(BuiltinTypes.STRING) },
+    saltoIDSettings: {
+      type: saltoIDSettingsType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
   },
 })
 

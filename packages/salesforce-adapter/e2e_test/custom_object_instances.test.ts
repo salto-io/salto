@@ -43,6 +43,9 @@ describe('custom object instances e2e', () => {
     dataManagement: {
       isNameBasedID: false,
       includeObjects: [productTwoMetadataName],
+      saltoIDSettings: {
+        defaultIdFields: ['Id'],
+      },
     },
   }
   beforeAll(async () => {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ObjectType, ElemID, InstanceElement, TypeElement, Element, isObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
@@ -25,8 +25,9 @@ import { filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
-import { createInstanceElement, metadataType, apiName, createMetadataTypeElements, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
+import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import { ConfigChangeSuggestion, FilterContext } from '../src/types'
+import { fetchMetadataType } from '../src/fetch'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -84,32 +85,53 @@ export const getMetadataFromElement = async (client: SalesforceClient,
   return getMetadata(client, mdType, fullName)
 }
 
-export const fetchTypes = async (client: SalesforceClient, types: string[]):
-Promise<ObjectType[]> => {
-  const baseTypeNames = new Set(types)
-  const subTypes = new Map<string, TypeElement>()
-  return _.flatten(await Promise.all(types.map(async type =>
-    createMetadataTypeElements({
-      name: type,
-      fields: (await client.describeMetadataType(type)).valueTypeFields,
-      knownTypes: subTypes,
-      baseTypeNames,
-      client,
-    }))))
+export const fetchTypes = async (
+  client: SalesforceClient, types: string[]
+): Promise<ObjectType[]> => {
+  const typeInfos = await client.listMetadataTypes()
+  const topLevelTypes = typeInfos.filter(info => types.includes(info.xmlName))
+  const baseTypeNames = new Set(topLevelTypes.map(info => info.xmlName))
+  const additionalTypeInfos = types
+    .filter(typeName => !baseTypeNames.has(typeName))
+    .map(typeName => ({
+      xmlName: typeName,
+      childXmlNames: [],
+      directoryName: '',
+      inFolder: false,
+      metaFile: false,
+      suffix: '',
+    }))
+  const knownTypes = new Map()
+  const res = await Promise.all(
+    topLevelTypes
+      .concat(additionalTypeInfos)
+      .map(info => fetchMetadataType(client, info, knownTypes, baseTypeNames))
+  )
+  return res.flat().filter(isObjectType)
 }
 
-export const createInstance = async (client: SalesforceClient, value: MetadataValues,
-  type: string | ObjectType): Promise<InstanceElement> => {
+type CreateInstanceParams = {
+  value: MetadataValues
+  typeElements?: Iterable<Element>
+  type: string | ObjectType
+}
+export function createInstance(params: { value: MetadataValues; type: ObjectType }): InstanceElement
+export function createInstance(
+  params: { value: MetadataValues; type: string; typeElements: Iterable<Element> }
+): InstanceElement
+export function createInstance(
+  { value, typeElements, type }: CreateInstanceParams
+): InstanceElement {
   const objectType = isObjectType(type)
     ? type
-    : findElement(await fetchTypes(client, [type]), new ElemID(SALESFORCE, type)) as ObjectType
+    : findElement(typeElements as Iterable<Element>, new ElemID(SALESFORCE, type)) as ObjectType
   return createInstanceElement(value, objectType)
 }
 
-export const getMetadataInstance = async (client: SalesforceClient, type: string | ObjectType,
+export const getMetadataInstance = async (client: SalesforceClient, type: ObjectType,
   fullName: string): Promise<InstanceElement | undefined> => {
   const md = await getMetadata(client, isObjectType(type) ? metadataType(type) : type, fullName)
-  return _.isUndefined(md) ? undefined : createInstance(client, md, type)
+  return md === undefined ? undefined : createInstance({ value: md, type })
 }
 
 export const removeMetadataIfAlreadyExists = async (
@@ -172,8 +194,8 @@ export const createElementAndVerify = async <T extends InstanceElement | ObjectT
 }
 
 export const createAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
-  type: string | ObjectType, md: MetadataInfo): Promise<InstanceElement> => {
-  const instance = await createInstance(client, md, type)
+  type: string, md: MetadataInfo, typeElements: Iterable<Element>): Promise<InstanceElement> => {
+  const instance = await createInstance({ value: md, type, typeElements })
   await createElementAndVerify(adapter, client, instance)
   return instance
 }

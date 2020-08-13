@@ -17,11 +17,10 @@ import {
   InstanceElement, isStaticFile, ObjectType, StaticFile,
 } from '@salto-io/adapter-api'
 import filterCreator, {
-  CONTENT, CONTENT_TYPE,
-  STATIC_RESOURCE_METADATA_TYPE_ID,
+  CONTENT_TYPE, STATIC_RESOURCE_METADATA_TYPE_ID,
 } from '../../src/filters/static_resource_file_ext'
 import { FilterWith } from '../../src/filter'
-import * as constants from '../../src/constants'
+import { INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD } from '../../src/constants'
 
 describe('Static Resource File Extension Filter', () => {
   const filter = filterCreator() as FilterWith<'onFetch'>
@@ -31,7 +30,7 @@ describe('Static Resource File Extension Filter', () => {
       elemID: STATIC_RESOURCE_METADATA_TYPE_ID,
     }),
     {
-      [constants.INSTANCE_FULL_NAME_FIELD]: 'testStaticResourceInstance',
+      [INSTANCE_FULL_NAME_FIELD]: 'testStaticResourceInstance',
     },
   )
   const filepath = 'salesforce/staticresources/filename.resource'
@@ -44,11 +43,11 @@ describe('Static Resource File Extension Filter', () => {
 
   it('should replace the file extension', async () => {
     staticResourceInstance.value[CONTENT_TYPE] = 'image/png'
-    staticResourceInstance.value[CONTENT] = new StaticFile({ filepath, content })
+    staticResourceInstance.value[METADATA_CONTENT_FIELD] = new StaticFile({ filepath, content })
 
     await filter.onFetch([staticResourceInstance])
 
-    const updatedContent = staticResourceInstance.value[CONTENT]
+    const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(isStaticFile(updatedContent)).toEqual(true)
     expect((updatedContent as StaticFile).content).toEqual(content)
     expect((updatedContent as StaticFile).filepath)
@@ -57,11 +56,11 @@ describe('Static Resource File Extension Filter', () => {
 
   it('should do nothing if contentType is not a string', async () => {
     staticResourceInstance.value[CONTENT_TYPE] = undefined
-    staticResourceInstance.value[CONTENT] = new StaticFile({ filepath, content })
+    staticResourceInstance.value[METADATA_CONTENT_FIELD] = new StaticFile({ filepath, content })
 
     await filter.onFetch([staticResourceInstance])
 
-    const updatedContent = staticResourceInstance.value[CONTENT]
+    const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(isStaticFile(updatedContent)).toEqual(true)
     expect((updatedContent as StaticFile).content).toEqual(content)
     expect((updatedContent as StaticFile).filepath).toEqual(filepath)
@@ -69,11 +68,11 @@ describe('Static Resource File Extension Filter', () => {
 
   it('should do nothing if contentType has unrecognized extension', async () => {
     staticResourceInstance.value[CONTENT_TYPE] = 'dummy content type'
-    staticResourceInstance.value[CONTENT] = new StaticFile({ filepath, content })
+    staticResourceInstance.value[METADATA_CONTENT_FIELD] = new StaticFile({ filepath, content })
 
     await filter.onFetch([staticResourceInstance])
 
-    const updatedContent = staticResourceInstance.value[CONTENT]
+    const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(isStaticFile(updatedContent)).toEqual(true)
     expect((updatedContent as StaticFile).content).toEqual(content)
     expect((updatedContent as StaticFile).filepath).toEqual(filepath)
@@ -81,11 +80,11 @@ describe('Static Resource File Extension Filter', () => {
 
   it('should do nothing if static file content is undefined', async () => {
     staticResourceInstance.value[CONTENT_TYPE] = 'image/png'
-    staticResourceInstance.value[CONTENT] = content
+    staticResourceInstance.value[METADATA_CONTENT_FIELD] = content
 
     await filter.onFetch([staticResourceInstance])
 
-    const updatedContent = staticResourceInstance.value[CONTENT]
+    const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(updatedContent).toEqual(content)
   })
 })

@@ -22,17 +22,16 @@ import _ from 'lodash'
 import wu from 'wu'
 import mime from 'mime-types'
 import { FilterWith } from '../filter'
-import { SALESFORCE } from '../constants'
+import { SALESFORCE, METADATA_CONTENT_FIELD } from '../constants'
 
 const log = logger(module)
 
 export const STATIC_RESOURCE_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'StaticResource')
 export const CONTENT_TYPE = 'contentType'
-export const CONTENT = 'content'
 const RESOURCE_SUFFIX_LENGTH = 'resource'.length
 
 const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
-  const staticFile = staticResourceInstance.value[CONTENT]
+  const staticFile = staticResourceInstance.value[METADATA_CONTENT_FIELD]
   if (!isStaticFile(staticFile) || staticFile.content === undefined) {
     log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} due to invalid StaticFile`)
     return
@@ -50,7 +49,7 @@ const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
     return
   }
   const currentFilepath = staticFile.filepath
-  staticResourceInstance.value[CONTENT] = new StaticFile({
+  staticResourceInstance.value[METADATA_CONTENT_FIELD] = new StaticFile({
     filepath: `${currentFilepath.slice(0, -RESOURCE_SUFFIX_LENGTH)}${newExtension}`,
     content: staticFile.content,
   })

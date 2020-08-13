@@ -20,8 +20,7 @@ import {
   TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
 } from '@salto-io/adapter-api'
 import {
-  findElement,
-  findObjectType, naclCase,
+  findElement, naclCase,
 } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -39,7 +38,8 @@ import {
   TopicsForObjectsInfo,
 } from '../src/client/types'
 import {
-  Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataTypeAnnotations,
+  Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataObjectType,
+  createInstanceElement,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import {
@@ -47,17 +47,16 @@ import {
 } from '../test/utils'
 import SalesforceClient, { API_VERSION, Credentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
-import { toMetadataPackageZip, fromRetrieveResult } from '../src/transformers/xml_transformer'
+import { fromRetrieveResult, createDeployPackage } from '../src/transformers/xml_transformer'
+import { mockTypes, lwcJsResourceContent, lwcHtmlResourceContent, mockDefaultValues } from '../test/mock_elements'
 import {
   objectExists, getMetadata, getMetadataFromElement, createInstance, removeElementAndVerify,
   removeElementIfAlreadyExists, createElementAndVerify, createElement, removeElement,
 } from './utils'
-import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
-  accountApiName, auraInstanceValues, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
-  customObjectWithFieldsName, gvsName, lightningComponentBundleInstanceValues,
-  lwcHtmlResourceContent, lwcJsResourceContent, removeCustomObjectsWithVariousFields,
-  staticResourceInstanceValues, summaryFieldName, verifyElementsExist,
+  accountApiName, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
+  customObjectWithFieldsName, gvsName, removeCustomObjectsWithVariousFields,
+  summaryFieldName, verifyElementsExist,
 } from './setup'
 
 const { makeArray } = collections.array
@@ -2727,7 +2726,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const removeIfAlreadyExists = async (instance: MetadataInstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
-            await client.deploy(await toMetadataPackageZip(instance, true) as Buffer)
+            const pkg = createDeployPackage()
+            pkg.delete(instance)
+            await client.deploy(await pkg.getZip())
           }
         }
 
@@ -2766,38 +2767,24 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(instanceInfo).toBeUndefined()
         }
 
-        const createInstanceElement = (
+        const createApexInstance = (
+          type: MetadataObjectType,
           fullName: string,
-          typeName: string,
-          content: string | Value,
-          typeAnnotations: Partial<MetadataTypeAnnotations> = {},
-        ): MetadataInstanceElement => {
-          const objectType = new ObjectType({
-            elemID: new ElemID(constants.SALESFORCE, typeName),
-            annotations: {
-              [constants.METADATA_TYPE]: typeName,
-              ...typeAnnotations,
-            },
-          })
-          return new InstanceElement(
-            fullName,
-            objectType,
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
-              apiVersion: API_VERSION,
-              content,
-            }
-          ) as MetadataInstanceElement
-        }
+          content: Value,
+        ): MetadataInstanceElement => createInstanceElement(
+          { fullName, apiVersion: API_VERSION, content },
+          type,
+        )
 
         describe('apex class manipulation', () => {
-          const apexClassInstance = createInstanceElement('MyApexClass', 'ApexClass',
+          const apexClassInstance = createApexInstance(
+            mockTypes.ApexClass,
+            'MyApexClass',
             new StaticFile({
               filepath: 'ApexClass.cls',
               content: Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'),
             }),
-            { hasMetaFile: true })
-
+          )
           beforeAll(async () => {
             await removeIfAlreadyExists(apexClassInstance)
           })
@@ -2822,12 +2809,14 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('apex trigger manipulation', () => {
-          const apexTriggerInstance = createInstanceElement('MyApexTrigger', 'ApexTrigger',
+          const apexTriggerInstance = createApexInstance(
+            mockTypes.ApexTrigger,
+            'MyApexTrigger',
             new StaticFile({
               filepath: 'MyApexTrigger.trigger',
               content: Buffer.from('trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}'),
-            }),
-            { hasMetaFile: true })
+            })
+          )
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexTriggerInstance)
@@ -2853,12 +2842,14 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('apex page manipulation', () => {
-          const apexPageInstance = createInstanceElement('MyApexPage', 'ApexPage',
+          const apexPageInstance = createApexInstance(
+            mockTypes.ApexPage,
+            'MyApexPage',
             new StaticFile({
               filepath: 'ApexPage.page',
               content: Buffer.from('<apex:page>Created by e2e test!</apex:page>'),
             }),
-            { hasMetaFile: true })
+          )
           apexPageInstance.value.label = 'MyApexPage'
 
           beforeAll(async () => {
@@ -2885,12 +2876,14 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('apex component manipulation', () => {
-          const apexComponentInstance = createInstanceElement('MyApexComponent', 'ApexComponent',
+          const apexComponentInstance = createApexInstance(
+            mockTypes.ApexComponent,
+            'MyApexComponent',
             new StaticFile({
               filepath: 'MyApexComponent.component',
               content: Buffer.from('<apex:component >Created by e2e test!</apex:component>'),
             }),
-            { hasMetaFile: true })
+          )
           apexComponentInstance.value.label = 'MyApexComponent'
 
           beforeAll(async () => {
@@ -2946,9 +2939,14 @@ describe('Salesforce adapter E2E with real account', () => {
           let emailFolderInstance: InstanceElement
 
           beforeAll(async () => {
-            emailFolderInstance = await createInstance(client, { name: 'My Email Folder Name',
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder' },
-            'EmailFolder')
+            emailFolderInstance = await createInstance({
+              value: {
+                name: 'My Email Folder Name',
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder',
+              },
+              type: 'EmailFolder',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, emailFolderInstance)
           })
 
@@ -2970,21 +2968,25 @@ describe('Salesforce adapter E2E with real account', () => {
           let emailTemplateInstance: InstanceElement
 
           beforeAll(async () => {
-            emailTemplateInstance = await createInstance(client, {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'TestEmailFolder/MyEmailTemplate',
-              name: 'My Email Template Name',
-              available: true,
-              style: 'none',
-              subject: 'My Email Template Subject',
-              uiType: 'Aloha',
-              encodingKey: 'UTF-8',
-              type: 'text',
-              description: 'My Email Template Description',
-              content: new StaticFile({
-                filepath: 'MyEmailTemplate.email',
-                content: Buffer.from('My Email Template Body'),
-              }),
-            }, 'EmailTemplate')
+            emailTemplateInstance = await createInstance({
+              value: {
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'TestEmailFolder/MyEmailTemplate',
+                name: 'My Email Template Name',
+                available: true,
+                style: 'none',
+                subject: 'My Email Template Subject',
+                uiType: 'Aloha',
+                encodingKey: 'UTF-8',
+                type: 'text',
+                description: 'My Email Template Description',
+                content: new StaticFile({
+                  filepath: 'MyEmailTemplate.email',
+                  content: Buffer.from('My Email Template Body'),
+                }),
+              },
+              type: 'EmailTemplate',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, emailTemplateInstance)
           })
 
@@ -3006,8 +3008,8 @@ describe('Salesforce adapter E2E with real account', () => {
           let reportTypeInstance: InstanceElement
 
           beforeAll(async () => {
-            reportTypeInstance = await createInstance(client,
-              {
+            reportTypeInstance = await createInstance({
+              value: {
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportType',
                 label: 'My Report Type Label',
                 baseObject: 'Account',
@@ -3017,7 +3019,10 @@ describe('Salesforce adapter E2E with real account', () => {
                   columns: [],
                   masterLabel: 'Master Label',
                 }],
-              }, 'ReportType')
+              },
+              type: 'ReportType',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, reportTypeInstance)
           })
 
@@ -3039,10 +3044,14 @@ describe('Salesforce adapter E2E with real account', () => {
           let reportFolderInstance: InstanceElement
 
           beforeAll(async () => {
-            reportFolderInstance = await createInstance(client, {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportFolder',
-              name: 'My Report Folder Name',
-            }, 'ReportFolder')
+            reportFolderInstance = await createInstance({
+              value: {
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportFolder',
+                name: 'My Report Folder Name',
+              },
+              type: 'ReportFolder',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, reportFolderInstance)
           })
 
@@ -3064,12 +3073,16 @@ describe('Salesforce adapter E2E with real account', () => {
           let reportInstance: InstanceElement
 
           beforeAll(async () => {
-            reportInstance = await createInstance(client, {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'TestReportFolder/MyReport',
-              name: 'My Report Name',
-              format: 'Summary',
-              reportType: 'Opportunity',
-            }, 'Report')
+            reportInstance = await createInstance({
+              value: {
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'TestReportFolder/MyReport',
+                name: 'My Report Name',
+                format: 'Summary',
+                reportType: 'Opportunity',
+              },
+              type: 'Report',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, reportInstance)
           })
 
@@ -3091,8 +3104,14 @@ describe('Salesforce adapter E2E with real account', () => {
           let dashboardFolderInstance: InstanceElement
 
           beforeAll(async () => {
-            dashboardFolderInstance = await createInstance(client, { name: 'My Dashboard Folder Name',
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyDashboardFolder' }, 'DashboardFolder')
+            dashboardFolderInstance = await createInstance({
+              value: {
+                name: 'My Dashboard Folder Name',
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'MyDashboardFolder',
+              },
+              type: 'DashboardFolder',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, dashboardFolderInstance)
           })
 
@@ -3114,24 +3133,28 @@ describe('Salesforce adapter E2E with real account', () => {
           let dashboardInstance: InstanceElement
 
           beforeAll(async () => {
-            dashboardInstance = await createInstance(client, {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'TestDashboardFolder/MyDashboard',
-              backgroundEndColor: '#FFFFFF',
-              backgroundFadeDirection: 'Diagonal',
-              backgroundStartColor: '#FFFFFF',
-              textColor: '#000000',
-              title: 'My Dashboard Title',
-              titleColor: '#000000',
-              titleSize: '12',
-              leftSection: {
-                columnSize: 'Medium',
-                components: [],
+            dashboardInstance = await createInstance({
+              value: {
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'TestDashboardFolder/MyDashboard',
+                backgroundEndColor: '#FFFFFF',
+                backgroundFadeDirection: 'Diagonal',
+                backgroundStartColor: '#FFFFFF',
+                textColor: '#000000',
+                title: 'My Dashboard Title',
+                titleColor: '#000000',
+                titleSize: '12',
+                leftSection: {
+                  columnSize: 'Medium',
+                  components: [],
+                },
+                rightSection: {
+                  columnSize: 'Medium',
+                  components: [],
+                },
               },
-              rightSection: {
-                columnSize: 'Medium',
-                components: [],
-              },
-            }, 'Dashboard')
+              type: 'Dashboard',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, dashboardInstance)
           })
 
@@ -3153,11 +3176,14 @@ describe('Salesforce adapter E2E with real account', () => {
           let auraInstance: InstanceElement
 
           beforeAll(async () => {
-            auraInstance = await createInstance(
-              client,
-              { ...auraInstanceValues, [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAuraDefinitionBundle' },
-              'AuraDefinitionBundle'
-            )
+            auraInstance = await createInstance({
+              value: {
+                ...mockDefaultValues.AuraDefinitionBundle,
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAuraDefinitionBundle',
+              },
+              type: 'AuraDefinitionBundle',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, auraInstance)
           })
 
@@ -3180,10 +3206,9 @@ describe('Salesforce adapter E2E with real account', () => {
           let lwcInstance: InstanceElement
 
           beforeAll(async () => {
-            lwcInstance = await createInstance(
-              client,
-              {
-                ...lightningComponentBundleInstanceValues,
+            lwcInstance = await createInstance({
+              value: {
+                ...mockDefaultValues.LightningComponentBundle,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
                 lwcResources: {
                   lwcResource: [
@@ -3198,8 +3223,9 @@ describe('Salesforce adapter E2E with real account', () => {
                   ],
                 },
               },
-              findObjectType(result, new ElemID(constants.SALESFORCE, 'LightningComponentBundle')) as ObjectType
-            )
+              type: 'LightningComponentBundle',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, lwcInstance)
           })
 
@@ -3235,14 +3261,14 @@ describe('Salesforce adapter E2E with real account', () => {
           let staticResourceInstance: InstanceElement
 
           beforeAll(async () => {
-            staticResourceInstance = await createInstance(
-              client,
-              {
-                ...staticResourceInstanceValues,
+            staticResourceInstance = await createInstance({
+              value: {
+                ...mockDefaultValues.StaticResource,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyStaticResource',
               },
-              'StaticResource'
-            )
+              type: 'StaticResource',
+              typeElements: result,
+            })
             await removeElementIfAlreadyExists(client, staticResourceInstance)
           })
 
@@ -3265,43 +3291,158 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('flow instance manipulations', () => {
       let flow: InstanceElement
       beforeAll(async () => {
-        const flowType = findObjectType(result, new ElemID(constants.SALESFORCE, 'Flow')) as ObjectType
-        flow = await createInstance(client, {
-          [constants.INSTANCE_FULL_NAME_FIELD]: 'MyFlow',
-          decisions: {
-            processMetadataValues: {
-              name: 'index',
-              value: {
-                numberValue: '0.0',
+        flow = await createInstance({
+          value: {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'MyFlow',
+            decisions: {
+              processMetadataValues: {
+                name: 'index',
+                value: {
+                  numberValue: '0.0',
+                },
+              },
+              name: 'myDecision',
+              label: 'myDecision2',
+              locationX: '50',
+              locationY: '0',
+              defaultConnectorLabel: 'default',
+              rules: {
+                name: 'myRule_1',
+                conditionLogic: 'and',
+                conditions: {
+                  processMetadataValues: [
+                    {
+                      name: 'inputDataType',
+                      value: {
+                        stringValue: 'String',
+                      },
+                    },
+                    {
+                      name: 'leftHandSideType',
+                      value: {
+                        stringValue: 'String',
+                      },
+                    },
+                    {
+                      name: 'operatorDataType',
+                      value: {
+                        stringValue: 'String',
+                      },
+                    },
+                    {
+                      name: 'rightHandSideType',
+                      value: {
+                        stringValue: 'String',
+                      },
+                    },
+                  ],
+                  leftValueReference: 'myVariable_current.FirstName',
+                  operator: 'EqualTo',
+                  rightValue: {
+                    stringValue: 'BLA',
+                  },
+                },
+                connector: {
+                  targetReference: 'myRule_1_A1',
+                },
+                label: 'NameIsBla',
               },
             },
-            name: 'myDecision',
-            label: 'myDecision2',
-            locationX: '50',
-            locationY: '0',
-            defaultConnectorLabel: 'default',
-            rules: {
-              name: 'myRule_1',
-              conditionLogic: 'and',
-              conditions: {
+            interviewLabel: 'MyFlow-1_InterviewLabel',
+            label: 'MyFlow',
+            processMetadataValues: [
+              {
+                name: 'ObjectType',
+                value: {
+                  stringValue: 'Contact',
+                },
+              },
+              {
+                name: 'ObjectVariable',
+                value: {
+                  elementReference: 'myVariable_current',
+                },
+              },
+              {
+                name: 'OldObjectVariable',
+                value: {
+                  elementReference: 'myVariable_old',
+                },
+              },
+              {
+                name: 'TriggerType',
+                value: {
+                  stringValue: 'onCreateOnly',
+                },
+              },
+            ],
+            processType: 'Workflow',
+            recordUpdates: {
+              processMetadataValues: [
+                {
+                  name: 'evaluationType',
+                  value: {
+                    stringValue: 'always',
+                  },
+                },
+                {
+                  name: 'extraTypeInfo',
+                },
+                {
+                  name: 'isChildRelationship',
+                  value: {
+                    booleanValue: 'false',
+                  },
+                },
+                {
+                  name: 'reference',
+                  value: {
+                    stringValue: '[Contact]',
+                  },
+                },
+                {
+                  name: 'referenceTargetField',
+                },
+              ],
+              name: 'myRule_1_A1',
+              label: 'UpdateLastName',
+              locationX: '100',
+              locationY: '200',
+              filters: {
+                processMetadataValues: {
+                  name: 'implicit',
+                  value: {
+                    booleanValue: 'true',
+                  },
+                },
+                field: 'Id',
+                operator: 'EqualTo',
+                value: {
+                  elementReference: 'myVariable_current.Id',
+                },
+              },
+              inputAssignments: {
                 processMetadataValues: [
                   {
-                    name: 'inputDataType',
+                    name: 'dataType',
                     value: {
                       stringValue: 'String',
                     },
                   },
                   {
-                    name: 'leftHandSideType',
+                    name: 'isRequired',
                     value: {
-                      stringValue: 'String',
+                      booleanValue: 'false',
                     },
                   },
                   {
-                    name: 'operatorDataType',
+                    name: 'leftHandSideLabel',
                     value: {
-                      stringValue: 'String',
+                      stringValue: 'Last Name',
                     },
+                  },
+                  {
+                    name: 'leftHandSideReferenceTo',
                   },
                   {
                     name: 'rightHandSideType',
@@ -3310,150 +3451,37 @@ describe('Salesforce adapter E2E with real account', () => {
                     },
                   },
                 ],
-                leftValueReference: 'myVariable_current.FirstName',
-                operator: 'EqualTo',
-                rightValue: {
-                  stringValue: 'BLA',
-                },
-              },
-              connector: {
-                targetReference: 'myRule_1_A1',
-              },
-              label: 'NameIsBla',
-            },
-          },
-          interviewLabel: 'MyFlow-1_InterviewLabel',
-          label: 'MyFlow',
-          processMetadataValues: [
-            {
-              name: 'ObjectType',
-              value: {
-                stringValue: 'Contact',
-              },
-            },
-            {
-              name: 'ObjectVariable',
-              value: {
-                elementReference: 'myVariable_current',
-              },
-            },
-            {
-              name: 'OldObjectVariable',
-              value: {
-                elementReference: 'myVariable_old',
-              },
-            },
-            {
-              name: 'TriggerType',
-              value: {
-                stringValue: 'onCreateOnly',
-              },
-            },
-          ],
-          processType: 'Workflow',
-          recordUpdates: {
-            processMetadataValues: [
-              {
-                name: 'evaluationType',
+                field: 'LastName',
                 value: {
-                  stringValue: 'always',
+                  stringValue: 'Updated Name',
                 },
               },
+              object: 'Contact',
+            },
+            startElementReference: 'myDecision',
+            status: 'Draft',
+            variables: [
               {
-                name: 'extraTypeInfo',
+                name: 'myVariable_current',
+                dataType: 'SObject',
+                isCollection: 'false',
+                isInput: 'true',
+                isOutput: 'true',
+                objectType: 'Contact',
               },
               {
-                name: 'isChildRelationship',
-                value: {
-                  booleanValue: 'false',
-                },
-              },
-              {
-                name: 'reference',
-                value: {
-                  stringValue: '[Contact]',
-                },
-              },
-              {
-                name: 'referenceTargetField',
+                name: 'myVariable_old',
+                dataType: 'SObject',
+                isCollection: 'false',
+                isInput: 'true',
+                isOutput: 'false',
+                objectType: 'Contact',
               },
             ],
-            name: 'myRule_1_A1',
-            label: 'UpdateLastName',
-            locationX: '100',
-            locationY: '200',
-            filters: {
-              processMetadataValues: {
-                name: 'implicit',
-                value: {
-                  booleanValue: 'true',
-                },
-              },
-              field: 'Id',
-              operator: 'EqualTo',
-              value: {
-                elementReference: 'myVariable_current.Id',
-              },
-            },
-            inputAssignments: {
-              processMetadataValues: [
-                {
-                  name: 'dataType',
-                  value: {
-                    stringValue: 'String',
-                  },
-                },
-                {
-                  name: 'isRequired',
-                  value: {
-                    booleanValue: 'false',
-                  },
-                },
-                {
-                  name: 'leftHandSideLabel',
-                  value: {
-                    stringValue: 'Last Name',
-                  },
-                },
-                {
-                  name: 'leftHandSideReferenceTo',
-                },
-                {
-                  name: 'rightHandSideType',
-                  value: {
-                    stringValue: 'String',
-                  },
-                },
-              ],
-              field: 'LastName',
-              value: {
-                stringValue: 'Updated Name',
-              },
-            },
-            object: 'Contact',
           },
-          startElementReference: 'myDecision',
-          status: 'Draft',
-          variables: [
-            {
-              name: 'myVariable_current',
-              dataType: 'SObject',
-              isCollection: 'false',
-              isInput: 'true',
-              isOutput: 'true',
-              objectType: 'Contact',
-            },
-            {
-              name: 'myVariable_old',
-              dataType: 'SObject',
-              isCollection: 'false',
-              isInput: 'true',
-              isOutput: 'false',
-              objectType: 'Contact',
-            },
-          ],
-        },
-        flowType)
+          type: 'Flow',
+          typeElements: result,
+        })
 
         await removeElementIfAlreadyExists(client, flow)
       })
@@ -3485,108 +3513,110 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('layout manipulations', () => {
       let layout: InstanceElement
       beforeAll(async () => {
-        const layoutType = findObjectType(result, LAYOUT_TYPE_ID) as ObjectType
-        layout = new InstanceElement('MyLayout', layoutType, {
-          [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead-MyLayout',
-          layoutSections: [
-            {
-              customLabel: false,
-              detailHeading: false,
-              editHeading: true,
-              label: 'Lead Information',
-              layoutColumns: [
-                {
-                  layoutItems: [
-                    {
-                      behavior: 'Required',
-                      field: 'Name',
-                    },
-                    {
-                      behavior: 'Required',
-                      field: 'Company',
-                    },
-                  ],
-                },
-                {
-                  layoutItems: [
-                    {
-                      behavior: 'Edit',
-                      field: 'Email',
-                    },
-                    {
-                      behavior: 'Required',
-                      field: 'Status',
-                    },
-                    {
-                      behavior: 'Edit',
-                      field: 'Rating',
-                    },
-                  ],
-                },
-              ],
-              style: 'TwoColumnsTopToBottom',
-            },
-            {
-              customLabel: false,
-              detailHeading: false,
-              editHeading: true,
-              label: 'Address Information',
-              layoutColumns: [
-                {
-                  layoutItems: [
-                    {
-                      behavior: 'Edit',
-                      field: 'Address',
-                    },
-                  ],
-                },
-              ],
-              style: 'OneColumn',
-            },
-          ],
-          quickActionList: {
-            quickActionListItems: [
+        layout = createInstance({
+          value: {
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead-MyLayout',
+            layoutSections: [
               {
-                quickActionName: 'FeedItem.LinkPost',
+                customLabel: false,
+                detailHeading: false,
+                editHeading: true,
+                label: 'Lead Information',
+                layoutColumns: [
+                  {
+                    layoutItems: [
+                      {
+                        behavior: 'Required',
+                        field: 'Name',
+                      },
+                      {
+                        behavior: 'Required',
+                        field: 'Company',
+                      },
+                    ],
+                  },
+                  {
+                    layoutItems: [
+                      {
+                        behavior: 'Edit',
+                        field: 'Email',
+                      },
+                      {
+                        behavior: 'Required',
+                        field: 'Status',
+                      },
+                      {
+                        behavior: 'Edit',
+                        field: 'Rating',
+                      },
+                    ],
+                  },
+                ],
+                style: 'TwoColumnsTopToBottom',
               },
               {
-                quickActionName: 'FeedItem.PollPost',
+                customLabel: false,
+                detailHeading: false,
+                editHeading: true,
+                label: 'Address Information',
+                layoutColumns: [
+                  {
+                    layoutItems: [
+                      {
+                        behavior: 'Edit',
+                        field: 'Address',
+                      },
+                    ],
+                  },
+                ],
+                style: 'OneColumn',
+              },
+            ],
+            quickActionList: {
+              quickActionListItems: [
+                {
+                  quickActionName: 'FeedItem.LinkPost',
+                },
+                {
+                  quickActionName: 'FeedItem.PollPost',
+                },
+              ],
+            },
+            relatedContent: {
+              relatedContentItems: [
+                {
+                  layoutItem: {
+                    behavior: 'Readonly',
+                    field: 'CampaignId',
+                  },
+                },
+                {
+                  layoutItem: {
+                    component: 'runtime_sales_social:socialPanel',
+                  },
+                },
+              ],
+            },
+            relatedLists: [
+              {
+                fields: [
+                  'TASK.STATUS',
+                  'ACTIVITY.TASK',
+                ],
+                relatedList: 'RelatedActivityList',
+              },
+              {
+                fields: [
+                  'TASK.SUBJECT',
+                  'TASK.DUE_DATE',
+                ],
+                relatedList: 'RelatedHistoryList',
               },
             ],
           },
-          relatedContent: {
-            relatedContentItems: [
-              {
-                layoutItem: {
-                  behavior: 'Readonly',
-                  field: 'CampaignId',
-                },
-              },
-              {
-                layoutItem: {
-                  component: 'runtime_sales_social:socialPanel',
-                },
-              },
-            ],
-          },
-          relatedLists: [
-            {
-              fields: [
-                'TASK.STATUS',
-                'ACTIVITY.TASK',
-              ],
-              relatedList: 'RelatedActivityList',
-            },
-            {
-              fields: [
-                'TASK.SUBJECT',
-                'TASK.DUE_DATE',
-              ],
-              relatedList: 'RelatedHistoryList',
-            },
-          ],
+          type: 'Layout',
+          typeElements: result,
         })
-
         await removeElementIfAlreadyExists(client, layout)
       })
 

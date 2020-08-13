@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, isObjectType, ObjectType, InstanceElement,
+  Element, isInstanceElement, isObjectType, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { SalesforceRecord } from '../src/client/types'
@@ -77,7 +77,7 @@ describe('custom object instances e2e', () => {
         .find(e => isObjectType(e) && (apiName(e, true) === productTwoMetadataName))
       expect(productTwoObjectType).toBeDefined()
       expect(isObjectType(productTwoObjectType)).toBeTruthy()
-      const values = {
+      const value = {
         Name: 'TestProductName',
         ProductCode: 'GC198',
         IsActive: true,
@@ -106,7 +106,10 @@ describe('custom object instances e2e', () => {
         SBQQ__Taxable__c: false,
         fullName: 'TestProductName',
       }
-      const instance = await createInstance(client, values, productTwoObjectType as ObjectType)
+      const instance = await createInstance({
+        value,
+        type: productTwoObjectType as ObjectType,
+      })
       createdInstance = await createElement(
         adapter,
         instance,

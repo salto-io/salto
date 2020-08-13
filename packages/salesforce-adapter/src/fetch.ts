@@ -14,19 +14,57 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FileProperties } from 'jsforce-types'
-import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { FileProperties, MetadataObject } from 'jsforce-types'
+import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD } from './constants'
 import SalesforceClient from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange } from './config_change'
-import { apiName, createInstanceElement, MetadataObjectType } from './transformers/transformer'
-import { fromRetrieveResult, toRetrieveRequest } from './transformers/xml_transformer'
+import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
+import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+
+export const fetchMetadataType = async (
+  client: SalesforceClient,
+  typeInfo: MetadataObject,
+  knownTypes: Map<string, TypeElement>,
+  baseTypeNames: Set<string>
+): Promise<TypeElement[]> => {
+  const typeDesc = await client.describeMetadataType(typeInfo.xmlName)
+  const folderType = typeInfo.inFolder ? typeDesc.parentField?.foreignKeyDomain : undefined
+  const mainTypes = await createMetadataTypeElements({
+    name: typeInfo.xmlName,
+    fields: typeDesc.valueTypeFields,
+    knownTypes,
+    baseTypeNames,
+    client,
+    annotations: {
+      hasMetaFile: typeInfo.metaFile ? true : undefined,
+      folderType,
+      suffix: typeInfo.suffix,
+      dirName: typeInfo.directoryName,
+    },
+  })
+  const folderTypes = folderType === undefined
+    ? []
+    : await createMetadataTypeElements({
+      name: folderType,
+      fields: (await client.describeMetadataType(folderType)).valueTypeFields,
+      knownTypes,
+      baseTypeNames,
+      client,
+      annotations: {
+        hasMetaFile: true,
+        folderContentType: typeInfo.xmlName,
+        dirName: typeInfo.directoryName,
+      },
+    })
+  return [...mainTypes, ...folderTypes]
+}
 
 const getTypesWithContent = (types: ReadonlyArray<ObjectType>): Set<string> => new Set(
   types
@@ -98,10 +136,9 @@ export const retrieveMetadataInstances = async ({
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>
   ): Promise<InstanceElement[]> => {
-    // Because of a salesforce quirk, in order to get folder instances we actually need to use the
-    // "child" type with the folder fullName
+    // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = fileProps.map(inst => (
-      { ...inst, type: typesByName[inst.type]?.annotations?.folderContentType ?? inst.type }
+      { ...inst, type: getManifestTypeName(typesByName[inst.type]) }
     ))
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)

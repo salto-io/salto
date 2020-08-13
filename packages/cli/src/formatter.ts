@@ -473,6 +473,12 @@ export const formatShouldCancelWithNonexistentState = warn(
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 
+export const formatShouldChangeFetchModeToAlign = (
+  fetchMode: string
+): string => warn(Prompts.FETCH_SHOULD_ALIGN_FETCH_MODE(fetchMode))
+export const formatChangingFetchMode = header(`${Prompts.FETCH_CHANGING_FETCH_MODE_TO_ALIGN}\n`)
+export const formatNotChangingFetchMode = header(`${Prompts.FETCH_NOT_CHANGING_FETCH_MODE}\n`)
+
 export const formatLoginUpdated = [
   formatSuccess(Prompts.SERVICES_LOGIN_UPDATED),
   emptyLine(),
@@ -556,23 +562,13 @@ export const formatFinishedLoading = (envName?: string): string => (
     : Prompts.FINISHED_LOADING
 )
 
-export const formatApproveIsolatedModePrompt = (
-  newServices: string[],
-  oldServices: string[],
-  isolatedInput: boolean
-): string => {
-  if (_.isEmpty(oldServices)) {
-    return Prompts.ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION
-  }
-  return isolatedInput
-    ? Prompts.NEW_SERVICES_ISOLATED_RECOMMENDATION(
-      formatWordsSeries(newServices),
-    )
-    : Prompts.ONLY_NEW_SERVICES_ISOLATED_RECOMMENDATION(
-      formatWordsSeries(newServices),
-      formatWordsSeries(oldServices)
-    )
-}
+export const formatApproveIsolateCurrentEnvPrompt = (envName: string): string => (
+  Prompts.ISOLATE_FIRST_ENV_RECOMMENDATION(envName)
+)
+
+export const formatDoneIsolatingCurrentEnv = (envName: string): string => (
+  Prompts.DONE_ISOLATING_FIRST_ENV(envName)
+)
 
 export const formatStateChanges = (
   numOfChanges: number
@@ -592,5 +588,10 @@ export const formatInvalidFilters = (invalidFilters: string[]): string => [
 
 export const formatInvalidID = (invalidIds: string[]): string => [
   formatSimpleError(Prompts.INVALID_IDS(formatWordsSeries(invalidIds))),
+  emptyLine(),
+].join('\n')
+
+export const formatUnknownTargetEnv = (unknownEnvs: string[]): string => [
+  formatSimpleError(Prompts.UNKNOWN_TARGET_ENVS(unknownEnvs)),
   emptyLine(),
 ].join('\n')

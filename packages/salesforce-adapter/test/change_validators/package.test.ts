@@ -13,13 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import packageValidator, {
   INSTALLED_PACKAGE_METADATA,
   PACKAGE_VERSION_FIELD_NAME,
 } from '../../src/change_validators/package'
 import { API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE } from '../../src/constants'
-import { toChange } from '../utils'
 
 describe('package change validator', () => {
   let obj: ObjectType

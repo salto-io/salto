@@ -14,12 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { loadLocalWorkspace } from '@salto-io/core'
+import { loadLocalWorkspace, envFolderExists } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
-import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv, formatRenameEnv } from '../formatter'
+import {
+  formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv,
+  formatRenameEnv, formatApproveIsolateCurrentEnvPrompt, formatDoneIsolatingCurrentEnv,
+} from '../formatter'
+import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
 
 const NEW_ENV_NAME = 'new-name'
 
@@ -35,11 +39,53 @@ const setEnvironment = async (
   return CliExitCode.Success
 }
 
+const shouldRecommendToIsolateCurrentEnv = async (
+  workspace: Workspace,
+  workspaceDir: string,
+): Promise<boolean> => {
+  const envNames = workspace.envs()
+  return (
+    envNames.length === 1
+    && !await workspace.isEmpty(true)
+    && !await envFolderExists(workspaceDir, envNames[0])
+  )
+}
+
+const isolateExistingEnvironments = async (workspace: Workspace): Promise<void> => {
+  await workspace.demoteAll()
+  await workspace.flush()
+}
+
+const maybeIsolateExistingEnv = async (
+  output: CliOutput,
+  workspace: Workspace,
+  workspaceDir: string,
+  force?: boolean,
+  acceptSuggestions?: boolean,
+): Promise<void> => {
+  if (
+    (!force || acceptSuggestions)
+    && await shouldRecommendToIsolateCurrentEnv(workspace, workspaceDir)
+  ) {
+    const existingEnv = workspace.envs()[0]
+    outputLine(output, formatApproveIsolateCurrentEnvPrompt(existingEnv))
+    if (acceptSuggestions || await cliApproveIsolateBeforeMultiEnv(existingEnv)) {
+      await isolateExistingEnvironments(workspace)
+      outputLine(output, formatDoneIsolatingCurrentEnv(existingEnv))
+    }
+  }
+}
+
 const createEnvironment = async (
   envName: string,
   output: CliOutput,
   workspace: Workspace,
+  workspaceDir: string,
+  force?: boolean,
+  acceptSuggestions?: boolean,
 ): Promise<CliExitCode> => {
+  await maybeIsolateExistingEnv(output, workspace, workspaceDir, force, acceptSuggestions)
+
   await workspace.addEnvironment(envName)
   await setEnvironment(envName, output, workspace)
   outputLine(output, formatCreateEnv(envName))
@@ -92,6 +138,8 @@ export const command = (
   output: CliOutput,
   envName?: string,
   newEnvName?: string,
+  force?: boolean,
+  acceptSuggestions?: boolean,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     if (namesRequiredCommands.includes(commandName)
@@ -111,7 +159,14 @@ export const command = (
     const workspace = await loadLocalWorkspace(workspaceDir)
     switch (commandName) {
       case 'create':
-        return createEnvironment(envName as string, output, workspace)
+        return createEnvironment(
+          envName as string,
+          output,
+          workspace,
+          workspaceDir,
+          force,
+          acceptSuggestions,
+        )
       case 'delete':
         return deleteEnvironment(envName as string, output, workspace)
       case 'set':
@@ -132,6 +187,8 @@ interface EnvsArgs {
   command: string
   name: string
   [NEW_ENV_NAME]: string
+  force: boolean
+  acceptSuggestions: boolean
 }
 
 type EnvsParsedCliInput = ParsedCliInput<EnvsArgs>
@@ -155,9 +212,34 @@ const envsBuilder = createCommandBuilder({
         desc: 'The new name of the environment (required for rename)',
       },
     },
+    keyed: {
+      force: {
+        alias: ['f'],
+        describe: 'Perform the action without prompting with recommendations (such as to make the current files env-specific)',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
+      // will also be available as acceptSuggestions because of camel-case-expansion
+      'accept-suggestions': {
+        alias: ['y'],
+        describe: 'Accept all correction suggestions without prompting',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
+    },
   },
   async build(input: EnvsParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, output, input.args.name, input.args[NEW_ENV_NAME])
+    return command(
+      '.',
+      input.args.command,
+      output,
+      input.args.name,
+      input.args[NEW_ENV_NAME],
+      input.args.force,
+      input.args.acceptSuggestions,
+    )
   },
 })
 

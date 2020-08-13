@@ -17,7 +17,7 @@ import * as path from 'path'
 import readdirp from 'readdirp'
 import {
   stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
-  rename, existsSync, readFileSync, statSync,
+  rename, existsSync, readFileSync, statSync, notFoundAsUndefined,
 } from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
@@ -38,6 +38,7 @@ jest.mock('@salto-io/file', () => ({
   isEmptyDir: jest.fn(),
   isSubDirectory: jest.fn(),
 }))
+isEmptyDir.notFoundAsUndefined = notFoundAsUndefined(isEmptyDir)
 jest.mock('readdirp')
 describe('localDirectoryStore', () => {
   const encoding = 'utf8'
@@ -56,7 +57,7 @@ describe('localDirectoryStore', () => {
   const mockMkdir = mkdirp as jest.Mock
   const mockRm = rm as jest.Mock
   const mockRename = rename as jest.Mock
-  const mockEmptyDir = isEmptyDir as jest.Mock
+  const mockEmptyDir = isEmptyDir as unknown as jest.Mock
   const mockIsSubFolder = isSubDirectory as jest.Mock
 
   describe('list', () => {

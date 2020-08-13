@@ -25,24 +25,27 @@ import { Values, Value } from './values'
 export { ActionName }
 
 export type ChangeDataType = ObjectType | InstanceElement | Field | PrimitiveType
+export type AdditionChange<T> = AdditionDiff<T>
+export type ModificationChange<T> = ModificationDiff<T>
+export type RemovalChange<T> = RemovalDiff<T>
 export type Change<T = ChangeDataType> =
-  AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>
+  AdditionChange<T> | ModificationChange<T> | RemovalChange<T>
 
-export const isModificationDiff = <T>(change: Change<T>): change is ModificationDiff<T> =>
+export const isModificationChange = <T>(change: Change<T>): change is ModificationChange<T> =>
   change.action === 'modify'
-export const isRemovalDiff = <T>(change: Change<T>): change is RemovalDiff<T> =>
+export const isRemovalChange = <T>(change: Change<T>): change is RemovalChange<T> =>
   change.action === 'remove'
-export const isAdditionDiff = <T>(change: Change<T>): change is AdditionDiff<T> =>
+export const isAdditionChange = <T>(change: Change<T>): change is AdditionChange<T> =>
   change.action === 'add'
-export const isAdditionOrModificationDiff = <T>(
+export const isAdditionOrModificationChange = <T>(
   change: Change<T>
-): change is AdditionDiff<T> | ModificationDiff<T> => (
-    isAdditionDiff(change) || isModificationDiff(change)
+): change is AdditionChange<T> | ModificationChange<T> => (
+    isAdditionChange(change) || isModificationChange(change)
   )
-export const isAdditionOrRemovalDiff = <T>(
+export const isAdditionOrRemovalChange = <T>(
   change: Change<T>
-): change is AdditionDiff<T> | RemovalDiff<T> => (
-    isAdditionDiff(change) || isRemovalDiff(change)
+): change is AdditionChange<T> | RemovalChange<T> => (
+    isAdditionChange(change) || isRemovalChange(change)
   )
 
 export const getChangeElement = <T>(change: Change<T>): T =>
@@ -65,3 +68,18 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
     id: ElemID
     path?: string[]
   }
+
+export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
+
+export const toChange = ({ before, after }: ChangeParams): Change => {
+  if (before !== undefined && after !== undefined) {
+    return { action: 'modify', data: { before, after } }
+  }
+  if (before !== undefined) {
+    return { action: 'remove', data: { before } }
+  }
+  if (after !== undefined) {
+    return { action: 'add', data: { after } }
+  }
+  throw new Error('Must provide before or after')
+}

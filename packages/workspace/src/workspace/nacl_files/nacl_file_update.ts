@@ -15,9 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import {
-  getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionDiff, DetailedChange,
-} from '@salto-io/adapter-api'
+import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { SourceRange, SourceMap } from '../../parser'
 
@@ -129,7 +127,7 @@ const fixEdgeIndentation = (
 export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
   existingFileSourceMap?: SourceMap): DetailedChange[] => {
   const isAnnotationTypeAddChange = (change: DetailedChange): boolean =>
-    change.id.idType === 'annotation' && isAdditionDiff(change)
+    change.id.idType === 'annotation' && isAdditionChange(change)
 
   const objectHasAnnotationTypesBlock = (topLevelIdFullName: string): boolean =>
     !_.isUndefined(existingFileSourceMap)

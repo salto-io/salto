@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeError, BuiltinTypes, InstanceElement, isPrimitiveType, isInstanceChange, ChangeValidator, isAdditionOrModificationDiff } from '@salto-io/adapter-api'
+import { ChangeError, BuiltinTypes, InstanceElement, isPrimitiveType, isInstanceChange, ChangeValidator, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { getLookUpName, resolveValues } from '../transformers/transformer'
 
 const getJsonValidationErrorsFromAfter = async (after: InstanceElement):
@@ -44,7 +44,7 @@ const changeValidator: ChangeValidator = async changes => (
   _.flatten(await Promise.all(
     changes
       .filter(isInstanceChange)
-      .filter(isAdditionOrModificationDiff)
+      .filter(isAdditionOrModificationChange)
       .map(change => getJsonValidationErrorsFromAfter(change.data.after))
   ))
 )

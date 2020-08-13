@@ -119,18 +119,6 @@ const validateDeployResult = decorators.wrapMethodWith(
   }
 )
 
-const validateLoadResult = decorators.wrapMethodWith(
-  async (original: decorators.OriginalCall): Promise<unknown> => {
-    const result = await original.call() as BatchResultInfo[]
-    const resultsWithErrors = result.filter(r => !r.success)
-    if (resultsWithErrors.length === 0) {
-      return result
-    }
-    const errors = _.flatten(resultsWithErrors.map(r => r.errors))
-    throw new Error(errors.join('\n'))
-  }
-)
-
 export type Credentials = {
   username: string
   password: string
@@ -492,7 +480,6 @@ export default class SalesforceClient {
   }
 
   @SalesforceClient.logDecorator
-  @validateLoadResult
   @SalesforceClient.requiresLogin
   public async bulkLoadOperation(
     type: string,

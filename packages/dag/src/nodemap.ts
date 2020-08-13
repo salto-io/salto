@@ -101,15 +101,19 @@ class WalkErrors extends Map<NodeId, Error> {
 // Does not store data other than IDs.
 // Includes logic to walk the graph in evaluation order, while removing each processed node.
 export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<NodeId>> {
-  private reverseNeighbors: collections.map.DefaultMap<NodeId, Set<NodeId>>
+  private readonly reverseNeighbors: collections.map.DefaultMap<NodeId, Set<NodeId>>
+
+  private static createReverseNeighbors(
+    entries: Iterable<[NodeId, Set<NodeId>]>
+  ): collections.map.DefaultMap<NodeId, Set<NodeId>> {
+    const result = new collections.map.DefaultMap<NodeId, Set<NodeId>>(() => new Set<NodeId>())
+    wu(entries).forEach(([id, deps]) => deps.forEach(dep => result.get(dep).add(id)))
+    return result
+  }
 
   constructor(entries?: Iterable<[NodeId, Set<NodeId>]>) {
-    const defaultInit = (): Set<NodeId> => new Set<NodeId>()
-    super(defaultInit, entries)
-    this.reverseNeighbors = new collections.map.DefaultMap(defaultInit)
-    wu(this).forEach(([id, deps]) => {
-      deps.forEach(dep => this.reverseNeighbors.get(dep).add(id))
-    })
+    super(() => new Set<NodeId>(), entries)
+    this.reverseNeighbors = AbstractNodeMap.createReverseNeighbors(this)
   }
 
   clone(): this {
@@ -132,9 +136,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   getReverse(id: NodeId): Set<NodeId> {
-    return this.reverseNeighbors.has(id)
-      ? this.reverseNeighbors.get(id)
-      : new Set()
+    return this.reverseNeighbors.getOrUndefined(id) ?? new Set()
   }
 
   // returns nodes without dependencies - to be visited next in evaluation order
@@ -299,11 +301,10 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     setMany(origEdges)
     return createsCycle
   }
-}
 
-export class NodeMap extends AbstractNodeMap {
-  addNode(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
-    return super.addNodeBase(id, dependsOn)
+  clear(): void {
+    super.clear()
+    this.reverseNeighbors.clear()
   }
 }
 

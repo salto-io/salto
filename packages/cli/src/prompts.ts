@@ -134,6 +134,13 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
       Date.now() - date.getTime()
     ).humanize()} ago.`
 
+  public static readonly FETCH_SHOULD_ALIGN_FETCH_MODE = (
+    fetchMode: string
+  ): string => 'It is recommended to fetch in \'align\' mode when fetching an environemnt for the first time and the fetched services already have elements in other environments.'
+   + ` Do you want to change the fetch mode from '${fetchMode}' to 'align'?`
+
+  public static readonly FETCH_CHANGING_FETCH_MODE_TO_ALIGN = 'Changing fetch mode to \'align\''
+  public static readonly FETCH_NOT_CHANGING_FETCH_MODE = 'Ok, not changing fetch mode'
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`
@@ -159,26 +166,19 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly RENAME_ENV = (currentEnvName: string, newEnvName: string): string =>
     `Renamed environment - ${currentEnvName} -> ${newEnvName}`
 
-  public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
-    + ' It is recommended to perform first fetch of an environment in isolated mode.'
+  public static readonly ISOLATE_FIRST_ENV_RECOMMENDATION = (
+    existingEnv: string
+  ): string => 'This action will add a second environment to the workspace.'
+    + ` It is recommended to move environment ${existingEnv} out of the common configuration before proceeding.`
 
-  public static readonly NEW_SERVICES_ISOLATED_RECOMMENDATION = (
-    servicesNames: string,
-  ): string => `The current fetch command is running for the first time for ${servicesNames}.`
-     + ' It is recommended to perform first fetch of a service in isolated mode, without fetching other services.'
+  public static readonly DONE_ISOLATING_FIRST_ENV = (
+    existingEnv: string
+  ): string => `Done moving environment ${existingEnv} out of the common configuration.`
 
-
-  public static readonly ONLY_NEW_SERVICES_ISOLATED_RECOMMENDATION = (
-    newServicesNames: string,
-    oldServicesNames: string
-  ): string => `The current fetch command is running for the first time for ${newServicesNames} in isolated mode.`
-    + ` This will also fetch ${oldServicesNames} in strict mode and may result in unwanted changes to `
-    + ' other environments.\n'
-    + `It is recommended to run this fetch as an isolated fetch only for ${newServicesNames}`
-
-  public static readonly APPROVE_ISOLATED_RECOMMENDATION = (
-    newServicesNames: string
-  ): string => `Would you like to switch to isolated mode and fetch ${newServicesNames}? (Answer No to continue without switching)`
+  public static readonly APPROVE_ISOLATE_BEFORE_MULTIENV_RECOMMENDATION = (
+    existingEnv: string
+  ): string => `Would you like to isolate the configuration for ${existingEnv} before adding the new environment?`
+    + ' (Answer No to continue without changes)'
 
   public static readonly STATE_ONLY_UPDATE_START = (
     numOfChanges: number
@@ -227,9 +227,27 @@ ${Prompts.SERVICE_ADD_HELP}`
     invalidIds: string
   ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
 
+  public static readonly INVALID_ENV_TARGET_CURRENT = 'The current environment cannot be a target environment'
+  public static readonly UNKNOWN_TARGET_ENVS = (
+    unknownEnvs: string[]
+  ): string => (unknownEnvs.length === 1
+    ? `Unknown target environment: ${unknownEnvs[0]}`
+    : `Unknown target environments: ${unknownEnvs?.join(' ')}`)
+
   public static readonly DEMOTE_START = 'Demoting the selected elements.'
   public static readonly DEMOTE_FINISHED = 'Done demoting elements.'
   public static readonly DEMOTE_FAILED = (
     error: string
   ): string => `Failed to move the selected elements out of the common folder: ${error}`
+
+  public static readonly COPY_TO_ENV_START = (
+    targetEnvs: string[] = []
+  ): string => `Copying the selected elements to ${
+    targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
+  }.`
+
+  public static readonly COPY_TO_ENV_FINISHED = 'Done copying elements.'
+  public static readonly COPY_TO_ENV_FAILED = (
+    error: string
+  ): string => `Failed to copy the selected elements to the target environments: ${error}`
 }

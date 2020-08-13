@@ -15,18 +15,37 @@
 */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { Workspace } from '@salto-io/workspace'
 import { convertToIDSelectors } from '../convertors'
-import { servicesFilter } from '../filters/services'
 import { ParsedCliInput, CliOutput, SpinnerCreator, CliExitCode, CliCommand, CliTelemetry } from '../types'
 import { createCommandBuilder } from '../command_builder'
-import { environmentFilter } from '../filters/env'
 import { getCliTelemetry } from '../telemetry'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { formatStepStart, formatStepFailed, formatInvalidID, formatStepCompleted } from '../formatter'
+import { formatStepStart, formatStepFailed, formatInvalidID, formatStepCompleted, formatUnknownTargetEnv } from '../formatter'
 import { outputLine } from '../outputer'
 
 const log = logger(module)
+
+const validateEnvs = (
+  output: CliOutput,
+  workspace: Workspace,
+  targetEnvs: string[] = [],
+): boolean => {
+  if (targetEnvs.length === 0) {
+    return true
+  }
+  const missingEnvs = targetEnvs.filter(e => !workspace.envs().includes(e))
+  if (!_.isEmpty(missingEnvs)) {
+    outputLine(formatStepFailed(formatUnknownTargetEnv(missingEnvs)), output)
+    return false
+  }
+  if (targetEnvs.includes(workspace.currentEnv())) {
+    outputLine(formatStepFailed(Prompts.INVALID_ENV_TARGET_CURRENT), output)
+    return false
+  }
+  return true
+}
 
 export const command = (
   workspaceDir: string,
@@ -35,9 +54,11 @@ export const command = (
   spinnerCreator: SpinnerCreator,
   force: boolean,
   inputSelectors: string[],
+  targetEnvs?: string[],
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.debug(`running demote command on '${workspaceDir}', inputSelectors=${inputSelectors}`)
+    log.debug(`running copy command on '${workspaceDir}', targetEnvs=${
+      targetEnvs}, inputSelectors=${inputSelectors}`)
     const { ids, invalidSelectors } = convertToIDSelectors(inputSelectors)
     if (!_.isEmpty(invalidSelectors)) {
       output.stdout.write(formatStepFailed(formatInvalidID(invalidSelectors)))
@@ -49,7 +70,6 @@ export const command = (
       output,
       {
         force,
-        printStateRecency: true,
         spinnerCreator,
       }
     )
@@ -57,62 +77,74 @@ export const command = (
       cliTelemetry.failure()
       return CliExitCode.AppError
     }
+    if (!validateEnvs(output, workspace, targetEnvs)) {
+      cliTelemetry.failure()
+      return CliExitCode.UserInputError
+    }
 
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     cliTelemetry.start(workspaceTags)
     try {
-      outputLine(formatStepStart(Prompts.DEMOTE_START), output)
-      await workspace.demote(ids)
+      outputLine(formatStepStart(Prompts.COPY_TO_ENV_START(targetEnvs)), output)
+      await workspace.copyTo(ids, targetEnvs)
       await workspace.flush()
-      outputLine(formatStepCompleted(Prompts.DEMOTE_FINISHED), output)
+      outputLine(formatStepCompleted(Prompts.COPY_TO_ENV_FINISHED), output)
       cliTelemetry.success(workspaceTags)
       return CliExitCode.Success
     } catch (e) {
       cliTelemetry.failure()
-      outputLine(formatStepFailed(Prompts.DEMOTE_FAILED(e.message)), output)
+      outputLine(formatStepFailed(Prompts.COPY_TO_ENV_FAILED(e.message)), output)
       return CliExitCode.AppError
     }
   },
 })
 
-type DemoteArgs = {
+type CopyArgs = {
   force: boolean
+  env: string
+  targetEnv: string[]
   selectors: string[]
 }
 
-type DemoteParsedCliInput = ParsedCliInput<DemoteArgs>
+type CopyParsedCliInput = ParsedCliInput<CopyArgs>
 
-const demoteBuilder = createCommandBuilder({
+const copyBuilder = createCommandBuilder({
   options: {
-    command: 'demote [selectors..]',
-    description: 'Demote the selected elements to not be shared between environments.',
+    command: 'copy [selectors..]',
+    description: 'Copy the selected elements to the target environment(s), overriding existing elements.',
     keyed: {
       force: {
         alias: ['f'],
-        describe: 'Demote the elements even if the workspace is invalid.',
+        describe: 'Copy the elements even if the workspace is invalid.',
         boolean: true,
         default: false,
         demandOption: false,
       },
+      // will also be available as targetEnv because of camel-case-expansion
+      'target-env': {
+        alias: ['t'],
+        describe: 'Only copy the elements to the specified environment(s) (default=all)',
+        type: 'array',
+        string: true,
+      },
     },
   },
 
-  filters: [servicesFilter, environmentFilter],
-
   async build(
-    input: DemoteParsedCliInput,
+    input: CopyParsedCliInput,
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
     return command(
       '.',
-      getCliTelemetry(input.telemetry, 'demote'),
+      getCliTelemetry(input.telemetry, 'copy'),
       output,
       spinnerCreator,
       input.args.force,
       input.args.selectors,
+      input.args.targetEnv,
     )
   },
 })
 
-export default demoteBuilder
+export default copyBuilder

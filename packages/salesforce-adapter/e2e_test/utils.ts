@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element, isObjectType, ChangeGroup, getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Value, ObjectType, ElemID, InstanceElement, TypeElement, Element, isObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
@@ -25,7 +25,7 @@ import { filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
-import { createInstanceElement, metadataType, apiName, createMetadataTypeElements, isCustomObject } from '../src/transformers/transformer'
+import { createInstanceElement, metadataType, apiName, createMetadataTypeElements, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import { ConfigChangeSuggestion, FilterContext } from '../src/types'
 
 const { makeArray } = collections.array
@@ -98,7 +98,7 @@ Promise<ObjectType[]> => {
     }))))
 }
 
-export const createInstance = async (client: SalesforceClient, value: Values,
+export const createInstance = async (client: SalesforceClient, value: MetadataValues,
   type: string | ObjectType): Promise<InstanceElement> => {
   const objectType = isObjectType(type)
     ? type
@@ -135,7 +135,7 @@ export const removeElementIfAlreadyExists = async (
   client: SalesforceClient,
   element: InstanceElement | ObjectType
 ): Promise<void> => {
-  if (isInstanceElement(element) && isCustomObject(element.type)) {
+  if (isInstanceOfCustomObject(element)) {
     await removeRecordIfAlreadyExists(client, element)
   } else {
     const mdType = metadataType(element)
@@ -163,7 +163,7 @@ export const createElementAndVerify = async <T extends InstanceElement | ObjectT
   adapter: SalesforceAdapter, client: SalesforceClient, element: T,
 ): Promise<T> => {
   const result = await createElement(adapter, element)
-  if (isInstanceElement(element) && isCustomObject(element.type)) {
+  if (isInstanceOfCustomObject(element)) {
     expect(await getRecordOfInstance(client, element)).toBeDefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeDefined()
@@ -195,7 +195,7 @@ export const removeElement = async <T extends InstanceElement | ObjectType>(
 export const removeElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
   element: InstanceElement | ObjectType): Promise<void> => {
   await removeElement(adapter, element)
-  if (isInstanceElement(element) && isCustomObject(element.type)) {
+  if (isInstanceOfCustomObject(element)) {
     expect(await getRecordOfInstance(client, element)).toBeUndefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeUndefined()

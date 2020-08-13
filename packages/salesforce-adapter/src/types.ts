@@ -15,9 +15,7 @@
 */
 import {
   ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
-  StaticFile,
 } from '@salto-io/adapter-api'
-import { MetadataInfo } from 'jsforce'
 import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
@@ -42,7 +40,6 @@ export type DataManagementConfig = {
   name: string
   enabled: boolean
   isNameBasedID: boolean
-  includeNamespaces?: string[]
   includeObjects?: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
@@ -96,7 +93,6 @@ const dataManagementType = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    includeNamespaces: { type: new ListType(BuiltinTypes.STRING) },
     includeObjects: { type: new ListType(BuiltinTypes.STRING) },
     excludeObjects: { type: new ListType(BuiltinTypes.STRING) },
     allowReferenceTo: { type: new ListType(BuiltinTypes.STRING) },
@@ -151,7 +147,9 @@ export const configType = new ObjectType({
             name: 'CPQ',
             enabled: false,
             isNameBasedID: true,
-            includeNamespaces: ['SBQQ'],
+            includeObjects: [
+              '^SBQQ__.*',
+            ],
             excludeObjects: [
               'SBQQ__ContractedPrice__c',
               'SBQQ__Quote__c',
@@ -180,7 +178,3 @@ export const configType = new ObjectType({
     },
   },
 })
-
-export interface MetadataInfoWithStaticFile extends MetadataInfo {
- content: StaticFile
-}

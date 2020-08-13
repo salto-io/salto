@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, StaticFile, ChangeError } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, StaticFile, ChangeError, toChange } from '@salto-io/adapter-api'
 import jsonTypeValidator from '../../src/change_validators/json_type'
-import { toChange } from '../common/mock_changes'
 
 const invalidJSON = '{'
 const validJSON = '{ "a": "bba" }'

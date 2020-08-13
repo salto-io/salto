@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isModificationDiff,
-  isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
+  TypeElement, ObjectType, InstanceElement, isModificationChange, isFieldChange, ChangeDataType,
+  isRemovalChange, isAdditionChange, Field, Element, isObjectType, isInstanceElement,
   Change, getChangeElement, isField, isElement, ElemIdGetter, Values, FetchResult,
-  AdapterOperations, ChangeGroup, DeployResult, isInstanceChange, isObjectTypeChange, isFieldChange,
+  AdapterOperations, ChangeGroup, DeployResult, isInstanceChange, isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import {
   resolveChangeElement, restoreChangeElement,
@@ -31,9 +31,9 @@ import { decorators, collections } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
-  toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
-  metadataType, createMetadataTypeElements, instancesToUpdateRecords, instancesToDeleteRecords,
-  defaultApiName, getLookUpName, isCustomObject, instancesToCreateRecords,
+  toCustomField, toCustomObject, apiName, Types, toMetadataInfo,
+  metadataType, createMetadataTypeElements, createInstanceElement,
+  defaultApiName, getLookUpName, isMetadataObjectType,
 } from './transformers/transformer'
 import { toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -67,13 +67,14 @@ import hideTypesFilter from './filters/hide_types'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
-import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
-  getConfigFromConfigChanges,
-  STOP_MANAGING_ITEMS_MSG } from './config_change'
+import {
+  createListMetadataObjectsConfigChange, createSkippedListConfigChange, getConfigFromConfigChanges,
+  STOP_MANAGING_ITEMS_MSG,
+} from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { retrieveMetadataInstances } from './fetch'
-import { IS_FOLDER } from './constants'
+import { isCustomObjectInstancesGroup, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -159,6 +160,14 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
     )
   }
 }
+
+const groupChangesByTopLevelName = (
+  changes: ReadonlyArray<Change<ChangeDataType>>
+): Record<string, Change<ChangeDataType>[]> =>
+  _.groupBy(
+    changes,
+    change => getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName(),
+  )
 
 export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
@@ -426,13 +435,13 @@ export default class SalesforceAdapter implements AdapterOperations {
       // This is temporary code until we change the internal implementation of the adapter to
       // handle changes without relying on getting the top level elements
       const getBeforeAndAfterElements = (): { before: ObjectType; after: ObjectType } => {
-        const updateChange = elemChanges.filter(isFieldChange).filter(isModificationDiff).pop()
+        const updateChange = elemChanges.filter(isFieldChange).filter(isModificationChange).pop()
         if (updateChange !== undefined) {
           return { before: updateChange.data.before.parent, after: updateChange.data.after.parent }
         }
-        const removeChanges = elemChanges.filter(isFieldChange).filter(isRemovalDiff)
+        const removeChanges = elemChanges.filter(isFieldChange).filter(isRemovalChange)
         const removedFields = removeChanges.map(change => change.data.before.name)
-        const addChanges = elemChanges.filter(isFieldChange).filter(isAdditionDiff)
+        const addChanges = elemChanges.filter(isFieldChange).filter(isAdditionChange)
         const addedFields = addChanges.map(change => change.data.after.name)
         const before = removeChanges.length !== 0
           ? removeChanges[0].data.before.parent
@@ -450,18 +459,28 @@ export default class SalesforceAdapter implements AdapterOperations {
       }
       return { action: 'modify', data: getBeforeAndAfterElements() }
     }
+
     const resolvedChanges = changeGroup.changes
       .map(change => resolveChangeElement(change, getLookUpName))
-    const changeByElem = _.groupBy(
-      resolvedChanges,
-      change => getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName(),
-    )
-    const results = await Promise.all(
-      Object.values(changeByElem)
-        .map(elemChanges => this.deployElementChanges(elemChanges, getMainElemChange(elemChanges)))
-    )
+    const resolvedChangeGroup = { groupID: changeGroup.groupID, changes: resolvedChanges }
+    const resolvedByElem = groupChangesByTopLevelName(resolvedChanges)
+    let results: DeployResult[]
+    if (isCustomObjectInstancesGroup(resolvedChangeGroup)) {
+      results = [await deployCustomObjectInstancesGroup(
+        resolvedChangeGroup,
+        this.client,
+        this.filtersRunner,
+      )]
+    } else {
+      results = await Promise.all(
+        Object.values(resolvedByElem)
+          .map(elemChanges =>
+            this.deployElementChanges(elemChanges, getMainElemChange(elemChanges)))
+      )
+    }
+    const changesByElem = groupChangesByTopLevelName(changeGroup.changes)
     const sourceElements = _.keyBy(
-      Object.values(changeByElem).map(change => getChangeElement(getMainElemChange(change))),
+      Object.values(changesByElem).map(change => getChangeElement(getMainElemChange(change))),
       changeElement => changeElement.elemID.getFullName(),
     )
     const appliedChanges = _.flatten(results.map(res => res.appliedChanges))
@@ -517,27 +536,13 @@ export default class SalesforceAdapter implements AdapterOperations {
         elem.value[constants.INSTANCE_FULL_NAME_FIELD] = defaultApiName(elem)
       }
     }
-
     const post = element.clone()
     const type = metadataType(post)
-    if (isCustomObject(post.type)) {
-      const result = await this.client.bulkLoadOperation(
-        apiName(post.type),
-        'insert',
-        instancesToCreateRecords([post]),
-      )
-      // Add autogenerated Id to the new instance so we will be able to update it immediately
-      if (post.type.fields[constants.CUSTOM_OBJECT_ID_FIELD] !== undefined) {
-        // Currently called with one instance so result is a single element array
-        post.value[constants.CUSTOM_OBJECT_ID_FIELD] = result[0]?.id
-      }
-    } else {
-      addInstanceDefaults(post)
-      if (this.metadataToDeploy.includes(type)) {
-        await this.deployInstance(post)
-      } else if (!this.metadataTypesToSkipMutation.includes(metadataType(post))) {
-        await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
-      }
+    addInstanceDefaults(post)
+    if (this.metadataToDeploy.includes(type)) {
+      await this.deployInstance(post)
+    } else if (!this.metadataTypesToSkipMutation.includes(metadataType(post))) {
+      await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
     }
     return post
   }
@@ -558,13 +563,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration()
   private async remove(element: Element): Promise<void> {
     const type = metadataType(element)
-    if (isInstanceElement(element) && isCustomObject(element.type)) {
-      await this.client.bulkLoadOperation(
-        apiName(element.type),
-        'delete',
-        instancesToDeleteRecords([element]),
-      )
-    } else if (isInstanceElement(element) && this.metadataToDeploy.includes(type)) {
+    if (isInstanceElement(element) && this.metadataToDeploy.includes(type)) {
       await this.deployInstance(element, true)
     } else if (!(isInstanceElement(element) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(element))
@@ -603,7 +602,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     validateApiName(before, after)
     const clonedObject = after.clone()
     changes
-      .filter(isAdditionDiff)
+      .filter(isAdditionChange)
       .map(getChangeElement)
       .filter(isField)
       .map(fieldChange => clonedObject.fields[fieldChange.name])
@@ -622,15 +621,15 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
-      this.deleteCustomFields(fieldChanges.filter(isRemovalDiff).map(getChangeElement)),
+      this.deleteCustomFields(fieldChanges.filter(isRemovalChange).map(getChangeElement)),
       // Retrieve the custom fields for addition and than create them
       this.createFields(fieldChanges
-        .filter(isAdditionDiff)
+        .filter(isAdditionChange)
         .filter(c => !this.systemFields.includes(getChangeElement(c).name))
         .map(c => clonedObject.fields[c.data.after.name])),
       // Update the remaining fields that were changed
       this.updateFields(fieldChanges
-        .filter(isModificationDiff)
+        .filter(isModificationChange)
         .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
       this.updateObjectAnnotations(before, clonedObject, changes),
@@ -699,13 +698,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           ))
     }
 
-    if (isCustomObject(newInstance.type)) {
-      await this.client.bulkLoadOperation(
-        apiName(newInstance.type),
-        'update',
-        instancesToUpdateRecords([newInstance])
-      )
-    } else if (this.metadataToDeploy.includes(typeName)) {
+    if (this.metadataToDeploy.includes(typeName)) {
       await this.deployInstance(newInstance)
     } else if (this.metadataTypesToUseUpsertUponUpdate.includes(typeName)) {
       await this.client.upsert(typeName, toMetadataInfo(apiName(newInstance), newInstance.value))
@@ -836,7 +829,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       knownTypes,
       baseTypeNames,
       client: this.client,
-      annotations: { hasMetaFile: typeInfo.metaFile ? true : undefined, folderType },
+      annotations: {
+        hasMetaFile: typeInfo.metaFile ? true : undefined,
+        folderType,
+        suffix: typeInfo.suffix,
+        dirName: typeInfo.directoryName,
+      },
     })
     const folderTypes = folderType === undefined
       ? []
@@ -846,7 +844,11 @@ export default class SalesforceAdapter implements AdapterOperations {
         knownTypes,
         baseTypeNames,
         client: this.client,
-        annotations: { hasMetaFile: true, isFolder: true },
+        annotations: {
+          hasMetaFile: true,
+          folderContentType: typeInfo.xmlName,
+          dirName: typeInfo.directoryName,
+        },
       })
     return [...mainTypes, ...folderTypes]
   }
@@ -878,8 +880,11 @@ export default class SalesforceAdapter implements AdapterOperations {
     const typeInfos = await typeInfoPromise
     const topLevelTypeNames = typeInfos.map(info => info.xmlName)
     const topLevelTypes = (await types)
-      .filter(isObjectType)
-      .filter(t => topLevelTypeNames.includes(apiName(t)) || t.annotations[IS_FOLDER] === true)
+      .filter(isMetadataObjectType)
+      .filter(t => (
+        topLevelTypeNames.includes(apiName(t))
+        || t.annotations.folderContentType !== undefined
+      ))
 
     const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(
       topLevelTypes,

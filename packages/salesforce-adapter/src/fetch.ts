@@ -18,10 +18,10 @@ import { FileProperties } from 'jsforce-types'
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { FOLDER_TYPE, METADATA_CONTENT_FIELD, HAS_META_FILE, IS_FOLDER } from './constants'
+import { METADATA_CONTENT_FIELD } from './constants'
 import SalesforceClient from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange } from './config_change'
-import { apiName, createInstanceElement } from './transformers/transformer'
+import { apiName, createInstanceElement, MetadataObjectType } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest } from './transformers/xml_transformer'
 
 const { isDefined } = lowerDashValues
@@ -32,15 +32,15 @@ const getTypesWithContent = (types: ReadonlyArray<ObjectType>): Set<string> => n
     .map(t => apiName(t))
 )
 
-const getTypesWithMetaFile = (types: ReadonlyArray<ObjectType>): Set<string> => new Set(
+const getTypesWithMetaFile = (types: ReadonlyArray<MetadataObjectType>): Set<string> => new Set(
   types
-    .filter(t => t.annotations[HAS_META_FILE] === true)
+    .filter(t => t.annotations.hasMetaFile === true)
     .map(t => apiName(t))
 )
 
-type RetreiveMetadataInstancesArgs = {
+type RetrieveMetadataInstancesArgs = {
   client: SalesforceClient
-  types: ReadonlyArray<ObjectType>
+  types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   maxConcurrentRetrieveRequests: number
   instancesRegexSkippedList: ReadonlyArray<RegExp>
@@ -52,15 +52,15 @@ export const retrieveMetadataInstances = async ({
   maxItemsInRetrieveRequest,
   maxConcurrentRetrieveRequests,
   instancesRegexSkippedList,
-}: RetreiveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
+}: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
   const notInSkipList = (file: FileProperties): boolean => (
     !instancesRegexSkippedList.some(re => re.test(`${file.type}.${file.fullName}`))
   )
 
-  const getFolders = async (type: ObjectType): Promise<(FileProperties | undefined)[]> => {
-    const folderType = type.annotations[FOLDER_TYPE]
+  const getFolders = async (type: MetadataObjectType): Promise<(FileProperties | undefined)[]> => {
+    const { folderType } = type.annotations
     if (folderType === undefined) {
       return [undefined]
     }
@@ -72,8 +72,8 @@ export const retrieveMetadataInstances = async ({
       .value()
   }
 
-  const listFilesOfType = async (type: ObjectType): Promise<FileProperties[]> => {
-    if (type.annotations[IS_FOLDER] === true) {
+  const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
+    if (type.annotations.folderContentType !== undefined) {
       // We get folders as part of getting the records inside them
       return []
     }
@@ -90,11 +90,6 @@ export const retrieveMetadataInstances = async ({
   }
 
   const typesByName = _.keyBy(types, t => apiName(t))
-  const folderToChildType = _(types)
-    .filter(type => FOLDER_TYPE in type.annotations)
-    .map(type => [type.annotations[FOLDER_TYPE], apiName(type)])
-    .fromPairs()
-    .value()
   const typesWithMetaFile = getTypesWithMetaFile(types)
   const typesWithContent = getTypesWithContent(types)
 
@@ -104,9 +99,7 @@ export const retrieveMetadataInstances = async ({
     // Because of a salesforce quirk, in order to get folder instances we actually need to use the
     // "child" type with the folder fullName
     const filesToRetrieve = fileProps.map(inst => (
-      inst.type in folderToChildType
-        ? { ...inst, type: folderToChildType[inst.type] }
-        : inst
+      { ...inst, type: typesByName[inst.type]?.annotations?.folderContentType ?? inst.type }
     ))
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)

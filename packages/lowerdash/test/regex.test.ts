@@ -13,19 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeDataType, Change } from '@salto-io/adapter-api'
+import { isValidRegex } from '../src/regex'
 
-// TODO: export to common test utils package
-export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
-export const toChange = ({ before, after }: ChangeParams): Change => {
-  if (before !== undefined && after !== undefined) {
-    return { action: 'modify', data: { before, after } }
-  }
-  if (before !== undefined) {
-    return { action: 'remove', data: { before } }
-  }
-  if (after !== undefined) {
-    return { action: 'add', data: { after } }
-  }
-  throw new Error('must provide before or after')
-}
+describe('regex', () => {
+  describe('isValidRegex', () => {
+    it('should return false for an invalid regex string', () => {
+      expect(isValidRegex('\\')).toBeFalsy()
+    })
+
+    it('should return true for a valid regex', () => {
+      expect(isValidRegex('validRegex')).toBeTruthy()
+    })
+  })
+})

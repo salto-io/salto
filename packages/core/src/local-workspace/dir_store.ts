@@ -98,8 +98,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   }
 
   const removeDirIfEmpty = async (dirPath: string): Promise<void> => {
-    if (await fileUtils.exists(dirPath)
-      && await fileUtils.isEmptyDir(dirPath)
+    if (await fileUtils.isEmptyDir.notFoundAsUndefined(dirPath)
       && fileUtils.isSubDirectory(dirPath, currentBaseDir)) {
       await fileUtils.rm(dirPath)
       await removeDirIfEmpty(path.dirname(dirPath))

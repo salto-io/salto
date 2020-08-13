@@ -17,7 +17,7 @@ import {
   Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult,
   AdapterOperationsContext, AdapterOperations,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SDKDownloadService } from '@salto-io/suitecloud-cli'
@@ -54,14 +54,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   NetsuiteConfig => {
   const validateRegularExpressions = (regularExpressions: string[]): void => {
     const invalidRegularExpressions = regularExpressions
-      .filter(regex => {
-        try {
-          RegExp(regex)
-          return false
-        } catch (e) {
-          return true
-        }
-      })
+      .filter(strRegex => !regex.isValidRegex(strRegex))
     if (!_.isEmpty(invalidRegularExpressions)) {
       const errMessage = `Failed to load config due to an invalid ${FILE_PATHS_REGEX_SKIP_LIST} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
       log.error(errMessage)

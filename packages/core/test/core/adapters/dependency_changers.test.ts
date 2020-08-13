@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange, DependencyChange, ChangeEntry, AdapterOperations } from '@salto-io/adapter-api'
+import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange, DependencyChange, ChangeEntry, AdapterOperations, toChange } from '@salto-io/adapter-api'
 import { getAdapterDependencyChangers } from '../../../src/core/adapters'
 import { mockFunction } from '../../common/helpers'
-import { toChange } from '../../common/plan'
 
 describe('getAdapterDependencyChangers', () => {
   const mockAdapter = (dependencyChanger?: DependencyChanger): Adapter => ({

@@ -16,9 +16,8 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalDiff,
-  CORE_ANNOTATIONS, isAdditionDiff,
-  isType, isInstanceElement,
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalChange,
+  CORE_ANNOTATIONS, isAdditionChange, isType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -27,7 +26,7 @@ import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
-import { multiEnvSource } from './nacl_files/mutil_env/multi_env_source'
+import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { Errors, ServiceDuplicationError, EnvDuplicationError,
   UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
@@ -38,7 +37,7 @@ import {
 import { WorkspaceConfigSource } from './workspace_config_source'
 import {
   createAddChange, createRemoveChange,
-} from './nacl_files/mutil_env/projections'
+} from './nacl_files/multi_env/projections'
 
 const log = logger(module)
 
@@ -79,6 +78,7 @@ export type Workspace = {
     Promise<Readonly<Record<string, InstanceElement>>>
 
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
+  hasElementsInServices(serviceNames: string[]): Promise<boolean>
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
@@ -108,6 +108,8 @@ export type Workspace = {
   getStateRecency(services: string): Promise<StateRecency>
   promote(ids: ElemID[]): Promise<void>
   demote(ids: ElemID[]): Promise<void>
+  demoteAll(): Promise<void>
+  copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
 }
 
 // common source has no state
@@ -147,7 +149,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
 
   // Determine if change is new type addition (add action)
   const isChangeNewHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
-    && isAdditionDiff(change)
+    && isAdditionChange(change)
     && isType(change.data.after)
     && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
 
@@ -157,7 +159,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   ): Promise<DetailedChange> => {
     // Handling new instance addition: removing all hidden (fields) values
     if (change.id.idType === 'instance'
-      && isAdditionDiff(change)
+      && isAdditionChange(change)
       && isInstanceElement(change.data.after)
     ) {
       const instance = change.data.after as InstanceElement
@@ -168,7 +170,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     // Handling type changed to hidden: when action is addition of hidden annotation (true)
     // We return remove change with the parentID (the top level element)
     if (change.id.idType === 'attr'
-      && isAdditionDiff(change)
+      && isAdditionChange(change)
       && change.id.getFullNameParts().length === 4
       && change.id.name === CORE_ANNOTATIONS.HIDDEN
       && change.data.after === true) {
@@ -185,7 +187,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     //
     // We return addition change with the top level element (from state)
     if (change.id.idType === 'attr'
-      && isRemovalDiff(change)
+      && isRemovalChange(change)
       && change.id.name === CORE_ANNOTATIONS.HIDDEN
       && change.data.before === true) {
       const topLevelParentID = change.id.createTopLevelParentID()
@@ -288,9 +290,14 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       )
     )),
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
-      const isNaclFilesSourceEmpty = _.isEmpty(await naclFilesSource.getAll())
+      const isNaclFilesSourceEmpty = !naclFilesSource || _.isEmpty(await naclFilesSource.getAll())
       return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
+    hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (
+      (await naclFilesSource.list()).some(
+        elemId => serviceNames.includes(elemId.adapter)
+      )
+    ),
     setNaclFiles: naclFilesSource.setNaclFiles,
     updateNaclFiles,
     removeNaclFiles: naclFilesSource.removeNaclFiles,
@@ -302,6 +309,8 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getElements: naclFilesSource.getElements,
     promote: naclFilesSource.promote,
     demote: naclFilesSource.demote,
+    demoteAll: naclFilesSource.demoteAll,
+    copyTo: naclFilesSource.copyTo,
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

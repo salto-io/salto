@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import parser from 'fast-xml-parser'
-import { MetadataInfo, RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
+import { RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
@@ -28,7 +28,7 @@ import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
   NAMESPACE_SEPARATOR, INSTALLED_PACKAGES_PATH, RECORDS_PATH,
 } from '../constants'
-import { apiName, metadataType } from './transformer'
+import { apiName, metadataType, MetadataValues } from './transformer'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -196,8 +196,6 @@ export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): Retriev
       .value(),
   },
 })
-
-export type MetadataValues = MetadataInfo & Values
 
 const addContentFieldAsStaticFile = (values: Values, valuePath: string[], content: Buffer,
   fileName: string, type: string, namespacePrefix?: string): void => {

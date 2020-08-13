@@ -224,17 +224,23 @@ export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => ({
   strings: () => errors.map(err => err.message),
 })
 
-export const mockLoadWorkspace = (name: string): Workspace =>
+export const mockLoadWorkspace = (
+  name: string,
+  envs = ['active', 'inactive'],
+  isEmpty = false,
+  hasElementsInServices = true,
+): Workspace =>
   ({
     uid: '123',
     name,
     currentEnv: () => 'active',
-    envs: () => ['active', 'inactive'],
+    envs: () => envs,
     services: () => ['salesforce', 'hubspot'],
     elements: jest.fn().mockResolvedValue([] as ReadonlyArray<Element>),
     hasErrors: () => jest.fn().mockResolvedValue(false),
     errors: () => jest.fn().mockResolvedValue(mockErrors([])),
-    isEmpty: jest.fn().mockResolvedValue(false),
+    isEmpty: jest.fn().mockResolvedValue(isEmpty),
+    hasElementsInServices: jest.fn().mockResolvedValue(hasElementsInServices),
     getTotalSize: jest.fn().mockResolvedValue(0),
     addEnvironment: jest.fn(),
     deleteEnvironment: jest.fn(),
@@ -251,6 +257,8 @@ export const mockLoadWorkspace = (name: string): Workspace =>
     fetchedServices: jest.fn().mockResolvedValue([]),
     promote: jest.fn().mockResolvedValue(undefined),
     demote: jest.fn().mockResolvedValue(undefined),
+    demoteAll: jest.fn().mockResolvedValue(undefined),
+    copyTo: jest.fn().mockResolvedValue(undefined),
     flush: jest.fn().mockResolvedValue(undefined),
   } as unknown as Workspace)
 
@@ -266,6 +274,7 @@ export const mockLoadWorkspaceEnvironment = (
     return {
       workspace: ({}) as unknown as Workspace,
       errored: true,
+      stateRecencies: [],
     }
   }
   if (sessionEnv === withEnvironmentParam) {
@@ -275,6 +284,7 @@ export const mockLoadWorkspaceEnvironment = (
         currentEnv: () => withEnvironmentParam,
       },
       errored: false,
+      stateRecencies: [],
     }
   }
   return {
@@ -283,6 +293,7 @@ export const mockLoadWorkspaceEnvironment = (
       currentEnv: () => withoutEnvironmentParam,
     },
     errored: false,
+    stateRecencies: [],
   }
 }
 

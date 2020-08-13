@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeDataType, Change, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { ChangeGroup, getChangeElement, toChange, ChangeParams } from '@salto-io/adapter-api'
 
 export type MockFunction<T extends (...args: never[]) => unknown> =
   jest.Mock<ReturnType<T>, Parameters<T>>
@@ -27,20 +27,6 @@ export type MockInterface<T extends {}> = {
 export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
   jest.fn()
 )
-
-export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
-export const toChange = ({ before, after }: ChangeParams): Change => {
-  if (before !== undefined && after !== undefined) {
-    return { action: 'modify', data: { before, after } }
-  }
-  if (before !== undefined) {
-    return { action: 'remove', data: { before } }
-  }
-  if (after !== undefined) {
-    return { action: 'add', data: { after } }
-  }
-  throw new Error('must provide before or after')
-}
 
 export const toChangeGroup = (...params: ChangeParams[]): ChangeGroup => {
   const changes = params.map(toChange)

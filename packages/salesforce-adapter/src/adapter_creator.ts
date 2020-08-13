@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter,
@@ -21,10 +21,9 @@ import {
 import _ from 'lodash'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
 import changeValidator from './change_validator'
+import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
-import {
-  configType, credentialsType, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig,
-} from './types'
+import { configType, credentialsType, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, DataManagementConfig, DATA_MANAGEMENT } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -38,25 +37,28 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 SalesforceConfig => {
-  const validateRegularExpressions = (regularExpressions: string[]): void => {
+  const validateRegularExpressions = (listName: string, regularExpressions: string[]): void => {
     const invalidRegularExpressions = regularExpressions
-      .filter(regex => {
-        try {
-          RegExp(regex)
-          return false
-        } catch (e) {
-          return true
-        }
-      })
+      .filter(strRegex => !regex.isValidRegex(strRegex))
     if (!_.isEmpty(invalidRegularExpressions)) {
-      const errMessage = `Failed to load config due to an invalid ${INSTANCES_REGEX_SKIPPED_LIST} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
+      const errMessage = `Failed to load config due to an invalid ${listName} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
       log.error(errMessage)
       throw Error(errMessage)
     }
   }
 
+  const validateDataManagement = (dataManagementConfigs: DataManagementConfig[]): void => {
+    dataManagementConfigs.forEach(dataManagementConfig => {
+      validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
+      validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
+      validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
+    })
+  }
+
   const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
-  validateRegularExpressions(instancesRegexSkippedList)
+  validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
+  const dataManagementConfigs = makeArray(config?.value?.dataManagement)
+  validateDataManagement(dataManagementConfigs)
   const adapterConfig = {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
@@ -87,5 +89,6 @@ export const adapter: Adapter = {
   configType,
   deployModifiers: {
     changeValidator,
+    getChangeGroupIds,
   },
 }

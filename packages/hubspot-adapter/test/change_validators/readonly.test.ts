@@ -13,12 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, StaticFile, ReferenceExpression, ElemID, ChangeError } from '@salto-io/adapter-api'
+import { InstanceElement, StaticFile, ReferenceExpression, ElemID, ChangeError, toChange } from '@salto-io/adapter-api'
 import readonlyValidator from '../../src/change_validators/readonly'
 import { Types } from '../../src/transformers/transformer'
 import { OBJECTS_NAMES } from '../../src/constants'
 import { contactPropertyMock } from '../common/mock_elements'
-import { toChange } from '../common/mock_changes'
 
 describe('readonly change validator', () => {
   describe('onUpdate', () => {

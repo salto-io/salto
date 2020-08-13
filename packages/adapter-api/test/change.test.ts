@@ -16,7 +16,7 @@
 import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange } from '../src/change'
+import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange } from '../src/change'
 
 describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
@@ -109,6 +109,27 @@ describe('change.ts', () => {
           change => expect(isFieldChange(change)).toBeFalsy()
         )
       })
+    })
+  })
+
+  describe('toChange', () => {
+    it('should create add change when only after is provided', () => {
+      const newChange = toChange({ after: inst })
+      expect(isAdditionChange(newChange)).toBeTruthy()
+    })
+
+    it('should create delete change when only before is provided', () => {
+      const newChange = toChange({ before: inst })
+      expect(isRemovalChange(newChange)).toBeTruthy()
+    })
+
+    it('should create a modify change if both before and after are provided', () => {
+      const newChange = toChange({ before: inst, after: inst })
+      expect(isModificationChange(newChange)).toBeTruthy()
+    })
+
+    it('should throw error if befor and after not provided', () => {
+      expect(() => toChange({})).toThrow('Must provide before or after')
     })
   })
 })

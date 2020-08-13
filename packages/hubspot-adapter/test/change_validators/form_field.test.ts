@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import { afterFormInstanceValuesMock } from '../common/mock_elements'
-import { toChange } from '../common/mock_changes'
 import formFieldValidator from '../../src/change_validators/form_field'
 import { OBJECTS_NAMES } from '../../src/constants'
 

@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeElement, isInstanceChange, isModificationDiff,
-  InstanceElement, ChangeError, isAdditionDiff,
+  ChangeValidator, getChangeElement, isInstanceChange, isModificationChange,
+  InstanceElement, ChangeError, isAdditionChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -67,14 +67,14 @@ const getCreateErrorsForNonCreatableFields = (
 const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = changes
     .filter(isInstanceChange)
-    .filter(isModificationDiff)
+    .filter(isModificationChange)
     .filter(change => isCustomObject(getChangeElement(change)))
     .flatMap(change =>
       getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after))
 
   const createChangeErrors = changes
     .filter(isInstanceChange)
-    .filter(isAdditionDiff)
+    .filter(isAdditionChange)
     .filter(change => isCustomObject(getChangeElement(change)))
     .flatMap(change => getCreateErrorsForNonCreatableFields(getChangeElement(change)))
 

@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, InstanceElement, ChangeError } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, ChangeError, toChange } from '@salto-io/adapter-api'
 import customObjectInstancesValidator from '../../src/change_validators/custom_object_instances'
-import { toChange } from '../utils'
 import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT } from '../../src/constants'
 
 describe('custom object instances change validator', () => {

@@ -25,7 +25,7 @@ import {
   Telemetry,
   PlanItem,
 } from '@salto-io/core'
-import { Workspace, nacl } from '@salto-io/workspace'
+import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -41,8 +41,11 @@ import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader,
   formatFetchFinish, formatStateChanges,
 } from '../formatter'
-import { getApprovedChanges as cliGetApprovedChanges,
-  shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
+import {
+  getApprovedChanges as cliGetApprovedChanges,
+  shouldUpdateConfig as cliShouldUpdateConfig,
+  getChangeToAlignAction,
+} from '../callbacks'
 import {
   loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace,
 } from '../workspace/workspace'
@@ -216,6 +219,23 @@ export const fetchCommand = async (
   return CliExitCode.AppError
 }
 
+const shouldRecommendAlignMode = async (
+  workspace: Workspace,
+  stateRecencies: StateRecency[],
+  inputServices?: string[],
+): Promise<boolean> => {
+  const newlyAddedServices = stateRecencies
+    .filter(recency => (
+      inputServices === undefined
+      || inputServices.includes(recency.serviceName)
+    ))
+
+  return (
+    newlyAddedServices.every(recency => recency.status === 'Nonexistent')
+    && workspace.hasElementsInServices(newlyAddedServices.map(recency => recency.serviceName))
+  )
+}
+
 export const command = (
   workspaceDir: string,
   force: boolean,
@@ -234,11 +254,25 @@ export const command = (
       interactive}, mode=${mode}], environment=${inputEnvironment}, services=${inputServices}`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
-    const { workspace, errored } = await loadWorkspace(workspaceDir, output,
+    const { workspace, errored, stateRecencies } = await loadWorkspace(workspaceDir, output,
       { force, printStateRecency: true, spinnerCreator, sessionEnv: inputEnvironment })
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
+    }
+
+    let useAlignMode = false
+    if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, inputServices)) {
+      const userChoice = await getChangeToAlignAction(mode, output)
+      if (userChoice === 'cancel operation') {
+        log.info('Canceling operation based on user input')
+        return CliExitCode.UserInputError
+      }
+      if (userChoice === 'yes') {
+        log.info(`Changing fetch mode from '${mode}' to 'align' based on user input`)
+        useAlignMode = true
+      }
+      log.info('Not changing fetch mode based on user input')
     }
 
     return fetchCommand({
@@ -251,7 +285,7 @@ export const command = (
       getApprovedChanges: cliGetApprovedChanges,
       shouldUpdateConfig: cliShouldUpdateConfig,
       inputServices,
-      mode,
+      mode: useAlignMode ? 'align' : mode,
       shouldCalcTotalSize,
       stateOnly,
     })

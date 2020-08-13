@@ -20,7 +20,7 @@ import {
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { projectChange } from '../../../src/workspace/nacl_files/mutil_env/projections'
+import { projectChange } from '../../../src/workspace/nacl_files/multi_env/projections'
 
 describe('projections', () => {
   const nestedElemID = new ElemID('salto', 'nested')

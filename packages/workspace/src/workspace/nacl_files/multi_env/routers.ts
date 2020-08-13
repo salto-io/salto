@@ -44,7 +44,7 @@ const filterByFile = async (
     .filter(e => resolvePath(e, id) !== undefined))
 )
 
-const seperateChangeByFiles = async (
+const separateChangeByFiles = async (
   change: DetailedChange,
   source: NaclFilesSource
 ): Promise<DetailedChange[]> => Promise.all(
@@ -292,7 +292,7 @@ export const routeIsolated = async (
               (await projectChange(
                 createAddChange(currentCommonElement, change.id, pathHint), source
               )
-              ).map(projectedChange => seperateChangeByFiles(projectedChange, commonSource))
+              ).map(projectedChange => separateChangeByFiles(projectedChange, commonSource))
             )
           ),
         ])
@@ -391,14 +391,46 @@ export const routeChanges = async (
   }
 }
 
-const addToSource = async (
-  ids: ElemID[],
-  originSource: NaclFilesSource,
-  targetSource: NaclFilesSource,
-): Promise<DetailedChange[]> => {
+const overrideIdInSource = (
+  id: ElemID,
+  before: ChangeDataType,
+  topLevelElement: ChangeDataType,
+): DetailedChange[] => {
+  if (id.isTopLevel()) {
+    return detailedCompare(before, topLevelElement, true)
+  }
+
+  const afterValue = resolvePath(topLevelElement, id)
+  const beforeValue = resolvePath(before, id)
+  if (beforeValue === undefined) {
+    // Nothing to override, just need to add the new value
+    return [createAddChange(afterValue, id)]
+  }
+  // The value exists in the target - override only the relevant part
+  return detailedCompare(
+    wrapNestedValues([{ id, value: beforeValue }], before) as ChangeDataType,
+    wrapNestedValues([{ id, value: afterValue }], topLevelElement) as ChangeDataType,
+    true,
+  )
+}
+
+const addToSource = async ({
+  ids,
+  originSource,
+  targetSource,
+  overrideTargetElements = false,
+}: {
+  ids: ElemID[]
+  originSource: NaclFilesSource
+  targetSource: NaclFilesSource
+  overrideTargetElements?: boolean
+}): Promise<DetailedChange[]> => {
   const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
   const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
     const topLevelElement = await originSource.get(gids[0].createTopLevelParentID().parent)
+    if (topLevelElement === undefined) {
+      throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
+    }
     const topLevelIds = gids.filter(id => id.isTopLevel())
     const wrappedElement = !_.isEmpty(topLevelIds)
       ? topLevelElement
@@ -410,23 +442,34 @@ const addToSource = async (
     if (before === undefined) {
       return [createAddChange(wrappedElement, topLevelElement.elemID)]
     }
+
+    if (overrideTargetElements) {
+      // we want to override, not merge - so we need to wrap each gid individually
+      return gids.flatMap(id => overrideIdInSource(
+        id,
+        before as ChangeDataType,
+        topLevelElement as ChangeDataType,
+      ))
+    }
+
     const mergeResult = mergeElements([
       before,
       wrappedElement,
     ])
-    // We should't have errors since before and wrapped elements are from common/env
-    // so they should be mergeable
     if (mergeResult.errors.length > 0) {
+      // If either the origin or the target source is the common folder, all elements should be
+      // mergeable and we shouldn't see merge errors
       throw new Error(
-        `Failed to move ${gids.map(id => id.getFullName())} Can not move unmergable element fragments.`
+        `Failed to add ${gids.map(id => id.getFullName())} - unmergable element fragments.`
       )
     }
     const after = mergeResult.merged[0] as ChangeDataType
     return detailedCompare(before, after, true)
   })))
-  return _.flatten(
-    await Promise.all(fullChanges.map(change => seperateChangeByFiles(change, originSource)))
-  )
+  return (await Promise.all(fullChanges.map(change => separateChangeByFiles(
+    change,
+    change.action === 'remove' ? targetSource : originSource
+  )))).flat()
 }
 
 const removeFromSource = async (
@@ -447,7 +490,7 @@ export const routePromote = async (
   secondarySources: Record<string, NaclFilesSource>,
 ): Promise<RoutedChanges> => ({
   primarySource: await removeFromSource(ids, primarySource),
-  commonSource: await addToSource(ids, primarySource, commonSource),
+  commonSource: await addToSource({ ids, originSource: primarySource, targetSource: commonSource }),
   secondarySources: await promises.object.mapValuesAsync(
     secondarySources,
     (source: NaclFilesSource) => removeFromSource(ids, source)
@@ -460,10 +503,36 @@ export const routeDemote = async (
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>,
 ): Promise<RoutedChanges> => ({
-  primarySource: await addToSource(ids, commonSource, primarySource),
+  primarySource: await addToSource({
+    ids,
+    originSource: commonSource,
+    targetSource: primarySource,
+  }),
   commonSource: await removeFromSource(ids, commonSource),
   secondarySources: await promises.object.mapValuesAsync(
     secondarySources,
-    (source: NaclFilesSource) => addToSource(ids, commonSource, source)
+    (source: NaclFilesSource) => addToSource({
+      ids,
+      originSource: commonSource,
+      targetSource: source,
+    })
+  ),
+})
+
+export const routeCopyTo = async (
+  ids: ElemID[],
+  primarySource: NaclFilesSource,
+  targetSources: Record<string, NaclFilesSource>,
+): Promise<RoutedChanges> => ({
+  primarySource: [],
+  commonSource: [],
+  secondarySources: await promises.object.mapValuesAsync(
+    targetSources,
+    (source: NaclFilesSource) => addToSource({
+      ids,
+      originSource: primarySource,
+      targetSource: source,
+      overrideTargetElements: true,
+    })
   ),
 })

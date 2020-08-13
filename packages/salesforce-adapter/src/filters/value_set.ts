@@ -18,7 +18,7 @@ import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
   Element, Field, isObjectType, Change, getChangeElement,
-  isField, isModificationDiff, ChangeDataType, isInstanceElement, ReferenceExpression,
+  isField, isModificationChange, ChangeDataType, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { SaveResult } from 'jsforce'
 import { FilterWith } from '../filter'
@@ -87,7 +87,7 @@ const filterCreator = (): FilterWith<'onUpdate'> => ({
 
     wu(changes)
       .forEach(c => {
-        if (isModificationDiff(c)) {
+        if (isModificationChange(c)) {
           const changedElement = getChangeElement(c)
           if (isRestrictedPicklistField(changedElement)
             && isObjectType(after)

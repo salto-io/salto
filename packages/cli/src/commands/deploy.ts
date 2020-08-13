@@ -35,7 +35,7 @@ import {
 } from '../formatter'
 import Prompts from '../prompts'
 import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
-import { servicesFilter, ServicesArgs } from '../filters/services'
+import { servicesFilter, ServicesArgs } from '../filters/service'
 import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)

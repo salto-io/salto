@@ -50,7 +50,7 @@ import {
   loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace,
 } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { servicesFilter, ServicesArgs } from '../filters/services'
+import { servicesFilter, ServicesArgs } from '../filters/service'
 import { getCliTelemetry } from '../telemetry'
 import { EnvironmentArgs } from './env'
 

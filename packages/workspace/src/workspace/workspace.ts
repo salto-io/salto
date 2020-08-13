@@ -261,7 +261,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     const resolvedElements = await elements()
     return new Errors({
       ...await naclFilesSource.getErrors(),
-      validation: validateElements(resolvedElements),
+      validation: _.uniqWith(validateElements(resolvedElements), _.isEqual),
     })
   }
 

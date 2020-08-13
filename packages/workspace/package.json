@@ -36,7 +36,6 @@
     "@salto-io/adapter-utils": "0.1.22",
     "@salto-io/logging": "0.1.22",
     "@salto-io/lowerdash": "0.1.22",
-    "fuse.js": "^3.4.5",
     "is-promise": "4.0.0",
     "lodash": "^4.17.19",
     "moo": "^0.5.1",

@@ -81,7 +81,7 @@ This will create a new directory named `quickstart` in your home directory which
 
 Next, we'll connect this workspace to a Salesforce account, by running:
 ```shell
-salto services add salesforce
+salto service add salesforce
 ```
 
 This command will prompt you to enter the credentials for your account, please do so.
@@ -228,7 +228,7 @@ Note that you've been prompted to give a name for the first environment in the w
 Next, we'll continue similarly to quick-start by adding a service and running fetch:
 
 ```shell
-salto services add salesforce
+salto service add salesforce
 # provide credentials to your "prod" instance
 salto fetch
 ```
@@ -243,7 +243,7 @@ Note that creating this env, also changed the current env to be `dev` (see `salt
 Now we'll configure this environment to connect to a `dev` instance (e.g. a Salesforce sandbox synched with `prod`) and run fetch:
 
 ```shell
-salto services add salesforce
+salto service add salesforce
 # provide credentials to your "dev" instance
 salto fetch
 ```
@@ -320,7 +320,7 @@ Deploys the current NaCl files config to the target services
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
 
-### **salto services \<command> [name]**
+### **salto service \<command> [name]**
 
 Manage your environments' services
 

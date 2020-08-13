@@ -51,7 +51,7 @@ export const serviceCmdFilter: ServiceCmdFilter = {
         }>): true => {
         if (args.command && nameRequiredCommands.includes(args.command)) {
           if (_.isEmpty(args.name)) {
-            throw new Error(`Missing required argument: name\n\nExample usage: 'salto services ${args.command} salesforce'`)
+            throw new Error(`Missing required argument: name\n\nExample usage: 'salto service ${args.command} salesforce'`)
           }
         }
         return true
@@ -94,7 +94,7 @@ export const servicesFilter: ServicesFilter = {
       await workspace.setCurrentEnv(args.env, false)
     }
     if (workspace.services().length === 0) {
-      throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto services add'.`)
+      throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto service add'.`)
     }
     // This assumes the default value for input services is all configured
     // so use the default (workspace services) if nothing was inputted

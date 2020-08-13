@@ -157,6 +157,59 @@ describe('Custom Object Instances filter', () => {
     connection.query = basicQueryImplementation
   })
 
+  describe('Without includeObjects', () => {
+    const excludeObject = createCustomObject(excludeObjectName)
+    const refToObject = createCustomObject(refToObjectName)
+    let elements: Element[]
+    beforeEach(() => {
+      filter = filterCreator(
+        {
+          client,
+          config: {
+            dataManagement: {
+              isNameBasedID: false,
+              includeObjects: [
+              ],
+              excludeObjects: [
+                '^TestNamespace__Exclude.*',
+                excludeOverrideObjectName,
+              ],
+              allowReferenceTo: [
+                '^RefFromNamespace__RefTo.*',
+                refToObjectName,
+                refFromAndToObjectName,
+                emptyRefToObjectName,
+              ],
+            },
+          },
+        }
+      ) as FilterType
+    })
+
+    beforeEach(async () => {
+      elements = [
+        excludeObject, refToObject,
+      ]
+      await filter.onFetch(elements)
+    })
+
+    it('should not add any more elements', () => {
+      expect(elements).toHaveLength(2)
+    })
+
+    it('should not effect the types', async () => {
+      const excludedAfterFilter = elements
+        .filter(e => e.annotations[API_NAME] === excludeObjectName)[0]
+      expect(excludedAfterFilter).toBeDefined()
+      expect(excludedAfterFilter).toEqual(excludeObject)
+
+      const refToAfterFilter = elements
+        .filter(e => e.annotations[API_NAME] === refToObjectName)[0]
+      expect(refToAfterFilter).toBeDefined()
+      expect(refToAfterFilter).toEqual(refToObject)
+    })
+  })
+
   describe('Without nameBasedID', () => {
     beforeEach(() => {
       filter = filterCreator(

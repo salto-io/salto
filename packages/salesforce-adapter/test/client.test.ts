@@ -270,7 +270,30 @@ describe('salesforce client', () => {
       })
     })
 
-    describe('when results are returned in more tha one query', () => {
+    describe('when all results are in a single query from tooling api', () => {
+      beforeEach(async () => {
+        dodoScope = nock('http://dodo22/services/data/v47.0/tooling/query/')
+          .get(/.*tooling.*/)
+          .times(1)
+          .reply(200, {
+            totalSize: 2,
+            done: true,
+            records: [{ val: 1 }, { val: 2 }],
+          })
+        resultsIterable = await client.queryAll('queryString', true)
+      })
+
+      it('should have the query returned elements', async () => {
+        const counter = await asyncCounter(resultsIterable)
+        expect(counter).toEqual(2)
+      })
+
+      afterAll(() => {
+        expect(dodoScope.isDone()).toBeTruthy()
+      })
+    })
+
+    describe('when results are returned in more than one query', () => {
       beforeEach(async () => {
         dodoScope = nock('http://dodo22/services/data/v47.0/query')
           .persist()

@@ -21,23 +21,8 @@ import {
   DependencyChanger,
 } from '@salto-io/adapter-api'
 import {
-  TransformFunc,
-  transformElement,
+  getAllReferencedIds,
 } from '@salto-io/adapter-utils'
-
-const getAllReferencedIds = (element: ChangeDataType): Set<string> => {
-  const allReferencedIds = new Set<string>()
-  const transformFunc: TransformFunc = ({ value }) => {
-    if (isReferenceExpression(value)) {
-      allReferencedIds.add(value.elemId.getFullName())
-    }
-    return value
-  }
-
-  transformElement({ element, transformFunc, strict: false })
-
-  return allReferencedIds
-}
 
 const isString = (val?: string): val is string => val !== undefined
 const getParentIds = (elem: ChangeDataType): Set<string> => new Set(

@@ -65,6 +65,7 @@ import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
 import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
+import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
@@ -120,6 +121,8 @@ export const DEFAULT_FILTERS = [
   referenceAnnotations,
   // foreignLeyReferences should come after referenceAnnotations
   foreignKeyReferences,
+  // extraDependenciesFilter should run after addMissingIdsFilter
+  extraDependenciesFilter,
   // hideTypesFilter should come before customObjectsSplitFilter
   hideTypesFilter,
   customObjectsSplitFilter,

@@ -29,7 +29,7 @@ import {
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify, naclCase,
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
-  restoreChangeElement, RestoreValuesFunc,
+  restoreChangeElement, RestoreValuesFunc, getAllReferencedIds,
 } from '../src/utils'
 import { mockFunction } from './common'
 
@@ -63,6 +63,9 @@ describe('Test utils.ts', () => {
           elemID: mockElem,
           fields: {
             field: { type: BuiltinTypes.STRING },
+            otherField: {
+              type: BuiltinTypes.STRING,
+            },
             value: { type: BuiltinTypes.STRING },
             innerObj: {
 
@@ -112,6 +115,7 @@ describe('Test utils.ts', () => {
       obj: [
         {
           field: 'firstField',
+          otherField: 'doesn\'t matter',
           value: {
             val: 'someString',
             anotherVal: { objTest: '123' },
@@ -127,6 +131,7 @@ describe('Test utils.ts', () => {
         },
         {
           field: 'true',
+          undeployable: valueRef,
           value: ['123', '456'],
           innerObj: {
             name: 'name1',
@@ -141,6 +146,7 @@ describe('Test utils.ts', () => {
           field: '123',
           innerObj: {
             name: 'name1',
+            undeployable: new ReferenceExpression(new ElemID('mockAdapter', 'test2', 'field', 'aaa')),
             listOfNames: ['str4', 'str1', 'str2'],
             magical: {
               deepNumber: '',
@@ -1441,6 +1447,13 @@ describe('Test utils.ts', () => {
       it('should serialize to the same result JSON.stringify', () => {
         expect(saltoJSON).toEqual(regJSON)
       })
+    })
+  })
+
+  describe('getAllReferencedIds', () => {
+    it('should find referenced ids', () => {
+      const res = getAllReferencedIds(mockInstance)
+      expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
     })
   })
 })

@@ -24,8 +24,10 @@ import { collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { findElements } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { API_NAME, LABEL, CUSTOM_OBJECT,
-  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION } from '../constants'
+import {
+  API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
+} from '../constants'
 import { JSONBool } from '../client/types'
 import { isCustomObject, metadataType, apiName, defaultApiName } from '../transformers/transformer'
 

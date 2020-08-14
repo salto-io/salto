@@ -67,11 +67,17 @@ export interface Bulk {
   load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
 }
 
+export interface Tooling {
+  query(soql: string): Promise<QueryResult<Value>>
+  queryMore(locator: string): Promise<QueryResult<Value>>
+}
+
 export default interface Connection {
   login(user: string, password: string): Promise<UserInfo>
   metadata: Metadata
   soap: Soap
   bulk: Bulk
+  tooling: Tooling
   describeGlobal(): Promise<Global>
   query(soql: string): Promise<QueryResult<Value>>
   queryMore(locator: string): Promise<QueryResult<Value>>

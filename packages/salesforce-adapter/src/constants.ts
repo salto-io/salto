@@ -25,6 +25,7 @@ export const ADMIN_PROFILE = 'Admin'
 export const NAMESPACE_SEPARATOR = '__'
 export const API_NAME_SEPARATOR = '.'
 export const CUSTOM_OBJECT_ID_FIELD = 'Id'
+export const INTERNAL_ID_FIELD = 'internalId'
 export const XML_ATTRIBUTE_PREFIX = 'attr_'
 
 export enum FIELD_TYPE_NAMES {
@@ -116,6 +117,12 @@ export const METADATA_TYPE = 'metadataType'
 export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topicsForObjects'
 export const FOREIGN_KEY_DOMAIN = 'foreignKeyDomain'
 export const IS_ATTRIBUTE = 'isAttribute'
+// must have the same name as INTERNAL_ID_FIELD
+// TODO should be state-only once that's supported for annotations (SALTO-910)
+export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
+
+// Temporary list of memory-only annotations, until we support state-only (SALTO-910)
+export const MEMORY_ONLY_ANNOTATIONS = [INTERNAL_ID_ANNOTATION]
 
 // Salesforce annotations
 export const LABEL = 'label'
@@ -162,6 +169,8 @@ export const FIELD_ANNOTATIONS = {
   UPDATEABLE: 'updateable',
   // indicates whether a field is queryable by SOQL (default true)
   QUERYABLE: 'queryable',
+  // when true, the field should not be deployed to the service
+  LOCAL_ONLY: 'localOnly',
 }
 
 export const VALUE_SET_FIELDS = {

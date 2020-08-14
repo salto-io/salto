@@ -27,14 +27,14 @@ import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject, instancesToUpdateRecords,
   getValueTypeFieldElement, createMetadataTypeElements, getLookUpName,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
-  isMetadataObjectType, isMetadataInstanceElement,
+  isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance,
 } from '../../src/transformers/transformer'
 import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,
   CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
   SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-  WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue, SalesforceRecord } from '../../src/client/types'
@@ -1124,6 +1124,7 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(element.path).not.toContain(SUBTYPES_PATH)
@@ -1134,9 +1135,49 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [],
         baseTypeNames: new Set(),
+        childTypeNames: new Set(),
         client,
       })
       expect(element.path).toContain(SUBTYPES_PATH)
+    })
+
+    it('should add internal id field for base types', async () => {
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [field],
+        baseTypeNames: new Set(['BaseType', 'FieldType', 'NestedFieldType']),
+        childTypeNames: new Set('SomeType'),
+        client,
+      })
+      expect(elements).toHaveLength(1)
+      const [element] = elements
+      expect(element.fields[INTERNAL_ID_FIELD]).toBeDefined()
+    })
+
+    it('should add internal id field for child types', async () => {
+      const elements = await createMetadataTypeElements({
+        name: 'SomeType',
+        fields: [field],
+        baseTypeNames: new Set(['BaseType', 'FieldType', 'NestedFieldType']),
+        childTypeNames: new Set(['SomeType']),
+        client,
+      })
+      expect(elements).toHaveLength(1)
+      const [element] = elements
+      expect(element.fields[INTERNAL_ID_FIELD]).toBeDefined()
+    })
+
+    it('should not add id field if not base or child type', async () => {
+      const elements = await createMetadataTypeElements({
+        name: 'OtherType',
+        fields: [field],
+        baseTypeNames: new Set(['BaseType', 'FieldType', 'NestedFieldType']),
+        childTypeNames: new Set('SomeType'),
+        client,
+      })
+      expect(elements).toHaveLength(1)
+      const [element] = elements
+      expect(element.fields[INTERNAL_ID_FIELD]).toBeUndefined()
     })
 
     it('should not create a field which is a base element as subtype', async () => {
@@ -1144,6 +1185,7 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [field],
         baseTypeNames: new Set(['BaseType', 'FieldType', 'NestedFieldType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(1)
@@ -1160,6 +1202,7 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [field],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(3)
@@ -1179,6 +1222,7 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [field],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(3)
@@ -1194,6 +1238,7 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [field],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(2)
@@ -1215,6 +1260,7 @@ describe('transformer', () => {
           soapType: 'MyPicklist',
         })],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(1)
@@ -1230,6 +1276,7 @@ describe('transformer', () => {
           soapType: 'base64Binary',
         })],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(1)
@@ -1253,6 +1300,7 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [fieldWithNestedReference],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(2)
@@ -1274,6 +1322,7 @@ describe('transformer', () => {
         name: 'BaseType',
         fields: [referenceField],
         baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
         client,
       })
       expect(elements).toHaveLength(1)
@@ -1565,6 +1614,70 @@ describe('transformer', () => {
           {},
         ))).toBeFalsy()
       })
+    })
+  })
+
+  describe('toDeployableInstance', () => {
+    const mockElemID = new ElemID(SALESFORCE, 'Test')
+    const mockInstanceName = 'Instance'
+    const values = {
+      Id: '123',
+      Name: {
+        FirstName: 'A',
+        LastName: 'B',
+      },
+      LocalAddress: {
+        City: 'Manchester',
+        State: 'UK',
+      },
+      Creatable: 'Create',
+      NotCreatable: 'DontSendMeOnCreate',
+      Updateable: 'Update',
+      NotUpdateable: 'NotUpdateable',
+
+    }
+    let instance: InstanceElement
+    let res: InstanceElement
+
+    beforeEach(() => {
+      instance = new InstanceElement(
+        mockInstanceName,
+        new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            Id: {
+              type: BuiltinTypes.STRING,
+              annotations: {
+                [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
+              },
+            },
+            Name: {
+              type: Types.compoundDataTypes.Name,
+            },
+            LocalAddress: {
+              type: Types.compoundDataTypes.Address,
+              annotations: {
+                [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
+                [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+                [FIELD_ANNOTATIONS.CREATABLE]: true,
+              },
+            },
+          },
+          annotationTypes: {},
+          annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+        }),
+        values,
+      )
+      res = toDeployableInstance(instance)
+    })
+
+    it('should hide local-only field', () => {
+      expect(instance.value.Id).toBeDefined()
+      expect(instance.value.Name).toBeDefined()
+      expect(instance.value.LocalAddress).toBeDefined()
+      expect(res.value.Id).toBeUndefined()
+      expect(res.value.Name).toBeDefined()
+      expect(res.value.LocalAddress).toBeUndefined()
     })
   })
 })

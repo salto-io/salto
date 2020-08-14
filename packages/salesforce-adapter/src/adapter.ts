@@ -47,6 +47,8 @@ import missingFieldsFilter from './filters/missing_fields'
 import removeFieldsFilter from './filters/remove_fields'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
+import addMissingIdsFilter from './filters/add_missing_ids'
+import removeMemoryOnlyAnnotationsFilter from './filters/remove_memory_only_annotations'
 import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
@@ -87,6 +89,8 @@ export const DEFAULT_FILTERS = [
   // customObjectsInstancesFilter depends on customObjectsFilter
   customObjectsInstancesFilter,
   removeFieldsFilter,
+  // addMissingIdsFilter should run after customObjectsFilter
+  addMissingIdsFilter,
   layoutFilter,
   // workflowFieldUpdateFilter and workflowRuleFilter depend on workflowFilter
   workflowFieldUpdateFilter,
@@ -119,6 +123,8 @@ export const DEFAULT_FILTERS = [
   // hideTypesFilter should come before customObjectsSplitFilter
   hideTypesFilter,
   customObjectsSplitFilter,
+  // removeMemoryOnlyAnnotationsFilter should run at the end
+  removeMemoryOnlyAnnotationsFilter,
 ]
 
 const absoluteIDMetadataTypes: Record<string, string[]> = {
@@ -543,7 +549,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (this.metadataToDeploy.includes(type)) {
       await this.deployInstance(post)
     } else if (!this.metadataTypesToSkipMutation.includes(metadataType(post))) {
-      await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
+      await this.client.upsert(type, toMetadataInfo(post))
     }
     return post
   }
@@ -706,14 +712,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (this.metadataToDeploy.includes(typeName)) {
       await this.deployInstance(newInstance)
     } else if (this.metadataTypesToUseUpsertUponUpdate.includes(typeName)) {
-      await this.client.upsert(typeName, toMetadataInfo(apiName(newInstance), newInstance.value))
+      await this.client.upsert(typeName, toMetadataInfo(newInstance))
     } else {
       await this.client.update(typeName, toMetadataInfo(
-        apiName(newInstance),
         // As SALTO-79 Conclusions we decided to send the entire newInstance to salesforce API
         // instead of only the delta (changes between newInstance & prevInstance).
         // until we have a better understanding of update behavior for all fields types.
-        newInstance.value
+        newInstance,
       ))
     }
 
@@ -817,8 +822,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
     )
     const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
+    const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames))
     return (await Promise.all(typeInfos.map(typeInfo => fetchMetadataType(
-      this.client, typeInfo, knownTypes, baseTypeNames,
+      this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames,
     )))).flat()
   }
 

@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  naclCase, GetLookupNameFunc, TransformFunc,
+  naclCase, GetLookupNameFunc, TransformFunc, transformElement,
 } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
@@ -44,7 +44,7 @@ import {
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
-  XML_ATTRIBUTE_PREFIX,
+  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -852,6 +852,10 @@ export const toCustomField = (
   return newField
 }
 
+const isLocalOnly = (field?: Field): boolean => (
+  field !== undefined && field.annotations[FIELD_ANNOTATIONS.LOCAL_ONLY] === true
+)
+
 export const toCustomObject = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
 ): CustomObject => {
@@ -860,6 +864,7 @@ export const toCustomObject = (
     element.annotations[LABEL],
     includeFields
       ? Object.values(element.fields)
+        .filter(field => !isLocalOnly(field))
         .map(field => toCustomField(field))
         .filter(field => !skipFields.includes(field.fullName))
       : undefined
@@ -884,13 +889,14 @@ export const toCustomObject = (
 }
 
 export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeField,
-  knownTypes: Map<string, TypeElement>): Field => {
+  knownTypes: Map<string, TypeElement>, additionalAnnotations?: Values): Field => {
   const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
   // mark required as false until SALTO-45 will be resolved
   const annotations: Values = {
     [CORE_ANNOTATIONS.REQUIRED]: false,
+    ...(additionalAnnotations || {}),
   }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
@@ -1137,13 +1143,27 @@ export const getSObjectFieldElement = (
   return new Field(parent, fieldName, naclFieldType, annotations)
 }
 
+export const toDeployableInstance = (element: InstanceElement): InstanceElement => {
+  const removeLocalOnly: TransformFunc = ({ value, field }) => (
+    (isLocalOnly(field))
+      ? undefined
+      : value
+  )
+
+  return transformElement({
+    element,
+    transformFunc: removeLocalOnly,
+    strict: false,
+  })
+}
+
 export const fromMetadataInfo = (info: MetadataInfo): Values => info
 
-export const toMetadataInfo = (fullName: string, values: Values):
+export const toMetadataInfo = (instance: InstanceElement):
   MetadataInfo =>
   ({
-    fullName,
-    ...values,
+    fullName: apiName(instance),
+    ...toDeployableInstance(instance).value,
   })
 
 export const createInstanceServiceIds = (
@@ -1212,6 +1232,7 @@ export const createInstanceElement = (
   values: MetadataValues,
   type: ObjectType,
   namespacePrefix?: string,
+  annotations?: Values,
 ): MetadataInstanceElement => {
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
   const getPackagePath = (): string[] => {
@@ -1238,7 +1259,21 @@ export const createInstanceElement = (
     values,
     [...getPackagePath(), RECORDS_PATH,
       type.isSettings ? SETTINGS_PATH : typeName, naclCase(fullName)],
+    annotations,
   ) as MetadataInstanceElement
+}
+
+const createIdField = (parent: ObjectType): void => {
+  parent.fields[INTERNAL_ID_FIELD] = new Field(
+    parent,
+    INTERNAL_ID_FIELD,
+    BuiltinTypes.STRING,
+    {
+      [CORE_ANNOTATIONS.REQUIRED]: false,
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
+    }
+  )
 }
 
 type CreateMetadataTypeParams = {
@@ -1246,12 +1281,13 @@ type CreateMetadataTypeParams = {
   fields: ValueTypeField[]
   knownTypes?: Map<string, TypeElement>
   baseTypeNames: Set<string>
+  childTypeNames: Set<string>
   client: SalesforceClient
   isSettings?: boolean
   annotations?: Partial<MetadataTypeAnnotations>
 }
 export const createMetadataTypeElements = async ({
-  name, fields, knownTypes = new Map(), baseTypeNames, client,
+  name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
   isSettings = false, annotations = {},
 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
@@ -1273,7 +1309,16 @@ export const createMetadataTypeElements = async ({
     ...isTopLevelType ? [] : [SUBTYPES_PATH],
     element.elemID.name,
   ]
+
+  const shouldCreateIdField = (): boolean => (
+    (baseTypeNames.has(name) || childTypeNames.has(name))
+    && element.fields[INTERNAL_ID_FIELD] === undefined
+  )
+
   if (!fields || _.isEmpty(fields)) {
+    if (shouldCreateIdField()) {
+      createIdField(element)
+    }
     return [element]
   }
 
@@ -1314,6 +1359,7 @@ export const createMetadataTypeElements = async ({
       fields: makeArray(field.fields),
       knownTypes,
       baseTypeNames,
+      childTypeNames,
       client,
     })))
 
@@ -1337,6 +1383,9 @@ export const createMetadataTypeElements = async ({
     element.fields[field.name] = field
   })
 
+  if (shouldCreateIdField()) {
+    createIdField(element)
+  }
   return _.flatten([element, ...embeddedTypes])
 }
 const lookUpRelative = (field?: Field, path?: ElemID): boolean => {

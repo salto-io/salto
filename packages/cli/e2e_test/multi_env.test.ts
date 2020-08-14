@@ -20,7 +20,7 @@ import { parser } from '@salto-io/workspace'
 import { strings } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
-import { isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { isObjectType, ObjectType, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
 import {
@@ -34,6 +34,7 @@ import {
   getNaclFileElements,
   cleanup as workspaceHelpersCleanup,
   getCurrentEnv,
+  loadValidWorkspace,
 } from './helpers/workspace'
 import * as templates from './helpers/templates'
 
@@ -280,6 +281,25 @@ describe('multi env tests', () => {
       it('should have empty previews for all envs', async () => {
         expect(env1Plan?.size).toBe(0)
         expect(env2Plan?.size).toBe(0)
+      })
+    })
+
+    describe('should have hidden fields in state but not in nacls', () => {
+      let visibleElements: readonly InstanceElement[]
+      let elementsWithHidden: readonly InstanceElement[]
+      beforeAll(async () => {
+        await runSetEnv(baseDir, ENV2_NAME)
+        const workspace = await loadValidWorkspace(baseDir, true)
+        visibleElements = (await workspace.elements(false)).filter(isInstanceElement)
+        elementsWithHidden = (await workspace.elements(true)).filter(isInstanceElement)
+      })
+
+      it('not have internalId in visible elements', async () => {
+        expect(visibleElements.some(e => e?.value?.internalId !== undefined)).toEqual(false)
+      })
+
+      it('have internalId in state', async () => {
+        expect(elementsWithHidden.some(e => e?.value?.internalId !== undefined)).toEqual(true)
       })
     })
   })

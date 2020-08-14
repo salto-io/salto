@@ -334,12 +334,17 @@ const createNestedMetadataInstances = (instance: InstanceElement,
       })
     }))
 
-const createObjectType = (
-  name: string,
-  label: string,
-  fields?: SObjField[],
+const createObjectType = ({
+  name,
+  label,
+  fields,
+  systemFields,
+}: {
+  name: string
+  label: string
+  fields?: SObjField[]
   systemFields?: string[]
-): ObjectType => {
+}): ObjectType => {
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
     [API_NAME]: name,
@@ -369,7 +374,10 @@ const createObjectType = (
 const createFromInstance = (instance: InstanceElement,
   typesFromInstance: TypesFromInstance): Element[] => {
   const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
-  const object = createObjectType(objectName, instance.value[LABEL])
+  const object = createObjectType({
+    name: objectName,
+    label: instance.value[LABEL],
+  })
   transformObjectAnnotations(object, isCustom(objectName)
     ? typesFromInstance.customAnnotationTypes
     : typesFromInstance.standardAnnotationTypes, instance)
@@ -420,7 +428,7 @@ const createFromSObjectsAndInstances = (
   systemFields: string[],
 ): Element[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
-    const object = createObjectType(name, label, fields, systemFields)
+    const object = createObjectType({ name, label, fields, systemFields })
     const instance = instances[name]
     if (!instance) {
       return [object]

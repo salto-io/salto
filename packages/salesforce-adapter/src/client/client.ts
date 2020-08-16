@@ -67,6 +67,9 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
   && error.message.match(/no.*named.*found/) !== null
 )
 
+const additionalInfoReadMetadata = (type: string): string =>
+  `ReadMetadata on MetadataType: ${type}`
+
 export type ErrorFilter = (error: Error) => boolean
 
 const isSFDCUnhandledException = (error: Error): boolean => error.name !== 'sf:UNKNOWN_EXCEPTION'
@@ -166,6 +169,7 @@ type SendChunkedArgs<TIn, TOut> = {
   chunkSize?: number
   isSuppressedError?: ErrorFilter
   isUnhandledError?: ErrorFilter
+  additionalInfo?: string
 }
 export type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
@@ -178,6 +182,7 @@ const sendChunked = async <TIn, TOut>({
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   isSuppressedError = () => false,
   isUnhandledError = () => true,
+  additionalInfo = '',
 }: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
@@ -186,7 +191,8 @@ const sendChunked = async <TIn, TOut>({
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
-        log.error('chunked %s failed on chunk, trying each element separately', operationName)
+        log.error('chunked %s failed on chunk, trying each element separately. (%o)',
+          operationName, additionalInfo)
         const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
         return {
           result: _.flatten(sendChunkResult.map(e => e.result).map(flatValues)),
@@ -194,15 +200,17 @@ const sendChunked = async <TIn, TOut>({
         }
       }
       if (isSuppressedError(error)) {
-        log.warn('chunked %s ignoring recoverable error on %o: %s',
-          operationName, chunkInput[0], error.message)
+        log.warn('chunked %s ignoring recoverable error on %o (%o): %s',
+          operationName, chunkInput[0], additionalInfo, error.message)
         return { result: [], errors: [] }
       }
       if (isUnhandledError(error)) {
-        log.error('chunked %s unrecoverable error on %o: %o', operationName, chunkInput[0], error)
+        log.error('chunked %s unrecoverable error on %o (%o): %o',
+          operationName, chunkInput[0], additionalInfo, error)
         throw error
       }
-      log.warn('chunked %s unknown error on %o: %o', operationName, chunkInput[0], error)
+      log.warn('chunked %s unknown error on %o (%o): %o',
+        operationName, chunkInput[0], additionalInfo, error)
       return { result: [], errors: chunkInput }
     }
   }
@@ -353,6 +361,7 @@ export default class SalesforceClient {
         this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
       ),
       isUnhandledError,
+      additionalInfo: additionalInfoReadMetadata(type),
     })
   }
 

@@ -30,5 +30,22 @@ dataManagement = {
     "Pricebook2",
     "PricebookEntry",
   ]
+  saltoIDSettings = {
+    defaultIdFields = ['##autoDetectedParentFields##', 'Name']
+    overrides = [
+      {
+        objectsRegex = 'SBQQ__CustomAction__c'
+        idFields = ['Name', 'SBQQ__Location__c', 'SBQQ__DisplayOrder__c']
+      },
+      {
+        objectsRegex = 'PricebookEntry'
+        idFields = ['Name', 'Pricebook2Id']
+      },
+      {
+        objectsRegex = 'Product2'
+        idFields = ['Name', 'ProductCode', 'Family']
+      },
+    ]
+  }
 }
 ```

@@ -291,7 +291,7 @@ Syncs this workspace's NaCl files with the services' current state
 **Options:**
 * `--force, -f` : Accept all incoming changes, even if there's a conflict with local changes [boolean] [default: false]
 * `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
-* `--isolated, -t` : Restrict fetch from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
+* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
 * `--state-only, --st` : Fetch remote changes to the state file without mofifying the NaCL files. [boolean] [default: false]
@@ -303,7 +303,7 @@ Syncs this workspace with the current local state
 **Options:**
 * `--force, -f ` : Accept all incoming changes [boolean] [default: false]
 * `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
-* `--isolated, -t` : Restrict restore from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
+* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
 * `--dry-run, -d` : Preview the restore plan without making changes [boolean] [default: false]
 * `--detailed-plan, -p` : Print detailed changes including values [boolean] [default: false]
 * `--list-planned-changes, -l` : Print a summary of the expected changes [boolean] [default: false]
@@ -333,6 +333,21 @@ Manage your environments' services
 
 * `--env, -e` : The name of the environment to use
 * `--nologin, -n` : Do not login to service when adding it. Example usage: `service add <service-name> --nologin`) [boolean] [default: false]
+
+### **salto element \<command> \<elm-id-selectors>**
+
+Manage your workspace environments
+
+**Arguments:**
+* `command` : The element management command [string] [required] [choices: "move", "copy"]
+* `elm-id-selectors` : A list of element id selectors [array]
+
+**Options:**
+
+* `--to` : Target to the move command [string] [required] [choices: "common", "env"]
+* `—-from-env` : Source env name for the copy command [string] [required]
+* `—-to-env` : Target env names for the copy command [array] [required] [choices: "common", "env"]
+
 
 ### **salto env \<command> [\<name>] [\<new-name>]**
 

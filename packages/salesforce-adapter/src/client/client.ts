@@ -67,9 +67,6 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
   && error.message.match(/no.*named.*found/) !== null
 )
 
-const additionalInfoReadMetadata = (type: string): string =>
-  `ReadMetadata on MetadataType: ${type}`
-
 export type ErrorFilter = (error: Error) => boolean
 
 const isSFDCUnhandledException = (error: Error): boolean => error.name !== 'sf:UNKNOWN_EXCEPTION'
@@ -165,11 +162,10 @@ export const realConnection = (
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>
-  operationName: keyof SalesforceClient
+  operationInfo: string
   chunkSize?: number
   isSuppressedError?: ErrorFilter
   isUnhandledError?: ErrorFilter
-  additionalInfo?: string
 }
 export type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
@@ -178,11 +174,10 @@ export type SendChunkedResult<TIn, TOut> = {
 const sendChunked = async <TIn, TOut>({
   input,
   sendChunk,
-  operationName,
+  operationInfo,
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   isSuppressedError = () => false,
   isUnhandledError = () => true,
-  additionalInfo = '',
 }: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
@@ -191,8 +186,8 @@ const sendChunked = async <TIn, TOut>({
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
-        log.error('chunked %s failed on chunk, trying each element separately. (%o)',
-          operationName, additionalInfo)
+        log.error('chunked %s failed on chunk, trying each element separately. %o',
+          operationInfo, error)
         const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
         return {
           result: _.flatten(sendChunkResult.map(e => e.result).map(flatValues)),
@@ -200,17 +195,17 @@ const sendChunked = async <TIn, TOut>({
         }
       }
       if (isSuppressedError(error)) {
-        log.warn('chunked %s ignoring recoverable error on %o (%o): %s',
-          operationName, chunkInput[0], additionalInfo, error.message)
+        log.warn('chunked %s ignoring recoverable error on %o: %s',
+          operationInfo, chunkInput[0], error.message)
         return { result: [], errors: [] }
       }
       if (isUnhandledError(error)) {
-        log.error('chunked %s unrecoverable error on %o (%o): %o',
-          operationName, chunkInput[0], additionalInfo, error)
+        log.error('chunked %s unrecoverable error on %o: %o',
+          operationInfo, chunkInput[0], error)
         throw error
       }
-      log.warn('chunked %s unknown error on %o (%o): %o',
-        operationName, chunkInput[0], additionalInfo, error)
+      log.warn('chunked %s unknown error on %o: %o',
+        operationInfo, chunkInput[0], error)
       return { result: [], errors: chunkInput }
     }
   }
@@ -330,10 +325,9 @@ export default class SalesforceClient {
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ):
-    Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
+  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
     return sendChunked({
-      operationName: 'listMetadataObjects',
+      operationInfo: 'listMetadataObjects',
       input: listMetadataQuery,
       sendChunk: chunk => this.conn.metadata.list(chunk),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
@@ -350,10 +344,9 @@ export default class SalesforceClient {
     type: string,
     name: string | string[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ):
-  Promise<SendChunkedResult<string, MetadataInfo>> {
+  ): Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({
-      operationName: 'readMetadata',
+      operationInfo: `readMetadata (${type})`,
       input: name,
       sendChunk: chunk => this.conn.metadata.read(type, chunk),
       chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
@@ -361,7 +354,6 @@ export default class SalesforceClient {
         this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
       ),
       isUnhandledError,
-      additionalInfo: additionalInfoReadMetadata(type),
     })
   }
 
@@ -379,7 +371,7 @@ export default class SalesforceClient {
   public async describeSObjects(objectNames: string[]):
   Promise<DescribeSObjectResult[]> {
     return (await sendChunked({
-      operationName: 'describeSObjects',
+      operationInfo: 'describeSObjects',
       input: objectNames,
       sendChunk: chunk => this.conn.soap.describeSObjects(chunk),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
@@ -398,7 +390,7 @@ export default class SalesforceClient {
   public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<UpsertResult[]> {
     const result = await sendChunked({
-      operationName: 'upsert',
+      operationInfo: `upsert (${type})`,
       input: metadata,
       sendChunk: chunk => this.conn.metadata.upsert(type, chunk),
     })
@@ -418,7 +410,7 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     const result = await sendChunked({
-      operationName: 'delete',
+      operationInfo: `delete (${type})`,
       input: fullNames,
       sendChunk: chunk => this.conn.metadata.delete(type, chunk),
     })
@@ -438,7 +430,7 @@ export default class SalesforceClient {
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     const result = await sendChunked({
-      operationName: 'update',
+      operationInfo: `update (${type})`,
       input: metadata,
       sendChunk: chunk => this.conn.metadata.update(type, chunk),
     })

@@ -210,13 +210,13 @@ If the `file` function points to a non existing file, the deploy operation will 
 
 ### Multiple Environments
 
-In a typical feature development process, multiple environments are being used. E.g. a feature is developed in a development environment, gets tested in a testing environment and once approved deployed to a production environment. When doing so, it is of very high importance to keep the configuration of these environments as similar as possible in order to ensure a consistent and safe change process.
+In a typical feature development process, multiple environments are being used. E.g. a feature is developed in a development environment, gets tested in a testing environment and once approved deployed to a production environment. 
 
 In Salto, `environments` are first-level citizens, which also enable the encapsulation of commonalities and differences between service accounts. Before showing some examples for working with environments, we should first explain some common terms and operations:
 
 - An `environment` is a collection of `services`.
-- Salto calculates the `common` configuration of all the environments, as well as the `environment-specific` configuration.
-- A `fetch` operation can work in `isolated mode` , when it will not modify common configuration, or in standard (non-isolated) mode when it will recalculate the common configuration. As a rule of thumb, `isolated mode` should be used when running fetch for the first time on a new service in an environment, and in standard mode when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
+- A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move <elm-id-selectors> --to common|env`
+- A `fetch` operation can work in `align mode`, when it will not modify common configuration, or in standard mode when it will modify both common and environment-specific configuration. As a rule of thumb, `align mode` should be used when the intent is to make sure that the fetched env is aligned with the common configuration elements. When fetching in `align mode`, any modifications to the common elements will be dropped and it should be followed by a deploy operation. Standard fetch mode is used when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
 Now, let's follow a common scenario of adding two environments to Salto:
 ```shell
@@ -238,7 +238,7 @@ Next we will add another environment (`dev`) by running:
 salto env create dev
 ```
 
-Note that creating this env, also changed the current env to be `dev` (see `salto env current`, `salto env set`, `salto env list`). You should always make sure to run commands in the context of the right env (see also the —env flag per command)
+Note that creating this env, also changed the current env to be `dev` (see `salto env current`, `salto env set`, `salto env list`). You should always make sure to run commands in the context of the right env (see also the —-env flag per command)
 
 Now we'll configure this environment to connect to a `dev` instance (e.g. a Salesforce sandbox synched with `prod`) and run fetch:
 
@@ -254,14 +254,15 @@ Lets stop and take a look at our workspace directory structure (for more info se
 - envs/                  # folder for env specific configuration
     — dev/               # folder for the dev environment specific configuration
 	    — salesforce/      # specific config for Salesforce in the dev env
-	    — static-resources # specific unique static resources for the dev env
+	    — static-resources/ # specific unique static resources for the dev env
     — prod/              # folder for the prod environment specific configuration
 	    — salesforce/      # specific config for Salesforce in the prod env
+        — static-resources/ # specific unique static resources for the dev env
 — salesforce/            # common cross-all-envs configuration for Salesforce
 — static-resources       # common static files for all environments
 
 ```
-Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. After all tests in dev are done, we can go ahead and run:
+Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. Do not forget to use the `salto move <elm-id-selectors> --to common` command in order to configure which elements should be common across all environemtns in the workspace (the `move` command can be executed at anytime, before or after changing the dev env).  After all tests in dev are done, we can go ahead and run:
 ```shell
 salto env set prod
 salto deploy

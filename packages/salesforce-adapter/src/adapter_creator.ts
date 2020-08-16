@@ -52,7 +52,11 @@ SalesforceConfig => {
       validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
       validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
       validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
-      // TODO: Add validation to the ID settings overrides keys
+      if (dataManagementConfig.saltoIDSettings?.overrides !== undefined) {
+        const overridesObjectRegexs = dataManagementConfig.saltoIDSettings.overrides
+          .map(override => override.objectsRegex)
+        validateRegularExpressions(`${DATA_MANAGEMENT}.saltoIDSettings.overrides`, overridesObjectRegexs)
+      }
     }
   }
 

@@ -125,5 +125,21 @@ describe('SalesforceAdapter creator', () => {
       )
       expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
     })
+
+    it('should throw an error when creating adapter with invalid regex in dataManagement.saltoIDSettings.overrides objectsRegex', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: {
+          isNameBasedID: true,
+          saltoIDSettings: {
+            overrides: [
+              { objectsRegex: '\\', idFields: ['Id'] },
+            ],
+          },
+        } },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+    })
   })
 })

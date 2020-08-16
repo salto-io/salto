@@ -69,7 +69,7 @@ describe('services filter', () => {
     })
 
     describe('command builder', () => {
-      describe('when service option is not used', () => {
+      describe('when services option is not used', () => {
         beforeEach(async () => {
           await runCli('t --test-opt')
         })
@@ -94,7 +94,7 @@ describe('services filter', () => {
           await runCli('t --test-opt -s salesforce')
         })
 
-        it('service should be inputted services', () => {
+        it('services should be inputted services', () => {
           expect(buildFunc.mock.calls[0][0]).toEqual(
             expect.objectContaining({
               args:
@@ -116,7 +116,7 @@ describe('services filter', () => {
           out = await runCli('t --test-opt -s abcdefg')
         })
 
-        it('should fail with service not configured error', async () => {
+        it('should fail with services not configured error', async () => {
           expect(out.err).toMatch('Not all services (abcdefg) are set up for this workspace')
         })
       })

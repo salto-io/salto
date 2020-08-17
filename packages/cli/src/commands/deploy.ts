@@ -219,11 +219,12 @@ export class DeployCommand implements CliCommand {
     let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
     if (!_.isUndefined(result.changes)) {
       const changes = [...result.changes]
-      if (!await updateWorkspace(
+      if (!await updateWorkspace({
         workspace,
-        { stderr: this.stderr, stdout: this.stdout },
-        changes
-      )) {
+        output: { stderr: this.stderr, stdout: this.stdout },
+        changes,
+        force: this.force,
+      })) {
         cliExitCode = CliExitCode.AppError
       }
     }

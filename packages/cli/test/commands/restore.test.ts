@@ -51,10 +51,10 @@ describe('restore command', () => {
       mockUpdateWorkspace(workspace, output, changes, isIsolated)
     )
   )
-  mockUpdateWorkspace.mockImplementation(ws =>
-    Promise.resolve(ws.name !== 'exist-on-error'))
+  mockUpdateWorkspace.mockImplementation(params =>
+    Promise.resolve(params.workspace.name !== 'exist-on-error'))
   const findWsUpdateCalls = (name: string): unknown[][][] =>
-    mockUpdateWorkspace.mock.calls.filter(args => args[0].name === name)
+    mockUpdateWorkspace.mock.calls.filter(args => args[0].workspace.name === name)
   mockUpdateStateOnly.mockResolvedValue(true)
 
   beforeEach(() => {

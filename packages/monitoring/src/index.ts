@@ -32,7 +32,17 @@ import { getMonitoringTelemetry } from './telemetry'
 
 sourceMapSupport.install()
 
-const stateFilePath = (envName: string): string => `salto.config/states/${envName}.jsonl`
+const getStateFilePath = (workspace: string, envName: string): string => {
+  const jsonlStateFilePath = `salto.config/states/${envName}.jsonl`
+  if (fs.existsSync(path.join(workspace, jsonlStateFilePath))) {
+    return jsonlStateFilePath
+  }
+  const zipStateFilePath = `${jsonlStateFilePath}.zip`
+  if (fs.existsSync(path.join(workspace, zipStateFilePath))) {
+    return zipStateFilePath
+  }
+  throw new Error('State file does not exists')
+}
 
 const validateGitRepo = async (dirPath: string): Promise<void> => {
   if (!await simpleGit(dirPath).checkIsRepo()) {
@@ -139,7 +149,7 @@ const main = async (): Promise<number> => {
     await git.commit(`Update state - ${new Date().toLocaleString()}`)
 
     out('Overriding the state with previous state file')
-    await git.checkout(['HEAD~1', stateFilePath(args.env as string)])
+    await git.checkout(['HEAD~1', getStateFilePath(args.workspace as string, args.env as string)])
 
     ws = await loadLocalWorkspace(args.workspace as string)
 
@@ -156,9 +166,7 @@ const main = async (): Promise<number> => {
     telemetry.stacktrace({ err: e })
     throw e
   } finally {
-    if (fs.existsSync(path.join(args.workspace as string, stateFilePath(args.env as string)))) {
-      await git.checkout(['HEAD', stateFilePath(args.env as string)])
-    }
+    await git.checkout(['HEAD', getStateFilePath(args.workspace as string, args.env as string)])
   }
   telemetry.success()
   out('Finished successfully')

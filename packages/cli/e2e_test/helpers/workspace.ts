@@ -197,7 +197,7 @@ export const runDeploy = async ({
   lastPlan,
   fetchOutputDir,
   allowErrors = false,
-  force = false,
+  force = true,
   dryRun = false,
   detailedPlan = false,
 }: {
@@ -233,13 +233,12 @@ export const runDeploy = async ({
 }
 
 export const runPreview = async (fetchOutputDir: string): Promise<void> => (
-  // using force=true to avoid a user prompt
-  runDeploy({ fetchOutputDir, allowErrors: false, force: true, dryRun: true })
+  runDeploy({ fetchOutputDir, allowErrors: false, dryRun: true })
 )
 
 export const loadValidWorkspace = async (
   fetchOutputDir: string,
-  force = false
+  force = true
 ): Promise<Workspace> => {
   const { workspace, errored } = await loadWorkspace(fetchOutputDir, mockCliOutput(), { force })
   expect(errored).toBeFalsy()
@@ -247,8 +246,7 @@ export const loadValidWorkspace = async (
 }
 
 export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
-  // using force=true because there are workspace warnings
-  const workspace = await loadValidWorkspace(fetchOutputDir, true /* force */)
+  const workspace = await loadValidWorkspace(fetchOutputDir)
   return preview(workspace, services)
 }
 

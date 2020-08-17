@@ -350,9 +350,7 @@ describe('cli e2e', () => {
       // We have to run preview first, otherwise the last plan won't be updated
       lastPlan.clear()
       await runPreview(fetchOutputDir)
-      // We have to run deploy with force = true because after we delete the new object
-      // there are unresolved reference warnings in the workspace
-      await runDeploy({ fetchOutputDir, allowErrors: false, force: true })
+      await runDeploy({ fetchOutputDir })
     })
     it('should have "remove" changes', async () => {
       verifyChanges(lastPlan, [

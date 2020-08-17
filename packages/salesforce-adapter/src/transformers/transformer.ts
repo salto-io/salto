@@ -1306,15 +1306,16 @@ export const createMetadataTypeElements = async ({
     return field
   }))
 
-  const embeddedTypes = await Promise.all(_.flatten(enrichedFields
+  const embeddedTypes = await Promise.all(enrichedFields
+    .filter(field => !baseTypeNames.has(field.soapType))
     .filter(field => !_.isEmpty(field.fields))
-    .map(field => createMetadataTypeElements({
+    .flatMap(field => createMetadataTypeElements({
       name: field.soapType,
       fields: makeArray(field.fields),
       knownTypes,
       baseTypeNames,
       client,
-    }))))
+    })))
 
   // Enum fields sometimes show up with a type name that is not primitive but also does not
   // have fields (so we won't create an embedded type for it). it seems like these "empty" types

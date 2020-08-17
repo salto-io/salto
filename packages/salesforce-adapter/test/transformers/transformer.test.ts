@@ -1146,10 +1146,9 @@ describe('transformer', () => {
         baseTypeNames: new Set(['BaseType', 'FieldType', 'NestedFieldType']),
         client,
       })
-      expect(elements).toHaveLength(2)
-      const [element, fieldType] = elements
+      expect(elements).toHaveLength(1)
+      const [element] = elements
       expect(element.path).not.toContain(SUBTYPES_PATH)
-      expect(fieldType.path).not.toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
 
@@ -1179,13 +1178,13 @@ describe('transformer', () => {
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
         fields: [field],
-        baseTypeNames: new Set(['BaseType', 'FieldType']),
+        baseTypeNames: new Set(['BaseType']),
         client,
       })
       expect(elements).toHaveLength(3)
       const [element, fieldType, nestedFieldType] = elements
       expect(element.path).not.toContain(SUBTYPES_PATH)
-      expect(fieldType.path).not.toContain(SUBTYPES_PATH)
+      expect(fieldType.path).toContain(SUBTYPES_PATH)
       expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
     })
@@ -1194,13 +1193,13 @@ describe('transformer', () => {
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
         fields: [field],
-        baseTypeNames: new Set(['BaseType', 'FieldType']),
+        baseTypeNames: new Set(['BaseType']),
         client,
       })
       expect(elements).toHaveLength(2)
       const [element, fieldType] = elements
       expect(element.path).not.toContain(SUBTYPES_PATH)
-      expect(fieldType.path).not.toContain(SUBTYPES_PATH)
+      expect(fieldType.path).toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
     })
 

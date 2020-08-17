@@ -56,6 +56,120 @@
     ]
   },
   {
+    "id": "CustomDetailFormulas",
+    "fields": [
+      {
+        "name": "datatype",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "Double",
+              "DateOnly",
+              "DateTime",
+              "Text"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "Report",
+    "fields": [
+      {
+        "name": "sortOrder",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "Asc",
+              "Desc"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "ReportAggregate",
+    "fields": [
+      {
+        "name": "datatype",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "currency",
+              "number",
+              "percent"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "ReportChart",
+    "fields": [
+      {
+        "name": "chartType",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "None",
+              "HorizontalBar",
+              "HorizontalBarGrouped",
+              "HorizontalBarStacked",
+              "HorizontalBarStackedTo100",
+              "VerticalColumn",
+              "VerticalColumnGrouped",
+              "VerticalColumnStacked",
+              "VerticalColumnStackedTo100",
+              "Line",
+              "LineGrouped",
+              "LineCumulative",
+              "LineCumulativeGrouped",
+              "Pie",
+              "Donut",
+              "Funnel",
+              "Scatter",
+              "ScatterGrouped",
+              "VerticalColumnLine",
+              "VerticalColumnGroupedLine",
+              "VerticalColumnStackedLine",
+              "Plugin"
+            ]
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "ReportGrouping",
+    "fields": [
+      {
+        "name": "sortOrder",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "Asc",
+              "Desc"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
     "id": "ReportTimeFrameFilter",
     "fields": [
       {

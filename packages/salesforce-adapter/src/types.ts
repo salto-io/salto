@@ -64,8 +64,9 @@ export type SalesforceConfig = {
 }
 
 export type ConfigChangeSuggestion = {
-  type: keyof SalesforceConfig & ('metadataTypesSkippedList' | 'instancesRegexSkippedList')
+  type: keyof SalesforceConfig & ('metadataTypesSkippedList' | 'instancesRegexSkippedList' | 'dataManagement')
   value: string
+  reason?: string
 }
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]

@@ -40,7 +40,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       .forEach(record => {
         const customObject = instanceParent(record)?.getFullName()
         if (_.isUndefined(customObject)) {
-          log.warn('failed to find custom object for record type %s', apiName(record))
+          log.debug('failed to find custom object for record type %s', apiName(record))
           return
         }
         const businessProcess = parentToBusinessProcesses[customObject]
@@ -48,7 +48,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         if (businessProcess) {
           record.value[BUSINESS_PROCESS] = new ReferenceExpression(businessProcess.elemID)
         } else if (record.value[BUSINESS_PROCESS]) {
-          log.warn('failed to find business process %s', record.value[BUSINESS_PROCESS])
+          log.debug('failed to find business process %s', record.value[BUSINESS_PROCESS])
         }
       })
   },

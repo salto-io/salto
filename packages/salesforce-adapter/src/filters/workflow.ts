@@ -71,7 +71,7 @@ const filterCreator: FilterCreator = () => ({
         const objType = elements.filter(isObjectType)
           .find(e => metadataType(e) === fieldType)
         if (_.isUndefined(objType)) {
-          log.warn('failed to find object type for %s', fieldType)
+          log.debug('failed to find object type for %s', fieldType)
           return []
         }
         const innerInstances = makeArray(workflowInstance.value[fieldName])

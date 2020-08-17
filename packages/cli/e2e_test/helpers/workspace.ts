@@ -178,7 +178,7 @@ export const runFetch = async (
   isolated = false,
   inputEnvironment?: string,
 ): Promise<void> => {
-  await fetch(
+  const result = await fetch(
     fetchOutputDir,
     true,
     false,
@@ -190,6 +190,7 @@ export const runFetch = async (
     services,
     inputEnvironment,
   ).execute()
+  expect(result).toEqual(CliExitCode.Success)
 }
 
 

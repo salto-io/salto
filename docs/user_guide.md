@@ -262,7 +262,7 @@ Lets stop and take a look at our workspace directory structure (for more info se
 — static-resources       # common static files for all environments
 
 ```
-Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. Do not forget to use the `salto move <elm-id-selectors> --to common` command in order to configure which elements should be common across all environemtns in the workspace (the `move` command can be executed at anytime, before or after changing the dev env).  After all tests in dev are done, we can go ahead and run:
+Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. Do not forget to use the `salto move <elm-id-selectors> --to common` command in order to configure which elements should be common across all environmetns in the workspace (the `move` command can be executed at anytime, before or after changing the dev env).  After all tests in dev are done, we can go ahead and run:
 ```shell
 salto env set prod
 salto deploy

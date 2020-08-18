@@ -100,8 +100,8 @@ export const updatePathIndex = (current: PathIndex, unmergedElements: Element[],
   if (servicesToMaintain.length === 0) {
     return createPathIndex(unmergedElements)
   }
-  const oldPathHintsToMaintain = Array.from(current.entries()).filter(value =>
-    servicesToMaintain.includes(value[0].split(ElemID.NAMESPACE_SEPARATOR)[0]))
+  const oldPathHintsToMaintain = wu(current.entries()).filter(([value]) =>
+    servicesToMaintain.includes(ElemID.fromFullName(value).adapter))
   const pathIndex = new PathIndex(oldPathHintsToMaintain)
   pathIndex.setAll(getElementsPathHints(unmergedElements))
   return pathIndex

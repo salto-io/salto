@@ -79,5 +79,15 @@ describe('state', () => {
       await state.overridePathIndex(elements)
       expect(await state.getPathIndex()).toEqual(createPathIndex([elem, newElem]))
     })
+
+    it('updatePathIndex', async () => {
+      const newElemID = new ElemID('dummy', 'newElem')
+      const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
+      const elements = [elem, newElem]
+      await state.overridePathIndex(elements)
+      const oneElement = [newElem]
+      await state.updatePathIndex(oneElement, ['salesforce'])
+      expect(await state.getPathIndex()).toEqual(createPathIndex([elem, newElem]))
+    })
   })
 })

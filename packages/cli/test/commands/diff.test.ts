@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { diff } from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
-import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
+import { diff, loadLocalWorkspace } from '@salto-io/core'
+import { CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/diff'
 
 import * as mocks from '../mocks'
@@ -35,14 +34,11 @@ const eventsNames = {
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   diff: jest.fn().mockImplementation(() => Promise.resolve([])),
+  loadLocalWorkspace: jest.fn(),
 }))
 jest.mock('../../src/workspace/workspace')
 describe('diff command', () => {
-  let spinners: Spinner[]
-  let spinnerCreator: SpinnerCreator
-  const services = ['salesforce']
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  const mockLoadWorkspace = mockCliWorkspace.loadWorkspace as jest.Mock
   const mockApplyChangesToWorkspace = mockCliWorkspace.applyChangesToWorkspace as jest.Mock
   const mockUpdateWorkspace = mockCliWorkspace.updateWorkspace as jest.Mock
   const mockUpdateStateOnly = mockCliWorkspace.updateStateOnly as jest.Mock
@@ -54,48 +50,11 @@ describe('diff command', () => {
   mockUpdateWorkspace.mockImplementation(ws =>
     Promise.resolve(ws.name !== 'exist-on-error'))
   mockUpdateStateOnly.mockResolvedValue(true)
-
-  beforeEach(() => {
-    spinners = []
-    spinnerCreator = mocks.mockSpinnerCreator(spinners)
-  })
+  const mockLoadWorkspace = loadLocalWorkspace as jest.Mock
 
   let result: number
   let mockTelemetry: mocks.MockTelemetry
   let mockCliTelemetry: CliTelemetry
-  describe('with errored workspace', () => {
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
-      const erroredWorkspace = {
-        hasErrors: () => true,
-        errors: { strings: () => ['some error'] },
-        config: { services },
-      } as unknown as Workspace
-      mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-
-      result = await command(
-        '',
-        true,
-        false,
-        mockCliTelemetry,
-        cliOutput,
-        spinnerCreator,
-        'other',
-        false,
-        false,
-      ).execute()
-    })
-
-    it('should fail', async () => {
-      expect(result).toBe(CliExitCode.AppError)
-      expect(diff).not.toHaveBeenCalled()
-      expect(mockTelemetry.getEvents().length).toEqual(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure][0].value).toEqual(1)
-    })
-  })
 
   describe('with valid workspace', () => {
     const workspaceName = 'valid-workspace'
@@ -104,18 +63,15 @@ describe('diff command', () => {
       cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
-      })
+      mockLoadWorkspace.mockResolvedValue(workspace)
       result = await command(
         '',
         true,
         false,
         mockCliTelemetry,
         cliOutput,
-        spinnerCreator,
-        'other',
+        'active',
+        'inactive',
         false,
         false,
       ).execute()
@@ -129,7 +85,7 @@ describe('diff command', () => {
       expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'other', false, false, undefined, [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, false, undefined, [])
     })
   })
 
@@ -140,18 +96,15 @@ describe('diff command', () => {
       cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
-      })
+      mockLoadWorkspace.mockResolvedValue(workspace)
       result = await command(
         '',
         true,
         false,
         mockCliTelemetry,
         cliOutput,
-        spinnerCreator,
-        'other',
+        'active',
+        'inactive',
         true,
         false,
       ).execute()
@@ -165,7 +118,7 @@ describe('diff command', () => {
       expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'other', true, false, undefined, [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', true, false, undefined, [])
     })
   })
 
@@ -176,18 +129,15 @@ describe('diff command', () => {
       cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
-      })
+      mockLoadWorkspace.mockResolvedValue(workspace)
       result = await command(
         '',
         true,
         false,
         mockCliTelemetry,
         cliOutput,
-        spinnerCreator,
-        'other',
+        'active',
+        'inactive',
         false,
         true,
       ).execute()
@@ -201,7 +151,7 @@ describe('diff command', () => {
       expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'other', false, true, undefined, [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, undefined, [])
     })
   })
 
@@ -213,21 +163,17 @@ describe('diff command', () => {
       cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
-      })
+      mockLoadWorkspace.mockResolvedValue(workspace)
       result = await command(
         '',
         true,
         false,
         mockCliTelemetry,
         cliOutput,
-        spinnerCreator,
-        'other',
+        'active',
+        'inactive',
         false,
         true,
-        undefined,
         undefined,
         [regex]
       ).execute()
@@ -241,7 +187,7 @@ describe('diff command', () => {
       expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'other', false, true, undefined, [new RegExp(regex)])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, undefined, [new RegExp(regex)])
     })
   })
 
@@ -253,21 +199,17 @@ describe('diff command', () => {
       cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
-      })
+      mockLoadWorkspace.mockResolvedValue(workspace)
       result = await command(
         '',
         true,
         false,
         mockCliTelemetry,
         cliOutput,
-        spinnerCreator,
-        'other',
+        'active',
+        'inactive',
         false,
         true,
-        undefined,
         undefined,
         [regex]
       ).execute()

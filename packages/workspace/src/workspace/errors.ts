@@ -56,7 +56,7 @@ export class ServiceDuplicationError extends Error {
 
 export class UnknownEnvError extends Error {
   constructor(envName: string) {
-    super(`Unkown environment ${envName}`)
+    super(`Unknown environment ${envName}`)
   }
 }
 

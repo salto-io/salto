@@ -13,17 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { diff, LocalChange } from '@salto-io/core'
+import { diff, LocalChange, loadLocalWorkspace } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import _ from 'lodash'
 import { ServicesArgs, servicesFilter } from '../filters/service'
 import { EnvironmentArgs } from './env'
-import { ParsedCliInput, CliOutput, SpinnerCreator, CliExitCode, CliCommand, CliTelemetry } from '../types'
+import { ParsedCliInput, CliOutput, CliExitCode, CliCommand, CliTelemetry } from '../types'
 import { createCommandBuilder } from '../command_builder'
-import { environmentFilter } from '../filters/env'
 import { getCliTelemetry } from '../telemetry'
-import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
+import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { formatDetailedChanges, formatInvalidFilters, formatStepStart, formatStepCompleted, header } from '../formatter'
 import { outputLine } from '../outputer'
@@ -34,9 +33,10 @@ const log = logger(module)
 type DiffArgs = {
     force: boolean
     detailedPlan: boolean
-    filters: string[]
+    elmSelectors: string[]
     hidden: boolean
     state: boolean
+    fromEnv: string
     toEnv: string
   } & ServicesArgs & EnvironmentArgs
 
@@ -63,19 +63,17 @@ const printDiff = (
   }
   outputLine(EOL, output)
 }
-
 export const command = (
   workspaceDir: string,
   force: boolean,
   detailedPlan: boolean,
   cliTelemetry: CliTelemetry,
   output: CliOutput,
-  spinnerCreator: SpinnerCreator,
+  inputEnvironment: string,
   toEnv: string,
   inputHidden = false,
   inputState = false,
   inputServices?: string[],
-  inputEnvironment?: string,
   inputFilters: string[] = []
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
@@ -89,41 +87,53 @@ export const command = (
       return CliExitCode.UserInputError
     }
 
-    const { workspace, errored } = await loadWorkspace(
-      workspaceDir,
-      output,
-      {
-        force,
-        spinnerCreator,
-        sessionEnv: inputEnvironment,
-      }
-    )
-    if (errored) {
-      cliTelemetry.failure()
-      return CliExitCode.AppError
+    const workspace = await loadLocalWorkspace('.')
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    const fromEnv = inputEnvironment
+    if (!(workspace.envs().includes(fromEnv))) {
+      throw new Error(`Unknown environment ${fromEnv}`)
+    }
+    if (!(workspace.envs().includes(toEnv))) {
+      throw new Error(`Unknown environment ${toEnv}`)
     }
 
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    const fromEnv = inputEnvironment ?? workspace.currentEnv()
     cliTelemetry.start(workspaceTags)
-
     outputLine(EOL, output)
     outputLine(formatStepStart(Prompts.DIFF_CALC_DIFF_START(toEnv, fromEnv)), output)
 
-    const changes = await diff(workspace, toEnv, inputHidden, inputState, inputServices, filters)
+    const changes = await diff(
+      workspace,
+      fromEnv,
+      toEnv,
+      inputHidden,
+      inputState,
+      inputServices,
+      filters,
+    )
     printDiff(changes, detailedPlan, toEnv, fromEnv, output)
 
     outputLine(formatStepCompleted(Prompts.DIFF_CALC_DIFF_FINISH(toEnv, fromEnv)), output)
     outputLine(EOL, output)
     cliTelemetry.success(workspaceTags)
+
     return CliExitCode.Success
   },
 })
 
 const diffBuilder = createCommandBuilder({
   options: {
-    command: 'diff <toEnv> [filters..]',
+    command: 'diff <from-env> <to-env> [elm-selectors..]',
     description: 'Show the changes needed to bring <toEnv> up to date with the active environment',
+    positional: {
+      'from-env': {
+        type: 'string',
+        desc: 'The environment to be aligned from',
+      },
+      'to-env': {
+        type: 'string',
+        desc: 'The environment to align',
+      },
+    },
     keyed: {
       force: {
         alias: ['f'],
@@ -154,12 +164,11 @@ const diffBuilder = createCommandBuilder({
     },
   },
 
-  filters: [servicesFilter, environmentFilter],
+  filters: [servicesFilter],
 
   async build(
     input: DiffParsedCliInput,
     output: CliOutput,
-    spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
     return command(
       '.',
@@ -167,13 +176,12 @@ const diffBuilder = createCommandBuilder({
       input.args.detailedPlan,
       getCliTelemetry(input.telemetry, 'diff'),
       output,
-      spinnerCreator,
+      input.args.fromEnv,
       input.args.toEnv,
       input.args.hidden,
       input.args.state,
       input.args.services,
-      input.args.env,
-      input.args.filters
+      input.args.elmSelectors
     )
   },
 })

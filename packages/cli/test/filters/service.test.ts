@@ -16,7 +16,7 @@
 import { createCommandBuilder, YargsCommandBuilder } from '../../src/command_builder'
 import { CliExitCode } from '../../src/types'
 import { MockCliOutput, cli, mockLoadWorkspace } from '../mocks'
-import { servicesFilter, serviceCmdFilter } from '../../src/filters/services'
+import { servicesFilter, serviceCmdFilter } from '../../src/filters/service'
 
 
 jest.mock('@salto-io/core', () => ({
@@ -116,7 +116,7 @@ describe('services filter', () => {
           out = await runCli('t --test-opt -s abcdefg')
         })
 
-        it('should fail with service not configured error', async () => {
+        it('should fail with services not configured error', async () => {
           expect(out.err).toMatch('Not all services (abcdefg) are set up for this workspace')
         })
       })
@@ -128,7 +128,7 @@ describe('services filter', () => {
         Promise.resolve({ execute: () => Promise.resolve(CliExitCode.Success) })) as jest.Mock
       builder = createCommandBuilder({
         options: {
-          command: 'services <command> [name]',
+          command: 'service <command> [name]',
           description: 'tests the command parser',
         },
         filters: [serviceCmdFilter],
@@ -143,16 +143,16 @@ describe('services filter', () => {
       })
     describe('should fail when commands called incorrectly', () => {
       it('fail with add', async () => {
-        out = await runCli('services add')
-        expect(out.err).toMatch('Error: Missing required argument: name\n\nExample usage: \'salto services add salesforce\'')
+        out = await runCli('service add')
+        expect(out.err).toMatch('Error: Missing required argument: name\n\nExample usage: \'salto service add salesforce\'')
       })
       it('fail with login', async () => {
-        out = await runCli('services login')
-        expect(out.err).toMatch('Error: Missing required argument: name\n\nExample usage: \'salto services login salesforce\'')
+        out = await runCli('service login')
+        expect(out.err).toMatch('Error: Missing required argument: name\n\nExample usage: \'salto service login salesforce\'')
       })
       describe('Should succeed', () => {
         it('succeed with add', async () => {
-          out = await runCli('services add sales force')
+          out = await runCli('service add sales force')
           expect(out.err).toMatch('')
         })
       })

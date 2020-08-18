@@ -29,7 +29,7 @@ import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
 import { getCredentialsFromUser } from '../callbacks'
-import { serviceCmdFilter, ServiceCmdArgs } from '../filters/services'
+import { serviceCmdFilter, ServiceCmdArgs } from '../filters/service'
 import {
   formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
   formatLoginUpdated, formatLoginOverride, formatServiceAdded,
@@ -164,7 +164,7 @@ type ServiceParsedCliInput = ParsedCliInput<ServiceArgs>
 
 const servicesBuilder = createCommandBuilder({
   options: {
-    command: 'services <command> [name]',
+    command: 'service <command> [name]',
     description: 'Manage your environment services',
   },
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
+  ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 
@@ -74,7 +74,7 @@ export type FetchElements<T> = {
 
 const configID = new ElemID('salesforce')
 
-export const credentialsType = new ObjectType({
+export const usernamePasswordCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
     username: { type: BuiltinTypes.STRING },
@@ -86,6 +86,69 @@ export const credentialsType = new ObjectType({
     sandbox: { type: BuiltinTypes.BOOLEAN },
   },
 })
+
+export const accessTokenCredentialsType = new ObjectType({
+  elemID: configID,
+  fields: {
+    accessToken: { type: BuiltinTypes.STRING },
+    instanceUrl: { type: BuiltinTypes.STRING },
+    isSandbox: { type: BuiltinTypes.BOOLEAN },
+  },
+})
+
+export const oauthRequestParameters = new ObjectType({
+  elemID: configID,
+  fields: {
+    consumerKey: {
+      type: BuiltinTypes.STRING,
+      annotations: { message: 'Consumer key for a connected app, whose redirect URI is http://localhost:port' },
+    },
+    port: {
+      type: BuiltinTypes.NUMBER,
+      annotations: { message: 'Port provided in the redirect URI' },
+    },
+    isSandbox: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: { message: 'Is connection to a sandbox?' },
+    },
+  },
+})
+
+export const isAccessTokenConfig = (config: Readonly<InstanceElement>): boolean =>
+  config.value.authType === 'oauth'
+
+export class UsernamePasswordCredentials {
+  constructor({ username, password, isSandbox, apiToken }:
+    { username: string; password: string; isSandbox: boolean; apiToken?: string }) {
+    this.username = username
+    this.password = password
+    this.isSandbox = isSandbox
+    this.apiToken = apiToken
+  }
+
+  username: string
+  password: string
+  apiToken?: string
+  isSandbox: boolean
+}
+
+export class OauthAccessTokenCredentials {
+  constructor({ instanceUrl, accessToken, isSandbox }: {
+    instanceUrl: string
+    accessToken: string
+    isSandbox: boolean
+  }) {
+    this.instanceUrl = instanceUrl
+    this.accessToken = accessToken
+    this.isSandbox = isSandbox
+  }
+
+  instanceUrl: string
+  accessToken: string
+  isSandbox: boolean
+}
+
+export type Credentials = UsernamePasswordCredentials | OauthAccessTokenCredentials
 
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),

@@ -16,24 +16,36 @@
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter,
+  InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse, Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import SalesforceClient, { Credentials, validateCredentials } from './client/client'
+import SalesforceClient, { validateCredentials } from './client/client'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
-import { configType, credentialsType, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, DataManagementConfig, DATA_MANAGEMENT } from './types'
+import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
+  isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
+  DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
+  Credentials, OauthAccessTokenCredentials } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
-  username: config.value.username,
-  password: config.value.password,
-  apiToken: config.value.token,
-  isSandbox: config.value.sandbox,
-})
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
+  if (isAccessTokenConfig(config)) {
+    return new OauthAccessTokenCredentials({
+      instanceUrl: config.value.instanceUrl,
+      accessToken: config.value.accessToken,
+      isSandbox: config.value.isSandbox,
+    })
+  }
+  return new UsernamePasswordCredentials({
+    username: config.value.username,
+    password: config.value.password,
+    isSandbox: config.value.sandbox,
+    apiToken: config.value.token,
+  })
+}
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 SalesforceConfig => {
@@ -89,16 +101,37 @@ SalesforceConfig => {
 const clientFromCredentials = (credentials: InstanceElement): SalesforceClient =>
   new SalesforceClient({ credentials: credentialsFromConfig(credentials) })
 
+const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
+  const endpoint = userInput.value.isSandbox ? 'test' : 'login'
+  const url = `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${userInput.value.consumerKey}&redirect_uri=http://localhost:${userInput.value.port}`
+  return {
+    url,
+    accessTokenField: 'access_token',
+  }
+}
+
 export const adapter: Adapter = {
   operations: context => new SalesforceAdapter({
     client: clientFromCredentials(context.credentials),
     config: adapterConfigFromConfig(context.config),
     getElemIdFunc: context.getElemIdFunc,
   }),
-  validateCredentials: config => validateCredentials(
-    credentialsFromConfig(config)
-  ),
-  credentialsType,
+  validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
+  authenticationMethods: {
+    basic: {
+      credentialsType: usernamePasswordCredentialsType,
+    },
+    oauth: {
+      createOAuthRequest,
+      credentialsType: accessTokenCredentialsType,
+      oauthRequestParameters,
+      createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => ({
+        isSandbox: oldConfig.isSandbox,
+        accessToken: response.accessToken,
+        instanceUrl: response.instanceUrl,
+      }),
+    },
+  },
   configType,
   deployModifiers: {
     changeValidator,

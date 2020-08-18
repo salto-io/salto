@@ -18,10 +18,12 @@ import SalesforceAdapter, {
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
   adapter as salesforceAdapter,
-  Credentials,
+  UsernamePasswordCredentials,
+  OauthAccessTokenCredentials,
 } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
 import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
@@ -55,18 +57,35 @@ export const instanceExists = async (client: SalesforceClient, type: string, nam
   return true
 }
 
-export const getSalesforceCredsInstance = (creds: Credentials): InstanceElement => {
+export const getSalesforceCredsInstance = (creds: UsernamePasswordCredentials): InstanceElement => {
   const configValues = {
     username: creds.username,
     password: creds.password,
     token: creds.apiToken ?? '',
     sandbox: creds.isSandbox,
   }
-  const { credentialsType } = salesforceAdapter
+  const { authenticationMethods } = salesforceAdapter
 
   return new InstanceElement(
     ElemID.CONFIG_NAME,
-    credentialsType,
+    authenticationMethods.basic.credentialsType,
+    configValues,
+  )
+}
+
+export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): InstanceElement => {
+  const configValues = {
+    accessToken: creds.accessToken,
+    instanceUrl: creds.instanceUrl,
+    isSandbox: creds.isSandbox,
+    authType: 'oauth',
+  }
+
+  const { authenticationMethods } = salesforceAdapter
+
+  return new InstanceElement(
+    ElemID.CONFIG_NAME,
+    authenticationMethods.oauth?.credentialsType as ObjectType,
     configValues,
   )
 }

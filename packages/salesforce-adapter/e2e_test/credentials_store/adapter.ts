@@ -16,7 +16,7 @@
 import { Adapter } from '@salto-io/e2e-credentials-store'
 import { Connection, MetadataInfo } from 'jsforce'
 import { strings } from '@salto-io/lowerdash'
-import { Credentials, validateCredentials } from '../../src/client/client'
+import { validateCredentials } from '../../src/client/client'
 
 interface OauthConfig {
   consumerKey: string
@@ -60,6 +60,14 @@ type Args = {
   password: string
   'api-token'?: string
   sandbox: boolean
+}
+
+type Credentials = {
+  username: string
+  password: string
+  isSandbox: boolean
+  consumerKey?: string
+  apiToken?: string
 }
 
 const adapter: Adapter<Args, Credentials> = {

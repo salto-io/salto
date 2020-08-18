@@ -16,7 +16,7 @@
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import { credsSpec } from './e2e_test/jest_environment'
-import { Credentials } from './src/client/client'
+import { UsernamePasswordCredentials } from './src/types'
 import { CUSTOM_OBJECT } from './src/constants'
 import { CustomObject as tCustomObject } from './src/client/types'
 
@@ -24,12 +24,12 @@ export { default } from './src/adapter'
 export { adapter } from './src/adapter_creator'
 export { default as changeValidator } from './src/change_validator'
 export { default as SalesforceClient } from './src/client/client'
-export { Credentials } from './src/client/client'
+export { UsernamePasswordCredentials, OauthAccessTokenCredentials } from './src/types'
 
 const log = logger(module)
 
 export type TestHelpers = {
-  credentials: (envName?: string) => Promise<CredsLease<Credentials>>
+  credentials: (envName?: string) => Promise<CredsLease<UsernamePasswordCredentials>>
   CUSTOM_OBJECT: string
 }
 

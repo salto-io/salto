@@ -36,7 +36,7 @@ const { makeArray } = collections.array
 
 const configID = new ElemID(NETSUITE)
 
-const credentialsType = new ObjectType({
+export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
     accountId: { type: BuiltinTypes.STRING },
@@ -98,7 +98,11 @@ export const adapter: Adapter = {
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },
-  credentialsType,
+  authenticationMethods: {
+    basic: {
+      credentialsType: defaultCredentialsType,
+    },
+  },
   configType,
   deployModifiers: {
     changeValidator,

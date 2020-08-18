@@ -1,4 +1,4 @@
-import { Credentials } from '../src/client/client'
+import { Credentials } from '../src/types'
 
 declare global {
   module NodeJS {

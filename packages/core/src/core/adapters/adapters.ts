@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement, Adapter } from '@salto-io/adapter-api'
+import {
+  AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
+  Adapter, AdapterAuthentication,
+} from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import adapterCreators from './creators'
@@ -23,7 +26,7 @@ const log = logger(module)
 
 export const getAdaptersCredentialsTypes = (
   names?: ReadonlyArray<string>
-): Record<string, ObjectType> => {
+): Record<string, AdapterAuthentication> => {
   let relevantAdapterCreators: Record<string, Adapter>
   if (names === undefined) {
     relevantAdapterCreators = adapterCreators
@@ -34,7 +37,7 @@ export const getAdaptersCredentialsTypes = (
     }
     relevantAdapterCreators = _.pick(adapterCreators, names)
   }
-  return _.mapValues(relevantAdapterCreators, creator => creator.credentialsType)
+  return _.mapValues(relevantAdapterCreators, creator => creator.authenticationMethods)
 }
 
 export const initAdapters = (

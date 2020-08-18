@@ -22,10 +22,10 @@ import {
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import {
-  Credentials,
   ApiLimitsTooLowError,
   validateCredentials,
 } from '../src/client/client'
+import { UsernamePasswordCredentials } from '../src/types'
 
 
 const log = logger(module)
@@ -33,7 +33,7 @@ const log = logger(module)
 const MIN_API_REQUESTS_NEEDED = 2000
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
-export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
+export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentials> => {
   const addEnvName = (varName: string): string => (envName === undefined
     ? varName
     : [varName, envName].join('_'))
@@ -52,9 +52,9 @@ export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
         isSandbox: envUtils.bool(sandboxEnvVarName),
       }
     },
-    validate: async (creds: Credentials): Promise<void> => {
+    validate: async (creds: UsernamePasswordCredentials): Promise<void> => {
       try {
-        await validateCredentials(creds, MIN_API_REQUESTS_NEEDED)
+        await validateCredentials(new UsernamePasswordCredentials(creds), MIN_API_REQUESTS_NEEDED)
       } catch (e) {
         if (e instanceof ApiLimitsTooLowError) {
           throw new SuspendCredentialsError(e, NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT)

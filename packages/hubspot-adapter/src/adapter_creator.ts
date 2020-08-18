@@ -22,7 +22,7 @@ import changeValidator from './change_validator'
 
 const configID = new ElemID('hubspot')
 
-const credentialsType = new ObjectType({
+export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: { apiKey: { type: BuiltinTypes.STRING } },
   annotationTypes: {},
@@ -43,7 +43,11 @@ export const adapter: Adapter = {
     client: clientFromCredentials(context.credentials),
   }),
   validateCredentials: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
-  credentialsType,
+  authenticationMethods: {
+    basic: {
+      credentialsType: defaultCredentialsType,
+    },
+  },
   deployModifiers: {
     changeValidator,
   },

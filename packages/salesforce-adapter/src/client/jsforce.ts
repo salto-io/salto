@@ -19,7 +19,7 @@ import {
   ListMetadataQuery, FileProperties, DescribeSObjectResult, BulkOptions, BulkLoadOperation,
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator, DeployResult,
   RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo, QueryResult, Batch,
-  Record as SfRecord,
+  IdentityInfo, Record as SfRecord,
 } from 'jsforce'
 import { Value } from '@salto-io/adapter-api'
 
@@ -82,4 +82,5 @@ export default interface Connection {
   query(soql: string): Promise<QueryResult<Value>>
   queryMore(locator: string): Promise<QueryResult<Value>>
   limits(): Promise<Limits>
+  identity(): Promise<IdentityInfo>
 }

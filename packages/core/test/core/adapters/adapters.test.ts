@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, AdapterAuthentication } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { adapter } from '@salto-io/salesforce-adapter'
 import {
-  initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
+  initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
+  getDefaultAdapterConfig,
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
@@ -30,11 +31,11 @@ jest.mock('@salto-io/adapter-utils', () => ({
 }))
 
 describe('adapters.ts', () => {
-  const { credentialsType } = adapter
+  const { authenticationMethods } = adapter
   const services = ['salesforce']
   const sfConfig = new InstanceElement(
     ElemID.CONFIG_NAME,
-    credentialsType,
+    authenticationMethods.basic.credentialsType,
     {
       username: 'nacluser',
       password: 'naclpass',
@@ -44,11 +45,11 @@ describe('adapters.ts', () => {
   )
 
   describe('run get adapters config statuses', () => {
-    let credentials: Record<string, ObjectType>
+    let credentials: Record<string, AdapterAuthentication>
 
     it('should return config for defined adapter', () => {
       credentials = getAdaptersCredentialsTypes(services)
-      expect(credentials.salesforce).toEqual(credentialsType)
+      expect(credentials.salesforce).toEqual(authenticationMethods)
     })
 
     it('should throw error for non defined adapter', () => {

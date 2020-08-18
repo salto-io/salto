@@ -29,6 +29,7 @@ import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT_ID_FIELD } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
+import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials } from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -119,36 +120,15 @@ const validateDeployResult = decorators.wrapMethodWith(
   }
 )
 
-export type Credentials = {
-  username: string
-  password: string
-  apiToken?: string
-  consumerKey?: string
-  isSandbox: boolean
-}
-
 export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
   retryOptions?: RequestRetryOptions
 }
 
-export const realConnection = (
-  isSandbox: boolean,
-  retryOptions: RequestRetryOptions,
-): Connection => {
-  const connection = new RealConnection({
-    version: API_VERSION,
-    loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
-    requestModule: (opts: Options, callback: RequestCallback) =>
-      requestretry({ ...retryOptions, ...opts }, (err, response, body) => {
-        const attempts = _.get(response, 'attempts') || _.get(err, 'attempts')
-        if (attempts && attempts > 1) {
-          log.warn('sfdc client retry attempts: %o', attempts)
-        }
-        return callback(err, response, body)
-      }),
-  })
+export const setPollIntervalForConnection = (
+  connection: RealConnection
+): void => {
   // Set poll interval and timeout for deploy
   connection.metadata.pollInterval = 3000
   connection.metadata.pollTimeout = 5400000
@@ -156,7 +136,43 @@ export const realConnection = (
   // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
   connection.bulk.pollInterval = 3000
   connection.bulk.pollTimeout = 5400000
+}
 
+export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =>
+  (opts: Options, callback: RequestCallback) =>
+    requestretry({ ...retryOptions, ...opts }, (err, response, body) => {
+      const attempts = _.get(response, 'attempts') || _.get(err, 'attempts')
+      if (attempts && attempts > 1) {
+        log.warn('sfdc client retry attempts: %o', attempts)
+      }
+      return callback(err, response, body)
+    })
+
+const oauthConnection = (
+  instanceUrl: string,
+  accessToken: string,
+  retryOptions: RequestRetryOptions,
+): Connection => {
+  const connection = new RealConnection({
+    version: API_VERSION,
+    instanceUrl,
+    accessToken,
+    requestModule: createRequestModuleFunction(retryOptions),
+  })
+  setPollIntervalForConnection(connection)
+  return connection
+}
+
+const realConnection = (
+  isSandbox: boolean,
+  retryOptions: RequestRetryOptions,
+): Connection => {
+  const connection = new RealConnection({
+    version: API_VERSION,
+    loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
+    requestModule: createRequestModuleFunction(retryOptions),
+  })
+  setPollIntervalForConnection(connection)
   return connection
 }
 
@@ -221,19 +237,40 @@ const sendChunked = async <TIn, TOut>({
 
 export class ApiLimitsTooLowError extends Error {}
 
-export const getConnectionDetails = async (creds: Credentials, connection? : Connection): Promise<{
+const createConnectionFromCredentials = (
+  creds: Credentials,
+  options: RequestRetryOptions,
+): Connection => {
+  if (creds instanceof OauthAccessTokenCredentials) {
+    return oauthConnection(creds.instanceUrl, creds.accessToken, options)
+  }
+  return realConnection(creds.isSandbox, options)
+}
+
+export const loginFromCredentialsAndReturnOrgId = async (
+  connection: Connection, creds: Credentials): Promise<string> => {
+  if (creds instanceof UsernamePasswordCredentials) {
+    return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
+  }
+  // Oauth connection doesn't require further login
+  return (await connection.identity()).organization_id
+}
+
+export const getConnectionDetails = async (
+  creds: Credentials, connection? : Connection): Promise<{
   remainingDailyRequests: number
   orgId: string
 }> => {
-  const conn = connection || realConnection(creds.isSandbox, {
+  const options = {
     maxAttempts: 2,
     retryStrategy: RetryStrategies.HTTPOrNetworkError,
-  })
-  const userInfo = await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
+  }
+  const conn = connection || (await createConnectionFromCredentials(creds, options))
+  const orgId = (await loginFromCredentialsAndReturnOrgId(conn, creds))
   const limits = await conn.limits()
   return {
     remainingDailyRequests: limits.DailyApiRequests.Remaining,
-    orgId: userInfo.organizationId,
+    orgId,
   }
 }
 
@@ -261,13 +298,12 @@ export default class SalesforceClient {
   ) {
     this.credentials = credentials
     this.conn = connection
-      || realConnection(credentials.isSandbox, retryOptions || DEFAULT_RETRY_OPTS)
+      || createConnectionFromCredentials(credentials, retryOptions || DEFAULT_RETRY_OPTS)
   }
 
   private async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
-      const { username, password, apiToken } = this.credentials
-      await this.conn.login(username, password + (apiToken || ''))
+      await loginFromCredentialsAndReturnOrgId(this.conn, this.credentials)
       this.isLoggedIn = true
     }
   }

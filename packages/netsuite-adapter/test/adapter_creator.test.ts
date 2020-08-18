@@ -38,7 +38,7 @@ mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })
 describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
-    adapter.credentialsType,
+    adapter.authenticationMethods.basic.credentialsType,
     {
       accountId: 'foo',
       tokenId: 'bar',

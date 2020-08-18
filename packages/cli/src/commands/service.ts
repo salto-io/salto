@@ -20,29 +20,65 @@ import {
   getAdaptersCredentialsTypes, installAdapter,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-
-import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, AdapterAuthentication, ElemID, OAuthMethod, AdapterAuthMethod } from '@salto-io/adapter-api'
 import { outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
+import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
 import { getCredentialsFromUser } from '../callbacks'
 import { serviceCmdFilter, ServiceCmdArgs } from '../filters/service'
 import {
   formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
-  formatLoginUpdated, formatLoginOverride, formatServiceAdded,
-  formatServiceAlreadyAdded, formatCredentialsHeader, formatLoginToServiceFailed,
+  formatLoginUpdated, formatLoginOverride, formatServiceAdded, formatServiceAlreadyAdded,
+  formatCredentialsHeader, formatLoginToServiceFailed,
 } from '../formatter'
 import { EnvironmentArgs } from './env'
 
+const getOauthConfig = async (
+  oauthMethod: OAuthMethod,
+  output: CliOutput,
+  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<InstanceElement> => {
+  outputLine(formatCredentialsHeader(oauthMethod.oauthRequestParameters.elemID.adapter), output)
+  const newConfig = await getLoginInput(oauthMethod.oauthRequestParameters)
+  const oauthParameters = oauthMethod.createOAuthRequest(newConfig)
+  const credentials = oauthMethod.createFromOauthResponse(newConfig.value,
+    await processOauthCredentials(newConfig.value.port,
+      oauthParameters.accessTokenField, oauthParameters.url, output))
+  return new InstanceElement(ElemID.CONFIG_NAME, oauthMethod.credentialsType, credentials)
+}
+
+const getConfigFromInput = async (
+  authType: AdapterAuthMethod,
+  authMethods: AdapterAuthentication,
+  output: CliOutput,
+  getLoginInput: (configType: ObjectType) =>
+    Promise<InstanceElement>): Promise<InstanceElement> => {
+  let newConfig: InstanceElement
+  if (authType === 'oauth' && authMethods.oauth) {
+    newConfig = await getOauthConfig(authMethods.oauth, output, getLoginInput)
+  } else {
+    const configType = authMethods[authType]
+    if (configType) {
+      outputLine(formatCredentialsHeader(configType.credentialsType.elemID.adapter), output)
+      newConfig = await getLoginInput(configType.credentialsType)
+    } else {
+      throw new Error(`Adapter does not support authentication of type ${authType}`)
+    }
+  }
+  newConfig.value.authType = authType
+  return newConfig
+}
+
 const getLoginInputFlow = async (
   workspace: Workspace,
-  configType: ObjectType,
+  authMethods: AdapterAuthentication,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
-  output: CliOutput
+  output: CliOutput,
+  authType: AdapterAuthMethod,
 ): Promise<void> => {
-  output.stdout.write(formatCredentialsHeader(configType.elemID.adapter))
-  const newConfig = await getLoginInput(configType)
+  const newConfig = await getConfigFromInput(authType, authMethods, output, getLoginInput)
   await updateCredentials(workspace, newConfig)
   output.stdout.write(EOL)
   outputLine(formatLoginUpdated, output)
@@ -62,8 +98,9 @@ const addService = async (
   output: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
+  authType: AdapterAuthMethod,
   inputEnvironment?: string,
-  nologin?: boolean
+  nologin?: boolean,
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (workspace.services().includes(serviceName)) {
@@ -73,9 +110,10 @@ const addService = async (
 
   await installAdapter(serviceName)
   if (!nologin) {
-    const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
+    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceName])[serviceName]
     try {
-      await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, output)
+      await getLoginInputFlow(workspace, adapterCredentialsTypes,
+        getLoginInput, output, authType)
     } catch (e) {
       errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
       return CliExitCode.AppError
@@ -109,6 +147,7 @@ const loginService = async (
   output: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
+  authType: AdapterAuthMethod,
   inputEnvironment?: string,
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
@@ -123,7 +162,13 @@ const loginService = async (
   if (serviceLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }
-  await getLoginInputFlow(workspace, serviceLoginStatus.configType, getLoginInput, output)
+  try {
+    await getLoginInputFlow(workspace, serviceLoginStatus.configTypeOptions,
+      getLoginInput, output, authType)
+  } catch (e) {
+    errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
+    return CliExitCode.AppError
+  }
   return CliExitCode.Success
 }
 
@@ -132,9 +177,10 @@ export const command = (
   commandName: string,
   { stdout, stderr }: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
+  authType: AdapterAuthMethod,
   serviceName = '',
   inputEnvironment?: string,
-  nologin?: boolean
+  nologin?: boolean,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     switch (commandName) {
@@ -144,6 +190,7 @@ export const command = (
           { stdout, stderr },
           getLoginInput,
           serviceName,
+          authType,
           inputEnvironment,
           nologin,
         )
@@ -155,7 +202,8 @@ export const command = (
           { stdout, stderr },
           getLoginInput,
           serviceName,
-          inputEnvironment
+          authType,
+          inputEnvironment,
         )
       default:
         throw new Error('Unknown service management command')
@@ -189,6 +237,7 @@ const servicesBuilder = createCommandBuilder({
       input.args.command,
       output,
       getCredentialsFromUser,
+      input.args.authType as AdapterAuthMethod,
       input.args.name,
       input.args.env,
       input.args.nologin,

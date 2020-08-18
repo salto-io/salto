@@ -19,6 +19,7 @@ import { DataNodeMap, Group } from '@salto-io/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
+  AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
@@ -300,9 +301,9 @@ export const mockLoadWorkspaceEnvironment = (
   }
 }
 
-export const mockCredentialsType = (adapterName: string): ObjectType => {
+export const mockCredentialsType = (adapterName: string): AdapterAuthentication => {
   const configID = new ElemID(adapterName)
-  return new ObjectType({
+  return { basic: { credentialsType: new ObjectType({
     elemID: configID,
     fields: {
       username: { type: BuiltinTypes.STRING },
@@ -313,7 +314,37 @@ export const mockCredentialsType = (adapterName: string): ObjectType => {
       },
       sandbox: { type: BuiltinTypes.BOOLEAN },
     },
-  })
+  }) } }
+}
+
+export const mockOauthCredentialsType = (adapterName: string,
+  oauthParameters: OAuthRequestParameters): AdapterAuthentication => {
+  const baseType = mockCredentialsType(adapterName)
+  baseType.oauth = {
+    credentialsType: new ObjectType({
+      elemID: new ElemID(adapterName),
+      fields: {
+        accessToken: { type: BuiltinTypes.STRING },
+        instanceUrl: { type: BuiltinTypes.STRING },
+      },
+    }),
+    oauthRequestParameters: new ObjectType({
+      elemID: new ElemID(adapterName),
+      fields: {
+        consumerKey: { type: BuiltinTypes.STRING },
+        port: { type: BuiltinTypes.NUMBER },
+        isSandbox: { type: BuiltinTypes.BOOLEAN },
+      },
+    }),
+    createOAuthRequest: jest.fn().mockReturnValue(oauthParameters),
+    createFromOauthResponse: jest.fn().mockImplementation((oldConfig: Values,
+      response: OauthAccessTokenResponse) => ({
+      isSandbox: oldConfig.isSandbox,
+      accessToken: response.accessToken,
+      instanceUrl: response.instanceUrl,
+    })),
+  }
+  return baseType
 }
 
 export const mockConfigType = (adapterName: string): ObjectType => {
@@ -330,6 +361,9 @@ export const mockConfigType = (adapterName: string): ObjectType => {
     annotations: {},
   })
 }
+
+export const mockAdapterAuthentication = (credentialsType: ObjectType): AdapterAuthentication =>
+  ({ basic: { credentialsType } })
 
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,

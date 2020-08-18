@@ -16,6 +16,7 @@
 import {
   InstanceElement, ObjectType, Element,
 } from './elements'
+import { AdapterAuthentication } from './authentication_types'
 import { ElemID } from './element_id'
 import { Change } from './change'
 import { DependencyChanger } from './dependency_changer'
@@ -60,7 +61,7 @@ export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
-  credentialsType: ObjectType
+  authenticationMethods: AdapterAuthentication
   configType?: ObjectType
   deployModifiers?: {
     changeValidator?: ChangeValidator

@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, OAuthMethod } from '@salto-io/adapter-api'
 import { adapter } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
+import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType } from '../src/types'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -24,12 +25,23 @@ jest.mock('../src/adapter')
 describe('SalesforceAdapter creator', () => {
   const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
-    adapter.credentialsType,
+    usernamePasswordCredentialsType,
     {
       username: 'myUser',
       password: 'myPassword',
       token: 'myToken',
       sandbox: false,
+      authType: 'basic',
+    }
+  )
+  const oauthCredentials = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    accessTokenCredentialsType,
+    {
+      accessToken: 'accessToken',
+      instanceUrl: 'instanceUrl',
+      isSandbox: false,
+      authType: 'oauth',
     }
   )
   const config = new InstanceElement(
@@ -41,17 +53,58 @@ describe('SalesforceAdapter creator', () => {
       notExist: ['not exist'],
     }
   )
-  describe('when validateCredentials is called', () => {
+  describe('when validateCredentials is called with username/password credentials', () => {
     beforeEach(() => {
       adapter.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', () => {
-      expect(validateCredentials).toHaveBeenCalledWith({
+      expect(validateCredentials).toHaveBeenCalledWith(new UsernamePasswordCredentials({
         username: 'myUser',
         password: 'myPassword',
-        apiToken: 'myToken',
         isSandbox: false,
+        apiToken: 'myToken',
+      }))
+    })
+  })
+
+  describe('when validateCredentials is called with oauth credentials', () => {
+    beforeEach(() => {
+      adapter.validateCredentials(oauthCredentials)
+    })
+
+    it('should call validateCredentials with the correct credentials', () => {
+      expect(validateCredentials).toHaveBeenCalledWith(new OauthAccessTokenCredentials({
+        accessToken: 'accessToken',
+        instanceUrl: 'instanceUrl',
+        isSandbox: false,
+      }))
+    })
+  })
+
+  describe('when creating oauth request', () => {
+    const oauthLoginInput = new InstanceElement(ElemID.CONFIG_NAME, oauthRequestParameters, {
+      consumerKey: 'testConsumerKey',
+      port: 8080,
+    })
+    it('creates oauth request with url using parameters', () => {
+      const request = (
+        adapter.authenticationMethods.oauth as OAuthMethod).createOAuthRequest(oauthLoginInput)
+      expect(request.url.includes(oauthLoginInput.value.consumerKey)).toBeTruthy()
+      expect(request.url.includes(oauthLoginInput.value.port)).toBeTruthy()
+    })
+    it('creates the right object from the response', () => {
+      const creds = (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
+        { isSandbox: false },
+        {
+          accessToken: 'testAccessToken',
+          instanceUrl: 'testInstanceUrl',
+        }
+      )
+      expect(creds).toEqual({
+        isSandbox: false,
+        accessToken: 'testAccessToken',
+        instanceUrl: 'testInstanceUrl',
       })
     })
   })
@@ -60,12 +113,12 @@ describe('SalesforceAdapter creator', () => {
     it('creates the client correctly', () => {
       adapter.operations({ credentials, config })
       expect(SalesforceClient).toHaveBeenCalledWith({
-        credentials: {
+        credentials: new UsernamePasswordCredentials({
           username: 'myUser',
           password: 'myPassword',
-          apiToken: 'myToken',
           isSandbox: false,
-        },
+          apiToken: 'myToken',
+        }),
       })
     })
 

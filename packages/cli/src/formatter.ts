@@ -425,15 +425,22 @@ export const formatCredentialsHeader = (adapterName: string): string => [
   emptyLine(),
 ].join('\n')
 
+export const formatGoToBrowser = (url: string): string => [
+  Prompts.GO_TO_BROWSER(url),
+  emptyLine(),
+].join('\n')
+
 export const formatFetchHeader = (): string => [
   emptyLine(),
   header(Prompts.FETCH_HEADER),
   subHeader(Prompts.FETCH_SUB_HEADER),
 ].join('\n')
+
 export const formatFetchFinish = (): string => [
   emptyLine(),
   Prompts.FETCH_SUCCESS_FINISHED,
 ].join('\n')
+
 export const formatStepStart = (text: string, indentLevel?: number): string => indent(`${chalk.yellow('>>>')} ${text}`, indentLevel ?? 1)
 export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
 export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)

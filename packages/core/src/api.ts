@@ -269,6 +269,7 @@ export const restore = async (
 
 export const diff = async (
   workspace: Workspace,
+  fromEnv: string,
   toEnv: string,
   includeHidden = false,
   useState = false,
@@ -277,11 +278,11 @@ export const diff = async (
 ): Promise<LocalChange[]> => {
   const diffServices = servicesFilters ?? workspace.services()
   const toElements = useState
-    ? await workspace.state().getAll()
-    : await workspace.elements(includeHidden)
-  const fromElements = useState
     ? await workspace.state(toEnv).getAll()
     : await workspace.elements(includeHidden, toEnv)
+  const fromElements = useState
+    ? await workspace.state(fromEnv).getAll()
+    : await workspace.elements(includeHidden, fromEnv)
   const fromServiceElements = filterElementsByServices(fromElements, diffServices)
   const toServiceElements = filterElementsByServices(toElements, diffServices)
   const diffChanges = await createDiffChanges(toServiceElements, fromServiceElements, idFilters)

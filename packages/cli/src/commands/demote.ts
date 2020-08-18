@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { convertToIDSelectors } from '../convertors'
-import { servicesFilter } from '../filters/services'
+import { servicesFilter } from '../filters/service'
 import { ParsedCliInput, CliOutput, SpinnerCreator, CliExitCode, CliCommand, CliTelemetry } from '../types'
 import { createCommandBuilder } from '../command_builder'
 import { environmentFilter } from '../filters/env'

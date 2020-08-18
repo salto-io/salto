@@ -16,7 +16,7 @@
 import { ObjectType } from '@salto-io/adapter-api'
 import { LoginStatus, updateCredentials, loadLocalWorkspace, addAdapter } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { command } from '../../src/commands/services'
+import { command } from '../../src/commands/service'
 import * as mocks from '../mocks'
 
 jest.mock('@salto-io/core', () => ({

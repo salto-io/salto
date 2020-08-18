@@ -128,7 +128,7 @@ const typesRecordsToInstances = (
     const fieldToPrefixName = (fieldName: string, field: Field): string | undefined => {
       const fieldValue = record[fieldName]
       if (!isReferenceField(field)) {
-        return fieldValue.toString()
+        return fieldValue?.toString()
       }
       const referencedTypeNames = getReferenceTo(field)
       return referencedTypeNames.map(typeName => {

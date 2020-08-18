@@ -17,10 +17,11 @@ import { EOL } from 'os'
 import { replaceContents, exists, readZipFile, rm, rename, generateZipString } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { state as wsState, serialization } from '@salto-io/workspace'
+import { state as wsState, serialization, pathIndex } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
 import { localState, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
+
 
 const { serialize } = serialization
 const { toMD5 } = hash
@@ -143,6 +144,20 @@ describe('local state', () => {
     const state = localState('full')
     const elements = await state.getAll()
     expect(elements).toHaveLength(2)
+  })
+
+  it('should override path index when asked to', async () => {
+    const state = localState('full')
+    state.overridePathIndex([mockElement])
+    expect(await state.getPathIndex()).toEqual(await pathIndex.createPathIndex([mockElement]))
+  })
+
+  it('should update path index when asked to', async () => {
+    const state = localState('full')
+    // This doesn't fully test the update functionality. That should be tested in path index test.
+    // This just tests that we reach the function.
+    state.updatePathIndex([mockElement], [])
+    expect(await state.getPathIndex()).toEqual(await pathIndex.createPathIndex([mockElement]))
   })
 
   it('should throw an error if the state nacl file is not valid', async () => {

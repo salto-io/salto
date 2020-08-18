@@ -82,6 +82,16 @@ const filterElementsByServices = (
   // Variables belong to all of the services
   || e.elemID.adapter === ElemID.VARIABLES_NAMESPACE)
 
+const partitionElementsByServices = (
+  elements: Element[] | readonly Element[],
+  services: ReadonlyArray<string>
+): [Element[], Element[]] => {
+  const isElementIncludedInServices = (element: Element): boolean =>
+    services.includes(element.elemID.adapter)
+    || element.elemID.adapter === ElemID.VARIABLES_NAMESPACE
+  return _.partition<Element>(elements, isElementIncludedInServices)
+}
+
 export const preview = async (
   workspace: Workspace,
   services = workspace.services(),
@@ -189,9 +199,9 @@ export const fetch: FetchFunc = async (
 ) => {
   log.debug('fetch starting..')
   const fetchServices = services ?? workspace.services()
-  const filteredStateElements = filterElementsByServices(await workspace.state().getAll(),
-    fetchServices)
-
+  const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
+    await workspace.state().getAll(), fetchServices
+  )
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
@@ -218,8 +228,9 @@ export const fetch: FetchFunc = async (
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     const state = await workspace.state()
-    await state.override(elements)
-    await state.overridePathIndex(unmergedElements)
+    await state.override(elements.concat(stateElementsNotCoveredByFetch))
+    await state.updatePathIndex(unmergedElements,
+      (await state.existingServices()).filter(key => !fetchServices.includes(key)))
     log.debug(`finish to override state with ${elements.length} elements`)
     return {
       changes,

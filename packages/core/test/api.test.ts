@@ -174,7 +174,7 @@ describe('api.ts', () => {
       new InstanceElement('instance_1', objType, {}),
       new InstanceElement('instance_2', objType, {}),
       new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden', regField: 'regValue' }),
-    ]
+    ] as Element[]
     mockedFetchChanges.mockReturnValue({
       elements: fetchedElements,
       mergeErrors: [],
@@ -184,22 +184,53 @@ describe('api.ts', () => {
     const stateElements = [{ elemID: new ElemID(mockService, 'test') }]
     const ws = mockWorkspace({})
     const mockFlush = ws.flush as jest.Mock
-    const mockedState = { ...mockState(), list: jest.fn().mockResolvedValue(stateElements) }
+    const mockedState = {
+      ...mockState(),
+      list: jest.fn().mockResolvedValue(stateElements),
+      getAll: jest.fn().mockResolvedValue(stateElements),
+    }
     ws.state = jest.fn().mockReturnValue(mockedState)
+    describe('Full fetch', () => {
+      beforeAll(async () => {
+        await api.fetch(ws, undefined, SERVICES)
+      })
 
-    beforeAll(async () => {
-      await api.fetch(ws, undefined, SERVICES)
+      it('should call fetch changes', () => {
+        expect(mockedFetchChanges).toHaveBeenCalled()
+      })
+      it('should override state', () => {
+        expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
+      })
+
+      it('should not call flush', () => {
+        expect(mockFlush).not.toHaveBeenCalled()
+      })
     })
 
-    it('should call fetch changes', () => {
-      expect(mockedFetchChanges).toHaveBeenCalled()
-    })
-    it('should override state', () => {
-      expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
-    })
+    describe('Fetch one service out of two.', () => {
+      beforeAll(async () => {
+        SERVICES.push('salto2')
+        stateElements.push({ elemID: new ElemID('salto2', 'test') })
+        await api.fetch(ws, undefined, [mockService])
+      })
 
-    it('should not call flush', () => {
-      expect(mockFlush).not.toHaveBeenCalled()
+      afterAll(async () => {
+        SERVICES.splice(1, 1)
+        stateElements.splice(1, 1)
+      })
+
+      it('should call fetch changes with first service only', () => {
+        expect(mockedFetchChanges).toHaveBeenCalled()
+      })
+      it('should override state but also include existing elements', () => {
+        const existingElements = [stateElements[1]] as Element[]
+        expect(mockedState.override).toHaveBeenCalledWith(
+          expect.arrayContaining(fetchedElements.concat(existingElements))
+        )
+      })
+      it('should not call flush', () => {
+        expect(mockFlush).not.toHaveBeenCalled()
+      })
     })
   })
 

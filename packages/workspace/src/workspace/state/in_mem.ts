@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Element, ElemID, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { PathIndex, createPathIndex } from '../path_index'
+import { PathIndex, createPathIndex, updatePathIndex } from '../path_index'
 import { State, StateData } from './state'
 
 const { makeArray } = collections.array
@@ -63,6 +63,13 @@ Omit<State, 'flush' | 'clear' | 'rename' | 'getHash'> => {
       Object.keys((await stateData()).servicesUpdateDate),
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
       (await stateData()).pathIndex = createPathIndex(unmergedElements)
+    },
+    updatePathIndex: async (unmergedElements: Element[], servicesNotToChange: string[]):
+      Promise<void> => {
+      const currentStateData = await stateData()
+      currentStateData.pathIndex = updatePathIndex(
+        currentStateData.pathIndex, unmergedElements, servicesNotToChange
+      )
     },
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
   }

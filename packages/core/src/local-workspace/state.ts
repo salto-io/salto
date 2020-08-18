@@ -89,6 +89,11 @@ export const localState = (filePath: string): state.State => {
       await inMemState.overridePathIndex(unmergedElements)
       dirty = true
     },
+    updatePathIndex: async (unmergedElements: Element[], servicesToMaintain: string[]):
+     Promise<void> => {
+      await inMemState.updatePathIndex(unmergedElements, servicesToMaintain)
+      dirty = true
+    },
     rename: async (name: string): Promise<void> => {
       const newFilePath = path.join(path.dirname(currentFilePath), `${name}${ZIPPED_STATE_EXTENSION}`)
       await rename(currentFilePath, newFilePath)

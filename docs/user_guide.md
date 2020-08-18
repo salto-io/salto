@@ -135,17 +135,47 @@ From now on, you can use standard Git commands to record changes, create feature
 
 ## Advanced Concepts
 
-### References
+### Salto Configuration Elements
 
-In some cases, it is useful to reference one element from another. Such references can be introduced by the adapter, or by the user when manually editing NaCl files.
+In it's core, Salto fetches the configuration of business system accounts and builds an hierarchy of configuration elements where each element is represented by a unique `Salto Element ID`.
 
-A reference is done to a `Salto ID`, which conforms with the following schema:
+A `Salto Element ID` conforms with the following schema:
 
 ```
     <adapter>.<type>.attr.<name>[.<key>...]
     <adapter>.<type>.field.<name>[.<key>...]
     <adapter>.<type>.instance.<name>[.<key>...]
 ```
+Few configuration element id examples:
+
+```bash
+# salesforce object 
+salesforce.MyCustomObj__c
+
+# salesforce object's field
+salesforce.MyCustomObj__c.field.MyField__c
+
+# apex class
+salesforce.ApexClass.instance.MyApexClass
+```
+
+When using Salto's vs-code extension, a `Salto Element ID` can be obtained via right click on the element from the editor and choosing 'Copy Salto Reference'.
+
+![copy_salto_reference.png](copy_salto_reference.png)
+
+The Salto CLI supports various commands for moving, copying, comparing and manipulating configuration elements. These type of commands usually accept a `element-id-selectors` input parameter that enables the user to provide a list of salto element id patterns represented by regular expressions.
+
+For example, all custom fields of the salesforce Lead object can by represented by:
+
+```bash
+salesforce.Lead.field.*__c
+```
+
+### References
+
+In some cases, it is useful to reference one element from another. Such references can be introduced by the adapter, or by the user when manually editing NaCl files.
+
+A reference is done to a `Salto Element ID`.
 
 For example, if we want to define that the value of a certain field will reference the value of another field, we could write :
 
@@ -215,7 +245,7 @@ In a typical feature development process, multiple environments are being used. 
 In Salto, `environments` are first-level citizens, which also enable the encapsulation of commonalities and differences between service accounts. Before showing some examples for working with environments, we should first explain some common terms and operations:
 
 - An `environment` is a collection of `services`.
-- A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move <elm-id-selectors> --to common|env`
+- A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move <element-id-selectors> --to common|env`
 - A `fetch` operation can work in `align mode`, when it will not modify common configuration, or in standard mode when it will modify both common and environment-specific configuration. As a rule of thumb, `align mode` should be used when the intent is to make sure that the fetched env is aligned with the common configuration elements. When fetching in `align mode`, any modifications to the common elements will be dropped and it should be followed by a deploy operation. Standard fetch mode is used when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
 Now, let's follow a common scenario of adding two environments to Salto:

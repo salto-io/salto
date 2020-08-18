@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -65,6 +65,7 @@ describe('Custom Object Instances filter', () => {
       Pricebook2Id: 'hijklmn',
       SBQQ__Location__c: 'Quote',
       SBQQ__DisplayOrder__c: 2,
+      ProductCode: null,
     },
     {
       attributes: {
@@ -569,6 +570,7 @@ describe('Custom Object Instances filter', () => {
                 createNamespaceRegexFromString(nameBasedNamespace),
                 'PricebookEntry',
                 'SBQQ__CustomAction__c',
+                'Product2',
               ],
               allowReferenceTo: [
                 refToObjectName,
@@ -625,6 +627,20 @@ describe('Custom Object Instances filter', () => {
             [LABEL]: 'Pricebook2Id field',
             [API_NAME]: 'Pricebook2Id',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
+          },
+        },
+      }
+    )
+
+    const productName = 'Product2'
+    const productObject = createCustomObject(
+      productName,
+      {
+        ProductCode: {
+          type: BuiltinTypes.STRING,
+          annotations: {
+            [LABEL]: 'ProductCode field',
+            [API_NAME]: 'ProductCode',
           },
         },
       }
@@ -690,7 +706,7 @@ describe('Custom Object Instances filter', () => {
 
     beforeEach(async () => {
       elements = [
-        grandparentObject, parentObject, grandsonObject, orphanObject,
+        grandparentObject, parentObject, grandsonObject, orphanObject, productObject,
         pricebookEntryObject, SBQQCustomActionObject, refFromObject, refToObject,
       ]
       await filter.onFetch(elements)
@@ -698,8 +714,8 @@ describe('Custom Object Instances filter', () => {
 
     it('should add instances per configured object', () => {
       // 2 new instances per configured object because of TestCustomRecords's length
-      expect(elements.length).toEqual(24)
-      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(16)
+      expect(elements.length).toEqual(27)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(18)
     })
 
     describe('grandparent object (no master)', () => {
@@ -803,6 +819,27 @@ describe('Custom Object Instances filter', () => {
         const pricebookLookupName = TestCustomRecords[1].Name
         const pricebookEntry = TestCustomRecords[0].Name
         expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${pricebookLookupName}___${pricebookEntry}`)
+      })
+    })
+
+    describe('Product2 object - checking case of non-existing values', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === productObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on name only because value of other field is null', () => {
+        const recordName = TestCustomRecords[0].Name
+        expect(instances[0].value.ProductCode).toBeNull()
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordName}`)
+      })
+
+      it('should base elemID on name only because value of other field is undefined', () => {
+        const recordName = TestCustomRecords[1].Name
+        expect(instances[1].value.ProductCode).toBeUndefined()
+        expect(instances[1].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordName}`)
       })
     })
 

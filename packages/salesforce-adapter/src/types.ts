@@ -47,8 +47,7 @@ export type SaltoIDSettings = {
 }
 
 export type DataManagementConfig = {
-  isNameBasedID: boolean
-  includeObjects?: string[]
+  includeObjects: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings

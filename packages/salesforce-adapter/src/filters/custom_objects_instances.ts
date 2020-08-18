@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, isObjectType, Field, isPrimitiveType } from '@salto-io/adapter-api'
-import { createInvlidIdFieldConfigChange, createEmptyRefIdFieldConfigChange } from '../config_change'
+import { createInvlidIdFieldConfigChange, createUnresolvedRefIdFieldConfigChange } from '../config_change'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
@@ -207,14 +207,12 @@ const getNameRefsValidity = (
     _.mapValues(
       idsToRecords,
       record => {
-        const { idFields } = customObjectFetchSetting[typeName]
-        const refToIdFields = idFields.filter(isReferenceField)
-        return refToIdFields.filter(field => {
-          const val = record[field.name]
-          const referencedTypeNames = getReferenceTo(field)
-          const referencedRecords = referencedTypeNames
+        const referenceIdFields = customObjectFetchSetting[typeName].idFields
+          .filter(isReferenceField)
+        return referenceIdFields.filter(field => {
+          const referencedRecords = getReferenceTo(field)
             .map(refToName => ((recordByIdAndType[refToName] !== undefined)
-              ? recordByIdAndType[refToName][val] : undefined))
+              ? recordByIdAndType[refToName][record[field.name]] : undefined))
             .filter(isDefined)
           return referencedRecords.length === 0
         }).map(field => field.name)
@@ -295,6 +293,13 @@ const getReferencedRecords = async (
   return allReferenceRecords
 }
 
+const logAllInvalidNameRefs = (
+  nameRefsValidity: Record<TypeName, Record<RecordID, string[]>>
+): void =>
+  Object.entries(nameRefsValidity).forEach(([typeName, idToInvalidFields]) =>
+    Object.entries(idToInvalidFields).forEach(([id, invalidFields]) =>
+      log.warn(`Failed to find idFields references from record of type - ${typeName} with id - ${id} for fields - ${invalidFields}`)))
+
 const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
@@ -316,22 +321,21 @@ const getAllInstances = async (
   )
   const mergedRecords = _.merge(baseRecordByTypeAndId, referencedRecordsByTypeAndId)
   const nameRefsValidity = getNameRefsValidity(mergedRecords, customObjectFetchSetting)
+  logAllInvalidNameRefs(nameRefsValidity)
   const validTypesRecords = _.pickBy(
     mergedRecords,
     (_idToRecord, typeName) =>
       Object.values(nameRefsValidity[typeName])
         .every(invalidNameRefs => invalidNameRefs === undefined || _.isEmpty(invalidNameRefs))
   )
-  const configSuggestions = Object.entries(nameRefsValidity).flatMap(
-    ([typeName, idToInvalidFields]) => {
-      const invalidIdsToFields = _.pickBy(
-        idToInvalidFields,
-        invalidFields => !_.isEmpty(invalidFields)
-      )
-      return Object.entries(invalidIdsToFields).map(([id, invalidFields]) =>
-        createEmptyRefIdFieldConfigChange(typeName, id, invalidFields))
-    }
-  )
+  const configSuggestions = Object.entries(nameRefsValidity)
+    .map(([typeName, idToInvalidFields]) => {
+      const typeInvalidFields = [...new Set(Object.values(idToInvalidFields).flat())]
+      if (_.isEmpty(typeInvalidFields)) {
+        return undefined
+      }
+      return createUnresolvedRefIdFieldConfigChange(typeName, typeInvalidFields)
+    }).filter(isDefined)
   return {
     instances: typesRecordsToInstances(validTypesRecords, customObjectFetchSetting),
     configChangeSuggestions: configSuggestions,
@@ -375,7 +379,7 @@ const getCustomObjectsFetchSettings = (
     allowReferencesToRegexes.some(objRegex => objRegex.test(apiName(type)))
   const relevantTypes = types
     .filter(customObject => isBaseType(customObject) || isReferencedType(customObject))
-  const idSettingsOverrides = makeArray(config.saltoIDSettings.overrides)
+  const idSettingsOverrides = makeArray(config.saltoIDSettings?.overrides)
   const getIdSettings = (type: ObjectType): string[] => {
     const typeOverride = idSettingsOverrides
       .find(objectIdSetting => new RegExp(objectIdSetting.objectsRegex).test(apiName(type)))

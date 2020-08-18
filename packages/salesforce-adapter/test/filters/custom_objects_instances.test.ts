@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
+import { ConfigChangeSuggestion } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -80,7 +81,7 @@ describe('Custom Object Instances filter', () => {
       FirstName: 'Firstizen',
       LastName: 'Lastizen',
       TestField: 'testizen',
-      Parent: 'badId',
+      Parent: 'abcdefg',
       Grandparent: 'abcdefg',
       Pricebook2Id: 'abcdefg',
       SBQQ__Location__c: 'Quote',
@@ -176,7 +177,6 @@ describe('Custom Object Instances filter', () => {
           client,
           config: {
             dataManagement: {
-              isNameBasedID: false,
               includeObjects: [
               ],
               excludeObjects: [
@@ -229,7 +229,6 @@ describe('Custom Object Instances filter', () => {
           client,
           config: {
             dataManagement: {
-              isNameBasedID: false,
               includeObjects: [
                 createNamespaceRegexFromString(testNamespace),
                 createNamespaceRegexFromString(refFromNamespace),
@@ -556,8 +555,7 @@ describe('Custom Object Instances filter', () => {
 
       it('should query refTo by ids according to references values', () => {
         // The query should be split according to MAX_IDS_PER_INSTANCES_QUERY
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','badId')`)
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('abcdefg')`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','abcdefg')`)
       })
 
       it('should qeuery all namespaced/included objects not by id', () => {
@@ -579,12 +577,12 @@ describe('Custom Object Instances filter', () => {
           client,
           config: {
             dataManagement: {
-              isNameBasedID: true,
               includeObjects: [
                 createNamespaceRegexFromString(nameBasedNamespace),
                 'PricebookEntry',
                 'SBQQ__CustomAction__c',
                 'Product2',
+                'BadIdFields',
               ],
               allowReferenceTo: [
                 refToObjectName,
@@ -594,6 +592,7 @@ describe('Custom Object Instances filter', () => {
                 overrides: [
                   { objectsRegex: 'PricebookEntry', idFields: ['Pricebook2Id', 'Name'] },
                   { objectsRegex: 'SBQQ__CustomAction__c', idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
+                  { objectsRegex: 'BadIdFields', idFields: ['Bad'] },
                 ],
               },
             },
@@ -725,18 +724,23 @@ describe('Custom Object Instances filter', () => {
       }
     )
 
+    const badIdFieldsName = 'BadIdFields'
+    const badIdFieldsObject = createCustomObject(badIdFieldsName)
+
+    let changeSuggestions: ConfigChangeSuggestion[]
     beforeEach(async () => {
       elements = [
         grandparentObject, parentObject, grandsonObject, orphanObject, productObject,
         pricebookEntryObject, SBQQCustomActionObject, refFromObject, refToObject,
+        badIdFieldsObject,
       ]
-      await filter.onFetch(elements)
+      changeSuggestions = ((await filter.onFetch(elements)) ?? []) as ConfigChangeSuggestion[]
     })
 
     it('should add instances per configured object', () => {
       // 2 new instances per configured object because of TestCustomRecords's length
-      expect(elements.length).toEqual(27)
-      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(18)
+      expect(elements.length).toEqual(26)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(16)
     })
 
     describe('grandparent object (no master)', () => {
@@ -781,10 +785,6 @@ describe('Custom Object Instances filter', () => {
         const grandsonName = TestCustomRecords[0].Name
         expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}___${grandsonName}`)
       })
-
-      it('should base elemID on grandon name only if no record with references parent id', () => {
-        expect(instances[1].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[1].Name}`)
-      })
     })
 
     describe('orphan object (master non-existance)', () => {
@@ -794,9 +794,31 @@ describe('Custom Object Instances filter', () => {
           e => isInstanceElement(e) && e.type === orphanObject
         ) as InstanceElement[]
       })
+      it('should not create instances and suggest to add to include list', () => {
+        expect(instances).toHaveLength(0)
+        const changeSuggestionWithOrphanValue = changeSuggestions
+          .filter(suggestion => suggestion.value === orphanObjectName)
+        expect(changeSuggestionWithOrphanValue).toHaveLength(1)
+        expect(changeSuggestionWithOrphanValue[0].type).toEqual('dataManagement')
+        expect(changeSuggestionWithOrphanValue[0].reason).toEqual(`${orphanObjectName} has Parent (reference) configured as idField. Failed to resolve some of the references.`)
+      })
+    })
 
-      it('should base elemID on record name only', () => {
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+    describe('badIdFields object', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === badIdFieldsObject
+        ) as InstanceElement[]
+      })
+
+      it('should not create instances and suggest to add to include list', () => {
+        expect(instances).toHaveLength(0)
+        const changeSuggestionWithBadFieldsValue = changeSuggestions
+          .filter(suggestion => suggestion.value === badIdFieldsName)
+        expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
+        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
+        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`Bad defined as idFields but do not exist on type ${badIdFieldsName}`)
       })
     })
 

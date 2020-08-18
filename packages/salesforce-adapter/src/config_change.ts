@@ -32,15 +32,14 @@ export const createInvlidIdFieldConfigChange = (
     reason: `${invalidFields} defined as idFields but do not exist on type ${typeName}`,
   })
 
-export const createEmptyRefIdFieldConfigChange = (
+export const createUnresolvedRefIdFieldConfigChange = (
   typeName: string,
-  id: string,
   invalidFields: string[]
 ): ConfigChangeSuggestion =>
   ({
     type: DATA_MANAGEMENT,
     value: typeName,
-    reason: `${invalidFields} defined as idFields but could resolve find reference for id ${id}`,
+    reason: `${typeName} has ${invalidFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from salesforce. '

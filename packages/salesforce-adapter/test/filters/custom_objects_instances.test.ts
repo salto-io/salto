@@ -570,7 +570,7 @@ describe('Custom Object Instances filter', () => {
     })
   })
 
-  describe('When configured with nameBasedID', () => {
+  describe('When configured with default autoDetectParentFields + name', () => {
     beforeEach(() => {
       filter = filterCreator(
         {

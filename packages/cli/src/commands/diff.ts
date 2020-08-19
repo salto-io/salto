@@ -63,7 +63,6 @@ const printDiff = (
   }
   outputLine(EOL, output)
 }
-
 export const command = (
   workspaceDir: string,
   detailedPlan: boolean,
@@ -96,7 +95,6 @@ export const command = (
       throw new errors.UnknownEnvError(toEnv)
     }
     cliTelemetry.start(workspaceTags)
-
     outputLine(EOL, output)
     outputLine(formatStepStart(Prompts.DIFF_CALC_DIFF_START(toEnv, fromEnv)), output)
 
@@ -114,6 +112,7 @@ export const command = (
     outputLine(formatStepCompleted(Prompts.DIFF_CALC_DIFF_FINISH(toEnv, fromEnv)), output)
     outputLine(EOL, output)
     cliTelemetry.success(workspaceTags)
+
     return CliExitCode.Success
   },
 })

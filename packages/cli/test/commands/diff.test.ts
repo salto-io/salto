@@ -204,7 +204,6 @@ describe('diff command', () => {
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
       mockLoadWorkspace.mockResolvedValue(workspace)
-
       result = await command(
         '',
         true,
@@ -240,7 +239,6 @@ describe('diff command', () => {
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
       mockLoadWorkspace.mockResolvedValue(workspace)
-
       result = await command(
         '',
         true,

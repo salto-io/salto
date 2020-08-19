@@ -21,6 +21,7 @@ import {
   LoginStatus,
   updateCredentials,
   loadLocalWorkspace,
+  getAdaptersCredentialsTypes,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 
@@ -72,11 +73,12 @@ const addService = async (
     return CliExitCode.UserInputError
   }
 
-  const adapterCredentialsType = await addAdapter(workspace, serviceName)
-  stdout.write(formatServiceAdded(serviceName))
-
   try {
+    const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
     await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
+
+    await addAdapter(workspace, serviceName)
+    stdout.write(formatServiceAdded(serviceName))
   } catch (e) {
     stderr.write(formatLoginToServiceFailed(serviceName, e.message))
   }

@@ -21,6 +21,12 @@ import * as mocks from '../mocks'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
+  getAdaptersCredentialsTypes: jest.fn().mockImplementation(():
+   Record<string, ObjectType> => ({
+    newAdapter: mocks.mockCredentialsType('newAdapter'),
+    hubspot: mocks.mockCredentialsType('hubspot'),
+    '': mocks.mockCredentialsType(''),
+  })),
   addAdapter: jest.fn().mockImplementation((
     _workspace: Workspace,
     adapterName: string
@@ -174,10 +180,6 @@ describe('services command', () => {
           await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
         })
 
-        it('should print added', async () => {
-          expect(cliOutput.stdout.content).toContain('added to the environment')
-        })
-
         it('should print please enter credentials', async () => {
           expect(cliOutput.stdout.content).toContain('Please enter your Newadapter credentials:')
         })
@@ -189,10 +191,18 @@ describe('services command', () => {
           it('should print login information updated', async () => {
             expect(cliOutput.stdout.content).toContain('Login information successfully updated!')
           })
+
+          it('should print added', async () => {
+            expect(cliOutput.stdout.content).toContain('added to the environment')
+          })
         })
 
         describe('when called with invalid credentials', () => {
           beforeEach(async () => {
+            cliOutput = {
+              stdout: new mocks.MockWriteStream(),
+              stderr: new mocks.MockWriteStream(),
+            };
             (updateCredentials as jest.Mock).mockRejectedValue('Rejected!')
             await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
           })
@@ -207,7 +217,33 @@ describe('services command', () => {
           it('should print try again text', async () => {
             expect(cliOutput.stderr.content).toContain('To try again run: `salto services login newAdapter`')
           })
+
+          it('should not print login information updated', async () => {
+            expect(cliOutput.stdout.content).not.toContain('Login information successfully updated!')
+          })
+
+          it('should not print added', async () => {
+            expect(cliOutput.stdout.content).not.toContain('added to the environment')
+          })
         })
+
+        // describe('No-Login flag', () => {
+        //   it('should add without login', async () => {
+        //     await command(
+        //       '',
+        //       'add',
+        //       cliOutput,
+        //       mockGetCredentialsFromUser,
+        //       'newAdapter',
+        //       undefined,
+        //       true
+        //     ).execute()
+        //     expect(cliOutput.stdout.content).toContain('added to the environment')
+        //     expect(cliOutput.stdout.content).not.toContain(
+        //  'Please enter your Newadapter credentials:')
+        //   })
+        // })
+
         describe('Environment flag', () => {
           const mockAddAdapter = addAdapter as jest.Mock
           beforeEach(async () => {

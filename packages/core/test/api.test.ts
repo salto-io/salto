@@ -204,7 +204,7 @@ describe('api.ts', () => {
       new InstanceElement('instance_1', objType, {}),
       new InstanceElement('instance_2', objType, {}),
       new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden', regField: 'regValue' }),
-    ] as Element[]
+    ]
     mockedFetchChanges.mockReturnValue({
       elements: fetchedElements,
       mergeErrors: [],
@@ -213,11 +213,8 @@ describe('api.ts', () => {
     describe('Full fetch', () => {
       const ws = mockWorkspace({})
       const mockFlush = ws.flush as jest.Mock
-      const stateElements = [{ elemID: new ElemID(mockService, 'test') }]
-      const mockedState = {
-        ...mockState(),
-        getAll: jest.fn().mockResolvedValue(stateElements),
-      }
+      const stateElements = [new InstanceElement('old_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+      const mockedState = mockState(SERVICES, stateElements)
       ws.state = jest.fn().mockReturnValue(mockedState)
 
       beforeAll(async () => {
@@ -240,13 +237,10 @@ describe('api.ts', () => {
       const ws = mockWorkspace({})
       const mockFlush = ws.flush as jest.Mock
       const stateElements = [
-        { elemID: new ElemID(mockService, 'test') },
-        { elemID: new ElemID(emptyMockService, 'test') },
+        new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+        new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
       ]
-      const mockedState = {
-        ...mockState(),
-        getAll: jest.fn().mockResolvedValue(stateElements),
-      }
+      const mockedState = mockState(SERVICES, stateElements)
       ws.state = jest.fn().mockReturnValue(mockedState)
       beforeAll(async () => {
         await api.fetch(ws, undefined, [mockService])
@@ -256,9 +250,9 @@ describe('api.ts', () => {
         expect(mockedFetchChanges).toHaveBeenCalled()
       })
       it('should override state but also include existing elements', () => {
-        const existingElements = [stateElements[1]] as Element[]
+        const existingElements = [stateElements[1]]
         expect(mockedState.override).toHaveBeenCalledWith(
-          expect.arrayContaining(fetchedElements.concat(existingElements))
+          expect.arrayContaining([...fetchedElements, ...existingElements])
         )
       })
       it('should not call flush', () => {

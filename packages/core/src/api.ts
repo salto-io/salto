@@ -75,22 +75,22 @@ export const updateCredentials = async (
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
 
+const shouldElementBeIncluded = (services: ReadonlyArray<string>) =>
+  (element: Element): boolean => (
+    services.includes(element.elemID.adapter)
+    // Variables belong to all of the services
+    || element.elemID.adapter === ElemID.VARIABLES_NAMESPACE
+  )
+
 const filterElementsByServices = (
   elements: Element[] | readonly Element[],
   services: ReadonlyArray<string>
-): Element[] => elements.filter(e => services.includes(e.elemID.adapter)
-  // Variables belong to all of the services
-  || e.elemID.adapter === ElemID.VARIABLES_NAMESPACE)
+): Element[] => elements.filter(shouldElementBeIncluded(services))
 
 const partitionElementsByServices = (
   elements: Element[] | readonly Element[],
   services: ReadonlyArray<string>
-): [Element[], Element[]] => {
-  const isElementIncludedInServices = (element: Element): boolean =>
-    services.includes(element.elemID.adapter)
-    || element.elemID.adapter === ElemID.VARIABLES_NAMESPACE
-  return _.partition<Element>(elements, isElementIncludedInServices)
-}
+): [Element[], Element[]] => _.partition<Element>(elements, shouldElementBeIncluded(services))
 
 export const preview = async (
   workspace: Workspace,

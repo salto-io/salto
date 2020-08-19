@@ -281,27 +281,36 @@ export default class SalesforceClient {
     }
   )
 
-  private static logDecorator = decorators.wrapMethodWith(
-    // eslint-disable-next-line prefer-arrow-callback
-    async function logFailure(
-      this: SalesforceClient,
-      { call, name, args }: decorators.OriginalCall,
-    ): Promise<unknown> {
-      const desc = `client.${name}(${args.map(arg => _.get(arg, 'fullName', arg))
-        .filter(arg => typeof arg === 'string').join(', ')})`
-      try {
-        return await log.time(call, desc)
-      } catch (e) {
-        log.error('failed to run SFDC client call %s: %s', desc, e.message)
-        throw e
+  private static logDecorator = (keys?: string[]): decorators.InstanceMethodDecorator =>
+    decorators.wrapMethodWith(
+      // eslint-disable-next-line prefer-arrow-callback
+      async function logFailure(
+        this: SalesforceClient,
+        { call, name, args }: decorators.OriginalCall,
+      ): Promise<unknown> {
+        const printableArgs = args
+          .map(arg => {
+            const keysValues = (keys ?? [])
+              .map(key => _.get(arg, key))
+              .filter(val => !_.isUndefined(val))
+            return _.isEmpty(keysValues) ? arg : keysValues.join(', ')
+          })
+          .filter(arg => typeof arg === 'string')
+          .join(', ')
+        const desc = `client.${name}(${printableArgs})`
+        try {
+          return await log.time(call, desc)
+        } catch (e) {
+          log.error('failed to run SFDC client call %s: %s', desc, e.message)
+          throw e
+        }
       }
-    }
-  )
+    )
 
   /**
    * Extract metadata object names
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = this.conn.metadata.describe()
@@ -312,7 +321,7 @@ export default class SalesforceClient {
    * Read information about a value type
    * @param type The name of the metadata type for which you want metadata
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
@@ -320,7 +329,7 @@ export default class SalesforceClient {
     return flatValues(describeResult)
   }
 
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator(['type', 'folder', '0.type', '0.folder'])
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
@@ -338,7 +347,7 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async readMetadata(
     type: string,
@@ -360,13 +369,13 @@ export default class SalesforceClient {
   /**
    * Extract sobject names
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return flatValues((await this.conn.describeGlobal()).sobjects)
   }
 
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async describeSObjects(objectNames: string[]):
   Promise<DescribeSObjectResult[]> {
@@ -384,7 +393,7 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested creation
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator(['fullName'])
   @validateSaveResult
   @SalesforceClient.requiresLogin
   public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
@@ -405,7 +414,7 @@ export default class SalesforceClient {
    * @param fullNames The full names of the metadata components
    * @returns The save result of the requested deletion
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @validateDeleteResult
   @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
@@ -424,7 +433,7 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested update
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator(['fullName'])
   @validateSaveResult
   @SalesforceClient.requiresLogin
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
@@ -439,7 +448,7 @@ export default class SalesforceClient {
     return result.result
   }
 
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
     return flatValues(await this.conn.metadata.retrieve(retrieveRequest).complete())
@@ -450,7 +459,7 @@ export default class SalesforceClient {
    * @param zip The package zip
    * @returns The save result of the requested update
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @validateDeployResult
   @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
@@ -462,7 +471,7 @@ export default class SalesforceClient {
    * Queries for all the available Records given a query string
    * @param queryString the string to query with for records
    */
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async *queryAll(queryString: string): AsyncIterable<SalesforceRecord[]> {
     const hadMore = (results: QueryResult<Value>): boolean =>
@@ -480,7 +489,7 @@ export default class SalesforceClient {
     }
   }
 
-  @SalesforceClient.logDecorator
+  @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async bulkLoadOperation(
     type: string,

@@ -50,10 +50,12 @@ export type ChangeError = SaltoElementError & {
 export type ChangeValidator = (changes: ReadonlyArray<Change>) =>
   Promise<ReadonlyArray<ChangeError>>
 
-export type AdapterInstallResult = {
-  success: boolean
-  errors: string[]
-}
+export type AdapterSuccessInstallResult = { success: true; installedVersion: string }
+export type AdapterFailureInstallResult = { success: false; errors: string[] }
+export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureInstallResult
+
+export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
+  result is AdapterSuccessInstallResult => result.success
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

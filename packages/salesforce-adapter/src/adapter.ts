@@ -67,10 +67,7 @@ import hideTypesFilter from './filters/hide_types'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
-import {
-  createListMetadataObjectsConfigChange, createSkippedListConfigChange, getConfigFromConfigChanges,
-  STOP_MANAGING_ITEMS_MSG,
-} from './config_change'
+import { createListMetadataObjectsConfigChange, createSkippedListConfigChange, getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { retrieveMetadataInstances } from './fetch'
@@ -412,15 +409,20 @@ export default class SalesforceAdapter implements AdapterOperations {
     const filtersConfigChanges = (
       (await this.filtersRunner.onFetch(elements)) ?? []
     ) as ConfigChangeSuggestion[]
-
+    const configChangeSuggestions = Array.from(
+      new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])
+    )
     const config = getConfigFromConfigChanges(
-      Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])),
+      configChangeSuggestions,
       this.userConfig,
     )
     if (_.isUndefined(config)) {
       return { elements }
     }
-    return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG } }
+    return {
+      elements,
+      updatedConfig: { config, message: getConfigChangeMessage(configChangeSuggestions) },
+    }
   }
 
   async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {

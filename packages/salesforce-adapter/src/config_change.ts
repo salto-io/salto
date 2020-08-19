@@ -20,7 +20,25 @@ import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, DATA_MANAGEMENT, configType, SalesforceConfig } from './types'
 import * as constants from './constants'
 
+const { isDefined } = values
 const { makeArray } = collections.array
+
+const MESSAGE_INTRO = 'Salto failed to fetch some items from salesforce. '
+const MESSAGE_REASONS_INTRO = 'Due to the following issues: '
+const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
++ 'Salto needs to stop managing these items by applying the following configuration change:'
+
+const formatReason = (reason: string): string =>
+  `    * ${reason}`
+
+export const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]): string => {
+  const reasons = configChanges.map(configChange => configChange.reason).filter(isDefined)
+  if (_.isEmpty(reasons)) {
+    return [MESSAGE_INTRO, '', MESSAGE_SUMMARY].join('\n')
+  }
+
+  return [MESSAGE_INTRO, '', MESSAGE_REASONS_INTRO, ...reasons.map(formatReason), '', MESSAGE_SUMMARY].join('\n')
+}
 
 export const createInvlidIdFieldConfigChange = (
   typeName: string,
@@ -41,10 +59,6 @@ export const createUnresolvedRefIdFieldConfigChange = (
     value: typeName,
     reason: `${typeName} has ${invalidFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
-
-export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from salesforce. '
-  + 'In order to complete the fetch operation, '
-  + 'Salto needs to stop managing these items by applying the following configuration change:'
 
 export const createSkippedListConfigChange = (type: string, instance?: string):
   ConfigChangeSuggestion => {
@@ -112,6 +126,6 @@ export const getConfigFromConfigChanges = (
             .filter(object => !dataManagementObjects.includes(object)),
         }
       ),
-    }, values.isDefined)
+    }, isDefined)
   )
 }

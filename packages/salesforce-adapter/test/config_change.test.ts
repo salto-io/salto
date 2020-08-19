@@ -15,7 +15,7 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { ConfigChangeSuggestion, DATA_MANAGEMENT } from '../src/types'
-import { getConfigFromConfigChanges } from '../src/config_change'
+import { getConfigFromConfigChanges, getConfigChangeMessage } from '../src/config_change'
 
 describe('Config Changes', () => {
   const includedObjectName = 'Object'
@@ -33,6 +33,34 @@ describe('Config Changes', () => {
   it('should return undefined if no suggested changes', () => {
     const suggestedInstance = getConfigFromConfigChanges([], currentConfig)
     expect(suggestedInstance).toBeUndefined()
+  })
+
+  describe('getConfigChangeMessage', () => {
+    const configChangeWithoutReason = {
+      type: DATA_MANAGEMENT,
+      value: 'something',
+    } as ConfigChangeSuggestion
+
+    const configChangeWithReason = {
+      type: DATA_MANAGEMENT,
+      value: 'somethingElse',
+      reason: 'because',
+    } as ConfigChangeSuggestion
+
+    it('should return a message with only into and summary without reasons intro/content if no reasons in config changes', () => {
+      const message = getConfigChangeMessage([configChangeWithoutReason])
+      expect(message).not.toMatch('Due to the following issues:')
+      expect(message).toMatch('Salto failed to fetch some items from salesforce.')
+      expect(message).toMatch('Salto needs to stop managing these items by applying the following configuration change:')
+    })
+
+    it('should return a message with into/summary + reasons content+intro when there are reasons', () => {
+      const message = getConfigChangeMessage([configChangeWithReason])
+      expect(message).toMatch('Due to the following issues:')
+      expect(message).toMatch('   * because')
+      expect(message).toMatch('Salto failed to fetch some items from salesforce.')
+      expect(message).toMatch('Salto needs to stop managing these items by applying the following configuration change:')
+    })
   })
 
   describe('getConfigFromConfigChanges - dataManagement suggestions', () => {

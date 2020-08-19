@@ -30,9 +30,12 @@ describe('Config Changes', () => {
       },
     },
   }
+  const cloneOfCurrentConfig = { ...currentConfig }
+
   it('should return undefined if no suggested changes', () => {
-    const suggestedInstance = getConfigFromConfigChanges([], currentConfig)
+    const suggestedInstance = getConfigFromConfigChanges([], cloneOfCurrentConfig)
     expect(suggestedInstance).toBeUndefined()
+    expect(cloneOfCurrentConfig).toEqual(currentConfig)
   })
 
   describe('getConfigChangeMessage', () => {
@@ -71,7 +74,7 @@ describe('Config Changes', () => {
           type: DATA_MANAGEMENT,
           value: includedObjectName,
         } as ConfigChangeSuggestion
-        newConfig = getConfigFromConfigChanges([suggestToRemoveObject], currentConfig)
+        newConfig = getConfigFromConfigChanges([suggestToRemoveObject], cloneOfCurrentConfig)
       })
 
       it('should create an instance with values same as original config besides excludeObjects', () => {
@@ -83,6 +86,10 @@ describe('Config Changes', () => {
 
       it('should add the object name to excludeObjects', () => {
         expect(newConfig?.value.dataManagement.excludeObjects).toContain(includedObjectName)
+      })
+
+      it('should not change the currentConfig', () => {
+        expect(cloneOfCurrentConfig).toEqual(currentConfig)
       })
     })
 
@@ -109,6 +116,10 @@ describe('Config Changes', () => {
       it('should add the object name to excludeObjects and remove it from allowReferenceTo', () => {
         expect(newConfig?.value.dataManagement.excludeObjects).toContain(refToObjectName)
         expect(newConfig?.value.dataManagement.allowReferenceTo).not.toContain(refToObjectName)
+      })
+
+      it('should not change the currentConfig', () => {
+        expect(cloneOfCurrentConfig).toEqual(currentConfig)
       })
     })
   })

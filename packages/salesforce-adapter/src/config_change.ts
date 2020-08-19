@@ -88,7 +88,7 @@ export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChange
 
 export const getConfigFromConfigChanges = (
   configChanges: ConfigChangeSuggestion[],
-  currentConfig: SalesforceConfig
+  currentConfig: Readonly<SalesforceConfig>,
 ): InstanceElement | undefined => {
   const configChangesByType = _.groupBy(configChanges, 'type')
   const currentMetadataTypesSkippedList = makeArray(currentConfig.metadataTypesSkippedList)
@@ -100,11 +100,24 @@ export const getConfigFromConfigChanges = (
   const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
     .map(e => e.value)
     .filter(e => !currentInstancesRegexSkippedList.includes(e))
-  const dataManagementObjects = makeArray(configChangesByType.dataManagement)
+  const dataObjectsToExclude = makeArray(configChangesByType.dataManagement)
     .map(config => config.value)
-  if ([metadataTypesSkippedList, instancesRegexSkippedList, dataManagementObjects]
+  if ([metadataTypesSkippedList, instancesRegexSkippedList, dataObjectsToExclude]
     .every(_.isEmpty)) {
     return undefined
+  }
+  const dataManagementOverrides = {
+    excludeObjects: makeArray(currentDataManagement?.excludeObjects)
+      .concat(dataObjectsToExclude),
+  }
+  if (Array.isArray(currentDataManagement?.allowReferenceTo)) {
+    Object.assign(
+      dataManagementOverrides,
+      {
+        allowReferenceTo: currentDataManagement?.allowReferenceTo
+          .filter(objectName => !dataObjectsToExclude.includes(objectName)),
+      }
+    )
   }
   return new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -117,15 +130,10 @@ export const getConfigFromConfigChanges = (
       maxConcurrentRetrieveRequests: currentConfig.maxConcurrentRetrieveRequests,
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
       enableHideTypesInNacls: currentConfig.enableHideTypesInNacls,
-      dataManagement: currentDataManagement === undefined ? undefined : Object.assign(
-        currentDataManagement,
-        {
-          excludeObjects: makeArray(currentDataManagement?.excludeObjects)
-            .concat(dataManagementObjects),
-          allowReferenceTo: makeArray(currentDataManagement?.allowReferenceTo)
-            .filter(object => !dataManagementObjects.includes(object)),
-        }
-      ),
+      dataManagement: currentDataManagement === undefined ? undefined : {
+        ...currentDataManagement,
+        ...dataManagementOverrides,
+      },
     }, isDefined)
   )
 }

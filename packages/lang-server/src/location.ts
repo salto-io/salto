@@ -28,8 +28,6 @@ export interface SaltoElemLocation {
 
 const MAX_LOCATION_SEARCH_RESULT = 20
 
-export type MatchType = 'fuzzy' | 'sensitive' | 'insensitive'
-
 export const getLocations = async (
   workspace: EditorWorkspace,
   fullname: string
@@ -40,12 +38,12 @@ export const getLocations = async (
 export const getQueryLocations = async (
   workspace: EditorWorkspace,
   query: string,
-  matchType: MatchType = 'sensitive'
+  sensitive = true,
 ): Promise<SaltoElemLocation[]> => {
-  const lastIDPartContains = (element: Element, sensitive: boolean): boolean => {
+  const lastIDPartContains = (element: Element, isSensitive: boolean): boolean => {
     const fullName = element.elemID.getFullName()
-    const fullNameToMatch = sensitive ? fullName : fullName.toLowerCase()
-    const queryToCheck = sensitive ? query : query.toLowerCase()
+    const fullNameToMatch = isSensitive ? fullName : fullName.toLowerCase()
+    const queryToCheck = isSensitive ? query : query.toLowerCase()
     const firstIndex = fullNameToMatch.indexOf(queryToCheck)
     if (firstIndex < 0) {
       return false // If the query is nowhere to be found - this is not a match
@@ -58,23 +56,36 @@ export const getQueryLocations = async (
     return isPartOfLastNamePart || isPrefix || isSuffix
   }
 
-  const elements = await workspace.elements
-  let matchingNames: string[]
-  if (matchType === 'fuzzy') {
-    const fuse = new Fuse(elements.map(e => e.elemID.getFullName()))
-    matchingNames = fuse.search(query).map(r => r.item)
-  } else {
-    matchingNames = elements
-      .filter(e => lastIDPartContains(e, matchType === 'sensitive'))
-      .map(e => e.elemID.getFullName())
-  }
-  const topMatchingNames = matchingNames
+  const topMatchingNames = (await workspace.elements)
+    .filter(e => lastIDPartContains(e, sensitive))
+    .map(e => e.elemID.getFullName())
     .slice(0, MAX_LOCATION_SEARCH_RESULT)
 
   if (topMatchingNames.length > 0) {
     const locations = await Promise.all(topMatchingNames
       .map(name => getLocations(workspace, name)))
     return _.flatten(locations)
+  }
+  return []
+}
+
+export const getQueryLocationsFuzzy = async (
+  workspace: EditorWorkspace,
+  query: string,
+): Promise<Fuse.FuseResult<SaltoElemLocation>[]> => {
+  const elements = await workspace.elements
+  const fuse = new Fuse(elements.map(e => e.elemID.getFullName()), { includeMatches: true })
+  const fuseSearchResult = fuse.search(query)
+  const topFuzzyResults = fuseSearchResult
+    .slice(0, MAX_LOCATION_SEARCH_RESULT)
+
+  if (topFuzzyResults.length > 0) {
+    const locationsRes = await Promise.all(topFuzzyResults
+      .map(async res => {
+        const locations = await getLocations(workspace, res.item)
+        return locations.map(location => ({ ...res, item: location }))
+      }))
+    return _.flatten(locationsRes)
   }
   return []
 }

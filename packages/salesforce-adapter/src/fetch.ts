@@ -98,7 +98,6 @@ export const retrieveMetadataInstances = async ({
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>
   ): Promise<InstanceElement[]> => {
-    log.info('retrieving %d files', fileProps.length)
     // Because of a salesforce quirk, in order to get folder instances we actually need to use the
     // "child" type with the folder fullName
     const filesToRetrieve = fileProps.map(inst => (

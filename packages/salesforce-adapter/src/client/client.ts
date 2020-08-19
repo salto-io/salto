@@ -292,10 +292,10 @@ export default class SalesforceClient {
           .map(arg => {
             const keysValues = (keys ?? [])
               .map(key => _.get(arg, key))
-              .filter(val => !_.isUndefined(val))
+              .filter(_.isString)
             return _.isEmpty(keysValues) ? arg : keysValues.join(', ')
           })
-          .filter(arg => typeof arg === 'string')
+          .filter(_.isString)
           .join(', ')
         const desc = `client.${name}(${printableArgs})`
         try {
@@ -329,7 +329,7 @@ export default class SalesforceClient {
     return flatValues(describeResult)
   }
 
-  @SalesforceClient.logDecorator(['type', 'folder', '0.type', '0.folder'])
+  @SalesforceClient.logDecorator(['type', '0.type'])
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],

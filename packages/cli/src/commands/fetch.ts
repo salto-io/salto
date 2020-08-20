@@ -159,7 +159,7 @@ export const fetchCommand = async (
   // but since it's fetch flow, we omitted the elements
   // and only print the merge errors
   if (!_.isEmpty(fetchResult.mergeErrors)) {
-    log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
+    log.debug(`fetch had ${fetchResult.mergeErrors.length} merge errors`)
     cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }

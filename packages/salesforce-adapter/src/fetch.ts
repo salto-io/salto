@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD } from './constants'
 import SalesforceClient from './client/client'
@@ -25,6 +26,7 @@ import { apiName, createInstanceElement, MetadataObjectType } from './transforme
 import { fromRetrieveResult, toRetrieveRequest } from './transformers/xml_transformer'
 
 const { isDefined } = lowerDashValues
+const log = logger(module)
 
 const getTypesWithContent = (types: ReadonlyArray<ObjectType>): Set<string> => new Set(
   types
@@ -118,6 +120,7 @@ export const retrieveMetadataInstances = async ({
   const filesToRetrieve = _.flatten(await Promise.all(types.map(listFilesOfType)))
     .filter(notInSkipList)
 
+  log.info('going to retrieve %d files', filesToRetrieve.length)
   const instances = await promises.array.withLimitedConcurrency(
     _.chunk(filesToRetrieve, maxItemsInRetrieveRequest)
       .filter(filesChunk => filesChunk.length > 0)

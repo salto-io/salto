@@ -52,12 +52,12 @@ export const createInvlidIdFieldConfigChange = (
 
 export const createUnresolvedRefIdFieldConfigChange = (
   typeName: string,
-  invalidFields: string[]
+  unresolvedRefIdFields: string[]
 ): ConfigChangeSuggestion =>
   ({
     type: DATA_MANAGEMENT,
     value: typeName,
-    reason: `${typeName} has ${invalidFields} (reference) configured as idField. Failed to resolve some of the references.`,
+    reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
 
 export const createSkippedListConfigChange = (type: string, instance?: string):

@@ -49,7 +49,7 @@ type CustomObjectFetchSetting = {
 }
 
 const nameSeparator = '___'
-const detectsParentsIndicator = '##autoDetectedParentFields##'
+const detectsParentsIndicator = '##detectAllMasterDetailFields##'
 
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
@@ -101,10 +101,60 @@ const getRecords = async (
   )
 }
 
+type recordToInstanceParams = {
+  type: ObjectType
+  record: SalesforceRecord
+  instanceSaltoName: string
+}
+
+const recordToInstance = (
+  { type, record, instanceSaltoName }: recordToInstanceParams
+): InstanceElement => {
+  const getInstancePath = (instanceName: string): string[] => {
+    const typeNamespace = getNamespace(type)
+    if (typeNamespace) {
+      return [SALESFORCE, INSTALLED_PACKAGES_PATH, typeNamespace, OBJECTS_PATH,
+        type.elemID.typeName, RECORDS_PATH, instanceName]
+    }
+    return [SALESFORCE, OBJECTS_PATH, type.elemID.typeName, RECORDS_PATH, instanceName]
+  }
+  // Name compound sub-fields are returned at top level -> move them to the nameField
+  const transformCompoundNameValues = (recordValue: SalesforceRecord): SalesforceRecord => {
+    const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
+    // We assume there's only one Name field
+    const nameFieldName = Object.keys(_.pickBy(type.fields, isNameField))[0]
+    return _.isUndefined(nameFieldName)
+      ? recordValue
+      : {
+        ..._.omit(recordValue, nameSubFields),
+        [nameFieldName]: _.pick(recordValue, nameSubFields),
+        [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
+      }
+  }
+  const { name } = Types.getElemId(
+    instanceSaltoName,
+    true,
+    createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
+  )
+  return new InstanceElement(
+    name,
+    type,
+    transformCompoundNameValues(record),
+    getInstancePath(name),
+  )
+}
+
 const typesRecordsToInstances = (
   recordByIdAndType: RecordsByTypeAndId,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
-): InstanceElement[] => {
+): { instances: InstanceElement[]; configChangeSuggestions: ConfigChangeSuggestion[] } => {
+  const typesToUnresolvedRefFields = {} as Record<TypeName, string[]>
+  const addUnresolvedRefFieldByType = (typeName: string, unresolvedFieldName: string): void => {
+    typesToUnresolvedRefFields[typeName] = [...new Set([
+      ...makeArray(typesToUnresolvedRefFields[typeName]),
+      unresolvedFieldName,
+    ])]
+  }
   const saltoNameByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
   const setSaltoName = (typeName: TypeName, recordId: string, saltoName: string): void => {
     if (saltoNameByIdAndType[typeName] === undefined) {
@@ -119,107 +169,57 @@ const typesRecordsToInstances = (
     typeName: string,
     record: SalesforceRecord,
   ): string => {
-    const fieldToPrefixName = (field: Field): string | undefined => {
+    const fieldToSaltoName = (field: Field): string | undefined => {
       const fieldValue = record[field.name]
+      if (fieldValue === null || fieldValue === undefined) {
+        return undefined
+      }
       if (!isReferenceField(field)) {
-        return fieldValue?.toString()
+        return fieldValue.toString()
       }
       const referencedTypeNames = getReferenceTo(field)
-      return referencedTypeNames.map(name => {
-        const rec = recordByIdAndType[name] !== undefined
-          ? recordByIdAndType[name][fieldValue] : undefined
+      const referencedName = referencedTypeNames.map(referencedTypeName => {
+        const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
         if (rec === undefined) {
-          log.warn(`failed to find record with id ${fieldValue} of type ${name} when looking for parent`)
+          log.debug(`Failed to find record with id ${fieldValue} of type ${referencedTypeName} when looking for reference`)
           return undefined
         }
-        return getRecordSaltoName(name, rec)
+        return getRecordSaltoName(referencedTypeName, rec)
       }).find(isDefined)
+      if (referencedName === undefined) {
+        addUnresolvedRefFieldByType(typeName, field.name)
+      }
+      return referencedName
     }
-
     const saltoName = getSaltoName(typeName, record[CUSTOM_OBJECT_ID_FIELD])
     if (saltoName !== undefined) {
       return saltoName
     }
     const saltoIdFields = customObjectFetchSetting[typeName].idFields
-    const saltoIdsValues = saltoIdFields.map(field => fieldToPrefixName(field)).filter(isDefined)
+    const saltoIdsValues = saltoIdFields.map(field => fieldToSaltoName(field)).filter(isDefined)
     const fullName = saltoIdsValues.join(nameSeparator)
     setSaltoName(typeName, record[CUSTOM_OBJECT_ID_FIELD], fullName)
     return fullName
   }
 
-  const recordToInstance = (
-    typeName: TypeName,
-    record: SalesforceRecord,
-  ): InstanceElement => {
-    const type = customObjectFetchSetting[typeName].objectType
-    const getInstancePath = (instanceName: string): string[] => {
-      const typeNamespace = getNamespace(type)
-      if (typeNamespace) {
-        return [SALESFORCE, INSTALLED_PACKAGES_PATH, typeNamespace, OBJECTS_PATH,
-          type.elemID.typeName, RECORDS_PATH, instanceName]
-      }
-      return [SALESFORCE, OBJECTS_PATH, type.elemID.typeName, RECORDS_PATH, instanceName]
-    }
-    // Name compound sub-fields are returned at top level -> move them to the nameField
-    const transformCompoundNameValues = (recordValue: SalesforceRecord): SalesforceRecord => {
-      const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
-      // We assume there's only one Name field
-      const nameFieldName = Object.keys(_.pickBy(type.fields, isNameField))[0]
-      return _.isUndefined(nameFieldName)
-        ? recordValue
-        : {
-          ..._.omit(recordValue, nameSubFields),
-          [nameFieldName]: _.pick(recordValue, nameSubFields),
-          [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
-        }
-    }
-    const suggestedIDName = getRecordSaltoName(typeName, record)
-    const { name } = Types.getElemId(
-      suggestedIDName,
-      true,
-      createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
-    )
-    return new InstanceElement(
-      name,
-      type,
-      transformCompoundNameValues(record),
-      getInstancePath(name),
-    )
+  const instances = Object.entries(recordByIdAndType).flatMap(([typeName, idToRecord]) =>
+    (Object.values(idToRecord)
+      .map(record => ({
+        type: customObjectFetchSetting[typeName].objectType,
+        record,
+        instanceSaltoName: getRecordSaltoName(typeName, record),
+      }))
+      .filter(recToInstanceParams =>
+        !Object.keys(typesToUnresolvedRefFields).includes(apiName(recToInstanceParams.type)))
+      .map(recordToInstance)))
+  const configChangeSuggestions = Object.entries(typesToUnresolvedRefFields)
+    .map(([typeName, unresolvedRefFields]) =>
+      createUnresolvedRefIdFieldConfigChange(typeName, unresolvedRefFields))
+  return {
+    instances,
+    configChangeSuggestions,
   }
-
-  return Object.entries(recordByIdAndType)
-    .flatMap(([typeName, idsToRecords]) => (
-      Object.values(idsToRecords).map(record => (
-        recordToInstance(
-          typeName,
-          record,
-        )
-      ))
-    ))
 }
-
-const getNameRefsValidity = (
-  recordByIdAndType: RecordsByTypeAndId,
-  customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
-): Record<TypeName, Record<RecordID, string[]>> => Object.fromEntries(
-  Object.entries(recordByIdAndType).map(([typeName, idsToRecords]) => [
-    typeName,
-    _.mapValues(
-      idsToRecords,
-      record => {
-        const referenceIdFields = customObjectFetchSetting[typeName].idFields
-          .filter(isReferenceField)
-        return referenceIdFields.filter(field => {
-          const referencedRecords = getReferenceTo(field)
-            .map(refToName => ((recordByIdAndType[refToName] !== undefined)
-              ? recordByIdAndType[refToName][record[field.name]] : undefined))
-            .filter(isDefined)
-          return referencedRecords.length === 0
-        }).map(field => field.name)
-      }
-    ),
-  ])
-)
 
 const getTargetRecordIds = (
   type: ObjectType,
@@ -293,13 +293,6 @@ const getReferencedRecords = async (
   return allReferenceRecords
 }
 
-const logAllInvalidNameRefs = (
-  nameRefsValidity: Record<TypeName, Record<RecordID, string[]>>
-): void =>
-  Object.entries(nameRefsValidity).forEach(([typeName, idToInvalidFields]) =>
-    Object.entries(idToInvalidFields).forEach(([id, invalidFields]) =>
-      log.warn(`Failed to find idFields references from record of type - ${typeName} with id - ${id} for fields - ${invalidFields}`)))
-
 const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
@@ -319,27 +312,11 @@ const getAllInstances = async (
     customObjectFetchSetting,
     baseRecordByTypeAndId
   )
-  const mergedRecords = _.merge(baseRecordByTypeAndId, referencedRecordsByTypeAndId)
-  const nameRefsValidity = getNameRefsValidity(mergedRecords, customObjectFetchSetting)
-  logAllInvalidNameRefs(nameRefsValidity)
-  const validTypesRecords = _.pickBy(
-    mergedRecords,
-    (_idToRecord, typeName) =>
-      Object.values(nameRefsValidity[typeName])
-        .every(invalidNameRefs => invalidNameRefs === undefined || _.isEmpty(invalidNameRefs))
-  )
-  const configSuggestions = Object.entries(nameRefsValidity)
-    .map(([typeName, idToInvalidFields]) => {
-      const typeInvalidFields = [...new Set(Object.values(idToInvalidFields).flat())]
-      if (_.isEmpty(typeInvalidFields)) {
-        return undefined
-      }
-      return createUnresolvedRefIdFieldConfigChange(typeName, typeInvalidFields)
-    }).filter(isDefined)
-  return {
-    instances: typesRecordsToInstances(validTypesRecords, customObjectFetchSetting),
-    configChangeSuggestions: configSuggestions,
+  const mergedRecords = {
+    ...referencedRecordsByTypeAndId,
+    ...baseRecordByTypeAndId,
   }
+  return typesRecordsToInstances(mergedRecords, customObjectFetchSetting)
 }
 
 const getParentFieldNames = (fields: Field[]): string[] =>
@@ -364,11 +341,10 @@ const getIdFields = (
   return { idFields: idFieldsWithParents.map(fieldName => typeFields[fieldName]) }
 }
 
-
 const getCustomObjectsFetchSettings = (
   types: ObjectType[],
   config: DataManagementConfig,
-): Record<TypeName, CustomObjectFetchSetting> => {
+): CustomObjectFetchSetting[] => {
   const allowReferencesToRegexes = makeArray(config.allowReferenceTo).map(e => new RegExp(e))
   const includeObjectsRegexes = makeArray(config.includeObjects).map(e => new RegExp(e))
   const excludeObjectsRegexes = makeArray(config.excludeObjects).map(e => new RegExp(e))
@@ -384,22 +360,19 @@ const getCustomObjectsFetchSettings = (
     const typeOverride = idSettingsOverrides
       .find(objectIdSetting => new RegExp(objectIdSetting.objectsRegex).test(apiName(type)))
     return typeOverride === undefined
-      ? config.saltoIDSettings.defaultIdFields : typeOverride.idFields
+      ? config.saltoIDSettings?.defaultIdFields : typeOverride.idFields
   }
 
   const typeToFetchSettings = (type: ObjectType): CustomObjectFetchSetting => {
     const fields = getIdFields(type, getIdSettings(type))
-    return ({
+    return {
       objectType: type,
       isBase: isBaseType(type),
       idFields: fields.idFields,
       invalidIdFields: fields.invalidFields,
-    })
+    }
   }
-  return _.mapValues(
-    _.keyBy(relevantTypes, type => apiName(type)),
-    type => typeToFetchSettings(type)
-  )
+  return relevantTypes.map(typeToFetchSettings)
 }
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
@@ -412,22 +385,25 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       customObjects,
       config.dataManagement
     )
-    const validChangesFetchSettings = _.pickBy(
+    const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,
       setting => setting.invalidIdFields === undefined
+    )
+    const validChangesFetchSettings = _.keyBy(
+      validFetchSettings,
+      setting => apiName(setting.objectType),
     )
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
       validChangesFetchSettings,
     )
     elements.push(...instances)
-    const suggestChangesFetchSettings = _.pickBy(
-      customObjectFetchSetting,
-      setting => setting.invalidIdFields !== undefined
-    )
-    const invalidFieldSuggestions = Object.entries(suggestChangesFetchSettings)
-      .map(([typeName, fetchSettings]) =>
-        createInvlidIdFieldConfigChange(typeName, makeArray(fetchSettings.invalidIdFields)))
+    const invalidFieldSuggestions = invalidFetchSettings
+      .map(setting =>
+        createInvlidIdFieldConfigChange(
+          apiName(setting.objectType),
+          makeArray(setting.invalidIdFields),
+        ))
     return [...invalidFieldSuggestions, ...configChangeSuggestions]
   },
 })

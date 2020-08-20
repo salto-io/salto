@@ -38,5 +38,5 @@ export default [
   demoteBuilder,
   diffBuilder,
   copyBuilder,
-  elementBuilder
+  elementBuilder,
 ] as YargsCommandBuilder[]

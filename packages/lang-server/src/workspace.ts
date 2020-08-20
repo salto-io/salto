@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
-import { Element, SaltoError, ElemID, DetailedChange } from '@salto-io/adapter-api'
+import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 
 export class EditorWorkspace {
   private workspace: Workspace
@@ -99,6 +99,7 @@ export class EditorWorkspace {
       const opNaclFiles = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
+      this.wsElements = undefined
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
         await this.workspace.removeNaclFiles(...opDeletes)
@@ -113,7 +114,6 @@ export class EditorWorkspace {
       return this.runAggregatedSetOperation()
     }
     this.runningSetOperation = undefined
-    this.wsElements = undefined
     return undefined
   }
 

@@ -254,7 +254,7 @@ export const filterErrors = (errors: HclParseError[], src: string): HclParseErro
     return errors
   }
 
-  return errors
+  return _.uniqWith(errors, _.isEqual)
     .filter((error, i) => {
       if (i === 0) return true
       if (src.slice(errors[i - 1].subject.start.byte, error.subject.start.byte) === WILDCARD) {

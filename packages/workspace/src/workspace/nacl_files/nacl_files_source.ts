@@ -316,11 +316,8 @@ const buildNaclFilesSource = (
     getErrors: async (): Promise<Errors> => {
       const currentState = await getState()
       return new Errors({
-        parse: _.uniqWith(
-          _.flatten(Object.values(currentState.parsedNaclFiles).map(parsed => parsed.errors)),
-          _.isEqual
-        ),
-        merge: _.uniqWith(currentState.mergeErrors, _.isEqual),
+        parse: _.flatten(Object.values(currentState.parsedNaclFiles).map(parsed => parsed.errors)),
+        merge: currentState.mergeErrors,
         validation: [],
       })
     },

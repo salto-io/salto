@@ -15,102 +15,103 @@
 */
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import {
-  createPathIndex, serializedPathIndex, deserializedPathIndex, PathIndex,
+  createPathIndex, serializedPathIndex, deserializedPathIndex, PathIndex, updatePathIndex,
 } from '../../src/workspace/path_index'
 
 jest.spyOn(PathIndex.prototype, 'push')
-describe('create path index', () => {
-  const nestedType = new ObjectType({
-    elemID: new ElemID('salto', 'nested'),
-    fields: {
-      str: {
-        type: BuiltinTypes.STRING,
-      },
-      num: {
-        type: BuiltinTypes.NUMBER,
-      },
-      list: {
-        type: new ListType(BuiltinTypes.NUMBER),
-      },
+
+const nestedType = new ObjectType({
+  elemID: new ElemID('salto', 'nested'),
+  fields: {
+    str: {
+      type: BuiltinTypes.STRING,
     },
-  })
-  // singlePathObject
-  const singlePathObject = new ObjectType({
-    elemID: new ElemID('salto', 'singlePathObj'),
-    fields: {
-      simple: {
-        type: BuiltinTypes.STRING,
-      },
-      nested: {
-        type: nestedType,
-      },
+    num: {
+      type: BuiltinTypes.NUMBER,
     },
-    annotationTypes: {
-      simple: BuiltinTypes.STRING,
-      nested: nestedType,
+    list: {
+      type: new ListType(BuiltinTypes.NUMBER),
     },
-    annotations: {
-      simple: 'simple',
-      nested: {
-        str: 'Str',
-        num: 7,
-        list: [1, 2, 3],
-      },
+  },
+})
+// singlePathObject
+const singlePathObject = new ObjectType({
+  elemID: new ElemID('salto', 'singlePathObj'),
+  fields: {
+    simple: {
+      type: BuiltinTypes.STRING,
     },
-    path: ['salto', 'obj', 'simple'],
-  })
-  // multiPathObject
-  // singlePathObject
-  const multiPathAnnoObj = new ObjectType({
-    elemID: new ElemID('salto', 'multiPathObj'),
-    annotationTypes: {
-      simple: BuiltinTypes.STRING,
-      nested: nestedType,
+    nested: {
+      type: nestedType,
     },
-    annotations: {
-      simple: 'simple',
-      nested: {
-        str: 'Str',
-        num: 7,
-        list: [1, 2, 3],
-      },
-      notDefined: 'where is my def?!',
-    },
-    path: ['salto', 'obj', 'multi', 'anno'],
-  })
-  // singlePathObject
-  const multiPathFieldsObj = new ObjectType({
-    elemID: new ElemID('salto', 'multiPathObj'),
-    fields: {
-      simple: {
-        type: BuiltinTypes.STRING,
-      },
-      nested: {
-        type: nestedType,
-      },
-    },
-    path: ['salto', 'obj', 'multi', 'fields'],
-  })
-  // singlePathInstance
-  const singlePathInstance = new InstanceElement('singlePathInst', singlePathObject, { simple: 'Simple',
+  },
+  annotationTypes: {
+    simple: BuiltinTypes.STRING,
+    nested: nestedType,
+  },
+  annotations: {
+    simple: 'simple',
     nested: {
       str: 'Str',
       num: 7,
       list: [1, 2, 3],
-    } },
-  ['salto', 'inst', 'simple'],)
-  // multiPathInstance
-  const multiPathInstace1 = new InstanceElement('multiPathInst', singlePathObject, { simple: 'Simple',
+    },
+  },
+  path: ['salto', 'obj', 'simple'],
+})
+// multiPathObject
+// singlePathObject
+const multiPathAnnoObj = new ObjectType({
+  elemID: new ElemID('salto', 'multiPathObj'),
+  annotationTypes: {
+    simple: BuiltinTypes.STRING,
+    nested: nestedType,
+  },
+  annotations: {
+    simple: 'simple',
     nested: {
+      str: 'Str',
+      num: 7,
       list: [1, 2, 3],
-    } },
-  ['salto', 'inst', 'nested', '1'],)
-  const multiPathInstace2 = new InstanceElement('multiPathInst', singlePathObject, { nested: {
+    },
+    notDefined: 'where is my def?!',
+  },
+  path: ['salto', 'obj', 'multi', 'anno'],
+})
+// singlePathObject
+const multiPathFieldsObj = new ObjectType({
+  elemID: new ElemID('salto', 'multiPathObj'),
+  fields: {
+    simple: {
+      type: BuiltinTypes.STRING,
+    },
+    nested: {
+      type: nestedType,
+    },
+  },
+  path: ['salto', 'obj', 'multi', 'fields'],
+})
+// singlePathInstance
+const singlePathInstance = new InstanceElement('singlePathInst', singlePathObject, { simple: 'Simple',
+  nested: {
     str: 'Str',
     num: 7,
+    list: [1, 2, 3],
   } },
-  ['salto', 'inst', 'nested', '2'],)
+['salto', 'inst', 'simple'],)
+// multiPathInstance
+const multiPathInstace1 = new InstanceElement('multiPathInst', singlePathObject, { simple: 'Simple',
+  nested: {
+    list: [1, 2, 3],
+  } },
+['salto', 'inst', 'nested', '1'],)
+const multiPathInstace2 = new InstanceElement('multiPathInst', singlePathObject, { nested: {
+  str: 'Str',
+  num: 7,
+} },
+['salto', 'inst', 'nested', '2'],)
 
+describe('create path index', () => {
   const pathIndex = createPathIndex([
     singlePathObject,
     singlePathInstance,
@@ -219,5 +220,16 @@ describe('create path index', () => {
         ['salto', 'inst', 'nested', '1'],
       ])
     })
+  })
+})
+
+describe('updatePathIndex', () => {
+  const pathIndex = createPathIndex([singlePathObject])
+  it('should add new elements and maintain old ones', () => {
+    const newPathIndex = updatePathIndex(pathIndex, [multiPathAnnoObj], ['salto'])
+    let path = newPathIndex.get(singlePathObject.elemID.getFullName())
+    expect(path).toEqual([singlePathObject.path])
+    path = newPathIndex.get(multiPathAnnoObj.elemID.getFullName())
+    expect(path).toEqual([multiPathAnnoObj.path])
   })
 })

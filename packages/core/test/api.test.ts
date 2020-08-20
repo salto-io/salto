@@ -46,10 +46,12 @@ import { mockFunction } from './common/helpers'
 import { mockState } from './common/state'
 
 const mockService = 'salto'
+const emptyMockService = 'salto2'
 
-const SERVICES = [mockService]
+const SERVICES = [mockService, emptyMockService]
 
 const configID = new ElemID(mockService)
+const emptyConfigID = new ElemID(emptyMockService)
 const mockConfigType = new ObjectType({
   elemID: configID,
   fields: {
@@ -59,7 +61,25 @@ const mockConfigType = new ObjectType({
     sandbox: { type: BuiltinTypes.BOOLEAN },
   },
 })
+
+const mockEmptyConfigType = new ObjectType({
+  elemID: emptyConfigID,
+  fields: {
+    username: { type: BuiltinTypes.STRING },
+    password: { type: BuiltinTypes.STRING },
+    token: { type: BuiltinTypes.STRING },
+    sandbox: { type: BuiltinTypes.BOOLEAN },
+  },
+})
+
 const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
+  username: 'test@test',
+  password: 'test',
+  token: 'test',
+  sandbox: false,
+})
+
+const mockEmptyConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockEmptyConfigType, {
   username: 'test@test',
   password: 'test',
   token: 'test',
@@ -92,7 +112,10 @@ const mockWorkspace = ({
     state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),
     flush: jest.fn(),
-    servicesCredentials: jest.fn().mockResolvedValue({ [mockService]: mockConfigInstance }),
+    servicesCredentials: jest.fn().mockResolvedValue({
+      [mockService]: mockConfigInstance,
+      [emptyMockService]: mockEmptyConfigInstance,
+    }),
     servicesConfig: jest.fn().mockResolvedValue({}),
     getWorkspaceErrors: jest.fn().mockResolvedValue([]),
     addService: jest.fn(),
@@ -149,7 +172,14 @@ describe('api.ts', () => {
     credentialsType: mockConfigType,
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
   }
+
+  const mockEmptyAdapter = {
+    operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
+    credentialsType: mockEmptyConfigType,
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+  }
   adapterCreators[mockService] = mockAdapter
+  adapterCreators[emptyMockService] = mockEmptyAdapter
 
   const typeWithHiddenField = new ObjectType({
     elemID: new ElemID(mockService, 'dummyHidden'),
@@ -180,26 +210,54 @@ describe('api.ts', () => {
       mergeErrors: [],
       configs: [],
     })
+    describe('Full fetch', () => {
+      const ws = mockWorkspace({})
+      const mockFlush = ws.flush as jest.Mock
+      const stateElements = [new InstanceElement('old_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+      const mockedState = mockState(SERVICES, stateElements)
+      ws.state = jest.fn().mockReturnValue(mockedState)
 
-    const stateElements = [{ elemID: new ElemID(mockService, 'test') }]
-    const ws = mockWorkspace({})
-    const mockFlush = ws.flush as jest.Mock
-    const mockedState = { ...mockState(), list: jest.fn().mockResolvedValue(stateElements) }
-    ws.state = jest.fn().mockReturnValue(mockedState)
+      beforeAll(async () => {
+        await api.fetch(ws, undefined, SERVICES)
+      })
 
-    beforeAll(async () => {
-      await api.fetch(ws, undefined, SERVICES)
+      it('should call fetch changes', () => {
+        expect(mockedFetchChanges).toHaveBeenCalled()
+      })
+      it('should override state', () => {
+        expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
+      })
+
+      it('should not call flush', () => {
+        expect(mockFlush).not.toHaveBeenCalled()
+      })
     })
 
-    it('should call fetch changes', () => {
-      expect(mockedFetchChanges).toHaveBeenCalled()
-    })
-    it('should override state', () => {
-      expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
-    })
+    describe('Fetch one service out of two.', () => {
+      const ws = mockWorkspace({})
+      const mockFlush = ws.flush as jest.Mock
+      const stateElements = [
+        new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+        new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
+      ]
+      const mockedState = mockState(SERVICES, stateElements)
+      ws.state = jest.fn().mockReturnValue(mockedState)
+      beforeAll(async () => {
+        await api.fetch(ws, undefined, [mockService])
+      })
 
-    it('should not call flush', () => {
-      expect(mockFlush).not.toHaveBeenCalled()
+      it('should call fetch changes with first service only', () => {
+        expect(mockedFetchChanges).toHaveBeenCalled()
+      })
+      it('should override state but also include existing elements', () => {
+        const existingElements = [stateElements[1]]
+        expect(mockedState.override).toHaveBeenCalledWith(
+          expect.arrayContaining([...fetchedElements, ...existingElements])
+        )
+      })
+      it('should not call flush', () => {
+        expect(mockFlush).not.toHaveBeenCalled()
+      })
     })
   })
 

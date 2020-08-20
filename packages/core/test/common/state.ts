@@ -61,6 +61,7 @@ export const mockState = (
     existingServices: mockFunction<wsState.State['existingServices']>()
       .mockResolvedValue(services),
     overridePathIndex: mockFunction<wsState.State['overridePathIndex']>(),
+    updatePathIndex: mockFunction<wsState.State['updatePathIndex']>(),
     getPathIndex: mockFunction<wsState.State['getPathIndex']>().mockResolvedValue(
       index || new pathIndex.PathIndex()
     ),

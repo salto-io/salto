@@ -85,9 +85,25 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
   return wu(_.entries(pathHints))
 }
 
+export const getElementsPathHints = (unmergedElements: Element[]): Iterable<[string, Path[]]> =>
+  wu(unmergedElements.map(getElementPathHints)).flatten(true)
+
+
 export const createPathIndex = (unmergedElements: Element[]): PathIndex => {
-  const pathHints = wu(unmergedElements.map(getElementPathHints)).flatten(true)
+  const pathHints = getElementsPathHints(unmergedElements)
   const pathIndex = new PathIndex(pathHints)
+  return pathIndex
+}
+
+export const updatePathIndex = (current: PathIndex, unmergedElements: Element[],
+  servicesToMaintain: string[]): PathIndex => {
+  if (servicesToMaintain.length === 0) {
+    return createPathIndex(unmergedElements)
+  }
+  const oldPathHintsToMaintain = wu(current.entries()).filter(([value]) =>
+    servicesToMaintain.includes(ElemID.fromFullName(value).adapter))
+  const pathIndex = new PathIndex(oldPathHintsToMaintain)
+  pathIndex.setAll(getElementsPathHints(unmergedElements))
   return pathIndex
 }
 

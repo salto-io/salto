@@ -31,6 +31,7 @@ import {
   SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
+import convertLists from './filters/convert_lists'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
@@ -67,6 +68,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public constructor({
     client,
     filtersCreators = [
+      convertLists,
       replaceInstanceReferencesFilter,
     ],
     typesToSkip = [
@@ -114,7 +116,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
     }).filter(isInstanceElement)
     const elements = [...getAllTypes(), ...instances]
-    this.runFiltersOnFetch(elements)
+    await this.runFiltersOnFetch(elements)
     const config = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedTypes, failedFilePaths,
       this.userConfig)
     if (_.isUndefined(config)) {

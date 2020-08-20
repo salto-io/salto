@@ -149,8 +149,7 @@ describe('Transformer', () => {
       const { customrecordcustomfields } = result.value
       expect(customrecordcustomfields).toBeDefined()
       const { customrecordcustomfield } = customrecordcustomfields
-      expect(customrecordcustomfield).toHaveLength(1)
-      expect(customrecordcustomfield[0][SCRIPT_ID]).toEqual('custrecord_my_nested_script_id')
+      expect(customrecordcustomfield[SCRIPT_ID]).toEqual('custrecord_my_nested_script_id')
     })
 
     it('should ignore unknown attribute', () => {
@@ -199,14 +198,14 @@ describe('Transformer', () => {
       )
     })
 
-    it('should transform list field that contains a single object', () => {
+    it('should not transform list field that contains a single object as it will be done in a dedicated filter', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LIST_OF_SINGLE_OBJECT)
       expect(result.value.roleaccesses.roleaccess).toEqual(
-        [{
+        {
           accesslevel: '1',
           role: 'BOOKKEEPER',
           searchlevel: '2',
-        }]
+        }
       )
     })
 

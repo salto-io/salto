@@ -113,6 +113,7 @@ export class EditorWorkspace {
       return this.runAggregatedSetOperation()
     }
     this.runningSetOperation = undefined
+    this.wsElements = undefined
     return undefined
   }
 

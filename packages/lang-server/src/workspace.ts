@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
-import { Element, SaltoError, ElemID, DetailedChange } from '@salto-io/adapter-api'
+import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 
 export class EditorWorkspace {
   private workspace: Workspace
@@ -27,13 +27,17 @@ export class EditorWorkspace {
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
+  private wsElements?: Promise<readonly Element[]>
 
   constructor(public baseDir: string, workspace: Workspace) {
     this.workspace = workspace
   }
 
   get elements(): Promise<readonly Element[]> {
-    return this.workspace.elements()
+    if (_.isUndefined(this.wsElements)) {
+      this.wsElements = this.workspace.elements()
+    }
+    return this.wsElements
   }
 
   errors(): Promise<errors.Errors> {
@@ -95,6 +99,7 @@ export class EditorWorkspace {
       const opNaclFiles = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
+      this.wsElements = undefined
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
         await this.workspace.removeNaclFiles(...opDeletes)
@@ -117,14 +122,6 @@ export class EditorWorkspace {
       this.runningSetOperation = this.runAggregatedSetOperation()
     }
     return this.runningSetOperation
-  }
-
-  async updateNaclFiles(changes: DetailedChange[]): Promise<void> {
-    if (this.runningSetOperation === undefined) {
-      this.runningSetOperation = this.workspace.updateNaclFiles(changes)
-      return this.runningSetOperation
-    }
-    throw new Error('Can not update NaCl files during a running set operation')
   }
 
   async getNaclFile(filename: string): Promise<nacl.NaclFile | undefined> {

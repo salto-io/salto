@@ -64,10 +64,4 @@ describe('workspace', () => {
     const removeNaclFilesMock = baseWs.removeNaclFiles as jest.Mock
     expect(removeNaclFilesMock.mock.calls[0][0]).toContain('all.nacl')
   })
-
-  it('should not allow to update Nacl files before all pending operations are done', async () => {
-    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
-    workspace.setNaclFiles({ filename: 'new', buffer: 'new content' })
-    await expect(workspace.updateNaclFiles([])).rejects.toThrow()
-  })
 })

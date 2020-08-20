@@ -254,7 +254,7 @@ export const filterErrors = (errors: HclParseError[], src: string): HclParseErro
     return errors
   }
 
-  return _.uniqWith(errors, _.isEqual)
+  const errorsWithoutWildcards = errors
     .filter((error, i) => {
       if (i === 0) return true
       if (src.slice(errors[i - 1].subject.start.byte, error.subject.start.byte) === WILDCARD) {
@@ -263,6 +263,7 @@ export const filterErrors = (errors: HclParseError[], src: string): HclParseErro
       return true
     })
     .filter(error => !isWildcardToken(error))
+  return _.uniqWith(errorsWithoutWildcards, _.isEqual)
 }
 
 export const generateErrorContext = (src: string, error: HclParseError): HclParseError => {

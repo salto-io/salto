@@ -14,13 +14,11 @@ salesforce {
   maxItemsInRetrieveRequest = 2500
   enableHideTypesInNacls = false
   dataManagement = {
-      isNameBasedID = true
       includeObjects = [
-        "^SBQQ__.*",
         "Product2",
       ]
-      excludeObjects = [
-        "SBQQ__Quote__c",
-      ]
+      saltoIDSettings = {
+        defaultIdFields = ["Id"]
+      }
   }
 }

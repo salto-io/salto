@@ -27,13 +27,17 @@ export class EditorWorkspace {
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
+  private wsElements?: Promise<readonly Element[]>
 
   constructor(public baseDir: string, workspace: Workspace) {
     this.workspace = workspace
   }
 
   get elements(): Promise<readonly Element[]> {
-    return this.workspace.elements()
+    if (_.isUndefined(this.wsElements)) {
+      this.wsElements = this.workspace.elements()
+    }
+    return this.wsElements
   }
 
   errors(): Promise<errors.Errors> {

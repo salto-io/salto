@@ -44,6 +44,13 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'FilterItem', 'field', 'field'), CUSTOM_FIELD],
   [new ElemID(SALESFORCE, 'DashboardComponent', 'field', 'report'), 'Report'],
   [new ElemID(SALESFORCE, 'Report', 'field', 'reportType'), CUSTOM_OBJECT],
+  [new ElemID(SALESFORCE, 'CustomSite', 'field', 'authorizationRequiredPage'), 'ApexPage'],
+  [new ElemID(SALESFORCE, 'CustomSite', 'field', 'bandwidthExceededPage'), 'ApexPage'],
+  [new ElemID(SALESFORCE, 'CustomSite', 'field', 'fileNotFoundPage'), 'ApexPage'],
+  [new ElemID(SALESFORCE, 'CustomSite', 'field', 'genericErrorPage'), 'ApexPage'],
+  [new ElemID(SALESFORCE, 'CustomSite', 'field', 'indexPage'), 'ApexPage'],
+  [new ElemID(SALESFORCE, 'CustomSite', 'field', 'inMaintenancePage'), 'ApexPage'],
+  [new ElemID(SALESFORCE, 'CustomSite', 'field', 'selfRegPage'), 'ApexPage'],
 ]
 
 export const fieldToTypeMapping = new Map(

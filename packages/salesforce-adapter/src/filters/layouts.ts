@@ -27,12 +27,13 @@ import { FilterCreator } from '../filter'
 import {
   addObjectParentReference, generateApiNameToCustomObject, id, allCustomObjectFields,
 } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE } from '../constants'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 
 const { makeArray } = collections.array
 const log = logger(module)
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
+export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
 const MIN_NAME_LENGTH = 4
 
 export const specialLayoutObjects = new Map([
@@ -79,22 +80,33 @@ const fixLayoutPath = (
 }
 
 type LayoutItem = {
-  field: string | ReferenceExpression
+  field?: string | ReferenceExpression
+  customLink?: string | ReferenceExpression
 }
 
 const fixLayoutItemField = (
-  layoutItem: LayoutItem, layoutObj: ObjectType, layoutObjFields: Field[]
+  layoutItem: LayoutItem,
+  layoutObj: ObjectType,
+  layoutObjFields: Field[],
+  weblinkInstances: InstanceElement[],
 ): void => {
   if (!layoutItem) return
   const findField = (fieldName: string, fields: Field[]): Field | undefined =>
     fields.find(field => apiName(field, true) === fieldName)
-  const reference = findField(layoutItem.field as string, layoutObjFields)
+  const findWebLink = (name: string): InstanceElement | undefined =>
+    weblinkInstances.find(weblink => apiName(weblink, true) === name)
+
+  // customLink only exists on layout sections with CustomLinks style
+  const fieldName = layoutItem.customLink !== undefined ? 'customLink' : 'field'
+  const reference = fieldName === 'field'
+    ? findField(layoutItem[fieldName] as string, layoutObjFields)
+    : findWebLink(layoutItem[fieldName] as string)
   if (!reference) {
-    log.debug(`Could not find field ${layoutItem.field} for layout ${layoutObj.elemID.name}`)
+    log.debug(`Could not resolve reference ${layoutItem[fieldName]} for layout ${layoutObj.elemID.name}`)
     return
   }
 
-  layoutItem.field = new ReferenceExpression(
+  layoutItem[fieldName] = new ReferenceExpression(
     reference.elemID
   )
 }
@@ -102,7 +114,8 @@ const fixLayoutItemField = (
 const fixLayoutColumnItems = (
   layout: InstanceElement,
   layoutObj: ObjectType,
-  layoutObjFields: Field[]
+  layoutObjFields: Field[],
+  weblinkInstances: InstanceElement[],
 ): void => {
   const layoutItems = _(makeArray(layout.value.layoutSections))
     .map(layoutSection => makeArray(layoutSection.layoutColumns))
@@ -110,7 +123,7 @@ const fixLayoutColumnItems = (
     .map(layoutColumn => makeArray(layoutColumn.layoutItems))
     .flatten()
   layoutItems.forEach(layoutItem => fixLayoutItemField(
-    layoutItem as LayoutItem, layoutObj, layoutObjFields
+    layoutItem as LayoutItem, layoutObj, layoutObjFields, weblinkInstances
   ))
 }
 
@@ -129,6 +142,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
     fixNames(layouts)
+    const weblinkInstances = [...findInstances(elements, WEBLINK_TYPE_ID)]
 
     const apiNameToCustomObject = generateApiNameToCustomObject(elements)
 
@@ -143,7 +157,7 @@ const filterCreator: FilterCreator = () => ({
 
       addObjectParentReference(layout, layoutObj)
       fixLayoutPath(layout, layoutObj)
-      fixLayoutColumnItems(layout, layoutObj, layoutObjFields)
+      fixLayoutColumnItems(layout, layoutObj, layoutObjFields, weblinkInstances)
     })
   },
 })

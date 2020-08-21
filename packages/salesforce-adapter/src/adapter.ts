@@ -915,7 +915,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   Promise<FetchElements<NamespaceAndInstances[]>> {
     const { result: objs, errors: listErrors } = await this.client.listMetadataObjects({ type })
     const listObjectsConfigChanges = listErrors.map(createListMetadataObjectsConfigChange)
-    if (!objs) {
+    if (_.isEmpty(objs)) {
       return { elements: [], configChanges: listObjectsConfigChanges }
     }
     const getFullName = (obj: FileProperties): string => {

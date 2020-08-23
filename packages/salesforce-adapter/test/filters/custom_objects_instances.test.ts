@@ -588,7 +588,7 @@ describe('Custom Object Instances filter', () => {
                 refToObjectName,
               ],
               saltoIDSettings: {
-                defaultIdFields: ['##detectAllMasterDetailFields##', 'Name'],
+                defaultIdFields: ['##allMasterDetailFields##', 'Name'],
                 overrides: [
                   { objectsRegex: 'PricebookEntry', idFields: ['Pricebook2Id', 'Name'] },
                   { objectsRegex: 'SBQQ__CustomAction__c', idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },

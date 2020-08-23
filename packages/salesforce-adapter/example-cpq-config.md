@@ -30,7 +30,7 @@ dataManagement = {
     "^PricebookEntry$",
   ]
   saltoIDSettings = {
-    defaultIdFields = ["##detectAllMasterDetailFields##", "Name"]
+    defaultIdFields = ["##allMasterDetailFields##", "Name"]
     overrides = [
       {
         objectsRegex = "^SBQQ__CustomAction__c$"

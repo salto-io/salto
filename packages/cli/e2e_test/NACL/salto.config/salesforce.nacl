@@ -13,12 +13,4 @@ salesforce {
   maxConcurrentRetrieveRequests = 3
   maxItemsInRetrieveRequest = 2500
   enableHideTypesInNacls = false
-  dataManagement = {
-      includeObjects = [
-        "Product2",
-      ]
-      saltoIDSettings = {
-        defaultIdFields = ["Id"]
-      }
-  }
 }

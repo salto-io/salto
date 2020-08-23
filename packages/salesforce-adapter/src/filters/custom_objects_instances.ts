@@ -49,7 +49,7 @@ type CustomObjectFetchSetting = {
 }
 
 const nameSeparator = '___'
-const detectsParentsIndicator = '##detectAllMasterDetailFields##'
+const detectsParentsIndicator = '##allMasterDetailFields##'
 
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
@@ -148,12 +148,12 @@ const typesRecordsToInstances = (
   recordByIdAndType: RecordsByTypeAndId,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
 ): { instances: InstanceElement[]; configChangeSuggestions: ConfigChangeSuggestion[] } => {
-  const typesToUnresolvedRefFields = {} as Record<TypeName, string[]>
+  const typesToUnresolvedRefFields = {} as Record<TypeName, Set<string>>
   const addUnresolvedRefFieldByType = (typeName: string, unresolvedFieldName: string): void => {
-    typesToUnresolvedRefFields[typeName] = [...new Set([
-      ...makeArray(typesToUnresolvedRefFields[typeName]),
-      unresolvedFieldName,
-    ])]
+    if (typesToUnresolvedRefFields[typeName] === undefined) {
+      typesToUnresolvedRefFields[typeName] = new Set([unresolvedFieldName])
+    }
+    typesToUnresolvedRefFields[typeName].add(unresolvedFieldName)
   }
   const saltoNameByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
   const setSaltoName = (typeName: TypeName, recordId: string, saltoName: string): void => {
@@ -214,7 +214,7 @@ const typesRecordsToInstances = (
       .map(recordToInstance)))
   const configChangeSuggestions = Object.entries(typesToUnresolvedRefFields)
     .map(([typeName, unresolvedRefFields]) =>
-      createUnresolvedRefIdFieldConfigChange(typeName, unresolvedRefFields))
+      createUnresolvedRefIdFieldConfigChange(typeName, [...unresolvedRefFields]))
   return {
     instances,
     configChangeSuggestions,
@@ -356,7 +356,7 @@ const getCustomObjectsFetchSettings = (
   const relevantTypes = types
     .filter(customObject => isBaseType(customObject) || isReferencedType(customObject))
   const idSettingsOverrides = makeArray(config.saltoIDSettings?.overrides)
-  const getIdSettings = (type: ObjectType): string[] => {
+  const getIdFieldNames = (type: ObjectType): string[] => {
     const typeOverride = idSettingsOverrides
       .find(objectIdSetting => new RegExp(objectIdSetting.objectsRegex).test(apiName(type)))
     return typeOverride === undefined
@@ -364,7 +364,7 @@ const getCustomObjectsFetchSettings = (
   }
 
   const typeToFetchSettings = (type: ObjectType): CustomObjectFetchSetting => {
-    const fields = getIdFields(type, getIdSettings(type))
+    const fields = getIdFields(type, getIdFieldNames(type))
     return {
       objectType: type,
       isBase: isBaseType(type),

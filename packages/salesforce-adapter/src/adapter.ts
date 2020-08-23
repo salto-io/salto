@@ -409,9 +409,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const filtersConfigChanges = (
       (await this.filtersRunner.onFetch(elements)) ?? []
     ) as ConfigChangeSuggestion[]
-    const configChangeSuggestions = Array.from(
-      new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])
-    )
+    const configChangeSuggestions = [...metadataInstancesConfigInstances, ...filtersConfigChanges]
     const config = getConfigFromConfigChanges(
       configChangeSuggestions,
       this.userConfig,

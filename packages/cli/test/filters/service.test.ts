@@ -23,12 +23,12 @@ jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   loadLocalWorkspace: jest.fn().mockImplementation(() => mockLoadWorkspace('name')),
 }))
-describe('services filter', () => {
+describe('service filter', () => {
   let out: MockCliOutput
   let buildFunc: jest.Mock
   let builder: YargsCommandBuilder
 
-  describe('verify services filter', () => {
+  describe('verify service filter', () => {
     beforeEach(async () => {
       buildFunc = jest.fn(() =>
         Promise.resolve({ execute: () => Promise.resolve(CliExitCode.Success) })) as jest.Mock
@@ -154,6 +154,13 @@ describe('services filter', () => {
         it('succeed with add', async () => {
           out = await runCli('service add sales force')
           expect(out.err).toMatch('')
+        })
+
+        describe('nologin flag', () => {
+          it('succeed with add --nologin', async () => {
+            out = await runCli('service add salesforce --nologin')
+            expect(out.err).toMatch('')
+          })
         })
       })
     })

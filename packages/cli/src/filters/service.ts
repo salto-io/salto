@@ -23,6 +23,7 @@ import { EnvironmentArgs } from '../commands/env'
 export interface ServiceCmdArgs {
   command: string
   name?: string
+  nologin?: boolean
 }
 
 export type ServiceCmdParsedCliInput = ParsedCliInput<ServiceCmdArgs>
@@ -48,6 +49,7 @@ export const serviceCmdFilter: ServiceCmdFilter = {
         }).check((args: yargs.Arguments<{
           command?: string
           name?: string
+          nologin?: boolean
         }>): true => {
         if (args.command && nameRequiredCommands.includes(args.command)) {
           if (_.isEmpty(args.name)) {

@@ -331,6 +331,7 @@ Manage your environments' services
 **Options:**
 
 * `--env, -e` : The name of the environment to use
+* `--nologin, -nl` : Do not login to service when adding it (should follow `service add <service-name>`) [boolean] [default: false]
 
 ### **salto env \<command> [\<name>] [\<new-name>]**
 

@@ -60,7 +60,7 @@ jest.mock('@salto-io/core', () => ({
   loadLocalWorkspace: jest.fn(),
 }))
 
-describe('services command', () => {
+describe('service command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
     username: 'test@test',
@@ -215,7 +215,7 @@ describe('services command', () => {
           })
 
           it('should print try again text', async () => {
-            expect(cliOutput.stderr.content).toContain('To try again run: `salto services login newAdapter`')
+            expect(cliOutput.stderr.content).toContain('To try again run: `salto service login newAdapter`')
           })
 
           it('should not print login information updated', async () => {
@@ -227,22 +227,29 @@ describe('services command', () => {
           })
         })
 
-        // describe('No-Login flag', () => {
-        //   it('should add without login', async () => {
-        //     await command(
-        //       '',
-        //       'add',
-        //       cliOutput,
-        //       mockGetCredentialsFromUser,
-        //       'newAdapter',
-        //       undefined,
-        //       true
-        //     ).execute()
-        //     expect(cliOutput.stdout.content).toContain('added to the environment')
-        //     expect(cliOutput.stdout.content).not.toContain(
-        //  'Please enter your Newadapter credentials:')
-        //   })
-        // })
+        describe('nologin flag', () => {
+          beforeEach(async () => {
+            cliOutput = {
+              stdout: new mocks.MockWriteStream(),
+              stderr: new mocks.MockWriteStream(),
+            }
+            await command(
+              '',
+              'add',
+              cliOutput,
+              mockGetCredentialsFromUser,
+              'newAdapter',
+              undefined,
+              true
+            ).execute()
+          })
+          it('should add without login', async () => {
+            expect(cliOutput.stdout.content).toContain('added to the environment')
+            expect(cliOutput.stdout.content).not.toContain(
+              'Please enter your Newadapter credentials:'
+            )
+          })
+        })
 
         describe('Environment flag', () => {
           const mockAddAdapter = addAdapter as jest.Mock

@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import {
-  ElemID, Field, InstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveType,
-  PrimitiveTypes, Value, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
+  ElemID, Field, InstanceElement, isPrimitiveType, ObjectType, PrimitiveType,
+  PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
   ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
-  applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
+  MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
   GetLookupNameFunc,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -40,20 +40,6 @@ const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
 
 const FILE_CABINET_PATH_SEPARATOR = '/'
-
-const castToListRecursively = (
-  type: ObjectType,
-  values: Values,
-): void => {
-  // Cast all lists to list
-  const castLists = (field: Field, value: Value): Value => {
-    if (isListType(field.type) && !_.isArray(value)) {
-      return [value]
-    }
-    return value
-  }
-  applyRecursive(type, values, castLists)
-}
 
 // FileCabinet instance path might start with '.' and we can't have NaCLs with that prefix as we
 // don't load hidden files to the workspace in the core.
@@ -138,7 +124,6 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     type,
     transformFunc: transformPrimitive,
   }) as Values
-  castToListRecursively(type, transformedValues)
   return new InstanceElement(instanceName, type, transformedValues, getInstancePath(instanceName))
 }
 

@@ -422,13 +422,16 @@ def format_type_def(type_name, type_def, top_level_type_name = None):
         field_description_comment = ' /* Original description: {0} */'.format(field_def[DESCRIPTION]) if (DESCRIPTION in field_def and field_def[DESCRIPTION] != '') else ''
         return formatted_field + field_description_comment
 
+    def should_export_type_def(is_inner_type, type_name):
+        return not is_inner_type or type_name in inner_types_to_export
+
     is_inner_type = top_level_type_name != None
     annotations = format_type_annotations()
     field_definitions = []
     for field_def in type_def[FIELDS]:
         field_definitions.append(format_field_def(field_def))
     path = type_path_template.format(type_name = top_level_type_name if is_inner_type else type_name) # all inner_types will be located in the same file as their parent
-    export = 'export ' if not is_inner_type else ''
+    export = 'export ' if should_export_type_def(is_inner_type, type_name) else ''
     return type_template.format(type_name = type_name, export = export, annotations = annotations,
       field_definitions = '\n'.join(field_definitions), path = path)
 
@@ -491,6 +494,9 @@ def generate_file_per_type(type_name_to_types_defs):
         with open(CUSTOM_TYPES_DIR + type_name + '.ts', 'w') as file:
             file.write(type_def_file_content)
 
+inner_types_to_export = {
+    'dataset_dependencies',
+}
 
 should_not_be_required = {
     'publisheddashboard_dashboards_dashboard_centercolumn_customsearch_savedsearch',

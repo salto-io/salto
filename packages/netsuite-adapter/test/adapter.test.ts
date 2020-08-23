@@ -44,13 +44,13 @@ jest.mock('../src/config', () => ({
   getConfigFromConfigChanges: jest.fn(),
 }))
 
-const onFetchMock = jest.fn().mockImplementation(_arg => undefined)
+const onFetchMock = jest.fn().mockImplementation(async _arg => undefined)
 const firstDummyFilter: FilterCreator = () => ({
-  onFetch: onFetchMock(1),
+  onFetch: () => onFetchMock(1),
 })
 
 const secondDummyFilter: FilterCreator = () => ({
-  onFetch: onFetchMock(2),
+  onFetch: () => onFetchMock(2),
 })
 
 describe('Adapter', () => {

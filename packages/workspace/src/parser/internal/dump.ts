@@ -112,7 +112,7 @@ const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
   ]
 }
 
-const dumpValue = (
+export const dumpValue = (
   value: Value, indentationLevel = 0
 ): string[] => {
   if (_.isArray(value)) {

@@ -13,16 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/* eslint-disable @typescript-eslint/camelcase */
 import {
   Element, Field, isInstanceElement, isListType, ObjectType, ElemID, Values, Value,
 } from '@salto-io/adapter-api'
 import { applyRecursive } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { NETSUITE } from '../constants'
 import { FilterCreator } from '../filter'
+import { dataset_dependencies } from '../types/custom_types/dataset'
 
 const fieldsToSort: ElemID[] = [
-  new ElemID(NETSUITE, 'dataset_dependencies', 'field', 'dependency'),
+  dataset_dependencies.fields.dependency.elemID,
 ]
 
 const orderListRecursively = (

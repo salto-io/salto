@@ -26,7 +26,7 @@ export const datasetInnerTypes: ObjectType[] = []
 const datasetElemID = new ElemID(constants.NETSUITE, 'dataset')
 const dataset_dependenciesElemID = new ElemID(constants.NETSUITE, 'dataset_dependencies')
 
-const dataset_dependencies = new ObjectType({
+export const dataset_dependencies = new ObjectType({
   elemID: dataset_dependenciesElemID,
   annotations: {
   },

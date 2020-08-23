@@ -409,8 +409,11 @@ deep = {
       expect(await dumpValues(false, functions)).toEqual('false')
     })
     it('should dump list', async () => {
-      expect(await dumpValues([1, 'asd', true, { complex: 'value' }], functions)).toMatch(
-        /\[\s+1,\s+"asd",\s+true,\s+\{\s+complex = "value"\s+\}\s+]/s
+      expect(await dumpValues(
+        [1, 'asd', true, { complex: 'value' }, new ReferenceExpression(new ElemID('salto', 'ref')), new TestFuncImpl(funcName, ['yes'])],
+        functions
+      )).toMatch(
+        /\[\s+1,\s+"asd",\s+true,\s+\{\s+complex = "value"\s+\},\s+salto.ref,\s+ZOMG\("yes"\),\s+]/s
       )
     })
   })

@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 
-import { dump as hclDump } from './internal/dump'
+import { dump as hclDump, dumpValue } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
 import { Keywords } from './language'
 import {
@@ -173,13 +173,6 @@ const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
   blocks,
 })
 
-type PrimitiveSerializer = (val: Value) => string
-const primitiveSerializers: Record<string, PrimitiveSerializer> = {
-  string: val => `"${val}"`,
-  number: val => `${val}`,
-  boolean: val => (val ? 'true' : 'false'),
-}
-
 export const dumpElements = async (
   elements: Element[], functions: Functions = {}, indentationLevel = 0
 ): Promise<string> =>
@@ -199,28 +192,11 @@ export const dumpAnnotationTypes = (annotationTypes: TypeMap, indentationLevel =
 export const dumpValues = async (
   value: Value, functions: Functions, indentationLevel = 0
 ): Promise<string> => {
-  if (_.isArray(value)) {
-    // We got a Value array, we need to serialize it "manually" because our HCL implementation
-    // accepts only blocks
-    const nestedValues = await Promise.all(value.map(async elem => {
-      const serializedElem = await dumpValues(elem, functions, indentationLevel)
-      if ((_.isPlainObject(elem)) && !(serializedElem[0] === '{')) {
-        // We need to make sure nested complex elements are wrapped in {}
-        return `{\n${serializedElem}\n}`
-      }
-      return serializedElem
-    }))
-    return `[\n${nestedValues.join(',\n  ')}\n]`
+  if (!_.isPlainObject(value)) {
+    // We got a single value (not a values object), we should dump it directly
+    return dumpValue(value, indentationLevel).join('\n')
   }
-  if (!_.isArray(value) && !_.isPlainObject(value)) {
-    // We got a single primitive value, again we need to serialize "manually"
-    const serializer = primitiveSerializers[typeof value]
-    return serializer(value)
-  }
-
-
+  // We got a values object, we can use the regular HCL serializer flow
   const objWithSerializedFunctions = await dumpAttributes(value, functions)
-
-  // We got a values object, we can use the HCL serializer
   return hclDump(await dumpBlock(objWithSerializedFunctions, functions), indentationLevel)
 }

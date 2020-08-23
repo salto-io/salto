@@ -22,13 +22,7 @@ import {
   FunctionExpression,
 } from '../../src/parser/functions'
 
-export class TestFuncImpl {
-  constructor(
-    public readonly funcName: string,
-    public readonly parameters: Value[],
-  ) {
-  }
-}
+export class TestFuncImpl extends FunctionExpression {}
 
 const registerFunction = (
   funcName: string,

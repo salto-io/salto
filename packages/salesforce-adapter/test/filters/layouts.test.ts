@@ -58,6 +58,8 @@ describe('Test layout filter', () => {
               }, {
                 field: 'bar',
               }, {
+                customLink: 'link',
+              }, {
                 field: 'moo',
               }],
             },
@@ -75,7 +77,23 @@ describe('Test layout filter', () => {
         fields: { bar: { type: BuiltinTypes.STRING, annotations: { apiName: 'bar' } } },
       })
 
-      const elements = [testSObj, testLayout, standardFieldObj, customFieldObj]
+      const webLinkObj = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, 'WebLink'),
+        path: [constants.SALESFORCE],
+        fields: {},
+      })
+
+      const webLinkInst = new InstanceElement(
+        'link',
+        webLinkObj,
+        {
+          [constants.INSTANCE_FULL_NAME_FIELD]: `${apiName}.link`,
+        },
+      )
+
+      const elements = [
+        testSObj, testLayout, standardFieldObj, customFieldObj, webLinkObj, webLinkInst,
+      ]
 
       await filter.onFetch(elements)
 
@@ -89,9 +107,11 @@ describe('Test layout filter', () => {
       const { layoutItems } = instance.value.layoutSections.layoutColumns
       const fooField = layoutItems[0].field as ReferenceExpression
       const barField = layoutItems[1].field as ReferenceExpression
-      const mooField = layoutItems[2].field
+      const linkField = layoutItems[2].customLink as ReferenceExpression
+      const mooField = layoutItems[3].field
       expect(fooField.elemId).toEqual(standardFieldObj.fields.foo.elemID)
       expect(barField.elemId).toEqual(customFieldObj.fields.bar.elemID)
+      expect(linkField.elemId).toEqual(webLinkInst.elemID)
       expect(mooField).toEqual('moo')
     }
 

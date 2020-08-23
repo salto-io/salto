@@ -215,7 +215,7 @@ describe('service command', () => {
           })
 
           it('should print try again text', async () => {
-            expect(cliOutput.stderr.content).toContain('To try again run: `salto service login newAdapter`')
+            expect(cliOutput.stderr.content).toContain('To try again run: `salto service add newAdapter`')
           })
 
           it('should not print login information updated', async () => {

@@ -120,7 +120,7 @@ describe('Nacl Files Source', () => {
       const filename = 'mytest.nacl'
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = { 'dummy.elem': elem }
+      const elements = [elem]
       const parsedFiles = [{ filename, elements, errors: [], timestamp: 0 }]
       const naclSource = naclFilesSource(
         mockDirStore, mockCache, mockedStaticFilesSource, parsedFiles

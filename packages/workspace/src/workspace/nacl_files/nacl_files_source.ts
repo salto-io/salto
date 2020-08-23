@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, ElementMap, Value, DetailedChange, isElement,
+  Element, ElemID, Value, DetailedChange, isElement,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -73,7 +73,7 @@ export type NaclFilesSource = ElementsSource & {
 
 export type ParsedNaclFile = {
   filename: string
-  elements: ElementMap
+  elements: Element[]
   errors: ParseError[]
   timestamp: number
   buffer?: string
@@ -101,7 +101,7 @@ const toParsedNaclFile = (
 ): ParsedNaclFile => ({
   timestamp: naclFile.timestamp || Date.now(),
   filename: naclFile.filename,
-  elements: _.keyBy(parseResult.elements, e => e.elemID.getFullName()),
+  elements: parseResult.elements,
   errors: parseResult.errors,
 })
 
@@ -148,14 +148,17 @@ Promise<NaclFilesState> => {
     parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
 
   const elementsIndex: Record<string, string[]> = {}
-  Object.values(allParsed).forEach(naclFile => Object.keys(naclFile.elements)
-    .forEach(key => {
-      elementsIndex[key] = elementsIndex[key] || []
-      elementsIndex[key] = _.uniq([...elementsIndex[key], naclFile.filename])
+  Object.values(allParsed).forEach(naclFile =>
+    naclFile.elements.forEach(element => {
+      const elementFullName = element.elemID.getFullName()
+      elementsIndex[elementFullName] = elementsIndex[elementFullName] || []
+      elementsIndex[elementFullName] = _.uniq(
+        [...elementsIndex[elementFullName], naclFile.filename]
+      )
     }))
 
   const mergeResult = mergeElements(
-    Object.values(allParsed).flatMap(parsed => Object.values(parsed.elements))
+    Object.values(allParsed).flatMap(parsed => parsed.elements)
   )
 
   log.info('workspace has %d elements and %d parsed NaCl files',
@@ -184,7 +187,7 @@ const buildNaclFilesSource = (
     const parsed = {
       timestamp: Date.now(),
       filename,
-      elements: _.keyBy(elements, e => e.elemID.getFullName()),
+      elements,
       errors: [],
     }
     const key = cacheResultKey(parsed.filename, parsed.timestamp)

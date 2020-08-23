@@ -277,12 +277,12 @@ export const diff = async (
   idFilters: RegExp[] = [],
 ): Promise<LocalChange[]> => {
   const diffServices = servicesFilters ?? workspace.services()
-  const toElements = useState
-    ? await workspace.state(toEnv).getAll()
-    : await workspace.elements(includeHidden, toEnv)
   const fromElements = useState
     ? await workspace.state(fromEnv).getAll()
     : await workspace.elements(includeHidden, fromEnv)
+  const toElements = useState
+    ? await workspace.state(toEnv).getAll()
+    : await workspace.elements(includeHidden, toEnv)
   const fromServiceElements = filterElementsByServices(fromElements, diffServices)
   const toServiceElements = filterElementsByServices(toElements, diffServices)
   const diffChanges = await createDiffChanges(toServiceElements, fromServiceElements, idFilters)

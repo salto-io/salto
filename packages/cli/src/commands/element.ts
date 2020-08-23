@@ -154,7 +154,7 @@ export const command = (
       workspaceDir,
       output,
       {
-        force: elementArgs.force,
+        force,
         spinnerCreator,
         sessionEnv,
       }

@@ -101,20 +101,20 @@ const convertParserError = (
   const expectedMsg = expected.length > 1
     ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
     : expected[0]
-  const text = token.value || ''
+  const text = token?.value ?? ''
   const errorLength = text.length
-  const errorCol = token.col ?? 0
-  const errorOffset = token.offset ?? 0
+  const errorCol = token?.col ?? 0
+  const errorOffset = token?.offset ?? 0
   const summary = err.message.includes('\n') ? `Unexpected token: ${
     text === '\n' ? '\\n' : text}` : err.message // TODO: Handle escaping if reocurrs in other ways
   const start = token?.source?.start
-    ?? { line: token.line,
+    ?? { line: token?.line ?? 0,
       col: errorCol,
-      byte: errorOffset } as unknown as SourcePos
+      byte: errorOffset }
   const end = token?.source?.end
-    ?? { line: token.line,
+    ?? { line: token?.line ?? 0,
       col: errorCol + errorLength,
-      byte: errorOffset + errorLength } as unknown as SourcePos
+      byte: errorOffset + errorLength }
 
   return {
     summary,

@@ -26,13 +26,13 @@ const fieldsToSort: ElemID[] = [
   dataset_dependencies.fields.dependency.elemID,
 ]
 
-const orderListRecursively = (
+const castAndOrderListsRecursively = (
   type: ObjectType,
   values: Values,
 ): void => {
   const fieldFullNamesToSort = fieldsToSort.map(e => e.getFullName())
-  // Cast all lists to list
-  const castLists = (field: Field, value: Value): Value => {
+  // Cast all values of list type to list and order lists according to fieldsToSort
+  const castAndOrderLists = (field: Field, value: Value): Value => {
     if (!isListType(field.type)) {
       return value
     }
@@ -44,7 +44,7 @@ const orderListRecursively = (
       ? value.sort()
       : value
   }
-  applyRecursive(type, values, castLists)
+  applyRecursive(type, values, castAndOrderLists)
 }
 
 
@@ -57,7 +57,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .forEach(inst => orderListRecursively(inst.type, inst.value))
+      .forEach(inst => castAndOrderListsRecursively(inst.type, inst.value))
   },
 })
 

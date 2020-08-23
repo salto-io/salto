@@ -234,7 +234,7 @@ describe('workflow filter', () => {
           template: 'unfiled$public/SalesNewCustomerEmail',
         }
 
-        newAlert = await createAndVerify(adapter, client, alertType, value)
+        newAlert = await createAndVerify(adapter, client, alertType, value, fetchResult)
       })
 
       it('should update workflow alert', async () => {
@@ -299,7 +299,7 @@ describe('workflow filter', () => {
           protected: false,
           operation: 'Formula',
         }
-        newInstance = await createAndVerify(adapter, client, fieldUpdateType, value)
+        newInstance = await createAndVerify(adapter, client, fieldUpdateType, value, fetchResult)
       })
 
       it('should update workflow field update', async () => {
@@ -351,7 +351,7 @@ describe('workflow filter', () => {
           subject: 'TestWorkflowOutboundMessage',
         }
 
-        newInstance = await createAndVerify(adapter, client, taskType, value)
+        newInstance = await createAndVerify(adapter, client, taskType, value, fetchResult)
       })
 
 
@@ -423,7 +423,7 @@ describe('workflow filter', () => {
           ],
         }
 
-        newInstance = await createAndVerify(adapter, client, rulesType, value)
+        newInstance = await createAndVerify(adapter, client, rulesType, value, fetchResult)
       })
 
       it('should update workflow rule', async () => {

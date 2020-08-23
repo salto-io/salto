@@ -26,12 +26,13 @@ import {
 import { EventEmitter } from 'events'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { Types } from '../src/transformers/transformer'
+import { Types, createInstanceElement } from '../src/transformers/transformer'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createValueSetEntry } from './utils'
 import { WORKFLOW_TYPE_ID } from '../src/filters/workflow'
 import { createElement, removeElement } from '../e2e_test/utils'
+import { mockTypes, mockDefaultValues } from './mock_elements'
 
 const { makeArray } = collections.array
 
@@ -97,6 +98,7 @@ describe('SalesforceAdapter CRUD', () => {
 
   const deployTypeNames = [
     'AssignmentRules',
+    'ApexClass',
     'UnsupportedType',
   ]
 
@@ -863,6 +865,27 @@ describe('SalesforceAdapter CRUD', () => {
       })
     })
 
+    describe('for a type that uses deploy', () => {
+      let result: DeployResult
+      beforeEach(async () => {
+        const inst = createInstanceElement(mockDefaultValues.ApexClass, mockTypes.ApexClass)
+        result = await adapter.deploy({
+          groupID: inst.elemID.getFullName(),
+          changes: [{ action: 'add', data: { after: inst } }],
+        })
+      })
+
+      it('should succeed', () => {
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+
+      it('should call deploy and not upsert', () => {
+        expect(mockDeploy).toHaveBeenCalled()
+        expect(mockUpsert).not.toHaveBeenCalled()
+      })
+    })
+
     describe('for a workflow instance element', () => {
       const workflowInstance = new InstanceElement(
         mockInstanceName,
@@ -976,6 +999,27 @@ describe('SalesforceAdapter CRUD', () => {
           expect(fullName).toBe('Test__c')
         })
       })
+
+      describe('for a type that uses deploy', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          const inst = createInstanceElement(mockDefaultValues.ApexClass, mockTypes.ApexClass)
+          result = await adapter.deploy({
+            groupID: inst.elemID.getFullName(),
+            changes: [{ action: 'remove', data: { before: inst } }],
+          })
+        })
+
+        it('should succeed', () => {
+          expect(result.errors).toHaveLength(0)
+          expect(result.appliedChanges).toHaveLength(1)
+        })
+
+        it('should call deploy and not delete', () => {
+          expect(mockDeploy).toHaveBeenCalled()
+          expect(mockDelete).not.toHaveBeenCalled()
+        })
+      })
     })
 
     describe('when the request fails', () => {
@@ -1032,19 +1076,9 @@ describe('SalesforceAdapter CRUD', () => {
 
   describe('Update operation', () => {
     describe('for an instance element', () => {
-      const oldElement = new InstanceElement(
-        mockInstanceName,
-        new ObjectType({
-          elemID: mockElemID,
-          fields: {
-            [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
-          },
-          annotationTypes: {},
-          annotations: {
-            [constants.METADATA_TYPE]: 'AssignmentRules',
-          },
-        }),
-        { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName },
+      const oldElement = createInstanceElement(
+        { fullName: mockInstanceName },
+        mockTypes.AssignmentRules,
       )
 
       describe('when the request fails because fullNames are not the same', () => {
@@ -1075,46 +1109,21 @@ describe('SalesforceAdapter CRUD', () => {
       describe('delete metadata objects inside of instances upon update', () => {
         describe('objects names are nested', () => {
           const assignmentRuleFieldName = 'assignmentRule'
-          const mockAssignmentRulesObjectType = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
-              [assignmentRuleFieldName]: {
-                type: new ObjectType({
-                  elemID: mockElemID,
-                  fields: {
-                    [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
-                  },
-                  annotations: {
-                    [constants.METADATA_TYPE]: 'AssignmentRule',
-                  },
-                }),
-              },
-            },
-            annotationTypes: {},
-            annotations: {
-              [constants.METADATA_TYPE]: 'AssignmentRules',
-            },
-          })
-          const oldAssignmentRules = new InstanceElement(
-            mockInstanceName,
-            mockAssignmentRulesObjectType,
-            { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
+          const oldAssignmentRules = createInstanceElement(
+            {
+              [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
               [assignmentRuleFieldName]: [
                 { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
                 { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
-              ] },
-          )
-          const newAssignmentRules = new InstanceElement(
-            mockInstanceName,
-            mockAssignmentRulesObjectType,
-            { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
-              [assignmentRuleFieldName]: [
-                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
-              ] },
+              ],
+            },
+            mockTypes.AssignmentRules,
           )
 
           beforeEach(async () => {
+            const newAssignmentRules = oldAssignmentRules.clone()
+            // Remove one of the rules
+            newAssignmentRules.value[assignmentRuleFieldName].pop()
             await adapter.deploy({
               groupID: oldAssignmentRules.elemID.getFullName(),
               changes: [{
@@ -1998,25 +2007,15 @@ describe('SalesforceAdapter CRUD', () => {
     })
 
     describe('update with deploy', () => {
-      const deployTypeId = new ElemID(constants.SALESFORCE,
-        constants.ASSIGNMENT_RULES_METADATA_TYPE)
-      const deployType = new ObjectType({
-        elemID: deployTypeId,
-        annotations: {
-          [constants.METADATA_TYPE]: 'AssignmentRules',
-        },
-        fields: {
-          dummy: { type: BuiltinTypes.STRING },
-        },
-      })
-
       let before: InstanceElement
       let after: InstanceElement
       beforeEach(() => {
-        before = new InstanceElement(
-          'deploy_inst',
-          deployType.clone(),
-          { dummy: 'before' },
+        before = createInstanceElement(
+          {
+            fullName: 'deploy_inst',
+            dummy: 'before',
+          },
+          mockTypes.AssignmentRules.clone(),
         )
         after = before.clone()
         after.value.dummy = 'after'
@@ -2034,9 +2033,10 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when the deploy call should not be triggered', () => {
-        it('should not update with deploy for unsupported types even if listed', async () => {
-          before.type.annotations[constants.METADATA_TYPE] = 'UnsupportedType'
-          after.type.annotations[constants.METADATA_TYPE] = 'UnsupportedType'
+        it('should not deploy un-deployable metadata types', async () => {
+          // Top level metadata types have a dirname, removing it means we are passing
+          // a metadata type that cannot be deployed
+          delete before.type.annotations.dirName
           await adapter.deploy({
             groupID: before.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before, after } }],

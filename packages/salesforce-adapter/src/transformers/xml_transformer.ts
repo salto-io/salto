@@ -20,15 +20,10 @@ import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import {
-  MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues,
-} from '@salto-io/adapter-utils'
+import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { API_VERSION } from '../client/client'
-import {
-  INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
-  NAMESPACE_SEPARATOR, INSTALLED_PACKAGES_PATH, RECORDS_PATH,
-} from '../constants'
-import { apiName, metadataType, MetadataValues } from './transformer'
+import { INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX, RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR } from '../constants'
+import { apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType } from './transformer'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -42,7 +37,6 @@ export const metadataTypesWithAttributes = [
 const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'
 const METADATA_XML_SUFFIX = '-meta.xml'
-const CONTENT = 'content'
 const UNFILED_PUBLIC_FOLDER = 'unfiled$public'
 
 // ComplexTypes used constants
@@ -52,138 +46,10 @@ const TARGET_CONFIGS = 'targetConfigs'
 const LWC_RESOURCES = 'lwcResources'
 const LWC_RESOURCE = 'lwcResource'
 
-type ZipProps = {
-  folderType?: keyof ZipPropsMap
-  dirName: string
-  fileSuffix: string
-  isMetadataWithContent: boolean
-}
-
-type ZipPropsMap = {
-  ApexClass: ZipProps
-  ApexTrigger: ZipProps
-  ApexPage: ZipProps
-  ApexComponent: ZipProps
-  AssignmentRules: ZipProps
-  InstalledPackage: ZipProps
-  EmailTemplate: ZipProps
-  EmailFolder: ZipProps
-  ReportType: ZipProps
-  Report: ZipProps
-  ReportFolder: ZipProps
-  Dashboard: ZipProps
-  DashboardFolder: ZipProps
-  SharingRules: ZipProps
-  Territory2: ZipProps
-  Territory2Rule: ZipProps
-  Territory2Model: ZipProps
-  Territory2Type: ZipProps
-  StaticResource: ZipProps
-}
-
-const zipPropsMap: ZipPropsMap = {
-  ApexClass: {
-    dirName: 'classes',
-    fileSuffix: '.cls',
-    isMetadataWithContent: true,
-  },
-  ApexTrigger: {
-    dirName: 'triggers',
-    fileSuffix: '.trigger',
-    isMetadataWithContent: true,
-  },
-  ApexPage: {
-    dirName: 'pages',
-    fileSuffix: '.page',
-    isMetadataWithContent: true,
-  },
-  ApexComponent: {
-    dirName: 'components',
-    fileSuffix: '.component',
-    isMetadataWithContent: true,
-  },
-  AssignmentRules: {
-    dirName: 'assignmentRules',
-    fileSuffix: '.assignmentRules',
-    isMetadataWithContent: false,
-  },
-  InstalledPackage: {
-    dirName: 'installedPackages',
-    fileSuffix: '.installedPackage',
-    isMetadataWithContent: false,
-  },
-  EmailTemplate: {
-    dirName: 'email',
-    fileSuffix: '.email',
-    isMetadataWithContent: true,
-  },
-  EmailFolder: {
-    folderType: 'EmailTemplate',
-    dirName: 'email',
-    fileSuffix: METADATA_XML_SUFFIX,
-    isMetadataWithContent: false,
-  },
-  ReportType: {
-    dirName: 'reportTypes',
-    fileSuffix: '.reportType',
-    isMetadataWithContent: false,
-  },
-  Report: {
-    dirName: 'reports',
-    fileSuffix: '.report',
-    isMetadataWithContent: false,
-  },
-  ReportFolder: {
-    folderType: 'Report',
-    dirName: 'reports',
-    fileSuffix: METADATA_XML_SUFFIX,
-    isMetadataWithContent: false,
-  },
-  Dashboard: {
-    dirName: 'dashboards',
-    fileSuffix: '.dashboard',
-    isMetadataWithContent: false,
-  },
-  DashboardFolder: {
-    folderType: 'Dashboard',
-    dirName: 'dashboards',
-    fileSuffix: METADATA_XML_SUFFIX,
-    isMetadataWithContent: false,
-  },
-  SharingRules: {
-    dirName: 'sharingRules',
-    fileSuffix: '.sharingRules',
-    isMetadataWithContent: false,
-  },
-  Territory2: {
-    dirName: 'territory2Models',
-    fileSuffix: '.territory2',
-    isMetadataWithContent: false,
-  },
-  Territory2Rule: {
-    dirName: 'territory2Models',
-    fileSuffix: '.territory2Rule',
-    isMetadataWithContent: false,
-  },
-  Territory2Model: {
-    dirName: 'territory2Models',
-    fileSuffix: '.territory2Model',
-    isMetadataWithContent: false,
-  },
-  Territory2Type: {
-    dirName: 'territory2Types',
-    fileSuffix: '.territory2Type',
-    isMetadataWithContent: false,
-  },
-  StaticResource: {
-    dirName: 'staticresources',
-    fileSuffix: '.resource',
-    isMetadataWithContent: true,
-  },
-}
-
-const hasZipProps = (typeName: string): typeName is keyof ZipPropsMap =>
-  Object.keys(zipPropsMap).includes(typeName)
+export const getManifestTypeName = (type: MetadataObjectType): string => (
+  // Salesforce quirk - folder instances are listed under their content's type in the manifest
+  type.annotations.folderContentType ?? type.annotations.metadataType
+)
 
 export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): RetrieveRequest => ({
   apiVersion: API_VERSION,
@@ -416,56 +282,6 @@ const toMetadataXml = (name: string, values: Values): string =>
     ignoreAttributes: false,
   }).parse({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
-const addDeletionFiles = (zip: JSZip, instanceName: string, type: string): void => {
-  const zipProps = hasZipProps(type) ? zipPropsMap[type] : undefined
-  // describe the instances that are about to be deleted
-  zip.file(`${PACKAGE}/destructiveChanges.xml`,
-    toMetadataXml('Package',
-      { types: { members: instanceName, name: zipProps?.folderType ?? type } }))
-  // Add package "manifest" that specifies the content of the zip that should be deployed
-  zip.file(`${PACKAGE}/package.xml`, toMetadataXml('Package', { version: API_VERSION }))
-}
-
-const addInstanceFiles = (zip: JSZip, instanceName: string, type: string, values: Values): void => {
-  const zipProps = hasZipProps(type) ? zipPropsMap[type] : undefined
-  if (zipProps) {
-    const instanceContentPath = `${PACKAGE}/${zipProps.dirName}/${instanceName}${zipProps.fileSuffix}`
-    if (zipProps.isMetadataWithContent) {
-      // Add instance metadata
-      zip.file(`${instanceContentPath}${METADATA_XML_SUFFIX}`,
-        toMetadataXml(type, _.omit(values, CONTENT)))
-      // Add instance content
-      zip.file(instanceContentPath, values[CONTENT])
-    } else {
-      // Add instance content
-      zip.file(instanceContentPath, toMetadataXml(type, values))
-    }
-  } else { // Complex type
-    const complexType = complexTypesMap[type as keyof ComplexTypesMap]
-    const fieldToFileToContent = complexType.mapContentFields(instanceName, values)
-
-    // Add instance metadata
-    const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
-    zip.file(complexType.getMetadataFilePath(instanceName, values),
-      toMetadataXml(type, complexType.sortMetadataValues?.(metadataValues) ?? metadataValues))
-
-    // Add instance content fields
-    const fileNameToContentMaps = Object.values(fieldToFileToContent)
-    fileNameToContentMaps.forEach(fileNameToContentMap =>
-      Object.entries(fileNameToContentMap)
-        .forEach(([fileName, content]) => zip.file(fileName, content)))
-  }
-  // Add package "manifest" that specifies the content of the zip that should be deployed
-  zip.file(`${PACKAGE}/package.xml`,
-    toMetadataXml('Package', {
-      version: API_VERSION,
-      types: { members: instanceName, name: zipProps?.folderType ?? type },
-    }))
-}
-
-const isSupportedType = (typeName: string): boolean =>
-  hasZipProps(typeName) || isComplexType(typeName)
-
 const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => {
   const allAttributesPaths = new Set<string>()
   const createPathsSetCallback: TransformFunc = ({ value, field, path }) => {
@@ -501,19 +317,80 @@ const getValuesToDeploy = (instance: InstanceElement): Values => {
   return cloneValuesWithAttributePrefixes(instance)
 }
 
-export const toMetadataPackageZip = async (instance: InstanceElement, deletion: boolean):
-  Promise<Buffer | undefined> => {
-  const typeName = metadataType(instance)
-  if (!isSupportedType(typeName)) {
-    log.warn('Deploying instances of type %s is not supported', typeName)
-    return undefined
-  }
-  const zip = new JSZip()
-  if (deletion) {
-    addDeletionFiles(zip, apiName(instance), typeName)
-  } else {
-    addInstanceFiles(zip, apiName(instance), typeName, getValuesToDeploy(instance))
-  }
+const toPackageXml = (manifest: Map<string, string[]>): string => (
+  toMetadataXml('Package', {
+    version: API_VERSION,
+    types: [...manifest.entries()].map(([name, members]) => ({ name, members })),
+  })
+)
 
-  return zip.generateAsync({ type: 'nodebuffer' })
+export type DeployPackage = {
+  add(instance: MetadataInstanceElement): void
+  delete(instance: MetadataInstanceElement): void
+  getZip(): Promise<Buffer>
+}
+
+export const createDeployPackage = (): DeployPackage => {
+  const zip = new JSZip()
+  const addManifest = new collections.map.DefaultMap<string, string[]>(() => [])
+  const deleteManifest = new collections.map.DefaultMap<string, string[]>(() => [])
+  return {
+    add: instance => {
+      const instanceName = apiName(instance)
+      const manifestTypeName = getManifestTypeName(instance.type)
+      addManifest.get(manifestTypeName).push(instanceName)
+      // Add instance file(s) to zip
+      const typeName = metadataType(instance)
+      const values = getValuesToDeploy(instance)
+      if (isComplexType(typeName)) {
+        const complexType = complexTypesMap[typeName]
+        const fieldToFileToContent = complexType.mapContentFields(instanceName, values)
+
+        // Add instance metadata
+        const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
+        zip.file(
+          complexType.getMetadataFilePath(instanceName, values),
+          toMetadataXml(
+            typeName,
+            complexType.sortMetadataValues?.(metadataValues) ?? metadataValues
+          )
+        )
+
+        // Add instance content fields
+        const fileNameToContentMaps = Object.values(fieldToFileToContent)
+        fileNameToContentMaps.forEach(fileNameToContentMap =>
+          Object.entries(fileNameToContentMap)
+            .forEach(([fileName, content]) => zip.file(fileName, content)))
+      } else {
+        const { dirName, suffix, hasMetaFile } = instance.type.annotations
+        const instanceContentPath = [
+          PACKAGE,
+          dirName,
+          `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
+        ].join('/')
+        if (hasMetaFile) {
+          zip.file(
+            `${instanceContentPath}${METADATA_XML_SUFFIX}`,
+            toMetadataXml(typeName, _.omit(values, METADATA_CONTENT_FIELD))
+          )
+          if (values[METADATA_CONTENT_FIELD] !== undefined) {
+            zip.file(instanceContentPath, values[METADATA_CONTENT_FIELD])
+          }
+        } else {
+          zip.file(instanceContentPath, toMetadataXml(typeName, values))
+        }
+      }
+    },
+    delete: instance => {
+      const typeName = getManifestTypeName(instance.type)
+      deleteManifest.get(typeName).push(apiName(instance))
+    },
+    getZip: () => {
+      zip.file(`${PACKAGE}/package.xml`, toPackageXml(addManifest))
+      if (deleteManifest.size !== 0) {
+        zip.file(`${PACKAGE}/destructiveChanges.xml`, toPackageXml(deleteManifest))
+      }
+      return zip.generateAsync({ type: 'nodebuffer' })
+    },
+  }
 }

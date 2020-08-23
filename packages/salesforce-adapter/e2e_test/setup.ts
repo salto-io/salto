@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 import { MetadataInfo } from 'jsforce'
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ObjectType } from '@salto-io/adapter-api'
 import * as constants from '../src/constants'
 import { CustomField, ProfileInfo } from '../src/client/types'
-import { toMetadataPackageZip } from '../src/transformers/xml_transformer'
-import SalesforceClient, { API_VERSION } from '../src/client/client'
+import { createDeployPackage } from '../src/transformers/xml_transformer'
+import { MetadataValues, createInstanceElement } from '../src/transformers/transformer'
+import SalesforceClient from '../src/client/client'
 import { objectExists } from './utils'
-import { allMissingSubTypes } from '../src/transformers/salesforce_types'
+import { mockTypes, mockDefaultValues } from '../test/mock_elements'
 
 
 export const gvsName = 'TestGlobalValueSet'
@@ -28,8 +29,6 @@ export const accountApiName = 'Account'
 export const customObjectWithFieldsName = 'TestFields__c'
 export const customObjectAddFieldsName = 'TestAddFields__c'
 export const summaryFieldName = 'Case.summary__c'
-export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
-export const lwcHtmlResourceContent = '<template>\n    <div>\n        <div>Name: {name}</div>\n        <div>Description: {description}</div>\n        <lightning-badge label={material}></lightning-badge>\n        <lightning-badge label={category}></lightning-badge>\n        <div>Price: {price}</div>\n        <div><img src={pictureUrl}/></div>\n    </div>\n</template>'
 
 const randomString = String(Date.now()).substring(6)
 
@@ -72,76 +71,6 @@ export const removeCustomObjectsWithVariousFields = async (client: SalesforceCli
   }
   await Promise.all([customObjectWithFieldsName, customObjectAddFieldsName]
     .map(o => deleteCustomObject(o)))
-}
-
-export const auraInstanceValues = {
-  [constants.INSTANCE_FULL_NAME_FIELD]: 'TestAuraDefinitionBundle',
-  SVGContent: '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg width="120px" height="120px" viewBox="0 0 120 120" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n\t<g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">\n\t\t<path d="M120,108 C120,114.6 114.6,120 108,120 L12,120 C5.4,120 0,114.6 0,108 L0,12 C0,5.4 5.4,0 12,0 L108,0 C114.6,0 120,5.4 120,12 L120,108 L120,108 Z" id="Shape" fill="#2A739E"/>\n\t\t<path d="M77.7383308,20 L61.1640113,20 L44.7300055,63.2000173 L56.0543288,63.2000173 L40,99.623291 L72.7458388,54.5871812 L60.907727,54.5871812 L77.7383308,20 Z" id="Path-1" fill="#FFFFFF"/>\n\t</g>\n</svg>',
-  apiVersion: 49,
-  controllerContent: '({ myAction : function(component, event, helper) {} })',
-  description: 'Test Lightning Component Bundle',
-  designContent: '<design:component/>',
-  documentationContent: '<aura:documentation>\n\t<aura:description>Documentation</aura:description>\n\t<aura:example name="ExampleName" ref="exampleComponentName" label="Label">\n\t\tEdited Example Description\n\t</aura:example>\n</aura:documentation>',
-  helperContent: '({ helperMethod : function() {} })',
-  markup: '<aura:component >\n\t<p>Hello Lightning!</p>\n</aura:component>',
-  rendererContent: '({})',
-  styleContent: '.THIS{\n}',
-  type: 'Component',
-}
-
-export const lightningComponentBundleInstanceValues = {
-  [constants.INSTANCE_FULL_NAME_FIELD]: 'testLightningComponentBundle',
-  apiVersion: 49,
-  isExposed: true,
-  lwcResources: {
-    lwcResource: [
-      {
-        source: lwcJsResourceContent,
-        filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.js',
-      },
-      {
-        source: lwcHtmlResourceContent,
-        filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.html',
-      },
-    ],
-  },
-  targetConfigs: {
-    targetConfig: [
-      {
-        objects: [
-          {
-            object: 'Contact',
-          },
-        ],
-        targets: 'lightning__RecordPage',
-      },
-      {
-        supportedFormFactors: {
-          supportedFormFactor: [
-            {
-              type: 'Small',
-            },
-          ],
-        },
-        targets: 'lightning__AppPage,lightning__HomePage',
-      },
-    ],
-  },
-  targets: {
-    target: [
-      'lightning__AppPage',
-      'lightning__RecordPage',
-      'lightning__HomePage',
-    ],
-  },
-}
-
-export const staticResourceInstanceValues = {
-  [constants.INSTANCE_FULL_NAME_FIELD]: 'TestStaticResource',
-  cacheControl: 'Private',
-  contentType: 'text/xml',
-  description: 'Test Static Resource Description',
-  content: Buffer.from('<xml/>'),
 }
 
 export const verifyElementsExist = async (client: SalesforceClient): Promise<void> => {
@@ -892,45 +821,6 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     } as MetadataInfo)
   }
 
-  const verifyApexPageAndClassExist = async (): Promise<void> => {
-    await client.deploy(await toMetadataPackageZip(
-      new InstanceElement(
-        'ApexClassForProfile',
-        new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'ApexClass'),
-          annotations: {
-            [constants.METADATA_TYPE]: 'ApexClass',
-          },
-        }),
-        {
-          apiVersion: API_VERSION,
-          content: "public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}",
-          fullName: 'ApexClassForProfile',
-        }
-      ),
-      false,
-    ) as Buffer)
-
-    await client.deploy(await toMetadataPackageZip(
-      new InstanceElement(
-        'ApexPageForProfile',
-        new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'ApexPage'),
-          annotations: {
-            [constants.METADATA_TYPE]: 'ApexPage',
-          },
-        }),
-        {
-          apiVersion: API_VERSION,
-          content: '<apex:page>Created by e2e test for profile test!</apex:page>',
-          fullName: 'ApexPageForProfile',
-          label: 'ApexPageForProfile',
-        }
-      ),
-      false,
-    ) as Buffer)
-  }
-
   const verifyLeadHasConvertSettings = async (): Promise<void> => {
     await client.upsert('LeadConvertSettings', {
       fullName: 'LeadConvertSettings',
@@ -949,56 +839,19 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     } as MetadataInfo)
   }
 
-  const verifyAuraDefinitionBundleExists = async (): Promise<void> => {
-    await client.deploy(await toMetadataPackageZip(
-      new InstanceElement(
-        'TestAuraDefinitionBundle',
-        new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'AuraDefinitionBundle'),
-          annotations: {
-            [constants.METADATA_TYPE]: 'AuraDefinitionBundle',
-          },
-        }),
-        auraInstanceValues
-      ),
-      false,
-    ) as Buffer)
-  }
-
-  const targetConfigsType = allMissingSubTypes.find(sunType => sunType.elemID.isEqual(new ElemID(constants.SALESFORCE, 'TargetConfigs'))) as ObjectType
-  const verifyLightningComponentBundleExists = async (): Promise<void> => {
-    await client.deploy(await toMetadataPackageZip(
-      new InstanceElement(
-        'testLightningComponentBundle',
-        new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'LightningComponentBundle'),
-          fields: {
-            targetConfigs: { type: targetConfigsType },
-          },
-          annotations: {
-            [constants.METADATA_TYPE]: 'LightningComponentBundle',
-          },
-        }),
-        lightningComponentBundleInstanceValues
-      ),
-      false,
-    ) as Buffer)
-  }
-
-  const verifyStaticResourceExists = async (): Promise<void> => {
-    await client.deploy(await toMetadataPackageZip(
-      new InstanceElement(
-        'TestStaticResource',
-        new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'StaticResource'),
-          annotations: {
-            [constants.METADATA_TYPE]: 'StaticResource',
-          },
-        }),
-        staticResourceInstanceValues
-      ),
-      false,
-    ) as Buffer)
+  const verifyDeployableInstancesExist = async (): Promise<void> => {
+    const instances: [MetadataValues, ObjectType][] = [
+      [mockDefaultValues.ApexClass, mockTypes.ApexClass],
+      [mockDefaultValues.ApexPage, mockTypes.ApexPage],
+      [mockDefaultValues.AuraDefinitionBundle, mockTypes.AuraDefinitionBundle],
+      [mockDefaultValues.LightningComponentBundle, mockTypes.LightningComponentBundle],
+      [mockDefaultValues.StaticResource, mockTypes.StaticResource],
+    ]
+    const pkg = createDeployPackage()
+    instances.forEach(([values, type]) => {
+      pkg.add(createInstanceElement(values, type))
+    })
+    await client.deploy(await pkg.getZip())
   }
 
   await Promise.all([
@@ -1009,10 +862,7 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     verifyCustomObjectInnerTypesExist(),
     verifyFlowExists(),
     verifyRolesExist(),
-    verifyApexPageAndClassExist(),
     verifyLeadHasConvertSettings(),
-    verifyAuraDefinitionBundleExists(),
-    verifyLightningComponentBundleExists(),
-    verifyStaticResourceExists(),
+    verifyDeployableInstancesExist(),
   ])
 }

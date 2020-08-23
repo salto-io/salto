@@ -13,281 +13,184 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import jszip from 'jszip'
 import {
-  BuiltinTypes, ElemID, InstanceElement, ObjectType, ListType, isStaticFile, StaticFile,
+  isStaticFile, StaticFile,
 } from '@salto-io/adapter-api'
+import { promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import JSZip from 'jszip'
+import xmlParser from 'fast-xml-parser'
 import { RetrieveResult, FileProperties } from 'jsforce'
-import { fromRetrieveResult, toMetadataPackageZip } from '../../src/transformers/xml_transformer'
-import {
-  INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE,
-} from '../../src/constants'
+import { fromRetrieveResult, createDeployPackage, DeployPackage } from '../../src/transformers/xml_transformer'
+import { MetadataValues, createInstanceElement } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
-import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
-import { MetadataValues } from '../../src/transformers/transformer'
+import { mockTypes, mockDefaultValues } from '../mock_elements'
 
 
 describe('XML Transformer', () => {
-  const ASSIGNMENT_RULES_TYPE_ID = new ElemID(SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE)
-  const PACKAGE = 'unpackaged'
-
-  describe('toMetadataPackageZip in creation flow', () => {
-    describe('assignment rule', () => {
-      const assignmentRulesType = new ObjectType({
-        elemID: ASSIGNMENT_RULES_TYPE_ID,
-        annotations: {
-          [METADATA_TYPE]: 'AssignmentRules',
-        },
-        fields: {
-          str: { type: BuiltinTypes.STRING },
-          lst: { type: new ListType(BuiltinTypes.NUMBER) },
-          bool: { type: BuiltinTypes.BOOLEAN },
-        },
-      })
-      const assignmentRuleInstance = new InstanceElement(
-        'instance',
-        assignmentRulesType,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'Instance',
-          str: 'val',
-          lst: [1, 2],
-          bool: true,
-        },
+  describe('createDeployPackage', () => {
+    const getZipFiles = async (pkg: DeployPackage): Promise<Record<string, string>> => {
+      const zip = await JSZip.loadAsync(await pkg.getZip())
+      return promises.object.mapValuesAsync(
+        zip.files,
+        zipFile => zipFile.async('string')
       )
+    }
 
-      const zip = toMetadataPackageZip(assignmentRuleInstance, false)
-        .then(buf => jszip.loadAsync(buf as Buffer))
+    const packageName = 'unpackaged'
+    const addManifestPath = `${packageName}/package.xml`
+    const deleteManifestPath = `${packageName}/destructiveChanges.xml`
+    let pkg: DeployPackage
+    let zipFiles: Record<string, string>
 
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <version>47.0</version>
-           <types><members>Instance</members><name>AssignmentRules</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
+    beforeEach(() => {
+      pkg = createDeployPackage()
+    })
+
+    describe('empty package', () => {
+      beforeEach(async () => {
+        zipFiles = await getZipFiles(pkg)
       })
-
-      it('should contain instance xml', async () => {
-        const instanceXml = (await zip).files[`${PACKAGE}/assignmentRules/Instance.assignmentRules`]
-        expect(instanceXml).toBeDefined()
-        expect(await instanceXml.async('text')).toMatch(
-          `<AssignmentRules>
-           <str>val</str>
-           <lst>1</lst>
-           <lst>2</lst>
-           <bool>true</bool>
-         </AssignmentRules>`.replace(/>\s+</gs, '><')
+      it('should have empty manifest', () => {
+        expect(zipFiles).toHaveProperty(
+          [addManifestPath],
+          `<Package><version>${API_VERSION}</version></Package>`
         )
       })
     })
 
-    describe('apex class', () => {
-      const apexTypeElemID = new ElemID(SALESFORCE, 'ApexClass')
-      const apiVersion = 'apiVersion'
-      const apexClassType = new ObjectType({
-        elemID: apexTypeElemID,
-        annotations: {
-          [METADATA_TYPE]: 'ApexClass',
-        },
-        fields: {
-          [apiVersion]: { type: BuiltinTypes.NUMBER },
-          content: { type: BuiltinTypes.STRING },
-        },
+    describe('with simple types', () => {
+      const profileValues = { fullName: 'TestProfile', num: 12, str: 'str', b: true }
+      beforeEach(async () => {
+        pkg.add(createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout))
+        pkg.add(createInstanceElement({ fullName: 'TestLayout2' }, mockTypes.Layout))
+        pkg.add(createInstanceElement(profileValues, mockTypes.Profile))
+        pkg.delete(createInstanceElement({ fullName: 'foo' }, mockTypes.Profile))
+        zipFiles = await getZipFiles(pkg)
       })
-      const apexClassInstance = new InstanceElement(
-        'instance',
-        apexClassType,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
-          [apiVersion]: 47.0,
-          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
-        },
-      )
-
-      const apexClassWithHiddenContentInstance = new InstanceElement(
-        'instance',
-        apexClassType,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
-          [apiVersion]: 47.0,
-          content: '(hidden)',
-        },
-      )
-
-      const zip = toMetadataPackageZip(apexClassInstance, false)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      const zipWithHidden = toMetadataPackageZip(apexClassWithHiddenContentInstance, false)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <version>47.0</version>
-           <types><members>MyApexClass</members><name>ApexClass</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
+      it('should have manifest with all added instances', () => {
+        expect(zipFiles).toHaveProperty([addManifestPath])
+        const manifest = xmlParser.parse(zipFiles[addManifestPath])
+        expect(manifest).toHaveProperty('Package.types')
+        expect(manifest.Package.types).toContainEqual(
+          { name: 'Layout', members: ['TestLayout', 'TestLayout2'] }
+        )
+        expect(manifest.Package.types).toContainEqual(
+          { name: 'Profile', members: 'TestProfile' }
         )
       })
-
-      it('should not fail on hidden content', async () => {
-        const instanceXml = (await zipWithHidden).files[`${PACKAGE}/classes/MyApexClass.cls`]
-        expect(instanceXml).toBeDefined()
-        expect(await instanceXml.async('text'))
-          .toMatch('(hidden)')
-      })
-
-      it('should contain metadata xml', async () => {
-        const instanceXml = (await zip).files[`${PACKAGE}/classes/MyApexClass.cls-meta.xml`]
-        expect(instanceXml).toBeDefined()
-        expect(await instanceXml.async('text')).toMatch(
-          `<ApexClass>
-           <apiVersion>47</apiVersion>
-         </ApexClass>`.replace(/>\s+</gs, '><')
+      it('should have manifest with all removed instances', () => {
+        expect(zipFiles).toHaveProperty([deleteManifestPath])
+        const manifest = xmlParser.parse(zipFiles[deleteManifestPath])
+        expect(manifest).toHaveProperty('Package.types')
+        expect(manifest.Package.types).toEqual(
+          { name: 'Profile', members: 'foo' }
         )
       })
-
-      it('should contain instance content', async () => {
-        const instanceXml = (await zip).files[`${PACKAGE}/classes/MyApexClass.cls`]
-        expect(instanceXml).toBeDefined()
-        expect(await instanceXml.async('text'))
-          .toMatch('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')
+      it('should have xml files for each instance', () => {
+        expect(zipFiles).toHaveProperty([`${packageName}/layouts/TestLayout.layout`])
+        expect(zipFiles).toHaveProperty([`${packageName}/layouts/TestLayout2.layout`])
+        expect(zipFiles).toHaveProperty([`${packageName}/profiles/TestProfile.profile`])
+      })
+      it('should write serialized values to instance xml file', () => {
+        const values = xmlParser.parse(zipFiles[`${packageName}/profiles/TestProfile.profile`])
+        expect(values).toEqual({ Profile: _.omit(profileValues, 'fullName') })
       })
     })
 
-    describe('email folder', () => {
-      const emailFolderElemID = new ElemID(SALESFORCE, 'EmailFolder')
-      const emailFolderType = new ObjectType({
-        elemID: emailFolderElemID,
-        annotations: {
-          [METADATA_TYPE]: 'EmailFolder',
-        },
-        fields: {
-          name: { type: BuiltinTypes.STRING },
-        },
+    describe('with types that have a meta file', () => {
+      const apexClassValues = { fullName: 'MyClass', someVal: 'asd', content: Buffer.from('some data') }
+      beforeEach(async () => {
+        pkg.add(createInstanceElement(apexClassValues, mockTypes.ApexClass))
+        pkg.add(createInstanceElement({ fullName: 'TestFolder' }, mockTypes.EmailFolder))
+        zipFiles = await getZipFiles(pkg)
       })
-      const emailFolderInstance = new InstanceElement(
-        'instance',
-        emailFolderType,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder',
-          name: 'Folder Name',
-        },
-      )
-
-      const zip = toMetadataPackageZip(emailFolderInstance, false)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <version>${API_VERSION}</version>
-           <types><members>MyEmailFolder</members><name>EmailTemplate</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
+      describe('for metadata with content', () => {
+        it('should put values other than content in meta file', () => {
+          const metaFilePath = `${packageName}/classes/MyClass.cls-meta.xml`
+          expect(zipFiles).toHaveProperty([metaFilePath])
+          const values = xmlParser.parse(zipFiles[metaFilePath])
+          expect(values).toEqual({ ApexClass: _.omit(apexClassValues, ['fullName', 'content']) })
+        })
+        it('should put content in its own file', () => {
+          expect(zipFiles).toHaveProperty(
+            [`${packageName}/classes/MyClass.cls`],
+            apexClassValues.content.toString(),
+          )
+        })
       })
-
-      it('should contain metadata xml', async () => {
-        const instanceXml = (await zip).files[`${PACKAGE}/email/MyEmailFolder-meta.xml`]
-        expect(instanceXml).toBeDefined()
-        expect(await instanceXml.async('text')).toMatch(
-          `<EmailFolder>
-           <name>Folder Name</name>
-         </EmailFolder>`.replace(/>\s+</gs, '><')
-        )
+      describe('for folder type', () => {
+        it('should appear in manifest under its content type name', () => {
+          expect(zipFiles).toHaveProperty([addManifestPath])
+          const manifest = xmlParser.parse(zipFiles[addManifestPath])
+          expect(manifest).toHaveProperty('Package.types')
+          expect(manifest.Package.types).toContainEqual(
+            { name: 'EmailTemplate', members: 'TestFolder' }
+          )
+        })
+        it('should write values to meta file', () => {
+          expect(zipFiles).toHaveProperty([`${packageName}/email/TestFolder-meta.xml`])
+        })
       })
     })
 
-    describe('lightning component bundle', () => {
-      const targetConfigsType = allMissingSubTypes.find(sunType => sunType.elemID.isEqual(new ElemID(SALESFORCE, 'TargetConfigs'))) as ObjectType
-      const lightningComponentBundleInstance = new InstanceElement(
-        'myLightningComponentBundle',
-        new ObjectType({
-          elemID: new ElemID(SALESFORCE, 'LightningComponentBundle'),
-          fields: {
-            targetConfigs: { type: targetConfigsType },
-          },
-          annotations: {
-            [METADATA_TYPE]: 'LightningComponentBundle',
-          },
-        }),
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
-          apiVersion: 47.0,
-          lwcResources: {
-            lwcResource: [
-              {
-                source: '// some javascript content',
-                filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
-              },
-              {
-                source: '// some html content',
-                filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
-              },
-            ],
-          },
-          targetConfigs: {
-            targetConfig: [
-              {
-                objects: [
-                  {
-                    object: 'Contact',
-                  },
-                ],
-                targets: 'lightning__RecordPage',
-              },
-              {
-                supportedFormFactors: {
-                  supportedFormFactor: [
-                    {
-                      type: 'Small',
-                    },
-                  ],
-                },
-                targets: 'lightning__AppPage,lightning__HomePage',
-              },
-            ],
-          },
-          targets: {
-            target: [
-              'lightning__AppPage',
-              'lightning__RecordPage',
-              'lightning__HomePage',
-            ],
-          },
-        }
-      )
+    describe('with complex types', () => {
+      describe('AuraDefinitionBundle', () => {
+        beforeEach(async () => {
+          pkg.add(createInstanceElement(
+            mockDefaultValues.AuraDefinitionBundle,
+            mockTypes.AuraDefinitionBundle
+          ))
+          zipFiles = await getZipFiles(pkg)
+        })
+        it('should contain metadata xml', () => {
+          const filePath = `${packageName}/aura/TestAuraDefinitionBundle/TestAuraDefinitionBundle.cmp-meta.xml`
+          expect(zipFiles).toHaveProperty([filePath])
+          const data = xmlParser.parse(zipFiles[filePath])
+          expect(data).toEqual({
+            AuraDefinitionBundle: _.pick(
+              mockDefaultValues.AuraDefinitionBundle,
+              ['apiVersion', 'description', 'type']
+            ),
+          })
+        })
+        it('should contain component content files', () => {
+          const checkContentFile = (
+            fieldName: keyof typeof mockDefaultValues.AuraDefinitionBundle,
+            suffix: string,
+          ): void => {
+            const filePath = `${packageName}/aura/TestAuraDefinitionBundle/TestAuraDefinitionBundle${suffix}`
+            expect(zipFiles).toHaveProperty([filePath])
+            const data = zipFiles[filePath]
+            expect(data).toEqual(mockDefaultValues.AuraDefinitionBundle[fieldName])
+          }
 
-      const zip = toMetadataPackageZip(lightningComponentBundleInstance, false)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        const actual = await packageXml.async('text')
-        expect(actual).toMatch(
-          `<Package>
-           <version>47.0</version>
-           <types><members>myLightningComponentBundle</members><name>LightningComponentBundle</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
+          checkContentFile('documentationContent', '.auradoc')
+          checkContentFile('designContent', '.design')
+          checkContentFile('controllerContent', 'Controller.js')
+          checkContentFile('SVGContent', '.svg')
+          checkContentFile('helperContent', 'Helper.js')
+          checkContentFile('rendererContent', 'Renderer.js')
+          checkContentFile('styleContent', '.css')
+        })
       })
-
-      it('should contain metadata xml', async () => {
-        const instanceXml = (await zip).files[`${PACKAGE}/lwc/myLightningComponentBundle/myLightningComponentBundle.js-meta.xml`]
-        expect(instanceXml).toBeDefined()
-        const instanceXmlString = await instanceXml.async('text')
-        expect(instanceXmlString).toMatch(
-          `<LightningComponentBundle>
-            <apiVersion>47</apiVersion>
+      describe('LightningComponentBundle', () => {
+        beforeEach(async () => {
+          pkg.add(createInstanceElement(
+            mockDefaultValues.LightningComponentBundle,
+            mockTypes.LightningComponentBundle,
+          ))
+          zipFiles = await getZipFiles(pkg)
+        })
+        it('should contain metadata xml', () => {
+          const filePath = `${packageName}/lwc/testLightningComponentBundle/testLightningComponentBundle.js-meta.xml`
+          expect(zipFiles).toHaveProperty([filePath])
+          expect(zipFiles[filePath]).toMatch(
+            `<LightningComponentBundle>
+              <apiVersion>49</apiVersion>
+              <isExposed>true</isExposed>
               <targets>
                 <target>lightning__AppPage</target>
                 <target>lightning__RecordPage</target>
@@ -306,265 +209,8 @@ describe('XML Transformer', () => {
                     </targetConfig>
               </targetConfigs>
             </LightningComponentBundle>`.replace(/>\s+</gs, '><')
-        )
-      })
-
-      it('should contain javascript content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/lwc/myLightningComponentBundle/myLightningComponentBundle.js`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some javascript content')
-      })
-
-      it('should contain html content file', async () => {
-        const htmlContent = (await zip).files[`${PACKAGE}/lwc/myLightningComponentBundle/myLightningComponentBundle.html`]
-        expect(htmlContent).toBeDefined()
-        expect(await htmlContent.async('text'))
-          .toMatch('// some html content')
-      })
-    })
-
-    describe('aura definition bundle', () => {
-      const auraInstance = new InstanceElement(
-        'myAuraDefinitionBundle',
-        new ObjectType({
-          elemID: new ElemID(SALESFORCE, 'AuraDefinitionBundle'),
-          annotations: {
-            [METADATA_TYPE]: 'AuraDefinitionBundle',
-          },
-        }),
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'myAuraDefinitionBundle',
-          SVGContent: '// some svg content',
-          apiVersion: 47,
-          controllerContent: '// some controller content',
-          description: 'myAuraDefinitionBundle description',
-          designContent: '// some design content',
-          documentationContent: '// some documentation content',
-          helperContent: '// some helper content',
-          markup: '// some markup content',
-          rendererContent: '// some renderer content',
-          styleContent: '// some style content',
-          type: 'Component',
-        }
-      )
-
-      const zip = toMetadataPackageZip(auraInstance, false)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        const actual = await packageXml.async('text')
-        expect(actual).toMatch(
-          `<Package>
-           <version>47.0</version>
-           <types><members>myAuraDefinitionBundle</members><name>AuraDefinitionBundle</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
-      })
-
-      it('should contain metadata xml', async () => {
-        const instanceXml = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.cmp-meta.xml`]
-        expect(instanceXml).toBeDefined()
-        const instanceXmlString = await instanceXml.async('text')
-        expect(instanceXmlString).toMatch(
-          `<AuraDefinitionBundle>
-            <apiVersion>47</apiVersion>
-            <description>myAuraDefinitionBundle description</description>
-            <type>Component</type>
-            </AuraDefinitionBundle>`.replace(/>\s+</gs, '><')
-        )
-      })
-
-      it('should contain component content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.cmp`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some markup content')
-      })
-
-      it('should contain documentation content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.auradoc`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some documentation content')
-      })
-
-      it('should contain design content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.design`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some design content')
-      })
-
-      it('should contain controller content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundleController.js`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some controller content')
-      })
-
-      it('should contain svg content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.svg`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some svg content')
-      })
-
-      it('should contain helper content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundleHelper.js`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some helper content')
-      })
-
-      it('should contain renderer content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundleRenderer.js`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some renderer content')
-      })
-
-      it('should contain style content file', async () => {
-        const jsContent = (await zip).files[`${PACKAGE}/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.css`]
-        expect(jsContent).toBeDefined()
-        expect(await jsContent.async('text'))
-          .toMatch('// some style content')
-      })
-    })
-  })
-
-  describe('toMetadataPackageZip in deletion flow', () => {
-    describe('apex class', () => {
-      const apexTypeElemID = new ElemID(SALESFORCE, 'ApexClass')
-      const apiVersion = 'apiVersion'
-      const apexClassType = new ObjectType({
-        elemID: apexTypeElemID,
-        annotations: {
-          [METADATA_TYPE]: 'ApexClass',
-        },
-        fields: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          [apiVersion]: { type: BuiltinTypes.NUMBER },
-          content: { type: BuiltinTypes.STRING },
-        },
-      })
-      const apexClassInstance = new InstanceElement(
-        'instance',
-        apexClassType,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
-          [apiVersion]: 47.0,
-          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
-        },
-      )
-
-      const zip = toMetadataPackageZip(apexClassInstance, true)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <version>${API_VERSION}</version>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
-      })
-
-      it('should contain destructive changes xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/destructiveChanges.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <types><members>MyApexClass</members><name>ApexClass</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
-      })
-    })
-
-    describe('email folder', () => {
-      const emailFolderElemID = new ElemID(SALESFORCE, 'EmailFolder')
-      const emailFolderType = new ObjectType({
-        elemID: emailFolderElemID,
-        annotations: {
-          [METADATA_TYPE]: 'EmailFolder',
-        },
-        fields: {
-          name: { type: BuiltinTypes.STRING },
-        },
-      })
-      const emailFolderInstance = new InstanceElement(
-        'instance',
-        emailFolderType,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder',
-          name: 'Folder Name',
-        },
-      )
-
-      const zip = toMetadataPackageZip(emailFolderInstance, true)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <version>${API_VERSION}</version>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
-      })
-
-      it('should contain destructive changes xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/destructiveChanges.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <types><members>MyEmailFolder</members><name>EmailTemplate</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
-      })
-    })
-
-    describe('lightning component bundle', () => {
-      const lightningComponentBundleInstance = new InstanceElement(
-        'myLightningComponentBundle',
-        new ObjectType({
-          elemID: new ElemID(SALESFORCE, 'LightningComponentBundle'),
-          annotations: {
-            [METADATA_TYPE]: 'LightningComponentBundle',
-          },
-        }),
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
-          apiVersion: 47.0,
-          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
-        }
-      )
-
-      const zip = toMetadataPackageZip(lightningComponentBundleInstance, true)
-        .then(buf => jszip.loadAsync(buf as Buffer))
-
-      it('should contain package xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <version>${API_VERSION}</version>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
-      })
-
-      it('should contain destructive changes xml', async () => {
-        const packageXml = (await zip).files[`${PACKAGE}/destructiveChanges.xml`]
-        expect(packageXml).toBeDefined()
-        expect(await packageXml.async('text')).toMatch(
-          `<Package>
-           <types><members>myLightningComponentBundle</members><name>LightningComponentBundle</name></types>
-         </Package>`.replace(/>\s+</gs, '><')
-        )
+          )
+        })
       })
     })
   })

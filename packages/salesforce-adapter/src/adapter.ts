@@ -32,10 +32,10 @@ import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo,
-  metadataType, createMetadataTypeElements, createInstanceElement,
-  defaultApiName, getLookUpName, isMetadataObjectType,
+  metadataType, createInstanceElement, defaultApiName, getLookUpName, isMetadataObjectType,
+  isMetadataInstanceElement,
 } from './transformers/transformer'
-import { toMetadataPackageZip } from './transformers/xml_transformer'
+import { createDeployPackage } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
 import workflowFieldUpdateFilter from './filters/workflow_field_update'
 import workflowRuleFilter from './filters/workflow_rule'
@@ -70,7 +70,7 @@ import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types
 import { createListMetadataObjectsConfigChange, createSkippedListConfigChange, getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
-import { retrieveMetadataInstances } from './fetch'
+import { retrieveMetadataInstances, fetchMetadataType } from './fetch'
 import { isCustomObjectInstancesGroup, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 
 const { makeArray } = collections.array
@@ -548,12 +548,16 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async deployInstance(instance: InstanceElement, deletion = false): Promise<void> {
-    const zip = await toMetadataPackageZip(instance, deletion)
-    if (zip) {
-      await this.client.deploy(zip)
-    } else {
-      log.warn('Skipped deploying instance %s of type %s', apiName(instance), metadataType(instance))
+    if (!isMetadataInstanceElement(instance) || instance.type.annotations.dirName === undefined) {
+      throw new Error(`Cannot deploy instance ${instance.elemID.getFullName()} because it is not a top level metadata instance`)
     }
+    const pkg = createDeployPackage()
+    if (deletion) {
+      pkg.delete(instance)
+    } else {
+      pkg.add(instance)
+    }
+    await this.client.deploy(await pkg.getZip())
   }
 
   /**
@@ -811,46 +815,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     const knownTypes = new Map<string, TypeElement>(
       knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
     )
-    return _.flatten(await Promise.all((typeInfos).map(typeInfo => this.fetchMetadataType(
-      typeInfo, knownTypes, new Set(typeInfos.map(type => type.xmlName)),
-    ))))
-  }
-
-  private async fetchMetadataType(
-    typeInfo: MetadataObject,
-    knownTypes: Map<string, TypeElement>,
-    baseTypeNames: Set<string>
-  ): Promise<TypeElement[]> {
-    const typeDesc = await this.client.describeMetadataType(typeInfo.xmlName)
-    const folderType = typeInfo.inFolder ? typeDesc.parentField?.foreignKeyDomain : undefined
-    const mainTypes = await createMetadataTypeElements({
-      name: typeInfo.xmlName,
-      fields: typeDesc.valueTypeFields,
-      knownTypes,
-      baseTypeNames,
-      client: this.client,
-      annotations: {
-        hasMetaFile: typeInfo.metaFile ? true : undefined,
-        folderType,
-        suffix: typeInfo.suffix,
-        dirName: typeInfo.directoryName,
-      },
-    })
-    const folderTypes = folderType === undefined
-      ? []
-      : await createMetadataTypeElements({
-        name: folderType,
-        fields: (await this.client.describeMetadataType(folderType)).valueTypeFields,
-        knownTypes,
-        baseTypeNames,
-        client: this.client,
-        annotations: {
-          hasMetaFile: true,
-          folderContentType: typeInfo.xmlName,
-          dirName: typeInfo.directoryName,
-        },
-      })
-    return [...mainTypes, ...folderTypes]
+    const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
+    return (await Promise.all(typeInfos.map(typeInfo => fetchMetadataType(
+      this.client, typeInfo, knownTypes, baseTypeNames,
+    )))).flat()
   }
 
   @logDuration('fetching instances')

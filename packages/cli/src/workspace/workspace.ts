@@ -196,27 +196,39 @@ export const updateStateOnly = async (ws: Workspace,
   }
 }
 
-export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
-  changes: readonly FetchChange[], mode: nacl.RoutingMode = 'default'): Promise<boolean> => {
+type UpdateWorkspaceParams = {
+  workspace: Workspace
+  output: CliOutput
+  changes: readonly FetchChange[]
+  force?: boolean
+  mode?: nacl.RoutingMode
+}
+export const updateWorkspace = async ({
+  workspace,
+  output,
+  changes,
+  force = false,
+  mode = 'default',
+}: UpdateWorkspaceParams): Promise<boolean> => {
   if (changes.length > 0) {
-    await logWorkspaceUpdates(ws, changes)
-    await ws.updateNaclFiles(
+    await logWorkspaceUpdates(workspace, changes)
+    await workspace.updateNaclFiles(
       changes.map(c => c.change),
       mode
     )
-    const { status, errors } = await validateWorkspace(ws)
-    const formattedErrors = await formatWorkspaceErrors(ws, errors)
-    await printWorkspaceErrors(status, formattedErrors, cliOutput)
+    const { status, errors } = await validateWorkspace(workspace)
+    const formattedErrors = await formatWorkspaceErrors(workspace, errors)
+    await printWorkspaceErrors(status, formattedErrors, output)
     if (status === 'Error') {
       log.warn(formattedErrors)
-      const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
+      const shouldAbort = force || await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
       if (!shouldAbort) {
-        await ws.flush()
+        await workspace.flush()
       }
       return false
     }
   }
-  await ws.flush()
+  await workspace.flush()
   log.debug('finished updating workspace')
   return true
 }
@@ -237,7 +249,7 @@ export const applyChangesToWorkspace = async ({
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
   const updatingWsEmitter = new StepEmitter()
   applyProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
-  const success = await updateWorkspace(workspace, output, changesToApply, mode)
+  const success = await updateWorkspace({ workspace, output, changes: changesToApply, mode, force })
   if (success) {
     updatingWsEmitter.emit('completed')
     if (shouldCalcTotalSize) {

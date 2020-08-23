@@ -16,9 +16,7 @@
 import _ from 'lodash'
 import moment from 'moment'
 import inquirer from 'inquirer'
-import { DetailedChange } from '@salto-io/adapter-api'
 import { Workspace } from '@salto-io/workspace'
-import { FetchChange } from '@salto-io/core'
 import { EventEmitter } from 'pietile-eventemitter'
 import { Spinner } from '../../src/types'
 import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly, applyChangesToWorkspace } from '../../src/workspace/workspace'
@@ -186,14 +184,16 @@ describe('workspace', () => {
 
   describe('updateWorkspace', () => {
     it('no changes', async () => {
-      const result = await updateWorkspace(mockWs, cliOutput, [])
+      const result = await updateWorkspace({ workspace: mockWs, output: cliOutput, changes: [] })
       expect(result).toBeTruthy()
     })
 
     it('with changes', async () => {
-      const result = await updateWorkspace(mockWs, cliOutput,
-        dummyChanges.map((change: DetailedChange): FetchChange =>
-          ({ change, serviceChange: change })))
+      const result = await updateWorkspace({
+        workspace: mockWs,
+        output: cliOutput,
+        changes: dummyChanges.map(change => ({ change, serviceChange: change })),
+      })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
@@ -202,9 +202,11 @@ describe('workspace', () => {
     it('with more changes than max changes to log', async () => {
       const changes = _.fill(Array(MAX_DETAIL_CHANGES_TO_LOG + 1),
         detailedChange('add', ['adapter', 'dummy'], undefined, 'after-add-dummy1'))
-      const result = await updateWorkspace(mockWs, cliOutput,
-        changes.map((change: DetailedChange): FetchChange =>
-          ({ change, serviceChange: change })))
+      const result = await updateWorkspace({
+        workspace: mockWs,
+        output: cliOutput,
+        changes: changes.map(change => ({ change, serviceChange: change })),
+      })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, 'default')
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
@@ -214,9 +216,11 @@ describe('workspace', () => {
       mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
         { message: 'Error BLA', severity: 'Error' },
       ]))
-      const result = await updateWorkspace(mockWs, cliOutput,
-        dummyChanges.map((change: DetailedChange): FetchChange =>
-          ({ change, serviceChange: change })))
+      const result = await updateWorkspace({
+        workspace: mockWs,
+        output: cliOutput,
+        changes: dummyChanges.map(change => ({ change, serviceChange: change })),
+      })
       expect(result).toBe(false)
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
       expect(mockWs.flush).toHaveBeenCalledTimes(1)

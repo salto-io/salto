@@ -233,6 +233,60 @@ describe('deploy command', () => {
       expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     })
   })
+  describe('when deploy result makes the workspace invalid', () => {
+    beforeEach(() => {
+      const mockWs = mocks.mockLoadWorkspaceEnvironment('', cliOutput, {})
+      mockLoadWorkspace.mockResolvedValueOnce(mockWs)
+      const mockUpdateNacls = mockWs.workspace.updateNaclFiles as jest.Mock
+      const mockWorkspaceErrors = mockWs.workspace.errors as jest.Mock
+      mockUpdateNacls.mockImplementationOnce(async () => {
+        mockWorkspaceErrors.mockResolvedValueOnce(mocks.mockErrors([
+          { severity: 'Error', message: '' },
+        ]))
+      })
+      const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
+      mockGetUserBooleanInput.mockClear()
+      mockGetUserBooleanInput.mockReturnValue(true)
+    })
+    describe('when called without force', () => {
+      beforeEach(() => {
+        command = new DeployCommand(
+          '',
+          false /* force */,
+          false /* dryRun */,
+          false /* detailedPlan */,
+          mockCliTelemetry,
+          cliOutput,
+          spinnerCreator,
+          services,
+        )
+      })
+      it('should fail after asking whether to write', async () => {
+        const result = await command.execute()
+        expect(result).toBe(CliExitCode.AppError)
+        expect(callbacks.getUserBooleanInput).toHaveBeenCalled()
+      })
+    })
+    describe('when called with force', () => {
+      beforeEach(() => {
+        command = new DeployCommand(
+          '',
+          true /* force */,
+          false /* dryRun */,
+          false /* detailedPlan */,
+          mockCliTelemetry,
+          cliOutput,
+          spinnerCreator,
+          services,
+        )
+      })
+      it('should fail without user interaction', async () => {
+        const result = await command.execute()
+        expect(result).toBe(CliExitCode.AppError)
+        expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
+      })
+    })
+  })
   describe('Using environment variable', () => {
     beforeAll(async () => {
       mockLoadWorkspace.mockClear()

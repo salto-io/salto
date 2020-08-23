@@ -101,12 +101,13 @@ export const command = (
       output,
     )
 
-    const success = await updateWorkspace(
+    const success = await updateWorkspace({
       workspace,
       output,
-      changesToApply,
-      mode
-    )
+      changes: changesToApply,
+      mode,
+      force,
+    })
     if (success) {
       outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), output)
       if (shouldCalcTotalSize) {

@@ -46,7 +46,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       .forEach(customTranslation => {
         const customObjectElemId = instanceParent(customTranslation)
         if (_.isUndefined(customObjectElemId)) {
-          log.warn('failed to find custom object for custom translation %s',
+          log.debug('failed to find custom object for custom translation %s',
             apiName(customTranslation))
           return
         }
@@ -61,7 +61,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
           if (customField) {
             field[NAME] = new ReferenceExpression(customField.elemID)
           } else {
-            log.warn('failed to find field %s in %s', field[NAME], customObjectElemId.getFullName())
+            log.debug('failed to find field %s in %s', field[NAME], customObjectElemId.getFullName())
           }
         })
 
@@ -75,7 +75,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
           if (ruleInstance) {
             rule[NAME] = new ReferenceExpression(ruleInstance.elemID)
           } else {
-            log.warn('failed to validation rule %s for %s', rule[NAME],
+            log.debug('failed to find validation rule %s for %s', rule[NAME],
               customObjectElemId.getFullName())
           }
         })

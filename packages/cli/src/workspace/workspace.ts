@@ -121,11 +121,11 @@ const logWorkspaceUpdates = async (
   if (!await ws.isEmpty(true)) {
     log.info('going to update workspace with %d changes', changes.length)
     if (changes.length > MAX_DETAIL_CHANGES_TO_LOG) {
-      log.info('going to log only %d changes', MAX_DETAIL_CHANGES_TO_LOG)
+      log.debug('going to log only %d changes', MAX_DETAIL_CHANGES_TO_LOG)
     }
     formatDetailedChanges([changes.slice(0, MAX_DETAIL_CHANGES_TO_LOG).map(c => c.change)])
       .split('\n')
-      .forEach(s => log.info(s))
+      .forEach(s => log.debug(s))
   }
 }
 

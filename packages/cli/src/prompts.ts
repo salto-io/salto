@@ -240,6 +240,16 @@ ${Prompts.SERVICE_ADD_HELP}`
     error: string
   ): string => `Failed to move the selected elements out of the common folder: ${error}`
 
+  public static readonly MOVE_START = (
+    from: string,
+    to: string,
+  ): string => `Moving the selected elements from ${from} to ${to}.`
+
+  public static readonly MOVE_FINISHED = 'Done moving elements.'
+  public static readonly MOVE_FAILED = (
+    error: string
+  ): string => `Failed to move the selected elements: ${error}`
+
   public static readonly COPY_TO_ENV_START = (
     targetEnvs: string[] = []
   ): string => `Copying the selected elements to ${

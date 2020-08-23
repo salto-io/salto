@@ -17,13 +17,18 @@ import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
 import { ElemID } from '@salto-io/adapter-api'
 import { getCliTelemetry } from '../telemetry'
+import { EnvironmentArgs } from './env'
 import { convertToIDSelectors } from '../convertors'
 import { outputLine } from '../outputer'
+import { environmentFilter } from '../filters/env'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, CliTelemetry, SpinnerCreator } from '../types'
 import { createCommandBuilder } from '../command_builder'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { formatInvalidID, formatStepStart, formatStepFailed, formatStepCompleted, formatUnknownTargetEnv } from '../formatter'
+
+const toCommonInput = 'common'
+const toEnvsInput = 'envs'
 
 const validateEnvs = (
   output: CliOutput,
@@ -31,7 +36,7 @@ const validateEnvs = (
   toEnvs: string[] = [],
 ): boolean => {
   if (toEnvs.length === 0) {
-    return true
+    return false
   }
   const missingEnvs = toEnvs.filter(e => !workspace.envs().includes(e))
   if (!_.isEmpty(missingEnvs)) {
@@ -51,7 +56,9 @@ type CopyArgs = {
   toEnvs: string[]
 }
 
-type MoveArgs = {}
+type MoveArgs = {
+  to: string
+} & EnvironmentArgs
 
 type ElementArgs = {
   command: string
@@ -90,23 +97,34 @@ const moveElement = async (
   workspace: Workspace,
   output: CliOutput,
   cliTelemetry: CliTelemetry,
+  moveArgs: MoveArgs,
   elmSelectors: ElemID[],
 ): Promise<CliExitCode> => {
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
   try {
-    outputLine(formatStepStart(Prompts.DEMOTE_START), output)
-    await workspace.demote(elmSelectors)
+    switch (moveArgs.to) {
+      case toCommonInput:
+        outputLine(formatStepStart(Prompts.MOVE_START('envs', 'common')), output)
+        await workspace.promote(elmSelectors)
+        break
+      case toEnvsInput:
+        outputLine(formatStepStart(Prompts.MOVE_START('common', 'envs')), output)
+        await workspace.demote(elmSelectors)
+        break
+      default:
+        throw new Error('Unknown direction for move command. \'to\' argument required.')
+    }
     await workspace.flush()
-    outputLine(formatStepCompleted(Prompts.DEMOTE_FINISHED), output)
+    outputLine(formatStepCompleted(Prompts.MOVE_FINISHED), output)
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   } catch (e) {
     cliTelemetry.failure()
-    outputLine(formatStepFailed(Prompts.DEMOTE_FAILED(e.message)), output)
+    outputLine(formatStepFailed(Prompts.MOVE_FAILED(e.message)), output)
     return CliExitCode.AppError
   }
-} 
+}
 
 export const command = (
   workspaceDir: string,
@@ -116,9 +134,6 @@ export const command = (
   elementArgs: ElementArgs,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    // log.debug
-    // TODO: args validation
-
     const { ids: elmSelectors, invalidSelectors } = convertToIDSelectors(elementArgs.elmSelectors)
     if (!_.isEmpty(invalidSelectors)) {
       output.stdout.write(formatStepFailed(formatInvalidID(invalidSelectors)))
@@ -131,6 +146,7 @@ export const command = (
       {
         force: elementArgs.force,
         spinnerCreator,
+        sessionEnv: elementArgs.env?? elementArgs.fromEnv,
       }
     )
     if (errored) {
@@ -145,10 +161,10 @@ export const command = (
           output,
           cliTelemetry,
           elementArgs as CopyArgs,
-          elmSelectors
-          )
+          elmSelectors,
+        )
       case 'move':
-        return moveElement(workspace, output, cliTelemetry, elmSelectors)
+        return moveElement(workspace, output, cliTelemetry, elementArgs as MoveArgs, elmSelectors)
       default:
         throw new Error('Unknown element management command')
     }
@@ -157,7 +173,8 @@ export const command = (
 
 type ElementParsedCliInput = ParsedCliInput<ElementArgs>
 
-const envsBuilder = createCommandBuilder({
+const elementBuilder = createCommandBuilder({
+  filters: [environmentFilter],
   options: {
     command: 'element <command> <elm-selectors..>',
     description: 'Manage your elements environment\'s',
@@ -171,11 +188,20 @@ const envsBuilder = createCommandBuilder({
     keyed: {
       'from-env': {
         type: 'string',
-        desc: 'The environment to copy from',
+        desc: 'The environment to copy from (Required for copy)',
+        conflicts: ['to', 'env'],
       },
       'to-envs': {
         type: 'array',
-        desc: 'The environment to copy to',
+        desc: 'The environment to copy to (Required for copy)',
+        conflicts: ['to', 'env'],
+      },
+      to: {
+        type: 'string',
+        choices: [toCommonInput, toEnvsInput],
+        desc: 'Indicating the move direction. Use \'common\' for moving elements '
+        + 'from env-specific to the common space and \'envs\' for moving elements '
+        + 'from the common to env-specific space. (Required for move)',
       },
       force: {
         alias: ['f'],
@@ -199,4 +225,4 @@ const envsBuilder = createCommandBuilder({
 
 export type EnvironmentParsedCliInput = ParsedCliInput<ElementParsedCliInput>
 
-export default envsBuilder
+export default elementBuilder

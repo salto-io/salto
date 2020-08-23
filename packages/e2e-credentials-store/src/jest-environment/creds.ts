@@ -72,6 +72,7 @@ const creds = <TCreds extends {}>(
       const lease = await p.waitForLease(...LEASE_PARAMS)
       try {
         await spec.validate(lease.value)
+        logger.info('env %s using %s account %s', env.JEST_WORKER_ID, spec.typeName, lease.id)
         return lease
       } catch (e) {
         if (e instanceof SuspendCredentialsError) {

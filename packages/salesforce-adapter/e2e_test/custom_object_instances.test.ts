@@ -41,8 +41,10 @@ describe('custom object instances e2e', () => {
 
   const filtersContext = {
     dataManagement: {
-      isNameBasedID: false,
       includeObjects: [productTwoMetadataName],
+      saltoIDSettings: {
+        defaultIdFields: ['Id'],
+      },
     },
   }
   beforeAll(async () => {

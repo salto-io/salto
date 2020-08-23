@@ -95,11 +95,13 @@ describe('SalesforceAdapter creator', () => {
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         { dataManagement: {
-          isNameBasedID: true,
           includeObjects: ['\\'],
+          saltoIDSettings: {
+            defaultIdFields: ['field'],
+          },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.includeObjects value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.excludeObjects', () => {
@@ -107,11 +109,14 @@ describe('SalesforceAdapter creator', () => {
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         { dataManagement: {
-          isNameBasedID: true,
+          includeObjects: ['obj'],
           excludeObjects: ['\\'],
+          saltoIDSettings: {
+            defaultIdFields: ['field'],
+          },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.excludeObjects value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.allowReferenceTo', () => {
@@ -119,11 +124,75 @@ describe('SalesforceAdapter creator', () => {
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         { dataManagement: {
-          isNameBasedID: true,
+          includeObjects: ['obj'],
           allowReferenceTo: ['\\'],
+          saltoIDSettings: {
+            defaultIdFields: ['field'],
+          },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.allowReferenceTo value. The following regular expressions are invalid: \\')
+    })
+
+    it('should throw an error when creating adapter with invalid regex in dataManagement.saltoIDSettings.overrides objectsRegex', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: {
+          includeObjects: ['obj'],
+          saltoIDSettings: {
+            defaultIdFields: ['field'],
+            overrides: [
+              { objectsRegex: '\\', idFields: ['Id'] },
+            ],
+          },
+        } },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.saltoIDSettings.overrides value. The following regular expressions are invalid: \\')
+    })
+
+
+    it('should throw error when dataManagement is created without includeObjects', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: {
+          saltoIDSettings: {
+            defaultIdFields: ['field'],
+            overrides: [
+              { objectsRegex: '\\', idFields: ['Id'] },
+            ],
+          },
+        } },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('includeObjects is required when dataManagmenet is configured')
+    })
+
+    it('should throw error when dataManagement is created without saltoIDSettings', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: {
+          includeObjects: ['obj'],
+        } },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings is required when dataManagmenet is configured')
+    })
+
+    it('should throw error when dataManagement is created without saltoIDSettings.defaultIdFields', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { dataManagement: {
+          includeObjects: ['obj'],
+          saltoIDSettings: {
+            overrides: [
+              { objectsRegex: '\\', idFields: ['Id'] },
+            ],
+          },
+        } },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings.defaultIdFields is required when dataManagmenet is configured')
     })
   })
 })

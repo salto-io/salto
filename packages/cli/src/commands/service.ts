@@ -21,6 +21,7 @@ import {
   LoginStatus,
   updateCredentials,
   loadLocalWorkspace,
+  getAdaptersCredentialsTypes,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 
@@ -65,6 +66,7 @@ const addService = async (
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
   inputEnvironment?: string,
+  nologin?: boolean
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (workspace.services().includes(serviceName)) {
@@ -72,11 +74,14 @@ const addService = async (
     return CliExitCode.UserInputError
   }
 
-  const adapterCredentialsType = await addAdapter(workspace, serviceName)
-  stdout.write(formatServiceAdded(serviceName))
-
   try {
-    await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
+    if (!nologin) {
+      const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
+      await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
+    }
+
+    await addAdapter(workspace, serviceName)
+    stdout.write(formatServiceAdded(serviceName))
   } catch (e) {
     stderr.write(formatLoginToServiceFailed(serviceName, e.message))
   }
@@ -131,6 +136,7 @@ export const command = (
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName = '',
   inputEnvironment?: string,
+  nologin?: boolean
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     switch (commandName) {
@@ -140,7 +146,8 @@ export const command = (
           { stdout, stderr },
           getLoginInput,
           serviceName,
-          inputEnvironment
+          inputEnvironment,
+          nologin,
         )
       case 'list':
         return listServices(workspaceDir, { stdout, stderr }, serviceName, inputEnvironment)
@@ -166,6 +173,15 @@ const servicesBuilder = createCommandBuilder({
   options: {
     command: 'service <command> [name]',
     description: 'Manage your environment services',
+    keyed: {
+      nologin: {
+        alias: ['n'],
+        describe: 'Do not login to service when adding it. Example usage: \'service add <service-name> --nologin\'.',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
+    },
   },
 
   filters: [serviceCmdFilter, environmentFilter],
@@ -177,6 +193,7 @@ const servicesBuilder = createCommandBuilder({
       getCredentialsFromUser,
       input.args.name,
       input.args.env,
+      input.args.nologin,
     )
   },
 })

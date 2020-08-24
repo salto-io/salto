@@ -298,6 +298,22 @@ export const mockLoadWorkspaceEnvironment = (
   }
 }
 
+export const mockCredentialsType = (adapterName: string): ObjectType => {
+  const configID = new ElemID(adapterName)
+  return new ObjectType({
+    elemID: configID,
+    fields: {
+      username: { type: BuiltinTypes.STRING },
+      password: { type: BuiltinTypes.STRING },
+      token: {
+        type: BuiltinTypes.STRING,
+        annotations: {},
+      },
+      sandbox: { type: BuiltinTypes.BOOLEAN },
+    },
+  })
+}
+
 export const mockConfigType = (adapterName: string): ObjectType => {
   const configID = new ElemID(adapterName)
   return new ObjectType({

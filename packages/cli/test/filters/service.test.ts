@@ -23,12 +23,12 @@ jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   loadLocalWorkspace: jest.fn().mockImplementation(() => mockLoadWorkspace('name')),
 }))
-describe('services filter', () => {
+describe('service filter', () => {
   let out: MockCliOutput
   let buildFunc: jest.Mock
   let builder: YargsCommandBuilder
 
-  describe('verify services filter', () => {
+  describe('verify service filter', () => {
     beforeEach(async () => {
       buildFunc = jest.fn(() =>
         Promise.resolve({ execute: () => Promise.resolve(CliExitCode.Success) })) as jest.Mock

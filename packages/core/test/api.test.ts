@@ -528,21 +528,21 @@ describe('api.ts', () => {
   describe('diff', () => {
     const ws = mockWorkspace({ name: 'diff' })
     it('should return changes', async () => {
-      const changes = await api.diff(ws, 'other', false, false)
+      const changes = await api.diff(ws, 'active', 'other', false, false)
       expect(changes).toHaveLength(1)
-      expect(ws.elements).toHaveBeenCalledWith(false)
+      expect(ws.elements).toHaveBeenCalledWith(false, 'active')
       expect(ws.elements).toHaveBeenCalledWith(false, 'other')
     })
     it('should get the data from state when the state flag is true', async () => {
-      const changes = await api.diff(ws, 'other', false, true)
+      const changes = await api.diff(ws, 'active', 'other', false, true)
       expect(changes).toHaveLength(1)
-      expect(ws.state).toHaveBeenCalledWith()
+      expect(ws.state).toHaveBeenCalledWith('active')
       expect(ws.state).toHaveBeenCalledWith('other')
     })
     it('should get hidden types when flag is true', async () => {
-      const changes = await api.diff(ws, 'other', false, true)
+      const changes = await api.diff(ws, 'active', 'other', false, true)
       expect(changes).toHaveLength(1)
-      expect(ws.elements).toHaveBeenCalledWith(false)
+      expect(ws.elements).toHaveBeenCalledWith(false, 'active')
       expect(ws.elements).toHaveBeenCalledWith(false, 'other')
     })
   })

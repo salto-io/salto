@@ -62,7 +62,7 @@ type MoveArgs = {
   to: string
 } & EnvironmentArgs
 
-type ElementArgs = {
+export type ElementArgs = {
   command: string
   force: boolean
   elmSelectors: string[]
@@ -152,7 +152,6 @@ export const command = (
       output.stdout.write(formatStepFailed(formatInvalidID(invalidSelectors)))
       return CliExitCode.UserInputError
     }
-
     const { workspace, errored } = await loadWorkspace(
       workspaceDir,
       output,

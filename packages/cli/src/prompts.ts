@@ -217,11 +217,6 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Finished calculating the difference between ${toEnv} and ${fromEnv}.`
 
   public static readonly DIFF_CALC_DIFF_FAIL = 'Calculating diff failed!'
-  public static readonly PROMOTE_START = 'Promoting the selected elements.'
-  public static readonly PROMOTE_FINISHED = 'Done promoting elements.'
-  public static readonly PROMOTE_FAILED = (
-    error: string
-  ): string => `Failed to move the selected elements to the common folder: ${error}`
 
   public static readonly INVALID_IDS = (
     invalidIds: string
@@ -235,12 +230,6 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => (unknownEnvs.length === 1
     ? `Unknown target environment: ${unknownEnvs[0]}`
     : `Unknown target environments: ${unknownEnvs?.join(' ')}`)
-
-  public static readonly DEMOTE_START = 'Demoting the selected elements.'
-  public static readonly DEMOTE_FINISHED = 'Done demoting elements.'
-  public static readonly DEMOTE_FAILED = (
-    error: string
-  ): string => `Failed to move the selected elements out of the common folder: ${error}`
 
   public static readonly MOVE_START = (
     from: string,

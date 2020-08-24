@@ -14,25 +14,30 @@
 * limitations under the License.
 */
 
-import { formatLogTagValue } from '../../src/internal/log-tags'
+import { formatPrimitiveLogTagValue, formatLogTags } from '../../src/internal/log-tags'
 
 describe('logTags', () => {
   // The rest of the coverage is covered in pino_logger.test.ts
-  describe('formatLogTagValue', () => {
+  describe('formatPrimitiveLogTagValue', () => {
     it('should return string from number', () => {
-      expect(formatLogTagValue(5)).toEqual('5')
+      expect(formatPrimitiveLogTagValue(5)).toEqual('5')
     })
     it('should return string from boolean', () => {
-      expect(formatLogTagValue(true)).toEqual('true')
+      expect(formatPrimitiveLogTagValue(true)).toEqual('true')
     })
     it('should return string from string', () => {
-      expect(formatLogTagValue('foo')).toEqual('foo')
+      expect(formatPrimitiveLogTagValue('foo')).toEqual('"foo"')
     })
     it('should return empty from undefined', () => {
-      expect(formatLogTagValue(undefined)).toEqual('')
+      expect(formatPrimitiveLogTagValue(undefined)).toEqual('')
     })
     it('should return stringified from string', () => {
-      expect(formatLogTagValue('"foo')).toEqual(JSON.stringify('"foo'))
+      expect(formatPrimitiveLogTagValue('"foo')).toEqual(JSON.stringify('"foo'))
+    })
+  })
+  describe('formatLogTags', () => {
+    it('should return empty string for function value', () => {
+      expect(formatLogTags({ some: () => { throw Error('') } }, [])).toEqual('')
     })
   })
 })

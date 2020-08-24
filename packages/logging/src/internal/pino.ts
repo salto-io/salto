@@ -18,7 +18,6 @@ import { format, promisify } from 'util'
 import { createWriteStream } from 'fs'
 import { EOL } from 'os'
 import pino, { LevelWithSilent, DestinationStream } from 'pino'
-import safeStringify from 'fast-safe-stringify'
 // Workaround - pino in browser doesn't include pino.stdTimeFunctions
 // @ts-ignore
 import { isoTime } from 'pino/lib/time'
@@ -32,7 +31,7 @@ import {
 import { BaseLoggerRepo, BaseLoggerMaker } from './logger'
 import { LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config } from './config'
-import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, formatLogTagValue } from './log-tags'
+import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, stringifyIfNecessary, PrimitiveType } from './log-tags'
 
 const toPinoLogLevel = (level: LogLevel | 'none'): LevelWithSilent => (
   level === 'none' ? 'silent' : level
@@ -71,14 +70,31 @@ const formatError = (input: FormatterInput): string => [
   format(Object.fromEntries(customKeys(input).map(k => [k, input[k]]))),
 ].join(EOL)
 
-const formatExcessArg = (value: unknown, i: number): [string, string] => [
-  `arg${i}`,
-  isPrimitiveType(value) ? formatLogTagValue(value) : safeStringify(value),
-]
+const formatPrimitiveExcessArg = (value: unknown, i: number): [string, PrimitiveType] =>
+  (isPrimitiveType(value)
+    ? [`arg${i}`, typeof value === 'string' ? stringifyIfNecessary(value) : value]
+    : ['', '']
+  )
 
-const formatExcessArgs = (excessArgs?: unknown[]): LogTags =>
-  Object.fromEntries((excessArgs || []).map(formatExcessArg))
-
+const formatExcessArgs = (excessArgs?: unknown[]): LogTags => {
+  const baseExcessArgs = (excessArgs || []).filter(x => x)
+  const formattedPrimitiveExcessArgs = Object.fromEntries(
+    // filter for primitive type inside formatPrimitiveExcessArg to maintain global index
+    baseExcessArgs
+      .map(formatPrimitiveExcessArg)
+      .filter(x => x[0])
+  )
+  const formattedNonPrimitiveExcessArgs = baseExcessArgs
+    .filter(x => !isPrimitiveType(x))
+    .reduce(
+      (total, curr) => ({ ...(total as LogTags), ...(curr as LogTags) }),
+      {}
+    ) as LogTags
+  return {
+    ...formattedPrimitiveExcessArgs,
+    ...formattedNonPrimitiveExcessArgs,
+  }
+}
 
 const textFormat = (
   { colorize }: { colorize: boolean }

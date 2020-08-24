@@ -25,7 +25,7 @@ import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, CliTelemetry, Spinn
 import { createCommandBuilder } from '../command_builder'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { formatInvalidID, formatStepStart, formatStepFailed, formatStepCompleted, formatUnknownTargetEnv } from '../formatter'
+import { formatTargetEnvRequired, formatInvalidID, formatStepStart, formatStepFailed, formatStepCompleted, formatUnknownTargetEnv } from '../formatter'
 
 const toCommonInput = 'common'
 const toEnvsInput = 'envs'
@@ -36,7 +36,7 @@ const validateEnvs = (
   toEnvs: string[] = [],
 ): boolean => {
   if (toEnvs.length === 0) {
-    outputLine('Argument to-env required, received empty.', output)
+    outputLine(formatStepFailed(formatTargetEnvRequired()), output)
     return false
   }
   const missingEnvs = toEnvs.filter(e => !workspace.envs().includes(e))
@@ -147,7 +147,7 @@ export const command = (
       {
         force: elementArgs.force,
         spinnerCreator,
-        sessionEnv: elementArgs.env?? elementArgs.fromEnv,
+        sessionEnv: elementArgs.env ?? elementArgs.fromEnv,
       }
     )
     if (errored) {

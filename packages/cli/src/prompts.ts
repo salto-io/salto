@@ -227,6 +227,7 @@ ${Prompts.SERVICE_ADD_HELP}`
     invalidIds: string
   ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
 
+  public static readonly TARGET_ENVS_REQUIRED = 'The target environments cannot be empty'
   public static readonly INVALID_ENV_TARGET_CURRENT = 'The current environment cannot be a target environment'
   public static readonly UNKNOWN_TARGET_ENVS = (
     unknownEnvs: string[]

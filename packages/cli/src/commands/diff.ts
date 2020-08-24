@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { errors } from '@salto-io/workspace'
 import { diff, LocalChange, loadLocalWorkspace } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -89,10 +90,10 @@ export const command = (
     const workspace = await loadLocalWorkspace('.')
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     if (!(workspace.envs().includes(fromEnv))) {
-      throw new Error(`Unknown environment ${fromEnv}`)
+      throw new errors.UnknownEnvError(fromEnv)
     }
     if (!(workspace.envs().includes(toEnv))) {
-      throw new Error(`Unknown environment ${toEnv}`)
+      throw new errors.UnknownEnvError(toEnv)
     }
     cliTelemetry.start(workspaceTags)
 

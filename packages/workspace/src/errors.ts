@@ -15,4 +15,4 @@
 */
 export { ValidationError, UnresolvedReferenceValidationError } from './validator'
 export { WorkspaceError } from './workspace/workspace'
-export { Errors } from './workspace/errors'
+export { Errors, UnknownEnvError } from './workspace/errors'

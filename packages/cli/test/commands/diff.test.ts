@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { errors } from '@salto-io/workspace'
 import { diff, loadLocalWorkspace } from '@salto-io/core'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/diff'
@@ -73,7 +74,7 @@ describe('diff command', () => {
         'inactive',
         false,
         false,
-      ).execute()).rejects.toThrow(Error)
+      ).execute()).rejects.toThrow(errors.UnknownEnvError)
     })
   })
 
@@ -94,7 +95,7 @@ describe('diff command', () => {
         'NotExist',
         false,
         false,
-      ).execute()).rejects.toThrow(Error)
+      ).execute()).rejects.toThrow(errors.UnknownEnvError)
     })
   })
 

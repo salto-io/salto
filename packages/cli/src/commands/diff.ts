@@ -120,7 +120,7 @@ export const command = (
 
 const diffBuilder = createCommandBuilder({
   options: {
-    command: 'diff <from-env> <toEnv> [elm-selectors..]',
+    command: 'diff <from-env> <to-env> [elm-selectors..]',
     description: 'Show the changes needed to bring <toEnv> up to date with the active environment',
     positional: {
       'from-env': {

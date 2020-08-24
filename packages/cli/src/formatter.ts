@@ -597,6 +597,11 @@ export const formatUnknownTargetEnv = (unknownEnvs: string[]): string => [
 ].join('\n')
 
 export const formatTargetEnvRequired = (): string => [
-  formatSimpleError(Prompts.TARG),
+  formatSimpleError(Prompts.TARGET_ENVS_REQUIRED),
+  emptyLine(),
+].join('\n')
+
+export const formatSourceEnvRequired = (): string => [
+  formatSimpleError(Prompts.SOURCE_ENV_REQUIRED),
   emptyLine(),
 ].join('\n')

@@ -25,7 +25,7 @@ import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, CliTelemetry, Spinn
 import { createCommandBuilder } from '../command_builder'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { formatTargetEnvRequired, formatInvalidID, formatStepStart, formatStepFailed, formatStepCompleted, formatUnknownTargetEnv } from '../formatter'
+import { formatTargetEnvRequired, formatInvalidID, formatStepStart, formatStepFailed, formatStepCompleted, formatUnknownTargetEnv, formatSourceEnvRequired } from '../formatter'
 
 const toCommonInput = 'common'
 const toEnvsInput = 'envs'
@@ -135,6 +135,10 @@ export const command = (
   elementArgs: ElementArgs,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
+    if ((elementArgs.command === 'copy') && (elementArgs.fromEnv === undefined)) {
+      output.stdout.write(formatStepFailed(formatSourceEnvRequired()))
+      return CliExitCode.UserInputError
+    }
     const { ids: elmSelectors, invalidSelectors } = convertToIDSelectors(elementArgs.elmSelectors)
     if (!_.isEmpty(invalidSelectors)) {
       output.stdout.write(formatStepFailed(formatInvalidID(invalidSelectors)))

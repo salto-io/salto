@@ -42,11 +42,7 @@ const validateEnvs = (
   toEnvs: string[] = [],
 ): boolean => {
   if (toEnvs.length === 0) {
-<<<<<<< HEAD
     errorOutputLine(formatTargetEnvRequired(), output)
-=======
-    outputLine('Argument to-env required, received empty.', output)
->>>>>>> c98e515d... Development progress
     return false
   }
   const missingEnvs = toEnvs.filter(e => !workspace.envs().includes(e))

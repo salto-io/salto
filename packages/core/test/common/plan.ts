@@ -24,7 +24,9 @@ import { getAllElements } from './elements'
 
 export const createPlan = (changeGroups: Change[][]): Plan => {
   const toGroup = (changes: Change[]): Group<Change> => ({
-    groupKey: getChangeElement(changes[0]).elemID.createTopLevelParentID().parent.getFullName(),
+    groupKey: changes.length > 0
+      ? getChangeElement(changes[0]).elemID.createTopLevelParentID().parent.getFullName()
+      : '',
     items: new Map(changes.map((change, idx) => [`${idx}`, change])),
   })
   const graph = new DataNodeMap<Group<Change>>(

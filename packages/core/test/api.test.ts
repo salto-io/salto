@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import wu from 'wu'
 import {
   AdapterOperations,
   BuiltinTypes,
@@ -28,7 +27,10 @@ import {
   Variable,
   Adapter,
   isObjectType,
-  DetailedChange,
+  isEqualElements,
+  isAdditionChange,
+  ChangeDataType,
+  AdditionChange,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 // eslint-disable-next-line no-restricted-imports
@@ -36,13 +38,13 @@ import {
   addHiddenValuesAndHiddenTypes,
 } from '@salto-io/workspace/dist/src/workspace/hidden_values'
 import * as api from '../src/api'
-import * as plan from '../src/core/plan'
+import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
 import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
-import { mockFunction } from './common/helpers'
+import { mockFunction, MockFunction } from './common/helpers'
 import { mockState } from './common/state'
 
 const mockService = 'salto'
@@ -124,8 +126,10 @@ const mockWorkspace = ({
   } as unknown as workspace.Workspace
 }
 
-jest.mock('../src/core/fetch')
-jest.mock('../src/core/plan')
+jest.mock('../src/core/fetch', () => ({
+  ...jest.requireActual('../src/core/fetch'),
+  fetchChanges: jest.fn(),
+}))
 jest.mock('../src/core/restore', () => ({
   createRestoreChanges: jest.fn().mockResolvedValue([{
     action: 'add',
@@ -139,25 +143,6 @@ jest.mock('../src/core/diff', () => ({
     action: 'add',
     data: { after: 'value' },
   }]),
-}))
-
-jest.mock('@salto-io/workspace', () => ({
-  ...jest.requireActual('@salto-io/workspace'),
-  initWorkspace: jest.fn().mockImplementation(
-    (
-      _baseDir: string,
-      _defaultEnvName: string,
-      workspaceName?: string
-    ):
-      Promise<workspace.Workspace> => Promise.resolve(
-      mockWorkspace(
-        {
-          elements: [],
-          name: workspaceName,
-        }
-      )
-    )
-  ),
 }))
 
 describe('api.ts', () => {
@@ -196,7 +181,7 @@ describe('api.ts', () => {
   })
 
   describe('fetch', () => {
-    const mockedFetchChanges = fetch.fetchChanges as jest.Mock
+    const mockFetchChanges = fetch.fetchChanges as MockFunction<typeof fetch.fetchChanges>
     const objType = new ObjectType({ elemID: new ElemID(mockService, 'dummy') })
 
     const fetchedElements = [
@@ -205,10 +190,15 @@ describe('api.ts', () => {
       new InstanceElement('instance_2', objType, {}),
       new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden', regField: 'regValue' }),
     ]
-    mockedFetchChanges.mockReturnValue({
-      elements: fetchedElements,
-      mergeErrors: [],
-      configs: [],
+    beforeAll(() => {
+      mockFetchChanges.mockResolvedValue({
+        changes: [],
+        configChanges: mockPlan.createPlan([[]]),
+        unmergedElements: fetchedElements,
+        elements: fetchedElements,
+        mergeErrors: [],
+        adapterNameToConfigMessage: {},
+      })
     })
     describe('Full fetch', () => {
       const ws = mockWorkspace({})
@@ -218,11 +208,12 @@ describe('api.ts', () => {
       ws.state = jest.fn().mockReturnValue(mockedState)
 
       beforeAll(async () => {
+        mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, SERVICES)
       })
 
       it('should call fetch changes', () => {
-        expect(mockedFetchChanges).toHaveBeenCalled()
+        expect(mockFetchChanges).toHaveBeenCalled()
       })
       it('should override state', () => {
         expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
@@ -243,11 +234,12 @@ describe('api.ts', () => {
       const mockedState = mockState(SERVICES, stateElements)
       ws.state = jest.fn().mockReturnValue(mockedState)
       beforeAll(async () => {
+        mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, [mockService])
       })
 
       it('should call fetch changes with first service only', () => {
-        expect(mockedFetchChanges).toHaveBeenCalled()
+        expect(mockFetchChanges).toHaveBeenCalled()
       })
       it('should override state but also include existing elements', () => {
         const existingElements = [stateElements[1]]
@@ -262,9 +254,8 @@ describe('api.ts', () => {
   })
 
   describe('plan', () => {
-    const mockedGetPlan = plan.getPlan as jest.Mock
-    const mockGetPlanResult = mockPlan.getPlan()
-    mockedGetPlan.mockResolvedValue(mockGetPlanResult)
+    let mockedGetPlan: jest.SpyInstance<Promise<plan.Plan>, Parameters<typeof plan.getPlan>>
+    let mockGetPlanResult: plan.Plan
     let result: plan.Plan
 
     const stateInstance = new InstanceElement(
@@ -294,8 +285,13 @@ describe('api.ts', () => {
     ws.state = jest.fn().mockReturnValue(mockedState)
 
     beforeAll(async () => {
-      mockedGetPlan.mockClear()
+      mockedGetPlan = jest.spyOn(plan, 'getPlan')
+      mockGetPlanResult = mockPlan.getPlan()
+      mockedGetPlan.mockResolvedValue(mockGetPlanResult)
       result = await api.preview(ws, SERVICES)
+    })
+    afterAll(() => {
+      mockedGetPlan.mockRestore()
     })
     it('should call getPlan with the correct elements', async () => {
       expect(mockedGetPlan).toHaveBeenCalledTimes(1)
@@ -317,74 +313,56 @@ describe('api.ts', () => {
   })
 
   describe('deploy', () => {
-    const mockShouldDeploy = jest.fn().mockResolvedValue(true)
-    const mockReportCurrentAction = jest.fn()
-
-    const mockedGetPlan = plan.getPlan as jest.Mock
-    const mockGetPlanResult = mockPlan.getPlan()
-    mockedGetPlan.mockResolvedValue(mockGetPlanResult)
-
-    const mockedGetDetailedChanges = fetch.getDetailedChanges as jest.Mock
-    const elem = mockElements.getAllElements()[2]
-    const mockedGetDetailedChangesResult: DetailedChange = {
-      action: 'add',
-      data: { after: elem },
-      id: elem.elemID,
-    }
-    mockedGetDetailedChanges.mockReturnValue(Promise.resolve([mockedGetDetailedChangesResult]))
-
-    const mockedToChangesWithPath = fetch.toChangesWithPath as jest.Mock
-    mockedToChangesWithPath.mockImplementation(() => (change: fetch.FetchChange) => [change])
-
-    const ws = mockWorkspace({
-      elements: mockElements.getAllElements(),
-    })
-    const mockFlush = ws.flush as jest.Mock
+    let ws: workspace.Workspace
     let result: api.DeployResult
 
-    describe('when approved', () => {
+    describe('with element changes', () => {
+      let addedElem: ObjectType
       beforeAll(async () => {
-        mockedGetPlan.mockClear()
+        const workspaceElements = mockElements.getAllElements()
+        const stateElements = mockElements.getAllElements()
+
+        const removedElem = stateElements[4]
+        // eslint-disable-next-line prefer-destructuring
+        addedElem = workspaceElements[3]
+
+        ws = mockWorkspace({
+          elements: workspaceElements.filter(elem => !isEqualElements(elem, removedElem)),
+          stateElements: stateElements.filter(elem => !isEqualElements(elem, addedElem)),
+        })
+
+        const actionPlan = mockPlan.createPlan([[
+          { action: 'add', data: { after: addedElem.clone() } },
+          { action: 'remove', data: { before: removedElem.clone() } },
+        ]])
+
+        // Add annotation to the new element
+        const cloneAndAddAnnotation = <T extends ChangeDataType>(
+          change: AdditionChange<T>
+        ): AdditionChange<T> => {
+          const cloned = change.data.after.clone() as T
+          cloned.annotations.test = 1
+          return { action: 'add', data: { after: cloned } }
+        }
         mockAdapterOps.deploy.mockClear()
-        result = await api.deploy(
-          ws,
-          mockGetPlanResult,
-          mockReportCurrentAction,
-          SERVICES
-        )
+        mockAdapterOps.deploy.mockImplementationOnce(async changeGroup => ({
+          appliedChanges: changeGroup.changes
+            .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
+          errors: [],
+        }))
+        result = await api.deploy(ws, actionPlan, jest.fn(), SERVICES)
       })
 
-      it('should not getPlan on deploy', async () => {
-        expect(mockedGetPlan).not.toHaveBeenCalled()
-      })
-
-      it('should not call flush', async () => {
-        expect(mockFlush).not.toHaveBeenCalled()
-      })
-
-      it('should not ask for approval', async () => {
-        expect(mockShouldDeploy).not.toHaveBeenCalled()
-      })
-
-      it('should deploy changes', async () => {
+      it('should call adapter deploy function', async () => {
         expect(mockAdapterOps.deploy).toHaveBeenCalledTimes(1)
       })
-      it('should get detailed changes with resolve context', async () => {
-        expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
-        expect(mockedGetDetailedChanges.mock.calls[0].length).toBe(3)
-      })
 
-      it('should return fetch changes', async () => {
-        expect(wu(result.changes || []).toArray()).toHaveLength(1)
-      })
-    })
-    describe('when aborted', () => {
-      beforeAll(async () => {
-        mockAdapterOps.deploy.mockClear()
-        result = await api.deploy(ws, mockGetPlanResult, mockReportCurrentAction)
-      })
-      it('should return success', () => {
-        expect(result.success).toBeTruthy()
+      it('should return updates to existing elements', async () => {
+        expect(result.changes).toBeDefined()
+        const changes = [...result.changes ?? []]
+        expect(changes).toHaveLength(1)
+        expect(changes[0].change.action).toEqual('add')
+        expect(changes[0].change.id).toEqual(addedElem.elemID.createNestedID('attr', 'test'))
       })
     })
     describe('with field changes', () => {
@@ -405,7 +383,8 @@ describe('api.ts', () => {
           ]]
         )
 
-        result = await api.deploy(ws, actionPlan, mockReportCurrentAction)
+        ws = mockWorkspace({ elements: [changedElement], stateElements: [origElement] })
+        result = await api.deploy(ws, actionPlan, jest.fn())
       })
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)

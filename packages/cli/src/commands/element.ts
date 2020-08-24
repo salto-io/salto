@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
+import { logger } from '@salto-io/logging'
 import { ElemID } from '@salto-io/adapter-api'
 import { getCliTelemetry } from '../telemetry'
 import { EnvironmentArgs } from './env'
@@ -27,6 +28,7 @@ import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace
 import Prompts from '../prompts'
 import { formatTargetEnvRequired, formatInvalidID, formatStepStart, formatStepFailed, formatStepCompleted, formatUnknownTargetEnv, formatSourceEnvRequired } from '../formatter'
 
+const log = logger(module)
 const toCommonInput = 'common'
 const toEnvsInput = 'envs'
 
@@ -52,7 +54,6 @@ const validateEnvs = (
 }
 
 type CopyArgs = {
-  force: boolean
   fromEnv: string
   toEnvs: string[]
 }
@@ -63,6 +64,7 @@ type MoveArgs = {
 
 type ElementArgs = {
   command: string
+  force: boolean
   elmSelectors: string[]
 } & CopyArgs & MoveArgs
 
@@ -135,6 +137,12 @@ export const command = (
   elementArgs: ElementArgs,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
+    log.debug(
+      `running element ${elementArgs.command} command on '${workspaceDir}' env=${elementArgs.env},
+      , to=${elementArgs.to}, fromEnv=${elementArgs.fromEnv}, toEnvs=${elementArgs.toEnvs},
+      , force=${elementArgs.force}, elmSelectors=${elementArgs.elmSelectors}`
+    )
+
     if ((elementArgs.command === 'copy') && (elementArgs.fromEnv === undefined)) {
       output.stdout.write(formatStepFailed(formatSourceEnvRequired()))
       return CliExitCode.UserInputError

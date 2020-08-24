@@ -78,7 +78,7 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running diff command on '${workspaceDir}', detailedPlan=${detailedPlan}
-        , environment=${fromEnv}, services=${inputServices}, toEnv=${toEnv}
+        , services=${inputServices}, fromEnv=${fromEnv}, toEnv=${toEnv}
         , inputHidden=${inputHidden}, inputState=${inputState}, elmSelectors=${elmSelectors}`)
 
     const { filters, invalidFilters } = createRegexFilters(elmSelectors)

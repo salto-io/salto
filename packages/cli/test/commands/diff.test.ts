@@ -255,7 +255,6 @@ describe('diff command', () => {
       ).execute()
     })
 
-
     it('should return success status', async () => {
       expect(result).toBe(CliExitCode.UserInputError)
     })

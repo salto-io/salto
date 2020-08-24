@@ -64,10 +64,6 @@ jest.mock('@salto-io/lowerdash', () => ({
 
 const mockExecuteAction = jest.fn()
 
-jest.mock('../../src/client/sdf_root_cli_path', () => ({
-  getRootCLIPath: jest.fn().mockResolvedValue('path/to/cli'),
-}))
-
 jest.mock('@salto-io/suitecloud-cli', () => ({
   SDKOperationResultUtils: {
     hasErrors: jest.fn().mockImplementation(operationResult =>

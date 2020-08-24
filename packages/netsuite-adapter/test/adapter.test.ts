@@ -35,10 +35,6 @@ import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 
-jest.mock('../src/client/sdf_root_cli_path', () => ({
-  getRootCLIPath: jest.fn().mockReturnValue('path/to/cli'),
-}))
-
 jest.mock('../src/config', () => ({
   ...jest.requireActual('../src/config'),
   getConfigFromConfigChanges: jest.fn(),

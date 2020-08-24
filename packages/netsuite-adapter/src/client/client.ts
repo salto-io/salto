@@ -13,18 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import type {
-  AuthenticationService as AuthenticationServiceType,
-  CommandsMetadataService as CommandsMetadataServiceType,
-  CommandActionExecutor as CommandActionExecutorType,
-  CommandInstanceFactory as CommandInstanceFactoryType,
-  CLIConfigurationService as CLIConfigurationServiceType,
-  CommandOptionsValidator as CommandOptionsValidatorType,
-  CommandOutputHandler as CommandOutputHandlerType,
-  SDKOperationResultUtils as SDKOperationResultUtilsType,
+import {
+  AuthenticationService, CLIConfigurationService, CommandActionExecutor, CommandInstanceFactory,
+  CommandOptionsValidator, CommandOutputHandler, CommandsMetadataService, SDKOperationResultUtils,
   OperationResult,
 } from '@salto-io/suitecloud-cli'
-
 import { collections, decorators, hash, promises, values } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
@@ -35,7 +28,6 @@ import Bottleneck from 'bottleneck'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
-import { getRootCLIPath } from './sdf_root_cli_path'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
   FOLDER,
@@ -44,33 +36,6 @@ import {
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
-
-let AuthenticationService: typeof AuthenticationServiceType
-let CommandsMetadataService: typeof CommandsMetadataServiceType
-let CommandActionExecutor: typeof CommandActionExecutorType
-let CommandInstanceFactory: typeof CommandInstanceFactoryType
-let CLIConfigurationService: typeof CLIConfigurationServiceType
-let CommandOptionsValidator: typeof CommandOptionsValidatorType
-let CommandOutputHandler: typeof CommandOutputHandlerType
-let SDKOperationResultUtils: typeof SDKOperationResultUtilsType
-
-try {
-  // eslint-disable-next-line max-len
-  // eslint-disable-next-line import/no-extraneous-dependencies,@typescript-eslint/no-var-requires,global-require
-  const module = require('@salto-io/suitecloud-cli')
-  AuthenticationService = module.AuthenticationService
-  CommandsMetadataService = module.CommandsMetadataService
-  CommandActionExecutor = module.CommandActionExecutor
-  CommandInstanceFactory = module.CommandInstanceFactory
-  CLIConfigurationService = module.CLIConfigurationService
-  CommandOptionsValidator = module.CommandOptionsValidator
-  CommandOutputHandler = module.CommandOutputHandler
-  SDKOperationResultUtils = module.SDKOperationResultUtils
-} catch (e) {
-  // TODO: this is a temp solution as we can't distribute salto with suitecloud-cli
-  log.debug('Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing')
-  log.debug('If you want to use Netsuite adapter follow the instructions in the README file')
-}
 
 export type Credentials = {
   accountId: string
@@ -113,6 +78,7 @@ export const fileCabinetTopLevelFolders = [
 ]
 
 const baseExecutionPath = os.tmpdir()
+const rootCLIPath = osPath.join(require.resolve('@salto-io/suitecloud-cli'), '..', 'src')
 
 export interface CustomizationInfo {
   typeName: string
@@ -210,7 +176,7 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
 
 type Project = {
   projectName: string
-  executor: CommandActionExecutorType
+  executor: CommandActionExecutor
 }
 
 export type GetCustomObjectsResult = {
@@ -248,8 +214,8 @@ export default class NetsuiteClient {
     return Promise.resolve(netsuiteClient.credentials.accountId)
   }
 
-  private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
-    const commandsMetadataService = new CommandsMetadataService(getRootCLIPath())
+  private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
+    const commandsMetadataService = new CommandsMetadataService(rootCLIPath)
     commandsMetadataService.initializeCommandsMetadata()
     return new CommandActionExecutor({
       executionPath,
@@ -285,7 +251,7 @@ export default class NetsuiteClient {
         arguments: {
           projectname: projectName,
           type: 'ACCOUNTCUSTOMIZATION',
-          parentdirectory: getRootCLIPath(),
+          parentdirectory: rootCLIPath,
         },
       })
     NetsuiteClient.verifySuccessfulOperation(operationResult, COMMANDS.CREATE_PROJECT)
@@ -301,7 +267,7 @@ export default class NetsuiteClient {
   }
 
   private async executeProjectAction(commandName: string, commandArguments: Values,
-    projectCommandActionExecutor: CommandActionExecutorType): Promise<OperationResult> {
+    projectCommandActionExecutor: CommandActionExecutor): Promise<OperationResult> {
     const operationResult = await this.sdfCallsLimiter.schedule(() =>
       projectCommandActionExecutor.executeAction({
         commandName,
@@ -312,9 +278,7 @@ export default class NetsuiteClient {
     return operationResult
   }
 
-  protected async setupAccount(
-    projectCommandActionExecutor: CommandActionExecutorType
-  ): Promise<void> {
+  protected async setupAccount(projectCommandActionExecutor: CommandActionExecutor): Promise<void> {
     // Todo: use the correct implementation and not Salto's temporary solution after:
     //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
     const setupAccountUsingExistingAuthID = async (): Promise<void> => {
@@ -378,7 +342,7 @@ export default class NetsuiteClient {
   }
 
   private async importObjects(typeNames: string[], fetchAllAtOnce: boolean,
-    executor: CommandActionExecutorType):
+    executor: CommandActionExecutor):
     Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
     const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
@@ -400,8 +364,8 @@ export default class NetsuiteClient {
     }
   }
 
-  private async importObjectsByTypes(typeNames: string[],
-    executor: CommandActionExecutorType): Promise<string[]> {
+  private async importObjectsByTypes(typeNames: string[], executor: CommandActionExecutor):
+    Promise<string[]> {
     const failedTypes: string[] = []
     log.debug('Fetching custom objects one by one')
     await withLimitedConcurrency( // limit the number of open promises
@@ -420,7 +384,7 @@ export default class NetsuiteClient {
     return failedTypes
   }
 
-  private async runImportObjectsCommand(type: string, executor: CommandActionExecutorType):
+  private async runImportObjectsCommand(type: string, executor: CommandActionExecutor):
     Promise<OperationResult> {
     return this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
@@ -430,7 +394,7 @@ export default class NetsuiteClient {
     }, executor)
   }
 
-  private async listFilePaths(executor: CommandActionExecutorType, filePathRegexSkipList: RegExp[]):
+  private async listFilePaths(executor: CommandActionExecutor, filePathRegexSkipList: RegExp[]):
     Promise<{ listedPaths: string[]; failedPaths: string[] }> {
     const failedPaths: string[] = []
     const operationResults = (await Promise.all(
@@ -450,7 +414,7 @@ export default class NetsuiteClient {
     }
   }
 
-  private async importFiles(filePaths: string[], executor: CommandActionExecutorType):
+  private async importFiles(filePaths: string[], executor: CommandActionExecutor):
     Promise<{ importedPaths: string[]; failedPaths: string[] }> {
     try {
       const operationResult = await this.executeProjectAction(

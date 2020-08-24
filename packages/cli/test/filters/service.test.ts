@@ -155,13 +155,6 @@ describe('service filter', () => {
           out = await runCli('service add sales force')
           expect(out.err).toMatch('')
         })
-
-        describe('nologin flag', () => {
-          it('succeed with add --nologin', async () => {
-            out = await runCli('service add salesforce --nologin')
-            expect(out.err).toMatch('')
-          })
-        })
       })
     })
   })

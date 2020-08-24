@@ -175,8 +175,8 @@ const servicesBuilder = createCommandBuilder({
     description: 'Manage your environment services',
     keyed: {
       nologin: {
-        alias: ['nl'],
-        describe: 'Add the service without logging in to it (should follow \'service add <service-name>\').',
+        alias: ['n'],
+        describe: 'Do not login to service when adding it. Example usage: \'service add <service-name> --nologin\'.',
         boolean: true,
         default: false,
         demandOption: false,

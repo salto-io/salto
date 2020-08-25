@@ -480,6 +480,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         resolvedChangeGroup,
         this.client,
         this.filtersRunner,
+        this.userConfig.dataManagement,
       )]
     } else {
       results = await Promise.all(

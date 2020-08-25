@@ -63,8 +63,8 @@ const isReferenceField = (field: Field): boolean =>
 const getReferenceTo = (field: Field): string[] =>
   makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
 
-const buildQueryString = (type: ObjectType, ids?: string[]): string => {
-  const selectStr = Object.values(type.fields)
+export const buildSelectStr = (fields: Field[]): string => (
+  fields
     // the "queryable" annotation defaults to true when missing
     .filter(field => field.annotations[FIELD_ANNOTATIONS.QUERYABLE] !== false)
     .map(field => {
@@ -72,7 +72,10 @@ const buildQueryString = (type: ObjectType, ids?: string[]): string => {
         return Object.keys((field.type as ObjectType).fields).join(',')
       }
       return apiName(field, true)
-    }).join(',')
+    }).join(','))
+
+const buildQueryString = (type: ObjectType, ids?: string[]): string => {
+  const selectStr = buildSelectStr(Object.values(type.fields))
   const whereStr = (ids === undefined || _.isEmpty(ids)) ? '' : ` WHERE Id IN (${ids.map(id => `'${id}'`).join(',')})`
   return `SELECT ${selectStr} FROM ${apiName(type)}${whereStr}`
 }
@@ -107,6 +110,23 @@ type recordToInstanceParams = {
   instanceSaltoName: string
 }
 
+export const transformCompoundNameValues = (
+  type: ObjectType,
+  recordValue: SalesforceRecord
+): SalesforceRecord => {
+  const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
+  // We assume there's only one Name field
+  const nameFieldName = Object.keys(_.pickBy(type.fields, isNameField))[0]
+  const subNameValues = _.pick(recordValue, nameSubFields)
+  return (_.isUndefined(nameFieldName) || _.isEmpty(subNameValues))
+    ? recordValue
+    : {
+      ..._.omit(recordValue, nameSubFields),
+      [nameFieldName]: subNameValues,
+      [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
+    }
+}
+
 const recordToInstance = (
   { type, record, instanceSaltoName }: recordToInstanceParams
 ): InstanceElement => {
@@ -118,19 +138,6 @@ const recordToInstance = (
     }
     return [SALESFORCE, OBJECTS_PATH, type.elemID.typeName, RECORDS_PATH, instanceName]
   }
-  // Name compound sub-fields are returned at top level -> move them to the nameField
-  const transformCompoundNameValues = (recordValue: SalesforceRecord): SalesforceRecord => {
-    const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
-    // We assume there's only one Name field
-    const nameFieldName = Object.keys(_.pickBy(type.fields, isNameField))[0]
-    return _.isUndefined(nameFieldName)
-      ? recordValue
-      : {
-        ..._.omit(recordValue, nameSubFields),
-        [nameFieldName]: _.pick(recordValue, nameSubFields),
-        [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
-      }
-  }
   const { name } = Types.getElemId(
     instanceSaltoName,
     true,
@@ -139,7 +146,7 @@ const recordToInstance = (
   return new InstanceElement(
     name,
     type,
-    transformCompoundNameValues(record),
+    transformCompoundNameValues(type, record),
     getInstancePath(name),
   )
 }
@@ -325,21 +332,24 @@ const getParentFieldNames = (fields: Field[]): string[] =>
       && Types.primitiveDataTypes.MasterDetail.isEqual(field.type))
     .map(field => field.name)
 
-const getIdFields = (
+export const getIdFields = (
   type: ObjectType,
-  idFieldsNames: string[]
+  config: DataManagementConfig
 ): { idFields: Field[]; invalidFields?: string[] } => {
-  const typeFields = type.fields
+  const typeOverride = makeArray(config.saltoIDSettings?.overrides)
+    .find(objectIdSetting => new RegExp(objectIdSetting.objectsRegex).test(apiName(type)))
+  const idFieldsNames = typeOverride === undefined
+    ? config.saltoIDSettings?.defaultIdFields : typeOverride.idFields
   const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
     ((fieldName === detectsParentsIndicator)
-      ? getParentFieldNames(Object.values(typeFields)) : fieldName))
+      ? getParentFieldNames(Object.values(type.fields)) : fieldName))
   const invalidIdFieldNames = idFieldsWithParents
-    .filter(fieldName => typeFields[fieldName] === undefined
-        || typeFields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] === false)
+    .filter(fieldName => type.fields[fieldName] === undefined
+        || type.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] === false)
   if (invalidIdFieldNames.length > 0) {
     return { idFields: [], invalidFields: invalidIdFieldNames }
   }
-  return { idFields: idFieldsWithParents.map(fieldName => typeFields[fieldName]) }
+  return { idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]) }
 }
 
 const getCustomObjectsFetchSettings = (
@@ -356,16 +366,8 @@ const getCustomObjectsFetchSettings = (
     allowReferencesToRegexes.some(objRegex => objRegex.test(apiName(type)))
   const relevantTypes = types
     .filter(customObject => isBaseType(customObject) || isReferencedType(customObject))
-  const idSettingsOverrides = makeArray(config.saltoIDSettings?.overrides)
-  const getIdFieldNames = (type: ObjectType): string[] => {
-    const typeOverride = idSettingsOverrides
-      .find(objectIdSetting => new RegExp(objectIdSetting.objectsRegex).test(apiName(type)))
-    return typeOverride === undefined
-      ? config.saltoIDSettings?.defaultIdFields : typeOverride.idFields
-  }
-
   const typeToFetchSettings = (type: ObjectType): CustomObjectFetchSetting => {
-    const fields = getIdFields(type, getIdFieldNames(type))
+    const fields = getIdFields(type, config)
     return {
       objectType: type,
       isBase: isBaseType(type),

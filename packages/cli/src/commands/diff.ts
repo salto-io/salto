@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { errors } from '@salto-io/workspace'
 import { diff, LocalChange, loadLocalWorkspace } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -26,7 +25,7 @@ import { getCliTelemetry } from '../telemetry'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { formatDetailedChanges, formatInvalidFilters, formatStepStart, formatStepCompleted, header } from '../formatter'
-import { outputLine } from '../outputer'
+import { outputLine, errorOutputLine } from '../outputer'
 import { createRegexFilters } from '../convertors'
 
 const log = logger(module)
@@ -82,17 +81,19 @@ export const command = (
 
     const { filters, invalidFilters } = createRegexFilters(elmSelectors)
     if (!_.isEmpty(invalidFilters)) {
-      output.stderr.write(formatInvalidFilters(invalidFilters))
+      errorOutputLine(formatInvalidFilters(invalidFilters), output)
       return CliExitCode.UserInputError
     }
 
     const workspace = await loadLocalWorkspace('.')
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     if (!(workspace.envs().includes(fromEnv))) {
-      throw new errors.UnknownEnvError(fromEnv)
+      errorOutputLine(`Unknown environment ${fromEnv}`, output)
+      return CliExitCode.UserInputError
     }
     if (!(workspace.envs().includes(toEnv))) {
-      throw new errors.UnknownEnvError(toEnv)
+      errorOutputLine(`Unknown environment ${toEnv}`, output)
+      return CliExitCode.UserInputError
     }
     cliTelemetry.start(workspaceTags)
     outputLine(EOL, output)

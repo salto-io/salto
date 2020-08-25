@@ -16,11 +16,13 @@
 import { Workspace } from '@salto-io/workspace'
 import { ElemID } from '@salto-io/adapter-api'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
-import { command, ElementArgs } from '../../src/commands/element'
+import { command } from '../../src/commands/element'
 
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import Prompts from '../../src/prompts'
+import { formatTargetEnvRequired } from '../../src/formatter'
 
 const commandName = 'element'
 const eventsNames = {
@@ -56,18 +58,18 @@ describe('element command', () => {
         config: { services },
       } as unknown as Workspace
       mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-      const commandArgs = {
-        command: 'copy',
-        fromEnv: 'active',
-        toEnvs: ['inactive'],
-      } as ElementArgs
-
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs
+        'copy',
+        false,
+        [],
+        'active',
+        ['incative'],
+        undefined,
+        undefined,
       ).execute()
     })
 
@@ -79,7 +81,7 @@ describe('element command', () => {
     })
   })
 
-  describe('when workspace throws an error', () => {
+  describe('when workspace throws an error on copy', () => {
     const workspaceName = 'unexpected-error'
     const workspace = {
       ...mocks.mockLoadWorkspace(workspaceName),
@@ -95,18 +97,18 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
-      const commandArgs = {
-        command: 'copy',
-        fromEnv: 'active',
-        toEnvs: ['inactive'],
-        elmSelectors: ['salto.Account'],
-      } as ElementArgs
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs,
+        'copy',
+        false,
+        ['salto.Account'],
+        'active',
+        ['inactive'],
+        undefined,
+        undefined
       ).execute()
     })
 
@@ -122,8 +124,56 @@ describe('element command', () => {
     })
 
     it('should print failure to console', () => {
-      expect(cliOutput.stdout.content)
+      expect(cliOutput.stderr.content)
         .toContain('Failed to copy the selected elements to the target environments')
+    })
+  })
+
+  describe('when workspace throws an error on move', () => {
+    const workspaceName = 'unexpected-error'
+    const workspace = {
+      ...mocks.mockLoadWorkspace(workspaceName),
+      flush: async () => {
+        throw new Error('Oy Vey Zmir')
+      },
+    }
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+      mockLoadWorkspace.mockResolvedValue({
+        workspace,
+        errored: false,
+      })
+      result = await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'move',
+        false,
+        ['salto.Account'],
+        undefined,
+        undefined,
+        'common',
+        undefined
+      ).execute()
+    })
+
+
+    it('should return failure code', () => {
+      expect(result).toBe(CliExitCode.AppError)
+    })
+
+    it('should send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(2)
+      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+    })
+
+    it('should print failure to console', () => {
+      expect(cliOutput.stderr.content)
+        .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
     })
   })
 
@@ -138,18 +188,19 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
-      const commandArgs = {
-        command: 'copy',
-        fromEnv: 'active',
-        toEnvs: ['inactive'],
-        elmSelectors: ['a.b.c.d'],
-      } as ElementArgs
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs,
+        'copy',
+        false,
+        ['a.b.c.d'],
+        'active',
+        ['inactive'],
+        undefined,
+        undefined,
+
       ).execute()
     })
 
@@ -176,7 +227,61 @@ describe('element command', () => {
     })
 
     it('should print copy to console', () => {
-      expect(cliOutput.stdout.content).toContain('Failed to created element ID filters')
+      expect(cliOutput.stderr.content).toContain('Failed to created element ID filters')
+    })
+  })
+
+  describe('with copy without to-envs', () => {
+    const workspaceName = 'valid-ws'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+    mockLoadWorkspace.mockResolvedValue({
+      workspace,
+      errored: false,
+    })
+    it('should fail', async () => {
+      await expect(await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'copy',
+        false,
+        [],
+        undefined,
+        ['inactive'],
+        undefined,
+        undefined,
+      ).execute()).toBe(CliExitCode.UserInputError)
+    })
+  })
+
+  describe('with move without to', () => {
+    const workspaceName = 'valid-ws'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+    mockLoadWorkspace.mockResolvedValue({
+      workspace,
+      errored: false,
+    })
+    it('should fail', async () => {
+      await expect(await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'move',
+        false,
+        [],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      ).execute()).toBe(CliExitCode.UserInputError)
     })
   })
 
@@ -190,19 +295,60 @@ describe('element command', () => {
       workspace,
       errored: false,
     })
-    const commandArgs = {
-      command: 'InvalidCommand',
-      fromEnv: 'active',
-      toEnvs: ['inactive'],
-    } as ElementArgs
     it('should fail', async () => {
-      await expect(command(
+      await expect(await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs,
-      ).execute()).rejects.toThrow(Error)
+        'InvalidCommand',
+        false,
+        [],
+        'active',
+        ['inactive'],
+        undefined,
+        undefined,
+      ).execute()).toBe(CliExitCode.UserInputError)
+    })
+  })
+  describe('move with invalid \'to\' argument', () => {
+    const workspaceName = 'valid-ws'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    const selector = new ElemID('salto', 'Account')
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+      mockLoadWorkspace.mockResolvedValue({
+        workspace,
+        errored: false,
+      })
+      result = await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'move',
+        false,
+        [selector.getFullName()],
+        undefined,
+        undefined,
+        'ToNoWhere',
+        undefined,
+      ).execute()
+    })
+
+    it('should return failure code', () => {
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+    it('should send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(2)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+    })
+
+    it('should print failure to console', () => {
+      expect(cliOutput.stderr.content)
+        .toContain('Unknown direction for move command. \'to\' argument required.')
     })
   })
 
@@ -218,18 +364,18 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
-      const commandArgs = {
-        command: 'copy',
-        fromEnv: 'active',
-        toEnvs: ['inactive'],
-        elmSelectors: [selector.getFullName()],
-      } as ElementArgs
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs
+        'copy',
+        false,
+        [selector.getFullName()],
+        'active',
+        ['inactive'],
+        undefined,
+        undefined,
       ).execute()
     })
 
@@ -269,18 +415,18 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
-      const commandArgs = {
-        command: 'copy',
-        fromEnv: 'active',
-        toEnvs: ['inactive', 'unknown'],
-        elmSelectors: [selector.getFullName()],
-      } as ElementArgs
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs,
+        'copy',
+        false,
+        [selector.getFullName()],
+        'active',
+        ['inactive', 'unknown'],
+        undefined,
+        undefined,
       ).execute()
     })
 
@@ -294,8 +440,48 @@ describe('element command', () => {
     })
 
     it('should print failure to console', () => {
-      expect(cliOutput.stdout.content)
+      expect(cliOutput.stderr.content)
         .toContain('Unknown target environment')
+    })
+  })
+  describe('copy with empty list as target envs', () => {
+    const workspaceName = 'valid-ws'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    const selector = new ElemID('salto', 'Account')
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+      mockLoadWorkspace.mockResolvedValue({
+        workspace,
+        errored: false,
+      })
+      result = await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'copy',
+        false,
+        [selector.getFullName()],
+        'active',
+        [],
+        undefined,
+        undefined
+      ).execute()
+    })
+
+    it('should return failure code', () => {
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+    it('should send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+    })
+
+    it('should print failure to console', () => {
+      expect(cliOutput.stderr.content)
+        .toContain(formatTargetEnvRequired())
     })
   })
   describe('copy with current env as target env', () => {
@@ -310,18 +496,18 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
-      const commandArgs = {
-        command: 'copy',
-        fromEnv: 'active',
-        toEnvs: ['active'],
-        elmSelectors: [selector.getFullName()],
-      } as ElementArgs
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs,
+        'copy',
+        false,
+        [selector.getFullName()],
+        'active',
+        ['active'],
+        undefined,
+        undefined
       ).execute()
     })
 
@@ -334,11 +520,10 @@ describe('element command', () => {
     })
 
     it('should print failure to console', () => {
-      expect(cliOutput.stdout.content)
-        .toContain('The current environment cannot be a target environment')
+      expect(cliOutput.stderr.content)
+        .toContain(Prompts.INVALID_ENV_TARGET_CURRENT)
     })
   })
-
   describe('valid move to common', () => {
     const workspaceName = 'valid-ws'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
@@ -351,17 +536,18 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
-      const commandArgs = {
-        command: 'move',
-        to: 'common',
-        elmSelectors: [selector.getFullName()],
-      } as ElementArgs
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs,
+        'move',
+        false,
+        [selector.getFullName()],
+        undefined,
+        undefined,
+        'common',
+        'active',
       ).execute()
     })
 
@@ -401,17 +587,18 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
-      const commandArgs = {
-        command: 'move',
-        to: 'envs',
-        elmSelectors: [selector.getFullName()],
-      } as ElementArgs
       result = await command(
         '',
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        commandArgs,
+        'move',
+        false,
+        [selector.getFullName()],
+        undefined,
+        undefined,
+        'envs',
+        'active',
       ).execute()
     })
 

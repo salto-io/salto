@@ -24,10 +24,9 @@ import {
   formatRenameEnv, formatApproveIsolateCurrentEnvPrompt, formatDoneIsolatingCurrentEnv,
 } from '../formatter'
 import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
+import { outputLine, errorOutputLine } from '../outputer'
 
 const NEW_ENV_NAME = 'new-name'
-
-const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 
 const setEnvironment = async (
   envName: string,
@@ -35,7 +34,7 @@ const setEnvironment = async (
   workspace: Workspace,
 ): Promise<CliExitCode> => {
   await workspace.setCurrentEnv(envName)
-  outputLine(output, formatSetEnv(envName))
+  outputLine(formatSetEnv(envName), output)
   return CliExitCode.Success
 }
 
@@ -68,10 +67,10 @@ const maybeIsolateExistingEnv = async (
     && await shouldRecommendToIsolateCurrentEnv(workspace, workspaceDir)
   ) {
     const existingEnv = workspace.envs()[0]
-    outputLine(output, formatApproveIsolateCurrentEnvPrompt(existingEnv))
+    outputLine(formatApproveIsolateCurrentEnvPrompt(existingEnv), output)
     if (acceptSuggestions || await cliApproveIsolateBeforeMultiEnv(existingEnv)) {
       await isolateExistingEnvironments(workspace)
-      outputLine(output, formatDoneIsolatingCurrentEnv(existingEnv))
+      outputLine(formatDoneIsolatingCurrentEnv(existingEnv), output)
     }
   }
 }
@@ -88,7 +87,7 @@ const createEnvironment = async (
 
   await workspace.addEnvironment(envName)
   await setEnvironment(envName, output, workspace)
-  outputLine(output, formatCreateEnv(envName))
+  outputLine(formatCreateEnv(envName), output)
   return CliExitCode.Success
 }
 
@@ -98,7 +97,7 @@ const deleteEnvironment = async (
   workspace: Workspace,
 ): Promise<CliExitCode> => {
   await workspace.deleteEnvironment(envName)
-  outputLine(output, formatDeleteEnv(envName))
+  outputLine(formatDeleteEnv(envName), output)
   return CliExitCode.Success
 }
 
@@ -109,7 +108,7 @@ const renameEnvironment = async (
   workspace: Workspace,
 ): Promise<CliExitCode> => {
   await workspace.renameEnvironment(envName, newEnvName)
-  outputLine(output, formatRenameEnv(envName, newEnvName))
+  outputLine(formatRenameEnv(envName, newEnvName), output)
   return CliExitCode.Success
 }
 
@@ -117,7 +116,7 @@ const getCurrentEnv = (
   output: CliOutput,
   workspace: Workspace,
 ): CliExitCode => {
-  outputLine(output, formatCurrentEnv(workspace.currentEnv()))
+  outputLine(formatCurrentEnv(workspace.currentEnv()), output)
   return CliExitCode.Success
 }
 
@@ -126,7 +125,7 @@ const listEnvs = (
   workspace: Workspace,
 ): CliExitCode => {
   const list = formatEnvListItem(workspace.envs(), workspace.currentEnv())
-  outputLine(output, list)
+  outputLine(list, output)
   return CliExitCode.Success
 }
 
@@ -144,16 +143,19 @@ export const command = (
   async execute(): Promise<CliExitCode> {
     if (namesRequiredCommands.includes(commandName)
       && (_.isEmpty(envName) || _.isEmpty(newEnvName))) {
-      throw new Error('Missing required argument\n\n'
-        + `Example usage: salto env ${commandName} <name> <new-name>`)
+      errorOutputLine('Missing required argument\n\n'
+      + `Example usage: salto env ${commandName} <name> <new-name>`, output)
+      return CliExitCode.UserInputError
     }
     if (_.isEmpty(envName) && nameRequiredCommands.includes(commandName)) {
-      throw new Error('Missing required argument: name\n\n'
-        + `Example usage: salto env ${commandName} <name>`)
+      errorOutputLine('Missing required argument: name\n\n'
+      + `Example usage: salto env ${commandName} <name>`, output)
+      return CliExitCode.UserInputError
     }
     if (!_.isEmpty(envName) && !nameRequiredCommands.includes(commandName)) {
-      throw new Error(`Unknown argument: ${envName}\n\n`
-        + `Example usage: salto env ${commandName}`)
+      errorOutputLine(`Unknown argument: ${envName}\n\n`
+      + `Example usage: salto env ${commandName}`, output)
+      return CliExitCode.UserInputError
     }
 
     const workspace = await loadLocalWorkspace(workspaceDir)
@@ -178,7 +180,8 @@ export const command = (
       case 'rename':
         return renameEnvironment(envName as string, newEnvName as string, output, workspace)
       default:
-        throw new Error('Unknown environment management command')
+        errorOutputLine('Unknown environment management command', output)
+        return CliExitCode.UserInputError
     }
   },
 })

@@ -19,6 +19,7 @@ import { CliOutput } from './types'
 import { formatStepStart, formatStepCompleted, formatStepFailed } from './formatter'
 
 export const outputLine = (text: string, output: CliOutput): void => output.stdout.write(`${text}\n`)
+export const errorOutputLine = (text: string, output: CliOutput): void => output.stderr.write(`${text}\n`)
 export const progressOutputer = (
   startText: string,
   successText: string,

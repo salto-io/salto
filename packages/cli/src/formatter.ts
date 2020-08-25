@@ -600,8 +600,3 @@ export const formatTargetEnvRequired = (): string => [
   formatSimpleError(Prompts.TARGET_ENVS_REQUIRED),
   emptyLine(),
 ].join('\n')
-
-export const formatSourceEnvRequired = (): string => [
-  formatSimpleError(Prompts.SOURCE_ENV_REQUIRED),
-  emptyLine(),
-].join('\n')

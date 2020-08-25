@@ -52,7 +52,7 @@ import flowFilter from './filters/flow'
 import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
-import settingsFilter from './filters/settings_type'
+import settingsFilter, { SETTINGS_METADATA_TYPE } from './filters/settings_type'
 import workflowFilter from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
@@ -64,6 +64,7 @@ import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
 import hideTypesFilter from './filters/hide_types'
+import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
@@ -79,6 +80,7 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   // should run before missingFieldsFilter
   settingsFilter,
+  customFeedFilterFilter,
   missingFieldsFilter,
   // should run before customObjectsFilter
   workflowFilter,
@@ -185,6 +187,9 @@ export interface SalesforceAdapterParams {
   // types from the API
   metadataTypesSkippedList?: string[]
 
+  // Metadata types that are being fetched in the filters
+  metadataTypesOfInstancesFetchedInFilters?: string[]
+
   // Determine whether hide type folder
   enableHideTypesInNacls?: boolean
 
@@ -270,6 +275,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
+  private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, string[]>
   private filtersRunner: Required<Filter>
   private client: SalesforceClient
@@ -280,13 +286,14 @@ export default class SalesforceAdapter implements AdapterOperations {
     enableHideTypesInNacls = constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
-      'Settings',
+      SETTINGS_METADATA_TYPE,
       'NetworkBranding',
       'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
       'KnowledgeSettings',
     ],
+    metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
     instancesRegexSkippedList = [],
     maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
@@ -359,6 +366,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
+    this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
     this.systemFields = systemFields
@@ -830,6 +838,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       const result = await Promise.all(metadataTypesToRead
         // Just fetch metadata instances of the types that we receive from the describe call
         .filter(type => !this.metadataAdditionalTypes.includes(apiName(type)))
+        .filter(type => !this.metadataTypesOfInstancesFetchedInFilters.includes(apiName(type)))
         .map(async type => {
           const { elements, configChanges } = await this.listMetadataInstances(apiName(type))
           return {

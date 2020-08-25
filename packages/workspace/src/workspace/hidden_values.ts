@@ -18,6 +18,7 @@ import {
   CORE_ANNOTATIONS, Element, InstanceElement,
   isInstanceElement, isType, Values, isListType,
   TypeElement,
+  getFieldType,
 } from '@salto-io/adapter-api'
 import {
   transformElement, TransformFunc, transformValues,
@@ -27,8 +28,19 @@ import {
   updateMergedTypes,
 } from '../merger'
 
-const isHiddenType = (element: Element): boolean => isType(element)
-  && (element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+const isHidden = (element?: Element): boolean => (
+  element?.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+)
+
+export const isHiddenType = (element: Element): boolean => (
+  isType(element) && isHidden(element)
+)
+
+export const isHiddenField = (baseType: TypeElement, fieldPath: ReadonlyArray<string>): boolean => (
+  fieldPath.length === 0
+    ? false
+    : isHidden(getFieldType(baseType, fieldPath)) || isHiddenField(baseType, fieldPath.slice(0, -1))
+)
 
 export const addHiddenValuesAndHiddenTypes = (
   workspaceElements: ReadonlyArray<Element>,
@@ -41,7 +53,7 @@ export const addHiddenValuesAndHiddenTypes = (
     if (isInstanceElement(stateElement)) {
       const hiddenMap = new collections.map.DefaultMap<string, Values>(() => ({}))
       const createHiddenMapCallback: TransformFunc = ({ value, path, field }) => {
-        if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true && path !== undefined) {
+        if (isHidden(field) && path !== undefined) {
           hiddenMap.get(path.createParentID().getFullName())[path.name] = value
         }
         return value
@@ -111,18 +123,14 @@ export const addHiddenValuesAndHiddenTypes = (
   return elementsWithUpdatedTypes.concat(hiddenTypes)
 }
 
-export const removeHiddenValuesForInstance = (instance: InstanceElement):
-  InstanceElement => {
-  const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
-    if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-      return undefined
-    }
-    return value
-  }
+export const removeHiddenFieldValue: TransformFunc = ({ value, field }) => (
+  isHidden(field) ? undefined : value
+)
 
-  return transformElement({
+export const removeHiddenValuesForInstance = (instance: InstanceElement): InstanceElement => (
+  transformElement({
     element: instance,
     transformFunc: removeHiddenFieldValue,
     strict: false,
   }) || {}
-}
+)

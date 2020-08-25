@@ -17,10 +17,11 @@ import _ from 'lodash'
 import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalChange,
-  CORE_ANNOTATIONS, isAdditionChange, isType, isInstanceElement,
+  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getFieldType, isObjectType,
 } from '@salto-io/adapter-api'
+import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -33,6 +34,9 @@ import { EnvConfig } from './config/workspace_config_types'
 import {
   addHiddenValuesAndHiddenTypes,
   removeHiddenValuesForInstance,
+  removeHiddenFieldValue,
+  isHiddenField,
+  isHiddenType,
 } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import {
@@ -148,22 +152,41 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   }
 
   // Determine if change is new type addition (add action)
-  const isChangeNewHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
-    && isAdditionChange(change)
-    && isType(change.data.after)
-    && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
-
+  const isChangeNewHiddenType = (change: DetailedChange): boolean => (
+    isAdditionChange(change) && isHiddenType(change.data.after)
+  )
 
   const handleHiddenForTypesAndInstances = async (
     change: DetailedChange
-  ): Promise<DetailedChange> => {
-    // Handling new instance addition: removing all hidden (fields) values
-    if (change.id.idType === 'instance'
-      && isAdditionChange(change)
-      && isInstanceElement(change.data.after)
-    ) {
-      const instance = change.data.after as InstanceElement
-      change.data.after = removeHiddenValuesForInstance(instance)
+  ): Promise<DetailedChange | undefined> => {
+    // Handling new instance addition
+    if (change.id.idType === 'instance' && isAdditionChange(change)) {
+      const value = change.data.after
+      if (isInstanceElement(value)) {
+        // Full instance added - remove all hidden fields
+        change.data.after = removeHiddenValuesForInstance(value)
+      } else {
+        // A value inside the instance was added
+        const { parent, path: fieldPath } = change.id.createTopLevelParentID()
+        const parentInstance = await state().get(parent)
+        if (parentInstance !== undefined) {
+          if (isHiddenField(parentInstance, fieldPath)) {
+            // The whole value is hidden, omit the change
+            return undefined
+          }
+          const fieldType = getFieldType(parentInstance, fieldPath)
+          if (fieldType !== undefined && isObjectType(fieldType)) {
+            // The field itself is not hidden, but it might have hidden parts
+            change.data.after = transformValues({
+              values: value,
+              type: fieldType,
+              transformFunc: removeHiddenFieldValue,
+              pathID: change.id,
+              strict: false,
+            })
+          }
+        }
+      }
       return change
     }
 
@@ -204,10 +227,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     changes: DetailedChange[],
     mode?: RoutingMode
   ): Promise<void> => {
-    const changesAfterHiddenRemoved = await Promise.all(changes.filter(
-      change => !isChangeNewHiddenType(change)
-    )
-      .map(change => handleHiddenForTypesAndInstances(change)))
+    const changesAfterHiddenRemoved = (await Promise.all(
+      changes
+        .filter(change => !isChangeNewHiddenType(change))
+        .map(change => handleHiddenForTypesAndInstances(change))
+    )).filter(values.isDefined)
     await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
   }
 

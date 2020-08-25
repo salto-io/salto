@@ -142,11 +142,12 @@ export const deploy = async (
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
     await promises.array.series(appliedChanges.map(change => async () => {
       const updatedElement = await getUpdatedElement(change)
-      const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
-        ? workspace.state().remove(updatedElement.elemID)
-        : workspace.state().set(updatedElement)
-      await stateUpdate
-      changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
+      if (change.action === 'remove' && !isFieldChange(change)) {
+        await workspace.state().remove(updatedElement.elemID)
+      } else {
+        await workspace.state().set(updatedElement)
+        changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
+      }
     }))
   }
   const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)

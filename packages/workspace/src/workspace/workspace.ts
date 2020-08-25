@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalChange,
-  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getFieldType, isObjectType,
+  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getFieldDef, isObjectType,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -170,11 +170,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         const { parent, path: fieldPath } = change.id.createTopLevelParentID()
         const parentInstance = await state().get(parent)
         if (parentInstance !== undefined) {
-          if (isHiddenField(parentInstance, fieldPath)) {
+          if (isHiddenField(parentInstance.type, fieldPath)) {
             // The whole value is hidden, omit the change
             return undefined
           }
-          const fieldType = getFieldType(parentInstance, fieldPath)
+          const fieldType = getFieldDef(parentInstance.type, fieldPath)
           if (fieldType !== undefined && isObjectType(fieldType)) {
             // The field itself is not hidden, but it might have hidden parts
             change.data.after = transformValues({

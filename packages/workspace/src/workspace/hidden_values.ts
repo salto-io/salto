@@ -18,7 +18,7 @@ import {
   CORE_ANNOTATIONS, Element, InstanceElement,
   isInstanceElement, isType, Values, isListType,
   TypeElement,
-  getFieldType,
+  getFieldDef,
 } from '@salto-io/adapter-api'
 import {
   transformElement, TransformFunc, transformValues,
@@ -39,7 +39,8 @@ export const isHiddenType = (element: Element): boolean => (
 export const isHiddenField = (baseType: TypeElement, fieldPath: ReadonlyArray<string>): boolean => (
   fieldPath.length === 0
     ? false
-    : isHidden(getFieldType(baseType, fieldPath)) || isHiddenField(baseType, fieldPath.slice(0, -1))
+    : isHidden(getFieldDef(baseType, fieldPath))
+      || isHiddenField(baseType, fieldPath.slice(0, -1))
 )
 
 export const addHiddenValuesAndHiddenTypes = (

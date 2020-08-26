@@ -201,12 +201,14 @@ describe('fetch', () => {
       })
       describe('when instance type has merge error', () => {
         let fetchChangesResult: FetchChangesResult
+        let dupInstance: InstanceElement
+        let validInstance: InstanceElement
         beforeEach(async () => {
-          const instance = new InstanceElement('instance_elem_id_name', dupTypeBase, { fname: 'fvalue' })
-          const instance2 = new InstanceElement('instance_elem_id_name2', typeWithField, { fname: 'fvalue2' })
+          dupInstance = new InstanceElement('instance_elem_id_name', dupTypeBase, { fname: 'fvalue' })
+          validInstance = new InstanceElement('instance_elem_id_name2', typeWithField, { fname: 'fvalue2' })
           mockAdapters.dummy.fetch.mockResolvedValueOnce(
             Promise.resolve(
-              { elements: [instance, instance2, dupTypeBase, dupTypeBase2, typeWithField] }
+              { elements: [dupInstance, validInstance, dupTypeBase, dupTypeBase2, typeWithField] }
             )
           )
           fetchChangesResult = await fetchChanges(mockAdapters, [], [], [])
@@ -216,8 +218,17 @@ describe('fetch', () => {
         })
         it('should drop instance elements', () => {
           expect(fetchChangesResult.elements).toHaveLength(2)
-          expect(fetchChangesResult.elements.map(e => e.elemID.getFullName())).not.toContain(['dummy.elem.instance.instance_elem_id_name'])
-          expect(fetchChangesResult.elements.map(e => e.elemID.getFullName())).toContain('dummy.elem.instance.instance_elem_id_name2')
+          const elemIds = fetchChangesResult.elements.map(e => e.elemID.getFullName())
+          expect(elemIds).not.toContain(dupTypeBase.elemID.getFullName())
+          expect(elemIds).not.toContain(dupInstance.elemID.getFullName())
+        })
+        it('should drop instances and type from fetch changes', () => {
+          const fetchedChanges = [...fetchChangesResult.changes]
+          const addedElementIds = fetchedChanges
+            .map(change => getChangeElement(change.change))
+            .map(elem => elem.elemID.getFullName())
+          expect(addedElementIds).not.toContain(dupTypeBase.elemID.getFullName())
+          expect(addedElementIds).not.toContain(dupInstance.elemID.getFullName())
         })
       })
     })

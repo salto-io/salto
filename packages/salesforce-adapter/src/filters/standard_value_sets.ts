@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { FileProperties } from 'jsforce-types'
 import {
   Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -167,6 +168,19 @@ const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[
   })
 }
 
+const emptyFileProperties = (fullName: string): FileProperties => ({
+  fullName,
+  createdById: '',
+  createdByName: '',
+  createdDate: '',
+  fileName: '',
+  id: '',
+  lastModifiedById: '',
+  lastModifiedByName: '',
+  lastModifiedDate: '',
+  type: STANDARD_VALUE_SET,
+})
+
 /**
 * Declare the StandardValueSets filter that
 * adds the fixed collection of standard value sets in SFDC
@@ -186,7 +200,7 @@ export const makeFilter = (
     if (svsMetadataType !== undefined) {
       const svsInstances = await fetchMetadataInstances({
         client,
-        instancesNames: [...standardValueSetNames],
+        fileProps: [...standardValueSetNames].map(emptyFileProperties),
         metadataType: svsMetadataType,
         instancesRegexSkippedList: config.instancesRegexSkippedList,
       })

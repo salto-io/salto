@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { FileProperties } from 'jsforce-types'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -25,6 +26,10 @@ export const CUSTOM_FEED_FILTER_METADATA_TYPE_ID = new ElemID(
   SALESFORCE, CUSTOM_FEED_FILTER_METADATA_TYPE
 )
 
+const fixCustomFeedFullName = (props: FileProperties): FileProperties => ({
+  ...props, fullName: `Case.${props.fullName}`,
+})
+
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     const customFeedFilterType = findObjectType(
@@ -33,18 +38,17 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (customFeedFilterType === undefined) {
       return []
     }
-    // Fetch list of all custom feed filters
-    const {
-      elements: customFeedFilterList, configChanges: listObjectsConfigChanges,
-    } = await listMetadataObjects(client, CUSTOM_FEED_FILTER_METADATA_TYPE, [])
+    const { elements: fileProps, configChanges } = await listMetadataObjects(
+      client, CUSTOM_FEED_FILTER_METADATA_TYPE, [],
+    )
     const instances = await fetchMetadataInstances({
       client,
-      instancesNames: customFeedFilterList.map(e => `Case.${e.fullName}`),
+      fileProps: fileProps.map(fixCustomFeedFullName),
       metadataType: customFeedFilterType,
       instancesRegexSkippedList: config.instancesRegexSkippedList,
     })
     instances.elements.forEach(e => elements.push(e))
-    return [...instances.configChanges, ...listObjectsConfigChanges]
+    return [...instances.configChanges, ...configChanges]
   },
 })
 

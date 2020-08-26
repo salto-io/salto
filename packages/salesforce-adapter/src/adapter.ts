@@ -22,9 +22,7 @@ import {
 import {
   resolveChangeElement, restoreChangeElement,
 } from '@salto-io/adapter-utils'
-import {
-  SaveResult, FileProperties, UpsertResult, MetadataObject,
-} from 'jsforce'
+import { SaveResult, UpsertResult, MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { decorators, collections } from '@salto-io/lowerdash'
@@ -878,32 +876,18 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async createMetadataInstances(type: ObjectType):
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = apiName(type)
-    const { elements: objs, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
-      this.client, typeName, []
+    const { elements: fileProps, configChanges } = await listMetadataObjects(
+      this.client, typeName, [],
     )
-    if (objs.length === 0) {
-      return { elements: [], configChanges: listObjectsConfigChanges }
-    }
-    const getFullName = (obj: FileProperties): string => {
-      const namePrefix = obj.namespacePrefix
-        ? `${obj.namespacePrefix}${constants.NAMESPACE_SEPARATOR}` : ''
-      return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
-    }
-    const fullNameToNamespace = _(objs)
-      .map(obj => [getFullName(obj), obj.namespacePrefix])
-      .fromPairs()
-      .value()
-
     const instances = await fetchMetadataInstances({
       client: this.client,
-      instancesNames: objs.map(getFullName),
+      fileProps,
       metadataType: type,
       instancesRegexSkippedList: this.instancesRegexSkippedList,
-      fullNameToNamespace,
     })
     return {
       elements: instances.elements,
-      configChanges: [...instances.configChanges, ...listObjectsConfigChanges],
+      configChanges: [...instances.configChanges, ...configChanges],
     }
   }
 }

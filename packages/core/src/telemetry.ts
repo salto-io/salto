@@ -26,6 +26,7 @@ const MAX_EVENTS_PER_REQUEST = 20
 const EVENTS_API_PATH = '/v1/events'
 const EVENTS_FLUSH_INTERVAL = 1000
 const EVENT_NAME_SEPARATOR = '.'
+const MAX_CONSECUTIVE_RETRIES = 5
 export const DEFAULT_EVENT_NAME_PREFIX = 'salto'
 
 export type TelemetryConfig = {
@@ -87,6 +88,7 @@ const stacktraceFromError = (err: Error): string[] => {
 export type Telemetry = {
   enabled: boolean
 
+  isStopped(): boolean
   sendCountEvent(name: string, value: number, extraTags?: Tags): void
   sendStackEvent(name: string, value: Error, extraTags?: Tags): void
   stop(timeoutMs: number): Promise<void>
@@ -106,6 +108,7 @@ export const telemetrySender = (
   let httpRequestTimeout = axios.defaults.timeout
   let timer = {} as NodeJS.Timer
   let stopped = false
+  let consecutiveRetryCount = 0
   const commonTags = {
     ...tags,
     osArch: arch(),
@@ -137,8 +140,20 @@ export const telemetrySender = (
           { timeout: httpRequestTimeout },
         )
         queuedEvents = []
+        consecutiveRetryCount = 0
       } catch (e) {
         log.debug(`failed sending telemetry events: ${e}`)
+        if (e.response) {
+          const { status } = e.response
+          if (status >= 400 && status < 500) {
+            stopped = true
+          }
+        }
+        consecutiveRetryCount += 1
+        if (consecutiveRetryCount === MAX_CONSECUTIVE_RETRIES) {
+          log.debug('reached maximum retries: %d, giving up on sending events', MAX_CONSECUTIVE_RETRIES)
+          stopped = true
+        }
       }
     }
   }
@@ -146,7 +161,9 @@ export const telemetrySender = (
   const start = (): void => {
     timer = setTimeout(() => {
       flush()
-      start()
+      if (!stopped) {
+        start()
+      }
     }, flushInterval)
   }
 
@@ -186,8 +203,11 @@ export const telemetrySender = (
     newEvents.push(newEvent)
   }
 
+  const isStopped = (): boolean => stopped
+
   const sender = {
     enabled,
+    isStopped,
     sendCountEvent,
     sendStackEvent,
     stop,

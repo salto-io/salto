@@ -71,6 +71,7 @@
     "jest-junit": "^6.4.0",
     "nock": "^12.0.1",
     "tsc-watch": "^2.2.1",
-    "typescript": "3.9.3"
+    "typescript": "3.9.3",
+    "wait-for-expect": "^3.0.2"
   }
 }

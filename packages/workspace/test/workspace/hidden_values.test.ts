@@ -25,6 +25,7 @@ import {
 import {
   addHiddenValuesAndHiddenTypes,
   removeHiddenValuesForInstance,
+  isHiddenField,
 } from '../../src/workspace/hidden_values'
 
 describe('hidden_values.ts', () => {
@@ -349,6 +350,21 @@ describe('hidden_values.ts', () => {
 
     it('should not change new instances', () => {
       expect(normalInstance).toEqual(newNormalInstance)
+    })
+  })
+
+  describe('isHiddenField func', () => {
+    it('should return true for hidden fields', () => {
+      expect(isHiddenField(hiddenType, ['hidden'])).toEqual(true)
+      expect(isHiddenField(hiddenType, ['numHidden'])).toEqual(true)
+      expect(isHiddenField(hiddenType, ['hiddenList'])).toEqual(true)
+      expect(isHiddenField(hiddenType, ['hiddenObj'])).toEqual(true)
+    })
+
+    it('should return false for non-hidden fields', () => {
+      expect(isHiddenField(hiddenType, ['reg'])).toEqual(false)
+      expect(isHiddenField(hiddenType, ['listOfObjects'])).toEqual(false)
+      expect(isHiddenField(hiddenType, ['objField'])).toEqual(false)
     })
   })
 })

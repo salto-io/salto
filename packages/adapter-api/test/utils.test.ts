@@ -16,6 +16,8 @@
 
 import {
   getDeepInnerType,
+  getField,
+  getFieldType,
 } from '../src/utils'
 import {
   ObjectType, ListType, isElement, isField, isListType,
@@ -94,6 +96,23 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
     it('should recognize getDeepInnerType in list of lists', () => {
       expect(getDeepInnerType(mockObjectType.fields.listOfListFieldTest.type as ListType))
         .toEqual(BuiltinTypes.NUMBER)
+    })
+  })
+
+  describe('getField, getFieldType funcs', () => {
+    it('should succeed on a standard field', () => {
+      expect(getField(mockObjectType, ['fieldTest'])).toEqual(mockObjectType.fields.fieldTest)
+      expect(getFieldType(mockObjectType, ['fieldTest'])).toEqual(BuiltinTypes.NUMBER)
+    })
+
+    it('should succeed on a list field', () => {
+      expect(getField(mockObjectType, ['listFieldTest'])).toEqual(mockObjectType.fields.listFieldTest)
+      expect(getFieldType(mockObjectType, ['listFieldTest'])).toEqual(new ListType(BuiltinTypes.NUMBER))
+    })
+
+    it('should return undefined on a nonexistent field', () => {
+      expect(getField(mockObjectType, ['nonExistentField'])).toBeUndefined()
+      expect(getFieldType(mockObjectType, ['nonExistentField'])).toBeUndefined()
     })
   })
 })

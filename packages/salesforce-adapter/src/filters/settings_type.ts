@@ -14,18 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  Element, InstanceElement, isObjectType,
-  ObjectType, TypeElement,
-} from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   createMetadataTypeElements, apiName,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { id } from './utils'
-import { FetchElements, ConfigChangeSuggestion, FilterContext } from '../types'
+import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
 const log = logger(module)
@@ -37,66 +33,26 @@ export const SETTINGS_METADATA_TYPE = 'Settings'
 const createSettingsType = async (
   client: SalesforceClient,
   settingsTypesName: string,
-  knownTypes: Map<string, TypeElement>): Promise<ObjectType[]> => {
+  knownTypes: Map<string, TypeElement>
+): Promise<ObjectType[]> => {
   const typeFields = await client.describeMetadataType(settingsTypesName)
   const baseTypeNames = new Set([settingsTypesName])
-  return createMetadataTypeElements({
-    name: settingsTypesName,
-    fields: typeFields.valueTypeFields,
-    knownTypes,
-    baseTypeNames,
-    client,
-    isSettings: true,
-  })
-}
-
-const createSettingsTypes = async (
-  client: SalesforceClient,
-  config: FilterContext,
-  settingsTypesNames: string[]): Promise<ObjectType[]> => {
-  const knownTypes = new Map<string, TypeElement>()
-  return _.flatten(await Promise.all(settingsTypesNames
-    .map(settingsName => settingsName.concat(SETTINGS_METADATA_TYPE))
-    .filter(typeName => !(config.metadataTypesSkippedList ?? []).includes(typeName))
-    .map(typeName => createSettingsType(client, typeName, knownTypes)
-      .catch(e => {
-        log.error('failed to fetch settings type %s reason: %o', typeName, e)
-        return []
-      }))))
-}
-
-const extractSettingName = (settingType: string): string =>
-  (settingType.endsWith(SETTINGS_METADATA_TYPE) ? settingType.slice(0, -8) : settingType)
-
-// This method receiving settings type and call to readMetadata
-// And creating the new instance
-const createSettingsInstance = async (
-  client: SalesforceClient,
-  settingsType: ObjectType,
-  config: FilterContext
-): Promise<FetchElements<InstanceElement[]>> => {
-  const typeName = apiName(settingsType)
-  return fetchMetadataInstances({
-    client,
-    instancesNames: [extractSettingName(typeName)],
-    metadataType: settingsType,
-    instancesRegexSkippedList: config.instancesRegexSkippedList,
-  })
-}
-
-const createSettingsInstances = async (
-  client: SalesforceClient,
-  config: FilterContext,
-  settingsTypes: ObjectType[]
-): Promise<FetchElements<InstanceElement[]>> => {
-  const settingInstances = await Promise.all((settingsTypes)
-    .filter(s => s.isSettings)
-    .map(s => createSettingsInstance(client, s, config)))
-  return {
-    elements: _.flatten(settingInstances.map(ins => ins.elements)),
-    configChanges: _.flatten(settingInstances.map(ins => ins.configChanges)),
+  try {
+    return createMetadataTypeElements({
+      name: settingsTypesName,
+      fields: typeFields.valueTypeFields,
+      knownTypes,
+      baseTypeNames,
+      client,
+      isSettings: true,
+    })
+  } catch (e) {
+    log.error('failed to fetch settings type %s reason: %o', settingsTypesName, e)
+    return []
   }
 }
+
+const getSettingsTypeName = (typeName: string): string => typeName.concat(SETTINGS_METADATA_TYPE)
 
 /**
  * Add settings type
@@ -115,25 +71,41 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       client, SETTINGS_METADATA_TYPE, [], () => true
     )
 
-    // Extract settings names
-    const settingsTypesNames = settingsList.map(set => set.fullName)
-
-    // Create all settings types
-    const settingsTypes = await createSettingsTypes(client, config, settingsTypesNames)
-
-    // Add all settings types to elements
-    const knownTypesNames = new Set<string>(
-      elements.filter(e => isObjectType(e)).map(a => id(a))
+    // Use known types to avoid overriding existing types
+    const knownTypes = new Map(
+      elements.filter(isObjectType).map(e => [apiName(e), e])
     )
-    settingsTypes
-      .filter(st => !knownTypesNames.has(id(st)))
-      .forEach(e => elements.push(e))
 
-    // Create all settings instances
-    const settingsInstances = await createSettingsInstances(client, config, settingsTypes)
+    const settingsTypeInfos = settingsList.filter(info => (
+      !(config.metadataTypesSkippedList ?? []).includes(getSettingsTypeName(info.fullName))
+    ))
 
-    settingsInstances.elements.forEach(e => elements.push(e))
-    return [...settingsInstances.configChanges, ...listObjectsConfigChanges]
+    // Create settings types
+    const settingsTypes = (await Promise.all(
+      settingsTypeInfos
+        .map(info => getSettingsTypeName(info.fullName))
+        .map(typeName => createSettingsType(client, typeName, knownTypes))
+    )).flat()
+    elements.push(...settingsTypes)
+
+    // Create settings instances
+    const settingsTypeByName = _.keyBy(settingsTypes, type => apiName(type))
+    const settingsInstanceCreateResults = await Promise.all(
+      settingsTypeInfos
+        .map(info => ({ info, type: settingsTypeByName[getSettingsTypeName(info.fullName)] }))
+        .filter(({ type }) => type !== undefined)
+        .map(({ info, type }) => fetchMetadataInstances({
+          client,
+          metadataType: type,
+          fileProps: [info],
+          instancesRegexSkippedList: config.instancesRegexSkippedList,
+        }))
+    )
+    const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)
+    const instancesConfigChanges = settingsInstanceCreateResults.flatMap(res => res.configChanges)
+    elements.push(...settingsInstances)
+
+    return [...instancesConfigChanges, ...listObjectsConfigChanges]
   },
 })
 

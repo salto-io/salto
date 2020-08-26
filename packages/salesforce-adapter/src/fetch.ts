@@ -19,7 +19,7 @@ import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { METADATA_CONTENT_FIELD } from './constants'
+import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
@@ -85,27 +85,44 @@ export const listMetadataObjects = async (
   }
 }
 
+const getFullName = (obj: FileProperties): string => {
+  const namePrefix = obj.namespacePrefix
+    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
+  // Ensure fullName starts with the namespace prefix if there is one
+  // needed due to a SF quirk where sometimes metadata instances return without a namespace
+  // in the fullName even when they should have it
+  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+}
+
 export const fetchMetadataInstances = async ({
-  client, metadataType, instancesNames, instancesRegexSkippedList, fullNameToNamespace,
+  client, metadataType, fileProps, instancesRegexSkippedList,
 }: {
   client: SalesforceClient
-  instancesNames: string[]
+  fileProps: FileProperties[]
   metadataType: ObjectType
   instancesRegexSkippedList: ReadonlyArray<RegExp> | undefined
-  fullNameToNamespace?: Record<string, string | undefined>
 }): Promise<FetchElements<InstanceElement[]>> => {
+  if (fileProps.length === 0) {
+    return { elements: [], configChanges: [] }
+  }
   const metadataTypeName = apiName(metadataType)
+
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
-    instancesNames
+    fileProps.map(getFullName)
       .filter(name => !((instancesRegexSkippedList ?? [])
         .some(re => re.test(`${metadataTypeName}.${name}`)))),
   )
+
+  const fullNameToNamespace = Object.fromEntries(
+    fileProps.map(props => [getFullName(props), props.namespacePrefix])
+  )
+
   return {
     elements: metadataInfos
       .filter(m => !_.isEmpty(m))
       .filter(m => m.fullName !== undefined)
-      .map(m => createInstanceElement(m, metadataType, fullNameToNamespace?.[m.fullName])),
+      .map(m => createInstanceElement(m, metadataType, fullNameToNamespace[m.fullName])),
     configChanges: makeArray(errors)
       .map(e => createSkippedListConfigChange(metadataTypeName, e)),
   }

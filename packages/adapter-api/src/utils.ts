@@ -80,7 +80,7 @@ export const getSubElement = (
   }
 }
 
-export const getField = (
+const getFieldAndPath = (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>
 ): SubElementSearchResult | undefined => {
@@ -91,11 +91,11 @@ export const getField = (
   return undefined
 }
 
-export const getFieldDef = (
+export const getField = (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
 ): Field | undefined => (
-  getField(baseType, pathParts)?.field
+  getFieldAndPath(baseType, pathParts)?.field
 )
 
 export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
@@ -113,7 +113,7 @@ export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>)
     }
     return undefined
   }
-  const fieldData = getField(baseType, path)
+  const fieldData = getFieldAndPath(baseType, path)
   return fieldData?.field && getFieldInternalType(fieldData.field.type, fieldData.path)
 }
 

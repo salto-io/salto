@@ -27,7 +27,7 @@ export const provideWorkspaceDefinition = async (
   if (context.ref && isInstanceElement(context.ref.element)) {
     const refPath = context.ref.path
     if (!_.isEmpty(refPath) && _.last(refPath) === token) {
-      const field = getField(context.ref.element.type, refPath)?.field
+      const field = getField(context.ref.element.type, refPath)
       return field ? getLocations(workspace, field.elemID.getFullName()) : []
     }
   }

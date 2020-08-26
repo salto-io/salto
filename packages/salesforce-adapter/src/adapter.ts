@@ -23,7 +23,7 @@ import {
   resolveChangeElement, restoreChangeElement,
 } from '@salto-io/adapter-utils'
 import {
-  SaveResult, MetadataInfo, FileProperties, UpsertResult, MetadataObject,
+  SaveResult, FileProperties, UpsertResult, MetadataObject,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -32,7 +32,7 @@ import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo,
-  metadataType, createInstanceElement, defaultApiName, getLookUpName, isMetadataObjectType,
+  metadataType, defaultApiName, getLookUpName, isMetadataObjectType,
   isMetadataInstanceElement,
 } from './transformers/transformer'
 import { createDeployPackage } from './transformers/xml_transformer'
@@ -68,10 +68,10 @@ import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filt
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
-import { createListMetadataObjectsConfigChange, createSkippedListConfigChange, getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
+import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
-import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
+import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstancesGroup, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 
 const { makeArray } = collections.array
@@ -146,9 +146,6 @@ const addDefaults = (element: ObjectType): void => {
     addLabel(field)
   })
 }
-
-const instanceNameMatchRegex = (name: string, regex: RegExp[]): boolean =>
-  regex.some(re => re.test(name))
 
 const validateApiName = (prevElement: Element, newElement: Element): void => {
   if (apiName(prevElement) !== apiName(newElement)) {
@@ -236,8 +233,6 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
       return log.time(original.call, message || defaultMessage)
     }
   )
-
-type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
 
 const metadataToRetrieveAndDeploy = [
   'ApexClass', // readMetadata is not supported, contains encoded zip content
@@ -883,10 +878,9 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async listMetadataInstances(type: ObjectType):
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = apiName(type)
-    const { result: objs, errors: listErrors } = await this.client.listMetadataObjects(
-      { type: typeName }
+    const { elements: objs, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
+      this.client, typeName, []
     )
-    const listObjectsConfigChanges = listErrors.map(createListMetadataObjectsConfigChange)
     if (objs.length === 0) {
       return { elements: [], configChanges: listObjectsConfigChanges }
     }

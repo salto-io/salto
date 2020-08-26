@@ -19,19 +19,16 @@ import {
   ObjectType, TypeElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
-  createInstanceElement, createMetadataTypeElements, apiName,
+  createMetadataTypeElements, apiName,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { id } from './utils'
 import { FetchElements, ConfigChangeSuggestion, FilterContext } from '../types'
-import { createSkippedListConfigChange } from '../config_change'
-import { fetchMetadataInstances } from 'src/fetch'
+import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
 const log = logger(module)
-const { makeArray } = collections.array
 
 export const SETTINGS_METADATA_TYPE = 'Settings'
 
@@ -113,10 +110,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    */
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     // Fetch list of all settings types
-    const { result: settingsList } = await client.listMetadataObjects(
-      { type: SETTINGS_METADATA_TYPE },
-      // All errors are considered to be unhandled errors. If an error occur, throws an exception
-      () => true
+    const {
+      elements: settingsList, configChanges: listObjectsConfigChanges,
+    } = await listMetadataObjects(
+      client, SETTINGS_METADATA_TYPE, [], () => true
     )
 
     // Extract settings names
@@ -137,7 +134,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const settingsInstances = await createSettingsInstances(client, config, settingsTypes)
 
     settingsInstances.elements.forEach(e => elements.push(e))
-    return settingsInstances.configChanges
+    return [...settingsInstances.configChanges, ...listObjectsConfigChanges]
   },
 })
 

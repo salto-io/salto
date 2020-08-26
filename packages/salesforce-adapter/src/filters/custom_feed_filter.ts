@@ -17,7 +17,7 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { ConfigChangeSuggestion } from '../types'
-import { fetchMetadataInstances } from '../fetch'
+import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { SALESFORCE } from '../constants'
 
 export const CUSTOM_FEED_FILTER_METADATA_TYPE = 'CustomFeedFilter'
@@ -34,10 +34,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return []
     }
     // Fetch list of all custom feed filters
-    const { result: customFeedFilterList } = await client.listMetadataObjects(
-      { type: CUSTOM_FEED_FILTER_METADATA_TYPE },
-      // All errors are considered to be unhandled errors. If an error occur, throws an exception
-      () => true
+    const {
+      elements: customFeedFilterList, configChanges: listObjectsConfigChanges,
+    } = await listMetadataObjects(
+      client, CUSTOM_FEED_FILTER_METADATA_TYPE, [], () => true
     )
     const instances = await fetchMetadataInstances(
       client,
@@ -47,7 +47,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       config.instancesRegexSkippedList,
     )
     instances.elements.forEach(e => elements.push(e))
-    return instances.configChanges
+    return [...instances.configChanges, ...listObjectsConfigChanges]
   },
 })
 

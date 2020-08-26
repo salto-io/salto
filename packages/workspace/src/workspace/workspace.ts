@@ -164,27 +164,28 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       const value = change.data.after
       if (isInstanceElement(value)) {
         // Full instance added - remove all hidden fields
-        change.data.after = removeHiddenValuesForInstance(value)
-      } else {
-        // A value inside the instance was added
-        const { parent, path: fieldPath } = change.id.createTopLevelParentID()
-        const parentInstance = await state().get(parent)
-        if (parentInstance !== undefined) {
-          if (isHiddenField(parentInstance.type, fieldPath)) {
-            // The whole value is hidden, omit the change
-            return undefined
-          }
-          const fieldType = getField(parentInstance.type, fieldPath)
-          if (fieldType !== undefined && isObjectType(fieldType)) {
-            // The field itself is not hidden, but it might have hidden parts
-            change.data.after = transformValues({
-              values: value,
-              type: fieldType,
-              transformFunc: removeHiddenFieldValue,
-              pathID: change.id,
-              strict: false,
-            })
-          }
+        const after = removeHiddenValuesForInstance(value)
+        return _.merge(_.omit(change, 'data.after'), { data: { after } })
+      }
+      // A value inside the instance was added
+      const { parent, path: fieldPath } = change.id.createTopLevelParentID()
+      const parentInstance = await state().get(parent)
+      if (parentInstance !== undefined) {
+        if (isHiddenField(parentInstance.type, fieldPath)) {
+          // The whole value is hidden, omit the change
+          return undefined
+        }
+        const fieldType = getField(parentInstance.type, fieldPath)
+        if (fieldType !== undefined && isObjectType(fieldType)) {
+          // The field itself is not hidden, but it might have hidden parts
+          const after = transformValues({
+            values: value,
+            type: fieldType,
+            transformFunc: removeHiddenFieldValue,
+            pathID: change.id,
+            strict: false,
+          })
+          return _.merge(_.omit(change, 'data.after'), { data: { after } })
         }
       }
       return change

@@ -28,6 +28,7 @@ import SalesforceClient from '../client/client'
 import { id } from './utils'
 import { FetchElements, ConfigChangeSuggestion, FilterContext } from '../types'
 import { createSkippedListConfigChange } from '../config_change'
+import { fetchMetadataInstances } from 'src/fetch'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -74,18 +75,17 @@ const extractSettingName = (settingType: string): string =>
 // And creating the new instance
 const createSettingsInstance = async (
   client: SalesforceClient,
-  settingsType: ObjectType
+  settingsType: ObjectType,
+  config: FilterContext
 ): Promise<FetchElements<InstanceElement[]>> => {
   const typeName = apiName(settingsType)
-  const { result: metadataInfos, errors } = await client.readMetadata(
-    typeName, extractSettingName(typeName)
+  return fetchMetadataInstances(
+    client,
+    typeName,
+    [extractSettingName(typeName)],
+    settingsType,
+    config.instancesRegexSkippedList
   )
-  return {
-    elements: metadataInfos
-      .filter(m => m.fullName !== undefined)
-      .map(m => createInstanceElement(m, settingsType)),
-    configChanges: makeArray(errors).map(e => createSkippedListConfigChange(typeName, e)),
-  }
 }
 
 const createSettingsInstances = async (
@@ -95,9 +95,7 @@ const createSettingsInstances = async (
 ): Promise<FetchElements<InstanceElement[]>> => {
   const settingInstances = await Promise.all((settingsTypes)
     .filter(s => s.isSettings)
-    .filter(s => !((config.instancesRegexSkippedList ?? [])
-      .some(re => re.test(`${apiName(s)}.${extractSettingName(apiName(s))}`))))
-    .map(s => createSettingsInstance(client, s)))
+    .map(s => createSettingsInstance(client, s, config)))
   return {
     elements: _.flatten(settingInstances.map(ins => ins.elements)),
     configChanges: _.flatten(settingInstances.map(ins => ins.configChanges)),

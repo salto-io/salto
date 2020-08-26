@@ -16,16 +16,17 @@
 import _ from 'lodash'
 import { FileProperties, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
-import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
+import { promises, values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD } from './constants'
 import SalesforceClient from './client/client'
-import { createListMetadataObjectsConfigChange, createRetrieveConfigChange } from './config_change'
+import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 
 const { isDefined } = lowerDashValues
+const { makeArray } = collections.array
 const log = logger(module)
 
 export const fetchMetadataType = async (
@@ -64,6 +65,30 @@ export const fetchMetadataType = async (
       },
     })
   return [...mainTypes, ...folderTypes]
+}
+
+export const fetchMetadataInstances = async (
+  client: SalesforceClient,
+  metadataTypeName: string,
+  instancesNames: string[],
+  metadataType: ObjectType,
+  instancesRegexSkippedList: ReadonlyArray<RegExp> | undefined,
+  fullNameToNamespace: Record<string, string | undefined> = {},
+): Promise<FetchElements<InstanceElement[]>> => {
+  const { result: metadataInfos, errors } = await client.readMetadata(
+    metadataTypeName,
+    instancesNames
+      .filter(name => !((instancesRegexSkippedList ?? [])
+        .some(re => re.test(`${metadataType}.${name}`)))),
+  )
+  return {
+    elements: metadataInfos
+      .filter(m => !_.isEmpty(m))
+      .filter(m => m.fullName !== undefined)
+      .map(m => createInstanceElement(m, metadataType, fullNameToNamespace[m.fullName])),
+    configChanges: makeArray(errors)
+      .map(e => createSkippedListConfigChange(metadataTypeName, e)),
+  }
 }
 
 const getTypesWithContent = (types: ReadonlyArray<ObjectType>): Set<string> => new Set(

@@ -13,50 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { createInstanceElement } from '../transformers/transformer'
-import SalesforceClient from '../client/client'
-import { FetchElements, ConfigChangeSuggestion, FilterContext } from '../types'
-import { createSkippedListConfigChange } from '../config_change'
+import { ConfigChangeSuggestion } from '../types'
+import { fetchMetadataInstances } from '../fetch'
 import { SALESFORCE } from '../constants'
-
-const { makeArray } = collections.array
 
 export const CUSTOM_FEED_FILTER_METADATA_TYPE = 'CustomFeedFilter'
 export const CUSTOM_FEED_FILTER_METADATA_TYPE_ID = new ElemID(
   SALESFORCE, CUSTOM_FEED_FILTER_METADATA_TYPE
 )
 
-const createInstances = async (
-  client: SalesforceClient,
-  config: FilterContext,
-  customFeedFilterType: ObjectType,
-  instancesNames: string[],
-): Promise<FetchElements<InstanceElement[]>> => {
-  const { result: metadataInfos, errors } = await client.readMetadata(
-    CUSTOM_FEED_FILTER_METADATA_TYPE,
-    instancesNames.map(name => `Case.${name}`)
-      .filter(name => !((config.instancesRegexSkippedList ?? [])
-        .some(re => re.test(`${CUSTOM_FEED_FILTER_METADATA_TYPE}.${name}`)))),
-  )
-  return {
-    elements: metadataInfos
-      .filter(m => m.fullName !== undefined)
-      .map(m => createInstanceElement(m, customFeedFilterType)),
-    configChanges: makeArray(errors)
-      .map(e => createSkippedListConfigChange(CUSTOM_FEED_FILTER_METADATA_TYPE, e)),
-  }
-}
-
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
-    const customFeedFilterMetadataValue = findObjectType(
+    const customFeedFilterType = findObjectType(
       elements, CUSTOM_FEED_FILTER_METADATA_TYPE_ID
     )
-    if (customFeedFilterMetadataValue === undefined) {
+    if (customFeedFilterType === undefined) {
       return []
     }
     // Fetch list of all custom feed filters
@@ -65,9 +39,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       // All errors are considered to be unhandled errors. If an error occur, throws an exception
       () => true
     )
-
-    const instances = await createInstances(
-      client, config, customFeedFilterMetadataValue, customFeedFilterList.map(e => e.fullName)
+    const instances = await fetchMetadataInstances(
+      client,
+      CUSTOM_FEED_FILTER_METADATA_TYPE,
+      customFeedFilterList.map(e => `Case.${e.fullName}`),
+      customFeedFilterType,
+      config.instancesRegexSkippedList,
     )
     instances.elements.forEach(e => elements.push(e))
     return instances.configChanges

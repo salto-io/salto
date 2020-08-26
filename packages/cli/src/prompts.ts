@@ -226,9 +226,9 @@ ${Prompts.SERVICE_ADD_HELP}`
     command: string,
   ): string => `Unknown element command: ${command}`
 
-  public static readonly ELEMENT_COPY_USAGE = 'Usage: salto element copy [elm-selector, ...] --from-env <env> --to-envs [env1, ...]'
+  public static readonly ELEMENT_CLONE_USAGE = 'Usage: salto element clone [elm-selector, ...] --from-env <env> --to-envs [env1, ...]'
   public static readonly ELEMENT_MOVE_USAGE = 'Usage: salto element move [elm-selector, ...] --to [common|envs]'
-  public static readonly MISSING_COPY_ARG = 'Missing required environment argument'
+  public static readonly MISSING_CLONE_ARG = 'Missing required environment argument'
   public static readonly MISSING_MOVE_ARG = 'Missing \'to\' argument'
   public static readonly INVALID_MOVE_ARG = (
     invalidTo: string,
@@ -253,14 +253,14 @@ ${Prompts.SERVICE_ADD_HELP}`
     error: string
   ): string => `Failed to move the selected elements: ${error}`
 
-  public static readonly COPY_TO_ENV_START = (
+  public static readonly CLONE_TO_ENV_START = (
     targetEnvs: string[] = []
-  ): string => `Copying the selected elements to ${
+  ): string => `Cloning the selected elements to ${
     targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
   }.`
 
-  public static readonly COPY_TO_ENV_FINISHED = 'Done copying elements.'
-  public static readonly COPY_TO_ENV_FAILED = (
+  public static readonly CLONE_TO_ENV_FINISHED = 'Done cloning elements.'
+  public static readonly CLONE_TO_ENV_FAILED = (
     error: string
-  ): string => `Failed to copy the selected elements to the target environments: ${error}`
+  ): string => `Failed to clone the selected elements to the target environments: ${error}`
 }

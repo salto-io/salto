@@ -27,8 +27,8 @@ import { createCommandBuilder } from '../command_builder'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import {
-  formatTargetEnvRequired, formatInvalidID, formatUnknownTargetEnv, formatCopyToEnvFailed,
-  formatMissingCopyArg, formatMissingMoveArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
+  formatTargetEnvRequired, formatInvalidID, formatUnknownTargetEnv, formatCloneToEnvFailed,
+  formatMissingCloneArg, formatMissingMoveArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
   formatInvalidMoveArg, formatInvalidElementCommand,
 } from '../formatter'
 
@@ -57,7 +57,7 @@ const validateEnvs = (
   return true
 }
 
-const copyElement = async (
+const cloneElement = async (
   workspace: Workspace,
   output: CliOutput,
   cliTelemetry: CliTelemetry,
@@ -72,15 +72,15 @@ const copyElement = async (
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
   try {
-    outputLine(Prompts.COPY_TO_ENV_START(toEnvs), output)
+    outputLine(Prompts.CLONE_TO_ENV_START(toEnvs), output)
     await workspace.copyTo(selectors, toEnvs)
     await workspace.flush()
-    outputLine(Prompts.COPY_TO_ENV_FINISHED, output)
+    outputLine(Prompts.CLONE_TO_ENV_FINISHED, output)
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   } catch (e) {
     cliTelemetry.failure()
-    errorOutputLine(formatCopyToEnvFailed(e.message), output)
+    errorOutputLine(formatCloneToEnvFailed(e.message), output)
     return CliExitCode.AppError
   }
 }
@@ -140,10 +140,10 @@ export const command = (
       , force=${force}, elmSelectors=${inputElmSelectors}`
     )
 
-    if ((commandName === 'copy')
+    if ((commandName === 'clone')
     && ((inputFromEnv === undefined) || (inputToEnvs === undefined))) {
-      errorOutputLine(formatMissingCopyArg(), output)
-      errorOutputLine(Prompts.ELEMENT_COPY_USAGE, output)
+      errorOutputLine(formatMissingCloneArg(), output)
+      errorOutputLine(Prompts.ELEMENT_CLONE_USAGE, output)
       return CliExitCode.UserInputError
     }
     if ((commandName === 'move') && (inputTo === undefined)) {
@@ -175,8 +175,8 @@ export const command = (
     }
 
     switch (commandName) {
-      case 'copy':
-        return copyElement(
+      case 'clone':
+        return cloneElement(
           workspace,
           output,
           cliTelemetry,
@@ -192,7 +192,7 @@ export const command = (
   },
 })
 
-type CopyArgs = {
+type CloneArgs = {
   fromEnv: string
   toEnvs: string[]
 }
@@ -205,7 +205,7 @@ export type ElementArgs = {
   command: string
   force: boolean
   elmSelectors: string[]
-} & CopyArgs & MoveArgs
+} & CloneArgs & MoveArgs
 
 type ElementParsedCliInput = ParsedCliInput<ElementArgs>
 
@@ -217,19 +217,19 @@ const elementBuilder = createCommandBuilder({
     positional: {
       command: {
         type: 'string',
-        choices: ['copy', 'move'],
+        choices: ['clone', 'move'],
         description: 'The element management command',
       },
     },
     keyed: {
       'from-env': {
         type: 'string',
-        desc: 'The environment to copy from (Required for copy)',
+        desc: 'The environment to clone from (Required for clone)',
         conflicts: ['to', 'env'],
       },
       'to-envs': {
         type: 'array',
-        desc: 'The environment to copy to (Required for copy)',
+        desc: 'The environment to clone to (Required for clone)',
         conflicts: ['to', 'env'],
       },
       to: {
@@ -241,7 +241,7 @@ const elementBuilder = createCommandBuilder({
       },
       force: {
         alias: ['f'],
-        describe: 'Copy the elements even if the workspace is invalid.',
+        describe: 'Clone the elements even if the workspace is invalid.',
         boolean: true,
         default: false,
         demandOption: false,

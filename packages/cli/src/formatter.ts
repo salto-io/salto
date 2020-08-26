@@ -606,8 +606,8 @@ export const formatInvalidEnvTargetCurrent = (): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatMissingCopyArg = (): string => [
-  formatSimpleError(Prompts.MISSING_COPY_ARG),
+export const formatMissingCloneArg = (): string => [
+  formatSimpleError(Prompts.MISSING_CLONE_ARG),
   emptyLine(),
 ].join('\n')
 
@@ -616,8 +616,8 @@ export const formatMissingMoveArg = (): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatCopyToEnvFailed = (errorMessage: string): string => [
-  formatSimpleError(Prompts.COPY_TO_ENV_FAILED(errorMessage)),
+export const formatCloneToEnvFailed = (errorMessage: string): string => [
+  formatSimpleError(Prompts.CLONE_TO_ENV_FAILED(errorMessage)),
   emptyLine(),
 ].join('\n')
 

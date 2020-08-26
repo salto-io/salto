@@ -63,7 +63,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         [],
         'active',
@@ -81,7 +81,7 @@ describe('element command', () => {
     })
   })
 
-  describe('when workspace throws an error on copy', () => {
+  describe('when workspace throws an error on clone', () => {
     const workspaceName = 'unexpected-error'
     const workspace = {
       ...mocks.mockLoadWorkspace(workspaceName),
@@ -102,7 +102,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         ['salto.Account'],
         'active',
@@ -125,7 +125,7 @@ describe('element command', () => {
 
     it('should print failure to console', () => {
       expect(cliOutput.stderr.content)
-        .toContain('Failed to copy the selected elements to the target environments')
+        .toContain('Failed to clone the selected elements to the target environments')
     })
   })
 
@@ -193,7 +193,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         ['a.b.c.d'],
         'active',
@@ -226,12 +226,12 @@ describe('element command', () => {
       expect(mockTelemetry.getEvents()).toHaveLength(0)
     })
 
-    it('should print copy to console', () => {
+    it('should print clone to console', () => {
       expect(cliOutput.stderr.content).toContain('Failed to created element ID filters')
     })
   })
 
-  describe('with copy without to-envs', () => {
+  describe('with clone without to-envs', () => {
     const workspaceName = 'valid-ws'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -247,7 +247,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         [],
         undefined,
@@ -312,7 +312,7 @@ describe('element command', () => {
     })
   })
 
-  describe('valid copy', () => {
+  describe('valid clone', () => {
     const workspaceName = 'valid-ws'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     const selector = new ElemID('salto', 'Account')
@@ -329,7 +329,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         [selector.getFullName()],
         'active',
@@ -357,13 +357,13 @@ describe('element command', () => {
       expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
     })
 
-    it('should print copy to console', () => {
-      expect(cliOutput.stdout.content).toContain('Copying the selected elements to inactive.')
-      expect(cliOutput.stdout.content).toContain('Done copying elements.')
+    it('should print clone to console', () => {
+      expect(cliOutput.stdout.content).toContain('Cloning the selected elements to inactive.')
+      expect(cliOutput.stdout.content).toContain('Done cloning elements.')
     })
   })
 
-  describe('copy with invalid envs', () => {
+  describe('clone with invalid envs', () => {
     const workspaceName = 'valid-ws'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     const selector = new ElemID('salto', 'Account')
@@ -380,7 +380,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         [selector.getFullName()],
         'active',
@@ -404,7 +404,7 @@ describe('element command', () => {
         .toContain('Unknown target environment')
     })
   })
-  describe('copy with empty list as target envs', () => {
+  describe('clone with empty list as target envs', () => {
     const workspaceName = 'valid-ws'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     const selector = new ElemID('salto', 'Account')
@@ -421,7 +421,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         [selector.getFullName()],
         'active',
@@ -444,7 +444,7 @@ describe('element command', () => {
         .toContain(formatTargetEnvRequired())
     })
   })
-  describe('copy with current env as target env', () => {
+  describe('clone with current env as target env', () => {
     const workspaceName = 'valid-ws'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     const selector = new ElemID('salto', 'Account')
@@ -461,7 +461,7 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'copy',
+        'clone',
         false,
         [selector.getFullName()],
         'active',

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { errors } from '@salto-io/workspace'
 import { diff, loadLocalWorkspace } from '@salto-io/core'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/diff'
@@ -65,7 +64,7 @@ describe('diff command', () => {
     mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
     mockLoadWorkspace.mockResolvedValue(workspace)
     it('should throw Error', async () => {
-      await expect(command(
+      await expect(await command(
         '',
         true,
         mockCliTelemetry,
@@ -74,7 +73,7 @@ describe('diff command', () => {
         'inactive',
         false,
         false,
-      ).execute()).rejects.toThrow(errors.UnknownEnvError)
+      ).execute()).toBe(CliExitCode.UserInputError)
     })
   })
 
@@ -86,7 +85,7 @@ describe('diff command', () => {
     mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
     mockLoadWorkspace.mockResolvedValue(workspace)
     it('should throw Error', async () => {
-      await expect(command(
+      await expect(await command(
         '',
         true,
         mockCliTelemetry,
@@ -95,7 +94,7 @@ describe('diff command', () => {
         'NotExist',
         false,
         false,
-      ).execute()).rejects.toThrow(errors.UnknownEnvError)
+      ).execute()).toBe(CliExitCode.UserInputError)
     })
   })
 
@@ -204,7 +203,6 @@ describe('diff command', () => {
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
       mockLoadWorkspace.mockResolvedValue(workspace)
-
       result = await command(
         '',
         true,
@@ -240,7 +238,6 @@ describe('diff command', () => {
       mockTelemetry = mocks.getMockTelemetry()
       mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
       mockLoadWorkspace.mockResolvedValue(workspace)
-
       result = await command(
         '',
         true,
@@ -254,7 +251,6 @@ describe('diff command', () => {
         [regex]
       ).execute()
     })
-
 
     it('should return success status', async () => {
       expect(result).toBe(CliExitCode.UserInputError)

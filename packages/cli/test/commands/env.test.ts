@@ -18,6 +18,7 @@ import { Workspace } from '@salto-io/workspace'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/env'
+import { CliExitCode } from '../../src/types'
 
 jest.mock('@salto-io/core')
 describe('env commands', () => {
@@ -68,17 +69,20 @@ describe('env commands', () => {
 
   describe('unknown environment command', () => {
     it('should throws exception upon unknown command', async () => {
-      await expect(command('.', 'not-exist', cliOutput).execute()).rejects.toThrow()
+      expect(await command('.', 'not-exist', cliOutput).execute()).toBe(CliExitCode.UserInputError)
+      expect(cliOutput.stderr.content.length).toBeGreaterThan(0)
     })
   })
 
   describe('rename environment command', () => {
     it('should fail if no arguments were provided', async () => {
-      await expect(command('.', 'rename', cliOutput).execute()).rejects.toThrow()
+      await expect(await command('.', 'rename', cliOutput).execute())
+        .toBe(CliExitCode.UserInputError)
     })
 
     it('should fail if only one argument was provided', async () => {
-      await expect(command('.', 'rename', cliOutput, 'active').execute()).rejects.toThrow()
+      await expect(await command('.', 'rename', cliOutput, 'active').execute())
+        .toBe(CliExitCode.UserInputError)
     })
 
     it('should display renamed environment', async () => {

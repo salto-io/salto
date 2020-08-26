@@ -217,16 +217,25 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Finished calculating the difference between ${toEnv} and ${fromEnv}.`
 
   public static readonly DIFF_CALC_DIFF_FAIL = 'Calculating diff failed!'
-  public static readonly PROMOTE_START = 'Promoting the selected elements.'
-  public static readonly PROMOTE_FINISHED = 'Done promoting elements.'
-  public static readonly PROMOTE_FAILED = (
-    error: string
-  ): string => `Failed to move the selected elements to the common folder: ${error}`
 
   public static readonly INVALID_IDS = (
     invalidIds: string
   ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
 
+  public static readonly INVALID_ELEMENT_COMMAND = (
+    command: string,
+  ): string => `Unknown element command: ${command}`
+
+  public static readonly ELEMENT_CLONE_USAGE = 'Usage: salto element clone [elm-selector, ...] --from-env <env> --to-envs [env1, ...]'
+  public static readonly ELEMENT_MOVE_USAGE = 'Usage: salto element move [elm-selector, ...] --to [common|envs]'
+  public static readonly MISSING_CLONE_ARG = 'Missing required environment argument'
+  public static readonly MISSING_MOVE_ARG = 'Missing \'to\' argument'
+  public static readonly INVALID_MOVE_ARG = (
+    invalidTo: string,
+  ): string => `Unknown direction for move command ${invalidTo}, choices: [common|envs]`
+
+  public static readonly SOURCE_ENV_REQUIRED = 'The source envrionment cannot be empty'
+  public static readonly TARGET_ENVS_REQUIRED = 'The target environments cannot be empty'
   public static readonly INVALID_ENV_TARGET_CURRENT = 'The current environment cannot be a target environment'
   public static readonly UNKNOWN_TARGET_ENVS = (
     unknownEnvs: string[]
@@ -234,20 +243,24 @@ ${Prompts.SERVICE_ADD_HELP}`
     ? `Unknown target environment: ${unknownEnvs[0]}`
     : `Unknown target environments: ${unknownEnvs?.join(' ')}`)
 
-  public static readonly DEMOTE_START = 'Demoting the selected elements.'
-  public static readonly DEMOTE_FINISHED = 'Done demoting elements.'
-  public static readonly DEMOTE_FAILED = (
-    error: string
-  ): string => `Failed to move the selected elements out of the common folder: ${error}`
+  public static readonly MOVE_START = (
+    from: string,
+    to: string,
+  ): string => `Moving the selected elements from ${from} to ${to}.`
 
-  public static readonly COPY_TO_ENV_START = (
+  public static readonly MOVE_FINISHED = 'Done moving elements.'
+  public static readonly MOVE_FAILED = (
+    error: string
+  ): string => `Failed to move the selected elements: ${error}`
+
+  public static readonly CLONE_TO_ENV_START = (
     targetEnvs: string[] = []
-  ): string => `Copying the selected elements to ${
+  ): string => `Cloning the selected elements to ${
     targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
   }.`
 
-  public static readonly COPY_TO_ENV_FINISHED = 'Done copying elements.'
-  public static readonly COPY_TO_ENV_FAILED = (
+  public static readonly CLONE_TO_ENV_FINISHED = 'Done cloning elements.'
+  public static readonly CLONE_TO_ENV_FAILED = (
     error: string
-  ): string => `Failed to copy the selected elements to the target environments: ${error}`
+  ): string => `Failed to clone the selected elements to the target environments: ${error}`
 }

@@ -708,3 +708,17 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
 }
 
 export const safeJsonStringify = (value: Value): string => safeStringify(value)
+
+export const getAllReferencedIds = (element: Element): Set<string> => {
+  const allReferencedIds = new Set<string>()
+  const transformFunc: TransformFunc = ({ value }) => {
+    if (isReferenceExpression(value)) {
+      allReferencedIds.add(value.elemId.getFullName())
+    }
+    return value
+  }
+
+  transformElement({ element, transformFunc, strict: false })
+
+  return allReferencedIds
+}

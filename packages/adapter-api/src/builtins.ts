@@ -51,11 +51,13 @@ export const CORE_ANNOTATIONS = {
 export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: '_depends_on',
   PARENT: '_parent',
+  GENERATED_DEPENDENCIES: '_generated_dependencies',
 }
 
 export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(BuiltinTypes.STRING),
   [INSTANCE_ANNOTATIONS.PARENT]: new ListType(BuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(BuiltinTypes.STRING),
 }
 
 const restrictionType = new ObjectType({

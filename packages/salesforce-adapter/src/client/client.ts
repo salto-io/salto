@@ -473,17 +473,21 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
-  public async *queryAll(queryString: string): AsyncIterable<SalesforceRecord[]> {
+  public async *queryAll(
+    queryString: string,
+    useToolingApi = false,
+  ): AsyncIterable<SalesforceRecord[]> {
     const hadMore = (results: QueryResult<Value>): boolean =>
       !_.isUndefined(results.nextRecordsUrl)
 
-    let results = await this.conn.query(queryString)
+    const conn = useToolingApi ? this.conn.tooling : this.conn
+    let results = await conn.query(queryString)
     yield results.records as SalesforceRecord[]
 
     let hasMore = hadMore(results)
     while (hasMore) {
       // eslint-disable-next-line no-await-in-loop
-      results = await this.conn.queryMore(results.nextRecordsUrl as string)
+      results = await conn.queryMore(results.nextRecordsUrl as string)
       yield results.records as SalesforceRecord[]
       hasMore = hadMore(results)
     }

@@ -24,6 +24,7 @@ import {
   TelemetryEvent, StackEvent,
   Tags, isCountEvent, isStackEvent,
   DEFAULT_EVENT_NAME_PREFIX as prefix,
+  MAX_CONSECUTIVE_RETRIES,
 } from '../src/telemetry'
 
 describe('telemetry', () => {
@@ -276,23 +277,45 @@ describe('telemetry', () => {
   })
 
   it('should stop flushing events if HTTP response code is 4xx', async () => {
+    let timesHTTPCalled = 0
     nock.cleanAll()
-    nockScope.post('/v1/events').reply(403, 'Forbidden')
+    // eslint-disable-next-line prefer-arrow-callback
+    nockScope.post('/v1/events').reply(403, function reply(_url, _body) {
+      timesHTTPCalled += 1
+      return 'Forbidden'
+    })
     const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
     telemetry.sendCountEvent('ev', 1)
+    setTimeout(() => {
+      timesHTTPCalled += 1
+    }, 100)
     await waitForExpect(() => {
       expect(telemetry.isStopped()).toBeTruthy()
+      // in order to validate that indeed we've stopped sending events,
+      // we're settings timeout above that will raise the total number of times
+      // the HTTP server was called by one and here we're expecting this number to be
+      // the number of times expected (1) + 1
+      expect(timesHTTPCalled).toEqual(2)
     })
   })
 
   it('should stop flushing events after maximum amount of consecutive failed retries', async () => {
+    let timesHTTPCalled = 0
     nock.cleanAll()
-    nockScope.post('/v1/events').delayConnection(5000).reply(201, 'Created')
-    axios.defaults.timeout = 500
+    // eslint-disable-next-line prefer-arrow-callback
+    nockScope.post('/v1/events').delayConnection(5000).reply(201, function reply(_url, _body) {
+      timesHTTPCalled += 1
+      return 'Created'
+    })
+    axios.defaults.timeout = 1
     const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
     telemetry.sendCountEvent('ev', 1)
+    setTimeout(() => {
+      timesHTTPCalled += 1
+    }, 100)
     await waitForExpect(() => {
       expect(telemetry.isStopped()).toBeTruthy()
+      expect(timesHTTPCalled).toEqual(MAX_CONSECUTIVE_RETRIES + 1)
     })
   })
 })

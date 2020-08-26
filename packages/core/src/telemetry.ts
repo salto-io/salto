@@ -26,7 +26,7 @@ const MAX_EVENTS_PER_REQUEST = 20
 const EVENTS_API_PATH = '/v1/events'
 const EVENTS_FLUSH_INTERVAL = 1000
 const EVENT_NAME_SEPARATOR = '.'
-const MAX_CONSECUTIVE_RETRIES = 5
+export const MAX_CONSECUTIVE_RETRIES = 5
 export const DEFAULT_EVENT_NAME_PREFIX = 'salto'
 
 export type TelemetryConfig = {
@@ -147,6 +147,7 @@ export const telemetrySender = (
           const { status } = e.response
           if (status >= 400 && status < 500) {
             stopped = true
+            return
           }
         }
         consecutiveRetryCount += 1
@@ -159,8 +160,8 @@ export const telemetrySender = (
   }
 
   const start = (): void => {
-    timer = setTimeout(() => {
-      flush()
+    timer = setTimeout(async () => {
+      await flush()
       if (!stopped) {
         start()
       }

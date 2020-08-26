@@ -35,7 +35,7 @@ describe('Test CustomFeedFilter', () => {
     elemID: CUSTOM_FEED_FILTER_METADATA_TYPE_ID,
     annotations: {
       label: 'test label',
-      [constants.API_NAME]: 'Test__c',
+      [constants.API_NAME]: CUSTOM_FEED_FILTER_METADATA_TYPE,
     },
     isSettings: false,
   })

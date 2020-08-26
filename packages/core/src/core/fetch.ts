@@ -261,9 +261,17 @@ const fetchAndProcessMergeErrors = async (
       stateElements.map(e => e.elemID.getFullName())
     )
 
+    const droppedElements = new Set(
+      processErrorsResult.errorsWithDroppedElements.flatMap(
+        err => err.elements.map(e => e.elemID.createTopLevelParentID().parent.getFullName())
+      )
+    )
+    const validServiceElements = serviceElements
+      .filter(e => !droppedElements.has(e.elemID.getFullName()))
+
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrors.length}]`)
-    return { serviceElements, processErrorsResult, updatedConfigs }
+    return { serviceElements: validServiceElements, processErrorsResult, updatedConfigs }
   } catch (error) {
     getChangesEmitter.emit('failed')
     throw error

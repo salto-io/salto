@@ -16,16 +16,17 @@
 import _ from 'lodash'
 import { FileProperties, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
-import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
+import { promises, values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD } from './constants'
-import SalesforceClient from './client/client'
-import { createListMetadataObjectsConfigChange, createRetrieveConfigChange } from './config_change'
+import SalesforceClient, { ErrorFilter } from './client/client'
+import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 
 const { isDefined } = lowerDashValues
+const { makeArray } = collections.array
 const log = logger(module)
 
 export const fetchMetadataType = async (
@@ -66,6 +67,50 @@ export const fetchMetadataType = async (
   return [...mainTypes, ...folderTypes]
 }
 
+export const listMetadataObjects = async (
+  client: SalesforceClient,
+  metadataTypeName: string,
+  folders: string[],
+  isUnhandledError?: ErrorFilter,
+): Promise<FetchElements<FileProperties[]>> => {
+  const { result, errors } = await client.listMetadataObjects(
+    _.isEmpty(folders)
+      ? { type: metadataTypeName }
+      : folders.map(folder => ({ type: metadataTypeName, folder })),
+    isUnhandledError
+  )
+  return {
+    elements: result,
+    configChanges: (errors ?? []).map(createListMetadataObjectsConfigChange),
+  }
+}
+
+export const fetchMetadataInstances = async ({
+  client, metadataType, instancesNames, instancesRegexSkippedList, fullNameToNamespace,
+}: {
+  client: SalesforceClient
+  instancesNames: string[]
+  metadataType: ObjectType
+  instancesRegexSkippedList: ReadonlyArray<RegExp> | undefined
+  fullNameToNamespace?: Record<string, string | undefined>
+}): Promise<FetchElements<InstanceElement[]>> => {
+  const metadataTypeName = apiName(metadataType)
+  const { result: metadataInfos, errors } = await client.readMetadata(
+    metadataTypeName,
+    instancesNames
+      .filter(name => !((instancesRegexSkippedList ?? [])
+        .some(re => re.test(`${metadataTypeName}.${name}`)))),
+  )
+  return {
+    elements: metadataInfos
+      .filter(m => !_.isEmpty(m))
+      .filter(m => m.fullName !== undefined)
+      .map(m => createInstanceElement(m, metadataType, fullNameToNamespace?.[m.fullName])),
+    configChanges: makeArray(errors)
+      .map(e => createSkippedListConfigChange(metadataTypeName, e)),
+  }
+}
+
 const getTypesWithContent = (types: ReadonlyArray<ObjectType>): Set<string> => new Set(
   types
     .filter(t => Object.keys(t.fields).includes(METADATA_CONTENT_FIELD))
@@ -104,9 +149,11 @@ export const retrieveMetadataInstances = async ({
     if (folderType === undefined) {
       return [undefined]
     }
-    const { result, errors } = await client.listMetadataObjects({ type: folderType })
-    configChanges.push(...errors.map(createListMetadataObjectsConfigChange))
-    return _(result)
+    const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
+      client, folderType, []
+    )
+    configChanges.push(...listObjectsConfigChanges)
+    return _(res)
       .filter(notInSkipList)
       .uniqBy(file => file.fullName)
       .value()
@@ -119,13 +166,13 @@ export const retrieveMetadataInstances = async ({
     }
     const folders = await getFolders(type)
     const folderNames = folders.map(folder => (folder === undefined ? folder : folder.fullName))
-    const { result, errors } = await client.listMetadataObjects(
-      folderNames.map(folder => ({ type: apiName(type), folder }))
+    const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
+      client, apiName(type), folderNames.filter(isDefined)
     )
-    configChanges.push(...errors.map(createListMetadataObjectsConfigChange))
+    configChanges.push(...listObjectsConfigChanges)
     return [
       ...folders.filter(isDefined),
-      ..._.uniqBy(result, file => file.fullName),
+      ..._.uniqBy(res, file => file.fullName),
     ]
   }
 

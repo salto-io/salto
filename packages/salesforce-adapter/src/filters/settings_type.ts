@@ -19,18 +19,16 @@ import {
   ObjectType, TypeElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
-  createInstanceElement, createMetadataTypeElements, apiName,
+  createMetadataTypeElements, apiName,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { id } from './utils'
 import { FetchElements, ConfigChangeSuggestion, FilterContext } from '../types'
-import { createSkippedListConfigChange } from '../config_change'
+import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
 const log = logger(module)
-const { makeArray } = collections.array
 
 export const SETTINGS_METADATA_TYPE = 'Settings'
 
@@ -74,18 +72,16 @@ const extractSettingName = (settingType: string): string =>
 // And creating the new instance
 const createSettingsInstance = async (
   client: SalesforceClient,
-  settingsType: ObjectType
+  settingsType: ObjectType,
+  config: FilterContext
 ): Promise<FetchElements<InstanceElement[]>> => {
   const typeName = apiName(settingsType)
-  const { result: metadataInfos, errors } = await client.readMetadata(
-    typeName, extractSettingName(typeName)
-  )
-  return {
-    elements: metadataInfos
-      .filter(m => m.fullName !== undefined)
-      .map(m => createInstanceElement(m, settingsType)),
-    configChanges: makeArray(errors).map(e => createSkippedListConfigChange(typeName, e)),
-  }
+  return fetchMetadataInstances({
+    client,
+    instancesNames: [extractSettingName(typeName)],
+    metadataType: settingsType,
+    instancesRegexSkippedList: config.instancesRegexSkippedList,
+  })
 }
 
 const createSettingsInstances = async (
@@ -95,9 +91,7 @@ const createSettingsInstances = async (
 ): Promise<FetchElements<InstanceElement[]>> => {
   const settingInstances = await Promise.all((settingsTypes)
     .filter(s => s.isSettings)
-    .filter(s => !((config.instancesRegexSkippedList ?? [])
-      .some(re => re.test(`${apiName(s)}.${extractSettingName(apiName(s))}`))))
-    .map(s => createSettingsInstance(client, s)))
+    .map(s => createSettingsInstance(client, s, config)))
   return {
     elements: _.flatten(settingInstances.map(ins => ins.elements)),
     configChanges: _.flatten(settingInstances.map(ins => ins.configChanges)),
@@ -115,10 +109,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    */
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     // Fetch list of all settings types
-    const { result: settingsList } = await client.listMetadataObjects(
-      { type: SETTINGS_METADATA_TYPE },
-      // All errors are considered to be unhandled errors. If an error occur, throws an exception
-      () => true
+    const {
+      elements: settingsList, configChanges: listObjectsConfigChanges,
+    } = await listMetadataObjects(
+      client, SETTINGS_METADATA_TYPE, [], () => true
     )
 
     // Extract settings names
@@ -139,7 +133,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const settingsInstances = await createSettingsInstances(client, config, settingsTypes)
 
     settingsInstances.elements.forEach(e => elements.push(e))
-    return settingsInstances.configChanges
+    return [...settingsInstances.configChanges, ...listObjectsConfigChanges]
   },
 })
 

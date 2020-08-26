@@ -14,20 +14,18 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { MetadataInfo } from 'jsforce'
 import {
   Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import SalesforceClient, { SendChunkedResult } from '../client/client'
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
-  metadataType, apiName, createInstanceElement, isCustomObject, Types, isCustom,
+  metadataType, apiName, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList } from './utils'
-import { ConfigChangeSuggestion, FetchElements } from '../types'
-import { createSkippedListConfigChange } from '../config_change'
+import { ConfigChangeSuggestion } from '../types'
+import { fetchMetadataInstances } from '../fetch'
 
 const { makeArray } = collections.array
 
@@ -151,39 +149,11 @@ const calculatePicklistFieldsToUpdate = (
   return newField
 })
 
-const createStandardValueSetInstances = (
-  valueSets: MetadataInfo[],
-  svsMetadataType: ObjectType
-): InstanceElement[] => valueSets
-  .filter(vs => vs.fullName)
-  .map((svs: MetadataInfo) =>
-    createInstanceElement(svs, svsMetadataType))
-
 const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =>
   _.find(
     elements,
     (element: Element) => metadataType(element) === STANDARD_VALUE_SET
   ) as ObjectType | undefined
-
-const fetchStandardValueSets = async (
-  standardValueSets: Set<string>,
-  client: SalesforceClient
-): Promise<SendChunkedResult<string, MetadataInfo>> =>
-  client.readMetadata(STANDARD_VALUE_SET, [...standardValueSets])
-
-const createSVSInstances = async (
-  standardValueSetNames: Set<string>,
-  client: SalesforceClient,
-  svsMetadataType: ObjectType): Promise<FetchElements<InstanceElement[]>> => {
-  const { result: valueSets, errors } = await fetchStandardValueSets(
-    standardValueSetNames, client
-  )
-  return {
-    elements: createStandardValueSetInstances(valueSets, svsMetadataType),
-    configChanges: makeArray(errors)
-      .map(e => createSkippedListConfigChange(STANDARD_VALUE_SET, e)),
-  }
-}
 
 const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[]): void => {
   const svsValuesToName = svsValuesToRef(svsInstances)
@@ -197,7 +167,6 @@ const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[
   })
 }
 
-
 /**
 * Declare the StandardValueSets filter that
 * adds the fixed collection of standard value sets in SFDC
@@ -205,7 +174,7 @@ const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[
 */
 export const makeFilter = (
   standardValueSetNames: StandardValuesSets
-): FilterCreator => ({ client }) => ({
+): FilterCreator => ({ client, config }) => ({
   /**
    * Upon fetch, retrieve standard value sets and
    * modify references to them in fetched elements
@@ -215,7 +184,12 @@ export const makeFilter = (
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
     if (svsMetadataType !== undefined) {
-      const svsInstances = await createSVSInstances(standardValueSetNames, client, svsMetadataType)
+      const svsInstances = await fetchMetadataInstances({
+        client,
+        instancesNames: [...standardValueSetNames],
+        metadataType: svsMetadataType,
+        instancesRegexSkippedList: config.instancesRegexSkippedList,
+      })
       elements.push(...svsInstances.elements)
       updateSVSReferences(elements, svsInstances.elements)
       return svsInstances.configChanges

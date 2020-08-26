@@ -23,7 +23,7 @@ import {
   resolveChangeElement, restoreChangeElement,
 } from '@salto-io/adapter-utils'
 import {
-  SaveResult, MetadataInfo, FileProperties, UpsertResult, MetadataObject,
+  SaveResult, FileProperties, UpsertResult, MetadataObject,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -32,7 +32,7 @@ import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo,
-  metadataType, createInstanceElement, defaultApiName, getLookUpName, isMetadataObjectType,
+  metadataType, defaultApiName, getLookUpName, isMetadataObjectType,
   isMetadataInstanceElement,
 } from './transformers/transformer'
 import { createDeployPackage } from './transformers/xml_transformer'
@@ -52,7 +52,7 @@ import flowFilter from './filters/flow'
 import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
-import settingsFilter from './filters/settings_type'
+import settingsFilter, { SETTINGS_METADATA_TYPE } from './filters/settings_type'
 import workflowFilter from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
@@ -64,13 +64,14 @@ import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
 import hideTypesFilter from './filters/hide_types'
+import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
-import { createListMetadataObjectsConfigChange, createSkippedListConfigChange, getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
+import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
-import { retrieveMetadataInstances, fetchMetadataType } from './fetch'
+import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstancesGroup, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 
 const { makeArray } = collections.array
@@ -79,6 +80,7 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   // should run before missingFieldsFilter
   settingsFilter,
+  customFeedFilterFilter,
   missingFieldsFilter,
   // should run before customObjectsFilter
   workflowFilter,
@@ -145,9 +147,6 @@ const addDefaults = (element: ObjectType): void => {
   })
 }
 
-const instanceNameMatchRegex = (name: string, regex: RegExp[]): boolean =>
-  regex.some(re => re.test(name))
-
 const validateApiName = (prevElement: Element, newElement: Element): void => {
   if (apiName(prevElement) !== apiName(newElement)) {
     throw Error(
@@ -184,6 +183,9 @@ export interface SalesforceAdapterParams {
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
   metadataTypesSkippedList?: string[]
+
+  // Metadata types that are being fetched in the filters
+  metadataTypesOfInstancesFetchedInFilters?: string[]
 
   // Determine whether hide type folder
   enableHideTypesInNacls?: boolean
@@ -232,8 +234,6 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
     }
   )
 
-type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
-
 const metadataToRetrieveAndDeploy = [
   'ApexClass', // readMetadata is not supported, contains encoded zip content
   'ApexTrigger', // readMetadata is not supported, contains encoded zip content
@@ -270,6 +270,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
+  private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, string[]>
   private filtersRunner: Required<Filter>
   private client: SalesforceClient
@@ -280,13 +281,14 @@ export default class SalesforceAdapter implements AdapterOperations {
     enableHideTypesInNacls = constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
-      'Settings',
+      SETTINGS_METADATA_TYPE,
       'NetworkBranding',
       'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
       'KnowledgeSettings',
     ],
+    metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
     instancesRegexSkippedList = [],
     maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
@@ -359,6 +361,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
+    this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
     this.systemFields = systemFields
@@ -830,15 +833,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       const result = await Promise.all(metadataTypesToRead
         // Just fetch metadata instances of the types that we receive from the describe call
         .filter(type => !this.metadataAdditionalTypes.includes(apiName(type)))
-        .map(async type => {
-          const { elements, configChanges } = await this.listMetadataInstances(apiName(type))
-          return {
-            elements: elements
-              .filter(elem => !_.isEmpty(elem.instanceInfo))
-              .map(elem => createInstanceElement(elem.instanceInfo, type, elem.namespace)),
-            configChanges,
-          }
-        }))
+        .filter(type => !this.metadataTypesOfInstancesFetchedInFilters.includes(apiName(type)))
+        .map(async type => this.createMetadataInstances(type)))
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),
@@ -876,13 +872,15 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   /**
-   * List all the instances of specific metadataType
+   * Create all the instances of specific metadataType
    * @param type the metadata type
    */
-  private async listMetadataInstances(type: string):
-  Promise<FetchElements<NamespaceAndInstances[]>> {
-    const { result: objs, errors: listErrors } = await this.client.listMetadataObjects({ type })
-    const listObjectsConfigChanges = listErrors.map(createListMetadataObjectsConfigChange)
+  private async createMetadataInstances(type: ObjectType):
+  Promise<FetchElements<InstanceElement[]>> {
+    const typeName = apiName(type)
+    const { elements: objs, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
+      this.client, typeName, []
+    )
     if (objs.length === 0) {
       return { elements: [], configChanges: listObjectsConfigChanges }
     }
@@ -896,16 +894,16 @@ export default class SalesforceAdapter implements AdapterOperations {
       .fromPairs()
       .value()
 
-    const instancesFullNames = objs.map(getFullName)
-      .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
-    const readMetadataResult = await this.client.readMetadata(type, instancesFullNames)
-    const readMetadataConfigChanges = readMetadataResult.errors
-      .map(e => createSkippedListConfigChange(type, e))
-
+    const instances = await fetchMetadataInstances({
+      client: this.client,
+      instancesNames: objs.map(getFullName),
+      metadataType: type,
+      instancesRegexSkippedList: this.instancesRegexSkippedList,
+      fullNameToNamespace,
+    })
     return {
-      elements: readMetadataResult.result.map(instanceInfo =>
-        ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo })),
-      configChanges: [...readMetadataConfigChanges, ...listObjectsConfigChanges],
+      elements: instances.elements,
+      configChanges: [...instances.configChanges, ...listObjectsConfigChanges],
     }
   }
 }

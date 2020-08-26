@@ -85,14 +85,16 @@ export const listMetadataObjects = async (
   }
 }
 
-export const fetchMetadataInstances = async (
-  client: SalesforceClient,
-  metadataTypeName: string,
-  instancesNames: string[],
-  metadataType: ObjectType,
-  instancesRegexSkippedList: ReadonlyArray<RegExp> | undefined,
-  fullNameToNamespace: Record<string, string | undefined> = {},
-): Promise<FetchElements<InstanceElement[]>> => {
+export const fetchMetadataInstances = async ({
+  client, metadataType, instancesNames, instancesRegexSkippedList, fullNameToNamespace,
+}: {
+  client: SalesforceClient
+  instancesNames: string[]
+  metadataType: ObjectType
+  instancesRegexSkippedList: ReadonlyArray<RegExp> | undefined
+  fullNameToNamespace?: Record<string, string | undefined>
+}): Promise<FetchElements<InstanceElement[]>> => {
+  const metadataTypeName = apiName(metadataType)
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
     instancesNames
@@ -103,7 +105,7 @@ export const fetchMetadataInstances = async (
     elements: metadataInfos
       .filter(m => !_.isEmpty(m))
       .filter(m => m.fullName !== undefined)
-      .map(m => createInstanceElement(m, metadataType, fullNameToNamespace[m.fullName])),
+      .map(m => createInstanceElement(m, metadataType, fullNameToNamespace?.[m.fullName])),
     configChanges: makeArray(errors)
       .map(e => createSkippedListConfigChange(metadataTypeName, e)),
   }

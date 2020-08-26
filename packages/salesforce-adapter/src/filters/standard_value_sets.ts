@@ -184,13 +184,12 @@ export const makeFilter = (
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
     if (svsMetadataType !== undefined) {
-      const svsInstances = await fetchMetadataInstances(
+      const svsInstances = await fetchMetadataInstances({
         client,
-        STANDARD_VALUE_SET,
-        [...standardValueSetNames],
-        svsMetadataType,
-        config.instancesRegexSkippedList
-      )
+        instancesNames: [...standardValueSetNames],
+        metadataType: svsMetadataType,
+        instancesRegexSkippedList: config.instancesRegexSkippedList,
+      })
       elements.push(...svsInstances.elements)
       updateSVSReferences(elements, svsInstances.elements)
       return svsInstances.configChanges

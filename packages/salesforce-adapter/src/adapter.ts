@@ -834,7 +834,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         // Just fetch metadata instances of the types that we receive from the describe call
         .filter(type => !this.metadataAdditionalTypes.includes(apiName(type)))
         .filter(type => !this.metadataTypesOfInstancesFetchedInFilters.includes(apiName(type)))
-        .map(async type => this.listMetadataInstances(type)))
+        .map(async type => this.createMetadataInstances(type)))
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),
@@ -872,10 +872,10 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   /**
-   * List all the instances of specific metadataType
+   * Create all the instances of specific metadataType
    * @param type the metadata type
    */
-  private async listMetadataInstances(type: ObjectType):
+  private async createMetadataInstances(type: ObjectType):
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = apiName(type)
     const { elements: objs, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
@@ -894,14 +894,13 @@ export default class SalesforceAdapter implements AdapterOperations {
       .fromPairs()
       .value()
 
-    const instances = await fetchMetadataInstances(
-      this.client,
-      typeName,
-      objs.map(getFullName),
-      type,
-      this.instancesRegexSkippedList,
+    const instances = await fetchMetadataInstances({
+      client: this.client,
+      instancesNames: objs.map(getFullName),
+      metadataType: type,
+      instancesRegexSkippedList: this.instancesRegexSkippedList,
       fullNameToNamespace,
-    )
+    })
     return {
       elements: instances.elements,
       configChanges: [...instances.configChanges, ...listObjectsConfigChanges],

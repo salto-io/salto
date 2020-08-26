@@ -36,16 +36,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     // Fetch list of all custom feed filters
     const {
       elements: customFeedFilterList, configChanges: listObjectsConfigChanges,
-    } = await listMetadataObjects(
-      client, CUSTOM_FEED_FILTER_METADATA_TYPE, [], () => true
-    )
-    const instances = await fetchMetadataInstances(
+    } = await listMetadataObjects(client, CUSTOM_FEED_FILTER_METADATA_TYPE, [])
+    const instances = await fetchMetadataInstances({
       client,
-      CUSTOM_FEED_FILTER_METADATA_TYPE,
-      customFeedFilterList.map(e => `Case.${e.fullName}`),
-      customFeedFilterType,
-      config.instancesRegexSkippedList,
-    )
+      instancesNames: customFeedFilterList.map(e => `Case.${e.fullName}`),
+      metadataType: customFeedFilterType,
+      instancesRegexSkippedList: config.instancesRegexSkippedList,
+    })
     instances.elements.forEach(e => elements.push(e))
     return [...instances.configChanges, ...listObjectsConfigChanges]
   },

@@ -76,13 +76,12 @@ const createSettingsInstance = async (
   config: FilterContext
 ): Promise<FetchElements<InstanceElement[]>> => {
   const typeName = apiName(settingsType)
-  return fetchMetadataInstances(
+  return fetchMetadataInstances({
     client,
-    typeName,
-    [extractSettingName(typeName)],
-    settingsType,
-    config.instancesRegexSkippedList
-  )
+    instancesNames: [extractSettingName(typeName)],
+    metadataType: settingsType,
+    instancesRegexSkippedList: config.instancesRegexSkippedList,
+  })
 }
 
 const createSettingsInstances = async (

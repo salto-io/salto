@@ -311,46 +311,6 @@ describe('element command', () => {
       ).execute()).toBe(CliExitCode.UserInputError)
     })
   })
-  describe('move with invalid \'to\' argument', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
-      })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move',
-        false,
-        [selector.getFullName()],
-        undefined,
-        undefined,
-        'ToNoWhere',
-        undefined,
-      ).execute()
-    })
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.UserInputError)
-    })
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain('Unknown direction for move command. \'to\' argument required.')
-    })
-  })
 
   describe('valid copy', () => {
     const workspaceName = 'valid-ws'
@@ -623,6 +583,46 @@ describe('element command', () => {
     it('should print deployment to console', () => {
       expect(cliOutput.stdout.content).toContain('Moving the selected elements from common to envs.')
       expect(cliOutput.stdout.content).toContain('Done moving elements.')
+    })
+  })
+  describe('move with invalid \'to\' argument', () => {
+    const workspaceName = 'valid-ws'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    const selector = new ElemID('salto', 'Account')
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+      mockLoadWorkspace.mockResolvedValue({
+        workspace,
+        errored: false,
+      })
+      result = await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'move',
+        false,
+        [selector.getFullName()],
+        undefined,
+        undefined,
+        'ToNoWhere',
+        undefined,
+      ).execute()
+    })
+
+    it('should return failure code', () => {
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+    it('should send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(2)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+    })
+
+    it('should print failure to console', () => {
+      expect(cliOutput.stderr.content)
+        .toContain(Prompts.INVALID_MOVE_ARG('ToNoWhere'))
     })
   })
 })

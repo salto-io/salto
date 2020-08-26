@@ -222,6 +222,18 @@ ${Prompts.SERVICE_ADD_HELP}`
     invalidIds: string
   ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
 
+  public static readonly INVALID_ELEMENT_COMMAND = (
+    command: string,
+  ): string => `Unknown element command: ${command}`
+
+  public static readonly ELEMENT_COPY_USAGE = 'Usage: salto element copy [elm-selector, ...] --from-env <env> --to-envs [env1, ...]'
+  public static readonly ELEMENT_MOVE_USAGE = 'Usage: salto element move [elm-selector, ...] --to [common|envs]'
+  public static readonly MISSING_COPY_ARG = 'Missing required environment argument'
+  public static readonly MISSING_MOVE_ARG = 'Missing \'to\' argument'
+  public static readonly INVALID_MOVE_ARG = (
+    invalidTo: string,
+  ): string => `Unknown direction for move command ${invalidTo}, choices: [common|envs]`
+
   public static readonly SOURCE_ENV_REQUIRED = 'The source envrionment cannot be empty'
   public static readonly TARGET_ENVS_REQUIRED = 'The target environments cannot be empty'
   public static readonly INVALID_ENV_TARGET_CURRENT = 'The current environment cannot be a target environment'

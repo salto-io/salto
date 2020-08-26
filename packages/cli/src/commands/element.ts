@@ -26,7 +26,11 @@ import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, CliTelemetry, Spinn
 import { createCommandBuilder } from '../command_builder'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { formatTargetEnvRequired, formatInvalidID, formatUnknownTargetEnv } from '../formatter'
+import {
+  formatTargetEnvRequired, formatInvalidID, formatUnknownTargetEnv, formatCopyToEnvFailed,
+  formatMissingCopyArg, formatMissingMoveArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
+  formatInvalidMoveArg, formatInvalidElementCommand,
+} from '../formatter'
 
 const log = logger(module)
 const toCommonInput = 'common'
@@ -47,7 +51,7 @@ const validateEnvs = (
     return false
   }
   if (toEnvs.includes(workspace.currentEnv())) {
-    errorOutputLine(Prompts.INVALID_ENV_TARGET_CURRENT, output)
+    errorOutputLine(formatInvalidEnvTargetCurrent(), output)
     return false
   }
   return true
@@ -76,7 +80,7 @@ const copyElement = async (
     return CliExitCode.Success
   } catch (e) {
     cliTelemetry.failure()
-    errorOutputLine(Prompts.COPY_TO_ENV_FAILED(e.message), output)
+    errorOutputLine(formatCopyToEnvFailed(e.message), output)
     return CliExitCode.AppError
   }
 }
@@ -101,7 +105,7 @@ const moveElement = async (
         await workspace.demote(elmSelectors)
         break
       default:
-        errorOutputLine('Unknown direction for move command. \'to\' argument required.', output)
+        errorOutputLine(formatInvalidMoveArg(to), output)
         cliTelemetry.failure()
         return CliExitCode.UserInputError
     }
@@ -111,7 +115,7 @@ const moveElement = async (
     return CliExitCode.Success
   } catch (e) {
     cliTelemetry.failure()
-    errorOutputLine(Prompts.MOVE_FAILED(e.message), output)
+    errorOutputLine(formatMoveFailed(e.message), output)
     return CliExitCode.AppError
   }
 }
@@ -138,19 +142,13 @@ export const command = (
 
     if ((commandName === 'copy')
     && ((inputFromEnv === undefined) || (inputToEnvs === undefined))) {
-      errorOutputLine(
-        `Missing required environment argument
-        Usage: salto element copy [elm-selector, ...] --from-env <env> --to-envs [env1, ...]`,
-        output
-      )
+      errorOutputLine(formatMissingCopyArg(), output)
+      errorOutputLine(Prompts.ELEMENT_COPY_USAGE, output)
       return CliExitCode.UserInputError
     }
     if ((commandName === 'move') && (inputTo === undefined)) {
-      errorOutputLine(
-        `Missing required environment argument
-        Usage: salto element move [elm-selector, ...] --to [common|envs]`,
-        output
-      )
+      errorOutputLine(formatMissingMoveArg(), output)
+      errorOutputLine(Prompts.ELEMENT_MOVE_USAGE, output)
       return CliExitCode.UserInputError
     }
     const sessionEnv = env ?? inputFromEnv ?? ''
@@ -188,7 +186,7 @@ export const command = (
       case 'move':
         return moveElement(workspace, output, cliTelemetry, to, elmSelectors)
       default:
-        errorOutputLine('Unknown element management command', output)
+        errorOutputLine(formatInvalidElementCommand(commandName), output)
         return CliExitCode.UserInputError
     }
   },

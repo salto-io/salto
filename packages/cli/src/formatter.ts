@@ -600,3 +600,38 @@ export const formatTargetEnvRequired = (): string => [
   formatSimpleError(Prompts.TARGET_ENVS_REQUIRED),
   emptyLine(),
 ].join('\n')
+
+export const formatInvalidEnvTargetCurrent = (): string => [
+  formatSimpleError(Prompts.INVALID_ENV_TARGET_CURRENT),
+  emptyLine(),
+].join('\n')
+
+export const formatMissingCopyArg = (): string => [
+  formatSimpleError(Prompts.MISSING_COPY_ARG),
+  emptyLine(),
+].join('\n')
+
+export const formatMissingMoveArg = (): string => [
+  formatSimpleError(Prompts.MISSING_MOVE_ARG),
+  emptyLine(),
+].join('\n')
+
+export const formatCopyToEnvFailed = (errorMessage: string): string => [
+  formatSimpleError(Prompts.COPY_TO_ENV_FAILED(errorMessage)),
+  emptyLine(),
+].join('\n')
+
+export const formatMoveFailed = (errorMessage: string): string => [
+  formatSimpleError(Prompts.MOVE_FAILED(errorMessage)),
+  emptyLine(),
+].join('\n')
+
+export const formatInvalidMoveArg = (invalidTo: string): string => [
+  formatSimpleError(Prompts.INVALID_MOVE_ARG(invalidTo)),
+  emptyLine(),
+].join('\n')
+
+export const formatInvalidElementCommand = (command: string): string => [
+  formatSimpleError(Prompts.INVALID_MOVE_ARG(command)),
+  emptyLine(),
+].join('\n')

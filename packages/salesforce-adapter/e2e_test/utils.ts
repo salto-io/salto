@@ -91,6 +91,7 @@ export const fetchTypes = async (
   const typeInfos = await client.listMetadataTypes()
   const topLevelTypes = typeInfos.filter(info => types.includes(info.xmlName))
   const baseTypeNames = new Set(topLevelTypes.map(info => info.xmlName))
+  const childTypeNames = new Set(topLevelTypes.flatMap(info => info.childXmlNames))
   const additionalTypeInfos = types
     .filter(typeName => !baseTypeNames.has(typeName))
     .map(typeName => ({
@@ -105,7 +106,7 @@ export const fetchTypes = async (
   const res = await Promise.all(
     topLevelTypes
       .concat(additionalTypeInfos)
-      .map(info => fetchMetadataType(client, info, knownTypes, baseTypeNames))
+      .map(info => fetchMetadataType(client, info, knownTypes, baseTypeNames, childTypeNames))
   )
   return res.flat().filter(isObjectType)
 }

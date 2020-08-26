@@ -19,7 +19,7 @@ import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR } from './constants'
+import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
@@ -33,7 +33,8 @@ export const fetchMetadataType = async (
   client: SalesforceClient,
   typeInfo: MetadataObject,
   knownTypes: Map<string, TypeElement>,
-  baseTypeNames: Set<string>
+  baseTypeNames: Set<string>,
+  childTypeNames: Set<string>,
 ): Promise<TypeElement[]> => {
   const typeDesc = await client.describeMetadataType(typeInfo.xmlName)
   const folderType = typeInfo.inFolder ? typeDesc.parentField?.foreignKeyDomain : undefined
@@ -42,6 +43,7 @@ export const fetchMetadataType = async (
     fields: typeDesc.valueTypeFields,
     knownTypes,
     baseTypeNames,
+    childTypeNames,
     client,
     annotations: {
       hasMetaFile: typeInfo.metaFile ? true : undefined,
@@ -57,6 +59,7 @@ export const fetchMetadataType = async (
       fields: (await client.describeMetadataType(folderType)).valueTypeFields,
       knownTypes,
       baseTypeNames,
+      childTypeNames,
       client,
       annotations: {
         hasMetaFile: true,
@@ -114,15 +117,27 @@ export const fetchMetadataInstances = async ({
         .some(re => re.test(`${metadataTypeName}.${name}`)))),
   )
 
-  const fullNameToNamespace = Object.fromEntries(
-    fileProps.map(props => [getFullName(props), props.namespacePrefix])
+  const fullNameToNamespaceAndId = Object.fromEntries(
+    fileProps
+      .map(props => [getFullName(props), {
+        namespace: props.namespacePrefix,
+        id: props.id,
+      }])
   )
 
   return {
     elements: metadataInfos
       .filter(m => !_.isEmpty(m))
       .filter(m => m.fullName !== undefined)
-      .map(m => createInstanceElement(m, metadataType, fullNameToNamespace[m.fullName])),
+      .map(m => (fullNameToNamespaceAndId[m.fullName]?.id
+        ? { ...m, [INTERNAL_ID_FIELD]: fullNameToNamespaceAndId[m.fullName]?.id }
+        : m
+      ))
+      .map(m => createInstanceElement(
+        m,
+        metadataType,
+        fullNameToNamespaceAndId[m.fullName]?.namespace,
+      )),
     configChanges: makeArray(errors)
       .map(e => createSkippedListConfigChange(metadataTypeName, e)),
   }

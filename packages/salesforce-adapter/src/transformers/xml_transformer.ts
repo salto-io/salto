@@ -22,8 +22,14 @@ import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { API_VERSION } from '../client/client'
-import { INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX, RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR } from '../constants'
-import { apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType } from './transformer'
+import {
+  INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
+  RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD,
+} from '../constants'
+import {
+  apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType,
+  toDeployableInstance,
+} from './transformer'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -263,6 +269,9 @@ export const fromRetrieveResult = async (
           contentFileName, file.type, file.namespacePrefix)
       }
     }
+    if (file.id !== undefined) {
+      metadataValues[INTERNAL_ID_FIELD] = file.id
+    }
     return metadataValues
   }
 
@@ -342,7 +351,7 @@ export const createDeployPackage = (): DeployPackage => {
       addManifest.get(manifestTypeName).push(instanceName)
       // Add instance file(s) to zip
       const typeName = metadataType(instance)
-      const values = getValuesToDeploy(instance)
+      const values = getValuesToDeploy(toDeployableInstance(instance))
       if (isComplexType(typeName)) {
         const complexType = complexTypesMap[typeName]
         const fieldToFileToContent = complexType.mapContentFields(instanceName, values)

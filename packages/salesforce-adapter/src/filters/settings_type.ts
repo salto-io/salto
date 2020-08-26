@@ -43,6 +43,7 @@ const createSettingsType = async (
       fields: typeFields.valueTypeFields,
       knownTypes,
       baseTypeNames,
+      childTypeNames: new Set(),
       client,
       isSettings: true,
     })

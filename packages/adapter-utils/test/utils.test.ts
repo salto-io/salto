@@ -59,7 +59,6 @@ describe('Test utils.ts', () => {
       numArray: { type: new ListType(BuiltinTypes.NUMBER) },
       strArray: { type: new ListType(BuiltinTypes.STRING) },
       obj: {
-
         type: new ListType(new ObjectType({
           elemID: mockElem,
           fields: {

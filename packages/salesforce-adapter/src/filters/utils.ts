@@ -23,8 +23,9 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { findElements } from '@salto-io/adapter-utils'
+import { FileProperties } from 'jsforce-types'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
-  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
+  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION } from '../constants'
 import { JSONBool } from '../client/types'
 import { isCustomObject, metadataType, apiName, defaultApiName } from '../transformers/transformer'
 
@@ -158,3 +159,23 @@ export const parentApiNameToMetadataTypeInstances = (elements: Element[], type: 
 Dictionary<InstanceElement[]> => _(getInstancesOfMetadataType(elements, type))
   .groupBy(instance => instanceParent(instance)?.getFullName())
   .value() as Dictionary<InstanceElement[]>
+
+export const getFullName = (obj: FileProperties): string => {
+  const namePrefix = obj.namespacePrefix
+    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
+  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+}
+
+export const getInternalId = (elem: Element): string => (
+  (isInstanceElement(elem))
+    ? elem.value[INTERNAL_ID_FIELD]
+    : elem.annotations[INTERNAL_ID_ANNOTATION]
+)
+
+export const setInternalId = (elem: Element, val: string): void => {
+  if (isInstanceElement(elem)) {
+    elem.value[INTERNAL_ID_FIELD] = val
+  } else {
+    elem.annotations[INTERNAL_ID_ANNOTATION] = val
+  }
+}

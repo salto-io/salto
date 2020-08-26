@@ -2697,7 +2697,7 @@ describe('Salesforce adapter E2E with real account', () => {
           const retrieveRequest = {
             apiVersion: API_VERSION,
             singlePackage: false,
-            [packageName]: [{ types: { name: type, members: member } }],
+            [packageName]: { version: API_VERSION, types: [{ name: type, members: [member] }] },
           }
           return client.retrieve(retrieveRequest)
         }

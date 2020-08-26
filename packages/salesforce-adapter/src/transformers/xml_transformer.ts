@@ -55,6 +55,7 @@ export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): Retriev
   apiVersion: API_VERSION,
   singlePackage: false,
   [PACKAGE]: {
+    version: API_VERSION,
     types: _(files)
       .groupBy(file => file.type)
       .entries()

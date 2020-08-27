@@ -17,11 +17,14 @@
 
 import nock from 'nock'
 import _ from 'lodash'
+import waitForExpect from 'wait-for-expect'
+import axios from 'axios'
 import {
   telemetrySender, EVENT_TYPES,
   TelemetryEvent, StackEvent,
   Tags, isCountEvent, isStackEvent,
   DEFAULT_EVENT_NAME_PREFIX as prefix,
+  MAX_CONSECUTIVE_RETRIES,
 } from '../src/telemetry'
 
 describe('telemetry', () => {
@@ -40,11 +43,15 @@ describe('telemetry', () => {
   }
   const requiredTags = { installationID, app }
   let reqEvents = [] as Array<TelemetryEvent>
+  let nockScope: nock.Scope
+
+  waitForExpect.defaults.timeout = 500
+  waitForExpect.defaults.interval = 100
 
   beforeEach(() => {
-    const s = nock(url, { reqheaders: { authorization: token } }).persist()
+    nockScope = nock(url, { reqheaders: { authorization: token } }).persist()
     // eslint-disable-next-line prefer-arrow-callback
-    s.post(/.*/).reply(201, function reply(_url, body) {
+    nockScope.post('/v1/events').reply(201, function reply(_url, body) {
       const parsedBody = body as { events: Array<TelemetryEvent> }
       reqEvents = parsedBody.events
     })
@@ -164,10 +171,11 @@ describe('telemetry', () => {
   it('should send events without stopping the service', async () => {
     const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
     telemetry.sendCountEvent('ev', 1)
-    setTimeout(async () => {
+    await waitForExpect(async () => {
       expect(reqEvents.length).toEqual(1)
-      await telemetry.stop(1)
-    }, 1)
+    })
+    await telemetry.stop(1)
+    expect(telemetry.isStopped()).toBeTruthy()
   })
 
   it('should have os tags', async () => {
@@ -175,9 +183,9 @@ describe('telemetry', () => {
     telemetry.sendCountEvent('ev1', 1)
     await telemetry.stop(1)
 
-    expect(reqEvents[0].tags.os_arch).not.toBeUndefined()
-    expect(reqEvents[0].tags.os_platform).not.toBeUndefined()
-    expect(reqEvents[0].tags.os_release).not.toBeUndefined()
+    expect(reqEvents[0].tags.os_arch).toBeDefined()
+    expect(reqEvents[0].tags.os_platform).toBeDefined()
+    expect(reqEvents[0].tags.os_release).toBeDefined()
   })
 
   it('should fail sending events to a misconfigured endpoint and fail without throwing exception', async () => {
@@ -269,5 +277,48 @@ describe('telemetry', () => {
     }
     `
     expect(isStackEvent(JSON.parse(legalEventString) as StackEvent)).toBeTruthy()
+  })
+
+  it('should stop flushing events if HTTP response code is 4xx', async () => {
+    let timesHTTPCalled = 0
+    let testDone = false
+    nock.cleanAll()
+    // eslint-disable-next-line prefer-arrow-callback
+    nockScope.post('/v1/events').reply(403, function reply(_url, _body) {
+      timesHTTPCalled += 1
+      return 'Forbidden'
+    })
+    const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
+    telemetry.sendCountEvent('ev', 1)
+    setTimeout(() => {
+      testDone = true
+    }, 100)
+    await waitForExpect(() => {
+      expect(telemetry.isStopped()).toBeTruthy()
+      expect(timesHTTPCalled).toEqual(1)
+      expect(testDone).toBeTruthy()
+    })
+  })
+
+  it('should stop flushing events after maximum amount of consecutive failed retries', async () => {
+    let timesHTTPCalled = 0
+    let testDone = false
+    nock.cleanAll()
+    // eslint-disable-next-line prefer-arrow-callback
+    nockScope.post('/v1/events').delayConnection(5000).reply(201, function reply(_url, _body) {
+      timesHTTPCalled += 1
+      return 'Created'
+    })
+    axios.defaults.timeout = 1
+    const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
+    telemetry.sendCountEvent('ev', 1)
+    setTimeout(() => {
+      testDone = true
+    }, 100)
+    await waitForExpect(() => {
+      expect(telemetry.isStopped()).toBeTruthy()
+      expect(timesHTTPCalled).toEqual(MAX_CONSECUTIVE_RETRIES)
+      expect(testDone).toBeTruthy()
+    })
   })
 })

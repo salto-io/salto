@@ -409,6 +409,30 @@ describe('workspace', () => {
       },
       ['Records', 'Queue', 'queueInstance'],
     )
+
+    const objWithHiddenFields = new ObjectType({
+      elemID: new ElemID('salesforce', 'ObjWithHidden', 'type', ''),
+      annotations: {
+        [METADATA_TYPE]: 'ObjWithHidden',
+      },
+      fields: {
+        show: { type: BuiltinTypes.NUMBER },
+        hide: {
+          type: BuiltinTypes.STRING,
+          annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+        },
+      },
+    })
+
+    const instWithHiddenFields = new InstanceElement(
+      'instWithHidden',
+      objWithHiddenFields,
+      {
+        show: 432,
+        hide: 'hide',
+      },
+    )
+
     const changes: DetailedChange[] = [
       {
         path: ['file'],
@@ -571,7 +595,16 @@ describe('workspace', () => {
           after: queueInstance,
         },
       },
+      { // existing instance
+        id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'hide'),
+        action: 'add',
+        data: {
+          after: 'changed',
+        },
+      },
     ]
+
+    let clonedChanges: DetailedChange[]
 
     // New elements
     let newHiddenType: ObjectType
@@ -589,10 +622,11 @@ describe('workspace', () => {
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
-      const getResultMock = (_id: ElemID):
-        Promise<ObjectType> => Promise.resolve(
-        accountInsightsSettingsType
-      )
+      const getResultMock = (id: ElemID): Promise<Element> => (Promise.resolve(
+        id.isEqual(instWithHiddenFields.elemID)
+          ? instWithHiddenFields
+          : accountInsightsSettingsType
+      ))
       const mockGet = jest.fn().mockImplementation(getResultMock)
       const mockState = {
         get: mockGet,
@@ -609,8 +643,9 @@ describe('workspace', () => {
       )
         .toBeDefined()
 
-      await workspace.updateNaclFiles(changes)
-      expect(mockGet).toHaveBeenCalledTimes(1)
+      clonedChanges = _.cloneDeep(changes)
+      await workspace.updateNaclFiles(clonedChanges)
+      expect(mockGet).toHaveBeenCalledTimes(2)
       elemMap = getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
 
@@ -634,6 +669,11 @@ describe('workspace', () => {
       expect(lead).toBeDefined()
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
     })
+
+    it('should not modify the changes object', () => {
+      expect(clonedChanges).toEqual(changes)
+    })
+
     it('should update existing parsed Nacl files content', () => {
       const setNaclFile = dirStore.set as jest.Mock
       expect(setNaclFile.mock.calls[0][0].buffer).toMatch(/base_field\s+{\s+_default = "foo"/s)

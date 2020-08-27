@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalChange,
-  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getField, isObjectType,
+  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getField, isObjectType, Values,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -156,6 +156,10 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     isAdditionChange(change) && isHiddenType(change.data.after)
   )
 
+  const getChangeWithUpdatedAfter = (change: DetailedChange, after?: Values): DetailedChange => (
+    { ...change, data: { ...change.data, after } } as DetailedChange
+  )
+
   const handleHiddenForTypesAndInstances = async (
     change: DetailedChange
   ): Promise<DetailedChange | undefined> => {
@@ -164,27 +168,28 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       const value = change.data.after
       if (isInstanceElement(value)) {
         // Full instance added - remove all hidden fields
-        change.data.after = removeHiddenValuesForInstance(value)
-      } else {
-        // A value inside the instance was added
-        const { parent, path: fieldPath } = change.id.createTopLevelParentID()
-        const parentInstance = await state().get(parent)
-        if (parentInstance !== undefined) {
-          if (isHiddenField(parentInstance.type, fieldPath)) {
-            // The whole value is hidden, omit the change
-            return undefined
-          }
-          const fieldType = getField(parentInstance.type, fieldPath)
-          if (fieldType !== undefined && isObjectType(fieldType)) {
-            // The field itself is not hidden, but it might have hidden parts
-            change.data.after = transformValues({
-              values: value,
-              type: fieldType,
-              transformFunc: removeHiddenFieldValue,
-              pathID: change.id,
-              strict: false,
-            })
-          }
+        const after = removeHiddenValuesForInstance(value)
+        return getChangeWithUpdatedAfter(change, after)
+      }
+      // A value inside the instance was added
+      const { parent, path: fieldPath } = change.id.createTopLevelParentID()
+      const parentInstance = await state().get(parent)
+      if (parentInstance !== undefined) {
+        if (isHiddenField(parentInstance.type, fieldPath)) {
+          // The whole value is hidden, omit the change
+          return undefined
+        }
+        const fieldType = getField(parentInstance.type, fieldPath)
+        if (fieldType !== undefined && isObjectType(fieldType)) {
+          // The field itself is not hidden, but it might have hidden parts
+          const after = transformValues({
+            values: value,
+            type: fieldType,
+            transformFunc: removeHiddenFieldValue,
+            pathID: change.id,
+            strict: false,
+          })
+          return getChangeWithUpdatedAfter(change, after)
         }
       }
       return change

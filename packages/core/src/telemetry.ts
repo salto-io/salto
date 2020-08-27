@@ -161,11 +161,12 @@ export const telemetrySender = (
   }
 
   const start = (): void => {
+    if (stopped) {
+      return
+    }
     timer = setTimeout(async () => {
       await flush()
-      if (!stopped) {
-        start()
-      }
+      start()
     }, flushInterval)
   }
 

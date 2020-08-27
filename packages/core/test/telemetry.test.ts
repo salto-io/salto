@@ -173,9 +173,9 @@ describe('telemetry', () => {
     telemetry.sendCountEvent('ev', 1)
     await waitForExpect(async () => {
       expect(reqEvents.length).toEqual(1)
-      await telemetry.stop(1)
-      expect(telemetry.isStopped()).toBeTruthy()
     })
+    await telemetry.stop(1)
+    expect(telemetry.isStopped()).toBeTruthy()
   })
 
   it('should have os tags', async () => {

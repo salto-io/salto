@@ -18,14 +18,12 @@ import { logger } from '@salto-io/logging'
 import {
   Element, ElemID, Value, DetailedChange, isElement,
 } from '@salto-io/adapter-api'
-import {
-  resolvePath,
-} from '@salto-io/adapter-utils'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
 import {
-  getChangeLocations, updateNaclFileData, getChangesToUpdate,
+  getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
 } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource } from '../elements_source'
@@ -171,6 +169,26 @@ Promise<NaclFilesState> => {
   }
 }
 
+const logNaclFileUpdateErrorContext = (
+  filename: string,
+  fileChanges: DetailedChangeWithSource[],
+  naclDataBefore: string,
+  naclDataAfter: string,
+): void => {
+  log.debug('Parse errors in file %s after updating with changes:', filename)
+  fileChanges.forEach(change => {
+    log.debug(
+      '%s of %s at location: (start=%o end=%o)',
+      change.action,
+      change.id.getFullName(),
+      change.location.start,
+      change.location.end,
+    )
+  })
+  log.debug('data before:\n%s', naclDataBefore)
+  log.debug('data after:\n%s', naclDataAfter)
+}
+
 const buildNaclFilesSource = (
   naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
@@ -276,6 +294,9 @@ const buildNaclFilesSource = (
               ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>)
               : toParsedNaclFile({ filename, buffer },
                 await parseNaclFile({ filename, buffer }, cache, functions))
+            if (parsed.errors.length > 0) {
+              logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
+            }
             return { ...parsed, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s with %o changes due to: %o',

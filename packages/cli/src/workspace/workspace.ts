@@ -111,6 +111,7 @@ const printWorkspaceErrors = async (
 ): Promise<void> => {
   if (status === 'Valid') return
   const stream = (status === 'Error' ? stderr : stdout)
+  log.debug('workspace status %s, errors:\n%s', status, errorsStr)
   stream.write(`\n${errorsStr}\n`)
 }
 

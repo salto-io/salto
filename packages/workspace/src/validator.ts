@@ -396,7 +396,9 @@ const validateFieldValue = (elemID: ElemID, value: Value, field: Field, isAnnota
   ValidationError[] => {
   const fieldType = field.type
   if (isListType(fieldType)) {
-    if (!_.isArray(value)) {
+    // NOTE: the second part of the condition should be deleted as soon as
+    //  we complete the implementation of SALTO-228 (Support annotationTypes list)
+    if (!_.isArray(value) && !isAnnotations) {
       return [new InvalidValueValidationError({ elemID, value, fieldName: field.name, expectedValue: 'a list' })]
     }
     return _.flatten(

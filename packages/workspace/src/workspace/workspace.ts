@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalChange,
-  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getField, isObjectType,
+  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getField, isObjectType, Values,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -156,6 +156,10 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     isAdditionChange(change) && isHiddenType(change.data.after)
   )
 
+  const getChangeWithUpdatedAfter = (change: DetailedChange, after?: Values): DetailedChange => (
+    { ...change, data: { ...change.data, after } } as DetailedChange
+  )
+
   const handleHiddenForTypesAndInstances = async (
     change: DetailedChange
   ): Promise<DetailedChange | undefined> => {
@@ -165,7 +169,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       if (isInstanceElement(value)) {
         // Full instance added - remove all hidden fields
         const after = removeHiddenValuesForInstance(value)
-        return _.merge(_.omit(change, 'data.after'), { data: { after } })
+        return getChangeWithUpdatedAfter(change, after)
       }
       // A value inside the instance was added
       const { parent, path: fieldPath } = change.id.createTopLevelParentID()
@@ -185,7 +189,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
             pathID: change.id,
             strict: false,
           })
-          return _.merge(_.omit(change, 'data.after'), { data: { after } })
+          return getChangeWithUpdatedAfter(change, after)
         }
       }
       return change

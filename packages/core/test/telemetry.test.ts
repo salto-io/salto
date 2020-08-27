@@ -45,6 +45,9 @@ describe('telemetry', () => {
   let reqEvents = [] as Array<TelemetryEvent>
   let nockScope: nock.Scope
 
+  waitForExpect.defaults.timeout = 500
+  waitForExpect.defaults.interval = 100
+
   beforeEach(() => {
     nockScope = nock(url, { reqheaders: { authorization: token } }).persist()
     // eslint-disable-next-line prefer-arrow-callback
@@ -278,6 +281,7 @@ describe('telemetry', () => {
 
   it('should stop flushing events if HTTP response code is 4xx', async () => {
     let timesHTTPCalled = 0
+    let testDone = false
     nock.cleanAll()
     // eslint-disable-next-line prefer-arrow-callback
     nockScope.post('/v1/events').reply(403, function reply(_url, _body) {
@@ -287,20 +291,18 @@ describe('telemetry', () => {
     const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
     telemetry.sendCountEvent('ev', 1)
     setTimeout(() => {
-      timesHTTPCalled += 1
+      testDone = true
     }, 100)
     await waitForExpect(() => {
       expect(telemetry.isStopped()).toBeTruthy()
-      // in order to validate that indeed we've stopped sending events,
-      // we're settings timeout above that will raise the total number of times
-      // the HTTP server was called by one and here we're expecting this number to be
-      // the number of times expected (1) + 1
-      expect(timesHTTPCalled).toEqual(2)
+      expect(timesHTTPCalled).toEqual(1)
+      expect(testDone).toBeTruthy()
     })
   })
 
   it('should stop flushing events after maximum amount of consecutive failed retries', async () => {
     let timesHTTPCalled = 0
+    let testDone = false
     nock.cleanAll()
     // eslint-disable-next-line prefer-arrow-callback
     nockScope.post('/v1/events').delayConnection(5000).reply(201, function reply(_url, _body) {
@@ -311,11 +313,12 @@ describe('telemetry', () => {
     const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
     telemetry.sendCountEvent('ev', 1)
     setTimeout(() => {
-      timesHTTPCalled += 1
+      testDone = true
     }, 100)
     await waitForExpect(() => {
       expect(telemetry.isStopped()).toBeTruthy()
-      expect(timesHTTPCalled).toEqual(MAX_CONSECUTIVE_RETRIES + 1)
+      expect(timesHTTPCalled).toEqual(MAX_CONSECUTIVE_RETRIES)
+      expect(testDone).toBeTruthy()
     })
   })
 })

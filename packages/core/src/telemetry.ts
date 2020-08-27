@@ -146,6 +146,7 @@ export const telemetrySender = (
         if (e.response) {
           const { status } = e.response
           if (status >= 400 && status < 500) {
+            log.debug('telemetry http response status: %d, giving up on sending events', status)
             stopped = true
             return
           }

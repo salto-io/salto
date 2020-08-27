@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import {
+  AdapterFailureInstallResult, AdapterSuccessInstallResult, ElemID, InstanceElement,
+  isAdapterSuccessInstallResult, ObjectType,
+} from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
 import { adapter, DEFAULT_SDF_CONCURRENCY } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
@@ -28,7 +31,7 @@ jest.mock('../src/adapter')
 jest.mock('@salto-io/suitecloud-cli')
 
 const mockDownload = cli.SDKDownloadService.download as jest.Mock
-mockDownload.mockResolvedValue({ errors: [], success: true })
+mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })
 
 describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(
@@ -138,7 +141,8 @@ describe('NetsuiteAdapter creator', () => {
     it('when installation succeeds', async () => {
       if (adapter.install) {
         const res = await adapter.install()
-        expect(res).toEqual({ success: true, errors: [] })
+        expect(isAdapterSuccessInstallResult(res)).toBe(true)
+        expect((res as AdapterSuccessInstallResult).installedVersion).toEqual('123')
         expect(mockDownload).toHaveBeenCalled()
       }
     })
@@ -148,16 +152,16 @@ describe('NetsuiteAdapter creator', () => {
       })
       if (adapter.install) {
         const res = await adapter.install()
-        expect(res.success).toBeFalsy()
-        expect(res.errors).toEqual(['FAILED'])
+        expect(isAdapterSuccessInstallResult(res)).toBe(false)
+        expect((res as AdapterFailureInstallResult).errors).toEqual(['FAILED'])
       }
     })
     it('when installation fails with sdf errors in return value', async () => {
       mockDownload.mockImplementationOnce(() => ({ errors: ['FAILED'], success: false }))
       if (adapter.install) {
         const res = await adapter.install()
-        expect(res.success).toBeFalsy()
-        expect(res.errors).toEqual(['FAILED'])
+        expect(isAdapterSuccessInstallResult(res)).toBe(false)
+        expect((res as AdapterFailureInstallResult).errors).toEqual(['FAILED'])
       }
     })
   })

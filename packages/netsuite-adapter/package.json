@@ -8,7 +8,11 @@
     "url": "https://github.com/salto-io/salto_monorepo"
   },
   "files": [
-    "dist/**/*"
+    "dist",
+    "src",
+    "types",
+    "e2e_test",
+    "index.ts"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,7 +36,7 @@
     "@salto-io/file": "0.1.24",
     "@salto-io/logging": "0.1.24",
     "@salto-io/lowerdash": "0.1.24",
-    "@salto-io/suitecloud-cli": "1.0.2-salto-11",
+    "@salto-io/suitecloud-cli": "1.0.2-salto-13",
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^3.15.0",
     "he": "^1.2.0",

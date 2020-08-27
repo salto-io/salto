@@ -15,10 +15,10 @@
 */
 
 declare module '@salto-io/suitecloud-cli' {
-  import { Value, Values } from '@salto-io/adapter-api'
+  import { AdapterInstallResult, Value, Values } from '@salto-io/adapter-api'
 
   interface SDKDownloadServiceI {
-    download(): Promise<{success: boolean; errors: string[]}>
+    download(): Promise<AdapterInstallResult>
   }
 
   export class CommandsMetadataService {

@@ -49,6 +49,7 @@ import { mockState } from './common/state'
 
 const mockService = 'salto'
 const emptyMockService = 'salto2'
+const mockServiceWithInstall = 'adapterWithInstallMethod'
 
 const SERVICES = [mockService, emptyMockService]
 
@@ -163,8 +164,16 @@ describe('api.ts', () => {
     credentialsType: mockEmptyConfigType,
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
   }
+  const mockAdapterWithInstall = {
+    credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
+    operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
+  }
+
   adapterCreators[mockService] = mockAdapter
   adapterCreators[emptyMockService] = mockEmptyAdapter
+  adapterCreators[mockServiceWithInstall] = mockAdapterWithInstall
 
   const typeWithHiddenField = new ObjectType({
     elemID: new ElemID(mockService, 'dummyHidden'),
@@ -466,26 +475,34 @@ describe('api.ts', () => {
     })
 
     describe('when the adapter implements the install method', () => {
-      const serviceName = 'adapterWithInstallMethod'
-      const mockAdapterWithInstall = {
-        credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }),
-        operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-        validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
-        install: jest.fn().mockResolvedValue({ success: true }),
-      }
-      adapterCreators[serviceName] = mockAdapterWithInstall
-
       it('should invoke the adapter install method', async () => {
         const wsp = mockWorkspace({})
-        await api.addAdapter(wsp, serviceName)
+        await api.addAdapter(wsp, mockServiceWithInstall)
         expect(mockAdapterWithInstall.install).toHaveBeenCalled()
       })
       it('should throw an error if the adapter failed to install', async () => {
         mockAdapterWithInstall.install.mockResolvedValueOnce({ success: false })
         const wsp = mockWorkspace({})
-        return expect(api.addAdapter(wsp, serviceName)).rejects
+        return expect(api.addAdapter(wsp, mockServiceWithInstall)).rejects
           .toThrow()
       })
+    })
+  })
+
+  describe('installAdapter', () => {
+    it('should return the installed version', async () => {
+      const result = await api.installAdapter(mockServiceWithInstall)
+      expect(result).toEqual({ success: true, installedVersion: '123' })
+    })
+
+    it('should throw an error if the adapter failed to install', async () => {
+      mockAdapterWithInstall.install.mockResolvedValueOnce({ success: false, errors: ['ERROR'] })
+      return expect(api.installAdapter(mockServiceWithInstall)).rejects.toThrow()
+    })
+
+    it('should return undefined in case the adapter has no install method', async () => {
+      const result = await api.installAdapter(mockService)
+      expect(result).toBeUndefined()
     })
   })
 

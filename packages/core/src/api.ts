@@ -15,17 +15,9 @@
 */
 import wu from 'wu'
 import {
-  Element,
-  InstanceElement,
-  ObjectType,
-  ElemID,
-  AccountId,
-  getChangeElement,
-  isField,
-  Change,
-  ChangeDataType,
-  isFieldChange,
-  AdapterInstallResult,
+  Element, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField, Change,
+  ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
+  AdapterSuccessInstallResult,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -298,10 +290,23 @@ export const diff = async (
 }
 
 class AdapterInstallError extends Error {
-  constructor(name: string, installResults: AdapterInstallResult) {
+  constructor(name: string, failureInstallResults: AdapterFailureInstallResult) {
     const header = `Failed to add the ${name} adapter.`
-    super([header, ...installResults.errors].join(EOL))
+    super([header, ...failureInstallResults.errors].join(EOL))
   }
+}
+
+export const installAdapter = async (adapterName: string):
+  Promise<AdapterSuccessInstallResult|undefined> => {
+  const adapter = adapterCreators[adapterName]
+  if (adapter.install === undefined) {
+    return undefined
+  }
+  const installResult = await adapter.install()
+  if (isAdapterSuccessInstallResult(installResult)) {
+    return installResult
+  }
+  throw new AdapterInstallError(adapterName, installResult)
 }
 
 export const addAdapter = async (
@@ -312,14 +317,7 @@ export const addAdapter = async (
   if (!adapter) {
     throw new Error('No adapter available for this service')
   }
-
-  if (adapter.install !== undefined) {
-    const installResult = await adapter.install()
-    if (!installResult.success) {
-      throw new AdapterInstallError(adapterName, installResult)
-    }
-  }
-
+  await installAdapter(adapterName)
   await workspace.addService(adapterName)
 
   if (_.isUndefined((await workspace.servicesConfig([adapterName]))[adapterName])) {

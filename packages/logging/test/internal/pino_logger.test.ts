@@ -95,12 +95,12 @@ describe('pino based logger', () => {
 
         it('should write the message to the file', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
-          expect(line).toContain(`error ${NAMESPACE} arg0={"extra":"stuff"} hello1 { world: true }`)
+          expect(line).toContain(`error ${NAMESPACE} extra="stuff" hello1 { world: true }`)
         })
 
         it('should write the second message after a newline', () => {
           expect(line2).toMatch(TIMESTAMP_REGEX)
-          expect(line2).toContain(`warn ${NAMESPACE} arg0={"extra":"stuff"} hello2 { world: true }`)
+          expect(line2).toContain(`warn ${NAMESPACE} extra="stuff" hello2 { world: true }`)
         })
 
         it('should append to file on subsequent runs', async () => {
@@ -358,7 +358,7 @@ describe('pino based logger', () => {
         })
         it('line should contain log tags', async () => {
           expect(line).toContain('number=1')
-          expect(line).toContain('string=1')
+          expect(line).toContain('string="1"')
           expect(line).toContain('bool=true')
         })
         it('line should contain basic log data', () => {
@@ -397,7 +397,7 @@ describe('pino based logger', () => {
           })
           it('should contain old tags', () => {
             expect(line).toContain('number=1')
-            expect(line).toContain('string=1')
+            expect(line).toContain('string="1"')
             expect(line).toContain('bool=true')
           })
           it('line should contain basic log data', () => {
@@ -407,8 +407,8 @@ describe('pino based logger', () => {
             expect(line).toContain('hello { world: true }')
           })
           it('should contain new logTags also', async () => {
-            expect(line).toContain('newTag=data')
-            expect(line).toContain('superNewTag=tag')
+            expect(line).toContain('newTag="data"')
+            expect(line).toContain('superNewTag="tag"')
           })
         })
         describe('clear all tags', () => {
@@ -420,7 +420,7 @@ describe('pino based logger', () => {
           })
           it('should not contain old tags', () => {
             expect(line).not.toContain('number=1')
-            expect(line).not.toContain('string=1')
+            expect(line).not.toContain('string="1"')
             expect(line).not.toContain('bool=true')
           })
           it('line should contain basic log data', () => {
@@ -653,7 +653,7 @@ describe('pino based logger', () => {
         await repo.end()
       })
 
-      it('verify object was extended with excess args formatted object', async () => {
+      it('verify object was extended with excess args formatted object - simple', async () => {
         logger.warn(
           'where is extra args object %s',
           'foo',
@@ -669,22 +669,46 @@ describe('pino based logger', () => {
           level: 'warn',
           message: 'where is extra args object foo',
           arg0: 'moo',
-          arg1: '{"extra":"should be in log"}',
-          arg2: 'true',
+          extra: 'should be in log',
+          arg2: true,
           arg3: '"string with \\"bad chars\\"\\t\\n"',
         })
       })
 
+      it('verify object was extended with excess args formatted object - complex', async () => {
+        logger.warn(
+          'where is extra args object %s',
+          'foo',
+          { inlineTag1: 'inlineTag1', inlineTag2: 'inlineTag2', inlineTag3: 'so many tags' },
+          { extra: 'should be in log' },
+          () => 'shouldn\'t be in log '
+        );
+        [line] = consoleStream.contents().split(EOL)
+        jsonLine = JSON.parse(line)
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'where is extra args object foo',
+          inlineTag1: 'inlineTag1',
+          inlineTag2: 'inlineTag2',
+          inlineTag3: 'so many tags',
+          extra: 'should be in log',
+          arg2: '[Function]',
+        })
+      })
+
       it('verify object was extended with excess args another', async () => {
-        logger.warn('where is mix object %s', 'foo', { moo: 'moo' }, { extra: 'shouldnt be in log' });
+        logger.warn('where is mix object %s', 'foo', { moo: 'moo', foo: 'foo', boo: { loo: 'loo' } }, { extra: 'should be in log' });
         [line] = consoleStream.contents().split(EOL)
         jsonLine = JSON.parse(line)
         expect(jsonLine).toMatchObject({
           time: expect.stringMatching(TIMESTAMP_REGEX),
           level: 'warn',
           message: 'where is mix object foo',
-          arg0: '{"moo":"moo"}',
-          arg1: '{"extra":"shouldnt be in log"}',
+          moo: 'moo',
+          foo: 'foo',
+          boo: { loo: 'loo' },
+          extra: 'should be in log',
         })
       })
     })
@@ -724,7 +748,7 @@ describe('pino based logger', () => {
         })
         it('line should contain log tags', async () => {
           expect(line).toContain('number=1')
-          expect(line).toContain('string=1')
+          expect(line).toContain('string="1"')
           expect(line).toContain('bool=true')
         })
         it('line should contain basic log data', () => {
@@ -743,25 +767,27 @@ describe('pino based logger', () => {
           logger.assignTags(logTags)
           logger.log(
             'error', 'lots of data %s', 'datadata', 'excessArgs',
-            true, { someArg: { with: 'data' } }, 'bad\n\t"string', undefined
+            true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined
           );
           [line] = consoleStream.contents().split(EOL)
         })
 
         it('should contain parent log tags', () => {
           expect(line).toContain('number=1')
-          expect(line).toContain('string=1')
+          expect(line).toContain('string="1"')
           expect(line).toContain('bool=true')
         })
         it('should new log tags', () => {
-          expect(line).toContain('anotherTag=foo')
+          expect(line).toContain('anotherTag="foo"')
           expect(line).toContain('anotherNumber=4')
         })
         it('should contain excess arg', () => {
-          expect(line).toContain('arg0=excessArg')
+          expect(line).toContain('arg0="excessArgs"')
           expect(line).toContain('arg1=true')
-          expect(line).toContain('arg2={"someArg":{"with":"data"}')
+          expect(line).toContain('someArg={"with":"data"}')
+          expect(line).toContain('anotherArg="much simpler"')
           expect(line).toContain('arg3="bad\\n\\t\\"string"')
+          expect(line).toContain('arg4="undefined"')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
@@ -801,7 +827,9 @@ describe('pino based logger', () => {
           initialConfig.globalTags = moreTags
           logger = createLogger()
           logger.assignTags(logTags)
-          logger.log('error', 'lots of data %s', 'datadata', 'mixExcessArgs', 'moreExcess');
+          logger.log('error', 'lots of data %s', 'datadata',
+            { firstExcess: 'simple', secondExcess: { complex: 'data' } },
+            'mixExcessArgs', 'moreExcess');
           [line] = consoleStream.contents().split(EOL)
         })
         it('should contain parent log tags', () => {
@@ -818,8 +846,12 @@ describe('pino based logger', () => {
           expect(line).toContain(NAMESPACE)
           expect(line).toContain('error')
           expect(line).toContain('lots of data datadata')
-          expect(line).toContain('"arg0":"mixExcessArgs"')
-          expect(line).toContain('"arg1":"moreExcess"')
+        })
+        it('should contain excess data', () => {
+          expect(line).toContain('"firstExcess":"simple"')
+          expect(line).toContain('"secondExcess":{"complex":"data"}')
+          expect(line).toContain('"arg1":"mixExcessArgs"')
+          expect(line).toContain('"arg2":"moreExcess"')
         })
       })
     })
@@ -851,11 +883,11 @@ describe('pino based logger', () => {
           logger.assignTags({ number: undefined, string: undefined, anotherTag: 'foo' })
           await logLine({ level: 'warn' })
         })
-        it('line should contain corrent log tags', async () => {
+        it('line should contain current log tags', async () => {
           expect(line).not.toContain('number=1')
           expect(line).not.toContain('string=1')
           expect(line).toContain('bool=true')
-          expect(line).toContain('anotherTag=foo')
+          expect(line).toContain('anotherTag="foo"')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)

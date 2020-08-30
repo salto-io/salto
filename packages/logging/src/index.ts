@@ -21,6 +21,7 @@ import * as pino from './internal/pino'
 export { LogLevel } from './internal/level'
 export { Logger } from './internal/logger'
 export { Config as LogConfig } from './internal/config'
+export { LogTags } from './internal/log-tags'
 
 export { compare as compareLogLevels } from './internal/level'
 

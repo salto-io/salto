@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 
-import { format, promisify } from 'util'
+import { format, promisify, inspect } from 'util'
 import { createWriteStream } from 'fs'
 import { EOL } from 'os'
 import pino, { LevelWithSilent, DestinationStream } from 'pino'
-import safeStringify from 'fast-safe-stringify'
 // Workaround - pino in browser doesn't include pino.stdTimeFunctions
 // @ts-ignore
 import { isoTime } from 'pino/lib/time'
 import chalk from 'chalk'
+import safeStringify from 'fast-safe-stringify'
 import { streams, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
@@ -32,7 +32,7 @@ import {
 import { BaseLoggerRepo, BaseLoggerMaker } from './logger'
 import { LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config } from './config'
-import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, formatLogTagValue } from './log-tags'
+import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, PrimitiveType } from './log-tags'
 
 const toPinoLogLevel = (level: LogLevel | 'none'): LevelWithSilent => (
   level === 'none' ? 'silent' : level
@@ -71,14 +71,28 @@ const formatError = (input: FormatterInput): string => [
   format(Object.fromEntries(customKeys(input).map(k => [k, input[k]]))),
 ].join(EOL)
 
-const formatExcessArg = (value: unknown, i: number): [string, string] => [
-  `arg${i}`,
-  isPrimitiveType(value) ? formatLogTagValue(value) : safeStringify(value),
-]
+const formatArgumentKey = (i: number): string => `arg${i}`
 
-const formatExcessArgs = (excessArgs?: unknown[]): LogTags =>
-  Object.fromEntries((excessArgs || []).map(formatExcessArg))
+const formatPrimitiveExcessArg = (
+  value: PrimitiveType, i: number
+): Record<string, PrimitiveType> => ({
+  [formatArgumentKey(i)]: value,
+})
 
+const formatExcessArgs = (excessArgs?: unknown[]): LogTags => {
+  const baseExcessArgs = (excessArgs || [])
+  const formattedExcessArgs = {}
+  baseExcessArgs.forEach((excessArg, i) => {
+    if (isPrimitiveType(excessArg)) {
+      Object.assign(formattedExcessArgs, formatPrimitiveExcessArg(excessArg, i))
+    } else if (typeof excessArg === 'object') {
+      Object.assign(formattedExcessArgs, excessArg)
+    } else {
+      Object.assign(formattedExcessArgs, { [formatArgumentKey(i)]: inspect(excessArg) })
+    }
+  })
+  return formattedExcessArgs
+}
 
 const textFormat = (
   { colorize }: { colorize: boolean }
@@ -140,11 +154,23 @@ const toStream = (
 
 type JsonLogObject = Record<string, unknown> & { excessArgs: unknown[] }
 
+const formatJsonStringValue = (s: string): string => (
+  s.match(/^.*(\n|\t|").*$/) ? safeStringify(s) : s
+)
+
 const formatJsonLog = (object: JsonLogObject): Record<string, unknown> => {
   const {
     excessArgs, ...logJson
   } = object as object & { excessArgs: unknown[]}
-  const formattedExcessArgs = formatExcessArgs(excessArgs)
+  const formattedExcessArgs = {}
+  Object.entries(formatExcessArgs(excessArgs))
+    .forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        Object.assign(formattedExcessArgs, { [key]: formatJsonStringValue(value) })
+        return
+      }
+      Object.assign(formattedExcessArgs, { [key]: value })
+    })
   return { ...logJson, ...formattedExcessArgs }
 }
 

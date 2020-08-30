@@ -164,6 +164,10 @@ describe('Salto parser', () => {
         Multiline
         '''
       }
+
+      type salesforce.stringAttr {
+        "#strAttr" = "attr"
+      }
        `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
@@ -173,7 +177,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(17)
+        expect(elements.length).toBe(18)
       })
     })
 
@@ -571,6 +575,17 @@ describe('Salto parser', () => {
       it('should have a multiline string field', () => {
         expect(multilineObject.annotations).toHaveProperty('data')
         expect(multilineObject.annotations.data).toEqual('        This\n        is\n        Multiline')
+      })
+    })
+
+    describe('string attr keys', () => {
+      let stringAttrObject: ObjectType
+      beforeAll(() => {
+        stringAttrObject = elements[17] as ObjectType
+      })
+      it('should parse string attributes', () => {
+        expect(stringAttrObject.annotations).toHaveProperty('#strAttr')
+        expect(stringAttrObject.annotations['#strAttr']).toEqual('attr')
       })
     })
   })

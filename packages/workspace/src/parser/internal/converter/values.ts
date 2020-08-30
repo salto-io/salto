@@ -148,9 +148,9 @@ export const convertNumber = (num: LexerToken): InternalParseRes<number> => ({
   source: createSourceRange(num),
 })
 
-const convertAttrKey = (key: LexerToken): string => (key.type === 'string'
-  ? JSON.parse(key.text)
-  : key.text)
+const convertAttrKey = (key: LexerToken): string => (key.type === 'word'
+  ? key.text
+  : key.value)
 
 export const convertAttr = (
   attrKey: LexerToken,

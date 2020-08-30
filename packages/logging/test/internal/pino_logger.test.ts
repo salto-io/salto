@@ -693,6 +693,7 @@ describe('pino based logger', () => {
           inlineTag2: 'inlineTag2',
           inlineTag3: 'so many tags',
           extra: 'should be in log',
+          arg2: '[Function]',
         })
       })
 
@@ -786,6 +787,7 @@ describe('pino based logger', () => {
           expect(line).toContain('someArg={"with":"data"}')
           expect(line).toContain('anotherArg="much simpler"')
           expect(line).toContain('arg3="bad\\n\\t\\"string"')
+          expect(line).toContain('arg4="undefined"')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)

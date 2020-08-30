@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { format, promisify } from 'util'
+import { format, promisify, inspect } from 'util'
 import { createWriteStream } from 'fs'
 import { EOL } from 'os'
 import pino, { LevelWithSilent, DestinationStream } from 'pino'
@@ -71,20 +71,24 @@ const formatError = (input: FormatterInput): string => [
   format(Object.fromEntries(customKeys(input).map(k => [k, input[k]]))),
 ].join(EOL)
 
+const formatArgumentKey = (i: number): string => `arg${i}`
+
 const formatPrimitiveExcessArg = (
   value: PrimitiveType, i: number
 ): Record<string, PrimitiveType> => ({
-  [`arg${i}`]: value,
+  [formatArgumentKey(i)]: value,
 })
 
 const formatExcessArgs = (excessArgs?: unknown[]): LogTags => {
-  const baseExcessArgs = (excessArgs || []).filter(x => x)
+  const baseExcessArgs = (excessArgs || [])
   const formattedExcessArgs = {}
   baseExcessArgs.forEach((excessArg, i) => {
     if (isPrimitiveType(excessArg)) {
       Object.assign(formattedExcessArgs, formatPrimitiveExcessArg(excessArg, i))
     } else if (typeof excessArg === 'object') {
       Object.assign(formattedExcessArgs, excessArg)
+    } else {
+      Object.assign(formattedExcessArgs, { [formatArgumentKey(i)]: inspect(excessArg) })
     }
   })
   return formattedExcessArgs

@@ -334,7 +334,8 @@ const getIdFields = (
     ((fieldName === detectsParentsIndicator)
       ? getParentFieldNames(Object.values(typeFields)) : fieldName))
   const invalidIdFieldNames = idFieldsWithParents
-    .filter(fieldName => typeFields[fieldName] === undefined)
+    .filter(fieldName => typeFields[fieldName] === undefined
+        || typeFields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] === false)
   if (invalidIdFieldNames.length > 0) {
     return { idFields: [], invalidFields: invalidIdFieldNames }
   }

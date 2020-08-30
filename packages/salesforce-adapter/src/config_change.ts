@@ -47,7 +47,7 @@ export const createInvlidIdFieldConfigChange = (
   ({
     type: DATA_MANAGEMENT,
     value: typeName,
-    reason: `${invalidFields} defined as idFields but do not exist on type ${typeName}`,
+    reason: `${invalidFields} defined as idFields but are not queryable or do not exist on type ${typeName}`,
   })
 
 export const createUnresolvedRefIdFieldConfigChange = (

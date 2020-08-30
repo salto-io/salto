@@ -35,7 +35,6 @@ import Bottleneck from 'bottleneck'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
-import { getRootCLIPath } from './sdf_root_cli_path'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
   FOLDER,
@@ -249,7 +248,7 @@ export default class NetsuiteClient {
   }
 
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
-    const commandsMetadataService = new CommandsMetadataService(getRootCLIPath())
+    const commandsMetadataService = new CommandsMetadataService()
     commandsMetadataService.initializeCommandsMetadata()
     return new CommandActionExecutor({
       executionPath,
@@ -285,7 +284,7 @@ export default class NetsuiteClient {
         arguments: {
           projectname: projectName,
           type: 'ACCOUNTCUSTOMIZATION',
-          parentdirectory: getRootCLIPath(),
+          parentdirectory: osPath.join(baseExecutionPath, projectName),
         },
       })
     NetsuiteClient.verifySuccessfulOperation(operationResult, COMMANDS.CREATE_PROJECT)

@@ -571,37 +571,6 @@ describe('Custom Object Instances filter', () => {
   })
 
   describe('When configured with default autoDetectParentFields + name', () => {
-    beforeEach(() => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            dataManagement: {
-              includeObjects: [
-                createNamespaceRegexFromString(nameBasedNamespace),
-                'PricebookEntry',
-                'SBQQ__CustomAction__c',
-                'Product2',
-                'BadIdFields',
-              ],
-              allowReferenceTo: [
-                refToObjectName,
-              ],
-              saltoIDSettings: {
-                defaultIdFields: ['##allMasterDetailFields##', 'Name'],
-                overrides: [
-                  { objectsRegex: 'PricebookEntry', idFields: ['Pricebook2Id', 'Name'] },
-                  { objectsRegex: 'SBQQ__CustomAction__c', idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
-                  { objectsRegex: 'BadIdFields', idFields: ['Bad'] },
-                  { objectsRegex: 'Product2', idFields: ['ProductCode', 'Name'] },
-                ],
-              },
-            },
-          },
-        }
-      ) as FilterType
-    })
-
     let elements: Element[]
 
     const refToObject = createCustomObject(refToObjectName)
@@ -728,19 +697,64 @@ describe('Custom Object Instances filter', () => {
     const badIdFieldsName = 'BadIdFields'
     const badIdFieldsObject = createCustomObject(badIdFieldsName)
 
+    const notQueryableIdFieldsName = 'notQueryableIdFields'
+    const notQueryableIdFieldsObject = createCustomObject(
+      notQueryableIdFieldsName,
+      {
+        NotQueryable: {
+          type: BuiltinTypes.STRING,
+          annotations: {
+            [LABEL]: 'not queryable',
+            [API_NAME]: 'NotQueryable',
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+          },
+        },
+      }
+    )
+
     let changeSuggestions: ConfigChangeSuggestion[]
     beforeEach(async () => {
+      filter = filterCreator(
+        {
+          client,
+          config: {
+            dataManagement: {
+              includeObjects: [
+                createNamespaceRegexFromString(nameBasedNamespace),
+                pricebookEntryName,
+                SBQQCustomActionName,
+                productName,
+                badIdFieldsName,
+                notQueryableIdFieldsName,
+              ],
+              allowReferenceTo: [
+                refToObjectName,
+              ],
+              saltoIDSettings: {
+                defaultIdFields: ['##allMasterDetailFields##', 'Name'],
+                overrides: [
+                  { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
+                  { objectsRegex: SBQQCustomActionName, idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
+                  { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
+                  { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
+                  { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
+                ],
+              },
+            },
+          },
+        }
+      ) as FilterType
       elements = [
         grandparentObject, parentObject, grandsonObject, orphanObject, productObject,
         pricebookEntryObject, SBQQCustomActionObject, refFromObject, refToObject,
-        badIdFieldsObject,
+        badIdFieldsObject, notQueryableIdFieldsObject,
       ]
       changeSuggestions = ((await filter.onFetch(elements)) ?? []) as ConfigChangeSuggestion[]
     })
 
     it('should add instances per configured object', () => {
       // 2 new instances per configured object because of TestCustomRecords's length
-      expect(elements.length).toEqual(26)
+      expect(elements.length).toEqual(27)
       expect(elements.filter(e => isInstanceElement(e)).length).toEqual(16)
     })
 
@@ -819,7 +833,25 @@ describe('Custom Object Instances filter', () => {
           .filter(suggestion => suggestion.value === badIdFieldsName)
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
         expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
-        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`Bad defined as idFields but do not exist on type ${badIdFieldsName}`)
+        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`Bad defined as idFields but are not queryable or do not exist on type ${badIdFieldsName}`)
+      })
+    })
+
+    describe('notQueryableIdFields object', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === notQueryableIdFieldsObject
+        ) as InstanceElement[]
+      })
+
+      it('should not create instances and suggest to add to include list', () => {
+        expect(instances).toHaveLength(0)
+        const changeSuggestionWithBadFieldsValue = changeSuggestions
+          .filter(suggestion => suggestion.value === notQueryableIdFieldsName)
+        expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
+        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
+        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`NotQueryable defined as idFields but are not queryable or do not exist on type ${notQueryableIdFieldsName}`)
       })
     })
 

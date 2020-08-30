@@ -23,23 +23,16 @@ export type LogTags = Record<string, PrimitiveType | undefined | Record<string, 
 
 export const LOG_TAGS_COLOR = colorsByName.Olive
 
-export const stringifyIfNecessary = (s: string): string => {
-  try { // If string is already stringified, don't stringify again
-    JSON.parse(s)
-    return s
-  } catch (e) {
-    return s.match(/^.*(\n|\t|").*$/) ? safeStringify(s) : s
-  }
-}
-
-const encapsulateIfNecessary = (s: string): string => (s.match(/^".*"$/) ? s : `"${s}"`)
-
 export const isPrimitiveType = (value: unknown): value is string | number | boolean =>
   ['string', 'number', 'boolean'].includes(typeof value)
 
 export const formatPrimitiveLogTagValue = (value: unknown): string => {
-  if (typeof value === 'number' || typeof value === 'boolean') return value.toString()
-  if (typeof value === 'string') return encapsulateIfNecessary(stringifyIfNecessary(value))
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value.toString()
+  }
+  if (typeof value === 'string') {
+    return safeStringify(value)
+  }
   return ''
 }
 
@@ -47,22 +40,20 @@ export const formatPrimitiveLogTagValue = (value: unknown): string => {
 const formatKeyValue = (key: string, value: string): string =>
   `${key}=${value}`
 
-const formatObjectLogTag = (value: Record<string, unknown>): string => {
-  const keys = Object.keys(value)
-  return keys
-    .map(key => formatKeyValue(key, safeStringify(value[key])))
+const formatObjectLogTag = (obj: Record<string, unknown>): string =>
+  Object.entries(obj)
+    .map(([key, value]) => formatKeyValue(key, safeStringify(value)))
     .join(' ')
-}
 
 export const formatLogTags = (logTags: Record<string, unknown>, baseKeys: string[]): string => {
   const tagsWithoutBaseKeys = _.omit(logTags, ...baseKeys)
-  return Object.keys(tagsWithoutBaseKeys)
-    .map(logTagKey => {
-      if (isPrimitiveType(logTags[logTagKey])) {
-        return formatKeyValue(logTagKey, formatPrimitiveLogTagValue(logTags[logTagKey]))
+  return Object.entries(tagsWithoutBaseKeys)
+    .map(([logTagKey, logTagValue]) => {
+      if (isPrimitiveType(logTagValue)) {
+        return formatKeyValue(logTagKey, formatPrimitiveLogTagValue(logTagValue))
       }
-      if (typeof logTags[logTagKey] === 'object') {
-        return formatObjectLogTag({ [logTagKey]: logTags[logTagKey] })
+      if (typeof logTagValue === 'object') {
+        return formatObjectLogTag({ [logTagKey]: logTagValue })
       }
       return ''
     })

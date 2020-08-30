@@ -653,7 +653,7 @@ describe('pino based logger', () => {
         await repo.end()
       })
 
-      it('verify object was extended with excess args formatted object', async () => {
+      it('verify object was extended with excess args formatted object - simple', async () => {
         logger.warn(
           'where is extra args object %s',
           'foo',
@@ -672,6 +672,27 @@ describe('pino based logger', () => {
           extra: 'should be in log',
           arg2: true,
           arg3: '"string with \\"bad chars\\"\\t\\n"',
+        })
+      })
+
+      it('verify object was extended with excess args formatted object - complex', async () => {
+        logger.warn(
+          'where is extra args object %s',
+          'foo',
+          { inlineTag1: 'inlineTag1', inlineTag2: 'inlineTag2', inlineTag3: 'so many tags' },
+          { extra: 'should be in log' },
+          () => 'shouldn\'t be in log '
+        );
+        [line] = consoleStream.contents().split(EOL)
+        jsonLine = JSON.parse(line)
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'where is extra args object foo',
+          inlineTag1: 'inlineTag1',
+          inlineTag2: 'inlineTag2',
+          inlineTag3: 'so many tags',
+          extra: 'should be in log',
         })
       })
 

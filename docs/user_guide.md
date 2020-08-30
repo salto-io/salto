@@ -135,17 +135,47 @@ From now on, you can use standard Git commands to record changes, create feature
 
 ## Advanced Concepts
 
-### References
+### Salto Configuration Elements
 
-In some cases, it is useful to reference one element from another. Such references can be introduced by the adapter, or by the user when manually editing NaCl files.
+In it's core, Salto fetches the configuration of business system accounts and builds an hierarchy of configuration elements where each element is represented by a unique `Salto Element ID`.
 
-A reference is done to a `Salto ID`, which conforms with the following schema:
+A `Salto Element ID` conforms with the following schema:
 
 ```
     <adapter>.<type>.attr.<name>[.<key>...]
     <adapter>.<type>.field.<name>[.<key>...]
     <adapter>.<type>.instance.<name>[.<key>...]
 ```
+Few configuration element id examples:
+
+```bash
+# salesforce object 
+salesforce.MyCustomObj__c
+
+# salesforce object's field
+salesforce.MyCustomObj__c.field.MyField__c
+
+# apex class
+salesforce.ApexClass.instance.MyApexClass
+```
+
+When using Salto's vs-code extension, a `Salto Element ID` can be obtained via right click on the element from the editor and choosing 'Copy Salto Reference'.
+
+![copy_salto_reference.png](copy_salto_reference.png)
+
+The Salto CLI supports various commands for moving, copying, comparing and manipulating configuration elements. These type of commands usually accept a `element-id-selectors` input parameter that enables the user to provide a list of salto element id patterns represented by regular expressions.
+
+For example, all custom fields of the salesforce Lead object can by represented by:
+
+```bash
+salesforce.Lead.field.*__c
+```
+
+### References
+
+In some cases, it is useful to reference one element from another. Such references can be introduced by the adapter, or by the user when manually editing NaCl files.
+
+A reference is done to a `Salto Element ID`.
 
 For example, if we want to define that the value of a certain field will reference the value of another field, we could write :
 
@@ -210,13 +240,13 @@ If the `file` function points to a non existing file, the deploy operation will 
 
 ### Multiple Environments
 
-In a typical feature development process, multiple environments are being used. E.g. a feature is developed in a development environment, gets tested in a testing environment and once approved deployed to a production environment. When doing so, it is of very high importance to keep the configuration of these environments as similar as possible in order to ensure a consistent and safe change process.
+In a typical feature development process, multiple environments are being used. E.g. a feature is developed in a development environment, gets tested in a testing environment and once approved deployed to a production environment. 
 
 In Salto, `environments` are first-level citizens, which also enable the encapsulation of commonalities and differences between service accounts. Before showing some examples for working with environments, we should first explain some common terms and operations:
 
 - An `environment` is a collection of `services`.
-- Salto calculates the `common` configuration of all the environments, as well as the `environment-specific` configuration.
-- A `fetch` operation can work in `isolated mode` , when it will not modify common configuration, or in standard (non-isolated) mode when it will recalculate the common configuration. As a rule of thumb, `isolated mode` should be used when running fetch for the first time on a new service in an environment, and in standard mode when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
+- A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move <element-id-selectors> --to common|env`
+- A `fetch` operation can work in `align mode`, when it will not modify common configuration, or in standard mode when it will modify both common and environment-specific configuration. As a rule of thumb, `align mode` should be used when the intent is to make sure that the fetched env is aligned with the common configuration elements. When fetching in `align mode`, any modifications to the common elements will be dropped and it should be followed by a deploy operation. Standard fetch mode is used when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
 Now, let's follow a common scenario of adding two environments to Salto:
 ```shell
@@ -238,7 +268,7 @@ Next we will add another environment (`dev`) by running:
 salto env create dev
 ```
 
-Note that creating this env, also changed the current env to be `dev` (see `salto env current`, `salto env set`, `salto env list`). You should always make sure to run commands in the context of the right env (see also the —env flag per command)
+Note that creating this env, also changed the current env to be `dev` (see `salto env current`, `salto env set`, `salto env list`). You should always make sure to run commands in the context of the right env (see also the —-env flag per command)
 
 Now we'll configure this environment to connect to a `dev` instance (e.g. a Salesforce sandbox synched with `prod`) and run fetch:
 
@@ -254,14 +284,15 @@ Lets stop and take a look at our workspace directory structure (for more info se
 - envs/                  # folder for env specific configuration
     — dev/               # folder for the dev environment specific configuration
 	    — salesforce/      # specific config for Salesforce in the dev env
-	    — static-resources # specific unique static resources for the dev env
+	    — static-resources/ # specific unique static resources for the dev env
     — prod/              # folder for the prod environment specific configuration
 	    — salesforce/      # specific config for Salesforce in the prod env
+        — static-resources/ # specific unique static resources for the dev env
 — salesforce/            # common cross-all-envs configuration for Salesforce
 — static-resources       # common static files for all environments
 
 ```
-Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. After all tests in dev are done, we can go ahead and run:
+Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. Do not forget to use the `salto element move <elm-id-selectors> --to common` command in order to configure which elements should be common across all environmetns in the workspace (the `move` command can be executed at anytime, before or after changing the dev env).  After all tests in dev are done, we can go ahead and run:
 ```shell
 salto env set prod
 salto deploy
@@ -290,7 +321,7 @@ Syncs this workspace's NaCl files with the services' current state
 **Options:**
 * `--force, -f` : Accept all incoming changes, even if there's a conflict with local changes [boolean] [default: false]
 * `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
-* `--isolated, -t` : Restrict fetch from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
+* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
 * `--state-only, --st` : Fetch remote changes to the state file without mofifying the NaCL files. [boolean] [default: false]
@@ -302,7 +333,7 @@ Syncs this workspace with the current local state
 **Options:**
 * `--force, -f ` : Accept all incoming changes [boolean] [default: false]
 * `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
-* `--isolated, -t` : Restrict restore from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
+* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
 * `--dry-run, -d` : Preview the restore plan without making changes [boolean] [default: false]
 * `--detailed-plan, -p` : Print detailed changes including values [boolean] [default: false]
 * `--list-planned-changes, -l` : Print a summary of the expected changes [boolean] [default: false]
@@ -332,6 +363,21 @@ Manage your environments' services
 
 * `--env, -e` : The name of the environment to use
 * `--nologin, -n` : Do not login to service when adding it. Example usage: `service add <service-name> --nologin`) [boolean] [default: false]
+
+### **salto element \<command> \<elm-id-selectors>**
+
+Manage your workspace environments
+
+**Arguments:**
+* `command` : The element management command [string] [required] [choices: "move", "clone"]
+* `elm-id-selectors` : A list of element id selectors [array]
+
+**Options:**
+
+* `--to` : Target to the move command [string] [required] [choices: "common", "env"]
+* `—-from-env` : Source env name for the copy command [string] [required]
+* `—-to-env` : Target env names for the copy command [array] [required] [choices: "common", "env"]
+
 
 ### **salto env \<command> [\<name>] [\<new-name>]**
 

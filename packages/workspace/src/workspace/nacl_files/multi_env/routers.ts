@@ -212,10 +212,22 @@ export const routeDefault = async (
   // However - if we have only one env and the user moved the top level element to be
   // env specific - we respect that and add the change to the env.
   if (change.action === 'add') {
-    const primTopLevelElement = await primarySource.get(change.id.createTopLevelParentID().parent)
-    return _.isEmpty(secondarySources) && primTopLevelElement === undefined
-      ? { commonSource: [change] }
-      : { primarySource: [change] }
+    const topLevelID = change.id.createTopLevelParentID().parent
+    const primTopLevelElement = await primarySource.get(topLevelID)
+    const commonTopLevelElement = await commonSource.get(topLevelID)
+    const secTopLevelElements = await Promise.all(
+      Object.values(secondarySources).map(src => src.get(topLevelID))
+    )
+    const hasPrimTopLevel = primTopLevelElement !== undefined
+    const hasCommonTopLevel = commonTopLevelElement !== undefined
+    const hasSecTopLevel = _.some(secTopLevelElements, srcElem => srcElem !== undefined)
+    if (_.isEmpty(secondarySources) && !hasPrimTopLevel) {
+      return { commonSource: [change] }
+    }
+    if (hasCommonTopLevel && !hasPrimTopLevel && !hasSecTopLevel) {
+      return { commonSource: [change] }
+    }
+    return { primarySource: [change] }
   }
   // We add to the current defining source.
   const currentChanges = await projectChange(change, primarySource)

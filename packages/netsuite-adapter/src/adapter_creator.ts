@@ -108,7 +108,7 @@ export const adapter: Adapter = {
   },
   install: async (): Promise<AdapterInstallResult> => {
     try {
-      return SDKDownloadService.download()
+      return await SDKDownloadService.download()
     } catch (err) {
       return { success: false, errors: [err.message ?? err] }
     }

@@ -280,8 +280,35 @@ describe('element command', () => {
         undefined,
         undefined,
         undefined,
-        undefined,
+        'active',
       ).execute()).toBe(CliExitCode.UserInputError)
+    })
+  })
+
+  describe('with move without env', () => {
+    const workspaceName = 'valid-ws'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+    mockLoadWorkspace.mockResolvedValue({
+      workspace,
+      errored: false,
+    })
+    it('should fail', async () => {
+      await expect(await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'move',
+        false,
+        [],
+        undefined,
+        undefined,
+        'common',
+        undefined,
+      ).execute()).toBe(CliExitCode.Success)
     })
   })
 

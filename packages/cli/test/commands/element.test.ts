@@ -295,7 +295,7 @@ describe('element command', () => {
       workspace,
       errored: false,
     })
-    it('should fail', async () => {
+    it('should succeed', async () => {
       await expect(await command(
         '',
         cliOutput,

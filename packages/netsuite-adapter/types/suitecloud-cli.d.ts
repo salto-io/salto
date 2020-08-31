@@ -22,7 +22,7 @@ declare module '@salto-io/suitecloud-cli' {
   }
 
   export class CommandsMetadataService {
-    constructor(rootCLIPath: string)
+    constructor()
 
     initializeCommandsMetadata(): void
   }

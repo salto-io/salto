@@ -1294,16 +1294,17 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/suitecloud-cli@1.0.2-salto-13":
-  version "1.0.2-salto-13"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.0.2-salto-13.tgz#26386db531d9ff96534c36f2c052b6da3f299b6e"
-  integrity sha512-XVoKfFVmMcFy/5pFnrhJGu8p0EhgcJdnr595L2x+lMwc62UzVRBQ9KMj67mKXG4fTngdAS5cMcvCbuXjgnqVhw==
+"@salto-io/suitecloud-cli@1.0.2-salto-14":
+  version "1.0.2-salto-14"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.0.2-salto-14.tgz#19f32759d0739e28d27d072133c898bf5c09ecdd"
+  integrity sha512-ocYFI3OSRvW4C9234TIcPexAGhjBh3rTva2PsPQqIaJxI4UNhGvfg9t9xPhXRjPtJlgE0RKkEIMNY7aPetN24Q==
   dependencies:
     "@oracle/suitecloud-cli-localserver-command" "^1.0.2"
     chalk "^2.4.2"
     cli-spinner "^0.2.10"
     commander "^2.20.0"
     inquirer "^6.3.1"
+    lodash "^4.17.20"
     request-promise-native "^1.0.7"
     vm2 "^3.8.0"
     xml2js "^0.4.19"
@@ -7549,6 +7550,11 @@ lodash@^4.0.0, lodash@^4.15.0, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.13
   version "4.17.19"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.19.tgz#e48ddedbe30b3321783c5b4301fbd353bc1e4a4b"
   integrity sha512-JNvd8XER9GQX0v2qJgsaN/mzFCNA5BRe/j8JN9d+tWyGLSodKQHKFicdwNYzWwI3wjRnaKPsGj1XkBjx/F96DQ==
+
+lodash@^4.17.20:
+  version "4.17.20"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
+  integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
 
 log-symbols@^2.2.0:
   version "2.2.0"

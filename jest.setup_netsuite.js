@@ -13,4 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+// netsuite-adapter depends on suitecloud-cli package which uses the
+// request-promise-native package.
+// Without this mock, all of the tests of packages that depend on
+// netsuite-adapter fail on: 'unable to expose method "then"'
 jest.mock('request-promise-native');

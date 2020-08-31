@@ -15,25 +15,34 @@
 */
 const deepMerge = require('../../build_utils/deep_merge')
 
-module.exports = deepMerge(
-    require('../../jest.base.config.js'),
-    {
-        name: 'netsuite-adapter',
-        displayName: 'netsuite-adapter',
-        rootDir: `${__dirname}`,
-        collectCoverageFrom: [
-            '!<rootDir>/dist/index.js',
-        ],
-        testEnvironment: process.env.RUN_E2E_TESTS
-            ? '@salto-io/netsuite-adapter/dist/e2e_test/jest_environment'
-            : undefined,
-        coverageThreshold: {
-            global: {
-                branches: 90,
-                functions: 90,
-                lines: 90,
-                statements: 90,
+const mergeConfig = () => {
+    const mergedConfig = deepMerge(
+        require('../../jest.base.config.js'),
+        {
+            name: 'netsuite-adapter',
+            displayName: 'netsuite-adapter',
+            rootDir: `${__dirname}`,
+            collectCoverageFrom: [
+                '!<rootDir>/dist/index.js',
+            ],
+            testEnvironment: process.env.RUN_E2E_TESTS
+                ? '@salto-io/netsuite-adapter/dist/e2e_test/jest_environment'
+                : undefined,
+            coverageThreshold: {
+                global: {
+                    branches: 90,
+                    functions: 90,
+                    lines: 90,
+                    statements: 90,
+                },
             },
-        },
+        }
+    )
+    if (process.env.RUN_E2E_TESTS) {
+        mergedConfig.setupFiles = mergedConfig.setupFiles
+        .filter(filename => !filename.endsWith('jest.setup_netsuite.js'))
     }
-)
+    return mergedConfig
+};
+
+module.exports = mergeConfig()

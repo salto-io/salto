@@ -327,19 +327,24 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         elemId => serviceNames.includes(elemId.adapter)
       )
     ),
-    setNaclFiles: naclFilesSource.setNaclFiles,
+    // Returning the functions from the nacl file source directly (eg: promote: src.promote)
+    // may seem better, but the setCurrentEnv method replaced the naclFileSource.
+    // Passing direct pointer for these functions would have resulted in pointers to a nullified
+    // source so we need to wrap all of the function calls to make sure we are forwarding the method
+    // invokations to the proper source.
+    setNaclFiles: (...naclFiles: NaclFile[]) => naclFilesSource.setNaclFiles(...naclFiles),
     updateNaclFiles,
-    removeNaclFiles: naclFilesSource.removeNaclFiles,
-    getSourceMap: naclFilesSource.getSourceMap,
-    getSourceRanges: naclFilesSource.getSourceRanges,
-    listNaclFiles: naclFilesSource.listNaclFiles,
-    getTotalSize: naclFilesSource.getTotalSize,
-    getNaclFile: naclFilesSource.getNaclFile,
-    getElements: naclFilesSource.getElements,
-    promote: naclFilesSource.promote,
-    demote: naclFilesSource.demote,
-    demoteAll: naclFilesSource.demoteAll,
-    copyTo: naclFilesSource.copyTo,
+    removeNaclFiles: (...names: string[]) => naclFilesSource.removeNaclFiles(...names),
+    getSourceMap: (filename: string) => naclFilesSource.getSourceMap(filename),
+    getSourceRanges: (elemID: ElemID) => naclFilesSource.getSourceRanges(elemID),
+    listNaclFiles: () => naclFilesSource.listNaclFiles(),
+    getTotalSize: () => naclFilesSource.getTotalSize(),
+    getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),
+    getElements: (filename: string) => naclFilesSource.getElements(filename),
+    promote: (ids: ElemID[]) => naclFilesSource.promote(ids),
+    demote: (ids: ElemID[]) => naclFilesSource.demote(ids),
+    demoteAll: () => naclFilesSource.demoteAll(),
+    copyTo: (ids: ElemID[], targetEnvs: string[]) => naclFilesSource.copyTo(ids, targetEnvs),
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

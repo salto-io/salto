@@ -857,10 +857,25 @@ describe('workspace', () => {
   describe('setCurrentEnv', () => {
     let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
+    let credSource: ConfigSource
+    let state: State
+    let defNaclFiles: NaclFilesSource
+    let inactiveNaclFiles: NaclFilesSource
 
     beforeEach(async () => {
       workspaceConf = mockWorkspaceConfigSource()
-      workspace = await createWorkspace(undefined, undefined, workspaceConf)
+      credSource = mockCredentialsSource()
+      state = { clear: jest.fn(), getAll: jest.fn().mockResolvedValue([]) } as unknown as State
+      defNaclFiles = createMockNaclFileSource([])
+      inactiveNaclFiles = createMockNaclFileSource([
+        new ObjectType({ elemID: new ElemID('salto', 'inactive') }),
+      ])
+      workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
+        undefined,
+        {
+          default: { naclFiles: defNaclFiles, state },
+          inactive: { naclFiles: inactiveNaclFiles, state },
+        })
     })
 
     it('should change workspace state', async () => {
@@ -880,6 +895,15 @@ describe('workspace', () => {
 
     it('should throw unknownEnvError', async () => {
       await expect(workspace.setCurrentEnv('unknown', false)).rejects.toEqual(new UnknownEnvError('unknown'))
+    })
+
+    it('should return the elements of the new current envs after set', async () => {
+      const defaultElemIDs = (await workspace.elements()).map(e => e.elemID.getFullName())
+      expect(defaultElemIDs).toHaveLength(0)
+      await workspace.setCurrentEnv('inactive')
+      const inactiveElemIDs = (await workspace.elements()).map(e => e.elemID.getFullName())
+      expect(inactiveElemIDs).toHaveLength(1)
+      expect(inactiveElemIDs).toEqual(['salto.inactive'])
     })
   })
 

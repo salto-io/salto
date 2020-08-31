@@ -32,7 +32,7 @@ import wu from 'wu'
 import _ from 'lodash'
 
 export type UnifiedDiff = string
-const { dumpElements } = parser
+const { dumpElements, dumpValues } = parser
 
 type ChangeData = { before?: Element; after?: Element }
 
@@ -240,10 +240,7 @@ export const createChangeDiff = async (
     if (isElement(element)) {
       return dumpElements([element])
     }
-    if (_.isString(element)) {
-      return element
-    }
-    return ''
+    return dumpValues(element, {})
   }
 
   data.before = (data.before && data.after)

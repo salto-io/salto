@@ -25,14 +25,11 @@ export const getAdaptersCredentialsTypes = (
   if (names === undefined) {
     relevantAdapterCreators = adapterCreators
   } else {
-    const [existingAdapters, nonExistingAdapters] = _.partition(
-      names,
-      name => Object.keys(adapterCreators).includes(name)
-    )
+    const nonExistingAdapters = names.filter(name => !Object.keys(adapterCreators).includes(name))
     if (!_.isEmpty(nonExistingAdapters)) {
       throw new Error(`No adapter available for ${nonExistingAdapters}`)
     }
-    relevantAdapterCreators = _.pick(adapterCreators, existingAdapters)
+    relevantAdapterCreators = _.pick(adapterCreators, names)
   }
   return _.mapValues(relevantAdapterCreators, creator => creator.credentialsType)
 }

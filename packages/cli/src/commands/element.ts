@@ -151,7 +151,7 @@ export const command = (
       errorOutputLine(Prompts.ELEMENT_MOVE_USAGE, output)
       return CliExitCode.UserInputError
     }
-    const sessionEnv = env ?? inputFromEnv ?? ''
+    const sessionEnv = env ?? inputFromEnv ?? undefined
     const toEnvs = inputToEnvs ?? []
     const to = inputTo ?? ''
 
@@ -169,6 +169,7 @@ export const command = (
         sessionEnv,
       }
     )
+    console.log(workspace.currentEnv())
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError

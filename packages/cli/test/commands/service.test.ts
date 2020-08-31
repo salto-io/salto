@@ -21,18 +21,24 @@ import * as mocks from '../mocks'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
-  getAdaptersCredentialsTypes: jest.fn().mockImplementation(():
-   Record<string, ObjectType> => ({
-    newAdapter: mocks.mockCredentialsType('newAdapter'),
-    hubspot: mocks.mockCredentialsType('hubspot'),
-    '': mocks.mockCredentialsType(''),
-  })),
+  getAdaptersCredentialsTypes: jest.fn().mockImplementation((serviceNames: string[]):
+    Record<string, ObjectType> => {
+    if (serviceNames[0] === 'noAdapter') {
+      throw new Error('no adapter')
+    }
+    return {
+      newAdapter: mocks.mockCredentialsType('newAdapter'),
+      hubspot: mocks.mockCredentialsType('hubspot'),
+      salesforce: mocks.mockCredentialsType('salesforce'),
+      '': mocks.mockCredentialsType(''),
+    }
+  }),
   addAdapter: jest.fn().mockImplementation((
     _workspace: Workspace,
     adapterName: string
   ): Promise<ObjectType> => {
     if (adapterName === 'noAdapter') {
-      throw Error('no adapater')
+      throw new Error('no adapter')
     }
     return Promise.resolve(mocks.mockConfigType(adapterName))
   }),
@@ -273,6 +279,19 @@ describe('service command', () => {
             ).execute()
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
             expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual('injected')
+          })
+        })
+      })
+
+      describe('when called with a new adapter that does not exist', () => {
+        describe('with login', () => {
+          it('should throw an error', async () => {
+            await expect(command('', 'add', cliOutput, mockGetCredentialsFromUser, 'noAdapter').execute()).rejects.toThrow()
+          })
+        })
+        describe('without login', () => {
+          it('should throw an error', async () => {
+            await expect(command('', 'add', cliOutput, mockGetCredentialsFromUser, 'noAdapter', undefined, true).execute()).rejects.toThrow()
           })
         })
       })

@@ -14,18 +14,26 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ObjectType, AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-} from '@salto-io/adapter-api'
+import { ObjectType, AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import adapterCreators from './creators'
 
 export const getAdaptersCredentialsTypes = (
   names?: ReadonlyArray<string>
 ): Record<string, ObjectType> => {
-  const relevantAdapterCreators = _.isUndefined(names)
-    ? adapterCreators
-    : _.pick(adapterCreators, names)
+  let relevantAdapterCreators: Record<string, Adapter>
+  if (names === undefined) {
+    relevantAdapterCreators = adapterCreators
+  } else {
+    const [existingAdapters, nonExistingAdapters] = _.partition(
+      names,
+      name => Object.keys(adapterCreators).includes(name)
+    )
+    if (!_.isEmpty(nonExistingAdapters)) {
+      throw new Error(`No adapter available for ${nonExistingAdapters}`)
+    }
+    relevantAdapterCreators = _.pick(adapterCreators, existingAdapters)
+  }
   return _.mapValues(relevantAdapterCreators, creator => creator.credentialsType)
 }
 

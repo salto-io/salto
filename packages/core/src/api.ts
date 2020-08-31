@@ -315,7 +315,7 @@ export const addAdapter = async (
 ): Promise<ObjectType> => {
   const adapter = adapterCreators[adapterName]
   if (!adapter) {
-    throw new Error('No adapter available for this service')
+    throw new Error(`No adapter available for ${adapterName}`)
   }
   await installAdapter(adapterName)
   await workspace.addService(adapterName)

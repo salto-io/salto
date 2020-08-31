@@ -51,10 +51,8 @@ describe('adapters.ts', () => {
       expect(credentials.salesforce).toEqual(credentialsType)
     })
 
-    it('should return undefined for non defined adapter', () => {
-      credentials = getAdaptersCredentialsTypes(services.concat('fake'))
-      expect(credentials.salesforce).toEqual(credentialsType)
-      expect(credentials.fake).toBeUndefined()
+    it('should throw error for non defined adapter', () => {
+      expect(() => getAdaptersCredentialsTypes(services.concat('fake'))).toThrow()
     })
   })
 

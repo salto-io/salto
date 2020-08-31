@@ -1294,10 +1294,10 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/suitecloud-cli@1.0.2-salto-14":
-  version "1.0.2-salto-14"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.0.2-salto-14.tgz#19f32759d0739e28d27d072133c898bf5c09ecdd"
-  integrity sha512-ocYFI3OSRvW4C9234TIcPexAGhjBh3rTva2PsPQqIaJxI4UNhGvfg9t9xPhXRjPtJlgE0RKkEIMNY7aPetN24Q==
+"@salto-io/suitecloud-cli@1.0.2-salto-15":
+  version "1.0.2-salto-15"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.0.2-salto-15.tgz#6a2b010b99e3b26e274fa558904f86aa18d60ebd"
+  integrity sha512-gtPcsCDjnEszjO9/QJAxiUSWtNPu44z/B5IJM7UqRTydZ6idxHSby2AA8ucuFKx/MtHQdwT0uLsUvMhtOKDfYA==
   dependencies:
     "@oracle/suitecloud-cli-localserver-command" "^1.0.2"
     chalk "^2.4.2"
@@ -1306,7 +1306,6 @@
     inquirer "^6.3.1"
     lodash "^4.17.20"
     request-promise-native "^1.0.7"
-    vm2 "^3.8.0"
     xml2js "^0.4.19"
 
 "@sindresorhus/is@^0.14.0":
@@ -11541,11 +11540,6 @@ vm-browserify@^1.0.1:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/vm-browserify/-/vm-browserify-1.1.2.tgz#78641c488b8e6ca91a75f511e7a3b32a86e5dda0"
   integrity sha512-2ham8XPWTONajOR0ohOKOHXkm3+gaBmGut3SRuu75xLd/RRaY6vqgh8NBYYk7+RW3u5AtzPQZG8F10LHkl0lAQ==
-
-vm2@^3.8.0, vm2@^3.9.1:
-  version "3.9.2"
-  resolved "https://registry.yarnpkg.com/vm2/-/vm2-3.9.2.tgz#a4085d2d88a808a1b3c06d5478c2db3222a9cc30"
-  integrity sha512-nzyFmHdy2FMg7mYraRytc2jr4QBaUY3TEGe3q3bK8EgS9WC98wxn2jrPxS/ruWm+JGzrEIIeufKweQzVoQEd+Q==
 
 vsce@^1.66.0:
   version "1.75.0"

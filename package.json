@@ -7,8 +7,7 @@
       "packages/*"
     ],
     "nohoist": [
-      "salto-vscode/**",
-      "vm2/**"
+      "salto-vscode/**"
     ]
   },
   "resolutions": {

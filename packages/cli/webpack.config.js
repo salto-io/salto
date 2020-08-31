@@ -57,7 +57,6 @@ module.exports = {
   externals: {
     vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
                                 // caused by requestretry which depends on an old version of es6-promise
-    vm2: 'commonjs vm2',
   },
   plugins: [
     new webpack.EnvironmentPlugin({

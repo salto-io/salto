@@ -22,7 +22,7 @@ import {
 import {
   resolveChangeElement, restoreChangeElement,
 } from '@salto-io/adapter-utils'
-import { SaveResult, UpsertResult, MetadataObject } from 'jsforce'
+import { SaveResult, UpsertResult, MetadataObject, MetadataInfo } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { decorators, collections } from '@salto-io/lowerdash'

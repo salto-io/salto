@@ -611,11 +611,6 @@ export const formatMissingCloneArg = (): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatMissingMoveArg = (): string => [
-  formatSimpleError(Prompts.MISSING_MOVE_ARG),
-  emptyLine(),
-].join('\n')
-
 export const formatCloneToEnvFailed = (errorMessage: string): string => [
   formatSimpleError(Prompts.CLONE_TO_ENV_FAILED(errorMessage)),
   emptyLine(),

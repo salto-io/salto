@@ -69,7 +69,6 @@ describe('element command', () => {
         'active',
         ['incative'],
         undefined,
-        undefined,
       ).execute()
     })
 
@@ -108,7 +107,6 @@ describe('element command', () => {
         'active',
         ['inactive'],
         undefined,
-        undefined
       ).execute()
     })
 
@@ -129,7 +127,7 @@ describe('element command', () => {
     })
   })
 
-  describe('when workspace throws an error on move', () => {
+  describe('when workspace throws an error on move-to-envs', () => {
     const workspaceName = 'unexpected-error'
     const workspace = {
       ...mocks.mockLoadWorkspace(workspaceName),
@@ -150,12 +148,58 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'move',
+        'move-to-envs',
         false,
         ['salto.Account'],
         undefined,
         undefined,
-        'common',
+        undefined
+      ).execute()
+    })
+
+
+    it('should return failure code', () => {
+      expect(result).toBe(CliExitCode.AppError)
+    })
+
+    it('should send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(2)
+      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+    })
+
+    it('should print failure to console', () => {
+      expect(cliOutput.stderr.content)
+        .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
+    })
+  })
+
+  describe('when workspace throws an error on move-to-common', () => {
+    const workspaceName = 'unexpected-error'
+    const workspace = {
+      ...mocks.mockLoadWorkspace(workspaceName),
+      flush: async () => {
+        throw new Error('Oy Vey Zmir')
+      },
+    }
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+      mockLoadWorkspace.mockResolvedValue({
+        workspace,
+        errored: false,
+      })
+      result = await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'move-to-common',
+        false,
+        ['salto.Account'],
+        undefined,
+        undefined,
         undefined
       ).execute()
     })
@@ -198,7 +242,6 @@ describe('element command', () => {
         ['a.b.c.d'],
         'active',
         ['inactive'],
-        undefined,
         undefined,
 
       ).execute()
@@ -253,39 +296,11 @@ describe('element command', () => {
         undefined,
         ['inactive'],
         undefined,
-        undefined,
       ).execute()).toBe(CliExitCode.UserInputError)
     })
   })
 
-  describe('with move without to', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-    mockLoadWorkspace.mockResolvedValue({
-      workspace,
-      errored: false,
-    })
-    it('should fail', async () => {
-      await expect(await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move',
-        false,
-        [],
-        undefined,
-        undefined,
-        undefined,
-        'active',
-      ).execute()).toBe(CliExitCode.UserInputError)
-    })
-  })
-
-  describe('with move without env', () => {
+  describe('with move-to-common without env option', () => {
     const workspaceName = 'valid-ws'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -301,12 +316,37 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'move',
+        'move-to-common',
         false,
         [],
         undefined,
         undefined,
-        'common',
+        undefined,
+      ).execute()).toBe(CliExitCode.Success)
+    })
+  })
+
+  describe('with move-to-envs without env option', () => {
+    const workspaceName = 'valid-ws'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+    mockLoadWorkspace.mockResolvedValue({
+      workspace,
+      errored: false,
+    })
+    it('should succeed', async () => {
+      await expect(await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'move-to-envs',
+        false,
+        [],
+        undefined,
+        undefined,
         undefined,
       ).execute()).toBe(CliExitCode.Success)
     })
@@ -334,7 +374,6 @@ describe('element command', () => {
         'active',
         ['inactive'],
         undefined,
-        undefined,
       ).execute()).toBe(CliExitCode.UserInputError)
     })
   })
@@ -361,7 +400,6 @@ describe('element command', () => {
         [selector.getFullName()],
         'active',
         ['inactive'],
-        undefined,
         undefined,
       ).execute()
     })
@@ -413,7 +451,6 @@ describe('element command', () => {
         'active',
         ['inactive', 'unknown'],
         undefined,
-        undefined,
       ).execute()
     })
 
@@ -453,7 +490,6 @@ describe('element command', () => {
         [selector.getFullName()],
         'active',
         [],
-        undefined,
         undefined
       ).execute()
     })
@@ -493,7 +529,6 @@ describe('element command', () => {
         [selector.getFullName()],
         'active',
         ['active'],
-        undefined,
         undefined
       ).execute()
     })
@@ -528,12 +563,11 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'move',
+        'move-to-common',
         false,
         [selector.getFullName()],
         undefined,
         undefined,
-        'common',
         'active',
       ).execute()
     })
@@ -579,12 +613,11 @@ describe('element command', () => {
         cliOutput,
         mockCliTelemetry,
         spinnerCreator,
-        'move',
+        'move-to-envs',
         false,
         [selector.getFullName()],
         undefined,
         undefined,
-        'envs',
         'active',
       ).execute()
     })
@@ -610,46 +643,6 @@ describe('element command', () => {
     it('should print deployment to console', () => {
       expect(cliOutput.stdout.content).toContain('Moving the selected elements from common to envs.')
       expect(cliOutput.stdout.content).toContain('Done moving elements.')
-    })
-  })
-  describe('move with invalid \'to\' argument', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
-      })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move',
-        false,
-        [selector.getFullName()],
-        undefined,
-        undefined,
-        'ToNoWhere',
-        undefined,
-      ).execute()
-    })
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.UserInputError)
-    })
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain(Prompts.INVALID_MOVE_ARG('ToNoWhere'))
     })
   })
 })

@@ -792,6 +792,9 @@ describe('SalesforceAdapter CRUD', () => {
       describe('delete metadata objects inside of instances upon update', () => {
         describe('objects names are nested', () => {
           const assignmentRuleFieldName = 'assignmentRule'
+          const type = mockTypes.AssignmentRules
+          // in real AssignmentRules objects this attribute is empty:
+          type.fields.assignmentRule.type.annotations = {}
           const oldAssignmentRules = createInstanceElement(
             {
               [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
@@ -800,7 +803,7 @@ describe('SalesforceAdapter CRUD', () => {
                 { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
               ],
             },
-            mockTypes.AssignmentRules,
+            type,
           )
 
           beforeEach(async () => {

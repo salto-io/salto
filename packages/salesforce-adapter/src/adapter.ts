@@ -22,7 +22,7 @@ import {
 import {
   resolveChangeElement, restoreChangeElement,
 } from '@salto-io/adapter-utils'
-import { SaveResult, UpsertResult, MetadataObject, MetadataInfo } from 'jsforce'
+import { SaveResult, UpsertResult, MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { decorators, collections } from '@salto-io/lowerdash'
@@ -679,24 +679,13 @@ export default class SalesforceAdapter implements AdapterOperations {
       return
     }
 
-    const listTypeFields = _.keys(_.pickBy(newInstance.value, _.isArray))
-
-    if (listTypeFields.includes(fieldName) && withObjectPrefix) {
-      const prevNames = _.map(oldInstance.value[fieldName], (elem: MetadataInfo) => elem.fullName)
-      const newNames = _.map(newInstance.value[fieldName], (elem: MetadataInfo) => elem.fullName)
-      const namesToDelete = _.difference(prevNames, newNames)
-      const type = newInstance.type.fields[fieldName].type.elemID.typeName.replace('list<salesforce.', '').replace('>', '').replace(' ', '')
-      const promises = namesToDelete.map(elementName => this.client.delete(type, `${apiName(newInstance)}.${elementName}`))
-      await Promise.all(promises)
-    } else {
-      const metadataTypeName = metadataType(fieldType)
-      const deletedObjects = getDeletedObjectsNames(
-        makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
-      ).map(o => (withObjectPrefix ? [oldInstance.value.fullName, o] : [o])
-        .join(constants.API_NAME_SEPARATOR))
-      if (!_.isEmpty(deletedObjects)) {
-        await this.client.delete(metadataTypeName, deletedObjects)
-      }
+    const metadataTypeName = metadataType(fieldType)
+    const deletedObjects = getDeletedObjectsNames(
+      makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
+    ).map(o => (withObjectPrefix ? [oldInstance.value.fullName, o] : [o])
+      .join(constants.API_NAME_SEPARATOR))
+    if (!_.isEmpty(deletedObjects)) {
+      await this.client.delete(metadataTypeName, deletedObjects)
     }
   }
 

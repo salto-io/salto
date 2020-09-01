@@ -29,14 +29,8 @@ export interface SaltoElemLocation {
 const MAX_LOCATION_SEARCH_RESULT = 20
 
 const getAllElements = async (workspace: EditorWorkspace):
-Promise<ReadonlyArray<Element>> => {
-  const topLevelElements = await workspace.elements
-  const fields = topLevelElements
-    .filter(isObjectType)
-    .map(elem => Object.values(elem.fields))
-    .flat()
-  return [...topLevelElements, ...fields]
-}
+Promise<ReadonlyArray<Element>> => (await workspace.elements)
+  .flatMap(elem => (isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
 
 export const getLocations = async (
   workspace: EditorWorkspace,

@@ -185,15 +185,25 @@ export const routeDefault = async (
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>
 ): Promise<RoutedChanges> => {
-  // All add changes to the current active env specific folder unless
-  // sec sources are empty - we only have 1 env so adds should go to common.
-  // However - if we have only one env and the user moved the top level element to be
-  // env specific - we respect that and add the change to the env.
   if (change.action === 'add') {
-    const primTopLevelElement = await primarySource.get(change.id.createTopLevelParentID().parent)
-    return _.isEmpty(secondarySources) && primTopLevelElement === undefined
-      ? { commonSource: [change] }
-      : { primarySource: [change] }
+    const topLevelID = change.id.createTopLevelParentID().parent
+    const commonTopLevelElement = await commonSource.get(topLevelID)
+    const envTopLevelElements = await Promise.all(
+      [primarySource, ...Object.values(secondarySources)].map(src => src.get(topLevelID))
+    )
+    const hasCommonTopLevel = commonTopLevelElement !== undefined
+    const hasEnvSpecificDefinition = _.some(envTopLevelElements, srcElem => srcElem !== undefined)
+    // If we only have 1 env we will add the element to common UNLESS its parent already
+    // has a part defined in the env
+    if (_.isEmpty(secondarySources) && !hasEnvSpecificDefinition) {
+      return { commonSource: [change] }
+    }
+    // If the element parent is completly defined in common we will add new nested
+    // additions to common
+    if (hasCommonTopLevel && !hasEnvSpecificDefinition) {
+      return { commonSource: [change] }
+    }
+    return { primarySource: [change] }
   }
   // We add to the current defining source.
   const currentChanges = await projectChange(change, primarySource)

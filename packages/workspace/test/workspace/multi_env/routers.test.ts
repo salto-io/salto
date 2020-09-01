@@ -122,10 +122,13 @@ const splitInstanceJoined = new InstanceElement(
     ...splitInstance2.value,
   }
 )
+const commonOnlyObject = new ObjectType({
+  elemID: new ElemID('salto', 'commonOnly'),
+})
 const commonSource = createMockNaclFileSource(
-  [commonObj, commonInstance, splitObjJoined, splitInstanceJoined],
+  [commonObj, commonInstance, splitObjJoined, splitInstanceJoined, commonOnlyObject],
   {
-    'test/path.nacl': [commonObj, commonInstance],
+    'test/path.nacl': [commonObj, commonInstance, commonOnlyObject],
     'test/anno.nacl': [splitObjectAnnotations],
     'test/annoTypes.nacl': [splitObjectAnnotationTypes],
     'test/fields.nacl': [splitObjectFields],
@@ -162,6 +165,45 @@ describe('default fetch routing', () => {
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+
+  it('should route nested add changes to primary env when the containing element is not in common', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: 'value' },
+      id: envOnlyObj.elemID.createNestedID('attr', 'newAttr'),
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
+    expect(routedChanges.primarySource).toHaveLength(1)
+    expect(routedChanges.commonSource).toHaveLength(0)
+    expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+
+  it('should route nested add changes to primary env when the containing element is in common but also in primary env', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: 'value' },
+      id: commonObj.elemID.createNestedID('attr', 'newAttr'),
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
+    expect(routedChanges.primarySource).toHaveLength(1)
+    expect(routedChanges.commonSource).toHaveLength(0)
+    expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+
+  it('should route nested add changes to primary env when the containing element is only in common', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: 'value' },
+      id: commonOnlyObject.elemID.createNestedID('attr', 'newAttr'),
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
+    expect(routedChanges.primarySource).toHaveLength(0)
+    expect(routedChanges.commonSource).toHaveLength(1)
+    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
 

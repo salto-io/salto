@@ -46,6 +46,9 @@ export default async (
     spinnerCreator: SpinnerCreator
   }
 ): Promise<CliExitCode> => {
+  const [nodeExecLoc, saltoExecLoc, ...cmdLineArgs] = process.argv
+  const cmdStr = ['salto', ...cmdLineArgs].join(' ')
+  const startTime = new Date()
   try {
     const parseResult = await parse(commandBuilders, input, output)
 
@@ -60,7 +63,13 @@ export default async (
         increaseLoggingLogLevel()
       }
 
-      log.info('CLI started. Version: %s', versionString)
+      log.info('CLI started. Version: %s, Node exec location: %s, '
+              + 'Salto exec location: %s, Current dir: %s',
+      versionString,
+      nodeExecLoc,
+      saltoExecLoc,
+      process.cwd())
+      log.info('running "%s"', cmdStr)
 
       const parsedInput = { ...input, args: parsedArgs }
       const command = await commandBuilder(parsedInput, output, spinnerCreator)
@@ -81,6 +90,7 @@ export default async (
     return CliExitCode.AppError
   } finally {
     await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)
+    log.info('ran "%s" in %d ms', cmdStr, (new Date().getTime()) - startTime.getTime())
     await logger.end()
   }
 }

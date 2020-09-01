@@ -30,7 +30,7 @@ describe('workspace query locations', () => {
   describe('sensitive', () => {
     it('should find prefixes', async () => {
       const res = await getQueryLocations(workspace, 'vs.per')
-      expect(res).toHaveLength(7)
+      expect(res).toHaveLength(12)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find suffixes', async () => {
@@ -43,15 +43,19 @@ describe('workspace query locations', () => {
       expect(res).toHaveLength(2)
       expect(res[0].fullname).toBe('vs.person')
     })
-    it('should  return empty results on not found', async () => {
+    it('should return empty results on not found', async () => {
       const res = await getQueryLocations(workspace, 'nope')
       expect(res).toHaveLength(0)
+    })
+    it('should find field elements', async () => {
+      const res = await getQueryLocationsFuzzy(workspace, 'person')
+      expect(res.find(e => e.item.fullname === 'vs.person.field.age')).toBeDefined()
     })
   })
   describe('insensitive', () => {
     it('should find prefixes', async () => {
       const res = await getQueryLocations(workspace, 'vs.peR', false)
-      expect(res).toHaveLength(7)
+      expect(res).toHaveLength(12)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find suffixes', async () => {
@@ -64,21 +68,29 @@ describe('workspace query locations', () => {
       expect(res).toHaveLength(2)
       expect(res[0].fullname).toBe('vs.person')
     })
-    it('should  return empty results on not found', async () => {
+    it('should return empty results on not found', async () => {
       const res = await getQueryLocations(workspace, 'NOPe', false)
       expect(res).toHaveLength(0)
+    })
+    it('should find field elements', async () => {
+      const res = await getQueryLocationsFuzzy(workspace, 'pErSon')
+      expect(res.find(e => e.item.fullname === 'vs.person.field.age')).toBeDefined()
     })
   })
   describe('fuzzy', () => {
     it('should find elements', async () => {
       const res = await getQueryLocationsFuzzy(workspace, 'perbon')
-      expect(res).toHaveLength(7)
+      expect(res).toHaveLength(12)
       expect(res[0].item.fullname).toBe('vs.person')
       expect(res[0].matches?.[0].indices).toHaveLength(2)
       expect(res[0].matches?.[0].indices[0]).toEqual([3, 5])
       expect(res[0].matches?.[0].indices[1]).toEqual([7, 8])
     })
-    it('should  return empty results on not found', async () => {
+    it('should find field elements', async () => {
+      const res = await getQueryLocationsFuzzy(workspace, 'perbon')
+      expect(res.find(e => e.item.fullname === 'vs.person.field.age')).toBeDefined()
+    })
+    it('should return empty results on not found', async () => {
       const res = await getQueryLocations(workspace, 'blablablabla')
       expect(res).toHaveLength(0)
     })

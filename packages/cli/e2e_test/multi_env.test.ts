@@ -555,17 +555,17 @@ describe('multi env tests', () => {
         }))
       })
 
-      it('should not update common with the attributes added in the deploy', async () => {
+      it('should update common with the attributes added in the deploy', async () => {
         const filename = commonNaclFileName()
         const element = (await getNaclFileElements(filename))[0]
         expect(isObjectType(element)).toBeTruthy()
         const obj = element as ObjectType
-        expect(obj.fields.alpha.annotations.apiName).toBeUndefined()
-        expect(obj.fields.alpha.annotations.apiName).toBeUndefined()
-        expect(obj.annotations.metadataType).toBeUndefined()
-        expect(obj.annotations.apiName).toBeUndefined()
-        expect(obj.annotationTypes.apiName).toBeUndefined()
-        expect(obj.annotationTypes.metadataType).toBeUndefined()
+        expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+        expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+        expect(obj.annotations.metadataType).toBeDefined()
+        expect(obj.annotations.apiName).toBeDefined()
+        expect(obj.annotationTypes.apiName).toBeDefined()
+        expect(obj.annotationTypes.metadataType).toBeDefined()
       })
     })
 

@@ -36,7 +36,7 @@
     "@salto-io/file": "0.1.25",
     "@salto-io/logging": "0.1.25",
     "@salto-io/lowerdash": "0.1.25",
-    "@salto-io/suitecloud-cli": "1.0.2-salto-14",
+    "@salto-io/suitecloud-cli": "1.0.2-salto-15",
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^3.15.0",
     "he": "^1.2.0",
@@ -62,7 +62,6 @@
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
     "tsc-watch": "^2.2.1",
-    "typescript": "3.9.3",
-    "vm2": "^3.9.1"
+    "typescript": "3.9.3"
   }
 }

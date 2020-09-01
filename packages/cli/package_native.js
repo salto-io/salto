@@ -35,7 +35,6 @@ const TARGET_PLATFORMS = {
 
 const resources = [
   ...fontFiles.values(),
-  '../../node_modules/vm2/**',
   '../../node_modules/@salto-io/suitecloud-cli/src/metadata/*.json',
   '../../node_modules/@salto-io/suitecloud-cli/src/templates/**',
 ]

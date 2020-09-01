@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Fuse from 'fuse.js'
 
-import { Element, ElemID } from '@salto-io/adapter-api'
+import { Element, ElemID, isObjectType } from '@salto-io/adapter-api'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 
@@ -27,6 +27,10 @@ export interface SaltoElemLocation {
 }
 
 const MAX_LOCATION_SEARCH_RESULT = 20
+
+const getAllElements = async (workspace: EditorWorkspace):
+Promise<ReadonlyArray<Element>> => (await workspace.elements)
+  .flatMap(elem => (isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
 
 export const getLocations = async (
   workspace: EditorWorkspace,
@@ -56,7 +60,7 @@ export const getQueryLocations = async (
     return isPartOfLastNamePart || isPrefix || isSuffix
   }
 
-  const topMatchingNames = (await workspace.elements)
+  const topMatchingNames = (await getAllElements(workspace))
     .filter(e => lastIDPartContains(e, sensitive))
     .map(e => e.elemID.getFullName())
     .slice(0, MAX_LOCATION_SEARCH_RESULT)
@@ -73,7 +77,7 @@ export const getQueryLocationsFuzzy = async (
   workspace: EditorWorkspace,
   query: string,
 ): Promise<Fuse.FuseResult<SaltoElemLocation>[]> => {
-  const elements = await workspace.elements
+  const elements = await getAllElements(workspace)
   const fuse = new Fuse(elements.map(e => e.elemID.getFullName()), { includeMatches: true })
   const fuseSearchResult = fuse.search(query)
   const topFuzzyResults = fuseSearchResult

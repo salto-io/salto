@@ -28,13 +28,13 @@ import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace
 import Prompts from '../prompts'
 import {
   formatTargetEnvRequired, formatInvalidID, formatUnknownTargetEnv, formatCloneToEnvFailed,
-  formatMissingCloneArg, formatMissingMoveArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
+  formatMissingCloneArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
   formatInvalidMoveArg, formatInvalidElementCommand,
 } from '../formatter'
 
 const log = logger(module)
-const toCommonInput = 'common'
-const toEnvsInput = 'envs'
+const COMMON = 'common'
+const ENVS = 'envs'
 
 const validateEnvs = (
   output: CliOutput,
@@ -96,12 +96,12 @@ const moveElement = async (
   cliTelemetry.start(workspaceTags)
   try {
     switch (to) {
-      case toCommonInput:
-        outputLine(Prompts.MOVE_START('envs', 'common'), output)
+      case COMMON:
+        outputLine(Prompts.MOVE_START(ENVS, COMMON), output)
         await workspace.promote(elmSelectors)
         break
-      case toEnvsInput:
-        outputLine(Prompts.MOVE_START('common', 'envs'), output)
+      case ENVS:
+        outputLine(Prompts.MOVE_START(COMMON, ENVS), output)
         await workspace.demote(elmSelectors)
         break
       default:
@@ -130,13 +130,11 @@ export const command = (
   inputElmSelectors: string[],
   inputFromEnv?: string,
   inputToEnvs?: string[],
-  inputTo?: string,
   env?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(
-      `running element ${commandName} command on '${workspaceDir}' env=${env}
-      , to=${inputTo}, fromEnv=${inputFromEnv}, toEnvs=${inputToEnvs}
+      `running element ${commandName} command on '${workspaceDir}' env=${env}, fromEnv=${inputFromEnv}, toEnvs=${inputToEnvs}
       , force=${force}, elmSelectors=${inputElmSelectors}`
     )
 
@@ -146,14 +144,8 @@ export const command = (
       errorOutputLine(Prompts.ELEMENT_CLONE_USAGE, output)
       return CliExitCode.UserInputError
     }
-    if ((commandName === 'move') && (inputTo === undefined)) {
-      errorOutputLine(formatMissingMoveArg(), output)
-      errorOutputLine(Prompts.ELEMENT_MOVE_USAGE, output)
-      return CliExitCode.UserInputError
-    }
     const sessionEnv = env ?? inputFromEnv ?? undefined
     const toEnvs = inputToEnvs ?? []
-    const to = inputTo ?? ''
 
     const { ids: elmSelectors, invalidSelectors } = convertToIDSelectors(inputElmSelectors)
     if (!_.isEmpty(invalidSelectors)) {
@@ -183,8 +175,10 @@ export const command = (
           toEnvs,
           elmSelectors,
         )
-      case 'move':
-        return moveElement(workspace, output, cliTelemetry, to, elmSelectors)
+      case 'move-to-common':
+        return moveElement(workspace, output, cliTelemetry, COMMON, elmSelectors)
+      case 'move-to-envs':
+        return moveElement(workspace, output, cliTelemetry, ENVS, elmSelectors)
       default:
         errorOutputLine(formatInvalidElementCommand(commandName), output)
         return CliExitCode.UserInputError
@@ -217,7 +211,7 @@ const elementBuilder = createCommandBuilder({
     positional: {
       command: {
         type: 'string',
-        choices: ['clone', 'move'],
+        choices: ['clone', 'move-to-common', 'move-to-envs'],
         description: 'The element management command',
       },
     },
@@ -231,13 +225,6 @@ const elementBuilder = createCommandBuilder({
         type: 'array',
         desc: 'The environment to clone to (Required for clone)',
         conflicts: ['to', 'env'],
-      },
-      to: {
-        type: 'string',
-        choices: [toCommonInput, toEnvsInput],
-        desc: 'Indicating the move direction. Use \'common\' for moving elements '
-        + 'from env-specific to the common space and \'envs\' for moving elements '
-        + 'from the common to env-specific space. (Required for move)',
       },
       force: {
         alias: ['f'],
@@ -259,7 +246,6 @@ const elementBuilder = createCommandBuilder({
       input.args.elmSelectors,
       input.args.fromEnv,
       input.args.toEnvs,
-      input.args.to,
       input.args.env,
     )
   },

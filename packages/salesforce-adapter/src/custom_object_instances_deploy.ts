@@ -53,17 +53,20 @@ const getActionResult = (
   return { successInstances, errorMessages }
 }
 
-const formatValueForWhere = (field: Field, value: Value): Value => {
+const escapeWhereStr = (str: string): string =>
+  str.replace(/(\\)|(')/g, escaped => `\\${escaped}`)
+
+const formatValueForWhere = (field: Field, value: Value): string => {
   if (value === undefined) {
     return 'null'
   }
   if (isPrimitiveType(field.type)) {
     if (field.type.primitive === PrimitiveTypes.STRING) {
-      return `'${value}'`
+      return `'${escapeWhereStr(value)}'`
     }
-    return JSON.stringify(value)
+    return value.toString()
   }
-  throw new Error(`Can not create upsert WHERE clause for non-primitve field ${field.name}`)
+  throw new Error(`Can not create WHERE clause for non-primitve field ${field.name}`)
 }
 
 const capitalizeFirstLetter = (str: string): string =>
@@ -75,14 +78,9 @@ const getRecordsBySaltoIds = async (
   saltoIdFields: Field[],
   client: SalesforceClient,
 ): Promise<SalesforceRecord[]> => {
-  // Should always query Id together with the SaltoIdFields to match it to instances
-  const saltoIdFieldsWithIdField = (saltoIdFields
-    .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
-    ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
-  const selectStr = buildSelectStr(saltoIdFieldsWithIdField)
   // The use of IN can lead to querying uneeded records (cross values between instances)
   // and can be optimized
-  const fieldsWheres = saltoIdFields.flatMap(field => {
+  const computeWhereConditions = (field: Field): string | string[] => {
     const fieldType = field.type
     if (isObjectType(fieldType)) {
       const compoundFieldType = Object.values(Types.compoundDataTypes)
@@ -105,7 +103,13 @@ const getRecordsBySaltoIds = async (
       .map(instance =>
         (formatValueForWhere(instance.type.fields[field.name], instance.value[field.name]))))]
     return `${apiName(field, true)} IN (${instancesFieldValues.join(',')})`
-  })
+  }
+  // Should always query Id together with the SaltoIdFields to match it to instances
+  const saltoIdFieldsWithIdField = (saltoIdFields
+    .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
+    ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
+  const selectStr = buildSelectStr(saltoIdFieldsWithIdField)
+  const fieldsWheres = saltoIdFields.flatMap(computeWhereConditions)
   const whereStr = fieldsWheres.join(' AND ')
   const query = `SELECT ${selectStr} FROM ${apiName(type)} WHERE ${whereStr}`
   const recordsIterable = await client.queryAll(query)

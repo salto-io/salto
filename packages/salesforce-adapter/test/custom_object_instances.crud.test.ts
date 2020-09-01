@@ -134,7 +134,7 @@ describe('Custom Object Instances CRUD', () => {
     anotherInstanceName,
     customObject,
     {
-      SaltoName: 'anotherExistingInstance',
+      SaltoName: 'anotherExistingInstanceWithThing\'',
       NotCreatable: 'DontSendMeOnCreate',
     }
   )
@@ -143,7 +143,7 @@ describe('Custom Object Instances CRUD', () => {
       type: 'Type',
     },
     Id: 'anotherQueryId',
-    SaltoName: 'anotherExistingInstance',
+    SaltoName: 'anotherExistingInstanceWithThing\'',
     NumField: null,
   }
   const newInstanceWithRefName = 'newInstanceWithRef'
@@ -394,7 +394,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation FROM Type WHERE SaltoName IN (\'existingInstance\',\'anotherExistingInstance\') AND NumField IN (1,null) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation FROM Type WHERE SaltoName IN (\'existingInstance\',\'anotherExistingInstanceWithThing\\\'\') AND NumField IN (1,null) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null)')
           })
 
           it('Should call load operation once with update', () => {
@@ -426,7 +426,7 @@ describe('Custom Object Instances CRUD', () => {
             expect(anotherExistingInstanceChangeElement.elemID)
               .toEqual(anotherExistingInstance.elemID)
             expect(anotherExistingInstanceChangeElement.value.SaltoName).toBeDefined()
-            expect(anotherExistingInstanceChangeElement.value.SaltoName).toBe('anotherExistingInstance')
+            expect(anotherExistingInstanceChangeElement.value.SaltoName).toBe('anotherExistingInstanceWithThing\'')
             // Should add result Id
             expect(anotherExistingInstanceChangeElement.value.Id).toBeDefined()
             expect(anotherExistingInstanceChangeElement.value.Id).toEqual('anotherQueryId')
@@ -456,7 +456,7 @@ describe('Custom Object Instances CRUD', () => {
         })
         it('Should query according to instance values', () => {
           expect(mockQuery.mock.calls).toHaveLength(1)
-          expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'anotherExistingInstance\',\'anotherNewInstance\') AND NumField IN (1,2,null,3) AND City IN (\'Tel-Aviv\',null,\'Ashkelon\') AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null)')
+          expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'anotherExistingInstanceWithThing\\\'\',\'anotherNewInstance\') AND NumField IN (1,2,null,3) AND City IN (\'Tel-Aviv\',null,\'Ashkelon\') AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null)')
         })
 
         it('Should call load operation both with update and with insert', () => {

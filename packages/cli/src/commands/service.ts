@@ -74,18 +74,18 @@ const addService = async (
     return CliExitCode.UserInputError
   }
 
-  try {
-    if (!nologin) {
-      const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
+  if (!nologin) {
+    const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
+    try {
       await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
+    } catch (e) {
+      stderr.write(formatLoginToServiceFailed(serviceName, e.message))
+      return CliExitCode.AppError
     }
-
-    await addAdapter(workspace, serviceName)
-    stdout.write(formatServiceAdded(serviceName))
-  } catch (e) {
-    stderr.write(formatLoginToServiceFailed(serviceName, e.message))
   }
 
+  await addAdapter(workspace, serviceName)
+  stdout.write(formatServiceAdded(serviceName))
   return CliExitCode.Success
 }
 

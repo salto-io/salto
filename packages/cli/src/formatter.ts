@@ -437,7 +437,7 @@ export const formatStepCompleted = (text: string, indentLevel?: number): string 
 export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
 
 export const formatMergeErrors = (mergeErrors: FetchResult['mergeErrors']): string =>
-  `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(
+  `${Prompts.FETCH_MERGE_ERRORS}\n${mergeErrors.map(
     me => `${formatError(me.error)}, dropped elements: ${
       me.elements.map(e => e.elemID.getFullName()).join(', ')
     }`

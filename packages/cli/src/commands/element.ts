@@ -33,8 +33,8 @@ import {
 } from '../formatter'
 
 const log = logger(module)
-const toCommonInput = 'common'
-const toEnvsInput = 'envs'
+const COMMON = 'common'
+const ENVS = 'envs'
 
 const validateEnvs = (
   output: CliOutput,
@@ -96,12 +96,12 @@ const moveElement = async (
   cliTelemetry.start(workspaceTags)
   try {
     switch (to) {
-      case toCommonInput:
-        outputLine(Prompts.MOVE_START('envs', 'common'), output)
+      case COMMON:
+        outputLine(Prompts.MOVE_START(ENVS, COMMON), output)
         await workspace.promote(elmSelectors)
         break
-      case toEnvsInput:
-        outputLine(Prompts.MOVE_START('common', 'envs'), output)
+      case ENVS:
+        outputLine(Prompts.MOVE_START(COMMON, ENVS), output)
         await workspace.demote(elmSelectors)
         break
       default:
@@ -176,9 +176,9 @@ export const command = (
           elmSelectors,
         )
       case 'move-to-common':
-        return moveElement(workspace, output, cliTelemetry, toCommonInput, elmSelectors)
+        return moveElement(workspace, output, cliTelemetry, COMMON, elmSelectors)
       case 'move-to-envs':
-        return moveElement(workspace, output, cliTelemetry, toEnvsInput, elmSelectors)
+        return moveElement(workspace, output, cliTelemetry, ENVS, elmSelectors)
       default:
         errorOutputLine(formatInvalidElementCommand(commandName), output)
         return CliExitCode.UserInputError

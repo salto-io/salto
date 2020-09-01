@@ -31,20 +31,25 @@ export type RemovalChange<T> = RemovalDiff<T>
 export type Change<T = ChangeDataType> =
   AdditionChange<T> | ModificationChange<T> | RemovalChange<T>
 
-export const isModificationChange = <T>(change: Change<T>): change is ModificationChange<T> =>
-  change.action === 'modify'
-export const isRemovalChange = <T>(change: Change<T>): change is RemovalChange<T> =>
-  change.action === 'remove'
-export const isAdditionChange = <T>(change: Change<T>): change is AdditionChange<T> =>
-  change.action === 'add'
-export const isAdditionOrModificationChange = <T>(
-  change: Change<T>
-): change is AdditionChange<T> | ModificationChange<T> => (
+export type ChangeData<T extends Change<unknown>> = T extends Change<infer U> ? U : never
+export const isModificationChange = <T extends Change<unknown>>(
+  change: T
+): change is T & ModificationChange<ChangeData<T>> => change.action === 'modify'
+export const isRemovalChange = <T extends Change<unknown>>(
+  change: T
+): change is T & RemovalChange<ChangeData<T>> => change.action === 'remove'
+export const isAdditionChange = <T extends Change<unknown>>(
+  change: T
+): change is T & AdditionChange<ChangeData<T>> => change.action === 'add'
+
+export const isAdditionOrModificationChange = <T extends Change<unknown>>(
+  change: T
+): change is T & (AdditionChange<ChangeData<T>> | ModificationChange<ChangeData<T>>) => (
     isAdditionChange(change) || isModificationChange(change)
   )
-export const isAdditionOrRemovalChange = <T>(
-  change: Change<T>
-): change is AdditionChange<T> | RemovalChange<T> => (
+export const isAdditionOrRemovalChange = <T extends Change<unknown>>(
+  change: T
+): change is T & (AdditionChange<ChangeData<T>> | RemovalChange<ChangeData<T>>) => (
     isAdditionChange(change) || isRemovalChange(change)
   )
 
@@ -66,7 +71,7 @@ export const isFieldChange = (change: Change): change is Change<Field> => (
 export type DetailedChange<T = ChangeDataType | Values | Value> =
   Change<T> & {
     id: ElemID
-    path?: string[]
+    path?: ReadonlyArray<string>
   }
 
 export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }

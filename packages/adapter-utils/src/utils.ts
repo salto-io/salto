@@ -17,15 +17,15 @@ import wu from 'wu'
 import _ from 'lodash'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
+  ChangeData,
 } from '@salto-io/adapter-api'
-import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 
-const { mapValuesAsync } = promises.object
 const { isDefined } = lowerDashValues
 
 const log = logger(module)
@@ -36,6 +36,27 @@ export const naclCase = (name?: string): string => (
   // Match multiple consecutive chars to compact names and avoid repeated _
   name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
 )
+
+export const applyFunctionToChangeData = <T extends Change<unknown>>(
+  change: T, func: (arg: ChangeData<T>) => ChangeData<T>,
+): T => {
+  if (isAdditionChange(change)) {
+    return { ...change, data: { after: func(change.data.after) } }
+  }
+  if (isRemovalChange(change)) {
+    return { ...change, data: { before: func(change.data.before) } }
+  }
+  if (isModificationChange(change)) {
+    return {
+      ...change,
+      data: {
+        before: func(change.data.before),
+        after: func(change.data.after),
+      },
+    }
+  }
+  return change
+}
 
 export type TransformFuncArgs = {
   value: Value
@@ -333,65 +354,21 @@ export const restoreChangeElement = (
   sourceElements: Record<string, ChangeDataType>,
   getLookUpName: GetLookupNameFunc,
   restoreValuesFunc = restoreValues,
-): Change => {
-  if (isRemovalChange(change)) {
-    return {
-      ...change,
-      data: {
-        before: restoreValuesFunc(
-          sourceElements[change.data.before.elemID.getFullName()], change.data.before, getLookUpName
-        ),
-      },
-    }
-  }
-  if (isModificationChange(change)) {
-    return {
-      ...change,
-      data: {
-        before: restoreValuesFunc(
-          sourceElements[change.data.before.elemID.getFullName()], change.data.before, getLookUpName
-        ),
-        after: restoreValuesFunc(
-          sourceElements[change.data.after.elemID.getFullName()], change.data.after, getLookUpName
-        ),
-      },
-    }
-  }
-  if (isAdditionChange(change)) {
-    return {
-      ...change,
-      data: {
-        after: restoreValuesFunc(
-          sourceElements[change.data.after.elemID.getFullName()], change.data.after, getLookUpName
-        ),
-      },
-    }
-  }
-  return change
-}
+): Change => applyFunctionToChangeData(
+  change,
+  changeData => restoreValuesFunc(
+    sourceElements[changeData.elemID.getFullName()], changeData, getLookUpName,
+  )
+)
 
 export const resolveChangeElement = (
   change: Change,
   getLookUpName: GetLookupNameFunc,
   resolveValuesFunc = resolveValues,
-): Change => {
-  if (isRemovalChange(change)) {
-    return { ...change, data: { before: resolveValuesFunc(change.data.before, getLookUpName) } }
-  }
-  if (isModificationChange(change)) {
-    return {
-      ...change,
-      data: {
-        before: resolveValuesFunc(change.data.before, getLookUpName),
-        after: resolveValuesFunc(change.data.after, getLookUpName),
-      },
-    }
-  }
-  if (isAdditionChange(change)) {
-    return { ...change, data: { after: resolveValuesFunc(change.data.after, getLookUpName) } }
-  }
-  return change
-}
+): Change => applyFunctionToChangeData(
+  change,
+  changeData => resolveValuesFunc(changeData, getLookUpName)
+)
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (
   wu(elements).filter(e => e.elemID.isEqual(id))
@@ -554,32 +531,31 @@ export const valuesDeepSome = (value: Value, predicate: (val: Value) => boolean)
   return false
 }
 
-export const filterByID = async <T>(
+export const filterByID = <T extends Element | Values>(
   id: ElemID, value: T,
-  filterFunc: (id: ElemID) => Promise<boolean>
-): Promise<T | undefined> => {
-  const filterAnnotations = async (annotations: Value): Promise<Value> => (
+  filterFunc: (id: ElemID) => boolean
+): T | undefined => {
+  const filterAnnotations = (annotations: Value): Value => (
     filterByID(id.createNestedID('attr'), annotations, filterFunc)
   )
 
-  const filterAnnotationType = async (annoTypes: TypeMap): Promise<TypeMap> => _.pickBy(
-    await mapValuesAsync(annoTypes, async (anno, annoName) => (
-      await filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
+  const filterAnnotationType = (annoTypes: TypeMap): TypeMap => _.pickBy(
+    _.mapValues(annoTypes, (anno, annoName) => (
+      filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
     )),
-    anno => anno !== undefined
-  ) as TypeMap
+    isDefined,
+  )
 
-  if (!await filterFunc(id)) {
+  if (!filterFunc(id)) {
     return undefined
   }
   if (isObjectType(value)) {
-    const filteredFields = await Promise.all(
-      Object.values(value.fields).map(field => filterByID(field.elemID, field, filterFunc))
-    )
+    const filteredFields = Object.values(value.fields)
+      .map(field => filterByID(field.elemID, field, filterFunc))
     return new ObjectType({
       elemID: value.elemID,
-      annotations: await filterAnnotations(value.annotations),
-      annotationTypes: await filterAnnotationType(value.annotationTypes),
+      annotations: filterAnnotations(value.annotations),
+      annotationTypes: filterAnnotationType(value.annotationTypes),
       fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
       path: value.path,
       isSettings: value.isSettings,
@@ -588,8 +564,8 @@ export const filterByID = async <T>(
   if (isPrimitiveType(value)) {
     return new PrimitiveType({
       elemID: value.elemID,
-      annotations: await filterAnnotations(value.annotations),
-      annotationTypes: await filterAnnotationType(value.annotationTypes),
+      annotations: filterAnnotations(value.annotations),
+      annotationTypes: filterAnnotationType(value.annotationTypes),
       primitive: value.primitive,
       path: value.path,
     }) as Value as T
@@ -599,33 +575,33 @@ export const filterByID = async <T>(
       value.parent,
       value.name,
       value.type,
-      await filterByID(value.elemID, value.annotations, filterFunc)
+      filterByID(value.elemID, value.annotations, filterFunc)
     ) as Value as T
   }
   if (isInstanceElement(value)) {
     return new InstanceElement(
       value.elemID.name,
       value.type,
-      await filterByID(value.elemID, value.value, filterFunc),
+      filterByID(value.elemID, value.value, filterFunc),
       value.path,
-      await filterAnnotations(value.annotations)
+      filterAnnotations(value.annotations)
     ) as Value as T
   }
 
   if (_.isPlainObject(value)) {
     const filteredObj = _.pickBy(
-      await mapValuesAsync(
+      _.mapValues(
         value,
-        async (val: Value, key: string) => filterByID(id.createNestedID(key), val, filterFunc)
+        (val: Value, key: string) => filterByID(id.createNestedID(key), val, filterFunc)
       ),
-      val => val !== undefined
+      isDefined,
     )
     return _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
   }
   if (_.isArray(value)) {
-    const filteredArray = (await (Promise.all(value.map(
-      async (item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc)
-    )))).filter(item => item !== undefined)
+    const filteredArray = value
+      .map((item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc))
+      .filter(isDefined)
     return _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
   }
 

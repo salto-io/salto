@@ -109,7 +109,7 @@ export const projectElementOrValueToEnv = async (
 export const createAddChange = (
   value: Element | Value,
   id: ElemID,
-  path?: string[]
+  path?: ReadonlyArray<string>
 ): DetailedChange => ({
   data: { after: value },
   action: 'add',
@@ -120,7 +120,7 @@ export const createAddChange = (
 export const createRemoveChange = (
   value: Element | Value,
   id: ElemID,
-  path?: string[]
+  path?: ReadonlyArray<string>
 ): DetailedChange => ({
   data: { before: value },
   action: 'remove',
@@ -132,7 +132,7 @@ export const createModifyChange = (
   before: Element | Value,
   after: Element | Value,
   id: ElemID,
-  path?: string[]
+  path?: ReadonlyArray<string>
 ): DetailedChange => ({
   data: { before, after },
   action: 'modify',

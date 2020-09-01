@@ -21,7 +21,7 @@ import {
   BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile,
   isPrimitiveType, Element,
   isReferenceExpression,
-  isPrimitiveValue, CORE_ANNOTATIONS, FieldMap,
+  isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange, RemovalChange, ModificationChange,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import {
@@ -29,7 +29,7 @@ import {
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify, naclCase,
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
-  restoreChangeElement, RestoreValuesFunc, getAllReferencedIds,
+  restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
 } from '../src/utils'
 import { mockFunction } from './common'
 
@@ -823,6 +823,50 @@ describe('Test utils.ts', () => {
     })
   })
 
+  describe('applyFunctionToChangeData', () => {
+    const transformFunc = (): string => 'changed'
+    describe('with addition change', () => {
+      let transformedChange: AdditionChange<string>
+      beforeEach(() => {
+        transformedChange = applyFunctionToChangeData(
+          { action: 'add', data: { after: 'orig' }, path: ['path'] },
+          transformFunc,
+        )
+      })
+      it('should change the after value', () => {
+        expect(transformedChange.data.after).toEqual('changed')
+      })
+      it('should keep extra info on the change (support for detailed change)', () => {
+        expect(transformedChange).toHaveProperty('path', ['path'])
+      })
+    })
+    describe('with removal change', () => {
+      let transformedChange: RemovalChange<string>
+      beforeEach(() => {
+        transformedChange = applyFunctionToChangeData(
+          { action: 'remove', data: { before: 'orig' } },
+          transformFunc,
+        )
+      })
+      it('should change the before value', () => {
+        expect(transformedChange.data.before).toEqual('changed')
+      })
+    })
+    describe('with modification change', () => {
+      let transformedChange: ModificationChange<string>
+      beforeEach(() => {
+        transformedChange = applyFunctionToChangeData(
+          { action: 'modify', data: { before: 'orig', after: 'orig' } },
+          transformFunc,
+        )
+      })
+      it('should change the before and after values', () => {
+        expect(transformedChange.data.before).toEqual('changed')
+        expect(transformedChange.data.after).toEqual('changed')
+      })
+    })
+  })
+
   describe('set path func', () => {
     let clonedMockType: ObjectType
     beforeEach(() => {
@@ -1122,7 +1166,7 @@ describe('Test utils.ts', () => {
       const onlyFields = await filterByID(
         objElemID,
         obj,
-        id => Promise.resolve(id.idType === 'type' || id.idType === 'field')
+        id => id.idType === 'type' || id.idType === 'field'
       )
       expect(onlyFields).toBeDefined()
       expectEqualFields(onlyFields?.fields, obj.fields)
@@ -1131,7 +1175,7 @@ describe('Test utils.ts', () => {
       const onlyAnno = await filterByID(
         objElemID,
         obj,
-        id => Promise.resolve(id.idType === 'type' || id.idType === 'attr')
+        id => id.idType === 'type' || id.idType === 'attr'
       )
       expect(onlyAnno).toBeDefined()
       expect(onlyAnno?.fields).toEqual({})
@@ -1141,7 +1185,7 @@ describe('Test utils.ts', () => {
       const onlyAnnoType = await filterByID(
         objElemID,
         obj,
-        id => Promise.resolve(id.idType === 'type' || id.idType === 'annotation')
+        id => id.idType === 'type' || id.idType === 'annotation'
       )
       expect(onlyAnnoType).toBeDefined()
       expect(onlyAnnoType?.fields).toEqual({})
@@ -1151,7 +1195,7 @@ describe('Test utils.ts', () => {
       const withoutAnnoObjStr = await filterByID(
         objElemID,
         obj,
-        id => Promise.resolve(!id.getFullNameParts().includes('str'))
+        id => !id.getFullNameParts().includes('str')
       )
       expect(withoutAnnoObjStr).toBeDefined()
       expectEqualFields(withoutAnnoObjStr?.fields, obj.fields)
@@ -1162,7 +1206,7 @@ describe('Test utils.ts', () => {
       const withoutFieldAnnotations = await filterByID(
         objElemID,
         obj,
-        id => Promise.resolve(id.getFullName() !== 'salto.obj.field.obj.label')
+        id => id.getFullName() !== 'salto.obj.field.obj.label'
       )
 
       expect(withoutFieldAnnotations).toBeDefined()
@@ -1173,7 +1217,7 @@ describe('Test utils.ts', () => {
       const onlyI = await filterByID(
         objElemID,
         obj,
-        id => Promise.resolve(
+        id => (
           Number.isNaN(Number(_.last(id.getFullNameParts())))
           || Number(_.last(id.getFullNameParts())) === 0
         )
@@ -1189,7 +1233,7 @@ describe('Test utils.ts', () => {
       const filteredPrim = await filterByID(
         prim.elemID,
         prim,
-        id => Promise.resolve(!id.getFullNameParts().includes('str'))
+        id => !id.getFullNameParts().includes('str')
       )
       expect(filteredPrim?.annotations.obj).toEqual({ num: 17 })
       expect(filteredPrim?.annotationTypes).toEqual({ obj: annoType })
@@ -1199,9 +1243,7 @@ describe('Test utils.ts', () => {
       const filteredInstance = await filterByID(
         inst.elemID,
         inst,
-        id => Promise.resolve(
-          !id.getFullNameParts().includes('list')
-        )
+        id => !id.getFullNameParts().includes('list')
       )
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj })
     })
@@ -1210,7 +1252,7 @@ describe('Test utils.ts', () => {
       const filteredInstance = await filterByID(
         inst.elemID,
         inst,
-        id => Promise.resolve(id.idType !== 'instance')
+        id => id.idType !== 'instance'
       )
       expect(filteredInstance).toBeUndefined()
     })
@@ -1219,16 +1261,14 @@ describe('Test utils.ts', () => {
       const withoutList = await filterByID(
         inst.elemID,
         inst,
-        id => Promise.resolve(Number.isNaN(Number(_.last(id.getFullNameParts()))))
+        id => Number.isNaN(Number(_.last(id.getFullNameParts())))
       )
       expect(withoutList?.value).toEqual({ obj: inst.value.obj })
 
       const withoutObj = await filterByID(
         inst.elemID,
         inst,
-        id => Promise.resolve(
-          !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
-        )
+        id => !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
       )
       expect(withoutObj?.value).toEqual({ list: inst.value.list })
     })

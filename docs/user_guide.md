@@ -245,7 +245,7 @@ In a typical feature development process, multiple environments are being used. 
 In Salto, `environments` are first-level citizens, which also enable the encapsulation of commonalities and differences between service accounts. Before showing some examples for working with environments, we should first explain some common terms and operations:
 
 - An `environment` is a collection of `services`.
-- A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move <element-id-selectors> --to common|env`
+- A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move-to-common` and `salto element move-to-envs` commands
 - A `fetch` operation can work in `align mode`, when it will not modify common configuration, or in standard mode when it will modify both common and environment-specific configuration. As a rule of thumb, `align mode` should be used when the intent is to make sure that the fetched env is aligned with the common configuration elements. When fetching in `align mode`, any modifications to the common elements will be dropped and it should be followed by a deploy operation. Standard fetch mode is used when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
 Now, let's follow a common scenario of adding two environments to Salto:
@@ -292,7 +292,7 @@ Lets stop and take a look at our workspace directory structure (for more info se
 — static-resources       # common static files for all environments
 
 ```
-Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. Do not forget to use the `salto element move <elm-id-selectors> --to common` command in order to configure which elements should be common across all environmetns in the workspace (the `move` command can be executed at anytime, before or after changing the dev env).  After all tests in dev are done, we can go ahead and run:
+Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. Do not forget to use the `salto element move-to-common <elm-id-selectors>` command in order to configure which elements should be common across all environmetns in the workspace (the `move-to-common` command can be executed at anytime, before or after changing the dev env).  After all tests in dev are done, we can go ahead and run:
 ```shell
 salto env set prod
 salto deploy
@@ -369,14 +369,12 @@ Manage your environments' services
 Manage your workspace environments
 
 **Arguments:**
-* `command` : The element management command [string] [required] [choices: "move", "clone"]
+* `command` : The element management command [string] [required] [choices: "move-to-common", "move-to-envs", "clone"]
 * `elm-id-selectors` : A list of element id selectors [array]
 
 **Options:**
-
-* `--to` : Target to the move command [string] [required] [choices: "common", "env"]
-* `—-from-env` : Source env name for the copy command [string] [required]
-* `—-to-env` : Target env names for the copy command [array] [required] [choices: "common", "env"]
+* `—-from-env` : Source env name for the clone command [string] [required]
+* `—-to-env` : Target env names for the clone command [array] [required] 
 
 
 ### **salto env \<command> [\<name>] [\<new-name>]**

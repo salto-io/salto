@@ -324,7 +324,7 @@ Syncs this workspace's NaCl files with the services' current state
 * `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
-* `--state-only, --st` : Fetch remote changes to the state file without mofifying the NaCL files. [boolean] [default: false]
+* `--state-only, --st` : Fetch remote changes to the state file without modifying the NaCL files. [boolean] [default: false]
 
 ### **salto restore**
 

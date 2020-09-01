@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values, collections } from '@salto-io/lowerdash'
+import { values, collections, hash } from '@salto-io/lowerdash'
 import {
   ChangeGroup, getChangeElement, DeployResult, Change, isPrimitiveType,
   InstanceElement, isAdditionGroup, isRemovalGroup, Value, PrimitiveTypes,
@@ -31,6 +31,7 @@ import { SalesforceRecord } from './client/types'
 
 const { isDefined } = values
 const { toArrayAsync } = collections.asynciterable
+const { toMD5 } = hash
 
 type ActionResult = {
   successInstances: InstanceElement[]
@@ -175,20 +176,6 @@ const cloneWithoutNulls = (val: Values): Values =>
     return [k, v]
   })))
 
-const isEqualRecordAndInstanceIdValues = (
-  record: SalesforceRecord,
-  instance: InstanceElement,
-  idFieldsNames: string[],
-): boolean => {
-  const recordValues = transformCompoundNameValues(instance.type, record)
-  // Remove null values from the record result to compare it to instance values
-  const recordValuesWithoutNulls = cloneWithoutNulls(recordValues)
-  return _.isEqual(
-    _.pick(instance.value, idFieldsNames),
-    _.pick(recordValuesWithoutNulls, idFieldsNames)
-  )
-}
-
 const deployAddInstances = async (
   instances: InstanceElement[],
   idFields: Field[],
@@ -198,11 +185,27 @@ const deployAddInstances = async (
   const { type } = instances[0]
   const typeName = apiName(type)
   const idFieldsNames = idFields.map(field => field.name)
-  const existingRecords = await getRecordsBySaltoIds(type, instances, idFields, client)
+  const computeSaltoIdHash = (vals: Values): string => {
+    // Building the object this way because order of keys is important
+    const idFieldsValues = Object.fromEntries(
+      idFieldsNames.map(fieldName => [fieldName, vals[fieldName]])
+    )
+    return toMD5(JSON.stringify(idFieldsValues))
+  }
+  const computeRecordSaltoIdHash = (record: SalesforceRecord): string => {
+    const recordValues = transformCompoundNameValues(type, record)
+    // Remove null values from the record result to compare it to instance values
+    const recordValuesWithoutNulls = cloneWithoutNulls(recordValues)
+    return computeSaltoIdHash(recordValuesWithoutNulls)
+  }
+  const existingRecordsLookup = _.keyBy(
+    await getRecordsBySaltoIds(type, instances, idFields, client),
+    computeRecordSaltoIdHash,
+  )
   const [existingInstances, newInstances] = _.partition(
     instances,
-    instance => (existingRecords.find(record =>
-      isEqualRecordAndInstanceIdValues(record, instance, idFieldsNames)) !== undefined)
+    instance =>
+      existingRecordsLookup[computeSaltoIdHash(instance.value)] !== undefined
   )
   const {
     successInstances: successInsertInstances,
@@ -213,13 +216,9 @@ const deployAddInstances = async (
     client,
   )
   existingInstances.forEach(instance => {
-    const existingRecord = existingRecords.find(
-      record =>
-        (isEqualRecordAndInstanceIdValues(record, instance, idFieldsNames))
-    )
-    if (existingRecord !== undefined) {
-      instance.value[CUSTOM_OBJECT_ID_FIELD] = existingRecord[CUSTOM_OBJECT_ID_FIELD]
-    }
+    instance.value[
+      CUSTOM_OBJECT_ID_FIELD
+    ] = existingRecordsLookup[computeSaltoIdHash(instance.value)][CUSTOM_OBJECT_ID_FIELD]
   })
   const {
     successInstances: successUpdateInstances,

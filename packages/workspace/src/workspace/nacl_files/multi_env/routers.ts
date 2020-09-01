@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType } from '@salto-io/adapter-api'
+import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises } from '@salto-io/lowerdash'
-import { resolvePath, filterByID, detailedCompare } from '@salto-io/adapter-utils'
+import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
@@ -32,16 +32,14 @@ export interface RoutedChanges {
     secondarySources?: Record<string, DetailedChange[]>
 }
 
-const filterByFile = async (
+const filterByFile = (
   valueID: ElemID,
   value: Value,
-  filename: string,
-  source: NaclFilesSource
-): Promise<Value> => filterByID(
+  fileElements: Element[],
+): Value => filterByID(
   valueID,
   value,
-  async id => !_.isEmpty((await source.getElements(filename))
-    .filter(e => resolvePath(e, id) !== undefined))
+  id => !_.isEmpty((fileElements).filter(e => resolvePath(e, id) !== undefined))
 )
 
 const separateChangeByFiles = async (
@@ -52,32 +50,12 @@ const separateChangeByFiles = async (
     .map(range => range.filename)
     .map(async filename => {
       const pathHint = _.trimEnd(filename, FILE_EXTENSION).split(path.sep)
-      if (change.action === 'add') {
-        return {
-          ...change,
-          path: pathHint,
-          data: {
-            after: await filterByFile(change.id, change.data.after, filename, source),
-          },
-        }
-      }
-      if (change.action === 'remove') {
-        return {
-          ...change,
-          path: pathHint,
-          data: {
-            before: await filterByFile(change.id, change.data.before, filename, source),
-          },
-        }
-      }
-      return {
-        ...change,
-        path: pathHint,
-        data: {
-          before: await filterByFile(change.id, change.data.before, filename, source),
-          after: await filterByFile(change.id, change.data.after, filename, source),
-        },
-      }
+      const fileElements = await source.getElements(filename)
+      const filteredChange = applyFunctionToChangeData(
+        change,
+        changeData => filterByFile(change.id, changeData, fileElements),
+      )
+      return { ...filteredChange, path: pathHint }
     })
 )
 
@@ -229,7 +207,7 @@ export const routeDefault = async (
 const getChangePathHint = async (
   change: DetailedChange,
   commonSource: NaclFilesSource
-): Promise<string[] | undefined> => {
+): Promise<ReadonlyArray<string> | undefined> => {
   if (change.path) return change.path
   const refFilename = (await commonSource.getSourceRanges(change.id))
     .map(sourceRange => sourceRange.filename)[0]

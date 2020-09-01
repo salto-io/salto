@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, ElemID, DetailedChange } from '@salto-io/adapter-api'
-import { filterByID } from '@salto-io/adapter-utils'
+import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { pathIndex } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 
@@ -29,34 +29,20 @@ const splitChangeByPath = async (
   if (_.isEmpty(changeHints)) {
     return [change]
   }
-  return Promise.all(changeHints.map(async hint => {
-    const filterByPathHint = async (id: ElemID): Promise<boolean> => {
+  return changeHints.map(hint => {
+    const filterByPathHint = (id: ElemID): boolean => {
       const idHints = index.get(id.getFullName()) as string[][]
       return _.some(idHints, idHint => _.isEqual(idHint, hint))
     }
-    if (change.action === 'add') {
-      return {
-        ...change,
-        data: { after: await filterByID(change.id, change.data.after, filterByPathHint) },
-        path: hint,
-      } as DetailedChange
-    }
-    if (change.action === 'remove') {
-      return {
-        ...change,
-        data: { before: await filterByID(change.id, change.data.before, filterByPathHint) },
-        path: hint,
-      } as DetailedChange
-    }
+    const filteredChange = applyFunctionToChangeData(
+      change,
+      changeData => filterByID(change.id, changeData, filterByPathHint),
+    )
     return {
-      ...change,
-      data: {
-        before: await filterByID(change.id, change.data.before, filterByPathHint),
-        after: await filterByID(change.id, change.data.after, filterByPathHint),
-      },
+      ...filteredChange,
       path: hint,
-    } as DetailedChange
-  }))
+    }
+  })
 }
 
 export const createRestoreChanges = async (

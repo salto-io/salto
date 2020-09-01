@@ -29,7 +29,7 @@ import {
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
-import { State } from '../../src/workspace/state'
+import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from './static_files/common.test'
 import { DirectoryStore } from '../../src/workspace/dir_store'
@@ -43,6 +43,7 @@ import * as dump from '../../src/parser/dump'
 
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
+import { PathIndex } from '../../src/workspace/path_index'
 
 const changedNaclFile = {
   filename: 'file.nacl',
@@ -82,6 +83,12 @@ const mockCredentialsSource = (): ConfigSource => ({
   rename: jest.fn(),
 })
 
+const createState = (elements: Element[]): State => buildInMemState(async () => ({
+  elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
+  pathIndex: new PathIndex(),
+  servicesUpdateDate: {},
+}))
+
 const createWorkspace = async (
   dirStore?: DirectoryStore<string>, state?: State,
   configSource?: WorkspaceConfigSource, credentials?: ConfigSource,
@@ -100,10 +107,9 @@ const createWorkspace = async (
         },
         default: {
           naclFiles: createMockNaclFileSource([]),
-          state: state
-            || {
-              getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
-            } as unknown as State,
+          state: state ?? buildInMemState(
+            async () => ({ elements: {}, pathIndex: new PathIndex(), servicesUpdateDate: {} })
+          ),
         },
       },
     })
@@ -125,55 +131,45 @@ describe('workspace', () => {
         .toThrow(new Error('Workspace with no environments is illegal'))
     })
   })
-  describe('loaded elements', () => {
+  describe('elements', () => {
     let workspace: Workspace
     let elemMap: Record<string, Element>
-    const state = {
-      getAll: () => [new ObjectType({
-        elemID: new ElemID('salesforce', 'hidden'),
-        annotations: {
-          _hidden: true,
-        },
-      })],
-    } as unknown as State
     beforeAll(async () => {
+      const state = createState([
+        new ObjectType({
+          elemID: new ElemID('salesforce', 'hidden'),
+          annotations: { _hidden: true },
+        }),
+      ])
       workspace = await createWorkspace(undefined, state)
-      elemMap = getElemMap(await workspace.elements())
     })
-    it('should contain types from all files', () => {
-      expect(elemMap).toHaveProperty(['salesforce.lead'])
-      expect(elemMap).toHaveProperty(['multi.loc'])
-      expect(elemMap).toHaveProperty(['salesforce.hidden'])
+    describe('with hidden values and types', () => {
+      beforeAll(async () => {
+        elemMap = getElemMap(await workspace.elements())
+      })
+      it('should contain types from all files', () => {
+        expect(elemMap).toHaveProperty(['salesforce.lead'])
+        expect(elemMap).toHaveProperty(['multi.loc'])
+        expect(elemMap).toHaveProperty(['salesforce.hidden'])
+      })
+      it('should be merged', () => {
+        const lead = elemMap['salesforce.lead'] as ObjectType
+        expect(_.keys(lead.fields)).toHaveLength(5)
+      })
     })
-    it('should be merged', () => {
-      const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(_.keys(lead.fields)).toHaveLength(5)
-    })
-  })
-
-  describe('loaded elements without hidden types', () => {
-    let workspace: Workspace
-    let elemMap: Record<string, Element>
-    const state = {
-      getAll: () => [new ObjectType({
-        elemID: new ElemID('salesforce', 'hidden'),
-        annotations: {
-          _hidden: true,
-        },
-      })],
-    } as unknown as State
-    beforeAll(async () => {
-      workspace = await createWorkspace(undefined, state)
-      elemMap = getElemMap(await workspace.elements(false))
-    })
-    it('should contain types from all files', () => {
-      expect(elemMap).toHaveProperty(['salesforce.lead'])
-      expect(elemMap).toHaveProperty(['multi.loc'])
-      expect(elemMap).not.toHaveProperty(['salesforce.hidden'])
-    })
-    it('should be merged', () => {
-      const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(_.keys(lead.fields)).toHaveLength(5)
+    describe('loaded elements without hidden types', () => {
+      beforeAll(async () => {
+        elemMap = getElemMap(await workspace.elements(false))
+      })
+      it('should contain types from all files', () => {
+        expect(elemMap).toHaveProperty(['salesforce.lead'])
+        expect(elemMap).toHaveProperty(['multi.loc'])
+        expect(elemMap).not.toHaveProperty(['salesforce.hidden'])
+      })
+      it('should be merged', () => {
+        const lead = elemMap['salesforce.lead'] as ObjectType
+        expect(_.keys(lead.fields)).toHaveLength(5)
+      })
     })
   })
 
@@ -622,18 +618,9 @@ describe('workspace', () => {
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
-      const getResultMock = (id: ElemID): Promise<Element> => (Promise.resolve(
-        id.isEqual(instWithHiddenFields.elemID)
-          ? instWithHiddenFields
-          : accountInsightsSettingsType
-      ))
-      const mockGet = jest.fn().mockImplementation(getResultMock)
-      const mockState = {
-        get: mockGet,
-        getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
-      }
-
-      workspace = await createWorkspace(dirStore, mockState as unknown as State)
+      const state = createState([instWithHiddenFields, accountInsightsSettingsType])
+      const mockStateGet = jest.spyOn(state, 'get')
+      workspace = await createWorkspace(dirStore, state)
 
       // Ensure workspace elements contains AccountIntelligenceSettings
       expect(
@@ -645,7 +632,7 @@ describe('workspace', () => {
 
       clonedChanges = _.cloneDeep(changes)
       await workspace.updateNaclFiles(clonedChanges)
-      expect(mockGet).toHaveBeenCalledTimes(2)
+      expect(mockStateGet).toHaveBeenCalledTimes(2)
       elemMap = getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
 
@@ -865,7 +852,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       workspaceConf = mockWorkspaceConfigSource()
       credSource = mockCredentialsSource()
-      state = { clear: jest.fn(), getAll: jest.fn().mockResolvedValue([]) } as unknown as State
+      state = createState([])
       defNaclFiles = createMockNaclFileSource([])
       inactiveNaclFiles = createMockNaclFileSource([
         new ObjectType({ elemID: new ElemID('salto', 'inactive') }),
@@ -939,14 +926,15 @@ describe('workspace', () => {
       let workspaceConf: WorkspaceConfigSource
       let credSource: ConfigSource
       let workspace: Workspace
-      let state: State
+      let stateClear: jest.SpyInstance
       let naclFiles: NaclFilesSource
       const envName = 'inactive'
 
       beforeAll(async () => {
         workspaceConf = mockWorkspaceConfigSource()
         credSource = mockCredentialsSource()
-        state = { clear: jest.fn() } as unknown as State
+        const state = createState([])
+        stateClear = jest.spyOn(state, 'clear')
         naclFiles = createMockNaclFileSource([])
         workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
           undefined, { inactive: { naclFiles, state } })
@@ -968,7 +956,7 @@ describe('workspace', () => {
 
       it('should delete files', () => {
         expect(credSource.delete).toHaveBeenCalledTimes(1)
-        expect(state.clear).toHaveBeenCalledTimes(1)
+        expect(stateClear).toHaveBeenCalledTimes(1)
         expect(naclFiles.clear).toHaveBeenCalledTimes(1)
       })
     })
@@ -995,18 +983,20 @@ describe('workspace', () => {
       let workspace: Workspace
       let credSource: ConfigSource
       let state: State
+      let stateRename: jest.SpyInstance
       let naclFiles: NaclFilesSource
 
       beforeEach(async () => {
         workspaceConf = mockWorkspaceConfigSource()
         credSource = mockCredentialsSource()
-        state = { rename: jest.fn() } as unknown as State
+        state = createState([])
+        stateRename = jest.spyOn(state, 'rename')
         naclFiles = createMockNaclFileSource([])
       })
 
       const verifyRenameFiles = (): void => {
         expect(credSource.rename).toHaveBeenCalledTimes(1)
-        expect(state.rename).toHaveBeenCalledTimes(1)
+        expect(stateRename).toHaveBeenCalledTimes(1)
         expect(naclFiles.rename).toHaveBeenCalledTimes(1)
       }
 

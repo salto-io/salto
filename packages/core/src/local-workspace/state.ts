@@ -116,6 +116,7 @@ export const localState = (filePath: string): state.State => {
       return toMD5(stateText)
     },
     clear: async (): Promise<void> => {
+      await inMemState.clear()
       await rm(currentFilePath)
     },
   }

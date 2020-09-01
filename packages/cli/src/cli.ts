@@ -90,7 +90,7 @@ export default async (
     return CliExitCode.AppError
   } finally {
     await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)
-    log.info('running "%s" in %d ms', cmdStr, (new Date().getTime()) - startTime.getTime())
+    log.info('ran "%s" in %d ms', cmdStr, (new Date().getTime()) - startTime.getTime())
     await logger.end()
   }
 }

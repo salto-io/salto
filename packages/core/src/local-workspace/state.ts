@@ -107,7 +107,11 @@ export const localState = (filePath: string): state.State => {
     },
     rename: async (name: string): Promise<void> => {
       const newFilePath = path.join(path.dirname(currentFilePath), `${name}${ZIPPED_STATE_EXTENSION}`)
-      await rename(currentFilePath, newFilePath)
+      if (exists(currentFilePath)) {
+        await rename(currentFilePath, newFilePath)
+      } else {
+        log.debug(`Rename failed. ${currentFilePath} Does not exists`)
+      }
       currentFilePath = newFilePath
     },
     flush: async (): Promise<void> => {

@@ -57,7 +57,7 @@ export class NotAWorkspaceError extends Error {
 export const getNaclFilesSourceParams = (
   sourceBaseDir: string,
   cacheDir: string,
-  excludeDirs: string[] = []
+  excludeDirs: string[] = [],
 ): {
   naclFilesStore: dirStore.DirectoryStore<string>
   cache: parseCache.ParseResultCache
@@ -76,6 +76,7 @@ export const getNaclFilesSourceParams = (
   const naclStaticFilesStore = localDirectoryStore({
     baseDir: path.join(sourceBaseDir, STATIC_RESOURCES_FOLDER),
     directoryFilter: dirPathToIgnore,
+    suffixToRemoveOnRename: STATIC_RESOURCES_FOLDER,
   })
 
   const cacheStore = localDirectoryStore({

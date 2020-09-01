@@ -15,10 +15,13 @@
 */
 import readdirp from 'readdirp'
 import path from 'path'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import * as fileUtils from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
 import { dirStore } from '@salto-io/workspace'
+
+const log = logger(module)
 
 const { withLimitedConcurrency, series } = promises.array
 
@@ -36,13 +39,23 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
+  prefixToRemoveOnRename?: string,
+  suffixToRemoveOnRename?: string,
 ): dirStore.SyncDirectoryStore<T> => {
   let currentBaseDir = baseDir
   let updated: FileMap<T> = initUpdated || {}
   let deleted: string[] = initDeleted || []
+  const currentPrefixToRemoveOnRename = prefixToRemoveOnRename?.endsWith(path.sep)
+    ? prefixToRemoveOnRename.slice(0, -1) : prefixToRemoveOnRename
+  const currentSuffixToRemoveOnRename = suffixToRemoveOnRename?.startsWith(path.sep)
+    ? suffixToRemoveOnRename.slice(1) : suffixToRemoveOnRename
 
-  const getAbsFileName = (filename: string, dir?: string): string =>
-    path.resolve(dir ?? currentBaseDir, filename)
+  const getAbsFileName = (filename: string, dir?: string): string => {
+    if (path.isAbsolute(filename) && _.isUndefined(dir)) {
+      return filename
+    }
+    return path.resolve(dir ?? currentBaseDir, filename)
+  }
 
   const getRelativeFileName = (filename: string, dir?: string): string => {
     const base = dir || currentBaseDir
@@ -166,6 +179,35 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .map(f => () => removeDirIfEmpty(getAbsFileName(f))))
   }
 
+  const renameFile = async (currentPath: string, futurePath: string): Promise<void> => {
+    const absCurrentPath = getAbsFileName(currentPath)
+    if (await fileUtils.exists(absCurrentPath)) {
+      await fileUtils.mkdirp(path.dirname(futurePath))
+      await fileUtils.rename(absCurrentPath, getAbsFileName(futurePath))
+    } else {
+      log.debug(`Rename failed. ${absCurrentPath} Does not exists`)
+    }
+  }
+
+  const getCurrentBaseDirWithoutSuffix = (): string => {
+    if (_.isUndefined(currentSuffixToRemoveOnRename)) {
+      return currentBaseDir
+    }
+    if (currentBaseDir.endsWith(currentSuffixToRemoveOnRename)) {
+      return currentBaseDir.slice(0, -currentSuffixToRemoveOnRename.length)
+    }
+
+    throw Error('Invalid dir_store situation. current dir '
+      + `${currentBaseDir} doesn't contain the suffix ${currentSuffixToRemoveOnRename}`)
+  }
+
+  const getFutureBaseDir = (futureDirName: string): string => {
+    const prefix = currentPrefixToRemoveOnRename ?? path.dirname(getCurrentBaseDirWithoutSuffix())
+    return currentSuffixToRemoveOnRename
+      ? path.join(prefix, futureDirName, currentSuffixToRemoveOnRename)
+      : path.join(prefix, futureDirName)
+  }
+
   return {
     list,
     isEmpty,
@@ -206,23 +248,18 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
     rename: async (name: string): Promise<void> => {
       const allFiles = await list()
-      const newBaseDir = path.join(path.dirname(currentBaseDir), name)
-      const renameFile = async (file: string): Promise<void> => {
-        const newPath = getAbsFileName(file, newBaseDir)
-        const currentPath = getAbsFileName(file)
-        if (await fileUtils.exists(currentPath)) {
-          await fileUtils.mkdirp(path.dirname(newPath))
-          await fileUtils.rename(currentPath, newPath)
-        }
+      const futureBaseDir = getFutureBaseDir(name)
+      const renameChildFile = async (fileName: string): Promise<void> => {
+        const futurePath = getAbsFileName(fileName, futureBaseDir)
+        renameFile(fileName, futurePath)
       }
-      await withLimitedConcurrency(allFiles.map(f => () => renameFile(f)), RENAME_CONCURRENCY)
+      await withLimitedConcurrency(allFiles.map(f => () => renameChildFile(f)), RENAME_CONCURRENCY)
       await deleteAllEmptyDirectories()
       await removeDirIfEmpty(currentBaseDir)
-      currentBaseDir = newBaseDir
+      currentBaseDir = futureBaseDir
     },
 
-    renameFile: async (name: string, newName: string): Promise<void> =>
-      fileUtils.rename(getAbsFileName(name), getAbsFileName(newName)),
+    renameFile,
 
     mtimestamp: async (filename: string): Promise<undefined | number> => {
       let relFilename: string
@@ -263,6 +300,8 @@ type LocalDirectoryStoreParams = {
   encoding?: 'utf8'
   fileFilter?: string
   directoryFilter?: (path: string) => boolean
+  prefixToRemoveOnRename?: string
+  suffixToRemoveOnRename?: string
 }
 
 export function localDirectoryStore(params: Omit<LocalDirectoryStoreParams, 'encoding'>):
@@ -273,9 +312,23 @@ export function localDirectoryStore(
 ): dirStore.SyncDirectoryStore<string>
 
 export function localDirectoryStore(
-  { baseDir, encoding, fileFilter, directoryFilter }: LocalDirectoryStoreParams
+  {
+    baseDir,
+    encoding,
+    fileFilter,
+    directoryFilter,
+    prefixToRemoveOnRename,
+    suffixToRemoveOnRename,
+  }: LocalDirectoryStoreParams
 ): dirStore.SyncDirectoryStore<dirStore.ContentType> {
   return buildLocalDirectoryStore<dirStore.ContentType>(
-    baseDir, encoding, fileFilter, directoryFilter,
+    baseDir,
+    encoding,
+    fileFilter,
+    directoryFilter,
+    undefined,
+    undefined,
+    prefixToRemoveOnRename,
+    suffixToRemoveOnRename,
   )
 }

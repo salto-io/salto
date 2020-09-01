@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import path from 'path'
+import { logger } from '@salto-io/logging'
 import { readTextFile, exists, mkdirp, replaceContents, rm, rename } from '@salto-io/file'
 import { staticFiles } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+
+const log = logger(module)
 
 export const CACHE_FILENAME = 'static-file-cache'
 
@@ -25,6 +28,7 @@ export type StaticFilesCacheState = Record<string, staticFiles.StaticFilesCacheR
 export const buildLocalStaticFilesCache = (
   cacheDir: string,
   initCacheState?: Promise<StaticFilesCacheState>,
+  suffixToRemoveOnRename?: string,
 ): staticFiles.StaticFilesCache => {
   let currentCacheFile = path.join(cacheDir, CACHE_FILENAME)
 
@@ -50,9 +54,25 @@ export const buildLocalStaticFilesCache = (
       await rm(currentCacheFile)
     },
     rename: async (name: string) => {
-      const newCacheFile = path.join(path.dirname(cacheDir), name, CACHE_FILENAME)
+      let newCacheDir = cacheDir
+      if (suffixToRemoveOnRename) {
+        if (newCacheDir.endsWith(suffixToRemoveOnRename)) {
+          newCacheDir = newCacheDir.slice(-suffixToRemoveOnRename.length)
+          if (newCacheDir.slice(-1) === path.sep) {
+            newCacheDir = newCacheDir.slice(-1)
+          }
+        } else {
+          throw Error('Invalid static_files_cache situation, suffixToRemoveOnRename: '
+          + `${suffixToRemoveOnRename} not the tail of ${newCacheDir}`)
+        }
+      }
+      newCacheDir = path.join(path.dirname(newCacheDir), name)
+      const newCacheFile = path.join(newCacheDir, CACHE_FILENAME)
       if (await exists(currentCacheFile)) {
+        await mkdirp(path.dirname(newCacheFile))
         await rename(currentCacheFile, newCacheFile)
+      } else {
+        log.debug(`Rename failed. ${currentCacheFile} Does not exists`)
       }
       currentCacheFile = newCacheFile
     },

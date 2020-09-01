@@ -24,7 +24,6 @@ import {
   ObjectType,
   PrimitiveType,
   PrimitiveTypes,
-  Variable,
   Adapter,
   isObjectType,
   isEqualElements,
@@ -33,10 +32,6 @@ import {
   AdditionChange,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
-// eslint-disable-next-line no-restricted-imports
-import {
-  addHiddenValuesAndHiddenTypes,
-} from '@salto-io/workspace/dist/src/workspace/hidden_values'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
@@ -102,12 +97,7 @@ const mockWorkspace = ({
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
-    elements: jest.fn().mockImplementation(async () => Promise.resolve(
-      addHiddenValuesAndHiddenTypes(
-        elements,
-        await state.getAll()
-      )
-    )),
+    elements: jest.fn().mockImplementation(async () => elements),
     name,
     envs: () => ['default'],
     currentEnv: 'default',
@@ -268,50 +258,15 @@ describe('api.ts', () => {
     let mockGetPlanResult: plan.Plan
     let result: plan.Plan
 
-    const stateInstance = new InstanceElement(
-      'hidden_inst',
-      typeWithHiddenField,
-      {
-        hidden: 'Hidden',
-        regField: 'regValue',
-      }
-    )
-    const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 8)
-    const stateElements = [stateInstance, typeWithHiddenField, variable]
-
-    // workspace elements should not contains hidden values
-    const workspaceInstance = stateInstance.clone()
-    workspaceInstance.value = { regField: 'regValue' }
-
-    const workspaceElements = [workspaceInstance, typeWithHiddenField, variable]
-    const ws = mockWorkspace(
-      {
-        elements: workspaceElements,
-        stateElements,
-      }
-    )
-
     beforeAll(async () => {
       mockedGetPlan = jest.spyOn(plan, 'getPlan')
       mockGetPlanResult = mockPlan.getPlan()
       mockedGetPlan.mockResolvedValue(mockGetPlanResult)
-      result = await api.preview(ws, SERVICES)
+      result = await api.preview(mockWorkspace({}), SERVICES)
     })
+
     afterAll(() => {
       mockedGetPlan.mockRestore()
-    })
-    it('should call getPlan with the correct elements', async () => {
-      expect(mockedGetPlan).toHaveBeenCalledTimes(1)
-
-      // check that we call get plan after adding hidden values and variables to workspace elements
-      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
-        before: stateElements,
-        after: stateElements,
-      }))
-    })
-
-    it('should not call flush', async () => {
-      expect(ws.flush).not.toHaveBeenCalled()
     })
 
     it('should return getPlan response', async () => {

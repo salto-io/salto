@@ -57,6 +57,7 @@ export class NotAWorkspaceError extends Error {
 export const getNaclFilesSourceParams = (
   sourceBaseDir: string,
   cacheDir: string,
+  pathPrefix: string,
   excludeDirs: string[] = [],
 ): {
   naclFilesStore: dirStore.DirectoryStore<string>
@@ -74,9 +75,10 @@ export const getNaclFilesSourceParams = (
   })
 
   const naclStaticFilesStore = localDirectoryStore({
-    baseDir: path.join(sourceBaseDir, STATIC_RESOURCES_FOLDER),
+    baseDir: path.basename(sourceBaseDir),
     directoryFilter: dirPathToIgnore,
-    suffixToRemoveOnRename: STATIC_RESOURCES_FOLDER,
+    pathPrefix,
+    pathSuffix: STATIC_RESOURCES_FOLDER,
   })
 
   const cacheStore = localDirectoryStore({
@@ -97,10 +99,11 @@ export const getNaclFilesSourceParams = (
 const loadNaclFileSource = (
   sourceBaseDir: string,
   cacheDir: string,
+  pathPrefix: string,
   excludeDirs: string[] = []
 ): nacl.NaclFilesSource => {
   const { naclFilesStore, cache, staticFileSource } = getNaclFilesSourceParams(
-    sourceBaseDir, cacheDir, excludeDirs
+    sourceBaseDir, cacheDir, pathPrefix, excludeDirs
   )
   return naclFilesSource(naclFilesStore, cache, staticFileSource)
 }
@@ -119,7 +122,8 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
         {
           naclFiles: loadNaclFileSource(
             getEnvPath(baseDir, env),
-            path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
+            path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env),
+            path.join(baseDir, ENVS_PREFIX),
           ),
           state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, env)),
         },
@@ -128,7 +132,8 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
       naclFiles: loadNaclFileSource(
         baseDir,
         path.resolve(localStorage, CACHE_DIR_NAME, 'common'),
-        [path.join(baseDir, ENVS_PREFIX)]
+        path.resolve(localStorage, CACHE_DIR_NAME),
+        [path.join(baseDir, ENVS_PREFIX)],
       ),
     },
   },

@@ -38,24 +38,31 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap<T>,
-  initDeleted? : string[],
-  prefixToRemoveOnRename?: string,
-  suffixToRemoveOnRename?: string,
+  initDeleted?: string[],
+  pathPrefix?: string,
+  pathSuffix?: string,
 ): dirStore.SyncDirectoryStore<T> => {
-  let currentBaseDir = baseDir
+  let currentBaseDir: string
   let updated: FileMap<T> = initUpdated || {}
   let deleted: string[] = initDeleted || []
-  const currentPrefixToRemoveOnRename = prefixToRemoveOnRename?.endsWith(path.sep)
-    ? prefixToRemoveOnRename.slice(0, -1) : prefixToRemoveOnRename
-  const currentSuffixToRemoveOnRename = suffixToRemoveOnRename?.startsWith(path.sep)
-    ? suffixToRemoveOnRename.slice(1) : suffixToRemoveOnRename
+  let currentPathPrefix: string
+  let currentPathSuffix: string
 
-  const getAbsFileName = (filename: string, dir?: string): string => {
-    if (path.isAbsolute(filename) && _.isUndefined(dir)) {
-      return filename
-    }
-    return path.resolve(dir ?? currentBaseDir, filename)
+  if ((_.isUndefined(pathPrefix) && !_.isUndefined(pathSuffix))
+  || (!_.isUndefined(pathPrefix) && _.isUndefined(pathSuffix))) {
+    throw Error('Invalid dirStore initialization. pathPrefix &'
+    + ' pathPrefix comes together or not at all')
   }
+  if (_.isUndefined(pathPrefix) && _.isUndefined(pathSuffix)) {
+    currentBaseDir = baseDir
+  } else {
+    currentBaseDir = path.join(pathPrefix as string, baseDir, pathSuffix as string)
+    currentPathPrefix = pathPrefix as string
+    currentPathSuffix = pathSuffix as string
+  }
+
+  const getAbsFileName = (filename: string, dir?: string): string =>
+    path.resolve(dir ?? currentBaseDir, filename)
 
   const getRelativeFileName = (filename: string, dir?: string): string => {
     const base = dir || currentBaseDir
@@ -180,32 +187,12 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   }
 
   const renameFile = async (currentPath: string, futurePath: string): Promise<void> => {
-    const absCurrentPath = getAbsFileName(currentPath)
-    if (await fileUtils.exists(absCurrentPath)) {
+    if (await fileUtils.exists(currentPath)) {
       await fileUtils.mkdirp(path.dirname(futurePath))
-      await fileUtils.rename(absCurrentPath, getAbsFileName(futurePath))
+      await fileUtils.rename(currentPath, futurePath)
     } else {
-      log.debug(`Rename failed. ${absCurrentPath} Does not exists`)
+      log.debug(`Rename failed. ${currentPath} Does not exists`)
     }
-  }
-
-  const getCurrentBaseDirWithoutSuffix = (): string => {
-    if (_.isUndefined(currentSuffixToRemoveOnRename)) {
-      return currentBaseDir
-    }
-    if (currentBaseDir.endsWith(currentSuffixToRemoveOnRename)) {
-      return currentBaseDir.slice(0, -currentSuffixToRemoveOnRename.length)
-    }
-
-    throw Error('Invalid dir_store situation. current dir '
-      + `${currentBaseDir} doesn't contain the suffix ${currentSuffixToRemoveOnRename}`)
-  }
-
-  const getFutureBaseDir = (futureDirName: string): string => {
-    const prefix = currentPrefixToRemoveOnRename ?? path.dirname(getCurrentBaseDirWithoutSuffix())
-    return currentSuffixToRemoveOnRename
-      ? path.join(prefix, futureDirName, currentSuffixToRemoveOnRename)
-      : path.join(prefix, futureDirName)
   }
 
   return {
@@ -248,10 +235,13 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
     rename: async (name: string): Promise<void> => {
       const allFiles = await list()
-      const futureBaseDir = getFutureBaseDir(name)
+      const futureBaseDir = _.isUndefined(currentPathSuffix)
+        ? path.join(path.dirname(currentBaseDir), name)
+        : path.join(currentPathPrefix, name, currentPathSuffix)
       const renameChildFile = async (fileName: string): Promise<void> => {
+        const currentPath = getAbsFileName(fileName)
         const futurePath = getAbsFileName(fileName, futureBaseDir)
-        renameFile(fileName, futurePath)
+        renameFile(currentPath, futurePath)
       }
       await withLimitedConcurrency(allFiles.map(f => () => renameChildFile(f)), RENAME_CONCURRENCY)
       await deleteAllEmptyDirectories()
@@ -259,7 +249,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       currentBaseDir = futureBaseDir
     },
 
-    renameFile,
+    renameFile: async (name: string, newName: string): Promise<void> => {
+      await renameFile(getAbsFileName(name), getAbsFileName(newName))
+    },
 
     mtimestamp: async (filename: string): Promise<undefined | number> => {
       let relFilename: string
@@ -300,8 +292,8 @@ type LocalDirectoryStoreParams = {
   encoding?: 'utf8'
   fileFilter?: string
   directoryFilter?: (path: string) => boolean
-  prefixToRemoveOnRename?: string
-  suffixToRemoveOnRename?: string
+  pathPrefix?: string
+  pathSuffix?: string
 }
 
 export function localDirectoryStore(params: Omit<LocalDirectoryStoreParams, 'encoding'>):
@@ -317,8 +309,8 @@ export function localDirectoryStore(
     encoding,
     fileFilter,
     directoryFilter,
-    prefixToRemoveOnRename,
-    suffixToRemoveOnRename,
+    pathPrefix,
+    pathSuffix,
   }: LocalDirectoryStoreParams
 ): dirStore.SyncDirectoryStore<dirStore.ContentType> {
   return buildLocalDirectoryStore<dirStore.ContentType>(
@@ -328,7 +320,7 @@ export function localDirectoryStore(
     directoryFilter,
     undefined,
     undefined,
-    prefixToRemoveOnRename,
-    suffixToRemoveOnRename,
+    pathPrefix,
+    pathSuffix,
   )
 }

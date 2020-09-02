@@ -210,13 +210,13 @@ describe('api.ts', () => {
       })
     })
     describe('Full fetch', () => {
-      const ws = mockWorkspace({})
-      const mockFlush = ws.flush as jest.Mock
-      const stateElements = [new InstanceElement('old_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
-      const mockedState = mockState(SERVICES, stateElements)
-      ws.state = jest.fn().mockReturnValue(mockedState)
+      let ws: workspace.Workspace
+      let stateOverride: jest.SpyInstance
 
       beforeAll(async () => {
+        const stateElements = [new InstanceElement('old_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+        ws = mockWorkspace({ stateElements })
+        stateOverride = jest.spyOn(ws.state(), 'override')
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, SERVICES)
       })
@@ -225,24 +225,25 @@ describe('api.ts', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
       it('should override state', () => {
-        expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
+        expect(stateOverride).toHaveBeenCalledWith(fetchedElements)
       })
 
       it('should not call flush', () => {
-        expect(mockFlush).not.toHaveBeenCalled()
+        expect(ws.flush).not.toHaveBeenCalled()
       })
     })
 
     describe('Fetch one service out of two.', () => {
-      const ws = mockWorkspace({})
-      const mockFlush = ws.flush as jest.Mock
-      const stateElements = [
-        new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
-        new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
-      ]
-      const mockedState = mockState(SERVICES, stateElements)
-      ws.state = jest.fn().mockReturnValue(mockedState)
+      let ws: workspace.Workspace
+      let stateElements: InstanceElement[]
+      let stateOverride: jest.SpyInstance
       beforeAll(async () => {
+        stateElements = [
+          new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+          new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
+        ]
+        ws = mockWorkspace({ stateElements })
+        stateOverride = jest.spyOn(ws.state(), 'override')
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, [mockService])
       })
@@ -252,12 +253,12 @@ describe('api.ts', () => {
       })
       it('should override state but also include existing elements', () => {
         const existingElements = [stateElements[1]]
-        expect(mockedState.override).toHaveBeenCalledWith(
+        expect(stateOverride).toHaveBeenCalledWith(
           expect.arrayContaining([...fetchedElements, ...existingElements])
         )
       })
       it('should not call flush', () => {
-        expect(mockFlush).not.toHaveBeenCalled()
+        expect(ws.flush).not.toHaveBeenCalled()
       })
     })
   })
@@ -289,9 +290,6 @@ describe('api.ts', () => {
         stateElements,
       }
     )
-    const mockFlush = ws.flush as jest.Mock
-    const mockedState = { ...mockState(), getAll: jest.fn().mockResolvedValue(stateElements) }
-    ws.state = jest.fn().mockReturnValue(mockedState)
 
     beforeAll(async () => {
       mockedGetPlan = jest.spyOn(plan, 'getPlan')
@@ -313,7 +311,7 @@ describe('api.ts', () => {
     })
 
     it('should not call flush', async () => {
-      expect(mockFlush).not.toHaveBeenCalled()
+      expect(ws.flush).not.toHaveBeenCalled()
     })
 
     it('should return getPlan response', async () => {

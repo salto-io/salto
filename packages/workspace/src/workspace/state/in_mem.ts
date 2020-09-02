@@ -21,8 +21,7 @@ import { State, StateData } from './state'
 
 const { makeArray } = collections.array
 
-export const buildInMemState = (loadData: () => Promise<StateData>):
-Omit<State, 'flush' | 'clear' | 'rename' | 'getHash'> => {
+export const buildInMemState = (loadData: () => Promise<StateData>): State => {
   let innerStateData: Promise<StateData>
   const stateData = (): Promise<StateData> => {
     if (innerStateData === undefined) {
@@ -72,5 +71,14 @@ Omit<State, 'flush' | 'clear' | 'rename' | 'getHash'> => {
       )
     },
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
+    clear: async () => {
+      const innerState = await stateData()
+      innerState.elements = {}
+      innerState.pathIndex = new PathIndex()
+      innerState.servicesUpdateDate = {}
+    },
+    flush: () => Promise.resolve(),
+    rename: () => Promise.resolve(),
+    getHash: () => Promise.reject(new Error('memory state not hashable')),
   }
 }

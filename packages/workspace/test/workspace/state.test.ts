@@ -89,5 +89,24 @@ describe('state', () => {
       await state.updatePathIndex(oneElement, ['salesforce'])
       expect(await state.getPathIndex()).toEqual(createPathIndex([elem, newElem]))
     })
+
+    it('clear should clear all data', async () => {
+      await state.clear()
+      expect(await state.getAll()).toHaveLength(0)
+      expect((await state.getPathIndex()).size).toEqual(0)
+      expect(await state.getServicesUpdateDates()).toEqual({})
+    })
+
+    it('flush should do nothing', async () => {
+      await expect(state.flush()).resolves.not.toThrow()
+    })
+
+    it('rename should do nothing', async () => {
+      await expect(state.rename('bla')).resolves.not.toThrow()
+    })
+
+    it('getHash should not work on in memory state', async () => {
+      await expect(state.getHash()).rejects.toThrow()
+    })
   })
 })

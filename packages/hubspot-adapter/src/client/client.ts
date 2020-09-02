@@ -101,14 +101,14 @@ export default class HubspotClient {
   private conn: Connection
   private readonly hubspotObjectAPI: Record<string, HubspotObjectAPI>
 
-  static validateCredentials(
+  static async validateCredentials(
     credentials: Credentials, connection?: Connection
   ): Promise<AccountId> {
     const { apiKey } = credentials
     const conn = connection || new Hubspot({ apiKey })
 
-    return conn.integrations.getAccountDetails()
-      .then(result => result) // convert to regular promise
+    return (await conn.integrations.getAccountDetails()
+      .then(result => result)).portalId.toString() // convert to regular promise
   }
 
   constructor(

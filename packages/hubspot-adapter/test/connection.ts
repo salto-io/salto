@@ -83,7 +83,7 @@ const mockMadKu: () => Connection = () => ({
   } as Contact,
   integrations: {
     getAccountDetails: jest.fn().mockImplementation((): RequestPromise =>
-      ({ then: () => '' } as unknown as RequestPromise)),
+      ({ then: () => ({ portalId: 0 }) } as unknown as RequestPromise)),
     properties: {
       getAccountDetails: jest.fn().mockImplementation((): RequestPromise =>
         ({ then: () => '' } as unknown as RequestPromise)),

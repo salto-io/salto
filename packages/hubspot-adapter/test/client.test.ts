@@ -799,7 +799,7 @@ describe('Test HubSpot client', () => {
   })
   describe('Test validateCredentials Func', () => {
     it('should return', async () => {
-      expect(HubspotClient.validateCredentials({ apiKey: '' }, connection)).toEqual('')
+      expect(await HubspotClient.validateCredentials({ apiKey: '' }, connection)).toEqual('0')
     })
   })
 })

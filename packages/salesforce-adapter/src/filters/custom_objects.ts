@@ -170,9 +170,9 @@ const transfromAnnotationsNames = (fields: Values, parentName: string): Values =
         } else {
           const valueSetDefinition = v[VALUE_SET_FIELDS.VALUE_SET_DEFINITION]
           if (valueSetDefinition) {
-            annotations[FIELD_ANNOTATIONS.VALUE_SET] = valueSetDefinition[
+            annotations[FIELD_ANNOTATIONS.VALUE_SET] = makeArray(valueSetDefinition[
               VALUE_SET_DEFINITION_FIELDS.VALUE
-            ]
+            ])
             annotations[VALUE_SET_DEFINITION_FIELDS.SORTED] = valueSetDefinition[
               VALUE_SET_DEFINITION_FIELDS.SORTED
             ] || false

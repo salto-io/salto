@@ -165,7 +165,7 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('includeObjects is required when dataManagmenet is configured')
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('includeObjects is required when dataManagement is configured')
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings', () => {
@@ -176,7 +176,7 @@ describe('SalesforceAdapter creator', () => {
           includeObjects: ['obj'],
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings is required when dataManagmenet is configured')
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings is required when dataManagement is configured')
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings.defaultIdFields', () => {
@@ -192,7 +192,7 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings.defaultIdFields is required when dataManagmenet is configured')
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
     })
   })
 })

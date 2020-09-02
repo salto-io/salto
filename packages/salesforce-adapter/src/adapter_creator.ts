@@ -50,13 +50,13 @@ SalesforceConfig => {
   const validateDataManagement = (dataManagementConfig: DataManagementConfig | undefined): void => {
     if (dataManagementConfig !== undefined) {
       if (dataManagementConfig.includeObjects === undefined) {
-        throw Error('includeObjects is required when dataManagmenet is configured')
+        throw Error('includeObjects is required when dataManagement is configured')
       }
       if (dataManagementConfig.saltoIDSettings === undefined) {
-        throw Error('saltoIDSettings is required when dataManagmenet is configured')
+        throw Error('saltoIDSettings is required when dataManagement is configured')
       }
       if (dataManagementConfig.saltoIDSettings.defaultIdFields === undefined) {
-        throw Error('saltoIDSettings.defaultIdFields is required when dataManagmenet is configured')
+        throw Error('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
       }
       validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
       validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))

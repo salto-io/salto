@@ -51,23 +51,22 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'CustomSite', 'field', 'indexPage'), 'ApexPage'],
   [new ElemID(SALESFORCE, 'CustomSite', 'field', 'inMaintenancePage'), 'ApexPage'],
   [new ElemID(SALESFORCE, 'CustomSite', 'field', 'selfRegPage'), 'ApexPage'],
+  [new ElemID(SALESFORCE, 'SBQQ__PriceRule__c', 'field', 'SBQQ__LookupObject__c'), CUSTOM_OBJECT],
+  [new ElemID(SALESFORCE, 'SBQQ__ProductRule__c', 'field', 'SBQQ__LookupObject__c'), CUSTOM_OBJECT],
+  [new ElemID(SALESFORCE, 'SBQQ__FieldMetadata__c', 'field', 'SBQQ__ObjectName__c'), CUSTOM_OBJECT],
 ]
 
 export const fieldToTypeMapping = new Map(
   fieldToTypeMappingDefs.map(([fieldID, typeName]) => [fieldID.getFullName(), typeName])
 )
 
-const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> => (
-  _(elements)
-    .map(e => [metadataType(e), e.elemID])
-    .fromPairs()
-    .value()
-)
+const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> =>
+  (Object.fromEntries(elements.map(e => [metadataType(e), e.elemID])))
 
 export const groupByAPIName = (elements: Element[]): ApiNameMapping => (
   _(elements)
     .map<Element[]>(e => ((isObjectType(e) && isCustomObject(e))
-      ? [e, ..._.values(e.fields)] : [e]))
+      ? [e, ...Object.values(e.fields)] : [e]))
     .flatten()
     .groupBy(apiName)
     .mapValues(mapElemTypeToElemID)
@@ -85,26 +84,29 @@ const replaceReferenceValues = (
   )
 
   const replacePrimitive = (val: Value, field: Field): Value => {
+    if (!_.isString(val)) {
+      return val
+    }
     const elemIDMap = apiToIdMap[val]
-    if (_.isUndefined(elemIDMap)) {
+    if (elemIDMap === undefined) {
       return val
     }
 
     const targetType = replaceTypes.get(field.elemID.getFullName())
-    if (_.isUndefined(targetType)) {
+    if (targetType === undefined) {
       return val
     }
 
     const elemID = elemIDMap[targetType]
-    if (_.isUndefined(elemID)) {
+    if (elemID === undefined) {
       return val
     }
 
-    return _.isString(val) ? new ReferenceExpression(elemID) : val
+    return new ReferenceExpression(elemID)
   }
 
   const transformPrimitive: TransformFunc = ({ value, field }) => (
-    !_.isUndefined(field) && shouldReplace(field) ? replacePrimitive(value, field) : value
+    (field !== undefined && shouldReplace(field)) ? replacePrimitive(value, field) : value
   )
 
   return transformValues(

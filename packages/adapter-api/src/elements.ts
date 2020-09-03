@@ -133,8 +133,7 @@ export class ListType extends Element {
     )
   }
 
-  setInnerType(innerType: TypeElement)
-  {
+  setInnerType(innerType: TypeElement): void {
     this.innerType = innerType
     this.annotations = innerType.annotations
     this.annotationTypes = innerType.annotationTypes

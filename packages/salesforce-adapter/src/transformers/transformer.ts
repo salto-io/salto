@@ -22,30 +22,25 @@ import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
-  isElement, PrimitiveValue,
+  PrimitiveValue,
   Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import {
-  naclCase, GetLookupNameFunc, TransformFunc, transformElement,
-} from '@salto-io/adapter-utils'
+import { naclCase, TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, DESCRIPTION,
-  HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME, CPQ_LOOKUP_MESSAGE_FIELD,
+  HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
-  CUSTOM_VALUE, API_NAME_SEPARATOR, MAX_METADATA_RESTRICTION_VALUES, CPQ_LOOKUP_TYPE_FIELD,
+  CUSTOM_VALUE, API_NAME_SEPARATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, CPQ_LOOKUP_REQUIRED_FIELD,
-  LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CPQ_LOOKUP_PRODUCT_FIELD,
-  WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, CPQ_LOOKUP_FIELD, CPQ_PRICE_ACTION,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
-  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, CPQ_PRODUCT_RULE, CPQ_PRICE_RULE,
-  CPQ_SOURCE_LOOKUP_FIELD, CPQ_LOOKUP_QUERY,
+  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -1378,33 +1373,4 @@ export const createMetadataTypeElements = async ({
     createIdField(element)
   }
   return _.flatten([element, ...embeddedTypes])
-}
-const lookUpRelative = (field?: Field): boolean => {
-  const lookUpRelativeTypes = new Map<string, string[]>(
-    [
-      [LAYOUT_ITEM_METADATA_TYPE, ['field']],
-      [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, ['field']],
-      [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, ['name']],
-      [CPQ_LOOKUP_QUERY, [CPQ_LOOKUP_FIELD]],
-      [CPQ_PRICE_ACTION, [CPQ_SOURCE_LOOKUP_FIELD]],
-      [CPQ_PRODUCT_RULE, [
-        CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_MESSAGE_FIELD,
-        CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD,
-      ]],
-      [CPQ_PRICE_RULE, [
-        CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_MESSAGE_FIELD,
-        CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD,
-      ]],
-    ]
-  )
-  return field !== undefined
-    && (lookUpRelativeTypes.get(field.elemID.typeName) ?? []).includes(field.name)
-}
-
-export const getLookUpName: GetLookupNameFunc = ({ ref, field }) => {
-  if (isElement(ref.value)) {
-    const isRelative = lookUpRelative(field)
-    return apiName(ref.value, isRelative)
-  }
-  return ref.value
 }

@@ -288,3 +288,10 @@ export const WEBLINK_METADATA_TYPE = 'WebLink'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
+
+// CPQ CustomObjects
+export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
+export const CPQ_RPICE_RULE = 'SBQQ__PriceRule__c'
+
+// CPQ Fields
+export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'

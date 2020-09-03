@@ -626,4 +626,22 @@ describe('Test elements.ts', () => {
       })
     })
   })
+
+  describe('ListType', () => {
+    let lstType: ListType
+    beforeEach(() => {
+      lstType = lt.clone()
+    })
+    describe('test setInnerType', () => {
+      it('should set new innerType with correct elemID', () => {
+        const newInnerType = primStr.clone()
+        newInnerType.annotate({ testAnnotation: 'value' })
+        lstType.setInnerType(newInnerType)
+        expect(lstType.annotations).toEqual({ testAnnotation: 'value' })
+      })
+      it('should throw error if new innerType has wrong elemID', () => {
+        expect(() => { lstType.setInnerType(ot) }).toThrow()
+      })
+    })
+  })
 })

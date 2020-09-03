@@ -134,9 +134,13 @@ export class ListType extends Element {
   }
 
   setInnerType(innerType: TypeElement): void {
-    this.innerType = innerType
-    this.annotations = innerType.annotations
-    this.annotationTypes = innerType.annotationTypes
+    if (innerType.elemID.getFullName() === this.innerType.elemID.getFullName()) {
+      this.innerType = innerType
+      this.annotations = innerType.annotations
+      this.annotationTypes = innerType.annotationTypes
+    } else {
+      throw new Error('Inner type id does not match ListType id')
+    }
   }
 }
 

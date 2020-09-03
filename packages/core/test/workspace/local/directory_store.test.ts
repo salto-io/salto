@@ -79,6 +79,30 @@ describe('localDirectoryStore', () => {
     })
   })
 
+  describe('isEmpty', () => {
+    it('returns true if dir does not exist', async () => {
+      mockFileExists.mockResolvedValue(false)
+      const result = await localDirectoryStore({ baseDir: 'not-found', encoding }).isEmpty()
+      expect(result).toEqual(true)
+    })
+    it('return true if dir is empty', async () => {
+      const fileFilter = '*.nacl'
+      const baseDir = 'base'
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValue([])
+      const result = await localDirectoryStore({ baseDir, encoding, fileFilter }).isEmpty()
+      expect(result).toEqual(true)
+    })
+    it('return false if dir has files', async () => {
+      const fileFilter = '*.nacl'
+      const baseDir = 'base'
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValue([{ fullPath: 'test1' }, { fullPath: 'test2' }])
+      const result = await localDirectoryStore({ baseDir, encoding, fileFilter }).isEmpty()
+      expect(result).toEqual(false)
+    })
+  })
+
   describe('get', () => {
     it('does not return the file if it does not exist', async () => {
       const baseDir = 'not-exists'

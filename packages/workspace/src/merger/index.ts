@@ -54,8 +54,8 @@ export const updateMergedTypes = (
             if (isListType(listType.innerType)) {
               resolveListType(listType.innerType)
             } else {
-              listType.innerType = mergedTypes[listType.innerType.elemID.getFullName()]
-                || listType.innerType
+              listType.setInnerType(mergedTypes[listType.innerType.elemID.getFullName()]
+              || listType.innerType)
             }
           }
           resolveListType(fieldType)

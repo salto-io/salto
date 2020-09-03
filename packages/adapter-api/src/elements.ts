@@ -118,9 +118,8 @@ export class ListType extends Element {
   ) {
     super({
       elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
-      annotations: innerType.annotations,
-      annotationTypes: innerType.annotationTypes,
     })
+    this.setInnerType(innerType)
   }
 
   isEqual(other: ListType): boolean {
@@ -132,6 +131,13 @@ export class ListType extends Element {
     return new ListType(
       this.innerType
     )
+  }
+
+  setInnerType(innerType: TypeElement)
+  {
+    this.innerType = innerType
+    this.annotations = innerType.annotations
+    this.annotationTypes = innerType.annotationTypes
   }
 }
 

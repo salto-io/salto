@@ -74,14 +74,13 @@ export const localState = (filePath: string): state.State => {
 
   const inMemState = state.buildInMemState(loadFromFile)
 
-  const getStateText = async (): Promise<string> => {
+  const createStateText = async (): Promise<string> => {
     const elements = await inMemState.getAll()
     const elementsString = serialize(elements)
     const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
     const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
-    const versionString = await inMemState.getStateSaltoVersion()
     log.debug(`finished dumping state text [#elements=${elements.length}]`)
-    return [elementsString, dateString, pathIndexString, versionString].join(EOL)
+    return [elementsString, dateString, pathIndexString, version].join(EOL)
   }
 
   return {
@@ -116,7 +115,7 @@ export const localState = (filePath: string): state.State => {
       if (!dirty && pathToClean === '') {
         return
       }
-      const stateText = await getStateText()
+      const stateText = await createStateText()
       await mkdirp(path.dirname(currentFilePath))
       await replaceContents(currentFilePath, await generateZipString(stateText))
       if (pathToClean !== '') {
@@ -125,7 +124,7 @@ export const localState = (filePath: string): state.State => {
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string> => {
-      const stateText = await getStateText()
+      const stateText = await createStateText()
       return toMD5(stateText)
     },
     clear: async (): Promise<void> => {

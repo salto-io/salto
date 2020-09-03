@@ -43,9 +43,11 @@
     "@salto-io/salesforce-adapter": "0.1.28",
     "@salto-io/workspace": "0.1.28",
     "axios": "^0.19.2",
+    "glob": "^7.1.6",
     "lodash": "^4.17.19",
     "pietile-eventemitter": "^1.0.0",
     "readdirp": "^3.1.1",
+    "semver": "^7.3.2",
     "uuid": "^3.3.3",
     "wu": "^2.1.0"
   },

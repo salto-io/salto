@@ -16,6 +16,7 @@
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import {
   createPathIndex, serializedPathIndex, deserializedPathIndex, PathIndex, updatePathIndex,
+  deserializedPathsIndex, serializePathIndexByService,
 } from '../../src/workspace/path_index'
 
 jest.spyOn(PathIndex.prototype, 'push')
@@ -58,6 +59,30 @@ const singlePathObject = new ObjectType({
     },
   },
   path: ['salto', 'obj', 'simple'],
+})
+const singlePathObjectOtherService = new ObjectType({
+  elemID: new ElemID('salto2', 'singlePathObj'),
+  fields: {
+    simple: {
+      type: BuiltinTypes.STRING,
+    },
+    nested: {
+      type: nestedType,
+    },
+  },
+  annotationTypes: {
+    simple: BuiltinTypes.STRING,
+    nested: nestedType,
+  },
+  annotations: {
+    simple: 'simple',
+    nested: {
+      str: 'Str',
+      num: 7,
+      list: [1, 2, 3],
+    },
+  },
+  path: ['salto2', 'obj', 'simple'],
 })
 // multiPathObject
 // singlePathObject
@@ -210,6 +235,24 @@ describe('create path index', () => {
   describe('path index serialization', () => {
     it('symmetric operation', () => {
       expect(deserializedPathIndex(serializedPathIndex(pathIndex))).toEqual(pathIndex)
+    })
+  })
+  describe('path index multiple serialization', () => {
+    let multipleServicePathIndex: PathIndex
+    beforeEach(() => {
+      multipleServicePathIndex = createPathIndex([
+        singlePathObject,
+        singlePathObjectOtherService,
+        singlePathInstance,
+        multiPathAnnoObj,
+        multiPathFieldsObj,
+        multiPathInstace1,
+        multiPathInstace2,
+      ])
+    })
+    it('symmetric operation on multiple path indexes', () => {
+      const serialized = serializePathIndexByService(multipleServicePathIndex)
+      expect(deserializedPathsIndex(Object.values(serialized))).toEqual(multipleServicePathIndex)
     })
   })
   describe('complexity', () => {

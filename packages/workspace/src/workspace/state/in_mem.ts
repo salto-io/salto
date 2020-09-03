@@ -23,7 +23,7 @@ const { makeArray } = collections.array
 
 export const buildInMemState = (loadData: () => Promise<StateData>): State => {
   let innerStateData: Promise<StateData>
-  const stateData = (): Promise<StateData> => {
+  const stateData = async (): Promise<StateData> => {
     if (innerStateData === undefined) {
       innerStateData = loadData()
     }

@@ -108,6 +108,12 @@ export const updatePathIndex = (current: PathIndex, unmergedElements: Element[],
 }
 
 export const deserializedPathIndex = (data: string): PathIndex => new PathIndex(JSON.parse(data))
+export const deserializedPathsIndex = (dataEntries: string[]): PathIndex => new PathIndex(
+  dataEntries.flatMap(data => JSON.parse(data))
+)
 export const serializedPathIndex = (index: PathIndex): string => (
   safeJsonStringify(Array.from(index.entries()))
 )
+export const serializePathIndexByService = (index: PathIndex): Record<string, string> =>
+  _.mapValues(_.groupBy(Array.from(index.entries()), entry =>
+    ElemID.fromFullName(entry[0]).adapter), safeJsonStringify)

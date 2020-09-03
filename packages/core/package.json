@@ -22,13 +22,14 @@
     "clean-ts": "../../build_utils/clean-old-ts.sh",
     "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
     "test": "jest",
-    "clean": "rm -rf ./dist .eslintcache",
+    "clean": "rm -rf ./dist .eslintcache  ./src/generated",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
     "build-ts": "tsc -b && yarn clean-ts",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn lint --fix"
+    "lint-fix": "yarn lint --fix",
+    "generate": "./generate.sh"
   },
   "dependencies": {
     "@salto-io/adapter-api": "0.1.25",

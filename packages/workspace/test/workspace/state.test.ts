@@ -27,6 +27,7 @@ describe('state', () => {
     elements: { [elemID.getFullName()]: elem },
     servicesUpdateDate,
     pathIndex,
+    version: '0.0.1',
   })
   describe('build in-mem state', () => {
     let state: ReturnType<typeof buildInMemState>

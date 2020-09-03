@@ -80,5 +80,6 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     flush: () => Promise.resolve(),
     rename: () => Promise.resolve(),
     getHash: () => Promise.reject(new Error('memory state not hashable')),
+    getStateSaltoVersion: async () => (await stateData()).version,
   }
 }

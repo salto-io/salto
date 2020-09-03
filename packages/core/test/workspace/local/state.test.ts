@@ -21,7 +21,7 @@ import { state as wsState, serialization, pathIndex } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
 import { localState, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
-
+import { version } from '../../../src/generated/version.json'
 
 const { serialize } = serialization
 const { toMD5 } = hash
@@ -80,8 +80,7 @@ describe('local state', () => {
 
     it('should return a hash of an empty string', async () => {
       const stateHash = await state.getHash()
-      // c642ef3bd1563150551c7acc3e4ed5fb is the md5 digest of an empty state ('[]\n{}\n[]')
-      expect(stateHash).toEqual('c642ef3bd1563150551c7acc3e4ed5fb')
+      expect(stateHash).toEqual(toMD5(`[]\n{}\n[]\n${version}`))
     })
 
     it('should return an empty array if there is no saved state', async () => {
@@ -178,6 +177,7 @@ describe('local state', () => {
       serialize([mockElement]),
       safeJsonStringify({}),
       safeJsonStringify([]),
+      '0.0.0',
     ].join(EOL)))
   })
 
@@ -317,6 +317,7 @@ describe('local state', () => {
         serialize([mockElement]),
         safeJsonStringify({}),
         safeJsonStringify([]),
+        version,
       ].join(EOL)))
     })
   })

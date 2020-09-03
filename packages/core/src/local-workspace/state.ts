@@ -22,6 +22,7 @@ import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents,
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
+import { version } from '../generated/version.json'
 
 const { serialize, deserialize } = serialization
 const { toMD5 } = hash
@@ -30,6 +31,7 @@ const log = logger(module)
 
 export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
+const EMPTY_VERSION = '0.0.0'
 
 export const localState = (filePath: string): state.State => {
   let dirty = false
@@ -45,9 +47,14 @@ export const localState = (filePath: string): state.State => {
       text = await readTextFile(pathToClean)
     }
     if (text === undefined) {
-      return { elements: {}, servicesUpdateDate: {}, pathIndex: new pathIndex.PathIndex() }
+      return {
+        elements: {},
+        servicesUpdateDate: {},
+        pathIndex: new pathIndex.PathIndex(),
+        version,
+      }
     }
-    const [elementsData, updateDateData, pathIndexData] = text.split(EOL)
+    const [elementsData, updateDateData, pathIndexData, versionData] = text.split(EOL)
     const deserializedElements = (await deserialize(elementsData)).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
     const index = pathIndexData
@@ -57,7 +64,12 @@ export const localState = (filePath: string): state.State => {
       ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))
       : {}
     log.debug(`loaded state [#elements=${_.size(elements)}]`)
-    return { elements, servicesUpdateDate, pathIndex: index }
+    return {
+      elements,
+      servicesUpdateDate,
+      pathIndex: index,
+      version: versionData || EMPTY_VERSION,
+    }
   }
 
   const inMemState = state.buildInMemState(loadFromFile)
@@ -67,8 +79,9 @@ export const localState = (filePath: string): state.State => {
     const elementsString = serialize(elements)
     const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
     const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
+    const versionString = await inMemState.getStateSaltoVersion()
     log.debug(`finished dumping state text [#elements=${elements.length}]`)
-    return [elementsString, dateString, pathIndexString].join(EOL)
+    return [elementsString, dateString, pathIndexString, versionString].join(EOL)
   }
 
   return {

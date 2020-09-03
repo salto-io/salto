@@ -37,6 +37,14 @@ dataManagement = {
         idFields = ["Name", "SBQQ__Location__c", "SBQQ__DisplayOrder__c"]
       },
       {
+        objectsRegex = "^SBQQ__ProductFeature__c$"
+        idFields = ["##allMasterDetailFields##", "SBQQ__ConfiguredSKU__c", "Name"]
+      },
+      {
+        objectsRegex = "^SBQQ__ConfigurationAttribute__c$"
+        idFields = ["##allMasterDetailFields##", "SBQQ__TargetField__c", "Name"]
+      },
+      {
         objectsRegex = "^PricebookEntry$"
         idFields = ["Name", "Pricebook2Id"]
       },

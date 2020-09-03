@@ -67,6 +67,7 @@ export type NaclFilesSource = ElementsSource & {
   getErrors: () => Promise<Errors>
   getElements: (filename: string) => Promise<Element[]>
   clone: () => NaclFilesSource
+  isEmpty: () => Promise<boolean>
 }
 
 export type ParsedNaclFile = {
@@ -402,6 +403,7 @@ const buildNaclFilesSource = (
     },
     getSourceMap,
     getElementNaclFiles,
+    isEmpty: () => naclFilesStore.isEmpty(),
   }
 }
 

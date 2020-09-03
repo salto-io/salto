@@ -41,6 +41,7 @@ describe('Nacl Files Source', () => {
     }
     mockDirStore = {
       list: () => Promise.resolve([]),
+      isEmpty: () => Promise.resolve(false),
       get: jest.fn().mockResolvedValue(undefined),
       getFiles: jest.fn().mockResolvedValue([undefined]),
       set: () => Promise.resolve(),
@@ -65,6 +66,14 @@ describe('Nacl Files Source', () => {
       expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
       expect(mockCache.clear).toHaveBeenCalledTimes(1)
       expect(mockedStaticFilesSource.clear).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('isEmpty', () => {
+    it('should use store\'s isEmpty', async () => {
+      mockDirStore.isEmpty = jest.fn().mockResolvedValue(Promise.resolve())
+      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).isEmpty()
+      expect(mockDirStore.isEmpty as jest.Mock).toHaveBeenCalledTimes(1)
     })
   })
 

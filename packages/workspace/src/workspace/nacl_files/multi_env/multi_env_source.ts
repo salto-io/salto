@@ -215,6 +215,12 @@ const buildMultiEnvSource = (
     ])
   }
 
+  const isEmpty = async (env?: string): Promise<boolean> => (
+    (await Promise.all(
+      _.values(getActiveSources(env)).filter(s => s !== undefined).map(s => s.isEmpty())
+    )).every(e => e)
+  )
+
   return {
     getNaclFile,
     updateNaclFiles,
@@ -224,6 +230,7 @@ const buildMultiEnvSource = (
     demoteAll,
     copyTo,
     list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
+    isEmpty,
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]
     ),

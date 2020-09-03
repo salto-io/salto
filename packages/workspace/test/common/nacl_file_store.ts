@@ -84,6 +84,7 @@ export const mockDirStore = (exclude: string[] = ['error.nacl', 'dup.nacl'], emp
   return {
     list: jest.fn()
       .mockResolvedValue(Object.keys(naclFiles).filter(name => !exclude.includes(name))),
+    isEmpty: jest.fn().mockResolvedValue(Object.keys(naclFiles).length === 0),
     get: jest.fn().mockImplementation((filename: string) => Promise.resolve(naclFiles[filename])),
     set: jest.fn().mockImplementation(() => Promise.resolve()),
     delete: jest.fn().mockImplementation(() => Promise.resolve()),

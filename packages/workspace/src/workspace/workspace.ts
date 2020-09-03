@@ -319,7 +319,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       )
     )),
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
-      const isNaclFilesSourceEmpty = !naclFilesSource || _.isEmpty(await naclFilesSource.getAll())
+      const isNaclFilesSourceEmpty = !naclFilesSource || await naclFilesSource.isEmpty()
       return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
     hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (

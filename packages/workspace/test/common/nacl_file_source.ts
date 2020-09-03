@@ -28,6 +28,7 @@ export const createMockNaclFileSource = (
   sourceRanges?: SourceRange[]
 ): NaclFilesSource => ({
   list: async () => elements.map(e => e.elemID),
+  isEmpty: async () => elements.length === 0,
   get: async (id: ElemID) => {
     const { parent, path: idPath } = id.createTopLevelParentID()
     const element = elements.find(e => e.elemID.getFullName() === parent.getFullName())

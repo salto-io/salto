@@ -43,6 +43,7 @@ describe('Static Files Source', () => {
     } as StaticFilesCache
     mockDirStore = {
       list: () => Promise.resolve([]),
+      isEmpty: () => Promise.resolve(false),
       get: jest.fn().mockResolvedValue(undefined),
       getFiles: jest.fn().mockResolvedValue([undefined]),
       set: () => Promise.resolve(),

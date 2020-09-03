@@ -119,6 +119,12 @@ const inactiveErrors = new Errors({
     context: inactiveSourceRange,
   }],
 })
+const emptySource = createMockNaclFileSource(
+  [],
+  {},
+  commonErrors,
+  []
+)
 const commonSource = createMockNaclFileSource(
   [commonObject, commonFragment],
   commonNaclFiles,
@@ -204,6 +210,30 @@ describe('multi env source', () => {
       expect(elements).toHaveLength(3)
       expectToContainAllItems(elements, [commonElemID, envElemID, objectElemID])
       expect(elements).not.toContain(inactiveElemID)
+    })
+  })
+  describe('isEmpty', () => {
+    it('should return true when there are no sources', async () => {
+      const srcs = {}
+      const src = multiEnvSource(srcs, activePrefix, commonPrefix)
+      expect(await src.isEmpty()).toBeTruthy()
+    })
+    it('should return true when some sources have files', async () => {
+      const srcs = {
+        [commonPrefix]: commonSource,
+        [activePrefix]: emptySource,
+        [inactivePrefix]: inactiveSource,
+      }
+      const src = multiEnvSource(srcs, activePrefix, commonPrefix)
+      expect(await src.isEmpty()).toBeFalsy()
+    })
+    it('should look at elements from all active sources and not inactive sources', async () => {
+      const srcs = {
+        [commonPrefix]: emptySource,
+        [inactivePrefix]: inactiveSource,
+      }
+      const src = multiEnvSource(srcs, activePrefix, commonPrefix)
+      expect(await src.isEmpty()).toBeTruthy()
     })
   })
   describe('get', () => {

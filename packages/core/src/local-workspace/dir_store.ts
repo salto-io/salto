@@ -148,6 +148,10 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .uniq()
       .value()
 
+  const isEmpty = async (): Promise<boolean> => (
+    (await list()).length === 0
+  )
+
   const flush = async (): Promise<void> => {
     await withLimitedConcurrency(
       Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY
@@ -164,6 +168,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
   return {
     list,
+    isEmpty,
     get,
     getSync,
     set: async (file: dirStore.File<T>): Promise<void> => {

@@ -182,9 +182,9 @@ describe('local state', () => {
     ].join(EOL)))
   })
 
-  it('should return empty version if the version was not provided in the state file', async () => {
+  it('should return undefined version if the version was not provided in the state file', async () => {
     const state = localState('mutiple_adapters')
-    expect(await state.getStateSaltoVersion()).toBe('0.0.0')
+    expect(await state.getStateSaltoVersion()).not.toBeDefined()
   })
 
   describe('deprecated state file', () => {

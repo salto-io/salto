@@ -16,13 +16,16 @@
 import _ from 'lodash'
 import moment from 'moment'
 import inquirer from 'inquirer'
-import { Workspace } from '@salto-io/workspace'
+import semver from 'semver'
+import { Workspace, state } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import { Spinner } from '../../src/types'
 import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly, applyChangesToWorkspace } from '../../src/workspace/workspace'
 import { MockWriteStream, dummyChanges, detailedChange, mockErrors,
   mockFunction, getMockTelemetry } from '../mocks'
 import { getCliTelemetry } from '../../src/telemetry'
+
+import { version } from '../../src/generated/version.json'
 
 const mockWsFunctions = {
   services: mockFunction<Workspace['services']>().mockReturnValue(['salesforce']),
@@ -41,6 +44,9 @@ const mockWsFunctions = {
     date: new Date(),
     status: 'Valid',
   }),
+  state: mockFunction<Workspace['state']>().mockReturnValue({
+    getStateSaltoVersion: () => Promise.resolve(version),
+  } as state.State),
 }
 
 const mockWs = mockWsFunctions as unknown as Workspace
@@ -161,7 +167,7 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now), status: 'Old', serviceName: 'salesforce' }
       )
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
       expect(mockPrompt).toHaveBeenCalledTimes(1)
     })
 
@@ -169,7 +175,7 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now), status: 'Nonexistent', serviceName: 'salesforce' }
       )
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
       expect(mockPrompt).toHaveBeenCalledTimes(1)
     })
 
@@ -177,8 +183,29 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now), status: 'Valid', serviceName: 'salesforce' }
       )
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
       expect(mockPrompt).not.toHaveBeenCalled()
+    })
+
+    it('does not prompt the user if the state version is valid', async () => {
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
+      expect(mockPrompt).not.toHaveBeenCalled()
+    })
+
+    it('propmts the user if the state version is older than the current installed salto version', async () => {
+      mockWsFunctions.state.mockReturnValueOnce({
+        getStateSaltoVersion: () => Promise.resolve('0.0.1'),
+      } as state.State)
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
+      expect(mockPrompt).toHaveBeenCalled()
+    })
+
+    it('prompts the user if the state version is newer than the current installed salto version', async () => {
+      mockWsFunctions.state.mockReturnValueOnce({
+        getStateSaltoVersion: () => Promise.resolve(semver.inc(version, 'patch')),
+      } as state.State)
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
+      expect(mockPrompt).toHaveBeenCalled()
     })
   })
 

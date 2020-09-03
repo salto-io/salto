@@ -31,7 +31,6 @@ const log = logger(module)
 
 export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
-const EMPTY_VERSION = '0.0.0'
 
 export const localState = (filePath: string): state.State => {
   let dirty = false
@@ -68,7 +67,7 @@ export const localState = (filePath: string): state.State => {
       elements,
       servicesUpdateDate,
       pathIndex: index,
-      version: versionData || EMPTY_VERSION,
+      version: versionData,
     }
   }
 

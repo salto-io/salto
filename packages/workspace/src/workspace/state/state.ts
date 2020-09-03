@@ -22,7 +22,7 @@ export type StateData = {
   // The date of the last fetch
   servicesUpdateDate: Record<string, Date>
   pathIndex: PathIndex
-  version: string
+  version?: string
 }
 
 export interface State extends ElementsSource {
@@ -35,5 +35,5 @@ export interface State extends ElementsSource {
   updatePathIndex(unmergedElements: Element[], servicesToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
   getHash(): Promise<string>
-  getStateSaltoVersion(): Promise<string>
+  getStateSaltoVersion(): Promise<string | undefined>
 }

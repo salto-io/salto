@@ -25,10 +25,11 @@ import {
 } from '@salto-io/adapter-utils'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject, instancesToUpdateRecords,
-  getValueTypeFieldElement, createMetadataTypeElements, getLookUpName,
+  getValueTypeFieldElement, createMetadataTypeElements,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance,
 } from '../../src/transformers/transformer'
+import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,

@@ -285,6 +285,7 @@ export const WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE = 'WorkflowOutboundMessage'
 export const WORKFLOW_RULE_METADATA_TYPE = 'WorkflowRule'
 export const WORKFLOW_TASK_METADATA_TYPE = 'WorkflowTask'
 export const WEBLINK_METADATA_TYPE = 'WebLink'
+export const UNKNOWN_METADATA_TYPE = 'unknown'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

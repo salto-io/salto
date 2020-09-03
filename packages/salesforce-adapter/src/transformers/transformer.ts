@@ -22,13 +22,11 @@ import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
-  isElement, PrimitiveValue,
+  PrimitiveValue,
   Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import {
-  naclCase, GetLookupNameFunc, TransformFunc, transformElement,
-} from '@salto-io/adapter-utils'
+import { naclCase, TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
@@ -40,11 +38,9 @@ import {
   CUSTOM_VALUE, API_NAME_SEPARATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
-  LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-  WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
-  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD,
+  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, UNKNOWN_METADATA_TYPE,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -60,7 +56,7 @@ export const metadataType = (element: Element): string => {
     // We expect to reach to this place only with field of CustomObject
     return CUSTOM_FIELD
   }
-  return element.annotations[METADATA_TYPE] || 'unknown'
+  return element.annotations[METADATA_TYPE] || UNKNOWN_METADATA_TYPE
 }
 
 export const isCustomObject = (element: Element): boolean =>
@@ -1387,23 +1383,4 @@ export const createMetadataTypeElements = async ({
     createIdField(element)
   }
   return _.flatten([element, ...embeddedTypes])
-}
-const lookUpRelative = (field?: Field, path?: ElemID): boolean => {
-  const lookUpRelativeTypes = new Map<string, string>(
-    [
-      [LAYOUT_TYPE_ID_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE],
-      [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE],
-      [WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE],
-    ]
-  )
-  return field !== undefined && path !== undefined
-    && lookUpRelativeTypes.get(path.typeName) === field.elemID.typeName
-}
-
-export const getLookUpName: GetLookupNameFunc = ({ ref, path, field }) => {
-  if (isElement(ref.value)) {
-    const isRelative = lookUpRelative(field, path)
-    return apiName(ref.value, isRelative)
-  }
-  return ref.value
 }

@@ -21,7 +21,8 @@ import {
 import { values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { FIELD_ANNOTATIONS } from '../constants'
-import { isCustomObject, getLookUpName } from '../transformers/transformer'
+import { isCustomObject } from '../transformers/transformer'
+import { getLookUpName } from '../transformers/reference_mapping'
 
 const getUpdateErrorsForNonUpdateableFields = (
   before: InstanceElement,

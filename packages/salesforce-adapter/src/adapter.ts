@@ -30,7 +30,7 @@ import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo,
-  metadataType, defaultApiName, getLookUpName, isMetadataObjectType,
+  metadataType, defaultApiName, isMetadataObjectType,
   isMetadataInstanceElement,
 } from './transformers/transformer'
 import { createDeployPackage } from './transformers/xml_transformer'
@@ -74,6 +74,7 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstancesGroup, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
+import { getLookUpName } from './transformers/reference_mapping'
 
 const { makeArray } = collections.array
 const log = logger(module)

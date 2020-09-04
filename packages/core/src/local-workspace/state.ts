@@ -50,7 +50,7 @@ export const localState = (filePath: string): state.State => {
         elements: {},
         servicesUpdateDate: {},
         pathIndex: new pathIndex.PathIndex(),
-        version,
+        saltoVersion: version,
       }
     }
     const [elementsData, updateDateData, pathIndexData, versionData] = text.split(EOL)
@@ -67,7 +67,7 @@ export const localState = (filePath: string): state.State => {
       elements,
       servicesUpdateDate,
       pathIndex: index,
-      version: versionData,
+      saltoVersion: versionData,
     }
   }
 

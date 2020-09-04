@@ -22,7 +22,7 @@ export type StateData = {
   // The date of the last fetch
   servicesUpdateDate: Record<string, Date>
   pathIndex: PathIndex
-  version?: string
+  saltoVersion?: string
 }
 
 export interface State extends ElementsSource {

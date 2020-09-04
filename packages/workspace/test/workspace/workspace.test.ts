@@ -87,7 +87,7 @@ const createState = (elements: Element[]): State => buildInMemState(async () => 
   elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
   pathIndex: new PathIndex(),
   servicesUpdateDate: {},
-  version: '0.0.1',
+  saltoVersion: '0.0.1',
 }))
 
 const createWorkspace = async (
@@ -113,7 +113,7 @@ const createWorkspace = async (
               elements: {},
               pathIndex: new PathIndex(),
               servicesUpdateDate: {},
-              version: '0.0.1',
+              saltoVersion: '0.0.1',
             })
           ),
         },

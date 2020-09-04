@@ -264,12 +264,12 @@ ${Prompts.SERVICE_ADD_HELP}`
     error: string
   ): string => `Failed to clone the selected elements to the target environments: ${error}`
 
-  public static readonly UNKNOWN_STATE_VERSION = 'Can not determine the Salto version that was when the state of the services was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
-  public static readonly NEW_STATE_VERSION = (
-    stateVersion: string
-  ): string => `The state of the services was last fetch using Salto's version ${stateVersion}. It is highly recommended to run the fetch command again before proceeding - do you want to cancel?`
+  public static readonly UNKNOWN_STATE_SALTO_VERSION = 'Can not determine the Salto version that was when the state of the services was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
+  public static readonly OLD_STATE_SALTO_VERSION = (
+    stateSaltoVersion: string
+  ): string => `The state of the services was last fetched using Salto's version ${stateSaltoVersion}. It is highly recommended to run the fetch command again before proceeding - do you want to cancel?`
 
-  public static readonly OLD_STATE_VERSION = (
-    stateVersion: string
-  ): string => `The state of the services was last fetched using Salto's version ${stateVersion} which is newer than the current installed Salto version. It is highly recommended to upgrade the current Salto version - do you want to cancel?`
+  public static readonly NEW_STATE_SALTO_VERSION = (
+    stateSaltoVersion: string
+  ): string => `The state of the services was last fetched using Salto's version ${stateSaltoVersion} which is newer than the current installed Salto version. It is highly recommended to upgrade the current Salto version - do you want to cancel?`
 }

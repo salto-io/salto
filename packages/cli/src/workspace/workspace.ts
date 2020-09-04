@@ -132,23 +132,23 @@ const logWorkspaceUpdates = async (
 }
 
 
-const shouldCancelDueToStateStatus = async (
-  stateVersion: string | undefined,
+const shouldRecommendFetch = async (
+  stateSaltoVersion: string | undefined,
   invalidRecencies: StateRecency[],
   cliOutput: CliOutput
 ): Promise<boolean> => {
-  if (!stateVersion) {
-    return shouldCancelCommand(Prompts.UNKNOWN_STATE_VERSION, cliOutput)
+  if (!stateSaltoVersion) {
+    return shouldCancelCommand(Prompts.UNKNOWN_STATE_SALTO_VERSION, cliOutput)
   }
-  const maxSupportedVersion = semver.inc(stateVersion, 'patch')
-  if (semver.gt(stateVersion, currentVersion)) {
-    return shouldCancelCommand(Prompts.NEW_STATE_VERSION(stateVersion), cliOutput)
+  const maxStateSupportedVersion = semver.inc(stateSaltoVersion, 'patch')
+  if (semver.gt(stateSaltoVersion, currentVersion)) {
+    return shouldCancelCommand(Prompts.NEW_STATE_SALTO_VERSION(stateSaltoVersion), cliOutput)
   }
-  if (!maxSupportedVersion) {
+  if (!maxStateSupportedVersion) {
     throw new Error('invalid state version string')
   }
-  if (semver.gt(currentVersion, maxSupportedVersion)) {
-    return shouldCancelCommand(Prompts.OLD_STATE_VERSION(stateVersion), cliOutput)
+  if (semver.gt(currentVersion, maxStateSupportedVersion)) {
+    return shouldCancelCommand(Prompts.OLD_STATE_SALTO_VERSION(stateSaltoVersion), cliOutput)
   }
   if (!_.isEmpty(invalidRecencies)) {
     const prompt = invalidRecencies.find(recency => recency.status !== 'Nonexistent')
@@ -194,11 +194,11 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
 
 
   // Offer to cancel because of stale status (stale or version)
-  const stateVersion = await workspace.state().getStateSaltoVersion()
+  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
   const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
   if (recommendStateRecency && !force
     && status !== 'Error'
-    && await shouldCancelDueToStateStatus(stateVersion, invalidRecencies, cliOutput)
+    && await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, cliOutput)
   ) {
     return { workspace, errored: true, stateRecencies }
   }

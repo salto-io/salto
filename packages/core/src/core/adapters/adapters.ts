@@ -16,7 +16,10 @@
 import _ from 'lodash'
 import { ObjectType, AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import adapterCreators from './creators'
+
+const log = logger(module)
 
 export const getAdaptersCredentialsTypes = (
   names?: ReadonlyArray<string>
@@ -46,6 +49,7 @@ export const initAdapters = (
       if (!creator) {
         throw new Error(`${adapter} adapter is not registered.`)
       }
+      log.debug('Using the following config for %s adapter: %o', adapter, config[adapter]?.config?.value)
       return creator.operations(context)
     }
   )

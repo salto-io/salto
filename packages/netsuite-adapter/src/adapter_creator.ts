@@ -25,7 +25,7 @@ import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter from './adapter'
-import { configType, NetsuiteConfig } from './config'
+import { configType, DEFAULT_SDF_CONCURRENCY, NetsuiteConfig } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
   SDF_CONCURRENCY_LIMIT,
@@ -33,9 +33,6 @@ import {
 
 const log = logger(module)
 const { makeArray } = collections.array
-
-// in small Netsuite accounts the concurrency limit per integration can be between 1-4
-export const DEFAULT_SDF_CONCURRENCY = 4
 
 const configID = new ElemID(NETSUITE)
 

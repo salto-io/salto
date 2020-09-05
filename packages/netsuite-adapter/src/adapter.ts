@@ -35,6 +35,7 @@ import convertLists from './filters/convert_lists'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
 } from './config'
 import { getAllReferencedInstances } from './reference_dependencies'
 
@@ -75,6 +76,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
     ],
     filePathRegexSkipList = [],
+    fetchAllTypesAtOnce = DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
     getElemIdFunc,
     config,
   }: NetsuiteAdapterParams) {
@@ -84,7 +86,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.filePathRegexSkipList = filePathRegexSkipList
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
       .map(e => new RegExp(e))
-    this.fetchAllTypesAtOnce = config[FETCH_ALL_TYPES_AT_ONCE] ?? true
+    this.fetchAllTypesAtOnce = config[FETCH_ALL_TYPES_AT_ONCE] ?? fetchAllTypesAtOnce
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
   }

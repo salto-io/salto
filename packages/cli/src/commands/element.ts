@@ -100,7 +100,7 @@ const moveElement = async (
         await workspace.promote(elmSelectors)
         break
       case ENVS:
-        outputLine(Prompts.MOVE_START('environemnt-specific folders'), output)
+        outputLine(Prompts.MOVE_START('environment-specific folders'), output)
         await workspace.demote(elmSelectors)
         break
       default:

@@ -20,6 +20,7 @@ import {
   Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult } from '@salto-io/core'
 import { errors, SourceFragment, parser } from '@salto-io/workspace'
@@ -156,7 +157,7 @@ const formatChangeData = (change: DetailedChange): string => {
     // Dummy changes are only headers, so add a ":"
     return ':'
   }
-  if (change.action === 'remove') {
+  if (change.action === 'remove' || isStaticFile(getChangeElement(change))) {
     // No need to emit any details about a remove change
     return ''
   }

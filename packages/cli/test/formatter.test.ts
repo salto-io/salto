@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
-  PrimitiveTypes, BuiltinTypes,
+  PrimitiveTypes, BuiltinTypes, StaticFile,
 } from '@salto-io/adapter-api'
 import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
@@ -268,6 +268,25 @@ describe('formatter', () => {
         it('should have annotation types', () => {
           expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*annotations.*label.*TYPE: string`, 's'))
         })
+      })
+      describe('with static file value', () => {
+        const staticFileBefore = new StaticFile({
+          content: Buffer.from('FAFAFAFAFAFAFAFAFAFA'),
+          filepath: 'road/to/nowhere',
+          hash: 'asdasdasdasd',
+        })
+        const staticFileAfter = new StaticFile({
+          content: Buffer.from('far better'),
+          filepath: 'road/to/nowhere',
+          hash: 'asdasdasdasd',
+        })
+        const fileChange = detailedChange('modify',
+          instance.elemID.createNestedID('content'),
+          staticFileBefore,
+          staticFileAfter)
+        output = formatChange(fileChange, true)
+        expect(output).toMatch('content')
+        expect(output).not.toMatch('Buffer')
       })
       describe('removal change', () => {
         beforeAll(() => {

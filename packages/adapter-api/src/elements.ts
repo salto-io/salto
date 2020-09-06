@@ -118,9 +118,8 @@ export class ListType extends Element {
   ) {
     super({
       elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
-      annotations: innerType.annotations,
-      annotationTypes: innerType.annotationTypes,
     })
+    this.setInnerType(innerType)
   }
 
   isEqual(other: ListType): boolean {
@@ -132,6 +131,16 @@ export class ListType extends Element {
     return new ListType(
       this.innerType
     )
+  }
+
+  setInnerType(innerType: TypeElement): void {
+    if (innerType.elemID.isEqual(this.innerType.elemID)) {
+      this.innerType = innerType
+      this.annotations = innerType.annotations
+      this.annotationTypes = innerType.annotationTypes
+    } else {
+      throw new Error('Inner type id does not match ListType id')
+    }
   }
 }
 

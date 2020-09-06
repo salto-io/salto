@@ -16,12 +16,10 @@
 import _ from 'lodash'
 import {
   Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
-  ReferenceExpression, Values, TemplateExpression, Value,
-  ElemID, InstanceAnnotationTypes, isListType, ListType,
-  BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile,
-  isPrimitiveType, Element,
-  isReferenceExpression,
-  isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange, RemovalChange, ModificationChange,
+  ReferenceExpression, Values, TemplateExpression, Value, ElemID, InstanceAnnotationTypes,
+  isListType, ListType, BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile, isPrimitiveType,
+  Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
+  RemovalChange, ModificationChange, isInstanceElement, isObjectType,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import {
@@ -30,8 +28,9 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
+  transformElement,
 } from '../src/utils'
-import { mockFunction } from './common'
+import { mockFunction, MockFunction } from './common'
 
 describe('Test utils.ts', () => {
   const mockStrType = new PrimitiveType({
@@ -495,6 +494,110 @@ describe('Test utils.ts', () => {
       it('should traverse list items with correct path ID', () => {
         expect(paths)
           .toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
+      })
+    })
+  })
+
+  describe('transformElement', () => {
+    let primType: PrimitiveType
+    let listType: ListType
+    let objType: ObjectType
+    let inst: InstanceElement
+    let transformFunc: MockFunction<TransformFunc>
+    beforeEach(() => {
+      primType = new PrimitiveType({
+        elemID: new ElemID('test', 'prim'),
+        primitive: PrimitiveTypes.NUMBER,
+        annotationTypes: { a1: BuiltinTypes.STRING },
+        annotations: { a1: 'asd' },
+      })
+      listType = new ListType(primType)
+      objType = new ObjectType({
+        elemID: new ElemID('test', 'test'),
+        fields: {
+          f1: { type: BuiltinTypes.STRING },
+          f2: { type: listType, annotations: { a1: 'foo' } },
+        },
+        annotationTypes: { a2: BuiltinTypes.STRING },
+        annotations: { a2: 1 },
+      })
+      inst = new InstanceElement(
+        'test',
+        objType,
+        { f1: 'a', f2: [1, 2, 3], f3: false },
+        undefined,
+        { [INSTANCE_ANNOTATIONS.PARENT]: ['me'] },
+      )
+      transformFunc = mockFunction<TransformFunc>().mockImplementation(({ value }) => value)
+    })
+    describe('with PrimitiveType', () => {
+      let result: PrimitiveType
+      beforeEach(() => {
+        result = transformElement({ element: primType, transformFunc, strict: false })
+      })
+      it('should return new primitive type', () => {
+        expect(isPrimitiveType(result)).toBeTruthy()
+      })
+      it('should transform annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+        })
+      })
+    })
+    describe('with ListType', () => {
+      let result: ListType
+      beforeEach(() => {
+        result = transformElement({ element: listType, transformFunc, strict: false })
+      })
+      it('should return new list type', () => {
+        expect(isListType(result)).toBeTruthy()
+      })
+      it('should transform inner type annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+        })
+      })
+    })
+    describe('with ObjectType', () => {
+      let result: ObjectType
+      beforeEach(() => {
+        result = transformElement({ element: objType, transformFunc, strict: false })
+      })
+      it('should return new object type', () => {
+        expect(isObjectType(result)).toBeTruthy()
+      })
+      it('should transform type annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 1,
+          field: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          path: objType.elemID.createNestedID('attr', 'a2'),
+        })
+      })
+      it('should transform field annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+        })
+      })
+    })
+    describe('with InstanceElement', () => {
+      let result: InstanceElement
+      beforeEach(() => {
+        result = transformElement({ element: inst, transformFunc, strict: false })
+      })
+      it('should return a new instance', () => {
+        expect(isInstanceElement(result)).toBeTruthy()
+      })
+      it('should transform values', () => {
+        expect(transformFunc).toHaveBeenCalledWith(
+          { value: 'a', field: objType.fields.f1, path: inst.elemID.createNestedID('f1') }
+        )
+      })
+      it('should transform annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 'me',
+          field: expect.any(Field),
+          path: inst.elemID.createNestedID(INSTANCE_ANNOTATIONS.PARENT, '0'),
+        })
       })
     })
   })

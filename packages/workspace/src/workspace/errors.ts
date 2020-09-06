@@ -62,6 +62,6 @@ export class UnknownEnvError extends Error {
 
 export class DeleteCurrentEnvError extends Error {
   constructor(envName: string) {
-    super(`Cannot delete the current env: ${envName}`)
+    super(`Cannot delete the current env: ${envName}\nPlease set the current environment to another one and try again.`)
   }
 }

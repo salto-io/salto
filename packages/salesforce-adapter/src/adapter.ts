@@ -320,6 +320,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       'Flow', // update fails for Active flows
       'EscalationRules',
       'AutoResponseRules',
+      'MatchingRules',
     ],
     nestedMetadataTypes = {
       ...absoluteIDMetadataTypes,

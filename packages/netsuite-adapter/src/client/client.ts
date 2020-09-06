@@ -35,6 +35,7 @@ import Bottleneck from 'bottleneck'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
+import uuidv4 from 'uuid/v4'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
   FOLDER,
@@ -276,7 +277,7 @@ export default class NetsuiteClient {
   )
 
   private static async createProject(): Promise<string> {
-    const projectName = `TempProject${String(Date.now()).substring(8)}`
+    const projectName = `TempSdfProject-${uuidv4()}`
     const operationResult = await NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
       .executeAction({
         commandName: COMMANDS.CREATE_PROJECT,

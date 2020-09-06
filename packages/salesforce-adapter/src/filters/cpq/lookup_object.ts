@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isObjectType, ObjectType, ReferenceExpression, Value } from '@salto-io/adapter-api'
+import { Element, ObjectType, ReferenceExpression, Value } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { isCustomObject, apiName } from '../../transformers/transformer'
-import { FIELD_ANNOTATIONS, CPQ_PRODUCT_RULE, CPQ_RPICE_RULE, CPQ_LOOKUP_OBJECT_NAME } from '../../constants'
+import { apiName } from '../../transformers/transformer'
+import { FIELD_ANNOTATIONS, CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME } from '../../constants'
+import { getCustomObjects } from '../utils'
 
-const OBJECTS_WITH_LOOKUP_OBJECT = [CPQ_PRODUCT_RULE, CPQ_RPICE_RULE]
+const OBJECTS_WITH_LOOKUP_OBJECT = [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE]
 
 const replaceLookupObjectValueSetValuesWithReferences = (customObjects: ObjectType[]): void => {
   const apiNameToElemID = Object.fromEntries(
@@ -52,10 +53,9 @@ const replaceLookupObjectValueSetValuesWithReferences = (customObjects: ObjectTy
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const customObjects = elements
-      .filter(isObjectType)
-      .filter(isCustomObject)
-    replaceLookupObjectValueSetValuesWithReferences(customObjects)
+    replaceLookupObjectValueSetValuesWithReferences(
+      getCustomObjects(elements)
+    )
   },
 })
 

@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   ChangeDataType, DetailedChange, isField, isListType, isInstanceElement,
   ElemID, Value, ObjectType, PrimitiveType, isObjectType, isPrimitiveType,
-  isEqualElements, isEqualValues,
+  isEqualElements, isEqualValues, isRemovalChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { setPath } from './utils'
 
 /**
  * Create detailed changes from change data (before and after values)
@@ -153,4 +154,14 @@ export const detailedCompare = (
     ? getFieldsChanges(before, after)
     : []
   return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges]
+}
+
+export const applyDetailedChanges = (
+  planElement: ChangeDataType,
+  detailedChanges: DetailedChange[],
+): void => {
+  detailedChanges.forEach(detailedChange => {
+    const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
+    setPath(planElement, detailedChange.id, data)
+  })
 }

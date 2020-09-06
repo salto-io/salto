@@ -168,17 +168,17 @@ ${Prompts.SERVICE_ADD_HELP}`
 
   public static readonly ISOLATE_FIRST_ENV_RECOMMENDATION = (
     existingEnv: string
-  ): string => 'This action will add a second environment to the workspace.'
-    + ` It is recommended to move environment ${existingEnv} out of the common configuration before proceeding.`
+  ): string => 'This operation will turn this workspace to a multi environment one by adding a second environment.'
+    + ` Its recommended to move all enviroment '${existingEnv}' configuration to the environment-specific folder.`
 
   public static readonly DONE_ISOLATING_FIRST_ENV = (
     existingEnv: string
-  ): string => `Done moving environment ${existingEnv} out of the common configuration.`
+  ): string => `Done moving environment '${existingEnv}' configuration to the environment-specific folder.`
 
   public static readonly APPROVE_ISOLATE_BEFORE_MULTIENV_RECOMMENDATION = (
     existingEnv: string
-  ): string => `Would you like to isolate the configuration for ${existingEnv} before adding the new environment?`
-    + ' (Answer No to continue without changes)'
+  ): string => `Move all enviroment '${existingEnv}' configuration to the environment-specific folder?`
+    + ' (Answering no will keep the configuration in the common folder)'
 
   public static readonly STATE_ONLY_UPDATE_START = (
     numOfChanges: number
@@ -244,25 +244,22 @@ ${Prompts.SERVICE_ADD_HELP}`
     : `Unknown target environments: ${unknownEnvs?.join(' ')}`)
 
   public static readonly MOVE_START = (
-    from: string,
     to: string,
-  ): string => `Moving the selected elements from ${from} to ${to}.`
+  ): string => `Moving the specified elements to ${to}.`
 
-  public static readonly MOVE_FINISHED = 'Done moving elements.'
   public static readonly MOVE_FAILED = (
     error: string
-  ): string => `Failed to move the selected elements: ${error}`
+  ): string => `Failed to move the specified elements: ${error}`
 
   public static readonly CLONE_TO_ENV_START = (
     targetEnvs: string[] = []
-  ): string => `Cloning the selected elements to ${
+  ): string => `Cloning the specified elements to ${
     targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
   }.`
 
-  public static readonly CLONE_TO_ENV_FINISHED = 'Done cloning elements.'
   public static readonly CLONE_TO_ENV_FAILED = (
     error: string
-  ): string => `Failed to clone the selected elements to the target environments: ${error}`
+  ): string => `Failed to clone the specified elements to the target environments: ${error}`
 
   public static readonly UNKNOWN_STATE_SALTO_VERSION = 'Can not determine the Salto version that was when the state of the services was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
   public static readonly OLD_STATE_SALTO_VERSION = (

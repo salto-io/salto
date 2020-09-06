@@ -678,7 +678,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (_.isUndefined(fieldType)) {
       return
     }
-
     const metadataTypeName = metadataType(fieldType)
     const deletedObjects = getDeletedObjectsNames(
       makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])

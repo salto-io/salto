@@ -18,12 +18,13 @@ import _ from 'lodash'
 import {
   ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField,
 } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
+import {
+  TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
   Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
-  isListType } from '@salto-io/adapter-api'
+} from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   naclCase, GetLookupNameFunc, TransformFunc, transformElement,
@@ -52,11 +53,10 @@ const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
 
 export const metadataType = (element: Element): string => {
-  if (isListType(element)) {
-    return metadataType(element.innerType)
-  } if (isInstanceElement(element)) {
+  if (isInstanceElement(element)) {
     return metadataType(element.type)
-  } if (isField(element)) {
+  }
+  if (isField(element)) {
     // We expect to reach to this place only with field of CustomObject
     return CUSTOM_FIELD
   }

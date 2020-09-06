@@ -297,3 +297,8 @@ export const CPQ_LOOKUP_DATA = 'SBQQ__LookupData__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'
+export const CPQ_LOOKUP_PRODUCT_FIELD = 'SBQQ__LookupProductField__c'
+export const CPQ_LOOKUP_MESSAGE_FIELD = 'SBQQ__LookupMessageField__c'
+export const CPQ_LOOKUP_REQUIRED_FIELD = 'SBQQ__LookupRequiredField__c'
+export const CPQ_LOOKUP_TYPE_FIELD = 'SBQQ__LookupTypeField__c'
+export const CPQ_LOOKUP_FIELD = 'SBQQ__LookupField__c'

@@ -16,14 +16,19 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { Element, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_DATA } from '../../constants'
+import { CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_DATA, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CPQ_LOOKUP_FIELD } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { isInstanceOfCustomObject, apiName } from '../../transformers/transformer'
 import { getCustomObjects } from '../utils'
 
 const { isDefined } = values
 
-const CPQ_LOOKUP_FIELDS = ['SBQQ__LookupProductField__c', 'SBQQ__LookupMessageField__c', 'SBQQ__LookupRequiredField__c', 'SBQQ__LookupTypeField__c']
+const CPQ_LOOKUP_FIELDS = [
+  CPQ_LOOKUP_PRODUCT_FIELD,
+  CPQ_LOOKUP_MESSAGE_FIELD,
+  CPQ_LOOKUP_REQUIRED_FIELD,
+  CPQ_LOOKUP_TYPE_FIELD,
+]
 type fieldBasedinstanceFieldsRefContext = {
   fields: string[]
   contextField: string
@@ -45,7 +50,7 @@ const mappingWithFieldBasedContext: Record<string, fieldBasedinstanceFieldsRefCo
 
 const mappingWithKnownContext: Record<string, instanceFieldsRefContext> = {
   [CPQ_LOOKUP_QUERY]: {
-    fields: ['SBQQ__LookupField__c'],
+    fields: [CPQ_LOOKUP_FIELD],
     contextObjectName: CPQ_LOOKUP_DATA,
   },
 }

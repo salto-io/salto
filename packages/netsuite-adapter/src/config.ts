@@ -26,22 +26,36 @@ import {
 
 const { makeArray } = collections.array
 
+// in small Netsuite accounts the concurrency limit per integration can be between 1-4
+export const DEFAULT_SDF_CONCURRENCY = 4
+export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = true
+
 const configID = new ElemID(NETSUITE)
 export const configType = new ObjectType({
   elemID: configID,
   fields: {
     [TYPES_TO_SKIP]: {
       type: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
+      },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
       type: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
+      },
     },
     [FETCH_ALL_TYPES_AT_ONCE]: {
       type: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
+      },
     },
     [SDF_CONCURRENCY_LIMIT]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_SDF_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
           max: 50,

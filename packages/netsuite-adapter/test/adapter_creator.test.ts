@@ -18,13 +18,14 @@ import {
   isAdapterSuccessInstallResult, ObjectType,
 } from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
-import { adapter, DEFAULT_SDF_CONCURRENCY } from '../src/adapter_creator'
+import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
+import { DEFAULT_SDF_CONCURRENCY } from '../src/config'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')

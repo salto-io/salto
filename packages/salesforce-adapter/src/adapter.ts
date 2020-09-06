@@ -62,6 +62,7 @@ import customObjectInstanceReferencesFilter from './filters/custom_object_instan
 import foreignKeyReferences from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
+import cpqLookupObjectsFilter from './filters/cpq/lookup_object'
 import recordTypeFilter from './filters/record_type'
 import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
@@ -103,6 +104,7 @@ export const DEFAULT_FILTERS = [
   flowFilter,
   lookupFiltersFilter,
   customObjectInstanceReferencesFilter,
+  cpqLookupObjectsFilter,
   animationRulesFilter,
   samlInitMethodFilter,
   topicsForObjectsFilter,

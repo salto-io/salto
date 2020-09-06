@@ -49,7 +49,7 @@ export const initAdapters = (
       if (!creator) {
         throw new Error(`${adapter} adapter is not registered.`)
       }
-      log.debug('Using the following config for %s adapter: %o', adapter, config[adapter]?.config?.value)
+      log.debug('Using the following config for %s adapter: %o', adapter, context.config?.value)
       return creator.operations(context)
     }
   )

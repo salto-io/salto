@@ -37,7 +37,7 @@ describe('logTags', () => {
   })
   describe('formatLogTags', () => {
     it('should return empty string for function value', () => {
-      expect(formatLogTags({ some: () => { throw Error('') } }, [])).toEqual('')
+      expect(formatLogTags({ some: undefined }, [])).toEqual('')
     })
   })
 })

@@ -392,7 +392,7 @@ describe('pino based logger', () => {
           beforeEach(async () => {
             initialConfig.globalTags = logTags
             logger = createLogger()
-            logger.assignGlobalTags({ newTag: 'data', superNewTag: 'tag' })
+            logger.assignGlobalTags({ newTag: 'data', superNewTag: 'tag', functionTag: () => 5 })
             await logLine({ level: 'warn' })
           })
           it('should contain old tags', () => {
@@ -408,6 +408,7 @@ describe('pino based logger', () => {
           })
           it('should contain new logTags also', async () => {
             expect(line).toContain('newTag="data"')
+            expect(line).toContain('functionTag=5')
             expect(line).toContain('superNewTag="tag"')
           })
         })
@@ -737,7 +738,7 @@ describe('pino based logger', () => {
     })
   })
   describe('local logging tags', () => {
-    const logTags = { number: 1, string: '1', bool: true }
+    const logTags = { number: 1, string: '1', bool: true, functionTag: () => 5 }
 
     describe('text format', () => {
       describe('without global loggers', () => {
@@ -750,6 +751,30 @@ describe('pino based logger', () => {
           expect(line).toContain('number=1')
           expect(line).toContain('string="1"')
           expect(line).toContain('bool=true')
+          expect(line).toContain('functionTag=5')
+        })
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('warn')
+          expect(line).toContain('hello { world: true }')
+        })
+      })
+      describe('complex function tags', () => {
+        const complexTags = {
+          normalTags: 1,
+          functionStringTags: () => '5',
+          functionObjTag: () => ({ something: 'bad', happened: 'here' }),
+        }
+        beforeEach(async () => {
+          logger = createLogger()
+          logger.assignTags(complexTags)
+          await logLine({ level: 'warn' })
+        })
+        it('line should contain log tags', async () => {
+          expect(line).toContain('normalTags=1')
+          expect(line).toContain('functionStringTags="5"')
+          expect(line).toContain('functionObjTag={"something":"bad","happened":"here"}')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
@@ -810,6 +835,7 @@ describe('pino based logger', () => {
         })
         it('line should contain log tags', async () => {
           expect(line).toContain('"number":1')
+          expect(line).toContain('"functionTag":5')
           expect(line).toContain('"string":"1"')
           expect(line).toContain('"bool":true')
         })
@@ -868,6 +894,7 @@ describe('pino based logger', () => {
           expect(line).not.toContain('number=1')
           expect(line).not.toContain('string=1')
           expect(line).not.toContain('bool=true')
+          expect(line).not.toContain('functionTag=5')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
@@ -888,6 +915,7 @@ describe('pino based logger', () => {
           expect(line).not.toContain('string=1')
           expect(line).toContain('bool=true')
           expect(line).toContain('anotherTag="foo"')
+          expect(line).toContain('functionTag=5')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)

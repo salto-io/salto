@@ -123,7 +123,7 @@ describe('element command', () => {
 
     it('should print failure to console', () => {
       expect(cliOutput.stderr.content)
-        .toContain('Failed to clone the selected elements to the target environments')
+        .toContain('Failed to clone the specified elements to the target environments')
     })
   })
 
@@ -423,8 +423,7 @@ describe('element command', () => {
     })
 
     it('should print clone to console', () => {
-      expect(cliOutput.stdout.content).toContain('Cloning the selected elements to inactive.')
-      expect(cliOutput.stdout.content).toContain('Done cloning elements.')
+      expect(cliOutput.stdout.content).toContain('Cloning the specified elements to inactive.')
     })
   })
 
@@ -591,8 +590,7 @@ describe('element command', () => {
     })
 
     it('should print deployment to console', () => {
-      expect(cliOutput.stdout.content).toContain('Moving the selected elements from envs to common')
-      expect(cliOutput.stdout.content).toContain('Done moving elements.')
+      expect(cliOutput.stdout.content).toContain('Moving the specified elements to common')
     })
   })
 
@@ -641,8 +639,7 @@ describe('element command', () => {
     })
 
     it('should print deployment to console', () => {
-      expect(cliOutput.stdout.content).toContain('Moving the selected elements from common to envs.')
-      expect(cliOutput.stdout.content).toContain('Done moving elements.')
+      expect(cliOutput.stdout.content).toContain('Moving the specified elements to environment-specific folders.')
     })
   })
 })

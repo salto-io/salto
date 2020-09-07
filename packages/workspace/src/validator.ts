@@ -45,6 +45,7 @@ const primitiveValidators = {
   [PrimitiveTypes.STRING]: _.isString,
   [PrimitiveTypes.NUMBER]: _.isNumber,
   [PrimitiveTypes.BOOLEAN]: _.isBoolean,
+  [PrimitiveTypes.UNKNOWN]: (value: Value) => value !== undefined,
 }
 
 /**
@@ -453,7 +454,9 @@ const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] 
     return referenceValidationErrors
   }
 
-  if (!_.some(Object.values(primitiveValidators), validator => validator(value))) {
+  if (!primitiveValidators[PrimitiveTypes.STRING](value)
+    && !primitiveValidators[PrimitiveTypes.BOOLEAN](value)
+    && !primitiveValidators[PrimitiveTypes.NUMBER](value)) {
     return [new InvalidValueValidationError({
       elemID,
       value,

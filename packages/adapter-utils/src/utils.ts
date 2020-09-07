@@ -23,7 +23,7 @@ import {
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData,
+  ChangeData, ListType,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -259,6 +259,13 @@ export const transformElement = <T extends Element>(
       annotations: transformedAnnotations,
     })
 
+    return newElement as T
+  }
+
+  if (isListType(element)) {
+    newElement = new ListType(
+      transformElement({ element: element.innerType, transformFunc, strict })
+    )
     return newElement as T
   }
 

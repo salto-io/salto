@@ -17,14 +17,14 @@ import {
   AdditionDiff, ModificationDiff, RemovalDiff, ActionName,
 } from '@salto-io/dag'
 import {
-  ObjectType, InstanceElement, Field, PrimitiveType, isInstanceElement, isObjectType, isField,
+  ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TypeElement,
 } from './elements'
 import { ElemID } from './element_id'
 import { Values, Value } from './values'
 
 export { ActionName }
 
-export type ChangeDataType = ObjectType | InstanceElement | Field | PrimitiveType
+export type ChangeDataType = TypeElement | InstanceElement | Field
 export type AdditionChange<T> = AdditionDiff<T>
 export type ModificationChange<T> = ModificationDiff<T>
 export type RemovalChange<T> = RemovalDiff<T>

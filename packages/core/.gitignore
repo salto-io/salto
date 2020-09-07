@@ -10,3 +10,5 @@ coverage
 # Generated parser js file
 /src/parser/internal/ts_plugin/hcl.js
 
+/src/generated
+

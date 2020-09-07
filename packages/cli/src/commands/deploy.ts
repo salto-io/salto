@@ -200,7 +200,7 @@ export class DeployCommand implements CliCommand {
       {
         force: this.force,
         printStateRecency: true,
-        recommendStateRecency: true,
+        recommendStateStatus: true,
         spinnerCreator: this.spinnerCreator,
         sessionEnv: this.inputEnv,
       })

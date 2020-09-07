@@ -22,6 +22,7 @@ import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents,
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
+import { version } from '../generated/version.json'
 
 const { serialize, deserialize } = serialization
 const { toMD5 } = hash
@@ -45,9 +46,14 @@ export const localState = (filePath: string): state.State => {
       text = await readTextFile(pathToClean)
     }
     if (text === undefined) {
-      return { elements: {}, servicesUpdateDate: {}, pathIndex: new pathIndex.PathIndex() }
+      return {
+        elements: {},
+        servicesUpdateDate: {},
+        pathIndex: new pathIndex.PathIndex(),
+        saltoVersion: version,
+      }
     }
-    const [elementsData, updateDateData, pathIndexData] = text.split(EOL)
+    const [elementsData, updateDateData, pathIndexData, versionData] = text.split(EOL)
     const deserializedElements = (await deserialize(elementsData)).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
     const index = pathIndexData
@@ -57,18 +63,23 @@ export const localState = (filePath: string): state.State => {
       ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))
       : {}
     log.debug(`loaded state [#elements=${_.size(elements)}]`)
-    return { elements, servicesUpdateDate, pathIndex: index }
+    return {
+      elements,
+      servicesUpdateDate,
+      pathIndex: index,
+      saltoVersion: versionData,
+    }
   }
 
   const inMemState = state.buildInMemState(loadFromFile)
 
-  const getStateText = async (): Promise<string> => {
+  const createStateText = async (): Promise<string> => {
     const elements = await inMemState.getAll()
     const elementsString = serialize(elements)
     const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
     const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
     log.debug(`finished dumping state text [#elements=${elements.length}]`)
-    return [elementsString, dateString, pathIndexString].join(EOL)
+    return [elementsString, dateString, pathIndexString, version].join(EOL)
   }
 
   return {
@@ -103,7 +114,7 @@ export const localState = (filePath: string): state.State => {
       if (!dirty && pathToClean === '') {
         return
       }
-      const stateText = await getStateText()
+      const stateText = await createStateText()
       await mkdirp(path.dirname(currentFilePath))
       await replaceContents(currentFilePath, await generateZipString(stateText))
       if (pathToClean !== '') {
@@ -112,7 +123,7 @@ export const localState = (filePath: string): state.State => {
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string> => {
-      const stateText = await getStateText()
+      const stateText = await createStateText()
       return toMD5(stateText)
     },
     clear: async (): Promise<void> => {

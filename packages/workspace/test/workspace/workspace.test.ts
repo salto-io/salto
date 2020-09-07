@@ -87,6 +87,7 @@ const createState = (elements: Element[]): State => buildInMemState(async () => 
   elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
   pathIndex: new PathIndex(),
   servicesUpdateDate: {},
+  saltoVersion: '0.0.1',
 }))
 
 const createWorkspace = async (
@@ -108,7 +109,12 @@ const createWorkspace = async (
         default: {
           naclFiles: createMockNaclFileSource([]),
           state: state ?? buildInMemState(
-            async () => ({ elements: {}, pathIndex: new PathIndex(), servicesUpdateDate: {} })
+            async () => ({
+              elements: {},
+              pathIndex: new PathIndex(),
+              servicesUpdateDate: {},
+              saltoVersion: '0.0.1',
+            })
           ),
         },
       },

@@ -16,22 +16,23 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
+import semver from 'semver'
 import { FetchChange, Tags, loadLocalWorkspace, StepEmitter } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
-  formatFinishedLoading, formatWorkspaceAbort } from '../formatter'
+  formatFinishedLoading, formatWorkspaceAbort, formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState } from '../formatter'
 import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
 import {
   shouldContinueInCaseOfWarnings,
   shouldAbortWorkspaceInCaseOfValidationError,
-  shouldCancelInCaseOfNoRecentState,
+  shouldCancelCommand,
 } from '../callbacks'
 import Prompts from '../prompts'
 import { groupRelatedErrors } from './errors'
-
+import { version as currentVersion } from '../generated/version.json'
 
 const log = logger(module)
 
@@ -53,7 +54,7 @@ type WorkspaceStatusErrors = {
 export type LoadWorkspaceOptions = {
   force: boolean
   printStateRecency: boolean
-  recommendStateRecency: boolean
+  recommendStateStatus: boolean
   spinnerCreator: SpinnerCreator
   sessionEnv?: string
   services?: string[]
@@ -130,10 +131,37 @@ const logWorkspaceUpdates = async (
   }
 }
 
+
+const shouldRecommendFetch = async (
+  stateSaltoVersion: string | undefined,
+  invalidRecencies: StateRecency[],
+  cliOutput: CliOutput
+): Promise<boolean> => {
+  if (!stateSaltoVersion) {
+    return shouldCancelCommand(Prompts.UNKNOWN_STATE_SALTO_VERSION, cliOutput)
+  }
+  const maxStateSupportedVersion = semver.inc(stateSaltoVersion, 'patch')
+  if (semver.gt(stateSaltoVersion, currentVersion)) {
+    return shouldCancelCommand(Prompts.NEW_STATE_SALTO_VERSION(stateSaltoVersion), cliOutput)
+  }
+  if (!maxStateSupportedVersion) {
+    throw new Error('invalid state version string')
+  }
+  if (semver.gt(currentVersion, maxStateSupportedVersion)) {
+    return shouldCancelCommand(Prompts.OLD_STATE_SALTO_VERSION(stateSaltoVersion), cliOutput)
+  }
+  if (!_.isEmpty(invalidRecencies)) {
+    const prompt = invalidRecencies.find(recency => recency.status !== 'Nonexistent')
+      ? formatShouldCancelWithOldState : formatShouldCancelWithNonexistentState
+    return shouldCancelCommand(prompt, cliOutput)
+  }
+  return false
+}
+
 export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   { force = false,
     printStateRecency = false,
-    recommendStateRecency = false,
+    recommendStateStatus: recommendStateRecency = false,
     spinnerCreator = undefined,
     sessionEnv = undefined,
     services = undefined }: Partial<LoadWorkspaceOptions> = {}): Promise<LoadWorkspaceResult> => {
@@ -163,15 +191,18 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
       : Prompts.STATE_RECENCY(recency.serviceName, recency.date as Date))).join(EOL)
     cliOutput.stdout.write(prompt + EOL)
   }
-  // Offer to cancel because of stale state
+
+
+  // Offer to cancel because of stale status (stale or version)
+  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
   const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
   if (recommendStateRecency && !force
-    && !_.isEmpty(invalidRecencies) && status !== 'Error') {
-    const shouldCancel = await shouldCancelInCaseOfNoRecentState(invalidRecencies, cliOutput)
-    if (shouldCancel) {
-      return { workspace, errored: true, stateRecencies }
-    }
+    && status !== 'Error'
+    && await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, cliOutput)
+  ) {
+    return { workspace, errored: true, stateRecencies }
   }
+
   // Handle warnings/errors
   await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), cliOutput)
   if (status === 'Warning' && !force) {

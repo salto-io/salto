@@ -27,6 +27,7 @@ describe('state', () => {
     elements: { [elemID.getFullName()]: elem },
     servicesUpdateDate,
     pathIndex,
+    saltoVersion: '0.0.1',
   })
   describe('build in-mem state', () => {
     let state: ReturnType<typeof buildInMemState>
@@ -107,6 +108,10 @@ describe('state', () => {
 
     it('getHash should not work on in memory state', async () => {
       await expect(state.getHash()).rejects.toThrow()
+    })
+
+    it('should return the salto version that was provided in load data', async () => {
+      expect(await state.getStateSaltoVersion()).toEqual('0.0.1')
     })
   })
 })

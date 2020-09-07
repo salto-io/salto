@@ -21,12 +21,11 @@ import {
   isPrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import { FetchChange, PlanItem } from '@salto-io/core'
-import { StateRecency } from '@salto-io/workspace'
 import {
   formatFetchChangeForApproval, formatShouldContinueWithWarning, formatCancelCommand,
   formatCredentialsHeader, formatConfigFieldInput, formatShouldAbortWithValidationError,
-  formatConfigChangeNeeded, formatShouldCancelWithOldState, formatShouldChangeFetchModeToAlign,
-  formatShouldCancelWithNonexistentState, formatDetailedChanges, formatChangingFetchMode,
+  formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign,
+  formatDetailedChanges, formatChangingFetchMode,
   formatNotChangingFetchMode,
 } from './formatter'
 import Prompts from './prompts'
@@ -61,12 +60,10 @@ export const getUserYesNoCancelInput = async (prompt: string): Promise<YesNoCanc
   return answers.userInput
 }
 
-export const shouldCancelInCaseOfNoRecentState = async (
-  recencies: StateRecency[],
+export const shouldCancelCommand = async (
+  prompt: string,
   { stdout }: CliOutput
 ): Promise<boolean> => {
-  const prompt = recencies.find(recency => recency.status !== 'Nonexistent')
-    ? formatShouldCancelWithOldState : formatShouldCancelWithNonexistentState
   const shouldCancel = await getUserBooleanInput(prompt)
   if (shouldCancel) {
     stdout.write(formatCancelCommand)

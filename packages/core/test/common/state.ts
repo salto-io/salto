@@ -27,5 +27,6 @@ export const mockState = (
     elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
     pathIndex: index ?? new pathIndex.PathIndex(),
     servicesUpdateDate: Object.fromEntries(services.map(serviceName => [serviceName, new Date()])),
+    saltoVersion: '0.0.1',
   }))
 )

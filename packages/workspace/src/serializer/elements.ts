@@ -91,12 +91,15 @@ export const serialize = (elements: Element[],
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
     const o = e as T & SerializedClass
-    o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name]
+    const saltoClass = ctorNameToSerializedName[e.constructor.name]
+      || Object.entries(NameToType).find(([_name, type]) => e instanceof type)?.[0]
+    if (saltoClass) {
+      o[SALTO_CLASS_FIELD] = saltoClass
+    }
     return o
   }
   const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => (
-    // We create a new StaticFile in order to handle the case when e is LazyStaticFile
-    _.omit(saltoClassReplacer(new StaticFile({ filepath: e.filepath, hash: e.hash })), 'content', 'internalContent')
+    _.omit(saltoClassReplacer(e), 'content', 'internalContent')
   )
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {

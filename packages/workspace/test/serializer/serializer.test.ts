@@ -25,6 +25,8 @@ import {
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
+import { LazyStaticFile } from '../../src/workspace/static_files/source'
+import { SyncDirectoryStore } from '../../src/workspace/dir_store'
 
 describe('State/cache serialization', () => {
   const strType = new PrimitiveType({
@@ -283,6 +285,30 @@ describe('State/cache serialization', () => {
     })
     it('should keep the original value', () => {
       expect(deserialized.value[SALTO_CLASS_FIELD]).toEqual('bla')
+    })
+  })
+  describe('when the field is LazyStaticFile', () => {
+    let deserialized: InstanceElement
+    beforeEach(async () => {
+      const typeWithLazyStaticFile = new ObjectType({
+        elemID: new ElemID('salesforce', 'test'),
+        fields: { lazyFile: { type: strType, annotations: { label: 'Lazy File' } } },
+      })
+      const classNameInst = new InstanceElement(
+        'ClsName',
+        typeWithLazyStaticFile,
+        {
+          file: new LazyStaticFile(
+            'some/path.ext', 'hash', {} as unknown as SyncDirectoryStore<Buffer>
+          ),
+        },
+      )
+      deserialized = (await deserialize(serialize([classNameInst])))[0] as InstanceElement
+    })
+    it('should serialize LazyStaticFile to StaticFile', () => {
+      expect(isInstanceElement(deserialized)).toBeTruthy()
+      expect(deserialized.value.file).toBeInstanceOf(StaticFile)
+      expect(deserialized.value.file).not.toBeInstanceOf(LazyStaticFile)
     })
   })
 })

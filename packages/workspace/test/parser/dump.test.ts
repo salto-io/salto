@@ -53,6 +53,11 @@ describe('Salto Dump', () => {
     primitive: PrimitiveTypes.BOOLEAN,
   })
 
+  const unknownType = new PrimitiveType({
+    elemID : new ElemID('salesforce', 'unknown'),
+    primitive : PrimitiveTypes.UNKNOWN
+  })
+
   const fieldType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'field'),
     primitive: PrimitiveTypes.NUMBER,
@@ -163,6 +168,7 @@ describe('Salto Dump', () => {
         strType, numType, boolType,
         fieldType, model, instance, config,
         instanceStartsWithNumber, instanceWithFunctions, instanceWithArray,
+        unknownType,
       ], functions)
     })
 
@@ -170,6 +176,7 @@ describe('Salto Dump', () => {
       expect(body).toMatch(/type salesforce.string is string {/)
       expect(body).toMatch(/type salesforce.number is number {/)
       expect(body).toMatch(/type salesforce.bool is boolean {/)
+      expect(body).toMatch(/type salesforce.unknown is unknown {/)
     })
 
     it('dumps primitive field type annotations', () => {
@@ -296,7 +303,7 @@ describe('Salto Dump', () => {
       const result = await parse(Buffer.from(body), 'none', functions)
       const { elements, errors } = result
       expect(errors).toHaveLength(0)
-      expect(elements).toHaveLength(11)
+      expect(elements).toHaveLength(12)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
@@ -307,6 +314,8 @@ describe('Salto Dump', () => {
       TestHelpers.expectInstancesToMatch(elements[7] as InstanceElement, config)
       TestHelpers.expectInstancesToMatch(elements[8] as InstanceElement, instanceStartsWithNumber)
       TestHelpers.expectInstancesToMatch(elements[9] as InstanceElement, instanceWithFunctions)
+      TestHelpers.expectInstancesToMatch(elements[10] as InstanceElement, instanceWithArray)
+      expect(elements[11]).toEqual(unknownType)
     })
   })
   describe('dump field', () => {

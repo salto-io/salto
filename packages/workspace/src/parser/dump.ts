@@ -46,6 +46,9 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   if (primitiveType === PrimitiveTypes.BOOLEAN) {
     return Keywords.TYPE_BOOL
   }
+  if (primitiveType === PrimitiveTypes.UNKNOWN) {
+    return Keywords.TYPE_UNKOWN
+  }
   return Keywords.TYPE_OBJECT
 }
 

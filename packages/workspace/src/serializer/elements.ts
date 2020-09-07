@@ -91,11 +91,8 @@ export const serialize = (elements: Element[],
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
     const o = e as T & SerializedClass
-    const saltoClass = ctorNameToSerializedName[e.constructor.name]
+    o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name]
       || Object.entries(NameToType).find(([_name, type]) => e instanceof type)?.[0]
-    if (saltoClass) {
-      o[SALTO_CLASS_FIELD] = saltoClass
-    }
     return o
   }
   const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => (

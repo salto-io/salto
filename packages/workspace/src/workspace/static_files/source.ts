@@ -22,7 +22,7 @@ import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from './common'
 
-class LazyStaticFile extends StaticFile {
+export class LazyStaticFile extends StaticFile {
   private dirStore: SyncDirectoryStore<Buffer>
 
   constructor(filepath: string, hash: string, dirStore: SyncDirectoryStore<Buffer>) {

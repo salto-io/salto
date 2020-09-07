@@ -92,6 +92,7 @@ export const serialize = (elements: Element[],
     // Add property SALTO_CLASS_FIELD
     const o = e as T & SerializedClass
     o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name]
+      || Object.entries(NameToType).find(([_name, type]) => e instanceof type)?.[0]
     return o
   }
   const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => (

@@ -117,7 +117,8 @@ export const serialize = (elements: Element[],
       return referenceExpressionReplacer(e)
     }
     if (isStaticFile(e)) {
-      return staticFileReplacer(e)
+      // We create a new StaticFile in order to handle the case when e is LazyStaticFile
+      return staticFileReplacer(new StaticFile({ filepath: e.filepath, hash: e.hash }))
     }
     if (isSaltoSerializable(e)) {
       return saltoClassReplacer(e)

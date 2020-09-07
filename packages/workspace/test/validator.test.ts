@@ -896,19 +896,19 @@ describe('Elements validation', () => {
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list', '2'))
       })
 
-      it('should allow all value types for unknown field type' , () => {
+      it('should allow all value types for unknown field type', () => {
         const unknownObj = new ObjectType({
           elemID: new ElemID('salto', 'unknown'),
-          fields : {
-            unknown : { type: BuiltinTypes.UNKNOWN }
-          }
+          fields: {
+            unknown: { type: BuiltinTypes.UNKNOWN },
+          },
         })
 
-        const numValue = new InstanceElement('numInst', unknownObj, {unknown: 1})
-        const strValue = new InstanceElement('numInst', unknownObj, {unknown: "O"})
-        const booValue = new InstanceElement('numInst', unknownObj, {unknown: true})
-        const arrValue = new InstanceElement('numInst', unknownObj, {unknown: [0]})
-        const objValue = new InstanceElement('numInst', unknownObj, {unknown: {o: "o"}})
+        const numValue = new InstanceElement('numInst', unknownObj, { unknown: 1 })
+        const strValue = new InstanceElement('numInst', unknownObj, { unknown: 'O' })
+        const booValue = new InstanceElement('numInst', unknownObj, { unknown: true })
+        const arrValue = new InstanceElement('numInst', unknownObj, { unknown: [0] })
+        const objValue = new InstanceElement('numInst', unknownObj, { unknown: { o: 'o' } })
         const errors = validateElements([numValue, strValue, booValue, arrValue, objValue])
         expect(errors).toHaveLength(0)
       })

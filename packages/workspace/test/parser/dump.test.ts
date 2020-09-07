@@ -54,8 +54,8 @@ describe('Salto Dump', () => {
   })
 
   const unknownType = new PrimitiveType({
-    elemID : new ElemID('salesforce', 'unknown'),
-    primitive : PrimitiveTypes.UNKNOWN
+    elemID: new ElemID('salesforce', 'unknown'),
+    primitive: PrimitiveTypes.UNKNOWN,
   })
 
   const fieldType = new PrimitiveType({

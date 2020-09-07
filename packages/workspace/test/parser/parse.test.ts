@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable,
-  isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable, isType,
+  isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable, isType, isPrimitiveType,
 } from '@salto-io/adapter-api'
 import {
   registerTestFunction,
@@ -168,6 +168,9 @@ describe('Salto parser', () => {
       type salesforce.stringAttr {
         "#strAttr" = "attr"
       }
+
+      type salesforce.unknown is unknown {
+      }
        `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
@@ -177,7 +180,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(18)
+        expect(elements.length).toBe(19)
       })
     })
 
@@ -586,6 +589,15 @@ describe('Salto parser', () => {
       it('should parse string attributes', () => {
         expect(stringAttrObject.annotations).toHaveProperty('#strAttr')
         expect(stringAttrObject.annotations['#strAttr']).toEqual('attr')
+      })
+    })
+
+    describe('unknown primitive type', () => {
+      it('should parse unknown primitive types', () => {
+        const element = elements[18]
+        expect(isPrimitiveType(element)).toBeTruthy()
+        const unknownType = element as PrimitiveType
+        expect(unknownType.primitive).toBe(PrimitiveTypes.UNKNOWN)
       })
     })
   })

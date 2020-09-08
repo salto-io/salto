@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes } from '@salto-io/adapter-api'
+import { BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { getFieldInputType, getApprovedChanges } from '../src/callbacks'
 import { dummyChanges } from './mocks'
 
@@ -37,6 +37,9 @@ describe('callbacks', () => {
     expect(tokenRes).toBe('password')
     expect(tokenIdRes).toBe('password')
     expect(tokenSecretRes).toBe('password')
+    expect(() => getFieldInputType(new ObjectType({ elemID: new ElemID('salto', 'nonPrim') }), 'unknown'))
+      .toThrow()
+    expect(() => getFieldInputType(BuiltinTypes.UNKNOWN, 'unknown')).toThrow()
   })
 
   describe('getApprovedChanges', () => {

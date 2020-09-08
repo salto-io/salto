@@ -292,6 +292,13 @@ export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db f
 // CPQ CustomObjects
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
 export const CPQ_PRICE_RULE = 'SBQQ__PriceRule__c'
+export const CPQ_LOOKUP_QUERY = 'SBQQ__LookupQuery__c'
+export const CPQ_LOOKUP_DATA = 'SBQQ__LookupData__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'
+export const CPQ_LOOKUP_PRODUCT_FIELD = 'SBQQ__LookupProductField__c'
+export const CPQ_LOOKUP_MESSAGE_FIELD = 'SBQQ__LookupMessageField__c'
+export const CPQ_LOOKUP_REQUIRED_FIELD = 'SBQQ__LookupRequiredField__c'
+export const CPQ_LOOKUP_TYPE_FIELD = 'SBQQ__LookupTypeField__c'
+export const CPQ_LOOKUP_FIELD = 'SBQQ__LookupField__c'

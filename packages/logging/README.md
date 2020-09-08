@@ -76,19 +76,19 @@ log.error('This message has extra', { extra: true })
 #### Assigning log tags per namespace logger
 
 Assigning tags to future log message from any logger with the same namespace. In order to empty assigned tags,
-simply run the function with undefined.
+simply run the function with undefined. Tags can be boolean, strings, objects or callback functions that return the latter.
 
 ```typescript
-log.assignTags({ requestId: '5', contextData: '4' })
+log.assignTags({ requestId: '5', contextData: 4, calcAtRuntime: () => 'caclulated at runtime' })
 log.assignTags(undefined) // Empties all assigned tags
 ```
 
 #### Assigning log tags globally
 
-Assigning tags to future log message from all loggers. In order to empty assigned tags, simply run the function with undefined.
+Assigning tags to future log message from all loggers. In order to empty assigned tags, simply run the function with undefined. Tags can be boolean, strings, objects or callback functions that return the latter.
 
 ```typescript
-log.globalAssignTags({ requestId: '5', contextData: '4' })
+log.globalAssignTags({ requestId: '5', contextData: 4, calcAtRuntime: () => 'caclulated at runtime' })
 log.globalAssignTags(undefined) // Empties all assigned tags
 ```
 

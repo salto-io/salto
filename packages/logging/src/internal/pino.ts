@@ -32,7 +32,7 @@ import {
 import { BaseLoggerRepo, BaseLoggerMaker } from './logger'
 import { LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config } from './config'
-import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, PrimitiveType } from './log-tags'
+import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, PrimitiveType, normalizeLogTags } from './log-tags'
 
 const toPinoLogLevel = (level: LogLevel | 'none'): LevelWithSilent => (
   level === 'none' ? 'silent' : level
@@ -215,8 +215,12 @@ export const loggerRepo = (
     return {
       log(level: LogLevel, message: string | Error, ...args: unknown[]): void {
         const namespaceTags = tagsByNamespace.get(namespace)
+        /*
+         We must "normalize" logTags because there are types of tags that pino doesn't support
+         for example - Functions.
+         */
         const pinoLogger = pinoLoggerWithoutTags.child(
-          { ...namespaceTags, ...config.globalTags }
+          normalizeLogTags({ ...namespaceTags, ...config.globalTags })
         )
         const [formatted, unconsumedArgs] = typeof message === 'string'
           ? formatMessage(message, ...args)

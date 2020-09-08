@@ -19,7 +19,8 @@ import safeStringify from 'fast-safe-stringify'
 import { byName as colorsByName } from './colors'
 
 export type PrimitiveType = string | number | boolean
-export type LogTags = Record<string, PrimitiveType | undefined | Record<string, unknown>>
+type LogTagValue = PrimitiveType | undefined | Record<string, unknown>
+export type LogTags = Record<string, LogTagValue | (() => LogTagValue)>
 
 export const LOG_TAGS_COLOR = colorsByName.Olive
 
@@ -60,6 +61,12 @@ export const formatLogTags = (logTags: Record<string, unknown>, baseKeys: string
     .filter(x => x)
     .join(' ')
 }
+
+export const normalizeLogTags = (logTags: LogTags): LogTags =>
+  Object.fromEntries(
+    Object.entries(logTags)
+      .map(([key, value]) => [key, typeof value === 'function' ? value() : value])
+  )
 
 export const toTags = (s: string): LogTags => JSON.parse(s)
 

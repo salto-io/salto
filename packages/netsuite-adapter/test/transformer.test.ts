@@ -514,6 +514,14 @@ describe('Transformer', () => {
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_HTML_CHARS))
     })
 
+    it('should omit ZeroWidthSpace chars', () => {
+      instance.value.label = 'element​Name' // There is ZeroWidthSpace char between element and Name
+      expect(instance.value.label).toHaveLength('elementName'.length + 1)
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_STRING_FIELD))
+    })
+
     it('should transform ordered values for forms', () => {
       const transactionFormInstance = new InstanceElement('elementName',
         customTypes[TRANSACTION_FORM], {

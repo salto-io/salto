@@ -150,8 +150,8 @@ export const configType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           '^EmailTemplate.MarketoEmailTemplates',
-          '.*StandardValueSet.AddressCountryCode',
-          '.*StandardValueSet.AddressStateCode',
+          '^StandardValueSet.AddressCountryCode',
+          '^StandardValueSet.AddressStateCode',
         ],
       },
     },

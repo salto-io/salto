@@ -123,6 +123,7 @@ export class DeployCommand implements CliCommand {
     const action = this.actions.get(itemName)
     if (action) {
       this.stderr.write(formatItemError(itemName, details))
+      log.error(formatItemError(itemName, details))
       if (action.intervalId) {
         clearInterval(action.intervalId)
       }
@@ -131,6 +132,7 @@ export class DeployCommand implements CliCommand {
 
   private cancelAction(itemName: string, parentItemName: string): void {
     this.stderr.write(formatCancelAction(itemName, parentItemName))
+    log.error(formatCancelAction(itemName, parentItemName))
   }
 
   private startAction(itemName: string, item: PlanItem): void {
@@ -189,9 +191,8 @@ export class DeployCommand implements CliCommand {
       result.errors.length,
     ))
     this.stdout.write(EOL)
-    if (result.errors.length > 0)
-    {
-      log.debug(`All deploy errors:\n${result.errors.map(err => err.message).join('\n')}`);
+    if (result.errors.length > 0) {
+      log.debug(`All deploy errors:\n${result.errors.map(err => err.message).join('\n')}`)
     }
     if (executingDeploy) {
       this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)

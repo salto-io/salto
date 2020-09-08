@@ -163,6 +163,7 @@ export const fetchCommand = async (
     log.debug(`fetch had ${fetchResult.mergeErrors.length} merge errors`)
     cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
+    log.error(formatMergeErrors(fetchResult.mergeErrors))
   }
 
   if (!_.isUndefined(fetchResult.configChanges)) {

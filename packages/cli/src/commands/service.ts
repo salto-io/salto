@@ -26,6 +26,7 @@ import {
 import { Workspace } from '@salto-io/workspace'
 
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
@@ -37,7 +38,6 @@ import {
   formatServiceAlreadyAdded, formatCredentialsHeader, formatLoginToServiceFailed,
 } from '../formatter'
 import { EnvironmentArgs } from './env'
-import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 

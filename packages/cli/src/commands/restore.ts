@@ -189,7 +189,13 @@ export const command = (
 const restoreBuilder = createCommandBuilder({
   options: {
     command: 'restore [element-selector..]',
-    description: 'Syncs this workspace with the current local state',
+    description: 'Restore configuration element(s) from the state file',
+    positional: {
+      'element-selector': {
+        type: 'string',
+        description: 'Array of configuration element patterns',
+      },
+    },
     keyed: {
       force: {
         alias: ['f'],

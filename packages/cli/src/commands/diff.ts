@@ -121,7 +121,7 @@ export const command = (
 const diffBuilder = createCommandBuilder({
   options: {
     command: 'diff <from-env> <to-env> [element-selector..]',
-    description: 'Show the changes needed to bring <toEnv> up to date with the active environment',
+    description: 'Compare two workspace environments',
     positional: {
       'from-env': {
         type: 'string',
@@ -130,6 +130,10 @@ const diffBuilder = createCommandBuilder({
       'to-env': {
         type: 'string',
         desc: 'The environment to align',
+      },
+      'element-selector': {
+        type: 'string',
+        description: 'Array of configuration element patterns',
       },
     },
     keyed: {

@@ -205,12 +205,16 @@ const elementBuilder = createCommandBuilder({
   filters: [environmentFilter],
   options: {
     command: 'element <command> <element-selector..>',
-    description: 'Manage your environment\'s element',
+    description: 'Manage configuration elements',
     positional: {
       command: {
         type: 'string',
         choices: ['clone', 'move-to-common', 'move-to-envs'],
         description: 'The element management command',
+      },
+      'element-selector': {
+        type: 'string',
+        description: 'Array of configuration elements',
       },
     },
     keyed: {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CPQ_LOOKUP_FIELD, CPQ_RULE_LOOKUP_OBJECT_FIELD } from '../../constants'
+import { CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CPQ_LOOKUP_FIELD, CPQ_RULE_LOOKUP_OBJECT_FIELD, CPQ_PRICE_ACTION, CPQ_SOURCE_LOOKUP_FIELD } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { isInstanceOfCustomObject, apiName } from '../../transformers/transformer'
 import { getCustomObjects } from '../utils'
@@ -40,6 +40,10 @@ const objectToReferencesContext: Record<string, FieldBasedInstanceFieldsRefConte
   },
   [CPQ_LOOKUP_QUERY]: {
     fields: [CPQ_LOOKUP_FIELD],
+    contextField: CPQ_RULE_LOOKUP_OBJECT_FIELD,
+  },
+  [CPQ_PRICE_ACTION]: {
+    fields: [CPQ_SOURCE_LOOKUP_FIELD],
     contextField: CPQ_RULE_LOOKUP_OBJECT_FIELD,
   },
 }

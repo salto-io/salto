@@ -32,7 +32,7 @@ const log = logger(module)
 
 type DiffArgs = {
     detailedPlan: boolean
-    elmSelectors: string[]
+    elementSelector: string[]
     hidden: boolean
     state: boolean
     fromEnv: string
@@ -120,8 +120,8 @@ export const command = (
 
 const diffBuilder = createCommandBuilder({
   options: {
-    command: 'diff <from-env> <to-env> [elm-selectors..]',
-    description: 'Show the changes needed to bring <toEnv> up to date with the active environment',
+    command: 'diff <from-env> <to-env> [element-selector..]',
+    description: 'Compare two workspace environments',
     positional: {
       'from-env': {
         type: 'string',
@@ -130,6 +130,9 @@ const diffBuilder = createCommandBuilder({
       'to-env': {
         type: 'string',
         desc: 'The environment to align',
+      },
+      'element-selector': {
+        description: 'Array of configuration element patterns',
       },
     },
     keyed: {
@@ -171,7 +174,7 @@ const diffBuilder = createCommandBuilder({
       input.args.hidden,
       input.args.state,
       input.args.services,
-      input.args.elmSelectors
+      input.args.elementSelector
     )
   },
 })

@@ -196,7 +196,7 @@ type MoveArgs = {
 export type ElementArgs = {
   command: string
   force: boolean
-  elmSelectors: string[]
+  elementSelector: string[]
 } & CloneArgs & MoveArgs
 
 type ElementParsedCliInput = ParsedCliInput<ElementArgs>
@@ -204,13 +204,16 @@ type ElementParsedCliInput = ParsedCliInput<ElementArgs>
 const elementBuilder = createCommandBuilder({
   filters: [environmentFilter],
   options: {
-    command: 'element <command> <elm-selectors..>',
-    description: 'Manage your environment\'s element',
+    command: 'element <command> <element-selector..>',
+    description: 'Manage configuration elements',
     positional: {
       command: {
         type: 'string',
         choices: ['clone', 'move-to-common', 'move-to-envs'],
         description: 'The element management command',
+      },
+      'element-selector': {
+        description: 'Array of configuration elements',
       },
     },
     keyed: {
@@ -241,7 +244,7 @@ const elementBuilder = createCommandBuilder({
       spinnerCreator,
       input.args.command,
       input.args.force,
-      input.args.elmSelectors,
+      input.args.elementSelector,
       input.args.fromEnv,
       input.args.toEnvs,
       input.args.env,

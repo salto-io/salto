@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, BuiltinTypes, InstanceElement, Element,
   ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
-  isVariableExpression, isReferenceExpression, StaticFile,
+  isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
@@ -323,6 +323,25 @@ describe('Test Salto Expressions', () => {
       )
       const res = resolve([refInst, inputElem], [context])
       expect((res[0] as InstanceElement).value.test.value).toEqual('b')
+    })
+
+    it('should not create copies of types', () => {
+      const primType = new PrimitiveType(
+        { elemID: new ElemID('test', 'prim'), primitive: PrimitiveTypes.NUMBER }
+      )
+      const objType = new ObjectType({
+        elemID: new ElemID('test', 'obj'),
+        fields: { f: { type: primType } },
+        annotationTypes: { a: primType },
+      })
+      const inst = new InstanceElement('test', objType, { f: 1 })
+
+      const [resInst, resObj, resPrim] = resolve(
+        [inst, objType, primType]
+      ) as [InstanceElement, ObjectType, PrimitiveType]
+      expect(resObj.fields.f.type).toBe(resPrim)
+      expect(resObj.annotationTypes.a).toBe(resPrim)
+      expect(resInst.type).toBe(resObj)
     })
   })
 

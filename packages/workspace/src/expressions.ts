@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, isInstanceElement, Value,
   ReferenceExpression, TemplateExpression, isVariable,
-  isReferenceExpression, isVariableExpression,
+  isReferenceExpression, isVariableExpression, isElement, Field,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -26,7 +26,7 @@ import {
 
 type Resolver<T> = (
   v: T,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited?: Set<string>
 ) => Value
 
@@ -38,12 +38,18 @@ export class CircularReference {
   constructor(public ref: string) {}
 }
 
+const getResolvedElement = <T extends Element>(
+  elem: T, contextElements: Record<string, Element>
+): T => (
+    contextElements[elem.elemID.getFullName()] as T ?? elem
+  )
+
 let resolveReferenceExpression: Resolver<ReferenceExpression>
 let resolveTemplateExpression: Resolver<TemplateExpression>
 
 const resolveMaybeExpression: Resolver<Value> = (
   value: Value,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): Value => {
   if (isReferenceExpression(value)) {
@@ -54,12 +60,19 @@ const resolveMaybeExpression: Resolver<Value> = (
     return resolveTemplateExpression(value, contextElements, visited)
   }
 
+  // We do not want to recurse into elements because we can assume they will also be resolved
+  // at some point (because we are calling resolve on all elements), so if we encounter an element
+  // all we need to do is make it point to the element from the context
+  if (isElement(value)) {
+    return getResolvedElement(value, contextElements)
+  }
+
   return undefined
 }
 
 resolveReferenceExpression = (
   expression: ReferenceExpression,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): ReferenceExpression => {
   const { traversalParts } = expression
@@ -72,9 +85,8 @@ resolveReferenceExpression = (
 
   const fullElemID = ElemID.fromFullName(traversal)
   const { parent } = fullElemID.createTopLevelParentID()
-  // Validation should throw an error if there is no match, or more than one match
+  // Validation should throw an error if there is no match
   const rootElement = contextElements[parent.getFullName()]
-    && contextElements[parent.getFullName()][0]
 
   if (!rootElement) {
     return expression.createWithValue(new UnresolvedReference(fullElemID))
@@ -106,7 +118,7 @@ resolveReferenceExpression = (
 
 resolveTemplateExpression = (
   expression: TemplateExpression,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): Value => expression.parts
   .map(p => {
@@ -117,33 +129,46 @@ resolveTemplateExpression = (
 
 const resolveElement = (
   element: Element,
-  contextElements: Record<string, Element[]>
+  contextElements: Record<string, Element>
 ): void => {
   const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
+    element.type = getResolvedElement(element.type, contextElements)
   }
 
   if (isObjectType(element)) {
-    element.fields = _.cloneDeepWith(element.fields, referenceCloner)
+    element.fields = _.mapValues(
+      element.fields,
+      field => new Field(
+        element,
+        field.name,
+        getResolvedElement(field.type, contextElements),
+        _.cloneDeepWith(field.annotations, referenceCloner),
+      ),
+    )
   }
 
   if (isVariable(element)) {
     element.value = _.cloneWith(element.value, referenceCloner)
   }
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
-  element.annotationTypes = _.clone(element.annotationTypes)
+  element.annotationTypes = _.mapValues(
+    element.annotationTypes,
+    type => getResolvedElement(type, contextElements)
+  )
 }
 
-export const resolve = (elements: readonly Element[],
-  additionalContext: ReadonlyArray<Element> = []): Element[] => {
-  const additionalContextElements = _.groupBy(additionalContext, e => e.elemID.getFullName())
+export const resolve = (
+  elements: ReadonlyArray<Element>,
+  additionalContext: ReadonlyArray<Element> = [],
+): Element[] => {
   // intentionally shallow clone because in resolve element we replace only top level properties
   const clonedElements = elements.map(_.clone)
-  const contextElements = {
-    ...additionalContextElements,
-    ..._.groupBy(clonedElements, e => e.elemID.getFullName()),
-  }
+  const contextElements = _.keyBy(
+    [...additionalContext, ...clonedElements],
+    e => e.elemID.getFullName()
+  )
   clonedElements.forEach(e => resolveElement(e, contextElements))
   return clonedElements
 }

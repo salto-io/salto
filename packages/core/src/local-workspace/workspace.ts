@@ -19,11 +19,12 @@ import uuidv4 from 'uuid/v4'
 import { exists } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
   configSource as cs, parseCache, staticFiles, dirStore } from '@salto-io/workspace'
+import * as fileUtils from '@salto-io/file'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
-import { buildLocalStaticFilesCache } from './static_files_cache'
+import { buildLocalStaticFilesCache, CACHE_FILENAME } from './static_files_cache'
 
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
@@ -105,7 +106,13 @@ const loadNaclFileSource = (
 }
 
 const getEnvPath = (baseDir: string, env: string): string => (
-  path.resolve(baseDir, ENVS_PREFIX, env)
+  env === COMMON_ENV_PREFIX ? baseDir : path.resolve(baseDir, ENVS_PREFIX, env)
+)
+
+const getEnvCachePath = (localStorage: string, env: string): string => (
+  env === COMMON_ENV_PREFIX
+    ? path.resolve(localStorage, CACHE_DIR_NAME, 'common')
+    : path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
 )
 
 export const loadLocalElementsSources = (baseDir: string, localStorage: string,
@@ -118,15 +125,15 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
         {
           naclFiles: loadNaclFileSource(
             getEnvPath(baseDir, env),
-            path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
+            getEnvCachePath(localStorage, env)
           ),
           state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, env)),
         },
       ])),
     [COMMON_ENV_PREFIX]: {
       naclFiles: loadNaclFileSource(
-        baseDir,
-        path.resolve(localStorage, CACHE_DIR_NAME, 'common'),
+        getEnvPath(baseDir, COMMON_ENV_PREFIX),
+        getEnvCachePath(localStorage, COMMON_ENV_PREFIX),
         [path.join(baseDir, ENVS_PREFIX)]
       ),
     },
@@ -162,7 +169,40 @@ Promise<Workspace> => {
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
   const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
-  return loadWorkspace(workspaceConfig, credentials, elemSources)
+  const ws = await loadWorkspace(workspaceConfig, credentials, elemSources)
+
+  const fileBasedDemoteAll = async (): Promise<void> => {
+    const config = await workspaceConfig.getWorkspaceConfig()
+    const envDir = getEnvPath(baseDir, config.currentEnv)
+    const cacheEnvDir = getEnvCachePath(workspaceConfig.localStorage, config.currentEnv)
+    const commonDir = getEnvPath(baseDir, COMMON_ENV_PREFIX)
+    const commonCacheDir = getEnvCachePath(workspaceConfig.localStorage, COMMON_ENV_PREFIX)
+    // Move the cache folder
+    await fileUtils.mkdirp(cacheEnvDir)
+    await fileUtils.mkdirp(envDir)
+
+    // Move all of the content folder in the common dir
+    const dirsToMove = [STATIC_RESOURCES_FOLDER, ...config.envs[0].services ?? []]
+    const cacheDirToMove = [CACHE_FILENAME, ...config.envs[0].services ?? []]
+    await Promise.all([
+      ...dirsToMove.map(dirToMove => (
+        fileUtils.rename(path.join(commonDir, dirToMove), path.join(envDir, dirToMove))
+      )),
+      ...cacheDirToMove.map(dirToMove => (
+        fileUtils.rename(path.join(commonCacheDir, dirToMove), path.join(cacheEnvDir, dirToMove))
+      )),
+    ])
+  }
+  return {
+    ...ws,
+    demoteAll: async (): Promise<void> => {
+      const envSources = Object.values(
+        _.pickBy(elemSources.sources, (_src, key) => key !== elemSources.commonSourceName)
+      )
+      const allEnvSourcesEmpty = envSources.length === 1 && await envSources[0].naclFiles.isEmpty()
+      return allEnvSourcesEmpty ? fileBasedDemoteAll() : ws.demoteAll()
+    },
+  }
 }
 
 export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):

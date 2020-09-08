@@ -54,6 +54,7 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'SBQQ__PriceRule__c', 'field', 'SBQQ__LookupObject__c'), CUSTOM_OBJECT],
   [new ElemID(SALESFORCE, 'SBQQ__ProductRule__c', 'field', 'SBQQ__LookupObject__c'), CUSTOM_OBJECT],
   [new ElemID(SALESFORCE, 'SBQQ__LookupQuery__c', 'field', 'SBQQ__RuleLookupObject__c'), CUSTOM_OBJECT],
+  [new ElemID(SALESFORCE, 'SBQQ__PriceAction__c', 'field', 'SBQQ__RuleLookupObject__c'), CUSTOM_OBJECT],
   [new ElemID(SALESFORCE, 'SBQQ__FieldMetadata__c', 'field', 'SBQQ__ObjectName__c'), CUSTOM_OBJECT],
 ]
 

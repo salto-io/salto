@@ -131,6 +131,7 @@ export const command = (
       const { filters, invalidFilters } = createRegexFilters(inputFilters)
       if (!_.isEmpty(invalidFilters)) {
         output.stderr.write(formatInvalidFilters(invalidFilters))
+        log.debug(formatInvalidFilters(invalidFilters))
         return CliExitCode.UserInputError
       }
 
@@ -144,6 +145,7 @@ export const command = (
           sessionEnv: inputEnvironment,
         }
       )
+      log.debug(`workspaced errored: ${errored}`)
       if (errored) {
         cliTelemetry.failure()
         return CliExitCode.AppError

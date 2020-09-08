@@ -21,6 +21,9 @@ import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from
 import { getEnvName } from '../callbacks'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { getCliTelemetry } from '../telemetry'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
 
 export const command = (
   workspaceName: string | undefined,
@@ -39,7 +42,9 @@ export const command = (
       stdout.write(
         Prompts.initCompleted(workspace.name, baseDir)
       )
+      log.debug(Prompts.initCompleted(workspace.name, baseDir))
     } catch (e) {
+      log.debug(Prompts.initFailed(e.message))
       stderr.write(Prompts.initFailed(e.message))
       cliTelemetry.failure()
       cliTelemetry.stacktrace(e)

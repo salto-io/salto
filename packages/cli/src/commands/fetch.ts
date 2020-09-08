@@ -151,6 +151,7 @@ export const fetchCommand = async (
   )
   if (fetchResult.success === false) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
+    log.debug(formatFatalFetchError(fetchResult.mergeErrors))
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
@@ -256,6 +257,7 @@ export const command = (
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored, stateRecencies } = await loadWorkspace(workspaceDir, output,
       { force, printStateRecency: true, spinnerCreator, sessionEnv: inputEnvironment })
+    log.debug(`workspace errored: ${errored}`)
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError

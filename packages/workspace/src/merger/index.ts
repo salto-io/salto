@@ -106,6 +106,9 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
 
   log.debug(`merged ${elements.length} elements to ${updated.length} elements [errors=${
     errors.length}]`)
+  if (errors.length > 0) {
+    log.debug(`All merge errors:\n${errors.map(err => err.message).join('\n')}`)
+  }
   return {
     merged: updated,
     errors,

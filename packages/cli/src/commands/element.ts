@@ -159,6 +159,7 @@ export const command = (
         sessionEnv,
       }
     )
+    log.debug(`workspace errored: ${errored}`)
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError

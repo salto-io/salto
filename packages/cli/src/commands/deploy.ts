@@ -59,13 +59,17 @@ const printPlan = async (
   )
   stdout.write(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
   stdout.write(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan))
+  log.debug(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
+  log.debug(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan))
 }
 
 const printStartDeploy = async (stdout: WriteStream, executingDeploy: boolean): Promise<void> => {
   if (executingDeploy) {
     stdout.write(deployPhaseHeader)
+    log.debug(deployPhaseHeader)
   } else {
     stdout.write(cancelDeployOutput)
+    log.debug(cancelDeployOutput)
   }
 }
 
@@ -185,6 +189,10 @@ export class DeployCommand implements CliCommand {
       result.errors.length,
     ))
     this.stdout.write(EOL)
+    if (result.errors.length > 0)
+    {
+      log.debug(`All deploy errors:\n${result.errors.map(err => err.message).join('\n')}`);
+    }
     if (executingDeploy) {
       this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
       this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
@@ -204,6 +212,7 @@ export class DeployCommand implements CliCommand {
         spinnerCreator: this.spinnerCreator,
         sessionEnv: this.inputEnv,
       })
+    log.debug(`workspace errored: ${errored}`)
     if (errored) {
       this.cliTelemetry.failure()
       return CliExitCode.AppError

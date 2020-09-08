@@ -65,12 +65,7 @@ export const formatLogTags = (logTags: Record<string, unknown>, baseKeys: string
 export const normalizeLogTags = (logTags: LogTags): LogTags =>
   Object.fromEntries(
     Object.entries(logTags)
-      .map(([key, value]) => {
-        if (typeof value === 'function') {
-          return [key, value()]
-        }
-        return [key, value]
-      })
+      .map(([key, value]) => [key, typeof value === 'function' ? value() : value])
   )
 
 export const toTags = (s: string): LogTags => JSON.parse(s)

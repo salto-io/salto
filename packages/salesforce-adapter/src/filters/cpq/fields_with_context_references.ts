@@ -29,15 +29,15 @@ const CPQ_LOOKUP_FIELDS = [
   CPQ_LOOKUP_REQUIRED_FIELD,
   CPQ_LOOKUP_TYPE_FIELD,
 ]
-type fieldBasedinstanceFieldsRefContext = {
+type FieldBasedinstanceFieldsRefContext = {
   fields: string[]
   contextField: string
 }
-type instanceFieldsRefContext = {
+type InstanceFieldsRefContext = {
   fields: string[]
   contextObjectName: string
 }
-const mappingWithFieldBasedContext: Record<string, fieldBasedinstanceFieldsRefContext> = {
+const mappingWithFieldBasedContext: Record<string, FieldBasedinstanceFieldsRefContext> = {
   [CPQ_PRODUCT_RULE]: {
     fields: CPQ_LOOKUP_FIELDS,
     contextField: CPQ_LOOKUP_OBJECT_NAME,
@@ -48,12 +48,18 @@ const mappingWithFieldBasedContext: Record<string, fieldBasedinstanceFieldsRefCo
   },
 }
 
-const mappingWithKnownContext: Record<string, instanceFieldsRefContext> = {
+const mappingWithKnownContext: Record<string, InstanceFieldsRefContext> = {
   [CPQ_LOOKUP_QUERY]: {
     fields: [CPQ_LOOKUP_FIELD],
     contextObjectName: CPQ_LOOKUP_DATA,
   },
 }
+
+const groupByTypeApiName = (instances: InstanceElement[]): Record<string, InstanceElement[]> =>
+  (_.groupBy(
+    instances,
+    instance => apiName(instance.type)
+  ))
 
 const replaceValuesWithFieldRefsByObjectContext = (
   instance: InstanceElement,
@@ -111,10 +117,7 @@ const replaceFieldNamesWithKnownContextRef = (
   instances: InstanceElement[],
   apiNameToCustomObjects: Record<string, ObjectType>
 ): void => {
-  const typeApiNameToInstances = _.groupBy(
-    instances,
-    instance => apiName(instance.type)
-  )
+  const typeApiNameToInstances = groupByTypeApiName(instances)
   const typeApiNameToRefsContext = Object.fromEntries(
     Object.keys(typeApiNameToInstances).map(typeName => {
       const typeContext = getKnownTypeContext(typeName, apiNameToCustomObjects)
@@ -139,10 +142,7 @@ const replaceFieldNamesWithFieldContextRef = (
   instances: InstanceElement[],
   apiNameToCustomObjects: Record<string, ObjectType>
 ): void => {
-  const typeApiNameToInstances = _.groupBy(
-    instances,
-    instance => apiName(instance.type)
-  )
+  const typeApiNameToInstances = groupByTypeApiName(instances)
   Object.entries(typeApiNameToInstances)
     .flatMap(([typeName, typeInstances]) =>
       (typeInstances

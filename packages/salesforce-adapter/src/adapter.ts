@@ -106,7 +106,7 @@ export const DEFAULT_FILTERS = [
   lookupFiltersFilter,
   customObjectInstanceReferencesFilter,
   cpqLookupObjectsFilter,
-  // should run before instanceReferences filter
+  // cpqFieldsWithContextRefFilter should run before instanceReferences filter
   cpqFieldsWithContextRefFilter,
   animationRulesFilter,
   samlInitMethodFilter,

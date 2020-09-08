@@ -192,7 +192,6 @@ const restoreBuilder = createCommandBuilder({
     description: 'Restore configuration element(s) from the state file',
     positional: {
       'element-selector': {
-        type: 'string',
         description: 'Array of configuration element patterns',
       },
     },

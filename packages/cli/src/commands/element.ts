@@ -213,7 +213,6 @@ const elementBuilder = createCommandBuilder({
         description: 'The element management command',
       },
       'element-selector': {
-        type: 'string',
         description: 'Array of configuration elements',
       },
     },

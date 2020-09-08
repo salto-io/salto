@@ -132,7 +132,6 @@ const diffBuilder = createCommandBuilder({
         desc: 'The environment to align',
       },
       'element-selector': {
-        type: 'string',
         description: 'Array of configuration element patterns',
       },
     },

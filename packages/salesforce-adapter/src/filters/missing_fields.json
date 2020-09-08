@@ -2160,5 +2160,23 @@
         ]
       }
     ]
+  },
+  {
+    "id": "ContentAssetLink",
+    "fields": [
+      {
+        "name": "access",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "values": [
+              "VIEWER",
+              "COLLABORATOR",
+              "INFERRED"
+            ]
+          }
+        }
+      }
+    ]
   }
 ]

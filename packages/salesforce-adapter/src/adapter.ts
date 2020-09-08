@@ -244,28 +244,35 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   )
 
 const metadataToRetrieveAndDeploy = [
-  'ApexClass', // readMetadata is not supported, contains encoded zip content
-  'ApexTrigger', // readMetadata is not supported, contains encoded zip content
-  'ApexPage', // contains encoded zip content
+  // Metadata with content - we use retrieve to get the StaticFiles properly
+  'ApexClass', // contains encoded zip content
   'ApexComponent', // contains encoded zip content
-  'AssignmentRules',
+  'ApexPage', // contains encoded zip content
+  'ApexTrigger', // contains encoded zip content
+  'AssignmentRules', // contains encoded zip content
   'AuraDefinitionBundle', // Has several fields with base64Binary encoded content
-  'LightningComponentBundle', // Has several fields with base64Binary encoded content
-  'InstalledPackage', // listMetadataObjects of this types returns duplicates
-  'EmailTemplate', // contains encoded zip content, is under a folder
-  'EmailFolder',
-  'ReportType',
-  'Report', // contains encoded zip content, is under a folder
-  'ReportFolder',
+  'Certificate', // contains encoded zip content
+  'ContentAsset', // contains encoded zip content
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
   'Document', // contains encoded zip content, is under a folder
   'DocumentFolder',
-  'Territory2', // All Territory2 types do not support CRUD
-  'Territory2Rule', // All Territory2 types do not support CRUD
-  'Territory2Model', // All Territory2 types do not support CRUD
-  'Territory2Type', // All Territory2 types do not support CRUD
+  'EclairGeoData', // contains encoded zip content
+  'EmailFolder',
+  'EmailTemplate', // contains encoded zip content, is under a folder
+  'LightningComponentBundle', // Has several fields with base64Binary encoded content
+  'NetworkBranding', // contains encoded zip content
+  'Report', // contains encoded zip content, is under a folder
+  'ReportFolder',
+  'ReportType',
+  'SiteDotCom', // contains encoded zip content
   'StaticResource', // contains encoded zip content
+  // Other types that need retrieve / deploy to work
+  'InstalledPackage', // listMetadataObjects of this types returns duplicates
+  'Territory2', // All Territory2 types do not support CRUD
+  'Territory2Model', // All Territory2 types do not support CRUD
+  'Territory2Rule', // All Territory2 types do not support CRUD
+  'Territory2Type', // All Territory2 types do not support CRUD
 ]
 
 export default class SalesforceAdapter implements AdapterOperations {

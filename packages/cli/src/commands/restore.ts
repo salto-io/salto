@@ -40,7 +40,7 @@ type RestoreArgs = {
     dryRun: boolean
     detailedPlan: boolean
     listPlannedChanges: boolean
-    filters: string[]
+    elementSelector: string[]
   } & ServicesArgs & EnvironmentArgs & FetchModeArgs
 
 type RestoreParsedCliInput = ParsedCliInput<RestoreArgs>
@@ -188,7 +188,7 @@ export const command = (
 
 const restoreBuilder = createCommandBuilder({
   options: {
-    command: 'restore [filters..]',
+    command: 'restore [element-selector..]',
     description: 'Syncs this workspace with the current local state',
     keyed: {
       force: {
@@ -260,7 +260,7 @@ const restoreBuilder = createCommandBuilder({
       input.config.shouldCalcTotalSize,
       input.args.services,
       input.args.env,
-      input.args.filters
+      input.args.elementSelector
     )
   },
 })

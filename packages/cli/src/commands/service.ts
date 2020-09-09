@@ -29,7 +29,7 @@ import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
-import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
+import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
 import { getCredentialsFromUser } from '../callbacks'
 import { serviceCmdFilter, ServiceCmdArgs } from '../filters/service'
 import {
@@ -43,13 +43,13 @@ const getLoginInputFlow = async (
   workspace: Workspace,
   configType: ObjectType,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
-  stdout: WriteStream
+  output: CliOutput
 ): Promise<void> => {
-  stdout.write(formatCredentialsHeader(configType.elemID.adapter))
+  output.stdout.write(formatCredentialsHeader(configType.elemID.adapter))
   const newConfig = await getLoginInput(configType)
   await updateCredentials(workspace, newConfig)
-  stdout.write(EOL)
-  outputLine(formatLoginUpdated, { stdout })
+  output.stdout.write(EOL)
+  outputLine(formatLoginUpdated, output)
 }
 
 const loadWorkspace = async (workspaceDir: string, inputEnvironment?: string):
@@ -63,7 +63,7 @@ Promise<Workspace> => {
 
 const addService = async (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput,
+  output: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
   inputEnvironment?: string,
@@ -71,22 +71,22 @@ const addService = async (
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (workspace.services().includes(serviceName)) {
-    errorOutputLine(formatServiceAlreadyAdded(serviceName), { stderr })
+    errorOutputLine(formatServiceAlreadyAdded(serviceName), output)
     return CliExitCode.UserInputError
   }
 
   if (!nologin) {
     const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
     try {
-      await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
+      await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, output)
     } catch (e) {
-      errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), { stderr })
+      errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
       return CliExitCode.AppError
     }
   }
 
   await addAdapter(workspace, serviceName)
-  outputLine(formatServiceAdded(serviceName), { stdout })
+  outputLine(formatServiceAdded(serviceName), output)
   return CliExitCode.Success
 }
 
@@ -109,14 +109,14 @@ const listServices = async (
 
 const loginService = async (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput,
+  output: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
   inputEnvironment?: string,
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (!workspace.services().includes(serviceName)) {
-    errorOutputLine(formatServiceNotConfigured(serviceName), { stderr })
+    errorOutputLine(formatServiceNotConfigured(serviceName), output)
     return CliExitCode.AppError
   }
   const serviceLoginStatus = (await getLoginStatuses(
@@ -124,9 +124,9 @@ const loginService = async (
     [serviceName]
   ))[serviceName] as LoginStatus
   if (serviceLoginStatus.isLoggedIn) {
-    outputLine(formatLoginOverride, { stdout })
+    outputLine(formatLoginOverride, output)
   }
-  await getLoginInputFlow(workspace, serviceLoginStatus.configType, getLoginInput, stdout)
+  await getLoginInputFlow(workspace, serviceLoginStatus.configType, getLoginInput, output)
   return CliExitCode.Success
 }
 

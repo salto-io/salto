@@ -27,7 +27,7 @@ import { getCliTelemetry } from '../telemetry'
 export const command = (
   workspaceName: string | undefined,
   cliTelemetry: CliTelemetry,
-  { stdout, stderr }: CliOutput,
+  output: CliOutput,
   getEnvNameCallback: (currentEnvName?: string) => Promise<string>
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
@@ -38,9 +38,9 @@ export const command = (
       const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)
       const workspaceTags = await getWorkspaceTelemetryTags(workspace)
       cliTelemetry.success(workspaceTags)
-      outputLine(Prompts.initCompleted(workspace.name, baseDir), { stdout })
+      outputLine(Prompts.initCompleted(workspace.name, baseDir), output)
     } catch (e) {
-      errorOutputLine(Prompts.initFailed(e.message), { stderr })
+      errorOutputLine(Prompts.initFailed(e.message), output)
       cliTelemetry.failure()
       cliTelemetry.stacktrace(e)
       return CliExitCode.AppError

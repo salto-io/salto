@@ -48,7 +48,7 @@ describe('localParseResultCache', () => {
   const mockMkdir = mkdirp as jest.Mock
   const mockedStaticFilesSource = { clone: jest.fn() } as unknown as staticFiles.StaticFilesSource
   const cache = parseResultCache(
-    localDirectoryStore({ baseDir: mockBaseDirPath, encoding: 'utf8' }),
+    localDirectoryStore({ baseDir: mockBaseDirPath, name: '', encoding: 'utf8' }),
     mockedStaticFilesSource
   )
   const sourceMap = new parser.SourceMap()

@@ -55,7 +55,7 @@ describe('Static Files Cache', () => {
 
   beforeEach(() => {
     jest.resetAllMocks()
-    staticFilesCache = buildLocalStaticFilesCache('cacheDir')
+    staticFilesCache = buildLocalStaticFilesCache('', 'cacheDir')
   })
   it('does not fail if no cache file exists', async () => {
     expect((await staticFilesCache.get(baseMetaData.filepath))).toBeUndefined()
@@ -63,7 +63,7 @@ describe('Static Files Cache', () => {
   it('uses content of cache file if existed', async () => {
     mockFileExists.mockResolvedValueOnce(true)
     mockReadFile.mockResolvedValueOnce(expectedCacheContent)
-    staticFilesCache = buildLocalStaticFilesCache('cacheDir')
+    staticFilesCache = buildLocalStaticFilesCache('', 'cacheDir')
     return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
   })
   it('puts and retrieves value', async () => {

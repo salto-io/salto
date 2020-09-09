@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import {
   CORE_ANNOTATIONS, Element,
   isInstanceElement, isType,
@@ -35,6 +36,8 @@ import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 
+const log = logger(module)
+
 const isHidden = (element?: Element): boolean => (
   element?.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true
 )
@@ -47,11 +50,11 @@ const splitElementHiddenParts = <T extends Element>(
     return { hidden: element }
   }
 
-  const hiddenPaths: string[] = []
+  const hiddenPaths: ElemID[] = []
   const removeHiddenAndStorePath: TransformFunc = ({ value, field, path }) => {
     if (isHidden(field)) {
       if (path !== undefined) {
-        hiddenPaths.push(path.getFullName())
+        hiddenPaths.push(path)
       }
       return undefined
     }
@@ -76,7 +79,7 @@ const splitElementHiddenParts = <T extends Element>(
     // We also do not omit A.B.C.D because A.B.C was hidden, so by association everything inside
     // it is also hidden
     path !== undefined && hiddenPaths.some(hiddenPath => (
-      hiddenPath.startsWith(path.getFullName()) || path.getFullName().startsWith(hiddenPath)
+      path.isEqual(hiddenPath) || hiddenPath.isParentOf(path) || path.isParentOf(hiddenPath)
     ))
   )
 
@@ -125,24 +128,24 @@ const removeHiddenFromValues = (
 )
 
 const isChangeToHidden = (change: DetailedChange): boolean => (
-  isAdditionOrModificationChange(change) && change.data.after === true
+  change.id.name === CORE_ANNOTATIONS.HIDDEN
+  && isAdditionOrModificationChange(change) && change.data.after === true
 )
 
 const isChangeToNotHidden = (change: DetailedChange): boolean => (
-  isRemovalOrModificationChange(change) && change.data.before === true
+  change.id.name === CORE_ANNOTATIONS.HIDDEN
+  && isRemovalOrModificationChange(change) && change.data.before === true
 )
 
 const isHiddenChangeOnElement = (change: DetailedChange): boolean => (
   change.id.idType === 'attr'
   && change.id.nestingLevel === 1
-  && change.id.name === CORE_ANNOTATIONS.HIDDEN
   && (isChangeToHidden(change) || isChangeToNotHidden(change))
 )
 
 const isHiddenChangeOnField = (change: DetailedChange): boolean => (
   change.id.idType === 'field'
   && change.id.nestingLevel === 2
-  && change.id.name === CORE_ANNOTATIONS.HIDDEN
   && (isChangeToHidden(change) || isChangeToNotHidden(change))
 )
 
@@ -158,6 +161,10 @@ const getHiddenTypeChanges = async (
         const elem = await state.get(elemId)
         if (!isElement(elem)) {
           // Should never happen
+          log.warn(
+            'Element %s was change to hidden %s but was not found in state',
+            elemId.getFullName(), isChangeToHidden(change),
+          )
           return change
         }
         return isChangeToHidden(change)
@@ -174,7 +181,7 @@ const getHiddenFieldValueChanges = async (
 ): Promise<DetailedChange[]> => {
   const hiddenFieldChanges = changes.filter(isHiddenChangeOnField)
   if (hiddenFieldChanges.length === 0) {
-    // This should be to common case where there are no changes to the hidden annotation
+    // This should be the common case where there are no changes to the hidden annotation
     return []
   }
 
@@ -238,14 +245,16 @@ const removeDuplicateChanges = (
   const changeById = _.keyBy(changes, change => change.id.getFullName())
 
   // If we have a change to A.B and a change to A.B.C, the second change is redundant because
-  // its value is included in the first one. a change in "unique" if there are no changes
-  // to ids that contain it
-  const hasChangeContainingId = (id: ElemID): boolean => (
-    changeById[id.getFullName()] !== undefined
-    || (!id.isTopLevel() && hasChangeContainingId(id.createParentID()))
-  )
-  return Object.values(changeById)
-    .filter(change => change.id.isTopLevel() || !hasChangeContainingId(change.id.createParentID()))
+  // its value is included in the first one.
+  const hasChangeOnParent = (id: ElemID): boolean => {
+    if (id.isTopLevel()) {
+      return false
+    }
+    const parent = id.createParentID()
+    return changeById[parent.getFullName()] !== undefined || hasChangeOnParent(parent)
+  }
+
+  return Object.values(changeById).filter(change => !hasChangeOnParent(change.id))
 }
 
 const handleChangesToHiddenAnnotation = async (

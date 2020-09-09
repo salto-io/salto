@@ -15,13 +15,10 @@
 */
 import readdirp from 'readdirp'
 import path from 'path'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import * as fileUtils from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
 import { dirStore } from '@salto-io/workspace'
-
-const log = logger(module)
 
 const { withLimitedConcurrency, series } = promises.array
 
@@ -51,14 +48,14 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   if ((_.isUndefined(pathPrefix) && !_.isUndefined(pathSuffix))
   || (!_.isUndefined(pathPrefix) && _.isUndefined(pathSuffix))) {
     throw Error('Invalid dirStore initialization. pathPrefix &'
-    + ' pathPrefix comes together or not at all')
+    + ' pathSuffix comes together or not at all')
   }
-  if (_.isUndefined(pathPrefix) && _.isUndefined(pathSuffix)) {
-    currentBaseDir = baseDir
+  if (!_.isUndefined(pathPrefix) && !_.isUndefined(pathSuffix)) {
+    currentBaseDir = path.join(pathPrefix, baseDir, pathSuffix)
+    currentPathPrefix = pathPrefix
+    currentPathSuffix = pathSuffix
   } else {
-    currentBaseDir = path.join(pathPrefix as string, baseDir, pathSuffix as string)
-    currentPathPrefix = pathPrefix as string
-    currentPathSuffix = pathSuffix as string
+    currentBaseDir = baseDir
   }
 
   const getAbsFileName = (filename: string, dir?: string): string =>
@@ -191,7 +188,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       await fileUtils.mkdirp(path.dirname(futurePath))
       await fileUtils.rename(currentPath, futurePath)
     } else {
-      log.debug(`Rename failed. ${currentPath} Does not exists`)
+      throw Error(`Rename failed. ${currentPath} Does not exists`)
     }
   }
 

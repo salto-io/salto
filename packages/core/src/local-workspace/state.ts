@@ -110,7 +110,7 @@ export const localState = (filePath: string): state.State => {
       if (exists(currentFilePath)) {
         await rename(currentFilePath, newFilePath)
       } else {
-        log.debug(`Rename failed. ${currentFilePath} Does not exists`)
+        throw Error(`Rename failed. ${currentFilePath} Does not exists`)
       }
       currentFilePath = newFilePath
     },

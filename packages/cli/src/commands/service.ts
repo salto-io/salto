@@ -26,7 +26,7 @@ import {
 import { Workspace } from '@salto-io/workspace'
 
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
+import { outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
@@ -39,8 +39,6 @@ import {
 } from '../formatter'
 import { EnvironmentArgs } from './env'
 
-const log = logger(module)
-
 const getLoginInputFlow = async (
   workspace: Workspace,
   configType: ObjectType,
@@ -51,9 +49,7 @@ const getLoginInputFlow = async (
   const newConfig = await getLoginInput(configType)
   await updateCredentials(workspace, newConfig)
   stdout.write(EOL)
-  stdout.write(formatLoginUpdated)
-  log.debug(EOL)
-  log.debug(formatLoginUpdated)
+  outputLine(formatLoginUpdated, { stdout })
 }
 
 const loadWorkspace = async (workspaceDir: string, inputEnvironment?: string):
@@ -75,8 +71,7 @@ const addService = async (
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (workspace.services().includes(serviceName)) {
-    stderr.write(formatServiceAlreadyAdded(serviceName))
-    log.debug(formatServiceAlreadyAdded(serviceName))
+    errorOutputLine(formatServiceAlreadyAdded(serviceName), { stderr })
     return CliExitCode.UserInputError
   }
 
@@ -85,15 +80,13 @@ const addService = async (
     try {
       await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
     } catch (e) {
-      stderr.write(formatLoginToServiceFailed(serviceName, e.message))
-      log.debug(formatLoginToServiceFailed(serviceName, e.message))
+      errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), { stderr })
       return CliExitCode.AppError
     }
   }
 
   await addAdapter(workspace, serviceName)
-  stdout.write(formatServiceAdded(serviceName))
-  log.debug(formatServiceAdded(serviceName))
+  outputLine(formatServiceAdded(serviceName), { stdout })
   return CliExitCode.Success
 }
 
@@ -105,14 +98,11 @@ const listServices = async (
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (_.isEmpty(serviceName)) {
-    cliOutput.stdout.write(formatConfiguredServices(workspace.services()))
-    log.debug(formatConfiguredServices(workspace.services()))
+    outputLine(formatConfiguredServices(workspace.services()), cliOutput)
   } else if (workspace.services().includes(serviceName)) {
-    cliOutput.stdout.write(formatServiceConfigured(serviceName))
-    log.debug(formatServiceConfigured(serviceName))
+    outputLine(formatServiceConfigured(serviceName), cliOutput)
   } else {
-    cliOutput.stdout.write(formatServiceNotConfigured(serviceName))
-    log.debug(formatServiceNotConfigured(serviceName))
+    outputLine(formatServiceNotConfigured(serviceName), cliOutput)
   }
   return CliExitCode.Success
 }
@@ -126,8 +116,7 @@ const loginService = async (
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (!workspace.services().includes(serviceName)) {
-    stderr.write(formatServiceNotConfigured(serviceName))
-    log.debug(formatServiceNotConfigured(serviceName))
+    errorOutputLine(formatServiceNotConfigured(serviceName), { stderr })
     return CliExitCode.AppError
   }
   const serviceLoginStatus = (await getLoginStatuses(
@@ -135,8 +124,7 @@ const loginService = async (
     [serviceName]
   ))[serviceName] as LoginStatus
   if (serviceLoginStatus.isLoggedIn) {
-    stdout.write(formatLoginOverride)
-    log.debug(formatLoginOverride)
+    outputLine(formatLoginOverride, { stdout })
   }
   await getLoginInputFlow(workspace, serviceLoginStatus.configType, getLoginInput, stdout)
   return CliExitCode.Success

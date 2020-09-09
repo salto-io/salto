@@ -19,6 +19,7 @@ import { Workspace } from '@salto-io/workspace'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
+import { outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { getUserBooleanInput } from '../callbacks'
@@ -57,19 +58,15 @@ const printPlan = async (
   const planWorkspaceErrors = await Promise.all(
     actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
   )
-  stdout.write(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
-  stdout.write(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan))
-  log.debug(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
-  log.debug(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan))
+  outputLine(header(Prompts.PLAN_STEPS_HEADER_DEPLOY), { stdout })
+  outputLine(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan), { stdout })
 }
 
 const printStartDeploy = async (stdout: WriteStream, executingDeploy: boolean): Promise<void> => {
   if (executingDeploy) {
-    stdout.write(deployPhaseHeader)
-    log.debug(deployPhaseHeader)
+    outputLine(deployPhaseHeader, { stdout })
   } else {
-    stdout.write(cancelDeployOutput)
-    log.debug(cancelDeployOutput)
+    outputLine(cancelDeployOutput, { stdout })
   }
 }
 
@@ -122,8 +119,7 @@ export class DeployCommand implements CliCommand {
   private errorAction(itemName: string, details: string): void {
     const action = this.actions.get(itemName)
     if (action) {
-      this.stderr.write(formatItemError(itemName, details))
-      log.error(formatItemError(itemName, details))
+      errorOutputLine(formatItemError(itemName, details), { stderr: this.stderr })
       if (action.intervalId) {
         clearInterval(action.intervalId)
       }
@@ -131,8 +127,7 @@ export class DeployCommand implements CliCommand {
   }
 
   private cancelAction(itemName: string, parentItemName: string): void {
-    this.stderr.write(formatCancelAction(itemName, parentItemName))
-    log.error(formatCancelAction(itemName, parentItemName))
+    errorOutputLine(formatCancelAction(itemName, parentItemName), { stderr: this.stderr })
   }
 
   private startAction(itemName: string, item: PlanItem): void {
@@ -213,7 +208,6 @@ export class DeployCommand implements CliCommand {
         spinnerCreator: this.spinnerCreator,
         sessionEnv: this.inputEnv,
       })
-    log.debug(`workspace errored: ${errored}`)
     if (errored) {
       this.cliTelemetry.failure()
       return CliExitCode.AppError

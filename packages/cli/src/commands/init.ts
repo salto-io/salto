@@ -15,7 +15,7 @@
 */
 import * as path from 'path'
 import { initLocalWorkspace } from '@salto-io/core'
-import { logger } from '@salto-io/logging'
+import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -23,7 +23,6 @@ import { getEnvName } from '../callbacks'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { getCliTelemetry } from '../telemetry'
 
-const log = logger(module)
 
 export const command = (
   workspaceName: string | undefined,
@@ -39,13 +38,9 @@ export const command = (
       const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)
       const workspaceTags = await getWorkspaceTelemetryTags(workspace)
       cliTelemetry.success(workspaceTags)
-      stdout.write(
-        Prompts.initCompleted(workspace.name, baseDir)
-      )
-      log.debug(Prompts.initCompleted(workspace.name, baseDir))
+      outputLine(Prompts.initCompleted(workspace.name, baseDir), { stdout })
     } catch (e) {
-      stderr.write(Prompts.initFailed(e.message))
-      log.debug(Prompts.initFailed(e.message))
+      errorOutputLine(Prompts.initFailed(e.message), { stderr })
       cliTelemetry.failure()
       cliTelemetry.stacktrace(e)
       return CliExitCode.AppError

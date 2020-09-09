@@ -87,8 +87,6 @@ export default async (
       ? chalk`{${ERROR_STYLE} ${unstyledErrorString}}` : unstyledErrorString
     errorStream.write(errorString)
     errorStream.write(EOL)
-    log.debug(errorString)
-    log.debug(EOL)
     return CliExitCode.AppError
   } finally {
     await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)

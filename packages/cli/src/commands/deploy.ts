@@ -127,7 +127,7 @@ export class DeployCommand implements CliCommand {
   }
 
   private cancelAction(itemName: string, parentItemName: string): void {
-    errorOutputLine(formatCancelAction(itemName, parentItemName), { stderr: this.stderr })
+    outputLine(formatCancelAction(itemName, parentItemName), { stdout: this.stdout })
   }
 
   private startAction(itemName: string, item: PlanItem): void {

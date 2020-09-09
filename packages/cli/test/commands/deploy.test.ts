@@ -106,7 +106,7 @@ describe('deploy command', () => {
         })
         it('it should cancel upon cancelling', async () => {
           wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'cancelled', 'parent-node-name'))
-          expect(cliOutput.stderr.content.search('Cancelled')).toBeGreaterThan(0)
+          expect(cliOutput.stdout.content.search('Cancelled')).toBeGreaterThan(0)
         })
       })
     })

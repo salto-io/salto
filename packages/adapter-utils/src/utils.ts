@@ -23,7 +23,7 @@ import {
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData, ListType,
+  ChangeData, ListType, isElement,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -704,4 +704,28 @@ export const getAllReferencedIds = (element: Element): Set<string> => {
   transformElement({ element, transformFunc, strict: false })
 
   return allReferencedIds
+}
+
+export const getNestedStaticFiles = (value: Value): StaticFile[] => {
+  if (isElement(value)) {
+    const allReferencedIds = new Set<StaticFile>()
+    const transformFunc: TransformFunc = ({ value: val }) => {
+      if (isStaticFile(val)) {
+        allReferencedIds.add(val)
+      }
+      return val
+    }
+    transformElement({ element: value, transformFunc, strict: false })
+    return wu(allReferencedIds.values()).toArray()
+  }
+  if (_.isArray(value)) {
+    return _.flatten(value.map(getNestedStaticFiles))
+  }
+  if (_.isPlainObject(value)) {
+    return _.flatten(Object.values(value).map(getNestedStaticFiles))
+  }
+  if (isStaticFile(value)) {
+    return [value]
+  }
+  return []
 }

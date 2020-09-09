@@ -47,7 +47,7 @@ describe('Static Files Source', () => {
       get: jest.fn().mockResolvedValue(undefined),
       getFiles: jest.fn().mockResolvedValue([undefined]),
       set: () => Promise.resolve(),
-      delete: () => Promise.resolve(),
+      delete: jest.fn().mockResolvedValue(undefined),
       clear: () => Promise.resolve(),
       rename: () => Promise.resolve(),
       renameFile: () => Promise.resolve(),
@@ -241,6 +241,12 @@ describe('Static Files Source', () => {
     it('should persist valid static file with content', async () => {
       await staticFilesSource.persistStaticFile(exampleStaticFileWithContent)
       expect(mockDirStore.set).toHaveBeenCalledTimes(1)
+    })
+  })
+  describe('delete a file', () => {
+    it('should invoke the dir store delete method with the static file file path attribute', async () => {
+      await staticFilesSource.delete(exampleStaticFileWithContent)
+      expect(mockDirStore.delete).toHaveBeenCalledWith(exampleStaticFileWithContent.filepath)
     })
   })
 })

@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, Value, DetailedChange, isElement,
+  Element, ElemID, Value, DetailedChange, isElement, getChangeElement,
 } from '@salto-io/adapter-api'
-import { resolvePath } from '@salto-io/adapter-utils'
+import { resolvePath, getNestedStaticFiles } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
@@ -189,7 +189,7 @@ const logNaclFileUpdateErrorContext = (
   log.debug('data before:\n%s', naclDataBefore)
   log.debug('data after:\n%s', naclDataAfter)
 }
-
+// TODO START
 const buildNaclFilesSource = (
   naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
@@ -261,6 +261,15 @@ const buildNaclFilesSource = (
       return naclFile ? naclFile.buffer : ''
     }
 
+    const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
+      await Promise.all(_.flatten(
+        fileChanges.filter(change => change.action === 'remove')
+          .map(getChangeElement)
+          .map(getNestedStaticFiles)
+          .map(files => files.map(file => staticFileSource.delete(file)))
+      ))
+    }
+
     const naclFiles = _(await Promise.all(changes.map(change => change.id)
       .map(elemID => getElementNaclFiles(elemID))))
       .flatten().uniq().value()
@@ -298,6 +307,7 @@ const buildNaclFilesSource = (
             if (parsed.errors.length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }
+            await removeDanglingStaticFiles(fileChanges)
             return { ...parsed, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s with %o changes due to: %o',

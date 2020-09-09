@@ -134,6 +134,14 @@ export class ElemID {
     return this.getFullName() === other.getFullName()
   }
 
+  isParentOf(other: ElemID): boolean {
+    if (other.isTopLevel() || this.nestingLevel >= other.nestingLevel) {
+      return false
+    }
+    const parent = other.createParentID()
+    return this.isEqual(parent) || this.isParentOf(parent)
+  }
+
   createNestedID(...nameParts: string[]): ElemID {
     if (ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)) {
       const newIdName = [...this.fullNameParts(), ...nameParts].join(ElemID.NAMESPACE_SEPARATOR)

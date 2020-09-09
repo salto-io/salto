@@ -186,9 +186,8 @@ export class DeployCommand implements CliCommand {
       result.errors.length,
     ))
     this.stdout.write(EOL)
-    if (result.errors.length > 0) {
-      log.debug(`All deploy errors:\n${result.errors.map(err => err.message).join('\n')}`)
-    }
+    log.debug(`${result.errors.length} errors occured:\n${result.errors.map(err => err.message).join('\n')}`)
+
     if (executingDeploy) {
       this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
       this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)

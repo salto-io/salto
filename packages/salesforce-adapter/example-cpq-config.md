@@ -45,7 +45,7 @@ dataManagement = {
         idFields = ["##allMasterDetailFields##", "SBQQ__TargetField__c", "Name"]
       },
       {
-        objectsRegex = "^SBQQ__LookupQuery__c$",
+        objectsRegex = "^SBQQ__LookupQuery__c$"
         idFields = ["##allMasterDetailFields##", "SBQQ__PriceRule2__c", "Name"]
       },
       {

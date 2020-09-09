@@ -1125,6 +1125,11 @@ export const getSObjectFieldElement = (
     annotations[CORE_ANNOTATIONS.REQUIRED] = false
   }
 
+  // An autoNumber field should be hidden because it will differ between enviorments
+  if (field.autoNumber) {
+    annotations[CORE_ANNOTATIONS.HIDDEN] = true
+  }
+
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
   return new Field(parent, fieldName, naclFieldType, annotations)
 }

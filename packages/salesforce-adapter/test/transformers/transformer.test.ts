@@ -441,16 +441,6 @@ describe('transformer', () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceAddressField, serviceIds, ['OtherAddress'])
         expect(fieldElement.type).toEqual(Types.compoundDataTypes.Address)
       })
-
-      it('should fetch name field as text type when no name compound field in object', async () => {
-        const fieldElement = getSObjectFieldElement(
-          dummyElem,
-          salesforceAddressField,
-          serviceIds,
-          []
-        )
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Text)
-      })
     })
 
     describe('id field transformation', () => {
@@ -497,6 +487,77 @@ describe('transformer', () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField, serviceIds, [])
         expect(fieldElement.type).toEqual(BuiltinTypes.SERVICE_ID)
+      })
+    })
+
+    describe('autoNumber field transformation', () => {
+      const origSalesforceAutonumberField: SalesforceField = {
+        aggregatable: true,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: true,
+        byteLength: 363,
+        calculated: false,
+        caseSensitive: false,
+        createable: false,
+        custom: false,
+        defaultedOnCreate: false,
+        deprecatedAndHidden: false,
+        digits: 0,
+        filterable: true,
+        groupable: true,
+        idLookup: false,
+        label: 'Auto Number #',
+        length: 121,
+        name: 'AutoNumber',
+        nameField: false,
+        namePointing: false,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: false,
+        precision: 0,
+        queryByDistance: false,
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'xsd:string',
+        sortable: true,
+        type: 'string',
+        unique: false,
+        updateable: false,
+      }
+      let salesforceAutoNumberField: SalesforceField
+      beforeEach(() => {
+        salesforceAutoNumberField = _.cloneDeep(origSalesforceAutonumberField)
+      })
+
+      describe('Non nameField', () => {
+        it('Should fetch as AutoNumber field with hidden annotation', () => {
+          const fieldElement = getSObjectFieldElement(
+            dummyElem,
+            salesforceAutoNumberField,
+            serviceIds,
+            []
+          )
+          expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
+          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+        })
+      })
+
+      describe('For nameField', () => {
+        it('Should fetch as AutoNumber field with hidden annotation', () => {
+          salesforceAutoNumberField.nameField = true
+          const fieldElement = getSObjectFieldElement(
+            dummyElem,
+            salesforceAutoNumberField,
+            serviceIds,
+            []
+          )
+          expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
+          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+        })
       })
     })
 

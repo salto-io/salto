@@ -48,11 +48,18 @@ describe('local workspace', () => {
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
+    isEmpty: jest.fn().mockResolvedValue(true),
+    rename: jest.fn(),
   } as unknown as ws.dirStore.DirectoryStore<string>)
   const repoDirStore = mockDirStoreInstance()
   const localDirStore = mockDirStoreInstance()
-  mockCreateDirStore.mockImplementation(params =>
-    (params.baseDir.startsWith(getSaltoHome()) ? localDirStore : repoDirStore))
+  const envDirStore = mockDirStoreInstance()
+  mockCreateDirStore.mockImplementation(params => {
+    if (params.baseDir.startsWith(getSaltoHome())) {
+      return localDirStore
+    }
+    return params.name.includes(ENVS_PREFIX) ? envDirStore : repoDirStore
+  })
   const toWorkspaceRelative = (params: {baseDir: string; name: string}): string => {
     const dir = path.join(params.baseDir, params.name)
     return (dir.startsWith(getSaltoHome())
@@ -150,6 +157,38 @@ describe('local workspace', () => {
         .map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'default'))
+    })
+  })
+
+  describe('wrapped renameEnvironment', () => {
+    const mockRenameEnvironment = jest.fn()
+
+    beforeAll(() => {
+      mockExists.mockResolvedValue(true)
+      const mockLoad = ws.loadWorkspace as jest.Mock
+      mockLoad.mockResolvedValue({
+        renameEnvironment: mockRenameEnvironment,
+      })
+      const getConf = repoDirStore.get as jest.Mock
+      getConf.mockResolvedValue({ buffer: `
+      salto {
+        uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+        name = "test"
+        envs = [
+            {
+              name = "default"
+            }
+        ]
+        currentEnv = "default"
+      }
+      `,
+      filename: '' })
+    })
+
+    it('should invoke the rename command on the dir stores after adding the local prefix to the env name', async () => {
+      const workspace = await loadLocalWorkspace('.')
+      await workspace.renameEnvironment('default', 'newEnvName')
+      expect(mockRenameEnvironment).toHaveBeenCalledWith('default', 'newEnvName', 'envs/newEnvName')
     })
   })
 })

@@ -21,10 +21,12 @@ import {
   TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, CUSTOM_OBJECT, CUSTOM_FIELD } from '../constants'
 import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
 
+const log = logger(module)
 // ApiName -> MetadataType -> ElemID
 export type ApiNameMapping = Record<string, Record<string, ElemID>>
 
@@ -79,7 +81,8 @@ const replaceReferenceValues = (
   values: Values,
   refElement: ObjectType,
   replaceTypes: Map<string, string>,
-  apiToIdMap: ApiNameMapping
+  apiToIdMap: ApiNameMapping,
+  fieldsWithResolvedReferences: Set<string>,
 ): Values => {
   const shouldReplace = (field: Field): boolean => (
     replaceTypes.has(field.elemID.getFullName())
@@ -104,6 +107,7 @@ const replaceReferenceValues = (
       return val
     }
 
+    fieldsWithResolvedReferences.add(field.elemID.getFullName())
     return new ReferenceExpression(elemID)
   }
 
@@ -124,14 +128,18 @@ const replaceReferenceValues = (
 export const replaceInstances = (elements: Element[], fieldToTypeMap: Map<string, string>):
 void => {
   const apiNameToElemIDs = groupByAPIName(elements)
+  const fieldsWithResolvedReferences = new Set<string>()
   elements.filter(isInstanceElement).forEach(instance => {
     instance.value = replaceReferenceValues(
       instance.value,
       instance.type,
       fieldToTypeMap,
-      apiNameToElemIDs
+      apiNameToElemIDs,
+      fieldsWithResolvedReferences,
     )
   })
+  // this list should be empty - this is an intermediate step before removing the filter
+  log.debug('added references in the following fields: $s', [...fieldsWithResolvedReferences])
 }
 
 const filter: FilterCreator = () => ({

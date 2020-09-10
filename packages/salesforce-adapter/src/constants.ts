@@ -294,6 +294,7 @@ export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
 export const CPQ_PRICE_RULE = 'SBQQ__PriceRule__c'
 export const CPQ_LOOKUP_QUERY = 'SBQQ__LookupQuery__c'
 export const CPQ_PRICE_ACTION = 'SBQQ__PriceAction__c'
+export const CPQ_FIELD_METADATA = 'SBQQ__FieldMetadata__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'
@@ -304,3 +305,4 @@ export const CPQ_LOOKUP_TYPE_FIELD = 'SBQQ__LookupTypeField__c'
 export const CPQ_LOOKUP_FIELD = 'SBQQ__LookupField__c'
 export const CPQ_RULE_LOOKUP_OBJECT_FIELD = 'SBQQ__RuleLookupObject__c'
 export const CPQ_SOURCE_LOOKUP_FIELD = 'SBQQ__SourceLookupField__c'
+export const CPQ_OBJECT_NAME = 'SBQQ__ObjectName__c'

@@ -108,7 +108,7 @@ const removeHiddenValue: TransformFunc = ({ value, field }) => (
   isHidden(field) ? undefined : value
 )
 
-const removeHiddenFromElement = <T extends Element>(element: T): Element => (
+const removeHiddenFromElement = <T extends Element>(element: T): T => (
   transformElement({
     element,
     transformFunc: removeHiddenValue,
@@ -149,6 +149,10 @@ const isHiddenChangeOnField = (change: DetailedChange): boolean => (
   && (isChangeToHidden(change) || isChangeToNotHidden(change))
 )
 
+/**
+ * When a type changes from/to hidden, we need to create a change that adds/removes
+ * the whole type to the nacl instead of just changing the hidden annotation value.
+ */
 const getHiddenTypeChanges = async (
   changes: DetailedChange[],
   state: State,
@@ -162,7 +166,7 @@ const getHiddenTypeChanges = async (
         if (!isElement(elem)) {
           // Should never happen
           log.warn(
-            'Element %s was change to hidden %s but was not found in state',
+            'Element %s was changed to hidden %s but was not found in state',
             elemId.getFullName(), isChangeToHidden(change),
           )
           return change
@@ -174,6 +178,10 @@ const getHiddenTypeChanges = async (
   )).filter(values.isDefined)
 )
 
+/**
+ * When a field changes from/to hidden, we need to create changes that add/remove the values
+ * of that field in all relevant instances / annotation values
+ */
 const getHiddenFieldValueChanges = async (
   changes: DetailedChange[],
   state: State,
@@ -210,8 +218,6 @@ const getHiddenFieldValueChanges = async (
     return value
   }
 
-  // When a field becomes hidden, all the values of that field need to be removed
-  // When a field is made visible, all the values of that field need to be added
   // In order to support making a field visible we must traverse all state elements
   // to find all the hidden values we need to add.
   // Theoretically in order to hide values we would need to iterate the workspace elements
@@ -257,7 +263,12 @@ const removeDuplicateChanges = (
   return Object.values(changeById).filter(change => !hasChangeOnParent(change.id))
 }
 
-const handleChangesToHiddenAnnotation = async (
+/**
+ * This handles the cases where something changes from hidden to visible or vice-versa.
+ * Since the hidden annotation is currently supported on types and fields, we need to handle
+ * types that changed visibility and fields that changed visibility.
+ */
+const mergeWithHiddenChangeSideEffects = async (
   changes: DetailedChange[],
   state: State,
   getWorkspaceElements: () => Promise<Element[]>,
@@ -266,6 +277,8 @@ const handleChangesToHiddenAnnotation = async (
     ...await getHiddenTypeChanges(changes, state),
     ...await getHiddenFieldValueChanges(changes, state, getWorkspaceElements),
   ]
+  // Additional changes may override / be overridden by original changes, so if we add new changes
+  // we have to make sure we remove duplicates
   return additionalChanges.length === 0
     ? changes
     : removeDuplicateChanges(changes, additionalChanges)
@@ -341,7 +354,7 @@ export const handleHiddenChanges = async (
   state: State,
   getWorkspaceElements: () => Promise<Element[]>,
 ): Promise<DetailedChange[]> => {
-  const changesWithHiddenAnnotationChanges = await handleChangesToHiddenAnnotation(
+  const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
     changes, state, getWorkspaceElements,
   )
   return filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)

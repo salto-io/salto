@@ -49,7 +49,7 @@ const myAdapter: Adapter<MyArgs, MyCreds> = {
       demand: true,
     },
   },
-  credentials: args => ({
+  credentials: async args => ({
     username: args.username,
     password: args.password,
   }),

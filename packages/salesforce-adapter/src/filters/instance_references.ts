@@ -139,7 +139,7 @@ void => {
     )
   })
   // this list should be empty - this is an intermediate step before removing the filter
-  log.debug(`added references in the following fields: ${[...fieldsWithResolvedReferences]}`)
+  log.debug('added references in the following fields: $s', [...fieldsWithResolvedReferences])
 }
 
 const filter: FilterCreator = () => ({

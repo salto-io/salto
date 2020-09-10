@@ -49,7 +49,7 @@ const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName = 'included' | 'instanceParent' | 'specific'
+export type ReferenceContextStrategyName = 'none' | 'instanceParent'
 type ReferenceTargetDefinition = {
   strategy: ReferenceContextStrategyName
   metadataType: string
@@ -57,12 +57,8 @@ type ReferenceTargetDefinition = {
 }
 export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
 
-type ExactSourceDef = {
-  field: string
-  parentType?: string
-}
-type RegExSourceDef = {
-  field: RegExp
+type SourceDef = {
+  field: string | RegExp
   parentType: string
 }
 
@@ -71,7 +67,7 @@ type RegExSourceDef = {
  * and reference expressions back to values (on deploy).
  */
 export type FieldReferenceDefinition = {
-  src: ExactSourceDef | RegExSourceDef
+  src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
   // If target is missing, the definition is used for resolving
   target?: ReferenceTargetDefinition
@@ -79,9 +75,12 @@ export type FieldReferenceDefinition = {
 
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.
- * Overlaps between rules are allowed, but priority between them is not guaranteed.
+ * Overlaps between rules are allowed, and the first successful conversion wins.
+ * Current order (defined by generateReferenceResolverFinder):
+ *  1. Exact field names take precedence over regexp
+ *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
  *
- * A value value will be converted into a reference expression if:
+ * A value will be converted into a reference expression if:
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
@@ -99,87 +98,87 @@ const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     // includes authorizationRequiredPage, bandwidthExceededPage, fileNotFoundPage, ...
     src: { field: /Page$/, parentType: 'CustomSite' },
-    target: { strategy: 'included', metadataType: 'ApexPage' },
+    target: { strategy: 'none', metadataType: 'ApexPage' },
   },
   {
     src: { field: 'recipient', parentType: 'WorkflowEmailRecipient' },
-    target: { strategy: 'included', metadataType: 'Role' },
+    target: { strategy: 'none', metadataType: 'Role' },
   },
   {
     src: { field: 'actionName', parentType: 'FlowActionCall' },
-    target: { strategy: 'included', metadataType: 'WorkflowAlert' },
+    target: { strategy: 'none', metadataType: 'WorkflowAlert' },
   },
   {
     src: { field: 'application', parentType: 'ProfileApplicationVisibility' },
-    target: { strategy: 'included', metadataType: 'CustomApplication' },
+    target: { strategy: 'none', metadataType: 'CustomApplication' },
   },
   {
     src: { field: 'layout', parentType: 'ProfileLayoutAssignment' },
-    target: { strategy: 'included', metadataType: 'Layout' },
+    target: { strategy: 'none', metadataType: 'Layout' },
   },
   {
     src: { field: 'flow', parentType: 'ProfileFlowAccess' },
-    target: { strategy: 'included', metadataType: 'Flow' },
+    target: { strategy: 'none', metadataType: 'Flow' },
   },
   {
     src: { field: 'recordType', parentType: 'ProfileRecordTypeVisibility' },
-    target: { strategy: 'included', metadataType: 'RecordType' },
+    target: { strategy: 'none', metadataType: 'RecordType' },
   },
   {
     src: { field: 'tabs', parentType: 'CustomApplication' },
-    target: { strategy: 'included', metadataType: 'CustomTab' },
+    target: { strategy: 'none', metadataType: 'CustomTab' },
   },
   {
     src: { field: 'tab', parentType: 'WorkspaceMapping' },
-    target: { strategy: 'included', metadataType: 'CustomTab' },
+    target: { strategy: 'none', metadataType: 'CustomTab' },
   },
   {
     src: { field: 'objectType', parentType: 'FlowVariable' },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: 'object', parentType: 'ProfileObjectPermissions' },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: 'name', parentType: 'ObjectSearchSetting' },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: 'field', parentType: 'ProfileFieldLevelSecurity' },
-    target: { strategy: 'included', metadataType: CUSTOM_FIELD },
+    target: { strategy: 'none', metadataType: CUSTOM_FIELD },
   },
   {
     src: { field: 'field', parentType: 'FilterItem' },
-    target: { strategy: 'included', metadataType: CUSTOM_FIELD },
+    target: { strategy: 'none', metadataType: CUSTOM_FIELD },
   },
   {
     src: { field: 'report', parentType: 'DashboardComponent' },
-    target: { strategy: 'included', metadataType: 'Report' },
+    target: { strategy: 'none', metadataType: 'Report' },
   },
   {
     src: { field: 'reportType', parentType: 'Report' },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_LOOKUP_OBJECT_NAME, parentType: CPQ_PRICE_RULE },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_LOOKUP_OBJECT_NAME, parentType: CPQ_PRODUCT_RULE },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentType: CPQ_LOOKUP_QUERY },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentType: CPQ_PRICE_ACTION },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_OBJECT_NAME, parentType: CPQ_FIELD_METADATA },
-    target: { strategy: 'included', metadataType: CUSTOM_OBJECT },
+    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
   },
 
   // serialization-only
@@ -236,14 +235,13 @@ const matchName = (fieldName: string, matcher: string | RegExp): boolean => (
 )
 
 const matchMetadataType = (elem: Element, type: string | undefined): boolean => (
-  // need typeName for backward compatibility - TODO remove after verifying
-  type === undefined ? true : (metadataType(elem) === type || elem.elemID.typeName === type)
+  type === undefined ? true : (metadataType(elem) === type)
 )
 
 export class FieldReferenceResolver {
-  src: ExactSourceDef | RegExSourceDef
+  src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
-  target: ExtendedReferenceTargetDefinition | undefined
+  target?: ExtendedReferenceTargetDefinition
 
   constructor(def: FieldReferenceDefinition) {
     this.src = def.src
@@ -265,16 +263,12 @@ export class FieldReferenceResolver {
       && matchMetadataType(field.parent, this.src.parentType)
     )
   }
-
-  field(): string | RegExp {
-    return this.src.field
-  }
 }
 
 export type ReferenceResolverFinder = (field: Field) => FieldReferenceResolver[]
 
 /**
- * Generate a functioning filtering for relevant reference resolvers for a given field.
+ * Generates a function that filters the relevant resolvers for a given field.
  */
 export const generateReferenceResolverFinder = (
   defs = fieldNameToTypeMappingDefs
@@ -294,7 +288,7 @@ export const generateReferenceResolverFinder = (
 
   return (field => (
     [
-      ...(matchersByFieldName[field.name] || []),
+      ...(matchersByFieldName[field.name] ?? []),
       ...(regexFieldMatchersByParent[metadataType(field.parent)] || []),
     ].filter(resolver => resolver.match(field))
   ))
@@ -305,17 +299,21 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
 
   const determineLookupStrategy = (args: GetLookupNameFuncArgs): ReferenceSerializationStrategy => {
     if (args.field === undefined) {
-      log.debug(`could not determine field for path ${args.path?.getFullName()}`)
+      log.debug('could not determine field for path %s', args.path?.getFullName())
       return ReferenceSerializationStrategyLookup.absoluteApiName
     }
     const strategies = resolverFinder(args.field)
       .map(def => def.serializationStrategy)
 
     if (strategies.length > 1) {
-      log.debug(`found ${strategies.length} matching strategies for field ${args.field.elemID.getFullName()} - using the first one`)
+      log.debug(
+        'found %d matching strategies for field %s - using the first one',
+        strategies.length,
+        args.field.elemID.getFullName(),
+      )
     }
     if (strategies.length === 0) {
-      log.debug(`could not find matching strategy for field ${args.field.elemID.getFullName()}`)
+      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
     }
     return strategies[0] ?? ReferenceSerializationStrategyLookup.absoluteApiName
   }

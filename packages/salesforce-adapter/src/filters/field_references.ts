@@ -43,8 +43,7 @@ type ContextFunc = (instance: InstanceElement, ...strategyArgs: string[]) => str
 const ContextStrategyLookup: Record<
   ReferenceContextStrategyName, ContextFunc
 > = {
-  included: () => [],
-  specific: (_instance, parentName) => [parentName],
+  none: () => [],
   instanceParent: instance => (isDefined(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
     ? [parentApiName(instance)]
     : []
@@ -145,7 +144,7 @@ void => {
       fieldsWithResolvedReferences,
     )
   })
-  log.debug(`added references in the following fields: ${[...fieldsWithResolvedReferences]}`)
+  log.debug('added references in the following fields: $s', [...fieldsWithResolvedReferences])
 }
 
 /**

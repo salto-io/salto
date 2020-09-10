@@ -37,6 +37,7 @@ import {
   SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue, SalesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -1458,22 +1459,23 @@ describe('transformer', () => {
     describe('with fields in layout instance', () => {
       const mockLayoutItem = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutItem'),
-        fields: { field: {
-          type: BuiltinTypes.STRING,
-          annotations: { [API_NAME]: 'LayoutItem.fields' },
-        } },
+        fields: { field: { type: BuiltinTypes.STRING } },
+        annotations: { [METADATA_TYPE]: 'LayoutItem' },
       })
       const mockLayoutColumn = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutColumn'),
         fields: { layoutItems: { type: new ListType(mockLayoutItem) } },
+        annotations: { [METADATA_TYPE]: 'LayoutColumn' },
       })
       const mockLayoutSection = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutSection'),
         fields: { layoutColumns: { type: new ListType(mockLayoutColumn) } },
+        annotations: { [METADATA_TYPE]: 'LayoutSection' },
       })
       const mockLayoutType = new ObjectType({
         elemID: LAYOUT_TYPE_ID,
         fields: { layoutSections: { type: new ListType(mockLayoutSection) } },
+        annotations: { [METADATA_TYPE]: LAYOUT_TYPE_ID_METADATA_TYPE },
       })
       const mockLayoutInstance = new InstanceElement('test', mockLayoutType, {})
       it('should resolve to relative api name', () => {
@@ -1494,6 +1496,7 @@ describe('transformer', () => {
           WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
         ),
         fields: { field: { type: BuiltinTypes.STRING } },
+        annotations: { [METADATA_TYPE]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE },
       })
       const mockWorkflowFieldUpdateInstance = new InstanceElement(
         'User_test1',
@@ -1514,21 +1517,17 @@ describe('transformer', () => {
     })
     describe('with fields in workflow rule instance', () => {
       const workflowActionReference = new ObjectType({
-        elemID: new ElemID(
-          SALESFORCE,
-          WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-        ),
+        elemID: new ElemID(SALESFORCE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE),
         fields: {
           name: { type: BuiltinTypes.STRING },
           type: { type: BuiltinTypes.STRING },
         },
+        annotations: { [METADATA_TYPE]: WORKFLOW_ACTION_REFERENCE_METADATA_TYPE },
       })
       const workflowRule = new ObjectType({
-        elemID: new ElemID(
-          SALESFORCE,
-          WORKFLOW_RULE_METADATA_TYPE,
-        ),
+        elemID: new ElemID(SALESFORCE, WORKFLOW_RULE_METADATA_TYPE),
         fields: { actions: { type: workflowActionReference } },
+        annotations: { [METADATA_TYPE]: WORKFLOW_RULE_METADATA_TYPE },
       })
       const mockWorkflowRuleInstance = new InstanceElement(
         'User_rule1',
@@ -1541,10 +1540,10 @@ describe('transformer', () => {
           }],
         },
       )
-      const workflowAlert = new ObjectType({ elemID: new ElemID(
-        SALESFORCE,
-        WORKFLOW_ACTION_ALERT_METADATA_TYPE,
-      ) })
+      const workflowAlert = new ObjectType({
+        elemID: new ElemID(SALESFORCE, WORKFLOW_ACTION_ALERT_METADATA_TYPE),
+        annotations: { [METADATA_TYPE]: WORKFLOW_ACTION_ALERT_METADATA_TYPE },
+      })
       const mockAlertInstance = new InstanceElement(
         'Opportunity_alert1',
         workflowAlert,
@@ -1558,10 +1557,26 @@ describe('transformer', () => {
         })).toEqual('alert1')
       })
     })
+    describe('when field is not specified', () => {
+      const srcObject = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'test'),
+        fields: { test: { type: BuiltinTypes.STRING } },
+        annotations: { [METADATA_TYPE]: 'test' },
+      })
+      const srcInst = new InstanceElement('test', srcObject, {})
+      it('should resolve to full api name', () => {
+        const testField = refObject.fields.test
+        expect(getLookUpName({
+          ref: new ReferenceExpression(testField.elemID, testField, refObject),
+          path: srcInst.elemID.createNestedID('test'),
+        })).toEqual('Lead.Test__c')
+      })
+    })
     describe('with all other cases', () => {
       const srcObject = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
         fields: { test: { type: BuiltinTypes.STRING } },
+        annotations: { [METADATA_TYPE]: 'test' },
       })
       const srcInst = new InstanceElement('test', srcObject, {})
       it('should resolve to full api name', () => {

@@ -26,9 +26,10 @@ import {
 import { Workspace } from '@salto-io/workspace'
 
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
-import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
+import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
 import { getCredentialsFromUser } from '../callbacks'
 import { serviceCmdFilter, ServiceCmdArgs } from '../filters/service'
 import {
@@ -42,13 +43,13 @@ const getLoginInputFlow = async (
   workspace: Workspace,
   configType: ObjectType,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
-  stdout: WriteStream
+  output: CliOutput
 ): Promise<void> => {
-  stdout.write(formatCredentialsHeader(configType.elemID.adapter))
+  output.stdout.write(formatCredentialsHeader(configType.elemID.adapter))
   const newConfig = await getLoginInput(configType)
   await updateCredentials(workspace, newConfig)
-  stdout.write(EOL)
-  stdout.write(formatLoginUpdated)
+  output.stdout.write(EOL)
+  outputLine(formatLoginUpdated, output)
 }
 
 const loadWorkspace = async (workspaceDir: string, inputEnvironment?: string):
@@ -62,7 +63,7 @@ Promise<Workspace> => {
 
 const addService = async (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput,
+  output: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
   inputEnvironment?: string,
@@ -70,22 +71,22 @@ const addService = async (
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (workspace.services().includes(serviceName)) {
-    stderr.write(formatServiceAlreadyAdded(serviceName))
+    errorOutputLine(formatServiceAlreadyAdded(serviceName), output)
     return CliExitCode.UserInputError
   }
 
   if (!nologin) {
     const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
     try {
-      await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
+      await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, output)
     } catch (e) {
-      stderr.write(formatLoginToServiceFailed(serviceName, e.message))
+      errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
       return CliExitCode.AppError
     }
   }
 
   await addAdapter(workspace, serviceName)
-  stdout.write(formatServiceAdded(serviceName))
+  outputLine(formatServiceAdded(serviceName), output)
   return CliExitCode.Success
 }
 
@@ -97,25 +98,25 @@ const listServices = async (
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (_.isEmpty(serviceName)) {
-    cliOutput.stdout.write(formatConfiguredServices(workspace.services()))
+    outputLine(formatConfiguredServices(workspace.services()), cliOutput)
   } else if (workspace.services().includes(serviceName)) {
-    cliOutput.stdout.write(formatServiceConfigured(serviceName))
+    outputLine(formatServiceConfigured(serviceName), cliOutput)
   } else {
-    cliOutput.stdout.write(formatServiceNotConfigured(serviceName))
+    outputLine(formatServiceNotConfigured(serviceName), cliOutput)
   }
   return CliExitCode.Success
 }
 
 const loginService = async (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput,
+  output: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
   inputEnvironment?: string,
 ): Promise<CliExitCode> => {
   const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (!workspace.services().includes(serviceName)) {
-    stderr.write(formatServiceNotConfigured(serviceName))
+    errorOutputLine(formatServiceNotConfigured(serviceName), output)
     return CliExitCode.AppError
   }
   const serviceLoginStatus = (await getLoginStatuses(
@@ -123,9 +124,9 @@ const loginService = async (
     [serviceName]
   ))[serviceName] as LoginStatus
   if (serviceLoginStatus.isLoggedIn) {
-    stdout.write(formatLoginOverride)
+    outputLine(formatLoginOverride, output)
   }
-  await getLoginInputFlow(workspace, serviceLoginStatus.configType, getLoginInput, stdout)
+  await getLoginInputFlow(workspace, serviceLoginStatus.configType, getLoginInput, output)
   return CliExitCode.Success
 }
 

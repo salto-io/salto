@@ -19,11 +19,12 @@ import { Workspace } from '@salto-io/workspace'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
+import { outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { getUserBooleanInput } from '../callbacks'
 import {
-  CliCommand, CliOutput, ParsedCliInput, WriteStream,
+  CliCommand, CliOutput, ParsedCliInput,
   CliExitCode, SpinnerCreator, CliTelemetry,
 } from '../types'
 import {
@@ -50,22 +51,22 @@ type Action = {
 
 const printPlan = async (
   actions: Plan,
-  stdout: WriteStream,
+  output: CliOutput,
   workspace: Workspace,
   detailedPlan: boolean,
 ): Promise<void> => {
   const planWorkspaceErrors = await Promise.all(
     actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
   )
-  stdout.write(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
-  stdout.write(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan))
+  outputLine(header(Prompts.PLAN_STEPS_HEADER_DEPLOY), output)
+  outputLine(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan), output)
 }
 
-const printStartDeploy = async (stdout: WriteStream, executingDeploy: boolean): Promise<void> => {
+const printStartDeploy = async (output: CliOutput, executingDeploy: boolean): Promise<void> => {
   if (executingDeploy) {
-    stdout.write(deployPhaseHeader)
+    outputLine(deployPhaseHeader, output)
   } else {
-    stdout.write(cancelDeployOutput)
+    outputLine(cancelDeployOutput, output)
   }
 }
 
@@ -79,8 +80,7 @@ export const shouldDeploy = async (
 }
 
 export class DeployCommand implements CliCommand {
-  readonly stdout: WriteStream
-  readonly stderr: WriteStream
+  readonly output: CliOutput
   private actions: Map<string, Action>
   private cliTelemetry: CliTelemetry
 
@@ -90,13 +90,12 @@ export class DeployCommand implements CliCommand {
     readonly dryRun: boolean,
     readonly detailedPlan: boolean,
     cliTelemetry: CliTelemetry,
-    { stdout, stderr }: CliOutput,
+    output: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
     readonly inputServices?: string[],
     readonly inputEnv?: string,
   ) {
-    this.stdout = stdout
-    this.stderr = stderr
+    this.output = output
     this.actions = new Map<string, Action>()
     this.cliTelemetry = cliTelemetry
     this.inputServices = inputServices
@@ -107,7 +106,7 @@ export class DeployCommand implements CliCommand {
     const action = this.actions.get(itemName)
     if (action) {
       if (action.startTime && action.item) {
-        this.stdout.write(formatItemDone(action.item, action.startTime))
+        outputLine(formatItemDone(action.item, action.startTime), this.output)
       }
       if (action.intervalId) {
         clearInterval(action.intervalId)
@@ -118,7 +117,7 @@ export class DeployCommand implements CliCommand {
   private errorAction(itemName: string, details: string): void {
     const action = this.actions.get(itemName)
     if (action) {
-      this.stderr.write(formatItemError(itemName, details))
+      errorOutputLine(formatItemError(itemName, details), this.output)
       if (action.intervalId) {
         clearInterval(action.intervalId)
       }
@@ -126,13 +125,13 @@ export class DeployCommand implements CliCommand {
   }
 
   private cancelAction(itemName: string, parentItemName: string): void {
-    this.stderr.write(formatCancelAction(itemName, parentItemName))
+    outputLine(formatCancelAction(itemName, parentItemName), this.output)
   }
 
   private startAction(itemName: string, item: PlanItem): void {
     const startTime = new Date()
     const intervalId = setInterval(() => {
-      this.stdout.write(formatActionInProgress(itemName, item.action, startTime))
+      outputLine(formatActionInProgress(itemName, item.action, startTime), this.output)
     }, ACTION_INPROGRESS_INTERVAL)
     const action = {
       item,
@@ -140,7 +139,7 @@ export class DeployCommand implements CliCommand {
       intervalId,
     }
     this.actions.set(itemName, action)
-    this.stdout.write(formatActionStart(item))
+    outputLine(formatActionStart(item), this.output)
   }
 
   updateAction(item: PlanItem, status: ItemStatus, details?: string): void {
@@ -167,7 +166,7 @@ export class DeployCommand implements CliCommand {
       return { success: true, errors: [] }
     }
     const executingDeploy = (this.force || await shouldDeploy(actionPlan))
-    await printStartDeploy(this.stdout, executingDeploy)
+    await printStartDeploy(this.output, executingDeploy)
     const result = executingDeploy
       ? await deploy(
         workspace,
@@ -180,11 +179,13 @@ export class DeployCommand implements CliCommand {
 
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))
-    this.stdout.write(deployPhaseEpilogue(
+    outputLine(deployPhaseEpilogue(
       nonErroredActions.length,
       result.errors.length,
-    ))
-    this.stdout.write(EOL)
+    ), this.output)
+    this.output.stdout.write(EOL)
+    log.debug(`${result.errors.length} errors occured:\n${result.errors.map(err => err.message).join('\n')}`)
+
     if (executingDeploy) {
       this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
       this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
@@ -196,7 +197,7 @@ export class DeployCommand implements CliCommand {
   async execute(): Promise<CliExitCode> {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}, dryRun=${this.dryRun}, detailedPlan=${this.detailedPlan}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
-      { stderr: this.stderr, stdout: this.stdout },
+      this.output,
       {
         force: this.force,
         printStateRecency: true,
@@ -213,7 +214,7 @@ export class DeployCommand implements CliCommand {
 
     this.cliTelemetry.start(workspaceTags)
     const actionPlan = await preview(workspace, this.inputServices)
-    await printPlan(actionPlan, this.stdout, workspace, this.detailedPlan)
+    await printPlan(actionPlan, this.output, workspace, this.detailedPlan)
 
     const result = await this.deployPlan(actionPlan, workspace, workspaceTags)
     let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
@@ -221,7 +222,7 @@ export class DeployCommand implements CliCommand {
       const changes = [...result.changes]
       if (!await updateWorkspace({
         workspace,
-        output: { stderr: this.stderr, stdout: this.stdout },
+        output: this.output,
         changes,
         force: this.force,
       })) {

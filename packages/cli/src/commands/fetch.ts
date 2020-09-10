@@ -30,7 +30,7 @@ import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
-import { progressOutputer, outputLine } from '../outputer'
+import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import {
@@ -150,7 +150,7 @@ export const fetchCommand = async (
     inputServices,
   )
   if (fetchResult.success === false) {
-    output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
+    errorOutputLine(formatFatalFetchError(fetchResult.mergeErrors), output)
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
@@ -161,7 +161,7 @@ export const fetchCommand = async (
   if (!_.isEmpty(fetchResult.mergeErrors)) {
     log.debug(`fetch had ${fetchResult.mergeErrors.length} merge errors`)
     cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
-    output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
+    errorOutputLine(formatMergeErrors(fetchResult.mergeErrors), output)
   }
 
   if (!_.isUndefined(fetchResult.configChanges)) {

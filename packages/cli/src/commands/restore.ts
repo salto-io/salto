@@ -28,7 +28,7 @@ import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../wo
 import { getApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
 import { formatChangesSummary, formatDetailedChanges, formatRestoreFinish, formatInvalidFilters, formatStepStart, formatStepCompleted, formatStepFailed, header } from '../formatter'
-import { outputLine } from '../outputer'
+import { outputLine, errorOutputLine } from '../outputer'
 import { createRegexFilters } from '../convertors'
 import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
 
@@ -130,7 +130,7 @@ export const command = (
 
       const { filters, invalidFilters } = createRegexFilters(inputFilters)
       if (!_.isEmpty(invalidFilters)) {
-        output.stderr.write(formatInvalidFilters(invalidFilters))
+        errorOutputLine(formatInvalidFilters(invalidFilters), output)
         return CliExitCode.UserInputError
       }
 

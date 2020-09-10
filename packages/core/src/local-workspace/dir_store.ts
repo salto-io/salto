@@ -19,8 +19,10 @@ import _ from 'lodash'
 import * as fileUtils from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
 import { dirStore } from '@salto-io/workspace'
+import { logger } from '@salto-io/logging'
 
 const { withLimitedConcurrency, series } = promises.array
+const log = logger(module)
 
 const READ_CONCURRENCY = 100
 const WRITE_CONCURRENCY = 100
@@ -238,8 +240,10 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
     flush,
 
-    getFiles: async (filenames: string[]): Promise<(dirStore.File<T> | undefined) []> =>
-      withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY),
+    getFiles: async (filenames: string[]): Promise<(dirStore.File<T> | undefined) []> => log.time(
+      () => (withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY)),
+      'getFiles for %d files with read concurrency %d', filenames.length, READ_CONCURRENCY,
+    ),
 
     getTotalSize: async (): Promise<number> => {
       const allFiles = (await list()).map(f => getAbsFileName(f))

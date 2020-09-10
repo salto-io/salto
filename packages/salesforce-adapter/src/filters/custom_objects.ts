@@ -111,7 +111,7 @@ const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = ['allowInChatterGroups', 'customHelp',
 const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fields',
   INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay']
 
-const typesToReplaceDirName: Record<string, string> = { // <type, new-dir-name>
+export const typesToReplaceDirName: Record<string, string> = { // <type, new-dir-name>
   WebLink: 'ButtonsLinksAndActions',
 }
 const getFieldName = (annotations: Values): string =>

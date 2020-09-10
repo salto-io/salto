@@ -29,7 +29,6 @@ import {
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
   transformElement,
-  getNestedStaticFiles,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
 
@@ -1598,53 +1597,6 @@ describe('Test utils.ts', () => {
     it('should find referenced ids', () => {
       const res = getAllReferencedIds(mockInstance)
       expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
-    })
-  })
-
-  describe('getNestedStaticFiles', () => {
-    const mockInstanceWithFiles = new InstanceElement(
-      'mockInstance',
-      mockType,
-      {
-        numArray: ['12', '13', new StaticFile({ filepath: 'arr', hash: 'X' })],
-        strArray: 'should be list',
-        file: new StaticFile({ filepath: 'plain', hash: 'X' }),
-        obj: [
-          {
-            field: new StaticFile({ filepath: 'obj', hash: 'X' }),
-          },
-        ],
-      },
-      ['yes', 'this', 'is', 'path'],
-    )
-
-    it('should detect all files when starting with an element', () => {
-      expect(getNestedStaticFiles(mockInstanceWithFiles).map(f => f.filepath)).toEqual([
-        'arr',
-        'plain',
-        'obj',
-      ])
-    })
-
-    it('should detect all files when starting with an object', () => {
-      expect(getNestedStaticFiles(mockInstanceWithFiles.value.obj[0]).map(f => f.filepath))
-        .toEqual([
-          'obj',
-        ])
-    })
-
-    it('should detect all files when starting with an array', () => {
-      expect(getNestedStaticFiles(mockInstanceWithFiles.value.numArray).map(f => f.filepath))
-        .toEqual([
-          'arr',
-        ])
-    })
-
-    it('should detect the file when starting with a plain attribute', () => {
-      expect(getNestedStaticFiles(mockInstanceWithFiles.value.file).map(f => f.filepath))
-        .toEqual([
-          'plain',
-        ])
     })
   })
 })

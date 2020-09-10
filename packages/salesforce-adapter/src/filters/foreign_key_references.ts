@@ -21,7 +21,7 @@ import _ from 'lodash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { groupByAPIName, ApiNameMapping } from './instance_references'
+import { groupByAPIName, ApiNameMapping } from './utils'
 import { FOREIGN_KEY_DOMAIN } from '../constants'
 
 const { makeArray } = collections.array

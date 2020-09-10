@@ -18,12 +18,13 @@ import { logger } from '@salto-io/logging'
 import {
   Element, ElemID, Value, DetailedChange, isElement, getChangeElement,
 } from '@salto-io/adapter-api'
-import { resolvePath, getNestedStaticFiles } from '@salto-io/adapter-utils'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
+  getNestedStaticFiles,
 } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource } from '../elements_source'

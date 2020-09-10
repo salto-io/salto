@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import { ObjectType } from '@salto-io/adapter-api'
-import { LoginStatus, updateCredentials, loadLocalWorkspace, addAdapter } from '@salto-io/core'
+import {
+  LoginStatus, updateCredentials, loadLocalWorkspace, addAdapter, installAdapter,
+} from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { command } from '../../src/commands/service'
 import * as mocks from '../mocks'
@@ -64,6 +66,7 @@ jest.mock('@salto-io/core', () => ({
     return loginStatuses
   }),
   loadLocalWorkspace: jest.fn(),
+  installAdapter: jest.fn(),
 }))
 
 describe('service command', () => {
@@ -182,12 +185,26 @@ describe('service command', () => {
       })
 
       describe('when called with a new service', () => {
+        const installAdapterMock = installAdapter as jest.Mock
         beforeEach(async () => {
           await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
         })
 
         it('should print please enter credentials', async () => {
           expect(cliOutput.stdout.content).toContain('Please enter your Newadapter credentials:')
+        })
+
+        it('should invoke the adapter install method', async () => {
+          expect(installAdapterMock).toHaveBeenCalled()
+        })
+
+        it('should throw an error if the adapter failed to install', async () => {
+          (installAdapterMock).mockImplementationOnce(() => {
+            throw new Error('Failed to install Adapter!')
+          })
+          await expect(
+            command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
+          ).rejects.toThrow()
         })
 
         describe('when called with valid credentials', () => {
@@ -254,6 +271,9 @@ describe('service command', () => {
             expect(cliOutput.stdout.content).not.toContain(
               'Please enter your Newadapter credentials:'
             )
+          })
+          it('should invoke the adapter install method', async () => {
+            expect(installAdapterMock).toHaveBeenCalled()
           })
         })
 

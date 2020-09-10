@@ -52,6 +52,11 @@ export const isAdditionOrRemovalChange = <T extends Change<unknown>>(
 ): change is T & (AdditionChange<ChangeData<T>> | RemovalChange<ChangeData<T>>) => (
     isAdditionChange(change) || isRemovalChange(change)
   )
+export const isRemovalOrModificationChange = <T extends Change<unknown>>(
+  change: T
+): change is T & (RemovalChange<ChangeData<T>> | ModificationChange<ChangeData<T>>) => (
+    isRemovalChange(change) || isModificationChange(change)
+  )
 
 export const getChangeElement = <T>(change: Change<T>): T =>
   (change.action === 'remove' ? change.data.before : change.data.after)

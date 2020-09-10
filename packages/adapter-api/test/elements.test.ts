@@ -376,6 +376,30 @@ describe('Test elements.ts', () => {
       })
     })
 
+    describe('isEqual', () => {
+      it('should return true for equal IDs', () => {
+        expect(configTypeId.isEqual(configTypeId)).toBeTruthy()
+      })
+      it('should return false for different IDs', () => {
+        expect(typeId.isEqual(fieldId)).toBeFalsy()
+      })
+    })
+
+    describe('isParentOf', () => {
+      it('should return true if the checked ID is nested under the current ID', () => {
+        expect(typeId.isParentOf(fieldId)).toBeTruthy()
+        expect(typeId.isParentOf(fieldIdWithPath)).toBeTruthy()
+        expect(typeId.isParentOf(annotationTypeId)).toBeTruthy()
+        expect(fieldId.isParentOf(fieldIdWithPath)).toBeTruthy()
+        expect(typeInstId.isParentOf(valueId)).toBeTruthy()
+      })
+      it('should return false if the checked ID is not nested under the current ID', () => {
+        expect(typeId.isParentOf(typeInstId)).toBeFalsy()
+        expect(fieldId.isParentOf(typeId)).toBeFalsy()
+        expect(typeId.isParentOf(typeId)).toBeFalsy()
+      })
+    })
+
     describe('createNestedID', () => {
       describe('from type ID', () => {
         it('should create nested ID with the correct id type', () => {

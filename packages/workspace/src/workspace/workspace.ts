@@ -16,12 +16,10 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalChange,
-  CORE_ANNOTATIONS, isAdditionChange, isInstanceElement, getField, isObjectType, Values,
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -31,17 +29,9 @@ import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { Errors, ServiceDuplicationError, EnvDuplicationError,
   UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
-import {
-  addHiddenValuesAndHiddenTypes,
-  removeHiddenValuesForInstance,
-  removeHiddenFieldValue,
-  isHiddenField,
-  isHiddenType,
-} from './hidden_values'
+import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
-import {
-  createAddChange, createRemoveChange,
-} from './nacl_files/multi_env/projections'
+import { MergeResult } from '../merger'
 
 const log = logger(module)
 
@@ -143,100 +133,19 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
     currentEnv(), elementsSources.commonSourceName)
 
-  const elements = async (includeHidden = true, env?: string): Promise<ReadonlyArray<Element>> => {
+  const elements = async (env?: string): Promise<MergeResult> => {
     const visibleElements = await naclFilesSource.getAll(env)
-    return includeHidden ? addHiddenValuesAndHiddenTypes(
-      visibleElements,
-      await state().getAll(),
-    ) : visibleElements
-  }
-
-  // Determine if change is new type addition (add action)
-  const isChangeNewHiddenType = (change: DetailedChange): boolean => (
-    isAdditionChange(change) && isHiddenType(change.data.after)
-  )
-
-  const getChangeWithUpdatedAfter = (change: DetailedChange, after?: Values): DetailedChange => (
-    { ...change, data: { ...change.data, after } } as DetailedChange
-  )
-
-  const handleHiddenForTypesAndInstances = async (
-    change: DetailedChange
-  ): Promise<DetailedChange | undefined> => {
-    // Handling new instance addition
-    if (change.id.idType === 'instance' && isAdditionChange(change)) {
-      const value = change.data.after
-      if (isInstanceElement(value)) {
-        // Full instance added - remove all hidden fields
-        const after = removeHiddenValuesForInstance(value)
-        return getChangeWithUpdatedAfter(change, after)
-      }
-      // A value inside the instance was added
-      const { parent, path: fieldPath } = change.id.createTopLevelParentID()
-      const parentInstance = await state().get(parent)
-      if (parentInstance !== undefined) {
-        if (isHiddenField(parentInstance.type, fieldPath)) {
-          // The whole value is hidden, omit the change
-          return undefined
-        }
-        const fieldType = getField(parentInstance.type, fieldPath)
-        if (fieldType !== undefined && isObjectType(fieldType)) {
-          // The field itself is not hidden, but it might have hidden parts
-          const after = transformValues({
-            values: value,
-            type: fieldType,
-            transformFunc: removeHiddenFieldValue,
-            pathID: change.id,
-            strict: false,
-          })
-          return getChangeWithUpdatedAfter(change, after)
-        }
-      }
-      return change
-    }
-
-    // Handling type changed to hidden: when action is addition of hidden annotation (true)
-    // We return remove change with the parentID (the top level element)
-    if (change.id.idType === 'attr'
-      && isAdditionChange(change)
-      && change.id.getFullNameParts().length === 4
-      && change.id.name === CORE_ANNOTATIONS.HIDDEN
-      && change.data.after === true) {
-      const parentID = change.id.createTopLevelParentID().parent
-      return createRemoveChange(
-        true, // actually the value isn't relevant in remove change
-        parentID,
-        change.path
-      )
-    }
-
-    // Handling type changed from hidden (to not hidden):
-    // when action is removal of hidden annotation (was true)
-    //
-    // We return addition change with the top level element (from state)
-    if (change.id.idType === 'attr'
-      && isRemovalChange(change)
-      && change.id.name === CORE_ANNOTATIONS.HIDDEN
-      && change.data.before === true) {
-      const topLevelParentID = change.id.createTopLevelParentID()
-
-      return createAddChange(
-        await state().get(topLevelParentID.parent), // The top level element
-        topLevelParentID.parent,
-      )
-    }
-    return change
+    const stateElements = await state(env).getAll()
+    return mergeWithHidden(visibleElements, stateElements)
   }
 
   const updateNaclFiles = async (
     changes: DetailedChange[],
     mode?: RoutingMode
   ): Promise<void> => {
-    const changesAfterHiddenRemoved = (await Promise.all(
-      changes
-        .filter(change => !isChangeNewHiddenType(change))
-        .map(change => handleHiddenForTypesAndInstances(change))
-    )).filter(values.isDefined)
+    const changesAfterHiddenRemoved = await handleHiddenChanges(
+      changes, state(), naclFilesSource.getAll,
+    )
     await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
   }
 
@@ -288,9 +197,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
 
   const errors = async (): Promise<Errors> => {
     const resolvedElements = await elements()
+    const errorsFromSource = await naclFilesSource.getErrors()
     return new Errors({
-      ...await naclFilesSource.getErrors(),
-      validation: validateElements(resolvedElements),
+      ...errorsFromSource,
+      merge: [...errorsFromSource.merge, ...resolvedElements.errors],
+      validation: validateElements(resolvedElements.merged),
     })
   }
 
@@ -300,7 +211,9 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
-    elements,
+    elements: async (includeHidden = true, env) => (
+      includeHidden ? (await elements(env)).merged : naclFilesSource.getAll(env)
+    ),
     state,
     envs,
     currentEnv,
@@ -331,7 +244,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.
     // Passing direct pointer for these functions would have resulted in pointers to a nullified
     // source so we need to wrap all of the function calls to make sure we are forwarding the method
-    // invokations to the proper source.
+    // invocations to the proper source.
     setNaclFiles: (...naclFiles: NaclFile[]) => naclFilesSource.setNaclFiles(...naclFiles),
     updateNaclFiles,
     removeNaclFiles: (...names: string[]) => naclFilesSource.removeNaclFiles(...names),

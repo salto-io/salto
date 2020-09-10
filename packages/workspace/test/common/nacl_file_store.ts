@@ -57,6 +57,44 @@ type salesforce.WithAnnotationsBlock {
 type salesforce.WithoutAnnotationsBlock {
 }
 
+type salesforce.ObjWithHidden {
+  number visible {
+  }
+  string hide {
+    ${CORE_ANNOTATIONS.HIDDEN} = true
+  }
+  number other {
+  }
+}
+
+salesforce.ObjWithHidden instWithHidden {
+  visible = 142
+  other = 1
+}
+
+type salesforce.ObjWithNestedHidden {
+  salesforce.ObjWithHidden nested {
+  }
+  number other {
+  }
+}
+
+salesforce.ObjWithNestedHidden instWithNestedHidden {
+  other = 1
+}
+
+type salesforce.ObjWithComplexHidden {
+  salesforce.ObjWithHidden nested {
+    ${CORE_ANNOTATIONS.HIDDEN} = true
+  }
+  number other {
+  }
+}
+
+salesforce.ObjWithComplexHidden instWithComplexHidden {
+  other = 1
+}
+
 type multi.loc { a = 1 }
 type one.liner { a = 1 }`,
   'subdir/file.nacl': `
@@ -77,9 +115,13 @@ type salesforce.lead {
   'willbempty.nacl': 'type nonempty { a = 2 }',
 }
 
-export const mockDirStore = (exclude: string[] = ['error.nacl', 'dup.nacl'], empty = false):
+export const mockDirStore = (
+  exclude: string[] = ['error.nacl', 'dup.nacl'],
+  empty = false,
+  files?: Record<string, string>,
+):
   DirectoryStore<string> => {
-  const naclFiles: Record<string, File<string>> = empty ? {} : _.mapValues(workspaceFiles,
+  const naclFiles: Record<string, File<string>> = empty ? {} : _.mapValues(files ?? workspaceFiles,
     (buffer, filename) => ({ filename, buffer }))
   return {
     list: jest.fn()

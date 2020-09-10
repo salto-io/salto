@@ -15,10 +15,9 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeElement, Change, isRemovalChange, DetailedChange,
-  ChangeDataType, isAdditionOrModificationChange,
+  AdapterOperations, getChangeElement, Change, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
-import { setPath, detailedCompare } from '@salto-io/adapter-utils'
+import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from './plan'
 
@@ -53,16 +52,6 @@ export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
 export type StepEvents = {
   completed: () => void
   failed: (errorText?: string) => void
-}
-
-const applyDetailedChanges = (
-  planElement: ChangeDataType,
-  detailedChanges: DetailedChange[],
-): void => {
-  detailedChanges.forEach(detailedChange => {
-    const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
-    setPath(planElement, detailedChange.id, data)
-  })
 }
 
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {

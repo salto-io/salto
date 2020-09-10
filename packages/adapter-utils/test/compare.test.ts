@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, PrimitiveTypes, Field } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { detailedCompare } from '../src/compare'
+import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, PrimitiveTypes, Field } from '@salto-io/adapter-api'
+import { detailedCompare, applyDetailedChanges } from '../src/compare'
 
 describe('detailedCompare', () => {
   const hasChange = (changes: DetailedChange[], action: string, id: ElemID): boolean => (
@@ -272,5 +272,43 @@ describe('detailedCompare', () => {
         after.elemID.createNestedID('modify')
       )).toBeTruthy()
     })
+  })
+})
+
+describe('applyDetailedChanges', () => {
+  let inst: InstanceElement
+  beforeAll(() => {
+    inst = new InstanceElement(
+      'test',
+      new ObjectType({ elemID: new ElemID('test', 'test') }),
+      { val: 1, rem: 0, nested: { mod: 1 } },
+    )
+    const changes: DetailedChange[] = [
+      {
+        id: inst.elemID.createNestedID('nested', 'mod'),
+        action: 'modify',
+        data: { before: 1, after: 2 },
+      },
+      {
+        id: inst.elemID.createNestedID('rem'),
+        action: 'remove',
+        data: { before: 0 },
+      },
+      {
+        id: inst.elemID.createNestedID('add'),
+        action: 'add',
+        data: { after: 3 },
+      },
+    ]
+    applyDetailedChanges(inst, changes)
+  })
+  it('should add new values', () => {
+    expect(inst.value.add).toEqual(3)
+  })
+  it('should modify existing values', () => {
+    expect(inst.value.nested.mod).toEqual(2)
+  })
+  it('should remove values', () => {
+    expect(inst.value).not.toHaveProperty('rem')
   })
 })

@@ -16,11 +16,11 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, ObjectType, ElemID, Field, DetailedChange,
-  BuiltinTypes, InstanceElement, ListType, Values, CORE_ANNOTATIONS, isListType,
+  Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
+  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType,
 } from '@salto-io/adapter-api'
 import {
-  findElement,
+  findElement, applyDetailedChanges,
 } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
 import {
@@ -44,6 +44,7 @@ import * as dump from '../../src/parser/dump'
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { PathIndex } from '../../src/workspace/path_index'
+import { resolve } from '../../src/expressions'
 
 const changedNaclFile = {
   filename: 'file.nacl',
@@ -108,14 +109,7 @@ const createWorkspace = async (
         },
         default: {
           naclFiles: createMockNaclFileSource([]),
-          state: state ?? buildInMemState(
-            async () => ({
-              elements: {},
-              pathIndex: new PathIndex(),
-              servicesUpdateDate: {},
-              saltoVersion: '0.0.1',
-            })
-          ),
+          state: state ?? createState([]),
         },
       },
     })
@@ -123,7 +117,6 @@ const createWorkspace = async (
 const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =>
   _.keyBy(elements, elem => elem.elemID.getFullName())
 
-jest.mock('../../src/workspace/dir_store')
 describe('workspace', () => {
   describe('loadWorkspace', () => {
     it('should fail if envs is empty', async () => {
@@ -236,6 +229,26 @@ describe('workspace', () => {
       expect(firstSourceFragment.sourceRange.start).toEqual({ byte: 26, col: 3, line: 3 })
       expect(firstSourceFragment.sourceRange.end).toEqual({ byte: 79, col: 4, line: 5 })
       expect(firstSourceFragment.fragment).toContain('salesforce.text base_field')
+    })
+    it('should have merge error when hidden values are added to nacl', async () => {
+      const state = createState([])
+      const workspace = await createWorkspace(
+        mockDirStore([], false, {
+          'x.nacl': `type salto.t {
+            number field {
+              ${CORE_ANNOTATIONS.HIDDEN} = true
+            }
+          }
+          salto.t inst {
+            field = 1
+          }`,
+        }),
+        state,
+      )
+      state.override(resolve(await workspace.elements(false)))
+
+      const wsErrors = await workspace.errors()
+      expect(wsErrors.merge).toHaveLength(1)
     })
   })
 
@@ -412,29 +425,6 @@ describe('workspace', () => {
       ['Records', 'Queue', 'queueInstance'],
     )
 
-    const objWithHiddenFields = new ObjectType({
-      elemID: new ElemID('salesforce', 'ObjWithHidden', 'type', ''),
-      annotations: {
-        [METADATA_TYPE]: 'ObjWithHidden',
-      },
-      fields: {
-        show: { type: BuiltinTypes.NUMBER },
-        hide: {
-          type: BuiltinTypes.STRING,
-          annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
-        },
-      },
-    })
-
-    const instWithHiddenFields = new InstanceElement(
-      'instWithHidden',
-      objWithHiddenFields,
-      {
-        show: 432,
-        hide: 'hide',
-      },
-    )
-
     const changes: DetailedChange[] = [
       {
         path: ['file'],
@@ -521,12 +511,6 @@ describe('workspace', () => {
         action: 'add',
         data: { after: 'momo' },
       },
-      {
-        path: ['other', 'foo', 'bar'],
-        id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
-        action: 'add',
-        data: { after: 'blublu' },
-      },
       { // Add to an exiting path
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'attr', 'dodo'),
@@ -562,14 +546,14 @@ describe('workspace', () => {
         data: { after: BuiltinTypes.NUMBER },
       },
       { // new Hidden type (should be removed)
-        id: new ElemID('salesforce', 'Queue', 'type', ''),
+        id: new ElemID('salesforce', 'Queue'),
         action: 'add',
         data: {
           after: queueHiddenType,
         },
       },
       { // new Hidden (sub) type (should be removed)
-        id: new ElemID('salesforce', 'QueueSobject', 'type', ''),
+        id: new ElemID('salesforce', 'QueueSobject'),
         action: 'add',
         data: {
           after: queueSobjectHiddenSubType,
@@ -585,10 +569,14 @@ describe('workspace', () => {
       { // when type change to be hidden
         id: new ElemID('salesforce', 'AccountIntelligenceSettings', 'attr', '_hidden'),
         action: 'add',
-        data: {
-          after: true,
-        },
-        path: ['salesforce', 'Types', 'AccountIntelligenceSettings'],
+        data: { after: true },
+      },
+      { // Change inside a hidden type
+        id: new ElemID(
+          'salesforce', 'AccountIntelligenceSettings', 'field', 'enableAccountLogos', '_required',
+        ),
+        action: 'add',
+        data: { after: true },
       },
       { // new instance
         id: new ElemID('salesforce', 'Queue', 'instance', 'queueInstance'),
@@ -597,12 +585,35 @@ describe('workspace', () => {
           after: queueInstance,
         },
       },
-      { // existing instance
+      { // Hidden field change to visible
+        id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'hide', CORE_ANNOTATIONS.HIDDEN),
+        action: 'modify',
+        data: { before: true, after: false },
+      },
+      { // Visible field change to hidden
+        id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'visible', CORE_ANNOTATIONS.HIDDEN),
+        action: 'add',
+        data: { after: true },
+      },
+      { // Change to field value as it becomes visible
         id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'hide'),
         action: 'add',
-        data: {
-          after: 'changed',
-        },
+        data: { after: 'changed' },
+      },
+      { // Change to field value as it becomes hidden
+        id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'visible'),
+        action: 'modify',
+        data: { before: 142, after: 150 },
+      },
+      { // Change where only part of the value is visible
+        id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'nested'),
+        action: 'add',
+        data: { after: { visible: 1, hide: 'a', other: 2 } },
+      },
+      { // Change inside a hidden complex field
+        id: new ElemID('salesforce', 'ObjWithComplexHidden', 'instance', 'instWithComplexHidden', 'nested', 'other'),
+        action: 'modify',
+        data: { before: 3, after: 4 },
       },
     ]
 
@@ -617,6 +628,9 @@ describe('workspace', () => {
     // Changed elements
     let typeBecameNotHidden: ObjectType
     let typeBecameHidden: ObjectType
+    let instWithHidden: InstanceElement
+    let instWithComplexHidden: InstanceElement
+    let instWithNestedHidden: InstanceElement
 
     let lead: ObjectType
     let elemMap: Record<string, Element>
@@ -624,22 +638,34 @@ describe('workspace', () => {
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
-      const state = createState([instWithHiddenFields, accountInsightsSettingsType])
-      const mockStateGet = jest.spyOn(state, 'get')
+      const state = createState([])
       workspace = await createWorkspace(dirStore, state)
-
-      // Ensure workspace elements contains AccountIntelligenceSettings
-      expect(
-        getElemMap(
-          await workspace.elements()
-        )['salesforce.AccountIntelligenceSettings'] as ObjectType
+      // We assume the state is synced with the workspace elements before we make changes
+      // We also assume the state elements are updated before we call updateNaclFiles so that hidden
+      // values can be taken from the state
+      // The call to resolve is the only safe way to clone elements while keeping all
+      // the inner references between elements correct, we then apply all the changes to the copied
+      // elements and set them along with the hidden types as the state elements
+      const stateElements = resolve(await workspace.elements())
+      const stateElementsById = _.keyBy(stateElements, elem => elem.elemID.getFullName())
+      const changesByElem = _.groupBy(
+        changes,
+        change => change.id.createTopLevelParentID().parent.getFullName()
       )
-        .toBeDefined()
+      Object.entries(changesByElem).forEach(([elemId, elemChanges]) => {
+        const elem = stateElementsById[elemId]
+        if (isType(elem) || isInstanceElement(elem)) {
+          applyDetailedChanges(elem, elemChanges)
+        }
+      })
+      state.override(
+        [...stateElements, accountInsightsSettingsType, queueHiddenType]
+      )
 
       clonedChanges = _.cloneDeep(changes)
       await workspace.updateNaclFiles(clonedChanges)
-      expect(mockStateGet).toHaveBeenCalledTimes(2)
-      elemMap = getElemMap(await workspace.elements())
+
+      elemMap = getElemMap(await workspace.elements(false))
       lead = elemMap['salesforce.lead'] as ObjectType
 
       // New types (first time returned from service)
@@ -652,6 +678,15 @@ describe('workspace', () => {
       typeBecameHidden = elemMap['salesforce.AccountIntelligenceSettings'] as ObjectType
 
       newInstance = elemMap['salesforce.Queue.instance.queueInstance'] as InstanceElement
+      instWithHidden = elemMap[
+        'salesforce.ObjWithHidden.instance.instWithHidden'
+      ] as InstanceElement
+      instWithComplexHidden = elemMap[
+        'salesforce.ObjWithComplexHidden.instance.instWithComplexHidden'
+      ] as InstanceElement
+      instWithNestedHidden = elemMap[
+        'salesforce.ObjWithNestedHidden.instance.instWithNestedHidden'
+      ] as InstanceElement
     })
 
     it('should not cause parse errors', async () => {
@@ -761,12 +796,26 @@ describe('workspace', () => {
       expect(newInstance.value.boolNotHidden).toEqual(false)
     })
 
+    it('should not add changes in hidden values', () => {
+      expect(instWithComplexHidden.value).not.toHaveProperty('nested')
+    })
+
+    it('should remove values of fields that became hidden', () => {
+      expect(instWithHidden.value).not.toHaveProperty('visible')
+      expect(instWithNestedHidden.value.nested).not.toHaveProperty('visible')
+    })
+
+    it('should add values that became visible', () => {
+      expect(instWithHidden.value.hide).toEqual('changed')
+      expect(instWithNestedHidden.value.nested.hide).toEqual('a')
+    })
+
     it('should not fail in case one of the changes fails', async () => {
       jest.spyOn(dump, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
       const change1: DetailedChange = {
         id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
-        action: 'modify',
-        data: { before: 'foo', after: 'blabla' },
+        action: 'add',
+        data: { after: 'blabla' },
       }
       const change2: DetailedChange = {
         id: new ElemID('salesforce', 'lead', 'field', 'base_field', CORE_ANNOTATIONS.DEFAULT),

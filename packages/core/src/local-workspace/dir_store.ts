@@ -33,7 +33,7 @@ type FileMap<T extends dirStore.ContentType> = Record<string, dirStore.File<T>>
 
 const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
-  storeName: string,
+  storeName?: string,
   nameSuffix?: string,
   encoding?: string,
   fileFilter?: string,
@@ -41,7 +41,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
 ): dirStore.SyncDirectoryStore<T> => {
-  let currentBaseDir = path.join(baseDir, storeName, nameSuffix || '')
+  let currentBaseDir = path.join(..._.compact([baseDir, storeName, nameSuffix]))
   let updated: FileMap<T> = initUpdated || {}
   let deleted: string[] = initDeleted || []
 
@@ -268,7 +268,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
 type LocalDirectoryStoreParams = {
   baseDir: string
-  name: string
+  name?: string
   nameSuffix?: string
   encoding?: 'utf8'
   fileFilter?: string

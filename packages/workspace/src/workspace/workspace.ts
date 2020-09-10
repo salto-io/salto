@@ -316,7 +316,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
         currentEnv(), elementsSources.commonSourceName)
     },
-    renameEnvironment: async (envName: string, newEnvName: string, newSourceName? : string) => {
+    renameEnvironment: async (envName: string, newEnvName: string, newEnvNaclPath? : string) => {
       const envConfig = envs().find(e => e === envName)
       if (_.isUndefined(envConfig)) {
         throw new UnknownEnvError(envName)
@@ -338,7 +338,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       await credentials.rename(envName, newEnvName)
       const environmentSource = elementsSources.sources[envName]
       if (environmentSource) {
-        await environmentSource.naclFiles.rename(newSourceName || newEnvName)
+        await environmentSource.naclFiles.rename(newEnvNaclPath || newEnvName)
         await environmentSource.state?.rename(newEnvName)
       }
       elementsSources.sources[newEnvName] = environmentSource

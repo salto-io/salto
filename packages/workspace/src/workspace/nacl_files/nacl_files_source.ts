@@ -189,7 +189,7 @@ const logNaclFileUpdateErrorContext = (
   log.debug('data before:\n%s', naclDataBefore)
   log.debug('data after:\n%s', naclDataAfter)
 }
-// TODO START
+
 const buildNaclFilesSource = (
   naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
@@ -261,13 +261,14 @@ const buildNaclFilesSource = (
       return naclFile ? naclFile.buffer : ''
     }
 
+    // This method was written with the assumption that each static file is pointed by no more
+    // then one value inthe nacls. A ticket was open to fix that (SALTO-954)
+
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
-      await Promise.all(_.flatten(
-        fileChanges.filter(change => change.action === 'remove')
-          .map(getChangeElement)
-          .map(getNestedStaticFiles)
-          .map(files => files.map(file => staticFileSource.delete(file)))
-      ))
+      await Promise.all(fileChanges.filter(change => change.action === 'remove')
+        .map(getChangeElement)
+        .map(getNestedStaticFiles)
+        .flatMap(files => files.map(file => staticFileSource.delete(file))))
     }
 
     const naclFiles = _(await Promise.all(changes.map(change => change.id)

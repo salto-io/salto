@@ -708,21 +708,21 @@ export const getAllReferencedIds = (element: Element): Set<string> => {
 
 export const getNestedStaticFiles = (value: Value): StaticFile[] => {
   if (isElement(value)) {
-    const allReferencedIds = new Set<StaticFile>()
+    const allStaticFiles = new Set<StaticFile>()
     const transformFunc: TransformFunc = ({ value: val }) => {
       if (isStaticFile(val)) {
-        allReferencedIds.add(val)
+        allStaticFiles.add(val)
       }
       return val
     }
     transformElement({ element: value, transformFunc, strict: false })
-    return wu(allReferencedIds.values()).toArray()
+    return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {
-    return _.flatten(value.map(getNestedStaticFiles))
+    return value.flatMap(getNestedStaticFiles)
   }
   if (_.isPlainObject(value)) {
-    return _.flatten(Object.values(value).map(getNestedStaticFiles))
+    return Object.values(value).flatMap(getNestedStaticFiles)
   }
   if (isStaticFile(value)) {
     return [value]

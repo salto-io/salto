@@ -16,12 +16,8 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import {
-  addAdapter,
-  getLoginStatuses,
-  LoginStatus,
-  updateCredentials,
-  loadLocalWorkspace,
-  getAdaptersCredentialsTypes,
+  addAdapter, getLoginStatuses, LoginStatus, updateCredentials, loadLocalWorkspace,
+  getAdaptersCredentialsTypes, installAdapter,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 
@@ -75,6 +71,7 @@ const addService = async (
     return CliExitCode.UserInputError
   }
 
+  await installAdapter(serviceName)
   if (!nologin) {
     const adapterCredentialsType = getAdaptersCredentialsTypes([serviceName])[serviceName]
     try {

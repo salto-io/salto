@@ -454,7 +454,7 @@ const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] 
     return referenceValidationErrors
   }
 
-  if (isPrimitiveValue(value)) {
+  if (!isPrimitiveValue(value)) {
     return [new InvalidValueValidationError({
       elemID,
       value,

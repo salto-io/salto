@@ -37,9 +37,9 @@ jest.mock('@salto-io/workspace', () => ({
 }))
 jest.mock('../../../src/local-workspace/dir_store')
 jest.mock('../../../src/local-workspace/static_files_cache', () => ({
-  buildLocalStaticFilesCache : () => ({
-    rename: jest.fn()
-  })
+  buildLocalStaticFilesCache: () => ({
+    rename: jest.fn(),
+  }),
 }))
 describe('local workspace', () => {
   const mockExists = exists as jest.Mock
@@ -53,8 +53,8 @@ describe('local workspace', () => {
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
-    isEmpty : jest.fn().mockResolvedValue(true),
-    rename: jest.fn()
+    isEmpty: jest.fn().mockResolvedValue(true),
+    rename: jest.fn(),
   } as unknown as ws.dirStore.DirectoryStore<string>)
   const repoDirStore = mockDirStoreInstance()
   const localDirStore = mockDirStoreInstance()
@@ -202,12 +202,11 @@ describe('local workspace', () => {
       mockExists.mockResolvedValue(true)
       const mockLoad = ws.loadWorkspace as jest.Mock
       mockLoad.mockResolvedValue({
-        demoteAll: jest.fn()
+        demoteAll: jest.fn(),
       })
     })
 
     describe('with only one env', () => {
-
       beforeAll(() => {
         const getConf = repoDirStore.get as jest.Mock
         getConf.mockResolvedValue({ buffer: `
@@ -230,18 +229,18 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(true)
-        const ws = await loadLocalWorkspace('.')
-        await ws.demoteAll()
+        const workspace = await loadLocalWorkspace('.')
+        await workspace.demoteAll()
         expect(repoDirStore.rename).toHaveBeenCalled()
       })
-  
+
       it('should invoke the multienvSource demoteAll method if env sepcfic folder is not empty', async () => {
         const repoIsEmpty = repoDirStore.isEmpty as jest.Mock
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(false)
-        const ws = await loadLocalWorkspace('/west')
-        await ws.demoteAll()
+        const workspace = await loadLocalWorkspace('/west')
+        await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
     })

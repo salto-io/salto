@@ -71,8 +71,9 @@ const flattenStateData = async (elementsData: string[], pathIndexData: string[],
   const updateDatesByService = updateDateData.map(
     (entry: string) => (entry ? JSON.parse(entry) : {})
   )
-  const servicesUpdateDate = _.mapValues(updateDatesByService.reduce((entry1,
-    entry2) => Object.assign(entry1, entry2), {}), dateStr => new Date(dateStr))
+  const thing = updateDatesByService.reduce((entry1,
+    entry2) => Object.assign(entry1, entry2), {})
+  const servicesUpdateDate = _.mapValues(thing, dateStr => new Date(dateStr))
   const saltoVersion = semver.minSatisfying(versions, '*') || undefined
   return { elements, servicesUpdateDate, pathIndex: index, saltoVersion }
 }
@@ -88,8 +89,11 @@ export const localState = (filePrefix: string): state.State => {
     let pathIndexData: string[] = []
     let currentFilePaths: string[] = []
     let versions: string[] = []
-    glob(`${currentFilePrefix}*${ZIPPED_STATE_EXTENSION}`, (_err: Error | null, files: string[]) => {
-      currentFilePaths = files
+    await new Promise<void>(resolve => {
+      glob(`${currentFilePrefix}*${ZIPPED_STATE_EXTENSION}`, (_err: Error | null, files: string[]) => {
+        currentFilePaths = files
+        resolve()
+      })
     })
     if (currentFilePaths.length > 0) {
       [elementsData, updateDateData, pathIndexData,
@@ -124,7 +128,7 @@ export const localState = (filePrefix: string): state.State => {
     )
     log.debug(`finished dumping state text [#elements=${elements.length}]`)
     return _.mapValues(serviceToElementStrings, (serviceElements, service) =>
-      [serviceElements || '[]', serviceToDates[service] || '{}',
+      [serviceElements || '[]', safeJsonStringify({ [service]: serviceToDates[service] } || {}),
         serviceToPathIndex[service] || '[]', version].join(EOL))
   }
 

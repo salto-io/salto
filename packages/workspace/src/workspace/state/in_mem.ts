@@ -56,8 +56,10 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
         }, {} as Record<string, Date>),
       }
     },
-    getServicesUpdateDates: async (): Promise<Record<string, Date>> => (await stateData())
-      .servicesUpdateDate,
+    getServicesUpdateDates: async (): Promise<Record<string, Date>> => {
+      const stateDataVal = (await stateData())
+      return stateDataVal.servicesUpdateDate
+    },
     existingServices: async (): Promise<string[]> =>
       Object.keys((await stateData()).servicesUpdateDate),
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {

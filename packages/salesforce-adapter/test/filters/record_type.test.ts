@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import {
-  ObjectType, InstanceElement, ElemID, ReferenceExpression,
-  INSTANCE_ANNOTATIONS,
+  ObjectType, InstanceElement, ElemID, ReferenceExpression, INSTANCE_ANNOTATIONS, BuiltinTypes,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/record_type'
+import mockClient from '../client'
+import filterCreator from '../../src/filters/field_references'
 import {
   SALESFORCE, RECORD_TYPE_METADATA_TYPE, METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
@@ -25,6 +25,9 @@ import {
 import { FilterWith } from '../../src/filter'
 
 describe('record type filter', () => {
+  const { client } = mockClient()
+  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+
   const customObjName = 'MockCustomObject'
   const customObjElemID = new ElemID(SALESFORCE, customObjName)
 
@@ -32,6 +35,9 @@ describe('record type filter', () => {
   const recordTypeType = new ObjectType({
     elemID: new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE),
     annotations: { [METADATA_TYPE]: RECORD_TYPE_METADATA_TYPE },
+    fields: {
+      businessProcess: { type: BuiltinTypes.STRING },
+    },
   })
   const recordTypeInstance = new InstanceElement(
     `${customObjName}_BLA`,
@@ -61,7 +67,7 @@ describe('record type filter', () => {
     `${customObjName}-${buisnessProcessName}`,
     buisnessProcessType,
     {
-      [INSTANCE_FULL_NAME_FIELD]: `${customObjName}-${buisnessProcessName}`,
+      [INSTANCE_FULL_NAME_FIELD]: `${customObjName}.${buisnessProcessName}`,
     },
     undefined,
     { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(customObjElemID) }
@@ -72,7 +78,6 @@ describe('record type filter', () => {
     let postFilterNoObj: InstanceElement
 
     beforeAll(async () => {
-      const filter = filterCreator() as FilterWith<'onFetch'>
       const testElements = [
         recordTypeInstance.clone(),
         fakeRecordTypeInstance.clone(),
@@ -87,8 +92,8 @@ describe('record type filter', () => {
 
     describe('fields reference', () => {
       it('should transform businessProcess to reference', async () => {
-        expect(postFilter.value.businessProcess)
-          .toEqual(new ReferenceExpression(buisnessProcessInstance.elemID))
+        expect(postFilter.value.businessProcess.elemId.getFullName())
+          .toEqual(buisnessProcessInstance.elemID.getFullName())
       })
 
       it('should keep businessProcess as is if no custom object', async () => {

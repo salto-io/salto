@@ -28,25 +28,25 @@ import { parentApiName } from './utils'
 import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
-  ReferenceSerializationStrategy,
-  ExtendedReferenceTargetDefinition,
-  ReferenceResolverFinder,
-  generateReferenceResolverFinder,
-  ReferenceContextStrategyName,
+  ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
+  generateReferenceResolverFinder, ReferenceContextStrategyName,
 } from '../transformers/reference_mapping'
+import { specialLayoutObjects } from './layouts'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
 type ElemLookupMapping = Record<string, Record<string, Element>>
+type ContextFunc = (instance: InstanceElement) => string | undefined
 
-type ContextFunc = (instance: InstanceElement, ...strategyArgs: string[]) => string[]
+const translateSpecialCases = (name: string): string => specialLayoutObjects.get(name) ?? name
+
 const ContextStrategyLookup: Record<
   ReferenceContextStrategyName, ContextFunc
 > = {
-  none: () => [],
+  none: () => undefined,
   instanceParent: instance => (isDefined(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
-    ? [parentApiName(instance)]
-    : []
+    ? translateSpecialCases(parentApiName(instance))
+    : undefined
   ),
 }
 
@@ -63,13 +63,13 @@ const replaceReferenceValues = (
       elemLookupMap[targetType]?.[value]
     )
 
-    const contextFunc = ContextStrategyLookup[target.strategy]
-    if (!contextFunc) {
+    const contextFunc = ContextStrategyLookup[target.parentContext ?? 'none']
+    if (contextFunc === undefined) {
       return undefined
     }
     return findElem(
-      target.metadataType,
-      target.lookup(val, ...contextFunc(instance, ...(target.name ? [target.name] : []))),
+      target.type,
+      target.lookup(val, contextFunc(instance)),
     )
   }
 
@@ -144,7 +144,7 @@ void => {
       fieldsWithResolvedReferences,
     )
   })
-  log.debug('added references in the following fields: $s', [...fieldsWithResolvedReferences])
+  log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
 }
 
 /**

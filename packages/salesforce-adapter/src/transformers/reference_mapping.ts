@@ -24,11 +24,15 @@ import {
   CPQ_SOURCE_LOOKUP_FIELD, CPQ_PRICE_ACTION, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_PRODUCT_RULE,
   CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CUSTOM_FIELD,
   CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD, CPQ_OBJECT_NAME, CPQ_FIELD_METADATA,
+  CUSTOM_FIELD_TRANSLATION_METADATA_TYPE,
+  VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
+  VALIDATION_RULE_TRANSLATION_METADATA_TYPE,
+  WEBLINK_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
 
-type LookupFunc = (val: Value, ...context: string[]) => string
+type LookupFunc = (val: Value, context?: string) => string
 
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
@@ -45,14 +49,18 @@ const ReferenceSerializationStrategyLookup: Record<
   },
   relativeApiName: {
     serialize: ({ ref }) => apiName(ref.value, true),
-    lookup: (val, ...context) => [...context, val].join(API_NAME_SEPARATOR),
+    lookup: (val, context) => (context !== undefined
+      ? [context, val].join(API_NAME_SEPARATOR)
+      : val
+    ),
   },
 }
 
 export type ReferenceContextStrategyName = 'none' | 'instanceParent'
+
 type ReferenceTargetDefinition = {
-  strategy: ReferenceContextStrategyName
-  metadataType: string
+  parentContext?: ReferenceContextStrategyName
+  type: string
   name?: string
 }
 export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
@@ -88,97 +96,121 @@ const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentType: WORKFLOW_FIELD_UPDATE_METADATA_TYPE },
     serializationStrategy: 'relativeApiName',
-    target: { strategy: 'instanceParent', metadataType: CUSTOM_FIELD },
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
     src: { field: 'field', parentType: LAYOUT_ITEM_METADATA_TYPE },
     serializationStrategy: 'relativeApiName',
-    target: { strategy: 'instanceParent', metadataType: CUSTOM_FIELD },
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'customLink', parentType: LAYOUT_ITEM_METADATA_TYPE },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: WEBLINK_METADATA_TYPE },
+  },
+  {
+    src: { field: 'name', parentType: CUSTOM_FIELD_TRANSLATION_METADATA_TYPE },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'name', parentType: VALIDATION_RULE_TRANSLATION_METADATA_TYPE },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: VALIDATION_RULES_METADATA_TYPE },
+  },
+  {
+    src: { field: 'businessProcess', parentType: RECORD_TYPE_METADATA_TYPE },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: BUSINESS_PROCESS_METADATA_TYPE },
   },
   {
     // includes authorizationRequiredPage, bandwidthExceededPage, fileNotFoundPage, ...
     src: { field: /Page$/, parentType: 'CustomSite' },
-    target: { strategy: 'none', metadataType: 'ApexPage' },
+    target: { type: 'ApexPage' },
   },
   {
     src: { field: 'recipient', parentType: 'WorkflowEmailRecipient' },
-    target: { strategy: 'none', metadataType: 'Role' },
+    target: { type: 'Role' },
   },
   {
     src: { field: 'actionName', parentType: 'FlowActionCall' },
-    target: { strategy: 'none', metadataType: 'WorkflowAlert' },
+    target: { type: 'WorkflowAlert' },
   },
   {
     src: { field: 'application', parentType: 'ProfileApplicationVisibility' },
-    target: { strategy: 'none', metadataType: 'CustomApplication' },
+    target: { type: 'CustomApplication' },
   },
   {
     src: { field: 'layout', parentType: 'ProfileLayoutAssignment' },
-    target: { strategy: 'none', metadataType: 'Layout' },
+    target: { type: 'Layout' },
+  },
+  {
+    src: { field: 'recordType', parentType: 'ProfileLayoutAssignment' },
+    target: { type: 'RecordType' },
   },
   {
     src: { field: 'flow', parentType: 'ProfileFlowAccess' },
-    target: { strategy: 'none', metadataType: 'Flow' },
+    target: { type: 'Flow' },
   },
   {
     src: { field: 'recordType', parentType: 'ProfileRecordTypeVisibility' },
-    target: { strategy: 'none', metadataType: 'RecordType' },
+    target: { type: 'RecordType' },
   },
   {
     src: { field: 'tabs', parentType: 'CustomApplication' },
-    target: { strategy: 'none', metadataType: 'CustomTab' },
+    target: { type: 'CustomTab' },
   },
   {
     src: { field: 'tab', parentType: 'WorkspaceMapping' },
-    target: { strategy: 'none', metadataType: 'CustomTab' },
+    target: { type: 'CustomTab' },
   },
   {
     src: { field: 'objectType', parentType: 'FlowVariable' },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: 'object', parentType: 'ProfileObjectPermissions' },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: 'name', parentType: 'ObjectSearchSetting' },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: 'field', parentType: 'ProfileFieldLevelSecurity' },
-    target: { strategy: 'none', metadataType: CUSTOM_FIELD },
+    target: { type: CUSTOM_FIELD },
   },
   {
     src: { field: 'field', parentType: 'FilterItem' },
-    target: { strategy: 'none', metadataType: CUSTOM_FIELD },
+    target: { type: CUSTOM_FIELD },
   },
   {
     src: { field: 'report', parentType: 'DashboardComponent' },
-    target: { strategy: 'none', metadataType: 'Report' },
+    target: { type: 'Report' },
   },
   {
     src: { field: 'reportType', parentType: 'Report' },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_LOOKUP_OBJECT_NAME, parentType: CPQ_PRICE_RULE },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_LOOKUP_OBJECT_NAME, parentType: CPQ_PRODUCT_RULE },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentType: CPQ_LOOKUP_QUERY },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentType: CPQ_PRICE_ACTION },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: CPQ_OBJECT_NAME, parentType: CPQ_FIELD_METADATA },
-    target: { strategy: 'none', metadataType: CUSTOM_OBJECT },
+    target: { type: CUSTOM_OBJECT },
   },
 
   // serialization-only

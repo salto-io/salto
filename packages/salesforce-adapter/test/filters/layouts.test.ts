@@ -104,15 +104,6 @@ describe('Test layout filter', () => {
       expect(instance.annotations[INSTANCE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
       )
-      const { layoutItems } = instance.value.layoutSections.layoutColumns
-      const fooField = layoutItems[0].field as ReferenceExpression
-      const barField = layoutItems[1].field as ReferenceExpression
-      const linkField = layoutItems[2].customLink as ReferenceExpression
-      const mooField = layoutItems[3].field
-      expect(fooField.elemId).toEqual(standardFieldObj.fields.foo.elemID)
-      expect(barField.elemId).toEqual(customFieldObj.fields.bar.elemID)
-      expect(linkField.elemId).toEqual(webLinkInst.elemID)
-      expect(mooField).toEqual('moo')
     }
 
     it('should add relation between layout to related sobject', async () => {

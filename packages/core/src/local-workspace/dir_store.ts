@@ -33,13 +33,15 @@ type FileMap<T extends dirStore.ContentType> = Record<string, dirStore.File<T>>
 
 const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
+  storeName?: string,
+  nameSuffix?: string,
   encoding?: string,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
 ): dirStore.SyncDirectoryStore<T> => {
-  let currentBaseDir = baseDir
+  let currentBaseDir = path.join(..._.compact([baseDir, storeName, nameSuffix]))
   let updated: FileMap<T> = initUpdated || {}
   let deleted: string[] = initDeleted || []
 
@@ -208,7 +210,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
     rename: async (name: string): Promise<void> => {
       const allFiles = await list()
-      const newBaseDir = path.join(path.dirname(currentBaseDir), name)
+      const newBaseDir = path.join(baseDir, name, nameSuffix || '')
       const renameFile = async (file: string): Promise<void> => {
         const newPath = getAbsFileName(file, newBaseDir)
         const currentPath = getAbsFileName(file)
@@ -253,6 +255,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
     clone: (): dirStore.SyncDirectoryStore<T> => buildLocalDirectoryStore(
       currentBaseDir,
+      storeName,
+      nameSuffix,
       encoding,
       fileFilter,
       directoryFilter,
@@ -264,6 +268,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
 type LocalDirectoryStoreParams = {
   baseDir: string
+  name?: string
+  nameSuffix?: string
   encoding?: 'utf8'
   fileFilter?: string
   directoryFilter?: (path: string) => boolean
@@ -277,9 +283,9 @@ export function localDirectoryStore(
 ): dirStore.SyncDirectoryStore<string>
 
 export function localDirectoryStore(
-  { baseDir, encoding, fileFilter, directoryFilter }: LocalDirectoryStoreParams
+  { baseDir, name, nameSuffix, encoding, fileFilter, directoryFilter }: LocalDirectoryStoreParams
 ): dirStore.SyncDirectoryStore<dirStore.ContentType> {
   return buildLocalDirectoryStore<dirStore.ContentType>(
-    baseDir, encoding, fileFilter, directoryFilter,
+    baseDir, name, nameSuffix, encoding, fileFilter, directoryFilter,
   )
 }

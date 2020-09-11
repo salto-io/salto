@@ -57,6 +57,7 @@ export class NotAWorkspaceError extends Error {
 export const getNaclFilesSourceParams = (
   sourceBaseDir: string,
   cacheDir: string,
+  name: string,
   excludeDirs: string[] = []
 ): {
   naclFilesStore: dirStore.DirectoryStore<string>
@@ -68,23 +69,28 @@ export const getNaclFilesSourceParams = (
 
   const naclFilesStore = localDirectoryStore({
     baseDir: sourceBaseDir,
+    name,
     encoding: 'utf8',
     fileFilter: `*${FILE_EXTENSION}`,
     directoryFilter: dirPathToIgnore,
   })
 
   const naclStaticFilesStore = localDirectoryStore({
-    baseDir: path.join(sourceBaseDir, STATIC_RESOURCES_FOLDER),
+    baseDir: path.join(sourceBaseDir),
+    name,
+    nameSuffix: STATIC_RESOURCES_FOLDER,
     directoryFilter: dirPathToIgnore,
   })
 
+  const cacheName = name === COMMON_ENV_PREFIX ? 'common' : name
   const cacheStore = localDirectoryStore({
     baseDir: cacheDir,
+    name: cacheName,
     encoding: 'utf8',
   })
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
-    buildLocalStaticFilesCache(cacheDir),
+    buildLocalStaticFilesCache(cacheDir, cacheName),
   )
   return {
     naclFilesStore,
@@ -95,17 +101,23 @@ export const getNaclFilesSourceParams = (
 
 const loadNaclFileSource = (
   sourceBaseDir: string,
-  cacheDir: string,
+  cacheBaseDir: string,
+  sourceName: string,
   excludeDirs: string[] = []
 ): nacl.NaclFilesSource => {
   const { naclFilesStore, cache, staticFileSource } = getNaclFilesSourceParams(
-    sourceBaseDir, cacheDir, excludeDirs
+    sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
   )
   return naclFilesSource(naclFilesStore, cache, staticFileSource)
 }
 
+
+const getLocalEnvName = (env: string): string => (env === COMMON_ENV_PREFIX
+  ? env
+  : path.join(ENVS_PREFIX, env))
+
 const getEnvPath = (baseDir: string, env: string): string => (
-  path.resolve(baseDir, ENVS_PREFIX, env)
+  path.resolve(baseDir, getLocalEnvName(env))
 )
 
 export const loadLocalElementsSources = (baseDir: string, localStorage: string,
@@ -117,8 +129,9 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
         env,
         {
           naclFiles: loadNaclFileSource(
-            getEnvPath(baseDir, env),
-            path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
+            baseDir,
+            path.resolve(localStorage, CACHE_DIR_NAME),
+            getLocalEnvName(env)
           ),
           state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, env)),
         },
@@ -126,7 +139,8 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
     [COMMON_ENV_PREFIX]: {
       naclFiles: loadNaclFileSource(
         baseDir,
-        path.resolve(localStorage, CACHE_DIR_NAME, 'common'),
+        path.resolve(localStorage, CACHE_DIR_NAME),
+        getLocalEnvName(COMMON_ENV_PREFIX),
         [path.join(baseDir, ENVS_PREFIX)]
       ),
     },
@@ -148,7 +162,8 @@ export const envFolderExists = async (workspaceDir: string, env: string): Promis
 
 const credentialsSource = (localStorage: string): cs.ConfigSource =>
   configSource(localDirectoryStore({
-    baseDir: path.join(localStorage, CREDENTIALS_CONFIG_PATH),
+    baseDir: localStorage,
+    name: CREDENTIALS_CONFIG_PATH,
     encoding: 'utf8',
   }))
 
@@ -162,7 +177,13 @@ Promise<Workspace> => {
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
   const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
-  return loadWorkspace(workspaceConfig, credentials, elemSources)
+  const ws = await loadWorkspace(workspaceConfig, credentials, elemSources)
+  return {
+    ...ws,
+    renameEnvironment: async (envName: string, newEnvName: string): Promise<void> => (
+      ws.renameEnvironment(envName, newEnvName, getLocalEnvName(newEnvName))
+    ),
+  }
 }
 
 export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):

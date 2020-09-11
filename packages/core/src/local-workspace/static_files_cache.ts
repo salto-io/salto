@@ -23,9 +23,12 @@ export const CACHE_FILENAME = 'static-file-cache'
 export type StaticFilesCacheState = Record<string, staticFiles.StaticFilesCacheResult>
 
 export const buildLocalStaticFilesCache = (
-  cacheDir: string,
+  baseDir: string,
+  name: string,
   initCacheState?: Promise<StaticFilesCacheState>,
 ): staticFiles.StaticFilesCache => {
+  let currentName = name
+  let cacheDir = path.join(baseDir, currentName)
   let currentCacheFile = path.join(cacheDir, CACHE_FILENAME)
 
   const initCache = async (): Promise<StaticFilesCacheState> =>
@@ -49,13 +52,17 @@ export const buildLocalStaticFilesCache = (
     clear: async () => {
       await rm(currentCacheFile)
     },
-    rename: async (name: string) => {
-      const newCacheFile = path.join(path.dirname(cacheDir), name, CACHE_FILENAME)
+    rename: async (newName: string) => {
+      const newCacheDir = path.join(baseDir, newName)
+      const newCacheFile = path.join(newCacheDir, CACHE_FILENAME)
       if (await exists(currentCacheFile)) {
+        await mkdirp(newCacheDir)
         await rename(currentCacheFile, newCacheFile)
       }
+      currentName = newName
       currentCacheFile = newCacheFile
+      cacheDir = newCacheDir
     },
-    clone: () => buildLocalStaticFilesCache(cacheDir, cache),
+    clone: () => buildLocalStaticFilesCache(cacheDir, currentName, cache),
   }
 }

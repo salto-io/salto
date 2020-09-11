@@ -17,21 +17,11 @@
 declare module '@salto-io/suitecloud-cli' {
   import { AdapterInstallResult, Value, Values } from '@salto-io/adapter-api'
 
-  interface SDKDownloadServiceI {
+  interface SdkDownloadServiceI {
     download(): Promise<AdapterInstallResult>
   }
 
   export class CommandsMetadataService {
-    constructor()
-
-    initializeCommandsMetadata(): void
-  }
-
-  export class CommandInstanceFactory {
-    constructor()
-  }
-
-  export class CommandOptionsValidator {
     constructor()
   }
 
@@ -39,45 +29,33 @@ declare module '@salto-io/suitecloud-cli' {
     constructor()
   }
 
-  export class AuthenticationService {
-    constructor(executionPath: string)
-  }
-
-  export class CommandOutputHandler {
+  export class NodeConsoleLogger {
     constructor()
   }
 
   export class CommandActionExecutor {
     constructor(dependencies: {
       executionPath: string
-      commandOutputHandler: CommandOutputHandler
-      commandOptionsValidator: CommandOptionsValidator
       cliConfigurationService: CLIConfigurationService
-      commandInstanceFactory: CommandInstanceFactory
-      authenticationService: AuthenticationService
       commandsMetadataService: CommandsMetadataService
+      log: NodeConsoleLogger
     })
 
     executeAction(context: {
       commandName: string
       runInInteractiveMode: boolean
       arguments: Values
-    }): Promise<OperationResult>
+    }): Promise<ActionResult>
   }
 
-  export class SDKOperationResultUtils {
-    static hasErrors(operationResult: OperationResult): boolean
-    static getErrorMessagesString(operationResult: OperationResult): string
+  export class ActionResultUtils {
+    static getErrorMessagesString(actionResult: ActionResult): string
   }
 
-  export type OperationResultStatus = 'ERROR' | 'SUCCESS'
-
-  export interface OperationResult {
+  export class ActionResult {
     data: Value
-    status: OperationResultStatus
-    resultMessage?: string
-    errorMessages?: string[]
+    isSuccess(): boolean
   }
 
-  export const SDKDownloadService: SDKDownloadServiceI
+  export const SdkDownloadService: SdkDownloadServiceI
 }

@@ -31,7 +31,7 @@ jest.mock('../src/client/client')
 jest.mock('../src/adapter')
 jest.mock('@salto-io/suitecloud-cli')
 
-const mockDownload = cli.SDKDownloadService.download as jest.Mock
+const mockDownload = cli.SdkDownloadService.download as jest.Mock
 mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })
 
 describe('NetsuiteAdapter creator', () => {

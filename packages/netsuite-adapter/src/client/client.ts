@@ -14,15 +14,12 @@
 * limitations under the License.
 */
 import type {
-  AuthenticationService as AuthenticationServiceType,
   CommandsMetadataService as CommandsMetadataServiceType,
   CommandActionExecutor as CommandActionExecutorType,
-  CommandInstanceFactory as CommandInstanceFactoryType,
   CLIConfigurationService as CLIConfigurationServiceType,
-  CommandOptionsValidator as CommandOptionsValidatorType,
-  CommandOutputHandler as CommandOutputHandlerType,
-  SDKOperationResultUtils as SDKOperationResultUtilsType,
-  OperationResult,
+  NodeConsoleLogger as NodeConsoleLoggerType,
+  ActionResultUtils as ActionResultUtilsType,
+  ActionResult,
 } from '@salto-io/suitecloud-cli'
 
 import { collections, decorators, hash, promises, values } from '@salto-io/lowerdash'
@@ -45,27 +42,21 @@ const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
-let AuthenticationService: typeof AuthenticationServiceType
 let CommandsMetadataService: typeof CommandsMetadataServiceType
 let CommandActionExecutor: typeof CommandActionExecutorType
-let CommandInstanceFactory: typeof CommandInstanceFactoryType
 let CLIConfigurationService: typeof CLIConfigurationServiceType
-let CommandOptionsValidator: typeof CommandOptionsValidatorType
-let CommandOutputHandler: typeof CommandOutputHandlerType
-let SDKOperationResultUtils: typeof SDKOperationResultUtilsType
+let NodeConsoleLogger: typeof NodeConsoleLoggerType
+let ActionResultUtils: typeof ActionResultUtilsType
 
 try {
   // eslint-disable-next-line max-len
   // eslint-disable-next-line import/no-extraneous-dependencies,@typescript-eslint/no-var-requires,global-require
   const module = require('@salto-io/suitecloud-cli')
-  AuthenticationService = module.AuthenticationService
   CommandsMetadataService = module.CommandsMetadataService
   CommandActionExecutor = module.CommandActionExecutor
-  CommandInstanceFactory = module.CommandInstanceFactory
   CLIConfigurationService = module.CLIConfigurationService
-  CommandOptionsValidator = module.CommandOptionsValidator
-  CommandOutputHandler = module.CommandOutputHandler
-  SDKOperationResultUtils = module.SDKOperationResultUtils
+  NodeConsoleLogger = module.NodeConsoleLogger
+  ActionResultUtils = module.ActionResultUtils
 } catch (e) {
   // TODO: this is a temp solution as we can't distribute salto with suitecloud-cli
   log.debug('Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing')
@@ -255,16 +246,11 @@ export default class NetsuiteClient {
   }
 
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
-    const commandsMetadataService = new CommandsMetadataService()
-    commandsMetadataService.initializeCommandsMetadata()
     return new CommandActionExecutor({
       executionPath,
-      commandOutputHandler: new CommandOutputHandler(),
-      commandOptionsValidator: new CommandOptionsValidator(),
       cliConfigurationService: new CLIConfigurationService(),
-      commandInstanceFactory: new CommandInstanceFactory(),
-      authenticationService: new AuthenticationService(executionPath),
-      commandsMetadataService,
+      commandsMetadataService: new CommandsMetadataService(),
+      log: NodeConsoleLogger,
     })
   }
 
@@ -284,7 +270,7 @@ export default class NetsuiteClient {
 
   private static async createProject(): Promise<string> {
     const projectName = `TempSdfProject-${uuidv4()}`
-    const operationResult = await NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
+    const actionResult = await NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
       .executeAction({
         commandName: COMMANDS.CREATE_PROJECT,
         runInInteractiveMode: false,
@@ -294,28 +280,28 @@ export default class NetsuiteClient {
           parentdirectory: osPath.join(baseExecutionPath, projectName),
         },
       })
-    NetsuiteClient.verifySuccessfulOperation(operationResult, COMMANDS.CREATE_PROJECT)
+    NetsuiteClient.verifySuccessfulAction(actionResult, COMMANDS.CREATE_PROJECT)
     return projectName
   }
 
-  private static verifySuccessfulOperation(operationResult: OperationResult, commandName: string):
+  private static verifySuccessfulAction(actionResult: ActionResult, commandName: string):
     void {
-    if (SDKOperationResultUtils.hasErrors(operationResult)) {
+    if (!actionResult.isSuccess()) {
       log.error(`SDF command ${commandName} has failed.`)
-      throw Error(SDKOperationResultUtils.getErrorMessagesString(operationResult))
+      throw Error(ActionResultUtils.getErrorMessagesString(actionResult))
     }
   }
 
   private async executeProjectAction(commandName: string, commandArguments: Values,
-    projectCommandActionExecutor: CommandActionExecutorType): Promise<OperationResult> {
-    const operationResult = await this.sdfCallsLimiter.schedule(() =>
+    projectCommandActionExecutor: CommandActionExecutorType): Promise<ActionResult> {
+    const actionResult = await this.sdfCallsLimiter.schedule(() =>
       projectCommandActionExecutor.executeAction({
         commandName,
         runInInteractiveMode: false,
         arguments: commandArguments,
       }))
-    NetsuiteClient.verifySuccessfulOperation(operationResult, commandName)
-    return operationResult
+    NetsuiteClient.verifySuccessfulAction(actionResult, commandName)
+    return actionResult
   }
 
   protected async setupAccount(
@@ -427,7 +413,7 @@ export default class NetsuiteClient {
   }
 
   private async runImportObjectsCommand(type: string, executor: CommandActionExecutorType):
-    Promise<OperationResult> {
+    Promise<ActionResult> {
     return this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
       type,
@@ -439,7 +425,7 @@ export default class NetsuiteClient {
   private async listFilePaths(executor: CommandActionExecutorType, filePathRegexSkipList: RegExp[]):
     Promise<{ listedPaths: string[]; failedPaths: string[] }> {
     const failedPaths: string[] = []
-    const operationResults = (await Promise.all(
+    const actionResults = (await Promise.all(
       fileCabinetTopLevelFolders
         .filter(folder => filePathRegexSkipList.every(regex => !regex.test(folder)))
         .map(folder =>
@@ -451,7 +437,7 @@ export default class NetsuiteClient {
             }))
     )).filter(values.isDefined)
     return {
-      listedPaths: operationResults.flatMap(operationResult => makeArray(operationResult.data)),
+      listedPaths: actionResults.flatMap(actionResult => makeArray(actionResult.data)),
       failedPaths,
     }
   }
@@ -459,13 +445,13 @@ export default class NetsuiteClient {
   private async importFiles(filePaths: string[], executor: CommandActionExecutorType):
     Promise<{ importedPaths: string[]; failedPaths: string[] }> {
     try {
-      const operationResult = await this.executeProjectAction(
+      const actionResult = await this.executeProjectAction(
         COMMANDS.IMPORT_FILES,
         { paths: filePaths },
         executor
       )
       return {
-        importedPaths: makeArray(operationResult.data.results)
+        importedPaths: makeArray(actionResult.data.results)
           .filter(result => result.loaded)
           .map(result => result.path),
         failedPaths: [],

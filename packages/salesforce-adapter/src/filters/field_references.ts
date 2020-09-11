@@ -82,8 +82,10 @@ const replaceReferenceValues = (
         return undefined
       }
       fieldsWithResolvedReferences.add(field.elemID.getFullName())
-      const ref = new ReferenceExpression(elem.elemID, elem)
-      return (serializer.serialize({ ref, field }) === val) ? ref : undefined
+      return (serializer.serialize({
+        ref: new ReferenceExpression(elem.elemID, elem),
+        field,
+      }) === val) ? new ReferenceExpression(elem.elemID) : undefined
     }
 
     const reference = resolverFinder(field)

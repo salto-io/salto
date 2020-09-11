@@ -22,6 +22,8 @@ import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents,
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
+import glob from 'glob'
+import semver from 'semver'
 import { version } from '../generated/version.json'
 
 const { serialize, deserialize } = serialization
@@ -32,20 +34,76 @@ const log = logger(module)
 export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
 
-export const localState = (filePath: string): state.State => {
+const readFromPaths = async (paths: string[]): Promise<string[][]> => {
+  const elementsData: string[] = []
+  const updateDateData: string[] = []
+  const pathIndexData: string[] = []
+  const versions: string[] = []
+  const readResults = await Promise.all(paths.map(async (p: string) =>
+    ((await exists(p)) ? readZipFile(p) : undefined)))
+  readResults.forEach(readResult => {
+    if (readResult) {
+      const [readElementsData, readUpdateDateData, readPathIndexData, versionInFile] = [
+        ...readResult.split(EOL), '[]', '[]', '[]', '[]']
+      elementsData.push(readElementsData)
+      updateDateData.push(readUpdateDateData)
+      pathIndexData.push(readPathIndexData)
+      if (versionInFile !== '[]') {
+        versions.push(versionInFile)
+      }
+    }
+  })
+  return [elementsData, updateDateData, pathIndexData, versions]
+}
+
+const deserializeAndFlatten = async (elementsJSON: string): Promise<Element[]> => (
+  await deserialize(elementsJSON)
+).map(flattenElementStr)
+
+const flattenStateData = async (elementsData: string[], pathIndexData: string[],
+  updateDateData: string[], versions: string[]): Promise<state.StateData> => {
+  const deserializedElements = _.flatten(await Promise.all(
+    elementsData.map((d: string) => deserializeAndFlatten(d))
+  ))
+  const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
+  const index = pathIndexData ? pathIndex.deserializedPathsIndex(pathIndexData)
+    : new pathIndex.PathIndex()
+  const updateDatesByService = updateDateData.map(
+    (entry: string) => (entry ? JSON.parse(entry) : {})
+  )
+  const thing = updateDatesByService.reduce((entry1,
+    entry2) => Object.assign(entry1, entry2), {})
+  const servicesUpdateDate = _.mapValues(thing, dateStr => new Date(dateStr))
+  const saltoVersion = semver.minSatisfying(versions, '*') || undefined
+  return { elements, servicesUpdateDate, pathIndex: index, saltoVersion }
+}
+
+export const localState = (filePrefix: string): state.State => {
   let dirty = false
   let pathToClean = ''
-  let currentFilePath = filePath + ZIPPED_STATE_EXTENSION
+  let currentFilePrefix = filePrefix
 
   const loadFromFile = async (): Promise<state.StateData> => {
-    let text: string | undefined
-    if (await exists(currentFilePath)) {
-      text = await readZipFile(currentFilePath)
-    } else if (await exists(filePath + STATE_EXTENSION)) {
-      pathToClean = filePath + STATE_EXTENSION
-      text = await readTextFile(pathToClean)
-    }
-    if (text === undefined) {
+    let elementsData: string[] = []
+    let updateDateData: string[] = []
+    let pathIndexData: string[] = []
+    let currentFilePaths: string[] = []
+    let versions: string[] = []
+    await new Promise<void>(resolve => {
+      glob(`${currentFilePrefix}*${ZIPPED_STATE_EXTENSION}`, (_err: Error | null, files: string[]) => {
+        currentFilePaths = files
+        resolve()
+      })
+    })
+    if (currentFilePaths.length > 0) {
+      [elementsData, updateDateData, pathIndexData,
+        versions] = await readFromPaths(currentFilePaths)
+    } else if (await exists(filePrefix + STATE_EXTENSION)) {
+      pathToClean = filePrefix + STATE_EXTENSION;
+      [elementsData[0], updateDateData[0], pathIndexData[0]] = [...(
+        await readTextFile(pathToClean)).split(EOL), '[]', '[]', '[]']
+      versions = [version]
+    } else {
       return {
         elements: {},
         servicesUpdateDate: {},
@@ -53,33 +111,25 @@ export const localState = (filePath: string): state.State => {
         saltoVersion: version,
       }
     }
-    const [elementsData, updateDateData, pathIndexData, versionData] = text.split(EOL)
-    const deserializedElements = (await deserialize(elementsData)).map(flattenElementStr)
-    const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
-    const index = pathIndexData
-      ? pathIndex.deserializedPathIndex(pathIndexData)
-      : new pathIndex.PathIndex()
-    const servicesUpdateDate = updateDateData
-      ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))
-      : {}
-    log.debug(`loaded state [#elements=${_.size(elements)}]`)
-    return {
-      elements,
-      servicesUpdateDate,
-      pathIndex: index,
-      saltoVersion: versionData,
-    }
+    const stateData = await flattenStateData(elementsData, pathIndexData, updateDateData, versions)
+    log.debug(`loaded state [#elements=${_.size(stateData.elements)}]`)
+    return stateData
   }
 
   const inMemState = state.buildInMemState(loadFromFile)
 
-  const createStateText = async (): Promise<string> => {
-    const elements = await inMemState.getAll()
-    const elementsString = serialize(elements)
-    const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
-    const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
+  const createStateTextPerService = async (): Promise<Record<string, string>> => {
+    const elements = _.groupBy(await inMemState.getAll(), element => element.elemID.adapter)
+    const serviceToElementStrings = _.mapValues(elements,
+      serviceElements => serialize(serviceElements))
+    const serviceToDates = await inMemState.getServicesUpdateDates()
+    const serviceToPathIndex = pathIndex.serializePathIndexByService(
+      await inMemState.getPathIndex()
+    )
     log.debug(`finished dumping state text [#elements=${elements.length}]`)
-    return [elementsString, dateString, pathIndexString, version].join(EOL)
+    return _.mapValues(serviceToElementStrings, (serviceElements, service) =>
+      [serviceElements || '[]', safeJsonStringify({ [service]: serviceToDates[service] } || {}),
+        serviceToPathIndex[service] || '[]', version].join(EOL))
   }
 
   return {
@@ -105,30 +155,39 @@ export const localState = (filePath: string): state.State => {
       await inMemState.updatePathIndex(unmergedElements, servicesToMaintain)
       dirty = true
     },
-    rename: async (name: string): Promise<void> => {
-      const newFilePath = path.join(path.dirname(currentFilePath), `${name}${ZIPPED_STATE_EXTENSION}`)
-      await rename(currentFilePath, newFilePath)
-      currentFilePath = newFilePath
+    rename: async (newPrefix: string): Promise<void> => {
+      glob(`${currentFilePrefix}*${ZIPPED_STATE_EXTENSION}`, async (_err: Error | null, files: string[]) => {
+        files.forEach(async filename => {
+          const newFilePath = filename.replace(currentFilePrefix,
+            path.join(path.dirname(currentFilePrefix), newPrefix))
+          await rename(filename, newFilePath)
+        })
+      })
+      currentFilePrefix = newPrefix
     },
     flush: async (): Promise<void> => {
       if (!dirty && pathToClean === '') {
         return
       }
-      const stateText = await createStateText()
-      await mkdirp(path.dirname(currentFilePath))
-      await replaceContents(currentFilePath, await generateZipString(stateText))
+      await mkdirp(path.dirname(currentFilePrefix))
+      const stateTextPerService = await createStateTextPerService()
+      Object.entries(stateTextPerService).forEach(async ([service, stateText]) => {
+        await replaceContents(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
+          await generateZipString(stateText))
+      })
       if (pathToClean !== '') {
         await rm(pathToClean)
       }
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string> => {
-      const stateText = await createStateText()
-      return toMD5(stateText)
+      const stateText = await createStateTextPerService()
+      return toMD5(safeJsonStringify(stateText))
     },
     clear: async (): Promise<void> => {
+      const existingServices = await inMemState.existingServices()
       await inMemState.clear()
-      await rm(currentFilePath)
+      await Promise.all(existingServices.map(service => rm(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`)))
     },
   }
 }

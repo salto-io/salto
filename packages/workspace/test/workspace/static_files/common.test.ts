@@ -28,6 +28,7 @@ export const mockStaticFilesSource = (): StaticFilesSource => ({
   rename: jest.fn(),
   getTotalSize: jest.fn(),
   clear: jest.fn(),
+  delete: jest.fn(),
 })
 
 export const defaultContent = 'ZOMG'

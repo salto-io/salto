@@ -25,6 +25,7 @@ export type StaticFilesSource = {
   rename: (name: string) => Promise<void>
   getTotalSize: () => Promise<number>
   clone: () => StaticFilesSource
+  delete: (staticFile: StaticFile) => Promise<void>
 }
 
 

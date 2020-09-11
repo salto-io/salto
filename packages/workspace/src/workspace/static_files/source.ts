@@ -121,6 +121,9 @@ export const buildStaticFilesSource = (
       staticFilesDirStore.clone() as SyncDirectoryStore<Buffer>,
       staticFilesCache.clone(),
     ),
+    delete: async (staticFile: StaticFile): Promise<void> => (
+      staticFilesDirStore.delete(staticFile.filepath)
+    ),
   }
   return staticFilesSource
 }

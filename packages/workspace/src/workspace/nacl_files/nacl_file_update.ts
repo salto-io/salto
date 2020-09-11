@@ -15,8 +15,10 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange } from '@salto-io/adapter-api'
+import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange,
+  DetailedChange, Value, StaticFile, isStaticFile } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
+import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { SourceRange, SourceMap } from '../../parser'
 
 import {
@@ -301,4 +303,28 @@ export const getChangesToUpdate = (
     .value()
 
   return groupAnnotationTypeChanges(_.concat(otherChanges, wrappedNestedAdditions), sourceMap)
+}
+
+export const getNestedStaticFiles = (value: Value): StaticFile[] => {
+  if (isElement(value)) {
+    const allStaticFiles = new Set<StaticFile>()
+    const transformFunc: TransformFunc = ({ value: val }) => {
+      if (isStaticFile(val)) {
+        allStaticFiles.add(val)
+      }
+      return val
+    }
+    transformElement({ element: value, transformFunc, strict: false })
+    return Array.from(allStaticFiles.values())
+  }
+  if (_.isArray(value)) {
+    return value.flatMap(getNestedStaticFiles)
+  }
+  if (_.isPlainObject(value)) {
+    return Object.values(value).flatMap(getNestedStaticFiles)
+  }
+  if (isStaticFile(value)) {
+    return [value]
+  }
+  return []
 }

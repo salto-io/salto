@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, Value, DetailedChange, isElement,
+  Element, ElemID, Value, DetailedChange, isElement, getChangeElement,
 } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
@@ -24,6 +24,7 @@ import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
+  getNestedStaticFiles,
 } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource } from '../elements_source'
@@ -261,6 +262,16 @@ const buildNaclFilesSource = (
       return naclFile ? naclFile.buffer : ''
     }
 
+    // This method was written with the assumption that each static file is pointed by no more
+    // then one value inthe nacls. A ticket was open to fix that (SALTO-954)
+
+    const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
+      await Promise.all(fileChanges.filter(change => change.action === 'remove')
+        .map(getChangeElement)
+        .map(getNestedStaticFiles)
+        .flatMap(files => files.map(file => staticFileSource.delete(file))))
+    }
+
     const naclFiles = _(await Promise.all(changes.map(change => change.id)
       .map(elemID => getElementNaclFiles(elemID))))
       .flatten().uniq().value()
@@ -298,6 +309,7 @@ const buildNaclFilesSource = (
             if (parsed.errors.length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }
+            await removeDanglingStaticFiles(fileChanges)
             return { ...parsed, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s with %o changes due to: %o',

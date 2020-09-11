@@ -13,26 +13,42 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, DetailedChange, StaticFile } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { ParseResultCache } from '../../../src/workspace/cache'
 
 import { mockStaticFilesSource } from '../static_files/common.test'
-import { parse } from '../../../src/parser'
+import * as parser from '../../../src/parser'
 
-jest.mock('../../../src/parser')
+jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
+  ...jest.requireActual('../../../src/workspace/nacl_files/nacl_file_update'),
+  getChangeLocations: (change: DetailedChange) => ({
+    ...change,
+    location: {
+      filename: 'file',
+      start: { line: 0, row: 0, byte: 0 },
+      end: { line: 0, row: 0, byte: 0 },
+    },
+  }),
+}))
+
+jest.mock('../../../src/parser', () => ({
+  ...jest.requireActual('../../../src/parser'),
+  parse: jest.fn().mockResolvedValue({ elements: [], errors: [] }),
+}))
+
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
   let mockCache: ParseResultCache
   let mockedStaticFilesSource: StaticFilesSource
-  const mockParse = parse as jest.Mock
+  const mockParse = parser.parse as jest.Mock
 
   beforeEach(() => {
     mockCache = {
-      get: jest.fn().mockResolvedValue(undefined),
+      get: jest.fn().mockResolvedValue({ elements: [] }),
       put: jest.fn().mockResolvedValue(undefined),
       clone: () => mockCache,
       flush: () => Promise.resolve(),
@@ -121,6 +137,26 @@ describe('Nacl Files Source', () => {
       await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
         .updateNaclFiles([change])
       expect(mockParse).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('removing static files', () => {
+    const elemID = new ElemID('salesforce', 'new_elem')
+    const filepath = 'to/the/superbowl'
+    const sfile = new StaticFile({ filepath, hash: 'XI' })
+    let src: NaclFilesSource
+    beforeEach(async () => {
+      src = naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
+    })
+    it('should not parse file when updating single add changes in a new file', async () => {
+      const change = {
+        id: elemID,
+        action: 'remove',
+        data: { before: sfile },
+        path: ['new', 'file'],
+      } as DetailedChange
+      await src.updateNaclFiles([change])
+      expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
     })
   })
 

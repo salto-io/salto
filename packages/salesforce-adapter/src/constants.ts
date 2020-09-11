@@ -52,6 +52,7 @@ export enum FIELD_TYPE_NAMES {
   ROLLUP_SUMMARY = 'Summary',
   // internal-only placeholder for fields whose type is unknown
   UNKNOWN = 'Unknown',
+  ANYTYPE = 'AnyType'
 }
 export const FIELD_TYPE_NAME_VALUES = [FIELD_TYPE_NAMES.AUTONUMBER, FIELD_TYPE_NAMES.TEXT,
   FIELD_TYPE_NAMES.NUMBER, FIELD_TYPE_NAMES.PERCENT, FIELD_TYPE_NAMES.CHECKBOX,

@@ -563,11 +563,13 @@ export class Types {
         ...Types.commonAnnotationTypes,
       },
     }),
-    AnyType : new PrimitiveType({
+    AnyType: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ANYTYPE),
-      primitive : PrimitiveTypes.UNKNOWN,
-      
-    })
+      primitive: PrimitiveTypes.UNKNOWN,
+      annotationTypes: {
+        ...Types.commonAnnotationTypes,
+      },
+    }),
   }
 
   private static getFormulaDataType = (baseTypeName: FIELD_TYPE_NAMES):

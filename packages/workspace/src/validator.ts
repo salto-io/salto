@@ -19,7 +19,7 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile,
+  isReferenceExpression, StaticFile, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -45,6 +45,7 @@ const primitiveValidators = {
   [PrimitiveTypes.STRING]: _.isString,
   [PrimitiveTypes.NUMBER]: _.isNumber,
   [PrimitiveTypes.BOOLEAN]: _.isBoolean,
+  [PrimitiveTypes.UNKNOWN]: (value: Value) => value !== undefined,
 }
 
 /**
@@ -453,7 +454,7 @@ const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] 
     return referenceValidationErrors
   }
 
-  if (!_.some(Object.values(primitiveValidators), validator => validator(value))) {
+  if (!isPrimitiveValue(value)) {
     return [new InvalidValueValidationError({
       elemID,
       value,

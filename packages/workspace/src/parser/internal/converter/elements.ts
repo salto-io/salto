@@ -55,6 +55,9 @@ const primitiveType = (typeName: string): PrimitiveTypes => {
   if (typeName === Keywords.TYPE_NUMBER) {
     return PrimitiveTypes.NUMBER
   }
+  if (typeName === Keywords.TYPE_UNKOWN) {
+    return PrimitiveTypes.UNKNOWN
+  }
   return PrimitiveTypes.BOOLEAN
 }
 

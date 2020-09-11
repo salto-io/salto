@@ -148,7 +148,7 @@ const isPasswordInputType = (fieldName: string): boolean =>
   ['token', 'password', 'tokenId', 'tokenSecret'].includes(fieldName)
 
 export const getFieldInputType = (fieldType: TypeElement, fieldName: string): string => {
-  if (!isPrimitiveType(fieldType)) {
+  if (!isPrimitiveType(fieldType) || fieldType.primitive === PrimitiveTypes.UNKNOWN) {
     throw new Error('Only primitive configuration values are supported')
   }
 

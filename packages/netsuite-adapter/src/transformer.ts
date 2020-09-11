@@ -86,6 +86,8 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
         return Number(value)
       case PrimitiveTypes.BOOLEAN:
         return value === XML_TRUE_VALUE
+      case PrimitiveTypes.UNKNOWN:
+        return value
       default:
         return String(value)
     }

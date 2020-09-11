@@ -107,6 +107,7 @@ export enum PrimitiveTypes {
   STRING,
   NUMBER,
   BOOLEAN,
+  UNKNOWN
 }
 
 export type TypeElement = PrimitiveType | ObjectType | ListType

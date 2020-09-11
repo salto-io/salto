@@ -120,6 +120,7 @@ const formatValue = (value: Element | Value): string => {
       [PrimitiveTypes.STRING]: 'string',
       [PrimitiveTypes.NUMBER]: 'number',
       [PrimitiveTypes.BOOLEAN]: 'boolean',
+      [PrimitiveTypes.UNKNOWN]: 'unknown',
     }
     return [
       indent(`\nTYPE: ${primitiveTypeNames[value.primitive]}`, 2),

@@ -88,15 +88,17 @@ describe('netsuite client', () => {
     commandName: COMMANDS.SETUP_ACCOUNT,
     arguments: {
       authid: expectedAuthId,
+      savetoken: false,
     },
   })
   const saveTokenCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
     arguments: {
-      accountid: transformedAccountId,
+      account: transformedAccountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
       authid: expectedAuthId,
+      savetoken: true,
     },
   })
 
@@ -134,7 +136,7 @@ describe('netsuite client', () => {
     it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT
-          && _.isUndefined(context.arguments.accountid)) {
+          && _.isUndefined(context.arguments.account)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -238,7 +240,7 @@ describe('netsuite client', () => {
     it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT
-          && _.isUndefined(context.arguments.accountid)) {
+          && _.isUndefined(context.arguments.account)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -618,7 +620,7 @@ describe('netsuite client', () => {
       it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.SETUP_ACCOUNT
-            && _.isUndefined(context.arguments.accountid)) {
+            && _.isUndefined(context.arguments.account)) {
             return Promise.resolve({ isSuccess: () => false })
           }
           return Promise.resolve({ isSuccess: () => true })

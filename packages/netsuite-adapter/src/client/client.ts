@@ -76,7 +76,7 @@ export type NetsuiteClientOpts = {
 
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
-  SETUP_ACCOUNT: 'account:setup',
+  SETUP_ACCOUNT: 'account:ci',
   IMPORT_OBJECTS: 'object:import',
   LIST_FILES: 'file:list',
   IMPORT_FILES: 'file:import',
@@ -239,6 +239,7 @@ export default class NetsuiteClient {
     this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: sdfConcurrencyLimit })
   }
 
+  @NetsuiteClient.logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     const netsuiteClient = new NetsuiteClient({ credentials, sdfConcurrencyLimit: 1 })
     await netsuiteClient.initProject()
@@ -307,20 +308,29 @@ export default class NetsuiteClient {
   protected async setupAccount(
     projectCommandActionExecutor: CommandActionExecutorType
   ): Promise<void> {
-    // Todo: use the correct implementation and not Salto's temporary solution after:
-    //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
     const setupAccountUsingExistingAuthID = async (): Promise<void> => {
-      await this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, { authid: this.authId },
-        projectCommandActionExecutor)
+      await this.executeProjectAction(
+        COMMANDS.SETUP_ACCOUNT,
+        {
+          authid: this.authId,
+          savetoken: false,
+        },
+        projectCommandActionExecutor
+      )
     }
 
     const setupAccountUsingNewAuthID = async (): Promise<void> => {
-      await this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
-        authid: this.authId,
-        accountid: this.credentials.accountId,
-        tokenid: this.credentials.tokenId,
-        tokensecret: this.credentials.tokenSecret,
-      }, projectCommandActionExecutor)
+      await this.executeProjectAction(
+        COMMANDS.SETUP_ACCOUNT,
+        {
+          authid: this.authId,
+          account: this.credentials.accountId,
+          tokenid: this.credentials.tokenId,
+          tokensecret: this.credentials.tokenSecret,
+          savetoken: true,
+        },
+        projectCommandActionExecutor
+      )
     }
 
     try {

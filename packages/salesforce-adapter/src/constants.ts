@@ -78,7 +78,7 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
 
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, FIELD_TYPE_NAMES> = {
-  anyType: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  anyType: FIELD_TYPE_NAMES.ANYTYPE, // TODO: define specific type
   base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   boolean: FIELD_TYPE_NAMES.CHECKBOX,
   combobox: FIELD_TYPE_NAMES.PICKLIST,

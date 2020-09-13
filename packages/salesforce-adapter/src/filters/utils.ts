@@ -138,9 +138,6 @@ export const apiNameParts = (instance: InstanceElement): string[] =>
 export const parentApiName = (instance: InstanceElement): string =>
   apiNameParts(instance)[0]
 
-export const relativeApiName = (instance: InstanceElement): string =>
-  apiName(instance).slice(parentApiName(instance).length + 1)
-
 export const instanceParent = (instance: InstanceElement): ElemID | undefined =>
   instance.annotations[INSTANCE_ANNOTATIONS.PARENT]?.elemId
 

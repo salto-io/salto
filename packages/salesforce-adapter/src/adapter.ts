@@ -61,10 +61,8 @@ import fieldReferences from './filters/field_references'
 import customObjectInstanceReferencesFilter from './filters/custom_object_instances_references'
 import foreignKeyReferences from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
-import customObjectTranslationFilter from './filters/custom_object_translation'
 import cpqLookupObjectsFilter from './filters/cpq/lookup_object'
 import cpqFieldsWithContextRefFilter from './filters/cpq/fields_with_context_references'
-import recordTypeFilter from './filters/record_type'
 import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
@@ -115,9 +113,6 @@ export const DEFAULT_FILTERS = [
   globalValueSetFilter,
   staticResourceFileExtFilter,
   xmlAttributesFilter,
-  // customObjectTranslationFilter and recordTypeFilter depends on customObjectsFilter
-  customObjectTranslationFilter,
-  recordTypeFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,

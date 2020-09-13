@@ -16,20 +16,18 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, InstanceElement, ObjectType, ReferenceExpression, Field, ElemID,
+  Element, InstanceElement, ObjectType, ElemID,
 } from '@salto-io/adapter-api'
 import {
   findInstances, naclCase,
 } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
-  addObjectParentReference, generateApiNameToCustomObject, id, allCustomObjectFields,
+  addObjectParentReference, generateApiNameToCustomObject, id,
 } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 
-const { makeArray } = collections.array
 const log = logger(module)
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
@@ -79,55 +77,6 @@ const fixLayoutPath = (
   layout.path = [...objectPath.slice(0, -1), layout.elemID.typeName, layout.elemID.name]
 }
 
-type LayoutItem = {
-  field?: string | ReferenceExpression
-  customLink?: string | ReferenceExpression
-}
-
-const fixLayoutItemField = (
-  layoutItem: LayoutItem,
-  layoutObj: ObjectType,
-  layoutObjFields: Field[],
-  weblinkInstances: InstanceElement[],
-): void => {
-  if (!layoutItem) return
-  const findField = (fieldName: string, fields: Field[]): Field | undefined =>
-    fields.find(field => apiName(field, true) === fieldName)
-  const findWebLink = (name: string): InstanceElement | undefined =>
-    weblinkInstances.find(weblink => apiName(weblink, true) === name)
-
-  // customLink only exists on layout sections with CustomLinks style
-  const fieldName = layoutItem.customLink !== undefined ? 'customLink' : 'field'
-  const reference = fieldName === 'field'
-    ? findField(layoutItem[fieldName] as string, layoutObjFields)
-    : findWebLink(layoutItem[fieldName] as string)
-  if (!reference) {
-    log.debug(`Could not resolve reference ${layoutItem[fieldName]} for layout ${layoutObj.elemID.name}`)
-    return
-  }
-
-  layoutItem[fieldName] = new ReferenceExpression(
-    reference.elemID
-  )
-}
-
-const fixLayoutColumnItems = (
-  layout: InstanceElement,
-  layoutObj: ObjectType,
-  layoutObjFields: Field[],
-  weblinkInstances: InstanceElement[],
-): void => {
-  const layoutItems = _(makeArray(layout.value.layoutSections))
-    .map(layoutSection => makeArray(layoutSection.layoutColumns))
-    .flatten()
-    .map(layoutColumn => makeArray(layoutColumn.layoutItems))
-    .flatten()
-  layoutItems.forEach(layoutItem => fixLayoutItemField(
-    layoutItem as LayoutItem, layoutObj, layoutObjFields, weblinkInstances
-  ))
-}
-
-
 /**
 * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
 * Fixes references in layout items.
@@ -142,7 +91,6 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
     fixNames(layouts)
-    const weblinkInstances = [...findInstances(elements, WEBLINK_TYPE_ID)]
 
     const apiNameToCustomObject = generateApiNameToCustomObject(elements)
 
@@ -153,11 +101,9 @@ const filterCreator: FilterCreator = () => ({
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
-      const layoutObjFields = [...allCustomObjectFields(elements, layoutObj.elemID)]
 
       addObjectParentReference(layout, layoutObj)
       fixLayoutPath(layout, layoutObj)
-      fixLayoutColumnItems(layout, layoutObj, layoutObjFields, weblinkInstances)
     })
   },
 })

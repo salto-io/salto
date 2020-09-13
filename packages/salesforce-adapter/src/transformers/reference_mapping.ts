@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, Element, isElement, Value } from '@salto-io/adapter-api'
+import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { apiName, metadataType } from './transformer'
+import { apiName } from './transformer'
 import {
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_OBJECT, API_NAME_SEPARATOR,
   WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_QUERY, CPQ_PRICE_RULE,
@@ -237,8 +237,8 @@ const matchName = (fieldName: string, matcher: string | RegExp): boolean => (
     : matcher.test(fieldName)
 )
 
-const matchMetadataType = (elem: Element, types: string[]): boolean => (
-  types.includes(metadataType(elem))
+const matchApiName = (elem: Element, types: string[]): boolean => (
+  types.includes(apiName(elem))
 )
 
 export class FieldReferenceResolver {
@@ -263,7 +263,7 @@ export class FieldReferenceResolver {
   match(field: Field): boolean {
     return (
       matchName(field.name, this.src.field)
-      && matchMetadataType(field.parent, this.src.parentTypes)
+      && matchApiName(field.parent, this.src.parentTypes)
     )
   }
 }
@@ -294,7 +294,7 @@ export const generateReferenceResolverFinder = (
   return (field => (
     [
       ...(matchersByFieldName[field.name] ?? []),
-      ...(regexFieldMatchersByParent[metadataType(field.parent)] || []),
+      ...(regexFieldMatchersByParent[apiName(field.parent)] || []),
     ].filter(resolver => resolver.match(field))
   ))
 }

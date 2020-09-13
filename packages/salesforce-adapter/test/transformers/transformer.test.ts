@@ -38,6 +38,8 @@ import {
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
   LAYOUT_TYPE_ID_METADATA_TYPE,
+  CPQ_PRODUCT_RULE,
+  CPQ_LOOKUP_PRODUCT_FIELD,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue, SalesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -1573,6 +1575,39 @@ describe('transformer', () => {
           ref: new ReferenceExpression(testField.elemID, testField, refObject),
           field: workflowFieldUpdate.fields.field,
           path: mockWorkflowFieldUpdateInstance.elemID.createNestedID('field'),
+        })).toEqual('Test__c')
+      })
+    })
+    describe('with fields in product_rule (custom object) lookup_product_field update instance', () => {
+      const mockProductRuleType = new ObjectType(
+        {
+          elemID: new ElemID(SALESFORCE, CPQ_PRODUCT_RULE),
+          fields: {
+            [CPQ_LOOKUP_PRODUCT_FIELD]: { type: BuiltinTypes.STRING },
+          },
+          annotations: {
+            [METADATA_TYPE]: CUSTOM_OBJECT,
+            [API_NAME]: CPQ_PRODUCT_RULE,
+          },
+        },
+      )
+      const testField = refObject.fields.test
+      const mockProductRuleInst = new InstanceElement(
+        'mockProductRule',
+        mockProductRuleType,
+        {
+          [CPQ_LOOKUP_PRODUCT_FIELD]: new ReferenceExpression(
+            testField.elemID,
+            testField,
+            refObject
+          ),
+        },
+      )
+      it('should resolve to relative api name', () => {
+        expect(getLookUpName({
+          ref: mockProductRuleInst.value[CPQ_LOOKUP_PRODUCT_FIELD],
+          field: mockProductRuleType.fields[CPQ_LOOKUP_PRODUCT_FIELD],
+          path: mockProductRuleInst.elemID.createNestedID(CPQ_LOOKUP_PRODUCT_FIELD),
         })).toEqual('Test__c')
       })
     })

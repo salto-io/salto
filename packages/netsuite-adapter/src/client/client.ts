@@ -388,7 +388,7 @@ export default class NetsuiteClient {
         await this.runImportObjectsCommand(ALL, executor)
         return true
       } catch (e) {
-        log.warn(`Attempt to fetch all custom objects has failed due to: ${e}`)
+        log.warn(`Attempt to fetch all custom objects has failed due to: "${e}"`)
         return false
       }
     }
@@ -413,7 +413,7 @@ export default class NetsuiteClient {
           await this.runImportObjectsCommand(typeName, executor)
           log.debug(`Fetched objects of type: ${typeName}`)
         } catch (e) {
-          log.warn(`Failed to fetch objects of type ${typeName} failed due to ${e}`)
+          log.warn(`Failed to fetch objects of type ${typeName} failed due to: "${e}"`)
           failedTypes.push(typeName)
         }
       }),

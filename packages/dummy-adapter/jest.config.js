@@ -18,19 +18,16 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(
   require('../../jest.base.config.js'),
   {
-    name: 'salesforce-adapter',
-    displayName: 'salesforce-adapter',
+    name: 'dummy-adapter',
+    displayName: 'dummy-adapter',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!<rootDir>/dist/index.js',
     ],
-    testEnvironment: process.env.RUN_E2E_TESTS	
-      ? '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'	
-      : undefined,
     coverageThreshold: {
       'global': {
-        branches: 89,
-        functions: 94,
+        branches: 74,
+        functions: 95,
         lines: 95,
         statements: 95,
       },

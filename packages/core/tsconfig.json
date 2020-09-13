@@ -32,5 +32,6 @@
         { "path": "../logging" },
         { "path": "../lowerdash" },
         { "path": "../salesforce-adapter" },
+        { "path": "../dummy-adapter" },
     ]
 }

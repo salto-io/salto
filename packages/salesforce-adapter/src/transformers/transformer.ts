@@ -1091,13 +1091,11 @@ export const getSObjectFieldElement = (
     }
   // Compound Fields
   } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
-    // Only fields that are compound in this object get compound type, otherwise default to text
+    // Only fields that are compound in this object get compound type
     if (objCompoundFieldNames.includes(field.name)) {
       naclFieldType = field.nameField
         ? Types.compoundDataTypes.Name
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
-    } else {
-      naclFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
     }
   }
 
@@ -1117,12 +1115,17 @@ export const getSObjectFieldElement = (
 
   // System fields besides name should be hidden and not be creatable, updateable nor required
   // Because they differ between envs and should not be edited through salto
-  // Name is an exception because it's editable and should be visible to the user
+  // Name is an exception because it can be editable and visible to the user
   if (!field.nameField && systemFields.includes(field.name)) {
     annotations[CORE_ANNOTATIONS.HIDDEN] = true
     annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
     annotations[FIELD_ANNOTATIONS.CREATABLE] = false
     annotations[CORE_ANNOTATIONS.REQUIRED] = false
+  }
+
+  // An autoNumber field should be hidden because it will differ between enviorments
+  if (field.autoNumber) {
+    annotations[CORE_ANNOTATIONS.HIDDEN] = true
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name

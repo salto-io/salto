@@ -24,10 +24,9 @@ import {
   CPQ_SOURCE_LOOKUP_FIELD, CPQ_PRICE_ACTION, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_PRODUCT_RULE,
   CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CUSTOM_FIELD,
   CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD, CPQ_OBJECT_NAME, CPQ_FIELD_METADATA,
-  CUSTOM_FIELD_TRANSLATION_METADATA_TYPE,
   VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
-  VALIDATION_RULE_TRANSLATION_METADATA_TYPE,
   WEBLINK_METADATA_TYPE,
+  SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -67,7 +66,7 @@ export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lo
 
 type SourceDef = {
   field: string | RegExp
-  parentType: string
+  parentTypes: string[]
 }
 
 /**
@@ -94,168 +93,140 @@ export type FieldReferenceDefinition = {
  */
 const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: { field: 'field', parentType: WORKFLOW_FIELD_UPDATE_METADATA_TYPE },
+    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
-    src: { field: 'field', parentType: LAYOUT_ITEM_METADATA_TYPE },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem'] },
+    target: { type: CUSTOM_FIELD },
   },
   {
-    src: { field: 'customLink', parentType: LAYOUT_ITEM_METADATA_TYPE },
+    src: { field: 'customLink', parentTypes: [LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: WEBLINK_METADATA_TYPE },
   },
+  ...([CUSTOM_FIELD, 'FieldSet', 'RecordType', 'SharingReason', WEBLINK_METADATA_TYPE, 'WorkflowTask', VALIDATION_RULES_METADATA_TYPE, 'QuickAction'].map(
+    (targetType): FieldReferenceDefinition => ({
+      src: { field: 'name', parentTypes: [`${targetType}Translation`] },
+      serializationStrategy: 'relativeApiName',
+      target: { parentContext: 'instanceParent', type: targetType },
+    })
+  )),
   {
-    src: { field: 'name', parentType: CUSTOM_FIELD_TRANSLATION_METADATA_TYPE },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+    src: { field: 'name', parentTypes: ['GlobalQuickActionTranslation'] },
+    target: { type: 'QuickAction' },
   },
   {
-    src: { field: 'name', parentType: VALIDATION_RULE_TRANSLATION_METADATA_TYPE },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: VALIDATION_RULES_METADATA_TYPE },
-  },
-  {
-    src: { field: 'businessProcess', parentType: RECORD_TYPE_METADATA_TYPE },
+    src: { field: 'businessProcess', parentTypes: [RECORD_TYPE_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: BUSINESS_PROCESS_METADATA_TYPE },
   },
   {
     // includes authorizationRequiredPage, bandwidthExceededPage, fileNotFoundPage, ...
-    src: { field: /Page$/, parentType: 'CustomSite' },
+    src: { field: /Page$/, parentTypes: ['CustomSite'] },
     target: { type: 'ApexPage' },
   },
   {
-    src: { field: 'recipient', parentType: 'WorkflowEmailRecipient' },
+    src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
     target: { type: 'Role' },
   },
   {
-    src: { field: 'actionName', parentType: 'FlowActionCall' },
+    src: { field: 'actionName', parentTypes: ['FlowActionCall'] },
     target: { type: 'WorkflowAlert' },
   },
   {
-    src: { field: 'application', parentType: 'ProfileApplicationVisibility' },
+    src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
     target: { type: 'CustomApplication' },
   },
   {
-    src: { field: 'layout', parentType: 'ProfileLayoutAssignment' },
+    src: { field: 'layout', parentTypes: ['ProfileLayoutAssignment'] },
     target: { type: 'Layout' },
   },
   {
-    src: { field: 'recordType', parentType: 'ProfileLayoutAssignment' },
+    src: { field: 'recordType', parentTypes: ['ProfileLayoutAssignment'] },
     target: { type: 'RecordType' },
   },
   {
-    src: { field: 'flow', parentType: 'ProfileFlowAccess' },
+    src: { field: 'flow', parentTypes: ['ProfileFlowAccess'] },
     target: { type: 'Flow' },
   },
   {
-    src: { field: 'recordType', parentType: 'ProfileRecordTypeVisibility' },
+    src: { field: 'recordType', parentTypes: ['ProfileRecordTypeVisibility'] },
     target: { type: 'RecordType' },
   },
   {
-    src: { field: 'tabs', parentType: 'CustomApplication' },
+    src: { field: 'tabs', parentTypes: ['CustomApplication'] },
     target: { type: 'CustomTab' },
   },
   {
-    src: { field: 'tab', parentType: 'WorkspaceMapping' },
+    src: { field: 'tab', parentTypes: ['WorkspaceMapping'] },
     target: { type: 'CustomTab' },
   },
   {
-    src: { field: 'objectType', parentType: 'FlowVariable' },
+    src: { field: 'objectType', parentTypes: ['FlowVariable'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'object', parentType: 'ProfileObjectPermissions' },
+    src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'name', parentType: 'ObjectSearchSetting' },
+    src: { field: 'name', parentTypes: ['ObjectSearchSetting'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'field', parentType: 'ProfileFieldLevelSecurity' },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'field', parentType: 'FilterItem' },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'report', parentType: 'DashboardComponent' },
+    src: { field: 'report', parentTypes: ['DashboardComponent'] },
     target: { type: 'Report' },
   },
   {
-    src: { field: 'reportType', parentType: 'Report' },
+    src: { field: 'reportType', parentTypes: ['Report'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: CPQ_LOOKUP_OBJECT_NAME, parentType: CPQ_PRICE_RULE },
+    src: { field: CPQ_LOOKUP_OBJECT_NAME, parentTypes: [CPQ_PRICE_RULE, CPQ_PRODUCT_RULE] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: CPQ_LOOKUP_OBJECT_NAME, parentType: CPQ_PRODUCT_RULE },
+    src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentTypes: [CPQ_LOOKUP_QUERY, CPQ_PRICE_ACTION] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentType: CPQ_LOOKUP_QUERY },
+    src: { field: CPQ_OBJECT_NAME, parentTypes: [CPQ_FIELD_METADATA] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentType: CPQ_PRICE_ACTION },
-    target: { type: CUSTOM_OBJECT },
-  },
-  {
-    src: { field: CPQ_OBJECT_NAME, parentType: CPQ_FIELD_METADATA },
-    target: { type: CUSTOM_OBJECT },
+    src: { field: 'relatedList', parentTypes: ['RelatedListItem'] },
+    target: { type: CUSTOM_FIELD },
   },
 
   // serialization-only
   {
-    src: { field: 'name', parentType: WORKFLOW_ACTION_REFERENCE_METADATA_TYPE },
+    src: { field: 'name', parentTypes: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
   },
   {
-    src: { field: CPQ_LOOKUP_FIELD, parentType: CPQ_LOOKUP_QUERY },
+    src: { field: CPQ_LOOKUP_FIELD, parentTypes: [CPQ_LOOKUP_QUERY] },
     serializationStrategy: 'relativeApiName',
   },
   {
-    src: { field: CPQ_SOURCE_LOOKUP_FIELD, parentType: CPQ_PRICE_ACTION },
+    src: { field: CPQ_SOURCE_LOOKUP_FIELD, parentTypes: [CPQ_PRICE_ACTION] },
     serializationStrategy: 'relativeApiName',
   },
   {
-    src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentType: CPQ_PRODUCT_RULE },
+    src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
   },
   {
-    src: { field: CPQ_LOOKUP_MESSAGE_FIELD, parentType: CPQ_PRODUCT_RULE },
+    src: { field: CPQ_LOOKUP_MESSAGE_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
   },
   {
-    src: { field: CPQ_LOOKUP_REQUIRED_FIELD, parentType: CPQ_PRODUCT_RULE },
+    src: { field: CPQ_LOOKUP_REQUIRED_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
   },
   {
-    src: { field: CPQ_LOOKUP_TYPE_FIELD, parentType: CPQ_PRODUCT_RULE },
-    serializationStrategy: 'relativeApiName',
-  },
-  {
-    src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentType: CPQ_PRICE_RULE },
-    serializationStrategy: 'relativeApiName',
-  },
-  {
-    src: { field: CPQ_LOOKUP_MESSAGE_FIELD, parentType: CPQ_PRICE_RULE },
-    serializationStrategy: 'relativeApiName',
-  },
-  {
-    src: { field: CPQ_LOOKUP_REQUIRED_FIELD, parentType: CPQ_PRICE_RULE },
-    serializationStrategy: 'relativeApiName',
-  },
-  {
-    src: { field: CPQ_LOOKUP_TYPE_FIELD, parentType: CPQ_PRICE_RULE },
+    src: { field: CPQ_LOOKUP_TYPE_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
   },
 ]
@@ -266,8 +237,8 @@ const matchName = (fieldName: string, matcher: string | RegExp): boolean => (
     : matcher.test(fieldName)
 )
 
-const matchMetadataType = (elem: Element, type: string | undefined): boolean => (
-  type === undefined ? true : (metadataType(elem) === type)
+const matchMetadataType = (elem: Element, types: string[]): boolean => (
+  types.includes(metadataType(elem))
 )
 
 export class FieldReferenceResolver {
@@ -292,7 +263,7 @@ export class FieldReferenceResolver {
   match(field: Field): boolean {
     return (
       matchName(field.name, this.src.field)
-      && matchMetadataType(field.parent, this.src.parentType)
+      && matchMetadataType(field.parent, this.src.parentTypes)
     )
   }
 }
@@ -314,8 +285,10 @@ export const generateReferenceResolverFinder = (
     .groupBy(def => def.src.field)
     .value()
   const regexFieldMatchersByParent = _(referenceDefinitions)
-    .filter(def => _.isRegExp(def.src.field) && _.isString(def.src.parentType))
-    .groupBy(def => def.src.parentType)
+    .filter(def => _.isRegExp(def.src.field))
+    .flatMap(def => def.src.parentTypes.map(parentType => ({ parentType, def })))
+    .groupBy(({ parentType }) => parentType)
+    .mapValues(items => items.map(item => item.def))
     .value()
 
   return (field => (

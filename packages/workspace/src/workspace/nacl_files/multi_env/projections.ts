@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   Values, isObjectType, TypeElement, ObjectType, PrimitiveType, Field, InstanceElement,
   Element, isType, isField, isInstanceElement, getChangeElement, Value, ElemID, DetailedChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 
 export class InvalidProjectionError extends Error {
@@ -39,31 +40,26 @@ const projectValue = (src: Value, target: Value): Value => {
   return target !== undefined ? src : undefined
 }
 
-const projectType = (src: TypeElement, target: TypeElement): TypeElement | undefined => {
+const projectType = (src: TypeElement, target: TypeElement): TypeElement => {
   const annotations = projectValue(src.annotations, target.annotations)
   const annotationTypes = _.pick(src.annotationTypes, _.keys(target.annotationTypes))
   if (isObjectType(src) && isObjectType(target)) {
     const fields = _.pick(src.fields, _.keys(target.fields))
-    return _.isEmpty(annotations) && _.isEmpty(annotationTypes) && _.isEmpty(fields)
-      ? undefined
-      : new ObjectType({
-        ...target,
-        annotationTypes,
-        annotations,
-        fields,
-        path: src.path,
-      })
-  }
-  return _.isEmpty(annotations) && _.isEmpty(annotationTypes)
-    ? undefined
-    : new PrimitiveType({
-      ...target as PrimitiveType,
+    return new ObjectType({
+      ...src,
       annotationTypes,
       annotations,
+      fields,
     })
+  }
+  return new PrimitiveType({
+    ...src as PrimitiveType,
+    annotationTypes,
+    annotations,
+  })
 }
 
-const projectField = (src: Field, target: Field): Field | undefined => {
+const projectField = (src: Field, target: Field): Field => {
   if (src.type !== target.type) return src
   const annotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(annotations)
@@ -77,7 +73,7 @@ const projectInstance = (
 ): InstanceElement | undefined => {
   const projectedValue = projectValue(src.value, target.value)
   const projectedAnnotations = projectValue(src.annotations, target.annotations)
-  return _.isEmpty(projectedValue)
+  return _.isEmpty(projectedValue) && _.isEmpty(projectedAnnotations)
     ? undefined
     : new InstanceElement(
       src.elemID.name,
@@ -88,12 +84,10 @@ const projectInstance = (
     )
 }
 
-export const projectElementOrValueToEnv = async (
+export const projectElementOrValueToEnv = (
   value: Element | Value,
-  id: ElemID,
-  env: ElementsSource
-): Promise<Element | undefined> => {
-  const targetElement = await env.get(id)
+  targetElement: Element | Value,
+): Element | Value | undefined => {
   if (isType(value) && isType(targetElement)) {
     return projectType(value, targetElement)
   }
@@ -101,7 +95,7 @@ export const projectElementOrValueToEnv = async (
     return projectField(value, targetElement)
   }
   if (isInstanceElement(value) && isInstanceElement(targetElement)) {
-    return projectInstance(value as InstanceElement, targetElement)
+    return projectInstance(value, targetElement)
   }
   return projectValue(value, targetElement)
 }
@@ -128,44 +122,24 @@ export const createRemoveChange = (
   path,
 })
 
-export const createModifyChange = (
-  before: Element | Value,
-  after: Element | Value,
-  id: ElemID,
-  path?: ReadonlyArray<string>
-): DetailedChange => ({
-  data: { before, after },
-  action: 'modify',
-  id,
-  path,
-})
-
 export const projectChange = async (
   change: DetailedChange,
   env: ElementsSource
 ): Promise<DetailedChange[]> => {
-  const beforeProjection = change.action !== 'add'
-    ? await projectElementOrValueToEnv(change.data.before, change.id, env)
-    : undefined
-  const afterProjection = change.action !== 'remove'
-    ? await projectElementOrValueToEnv(change.data.after, change.id, env)
-    : undefined
+  const targetElement = await env.get(change.id)
+  if (targetElement === undefined) {
+    return change.action === 'add' ? [change] : []
+  }
   if (change.action === 'add') {
-    if (!_.isUndefined(afterProjection)) {
-      throw new InvalidProjectionError(
-        change,
-        'can not project an add change to an existing env element.'
-      )
-    }
-    return [change]
+    throw new InvalidProjectionError(
+      change,
+      'can not project an add change to an existing env element.'
+    )
   }
 
-  if (change.action === 'modify' && !_.isUndefined(beforeProjection) && !_.isUndefined(afterProjection)) {
-    return [createModifyChange(beforeProjection, afterProjection, change.id, change.path)]
-  }
-
-  if (change.action === 'remove' && !_.isUndefined(beforeProjection)) {
-    return [createRemoveChange(beforeProjection, change.id, change.path)]
-  }
-  return []
+  const projectedChange = applyFunctionToChangeData(
+    change,
+    changeData => projectElementOrValueToEnv(changeData, targetElement),
+  )
+  return [projectedChange]
 }

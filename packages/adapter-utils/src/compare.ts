@@ -15,9 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  ChangeDataType, DetailedChange, isField, isListType, isInstanceElement,
-  ElemID, Value, ObjectType, PrimitiveType, isObjectType, isPrimitiveType,
-  isEqualElements, isEqualValues, isRemovalChange,
+  ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType,
+  PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { setPath } from './utils'
 
@@ -125,12 +124,8 @@ export const detailedCompare = (
     ]
   }
 
-  // A special case to handle isList changes in fields.
-  // should only happen if we misidentified the type
-  // in fetch. See SALTO-322
-  if (isField(before)
-      && isField(after)
-      && isListType(after.type) !== isListType(before.type)) {
+  // A special case to handle type changes in fields, we have to modify the whole field
+  if (isField(before) && isField(after) && !before.type.elemID.isEqual(after.type.elemID)) {
     return [{ action: 'modify', data: { before, after }, id: after.elemID }]
   }
 

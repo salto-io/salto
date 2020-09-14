@@ -36,6 +36,11 @@ jest.mock('@salto-io/workspace', () => ({
   loadWorkspace: jest.fn(),
 }))
 jest.mock('../../../src/local-workspace/dir_store')
+jest.mock('../../../src/local-workspace/static_files_cache', () => ({
+  buildLocalStaticFilesCache: () => ({
+    rename: jest.fn(),
+  }),
+}))
 describe('local workspace', () => {
   const mockExists = exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
@@ -189,6 +194,97 @@ describe('local workspace', () => {
       const workspace = await loadLocalWorkspace('.')
       await workspace.renameEnvironment('default', 'newEnvName')
       expect(mockRenameEnvironment).toHaveBeenCalledWith('default', 'newEnvName', 'envs/newEnvName')
+    })
+  })
+
+  describe('demoteAll', () => {
+    beforeAll(() => {
+      mockExists.mockResolvedValue(true)
+      const mockLoad = ws.loadWorkspace as jest.Mock
+      mockLoad.mockResolvedValue({
+        demoteAll: jest.fn(),
+      })
+    })
+
+    describe('with only one env', () => {
+      beforeAll(() => {
+        const getConf = repoDirStore.get as jest.Mock
+        getConf.mockResolvedValue({ buffer: `
+        salto {
+          uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+          name = "test"
+          envs = [
+              {
+                name = "default"
+              }
+          ]
+          currentEnv = "default"
+        }
+        `,
+        filename: '' })
+      })
+
+      it('should invoke the common source rename method if the env specific folder is empty', async () => {
+        const repoIsEmpty = repoDirStore.isEmpty as jest.Mock
+        repoIsEmpty.mockResolvedValueOnce(false)
+        const envIsEmpty = envDirStore.isEmpty as jest.Mock
+        envIsEmpty.mockResolvedValueOnce(true)
+        const workspace = await loadLocalWorkspace('.')
+        await workspace.demoteAll()
+        expect(repoDirStore.rename).toHaveBeenCalled()
+      })
+
+      it('should invoke the multienvSource demoteAll method if env sepcfic folder is not empty', async () => {
+        const repoIsEmpty = repoDirStore.isEmpty as jest.Mock
+        repoIsEmpty.mockResolvedValueOnce(false)
+        const envIsEmpty = envDirStore.isEmpty as jest.Mock
+        envIsEmpty.mockResolvedValueOnce(false)
+        const workspace = await loadLocalWorkspace('/west')
+        await workspace.demoteAll()
+        expect(repoDirStore.rename).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('with multiple envs', () => {
+      beforeAll(() => {
+        const getConf = repoDirStore.get as jest.Mock
+        getConf.mockResolvedValue({ buffer: `
+        salto {
+          uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+          name = "test"
+          envs = [
+              {
+                name = "default"
+              },
+              {
+                name = "other"
+              }
+          ]
+          currentEnv = "default"
+        }
+        `,
+        filename: '' })
+      })
+
+      it('should invoke the common source rename method  if the env specific folder is empty', async () => {
+        const repoIsEmpty = repoDirStore.isEmpty as jest.Mock
+        repoIsEmpty.mockResolvedValueOnce(false)
+        const envIsEmpty = envDirStore.isEmpty as jest.Mock
+        envIsEmpty.mockResolvedValueOnce(true)
+        const workspace = await loadLocalWorkspace('.')
+        await workspace.demoteAll()
+        expect(repoDirStore.rename).not.toHaveBeenCalled()
+      })
+
+      it('should invoke the common source rename  method if env sepcfic folder is not empty', async () => {
+        const repoIsEmpty = repoDirStore.isEmpty as jest.Mock
+        repoIsEmpty.mockResolvedValueOnce(false)
+        const envIsEmpty = envDirStore.isEmpty as jest.Mock
+        envIsEmpty.mockResolvedValueOnce(false)
+        const workspace = await loadLocalWorkspace('/west')
+        await workspace.demoteAll()
+        expect(repoDirStore.rename).not.toHaveBeenCalled()
+      })
     })
   })
 })

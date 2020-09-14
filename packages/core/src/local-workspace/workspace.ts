@@ -178,11 +178,24 @@ Promise<Workspace> => {
   const credentials = credentialsSource(workspaceConfig.localStorage)
   const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
   const ws = await loadWorkspace(workspaceConfig, credentials, elemSources)
+
   return {
     ...ws,
     renameEnvironment: async (envName: string, newEnvName: string): Promise<void> => (
       ws.renameEnvironment(envName, newEnvName, getLocalEnvName(newEnvName))
     ),
+    demoteAll: async (): Promise<void> => {
+      const envSources = Object.values(
+        _.pickBy(elemSources.sources, (_src, key) => key !== elemSources.commonSourceName)
+      )
+      const allEnvSourcesEmpty = envSources.length === 1 && await envSources[0].naclFiles.isEmpty()
+      if (allEnvSourcesEmpty) {
+        const commonSource = elemSources.sources[elemSources.commonSourceName].naclFiles
+        const { currentEnv } = (await workspaceConfig.getWorkspaceConfig())
+        return commonSource.rename(getLocalEnvName(currentEnv))
+      }
+      return ws.demoteAll()
+    },
   }
 }
 

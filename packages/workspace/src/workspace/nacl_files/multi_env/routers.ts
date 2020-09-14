@@ -16,7 +16,7 @@
 import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
-import { promises } from '@salto-io/lowerdash'
+import { promises, values } from '@salto-io/lowerdash'
 import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 import {
@@ -139,11 +139,10 @@ export const routeOverride = async (
   // If the add change projects to a secondary source we can't
   // add it to common since it is already marked as env specific.
   if (change.action === 'add') {
-    const secondaryProjections = await Promise.all(
-      _.values(secondarySources)
-        .map(src => projectElementOrValueToEnv(getChangeElement(change), change.id, src))
+    const secondarySourceValues = await Promise.all(
+      Object.values(secondarySources).map(source => source.get(change.id))
     )
-    if (_.some(secondaryProjections)) {
+    if (secondarySourceValues.some(values.isDefined)) {
       return { primarySource: [change] }
     }
     if (change.id.isTopLevel()) {
@@ -214,6 +213,87 @@ export const routeDefault = async (
   }
 }
 
+const overrideIdInSource = (
+  id: ElemID,
+  before: ChangeDataType,
+  topLevelElement: ChangeDataType,
+): DetailedChange[] => {
+  if (id.isTopLevel()) {
+    return detailedCompare(before, topLevelElement, true)
+  }
+
+  const afterValue = resolvePath(topLevelElement, id)
+  const beforeValue = resolvePath(before, id)
+  if (beforeValue === undefined) {
+    // Nothing to override, just need to add the new value
+    return [createAddChange(afterValue, id)]
+  }
+  // The value exists in the target - override only the relevant part
+  return detailedCompare(
+    wrapNestedValues([{ id, value: beforeValue }], before) as ChangeDataType,
+    wrapNestedValues([{ id, value: afterValue }], topLevelElement) as ChangeDataType,
+    true,
+  )
+}
+
+const addToSource = async ({
+  ids,
+  originSource,
+  targetSource,
+  overrideTargetElements = false,
+}: {
+  ids: ElemID[]
+  originSource: NaclFilesSource
+  targetSource: NaclFilesSource
+  overrideTargetElements?: boolean
+}): Promise<DetailedChange[]> => {
+  const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
+  const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
+    const topLevelElement = await originSource.get(gids[0].createTopLevelParentID().parent)
+    if (topLevelElement === undefined) {
+      throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
+    }
+    const topLevelIds = gids.filter(id => id.isTopLevel())
+    const wrappedElement = !_.isEmpty(topLevelIds)
+      ? topLevelElement
+      : wrapNestedValues(
+        gids.map(id => ({ id, value: resolvePath(topLevelElement, id) })),
+        topLevelElement
+      )
+    const before = await targetSource.get(topLevelElement.elemID)
+    if (before === undefined) {
+      return [createAddChange(wrappedElement, topLevelElement.elemID)]
+    }
+
+    if (overrideTargetElements) {
+      // we want to override, not merge - so we need to wrap each gid individually
+      return gids.flatMap(id => overrideIdInSource(
+        id,
+        before as ChangeDataType,
+        topLevelElement as ChangeDataType,
+      ))
+    }
+
+    const mergeResult = mergeElements([
+      before,
+      wrappedElement,
+    ])
+    if (mergeResult.errors.length > 0) {
+      // If either the origin or the target source is the common folder, all elements should be
+      // mergeable and we shouldn't see merge errors
+      throw new Error(
+        `Failed to add ${gids.map(id => id.getFullName())} - unmergable element fragments.`
+      )
+    }
+    const after = mergeResult.merged[0] as ChangeDataType
+    return detailedCompare(before, after, true)
+  })))
+  return (await Promise.all(fullChanges.map(change => separateChangeByFiles(
+    change,
+    change.action === 'remove' ? targetSource : originSource
+  )))).flat()
+}
+
 const getChangePathHint = async (
   change: DetailedChange,
   commonSource: NaclFilesSource
@@ -234,7 +314,7 @@ export const routeIsolated = async (
   secondarySources: Record<string, NaclFilesSource>
 ): Promise<RoutedChanges> => {
   // This is an add change, which means the element is not in common.
-  // so we will add it to the current action enviornment.
+  // so we will add it to the current action environment.
   const pathHint = await getChangePathHint(change, commonSource)
 
   if (change.action === 'add') {
@@ -244,51 +324,32 @@ export const routeIsolated = async (
   // In remove and modify changes, we need to remove the current value from
   // common, add it to the inactive envs, and apply the actual change to the
   // active env.
-  const changeElement = getChangeElement(change)
-  const currentEnvChanges = await projectChange(change, primarySource)
-  const commonChangeProjection = await projectElementOrValueToEnv(
-    changeElement,
-    change.id,
-    commonSource
-  )
   // If the element is not in common, then we can apply the change to
   // the primary source
-  if (_.isUndefined(commonChangeProjection)) {
+  const currentCommonElement = await commonSource.get(change.id)
+  if (currentCommonElement === undefined) {
     return { primarySource: [change] }
   }
+  const commonChangeProjection = projectElementOrValueToEnv(
+    getChangeElement(change),
+    currentCommonElement,
+  )
 
-  const currentCommonElement = await commonSource.get(change.id)
-  // Keeping the parser happy, this will never happen (see above)
-  if (_.isUndefined(currentCommonElement)) {
-    throw Error('Missing element in common')
-  }
   // Add the changed part of common to the target source
-  const modifyWithCommonProj = change.action === 'modify' && !_.isUndefined(commonChangeProjection)
-  const addCommonProjectionToCurrentChanges = modifyWithCommonProj
+  const addCommonProjectionToCurrentChanges = change.action === 'modify'
     ? await projectChange(
       createAddChange(commonChangeProjection, change.id, pathHint),
       primarySource
     ) : []
   // Add the old value of common to the inactive sources
-  const secondaryChanges = _.fromPairs(
-    await Promise.all(
-      _.entries(secondarySources)
-        .map(async ([name, source]) => [
-          name,
-          _.flatten(
-            await Promise.all(
-              (await projectChange(
-                createAddChange(currentCommonElement, change.id, pathHint), source
-              )
-              ).map(projectedChange => separateChangeByFiles(projectedChange, commonSource))
-            )
-          ),
-        ])
-    )
+  const secondaryChanges = await promises.object.mapValuesAsync(
+    secondarySources,
+    targetSource => addToSource({ ids: [change.id], originSource: commonSource, targetSource })
   )
+  const currentEnvChanges = await projectChange(change, primarySource)
   return {
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
-    commonSource: [createRemoveChange(commonChangeProjection, change.id, pathHint)],
+    commonSource: [createRemoveChange(currentCommonElement, change.id, pathHint)],
     secondarySources: secondaryChanges,
   }
 }
@@ -377,87 +438,6 @@ export const routeChanges = async (
       )
     ),
   }
-}
-
-const overrideIdInSource = (
-  id: ElemID,
-  before: ChangeDataType,
-  topLevelElement: ChangeDataType,
-): DetailedChange[] => {
-  if (id.isTopLevel()) {
-    return detailedCompare(before, topLevelElement, true)
-  }
-
-  const afterValue = resolvePath(topLevelElement, id)
-  const beforeValue = resolvePath(before, id)
-  if (beforeValue === undefined) {
-    // Nothing to override, just need to add the new value
-    return [createAddChange(afterValue, id)]
-  }
-  // The value exists in the target - override only the relevant part
-  return detailedCompare(
-    wrapNestedValues([{ id, value: beforeValue }], before) as ChangeDataType,
-    wrapNestedValues([{ id, value: afterValue }], topLevelElement) as ChangeDataType,
-    true,
-  )
-}
-
-const addToSource = async ({
-  ids,
-  originSource,
-  targetSource,
-  overrideTargetElements = false,
-}: {
-  ids: ElemID[]
-  originSource: NaclFilesSource
-  targetSource: NaclFilesSource
-  overrideTargetElements?: boolean
-}): Promise<DetailedChange[]> => {
-  const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
-  const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
-    const topLevelElement = await originSource.get(gids[0].createTopLevelParentID().parent)
-    if (topLevelElement === undefined) {
-      throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
-    }
-    const topLevelIds = gids.filter(id => id.isTopLevel())
-    const wrappedElement = !_.isEmpty(topLevelIds)
-      ? topLevelElement
-      : wrapNestedValues(
-        gids.map(id => ({ id, value: resolvePath(topLevelElement, id) })),
-        topLevelElement
-      )
-    const before = await targetSource.get(topLevelElement.elemID)
-    if (before === undefined) {
-      return [createAddChange(wrappedElement, topLevelElement.elemID)]
-    }
-
-    if (overrideTargetElements) {
-      // we want to override, not merge - so we need to wrap each gid individually
-      return gids.flatMap(id => overrideIdInSource(
-        id,
-        before as ChangeDataType,
-        topLevelElement as ChangeDataType,
-      ))
-    }
-
-    const mergeResult = mergeElements([
-      before,
-      wrappedElement,
-    ])
-    if (mergeResult.errors.length > 0) {
-      // If either the origin or the target source is the common folder, all elements should be
-      // mergeable and we shouldn't see merge errors
-      throw new Error(
-        `Failed to add ${gids.map(id => id.getFullName())} - unmergable element fragments.`
-      )
-    }
-    const after = mergeResult.merged[0] as ChangeDataType
-    return detailedCompare(before, after, true)
-  })))
-  return (await Promise.all(fullChanges.map(change => separateChangeByFiles(
-    change,
-    change.action === 'remove' ? targetSource : originSource
-  )))).flat()
 }
 
 const removeFromSource = async (

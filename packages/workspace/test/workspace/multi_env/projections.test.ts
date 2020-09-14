@@ -16,6 +16,7 @@
 import {
   ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType,
   DetailedChange,
+  getChangeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
@@ -224,15 +225,14 @@ describe('projections', () => {
     it('should project an add change for a non existing fragment for instances', async () => {
       const change: DetailedChange = {
         action: 'add',
-        data: { after: newPartialInstance },
-        id: newPartialInstance.elemID,
+        data: { after: newPartialInstance.value.nested2 },
+        id: newPartialInstance.elemID.createNestedID('nested2'),
       }
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
-      const { data } = projected[0] as unknown as AdditionDiff<InstanceElement>
-      expect(data.after).toBeInstanceOf(InstanceElement)
-      expect(data.after).toEqual(newPartialInstance)
+      const changeData = getChangeElement(projected[0])
+      expect(changeData).toEqual(newPartialInstance.value.nested2)
     })
     it('should not project an add change for an existing fragment for instances', async () => {
       const change: DetailedChange = {
@@ -282,16 +282,6 @@ describe('projections', () => {
       annotations: _.clone(objectType.annotations),
     })
 
-    const newPartialObject = new ObjectType({
-      elemID: objectType.elemID,
-      fields: _.omit(objectType.fields, _.keys(partialObjectType.fields)),
-      annotations: _.omit(objectType.annotations, _.keys(partialObjectType.annotations)),
-      annotationTypes: _.omit(
-        objectType.annotationTypes,
-        _.keys(partialObjectType.annotationTypes)
-      ),
-    })
-
     const modifiedObject = new ObjectType({
       elemID: objectType.elemID,
       fields: objectType.fields,
@@ -319,15 +309,14 @@ describe('projections', () => {
     it('should project an add change for a non existing fragment for object types', async () => {
       const change: DetailedChange = {
         action: 'add',
-        data: { after: newPartialObject },
-        id: newPartialObject.elemID,
+        data: { after: objectType.annotations.nested2 },
+        id: objectType.elemID.createNestedID('attr', 'nested2'),
       }
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
-      const { data } = projected[0] as unknown as AdditionDiff<ObjectType>
-      expect(data.after).toBeInstanceOf(ObjectType)
-      expect(data.after).toEqual(newPartialObject)
+      const changeData = getChangeElement(projected[0])
+      expect(changeData).toEqual(objectType.annotations.nested2)
     })
     it('should not project an add change for an existing fragment for object types', async () => {
       const change: DetailedChange = {
@@ -377,16 +366,6 @@ describe('projections', () => {
       primitive: primitiveType.primitive,
     })
 
-    const newPartialPrimitive = new PrimitiveType({
-      elemID: primitiveType.elemID,
-      annotations: _.omit(primitiveType.annotations, _.keys(partialPrimitiveType.annotations)),
-      annotationTypes: _.omit(
-        primitiveType.annotationTypes,
-        _.keys(partialPrimitiveType.annotationTypes)
-      ),
-      primitive: primitiveType.primitive,
-    })
-
     const modifiedPrimitive = new PrimitiveType({
       elemID: primitiveType.elemID,
       annotations: _.cloneDeepWith(primitiveType.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
@@ -411,15 +390,14 @@ describe('projections', () => {
     it('should project an add change for a non existing fragment for primitive types', async () => {
       const change: DetailedChange = {
         action: 'add',
-        data: { after: newPartialPrimitive },
-        id: newPartialPrimitive.elemID,
+        data: { after: primitiveType.annotations.nested2 },
+        id: primitiveType.elemID.createNestedID('attr', 'nested2'),
       }
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
-      const { data } = projected[0] as unknown as AdditionDiff<PrimitiveType>
-      expect(data.after).toBeInstanceOf(PrimitiveType)
-      expect(data.after).toEqual(newPartialPrimitive)
+      const changeData = getChangeElement(projected[0])
+      expect(changeData).toEqual(primitiveType.annotations.nested2)
     })
     it('should not project an add change for an existing fragment for primitive types', async () => {
       const change: DetailedChange = {

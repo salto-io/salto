@@ -56,7 +56,6 @@ import workflowFilter from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
 import referenceAnnotations from './filters/reference_annotations'
-import instanceReferences from './filters/instance_references'
 import fieldReferences from './filters/field_references'
 import customObjectInstanceReferencesFilter from './filters/custom_object_instances_references'
 import foreignKeyReferences from './filters/foreign_key_references'
@@ -117,7 +116,6 @@ export const DEFAULT_FILTERS = [
   convertListsFilter,
   convertTypeFilter,
   fieldReferences,
-  instanceReferences,
   // should run after custom_object_instances for now
   referenceAnnotations,
   // foreignLeyReferences should come after referenceAnnotations

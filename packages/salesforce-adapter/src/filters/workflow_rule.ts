@@ -23,8 +23,7 @@ import {
   findInstances,
 } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { parentApiName } from './utils'
-import { groupByAPIName, ApiNameMapping } from './instance_references'
+import { parentApiName, groupByAPIName, ApiNameMapping } from './utils'
 import {
   SALESFORCE, API_NAME_SEPARATOR,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,

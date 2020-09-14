@@ -178,3 +178,19 @@ export const setInternalId = (elem: Element, val: string): void => {
     elem.annotations[INTERNAL_ID_ANNOTATION] = val
   }
 }
+
+// ApiName -> MetadataType -> ElemID
+export type ApiNameMapping = Record<string, Record<string, ElemID>>
+
+const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> =>
+  (Object.fromEntries(elements.map(e => [metadataType(e), e.elemID])))
+
+export const groupByAPIName = (elements: Element[]): ApiNameMapping => (
+  _(elements)
+    .map<Element[]>(e => ((isObjectType(e) && isCustomObject(e))
+      ? [e, ...Object.values(e.fields)] : [e]))
+    .flatten()
+    .groupBy(apiName)
+    .mapValues(mapElemTypeToElemID)
+    .value()
+)

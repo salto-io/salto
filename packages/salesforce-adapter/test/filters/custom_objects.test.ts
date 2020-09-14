@@ -928,6 +928,11 @@ describe('Custom Objects filter', () => {
                 [INSTANCE_FULL_NAME_FIELD]: 'PartialListViewFullName',
                 columns: 'ListViewName',
               },
+              [NESTED_INSTANCE_VALUE_NAME.WEB_LINKS]: {
+                [INSTANCE_FULL_NAME_FIELD]: 'WebLinkFullName',
+                linkType: 'javascript',
+                url: '',
+              },
               pluralLabel: 'Leads',
               enableFeeds: 'True',
             })
@@ -956,7 +961,7 @@ describe('Custom Objects filter', () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
           result.push(customObjectInstance)
           await filter().onFetch(result)
-          expect(result).toHaveLength(2)
+          expect(result).toHaveLength(3)
           const resultFullNames = result.map(elem => elem.elemID.getFullName())
           expect(resultFullNames).not.toContain(customObjectInstance.elemID.getFullName())
           expect(resultFullNames).not.toContain(customObjectType.elemID.getFullName())
@@ -1054,6 +1059,16 @@ describe('Custom Objects filter', () => {
             .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'ListView', leadListViewsInstance.elemID.name])
           expect(leadListViewsInstance.value.columns).toEqual('ListViewName')
           expect(leadListViewsInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialListViewFullName')
+        })
+
+        it('should change path of nested instances listed in nestedMetadatatypeToReplaceDirName', async () => {
+          mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          const [leadWebLink] = result.filter(o => o.elemID.name === 'Lead_WebLinkFullName')
+          const leadWebLinkInstance = (leadWebLink as InstanceElement)
+          expect(leadWebLinkInstance.path).toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'ButtonsLinksAndActions',
+            leadWebLinkInstance.elemID.name])
         })
 
         it('should create multiple instance elements for nested instances of custom object', async () => {

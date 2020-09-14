@@ -20,7 +20,7 @@ import {
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
@@ -30,6 +30,7 @@ import {
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
+const { makeArray } = collections.array
 type ElemLookupMapping = Record<string, Record<string, Element>>
 type ElemIDToApiNameLookup = Record<string, string>
 type ContextFunc = (
@@ -42,7 +43,7 @@ const ContextStrategyLookup: Record<
 > = {
   none: () => undefined,
   instanceParent: (instance, elemIdToApiName) => {
-    const parent = instance.annotations[INSTANCE_ANNOTATIONS.PARENT]?.[0]
+    const parent = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])[0]
     return isReferenceExpression(parent) ? elemIdToApiName[parent.elemId.getFullName()] : undefined
   },
 }

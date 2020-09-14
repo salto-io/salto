@@ -52,6 +52,7 @@ export enum FIELD_TYPE_NAMES {
   ROLLUP_SUMMARY = 'Summary',
   // internal-only placeholder for fields whose type is unknown
   UNKNOWN = 'Unknown',
+  ANYTYPE = 'AnyType'
 }
 export const FIELD_TYPE_NAME_VALUES = [FIELD_TYPE_NAMES.AUTONUMBER, FIELD_TYPE_NAMES.TEXT,
   FIELD_TYPE_NAMES.NUMBER, FIELD_TYPE_NAMES.PERCENT, FIELD_TYPE_NAMES.CHECKBOX,
@@ -77,7 +78,7 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
 
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, FIELD_TYPE_NAMES> = {
-  anyType: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  anyType: FIELD_TYPE_NAMES.ANYTYPE,
   base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   boolean: FIELD_TYPE_NAMES.CHECKBOX,
   combobox: FIELD_TYPE_NAMES.PICKLIST,

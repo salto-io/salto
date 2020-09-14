@@ -126,25 +126,22 @@ const addPicklistAnnotations = (
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
+type RestrictedNumberName = 'TextLength' | 'TextAreaLength' | 'EncryptedTextLength'
+  | 'Precision' | 'Scale' | 'LocationScale' | 'LongTextAreaVisibleLines'
+  | 'MultiPicklistVisibleLines' | 'RichTextAreaVisibleLines' | 'RelationshipOrder'
 
-const restrictedNumberTypeDefinitions = {
-  TextLength: createRestriction({ min: 1, max: 255, enforce_value: false }),
-  TextAreaLength: createRestriction({ min: 1, max: 131072 }),
-  EncryptedTextLength: createRestriction({ min: 1, max: 175 }),
-  LongTextAreaVisibleLines: createRestriction({ min: 2, max: 50 }),
-  MultiPicklistVisibleLines: createRestriction({ min: 3, max: 10, enforce_value: false }),
-  RichTextAreaVisibleLines: createRestriction({ min: 10, max: 50 }),
-  RelationshipOrder: createRestriction({ min: 0, max: 1 }),
-}
-
-const restrictedNumberTypes = _.mapValues(
-  restrictedNumberTypeDefinitions,
-  (restriction, name) => new PrimitiveType({
+const restrictedNumber = (
+  name: RestrictedNumberName, min: number, max: number, enforce_value = true,
+):
+  Record<string, PrimitiveType> => ({
+  [name]: new PrimitiveType({
     elemID: new ElemID(SALESFORCE, name),
     primitive: PrimitiveTypes.NUMBER,
-    annotations: { [CORE_ANNOTATIONS.RESTRICTION]: restriction },
-  })
-)
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ enforce_value, min, max }),
+    },
+  }),
+})
 
 export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
   ['FlexiPage', 'LightningPage'],
@@ -329,6 +326,19 @@ export class Types {
     },
   })
 
+  private static restrictedNumberTypes: Record<RestrictedNumberName, PrimitiveType> = _.merge(
+    restrictedNumber('TextLength', 1, 255, false),
+    restrictedNumber('TextAreaLength', 1, 131072),
+    restrictedNumber('EncryptedTextLength', 1, 175),
+    restrictedNumber('Precision', 1, 18, false),
+    restrictedNumber('Scale', 0, 17),
+    restrictedNumber('LocationScale', 0, 15),
+    restrictedNumber('LongTextAreaVisibleLines', 2, 50),
+    restrictedNumber('MultiPicklistVisibleLines', 3, 10, false),
+    restrictedNumber('RichTextAreaVisibleLines', 10, 50),
+    restrictedNumber('RelationshipOrder', 0, 1),
+  )
+
   private static commonAnnotationTypes = {
     [API_NAME]: BuiltinTypes.SERVICE_ID,
     [DESCRIPTION]: BuiltinTypes.STRING,
@@ -354,7 +364,7 @@ export class Types {
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextLength,
+        [FIELD_ANNOTATIONS.LENGTH]: Types.restrictedNumberTypes.TextLength,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -363,8 +373,8 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
-        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
+        [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
@@ -416,8 +426,8 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
-        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
+        [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -439,7 +449,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.MultiPicklistVisibleLines,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: Types.restrictedNumberTypes.MultiPicklistVisibleLines,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
@@ -463,8 +473,8 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
-        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
+        [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -481,8 +491,8 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.LongTextAreaVisibleLines,
-        [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: Types.restrictedNumberTypes.LongTextAreaVisibleLines,
+        [FIELD_ANNOTATIONS.LENGTH]: Types.restrictedNumberTypes.TextAreaLength,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -491,8 +501,8 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.RichTextAreaVisibleLines,
-        [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: Types.restrictedNumberTypes.RichTextAreaVisibleLines,
+        [FIELD_ANNOTATIONS.LENGTH]: Types.restrictedNumberTypes.TextAreaLength,
       },
     }),
     TextArea: new PrimitiveType({
@@ -510,7 +520,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.MASK_CHAR]: Types.encryptedTextMaskCharType,
         [FIELD_ANNOTATIONS.MASK_TYPE]: Types.encryptedTextMaskTypeType,
-        [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.EncryptedTextLength,
+        [FIELD_ANNOTATIONS.LENGTH]: Types.restrictedNumberTypes.EncryptedTextLength,
       },
     }),
     Url: new PrimitiveType({
@@ -540,7 +550,7 @@ export class Types {
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: restrictedNumberTypes.RelationshipOrder,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: Types.restrictedNumberTypes.RelationshipOrder,
       },
     }),
     Summary: new PrimitiveType({
@@ -628,7 +638,7 @@ export class Types {
       },
       annotationTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.LocationScale,
         ...Types.commonAnnotationTypes,
       },
     }),
@@ -702,7 +712,7 @@ export class Types {
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,
       Types.TreatBlankAsType,
-      ...Object.values(restrictedNumberTypes),
+      ...Object.values(Types.restrictedNumberTypes),
     ]
       .map(type => {
         const fieldType = type.clone()

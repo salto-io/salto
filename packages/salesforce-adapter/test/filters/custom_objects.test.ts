@@ -30,14 +30,12 @@ import {
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
   CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
-  WEBLINK_METADATA_TYPE,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
 import filterCreator, {
   INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD, NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_ID, NESTED_INSTANCE_VALUE_NAME, NESTED_INSTANCE_TYPE_NAME,
-  typesToReplaceDirName,
 } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 import { isCustom } from '../../src/transformers/transformer'
@@ -1063,14 +1061,13 @@ describe('Custom Objects filter', () => {
           expect(leadListViewsInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialListViewFullName')
         })
 
-        it('should change path of nested instances listed in typesToReplaceDirName', async () => {
+        it('should change path of nested instances listed in nestedMetadatatypeToReplaceDirName', async () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
           result.push(customObjectInstance)
           await filter().onFetch(result)
           const [leadWebLink] = result.filter(o => o.elemID.name === 'Lead_WebLinkFullName')
           const leadWebLinkInstance = (leadWebLink as InstanceElement)
-          const newDirName = typesToReplaceDirName[WEBLINK_METADATA_TYPE]
-          expect(leadWebLinkInstance.path).toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', newDirName,
+          expect(leadWebLinkInstance.path).toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'ButtonsLinksAndActions',
             leadWebLinkInstance.elemID.name])
         })
 

@@ -111,8 +111,8 @@ const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = ['allowInChatterGroups', 'customHelp',
 const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fields',
   INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay']
 
-export const typesToReplaceDirName: Record<string, string> = { // <type, new-dir-name>
-  WebLink: 'ButtonsLinksAndActions',
+const nestedMetadatatypeToReplaceDirName: Record<string, string> = { // <type, new-dir-name>
+  [WEBLINK_METADATA_TYPE]: 'ButtonsLinksAndActions',
 }
 const getFieldName = (annotations: Values): string =>
   (annotations[FORMULA]
@@ -332,7 +332,7 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         const elemIdName = naclCase(fullName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         const path = [...(objPath as string[]).slice(0, -1),
-          typesToReplaceDirName[type.elemID.name] ?? type.elemID.name, elemIdName]
+          nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name, elemIdName]
         return new InstanceElement(elemIdName, type, nestedInstance,
           path, { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(objElemID) })
       })

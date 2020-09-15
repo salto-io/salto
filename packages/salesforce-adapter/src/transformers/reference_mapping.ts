@@ -91,7 +91,7 @@ export type FieldReferenceDefinition = {
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
-const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',

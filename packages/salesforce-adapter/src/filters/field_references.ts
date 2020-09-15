@@ -14,40 +14,38 @@
 * limitations under the License.
 */
 import {
-  Field, Element, isInstanceElement, Value, Values,
-  ReferenceExpression,
-  InstanceElement,
-  INSTANCE_ANNOTATIONS,
-  isObjectType,
+  Field, Element, isInstanceElement, Value, Values, isObjectType, isReferenceExpression,
+  ReferenceExpression, InstanceElement, INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { parentApiName } from './utils'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
-  generateReferenceResolverFinder, ReferenceContextStrategyName,
+  generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition,
 } from '../transformers/reference_mapping'
-import { specialLayoutObjects } from './layouts'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
+const { makeArray } = collections.array
 type ElemLookupMapping = Record<string, Record<string, Element>>
-type ContextFunc = (instance: InstanceElement) => string | undefined
-
-const translateSpecialCases = (name: string): string => specialLayoutObjects.get(name) ?? name
+type ElemIDToApiNameLookup = Record<string, string>
+type ContextFunc = (
+  instance: InstanceElement,
+  elemIdToApiName: ElemIDToApiNameLookup,
+) => string | undefined
 
 const ContextStrategyLookup: Record<
   ReferenceContextStrategyName, ContextFunc
 > = {
   none: () => undefined,
-  instanceParent: instance => (isDefined(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
-    ? translateSpecialCases(parentApiName(instance))
-    : undefined
-  ),
+  instanceParent: (instance, elemIdToApiName) => {
+    const parent = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])[0]
+    return isReferenceExpression(parent) ? elemIdToApiName[parent.elemId.getFullName()] : undefined
+  },
 }
 
 const replaceReferenceValues = (
@@ -55,6 +53,7 @@ const replaceReferenceValues = (
   resolverFinder: ReferenceResolverFinder,
   elemLookupMap: ElemLookupMapping,
   fieldsWithResolvedReferences: Set<string>,
+  elemIdToApiName: ElemIDToApiNameLookup,
 ): Values => {
   const getRefElem = (
     val: string, target: ExtendedReferenceTargetDefinition,
@@ -69,7 +68,7 @@ const replaceReferenceValues = (
     }
     return findElem(
       target.type,
-      target.lookup(val, contextFunc(instance)),
+      target.lookup(val, contextFunc(instance, elemIdToApiName)),
     )
   }
 
@@ -121,29 +120,40 @@ const mapApiNameToElem = (elements: Element[]): Record<string, Element> => (
     .value()
 )
 
-export const groupByMetadataTypeAndApiName = (elements: Element[]): ElemLookupMapping => (
-  _(elements)
-    .map<Element[]>(e => ((isObjectType(e) && isCustomObject(e))
+const toObjectsAndFields = (elements: Element[]): Element[] => (
+  elements.flatMap(e => ((isObjectType(e) && isCustomObject(e)) ? [e, ..._.values(e.fields)] : [e]))
+)
+
+const groupByMetadataTypeAndApiName = (elements: Element[]): ElemLookupMapping => (
+  _(toObjectsAndFields(elements))
+    .flatMap(e => ((isObjectType(e) && isCustomObject(e))
       ? [e, ..._.values(e.fields)] : [e]))
-    .flatten()
     .groupBy(metadataType)
     .mapValues(mapApiNameToElem)
     .value()
 )
 
+const mapElemIdToApiName = (elements: Element[]): ElemIDToApiNameLookup => (
+  Object.fromEntries(toObjectsAndFields(elements)
+    .map(e => [e.elemID.getFullName(), apiName(e)]))
+)
+
 export const addReferences = (
   elements: Element[],
+  defs?: FieldReferenceDefinition[]
 ):
 void => {
-  const resolverFinder = generateReferenceResolverFinder()
+  const resolverFinder = generateReferenceResolverFinder(defs)
   const elemLookup = groupByMetadataTypeAndApiName(elements)
   const fieldsWithResolvedReferences = new Set<string>()
+  const elemIdToApiName = mapElemIdToApiName(elements)
   elements.filter(isInstanceElement).forEach(instance => {
     instance.value = replaceReferenceValues(
       instance,
       resolverFinder,
       elemLookup,
       fieldsWithResolvedReferences,
+      elemIdToApiName,
     )
   })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])

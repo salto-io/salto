@@ -334,7 +334,7 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         const path = [...(objPath as string[]).slice(0, -1),
           nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name, elemIdName]
         return new InstanceElement(elemIdName, type, nestedInstance,
-          path, { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(objElemID) })
+          path, { [INSTANCE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
       })
     }))
 

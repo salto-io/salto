@@ -119,8 +119,9 @@ export const localState = (filePrefix: string): state.State => {
   const inMemState = state.buildInMemState(loadFromFile)
 
   const createStateTextPerService = async (): Promise<Record<string, string>> => {
-    const elements = _.groupBy(await inMemState.getAll(), element => element.elemID.adapter)
-    const serviceToElementStrings = _.mapValues(elements,
+    const elements = await inMemState.getAll()
+    const elementsByService = _.groupBy(elements, element => element.elemID.adapter)
+    const serviceToElementStrings = _.mapValues(elementsByService,
       serviceElements => serialize(serviceElements))
     const serviceToDates = await inMemState.getServicesUpdateDates()
     const serviceToPathIndex = pathIndex.serializePathIndexByService(

@@ -120,8 +120,12 @@ const mapApiNameToElem = (elements: Element[]): Record<string, Element> => (
     .value()
 )
 
+const toObjectsAndFields = (elements: Element[]): Element[] => (
+  elements.flatMap(e => ((isObjectType(e) && isCustomObject(e)) ? [e, ..._.values(e.fields)] : [e]))
+)
+
 const groupByMetadataTypeAndApiName = (elements: Element[]): ElemLookupMapping => (
-  _(elements)
+  _(toObjectsAndFields(elements))
     .flatMap(e => ((isObjectType(e) && isCustomObject(e))
       ? [e, ..._.values(e.fields)] : [e]))
     .groupBy(metadataType)
@@ -130,12 +134,8 @@ const groupByMetadataTypeAndApiName = (elements: Element[]): ElemLookupMapping =
 )
 
 const mapElemIdToApiName = (elements: Element[]): ElemIDToApiNameLookup => (
-  _(elements)
-    .flatMap(e => ((isObjectType(e) && isCustomObject(e))
-      ? [e, ..._.values(e.fields)] : [e]))
-    .map(e => [e.elemID.getFullName(), apiName(e)])
-    .fromPairs()
-    .value()
+  Object.fromEntries(toObjectsAndFields(elements)
+    .map(e => [e.elemID.getFullName(), apiName(e)]))
 )
 
 export const addReferences = (

@@ -171,10 +171,10 @@ export const localState = (filePrefix: string): state.State => {
       }
       await mkdirp(path.dirname(currentFilePrefix))
       const stateTextPerService = await createStateTextPerService()
-      Object.entries(stateTextPerService).forEach(async ([service, stateText]) => {
-        await replaceContents(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
+      await Promise.all(Object.entries(stateTextPerService).map(async ([service, stateText]) => (
+        replaceContents(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
           await generateZipString(stateText))
-      })
+      )))
       if (pathToClean !== '') {
         await rm(pathToClean)
       }

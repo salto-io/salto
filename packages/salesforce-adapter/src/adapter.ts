@@ -317,6 +317,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       'WorkflowKnowledgePublish',
       'WorkflowOutboundMessage',
       'WorkflowTask',
+      'KnowledgeCaseFieldsSettings',
+      'KnowledgeCaseField',
+      'KnowledgeWorkOrderFieldsSettings',
+      'KnowledgeWorkOrderField',
+      'KnowledgeWorkOrderLineItemFieldsSettings',
+      'KnowledgeWorkOrderLineItemField',
     ],
     metadataTypesToSkipMutation = [
       'Workflow', // handled in workflow filter

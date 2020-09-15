@@ -2178,5 +2178,32 @@
         }
       }
     ]
+  },
+  {
+    "id": "KnowledgeCaseFieldsSettings",
+    "fields": [
+      {
+        "name": "field",
+        "type": "KnowledgeCaseField"
+      }
+    ]
+  },
+  {
+    "id": "KnowledgeWorkOrderFieldsSettings",
+    "fields": [
+      {
+        "name": "field",
+        "type": "KnowledgeWorkOrderField"
+      }
+    ]
+  },
+  {
+    "id": "KnowledgeWorkOrderLineItemFieldsSettings",
+    "fields": [
+      {
+        "name": "field",
+        "type": "KnowledgeWorkOrderLineItemField"
+      }
+    ]
   }
 ]

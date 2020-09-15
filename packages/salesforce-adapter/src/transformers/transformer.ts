@@ -721,35 +721,6 @@ export class Types {
   }
 }
 
-const knowledgeFieldTemplate = {
-  foreignKeyDomain: '',
-  isForeignKey: false,
-  isNameField: false,
-  minOccurs: 0,
-  name: 'field',
-  soapType: '',
-  valueRequired: true,
-  fields: [],
-  picklistValues: [],
-}
-
-// those soapTypes are missing fields when returned from client.describeMetadataType
-const soapTypesMissingFields: Record<string, ValueTypeField> = { // <soapType, field-to-add>
-  KnowledgeCaseFieldsSettings: {
-    ...knowledgeFieldTemplate,
-    soapType: 'KnowledgeCaseField',
-  },
-  KnowledgeWorkOrderFieldsSettings: {
-    ...knowledgeFieldTemplate,
-    soapType: 'KnowledgeWorkOrderField',
-
-  },
-  KnowledgeWorkOrderLineItemFieldsSettings: {
-    ...knowledgeFieldTemplate,
-    soapType: 'KnowledgeWorkOrderLineItemField',
-  },
-}
-
 const transformCompoundValues = (
   record: SalesforceRecord,
   instance: InstanceElement
@@ -1370,10 +1341,6 @@ export const createMetadataTypeElements = async ({
   const enrichedFields = await Promise.all(fields.map(async field => {
     if (shouldEnrichFieldValue(field)) {
       const innerFields = await client.describeMetadataType(field.soapType)
-      if (soapTypesMissingFields[field.soapType]) {
-        innerFields.valueTypeFields.push(soapTypesMissingFields[field.soapType])
-        fields.push(soapTypesMissingFields[field.soapType])
-      }
       return { ...field,
         fields: innerFields.valueTypeFields }
     }

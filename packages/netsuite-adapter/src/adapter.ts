@@ -28,7 +28,7 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import {
-  SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
@@ -72,9 +72,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       convertLists,
       replaceInstanceReferencesFilter,
     ],
-    typesToSkip = [
-      SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
-    ],
+    typesToSkip = [],
     filePathRegexSkipList = [],
     fetchAllTypesAtOnce = DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
     getElemIdFunc,

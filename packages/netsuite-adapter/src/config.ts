@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
-  SDF_CONCURRENCY_LIMIT,
+  SDF_CONCURRENCY_LIMIT, SAVED_SEARCH,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -37,7 +37,11 @@ export const configType = new ObjectType({
     [TYPES_TO_SKIP]: {
       type: new ListType(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
+          // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
+          // a value for specific customers to use it for moving between envs, backup etc.
+        ],
       },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {

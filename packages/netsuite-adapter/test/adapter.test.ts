@@ -53,7 +53,7 @@ describe('Adapter', () => {
   const filePathRegexStr = '^Some/File/Regex$'
   const client = createClient()
   const config = {
-    [TYPES_TO_SKIP]: [TRANSACTION_FORM],
+    [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
     [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
   }
   const netsuiteAdapter = new NetsuiteAdapter({

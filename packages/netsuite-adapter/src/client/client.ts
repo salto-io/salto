@@ -22,7 +22,7 @@ import type {
   ActionResult,
 } from '@salto-io/suitecloud-cli'
 
-import { collections, decorators, hash, promises, values } from '@salto-io/lowerdash'
+import { collections, decorators, promises, values } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
@@ -33,6 +33,7 @@ import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
 import uuidv4 from 'uuid/v4'
+import AsyncLock from 'async-lock'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
   FOLDER,
@@ -77,6 +78,7 @@ export type NetsuiteClientOpts = {
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
   SETUP_ACCOUNT: 'account:ci',
+  MANAGE_AUTH: 'account:manageauth',
   IMPORT_OBJECTS: 'object:import',
   LIST_FILES: 'file:list',
   IMPORT_FILES: 'file:import',
@@ -208,6 +210,7 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
 type Project = {
   projectName: string
   executor: CommandActionExecutorType
+  authId: string
 }
 
 export type GetCustomObjectsResult = {
@@ -223,9 +226,10 @@ export type ImportFileCabinetResult = {
 
 export default class NetsuiteClient {
   private readonly credentials: Credentials
-  private readonly authId: string
   private readonly sdfConcurrencyLimit: number
   private readonly sdfCallsLimiter: Bottleneck
+  private readonly setupAccountLock: AsyncLock
+  private readonly baseCommandExecutor: CommandActionExecutorType
 
   constructor({ credentials, sdfConcurrencyLimit }: NetsuiteClientOpts) {
     this.credentials = {
@@ -233,16 +237,17 @@ export default class NetsuiteClient {
       // accountId must be uppercased as decribed in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
       accountId: credentials.accountId.toUpperCase().replace('-', '_'),
     }
-    this.authId = hash
-      .toMD5(this.credentials.accountId + this.credentials.tokenId + this.credentials.tokenSecret)
     this.sdfConcurrencyLimit = sdfConcurrencyLimit
     this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: sdfConcurrencyLimit })
+    this.setupAccountLock = new AsyncLock()
+    this.baseCommandExecutor = NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
   }
 
   @NetsuiteClient.logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     const netsuiteClient = new NetsuiteClient({ credentials, sdfConcurrencyLimit: 1 })
-    await netsuiteClient.initProject()
+    const { projectName, authId } = await netsuiteClient.initProject()
+    await netsuiteClient.projectCleanup(projectName, authId)
     return Promise.resolve(netsuiteClient.credentials.accountId)
   }
 
@@ -269,20 +274,17 @@ export default class NetsuiteClient {
     }
   )
 
-  private static async createProject(): Promise<string> {
-    const projectName = `TempSdfProject-${uuidv4()}`
-    const actionResult = await NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
-      .executeAction({
-        commandName: COMMANDS.CREATE_PROJECT,
-        runInInteractiveMode: false,
-        arguments: {
-          projectname: projectName,
-          type: 'ACCOUNTCUSTOMIZATION',
-          parentdirectory: osPath.join(baseExecutionPath, projectName),
-        },
-      })
+  private async createProject(projectName: string): Promise<void> {
+    const actionResult = await this.baseCommandExecutor.executeAction({
+      commandName: COMMANDS.CREATE_PROJECT,
+      runInInteractiveMode: false,
+      arguments: {
+        projectname: projectName,
+        type: 'ACCOUNTCUSTOMIZATION',
+        parentdirectory: osPath.join(baseExecutionPath, projectName),
+      },
+    })
     NetsuiteClient.verifySuccessfulAction(actionResult, COMMANDS.CREATE_PROJECT)
-    return projectName
   }
 
   private static verifySuccessfulAction(actionResult: ActionResult, commandName: string):
@@ -305,25 +307,22 @@ export default class NetsuiteClient {
     return actionResult
   }
 
-  protected async setupAccount(
-    projectCommandActionExecutor: CommandActionExecutorType
-  ): Promise<void> {
-    const setupAccountUsingExistingAuthID = async (): Promise<void> => {
-      await this.executeProjectAction(
-        COMMANDS.SETUP_ACCOUNT,
-        {
-          authid: this.authId,
-          savetoken: false,
-        },
-        projectCommandActionExecutor
-      )
-    }
+  // When SDF accesses the authIds data in parallel, it might have race and override one each other.
+  // We can't control it as it's part of the Java SDK, thus we should use a lock to control it.
+  private async useAuthIdsLock(fn: (() => Promise<void>)): Promise<void> {
+    await this.setupAccountLock.acquire('authIdManipulation', fn)
+  }
 
-    const setupAccountUsingNewAuthID = async (): Promise<void> => {
+  protected async setupAccount(
+    projectCommandActionExecutor: CommandActionExecutorType,
+    authId: string
+  ): Promise<void> {
+    await this.useAuthIdsLock(async () => {
+      log.debug(`Setting up account using authId: ${authId}`)
       await this.executeProjectAction(
         COMMANDS.SETUP_ACCOUNT,
         {
-          authid: this.authId,
+          authid: authId,
           account: this.credentials.accountId,
           tokenid: this.credentials.tokenId,
           tokensecret: this.credentials.tokenSecret,
@@ -331,32 +330,48 @@ export default class NetsuiteClient {
         },
         projectCommandActionExecutor
       )
-    }
-
-    try {
-      await setupAccountUsingExistingAuthID()
-    } catch (e) {
-      await setupAccountUsingNewAuthID()
-    }
+    })
   }
 
   private async initProject(): Promise<Project> {
-    const projectName = await NetsuiteClient.createProject()
+    const authId = uuidv4()
+    const projectName = `TempSdfProject-${authId}`
+    await this.createProject(projectName)
     const executor = NetsuiteClient
       .initCommandActionExecutor(NetsuiteClient.getProjectPath(projectName))
-    await this.setupAccount(executor)
-    return { projectName, executor }
+    await this.setupAccount(executor, authId)
+    return { projectName, executor, authId }
   }
 
   private static async deleteProject(projectName: string): Promise<void> {
-    log.debug(`Deleting project: ${projectName}`)
+    log.debug(`Deleting SDF project: ${projectName}`)
     await rm(NetsuiteClient.getProjectPath(projectName))
+  }
+
+  private async deleteAuthId(authId: string): Promise<void> {
+    await this.useAuthIdsLock(async () => {
+      log.debug(`Removing authId: ${authId}`)
+      await this.baseCommandExecutor.executeAction({
+        commandName: COMMANDS.MANAGE_AUTH,
+        runInInteractiveMode: false,
+        arguments: {
+          remove: authId,
+        },
+      })
+    })
+  }
+
+  private async projectCleanup(projectName: string, authId: string): Promise<void> {
+    await Promise.all([
+      NetsuiteClient.deleteProject(projectName),
+      this.deleteAuthId(authId),
+    ])
   }
 
   @NetsuiteClient.logDecorator
   async getCustomObjects(typeNames: string[], fetchAllAtOnce: boolean):
     Promise<GetCustomObjectsResult> {
-    const { executor, projectName } = await this.initProject()
+    const { executor, projectName, authId } = await this.initProject()
     const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(typeNames,
       fetchAllAtOnce, executor)
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
@@ -375,7 +390,7 @@ export default class NetsuiteClient {
           additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
       })
     )
-    await NetsuiteClient.deleteProject(projectName)
+    await this.projectCleanup(projectName, authId)
     return { elements, failedTypes, failedToFetchAllAtOnce }
   }
 
@@ -534,7 +549,7 @@ export default class NetsuiteClient {
       [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
         transformFolders(folderAttrsPaths, fileCabinetDirPath)]
     )).flat()
-    await NetsuiteClient.deleteProject(project.projectName)
+    await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
       failedPaths: [...listFilesResults.failedPaths, ...importFilesResults.failedPaths],
@@ -559,7 +574,7 @@ export default class NetsuiteClient {
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
     await this.runDeployCommands(project)
-    await NetsuiteClient.deleteProject(project.projectName)
+    await this.projectCleanup(project.projectName, project.authId)
   }
 
   private async runDeployCommands({ executor }: Project): Promise<void> {

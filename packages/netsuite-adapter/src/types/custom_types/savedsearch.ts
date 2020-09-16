@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
@@ -31,7 +31,7 @@ const savedsearch_dependencies = new ObjectType({
   },
   fields: {
     dependency: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      type: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },

@@ -654,6 +654,7 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test2 label',
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
 

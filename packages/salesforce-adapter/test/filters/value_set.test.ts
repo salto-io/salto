@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS,
+  ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/value_set'
 import { FilterWith } from '../../src/filter'
@@ -22,10 +22,10 @@ import * as constants from '../../src/constants'
 import { GLOBAL_VALUE_SET, MASTER_LABEL, CUSTOM_VALUE } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
 
-describe('lookup filters filter', () => {
-  const filter = filterCreator() as FilterWith<'onUpdate'>
+describe('value set filter', () => {
+  const filter = filterCreator() as FilterWith<'onDeploy'>
 
-  describe('on update', () => {
+  describe('on deploy', () => {
     describe('Global value set', () => {
       const globalValueSetName = 'GVSTest'
       const createGlobalValueSetInstanceElement = (values: string[]): InstanceElement =>
@@ -48,15 +48,11 @@ describe('lookup filters filter', () => {
             })),
         })
 
-      it('should add inactive values to global value set', () => {
+      it('should add inactive values to global value set', async () => {
         const beforeInstance = createGlobalValueSetInstanceElement(['val1'])
         const afterInstance = createGlobalValueSetInstanceElement(['val2'])
 
-        filter.onUpdate(
-          beforeInstance,
-          afterInstance,
-          [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }]
-        )
+        await filter.onDeploy([toChange({ before: beforeInstance, after: afterInstance })])
         expect(afterInstance.value[CUSTOM_VALUE]).toEqual([{
           [constants.CUSTOM_VALUE.FULL_NAME]: 'val2',
           [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -71,14 +67,10 @@ describe('lookup filters filter', () => {
         }])
       })
 
-      it('should not add inactive values when there were no deletions', () => {
+      it('should not add inactive values when there were no deletions', async () => {
         const beforeInstance = createGlobalValueSetInstanceElement(['val1'])
         const afterInstance = createGlobalValueSetInstanceElement(['val1', 'val2'])
-        filter.onUpdate(
-          beforeInstance,
-          afterInstance,
-          [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }]
-        )
+        await filter.onDeploy([toChange({ before: beforeInstance, after: afterInstance })])
         expect(afterInstance.value[CUSTOM_VALUE]).toEqual([{
           [constants.CUSTOM_VALUE.FULL_NAME]: 'val1',
           [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -124,19 +116,11 @@ describe('lookup filters filter', () => {
           },
         })
 
-      it('should add inactive values to custom picklist', () => {
+      it('should add inactive values to custom picklist', async () => {
         const beforeObject = createObjectWithPicklistField(['val1'])
         const afterObject = createObjectWithPicklistField(['val2'])
 
-        filter.onUpdate(
-          beforeObject,
-          afterObject,
-          [{ action: 'modify',
-            data: {
-              before: beforeObject.fields[fieldName],
-              after: afterObject.fields[fieldName],
-            } }]
-        )
+        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
         expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val2',
@@ -152,19 +136,11 @@ describe('lookup filters filter', () => {
           }])
       })
 
-      it('should not add inactive values to non restricted custom picklist', () => {
+      it('should not add inactive values to non restricted custom picklist', async () => {
         const beforeObject = createObjectWithPicklistField(['val1'], false)
         const afterObject = createObjectWithPicklistField(['val2'], false)
 
-        filter.onUpdate(
-          beforeObject,
-          afterObject,
-          [{ action: 'modify',
-            data: {
-              before: beforeObject.fields[fieldName],
-              after: afterObject.fields[fieldName],
-            } }]
-        )
+        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
         expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val2',
@@ -175,19 +151,11 @@ describe('lookup filters filter', () => {
           ])
       })
 
-      it('should not add inactive values to custom picklist when there were no deletions', () => {
+      it('should not add inactive values to custom picklist when there were no deletions', async () => {
         const beforeObject = createObjectWithPicklistField(['val1'])
         const afterObject = createObjectWithPicklistField(['val1', 'val2'])
 
-        filter.onUpdate(
-          beforeObject,
-          afterObject,
-          [{ action: 'modify',
-            data: {
-              before: beforeObject.fields[fieldName],
-              after: afterObject.fields[fieldName],
-            } }]
-        )
+        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
         expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val1',
@@ -204,19 +172,11 @@ describe('lookup filters filter', () => {
           ])
       })
 
-      it('should not add values to global picklist field in custom object', () => {
+      it('should not add values to global picklist field in custom object', async () => {
         const beforeObject = createObjectWithPicklistField(['val1'])
         const afterObject = createObjectWithPicklistField()
 
-        filter.onUpdate(
-          beforeObject,
-          afterObject,
-          [{ action: 'modify',
-            data: {
-              before: beforeObject.fields[fieldName],
-              after: afterObject.fields[fieldName],
-            } }]
-        )
+        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
         expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val1',

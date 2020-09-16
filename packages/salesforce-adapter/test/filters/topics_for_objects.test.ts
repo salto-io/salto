@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes,
+  ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange,
 } from '@salto-io/adapter-api'
 import { metadataType } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
@@ -27,7 +27,7 @@ const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
-describe('Field Permissions filter', () => {
+describe('Topics for objects filter', () => {
   const { client } = mockClient()
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockTopicElemID = new ElemID(constants.SALESFORCE, constants.TOPICS_FOR_OBJECTS_ANNOTATION)
@@ -64,12 +64,12 @@ describe('Field Permissions filter', () => {
 
   let mockUpdate: jest.Mock
 
-  type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
+  type FilterType = FilterWith<'onFetch' | 'onDeploy'>
   const filter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
 
   const verifyUpdateCall = (object: string, enableTopics: boolean): void => {
     expect(mockUpdate.mock.calls.length).toBe(1)
-    const topicsForObjects = mockUpdate.mock.calls[0][1] as TopicsForObjectsInfo
+    const topicsForObjects = mockUpdate.mock.calls[0][1][0] as TopicsForObjectsInfo
     expect(topicsForObjects.enableTopics).toBe(enableTopics)
     expect(topicsForObjects.entityApiName).toBe(object)
   }
@@ -96,7 +96,7 @@ describe('Field Permissions filter', () => {
 
   it('should set default value upon add', async () => {
     const after = mockObject.clone()
-    await filter().onAdd(after)
+    await filter().onDeploy([toChange({ after })])
 
     expect(after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION])
       .toEqual({ [ENABLE_TOPICS]: false })
@@ -108,7 +108,7 @@ describe('Field Permissions filter', () => {
     const after = mockObject.clone()
     after.annotate({ [TOPICS_FOR_OBJECTS_ANNOTATION]: enableTopicTrue })
 
-    await filter().onAdd(after)
+    await filter().onDeploy([toChange({ after })])
 
     expect(after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION])
       .toEqual({ [ENABLE_TOPICS]: true })
@@ -120,8 +120,7 @@ describe('Field Permissions filter', () => {
     const after = before.clone()
     after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] = enableTopicTrue
 
-    await filter().onUpdate(before, after,
-      [{ action: 'modify', data: { before, after } }])
+    await filter().onDeploy([toChange({ before, after })])
 
     verifyUpdateCall('Test__c', true)
   })

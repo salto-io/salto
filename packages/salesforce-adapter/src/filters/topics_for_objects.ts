@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import {
-  ObjectType, Element, Values, isObjectType, Change, getAnnotationValue,
+  ObjectType, Element, Values, getAnnotationValue, isObjectTypeChange,
+  isAdditionOrModificationChange, getChangeElement, isAdditionChange, isModificationChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { SaveResult } from 'jsforce'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 import { isCustomObject, apiName, metadataType } from '../transformers/transformer'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
 import { getCustomObjects, boolValue, getInstancesOfMetadataType } from './utils'
 
@@ -39,7 +39,7 @@ const setTopicsForObjects = (object: ObjectType, enableTopics: boolean): void =>
 const setDefaultTopicsForObjects = (object: ObjectType): void => setTopicsForObjects(object,
   DEFAULT_ENABLE_TOPICS_VALUE)
 
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch' | 'onDeploy'> => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const customObjectTypes = getCustomObjects(elements).filter(obj => obj.annotations[API_NAME])
     if (_.isEmpty(customObjectTypes)) {
@@ -68,43 +68,42 @@ const filterCreator: FilterCreator = ({ client }) => ({
     _.remove(elements, elem => (metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE))
   },
 
-  onAdd: async (after: Element): Promise<SaveResult[]> => {
-    if (isObjectType(after) && isCustomObject(after)) {
-      const topicsForObjects = getTopicsForObjects(after)
+  onDeploy: async changes => {
+    const customObjectChanges = changes
+      .filter(isObjectTypeChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => isCustomObject(getChangeElement(change)))
 
-      // In case that we add an object with enable_topics that differs from the default -> Adds
-      //  a TopicsForObjects with the object' value. Else, Don't send an update request
-      if (boolValue(topicsForObjects[ENABLE_TOPICS]) !== DEFAULT_ENABLE_TOPICS_VALUE) {
-        return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
-          new TopicsForObjectsInfo(apiName(after), apiName(after),
-            getTopicsForObjects(after)[ENABLE_TOPICS]))
-      }
-      if (_.isEmpty(topicsForObjects)) {
-        setDefaultTopicsForObjects(after)
-      }
-    }
-    return []
-  },
+    const newObjects = customObjectChanges
+      .filter(isAdditionChange)
+      .map(getChangeElement)
+    // Add default value for new custom objects that have not specified a value
+    newObjects
+      .filter(obj => _.isEmpty(getTopicsForObjects(obj)))
+      .forEach(setDefaultTopicsForObjects)
 
-  onUpdate: async (before: Element, after: Element, _changes: ReadonlyArray<Change>):
-    Promise<SaveResult[]> => {
-    if (!(isObjectType(before) && isObjectType(after) && isCustomObject(before))) {
+    const newObjectTopicsToSet = newObjects
+      .filter(obj => getTopicsForObjects(obj)[ENABLE_TOPICS] !== DEFAULT_ENABLE_TOPICS_VALUE)
+
+    const changedObjectTopics = customObjectChanges
+      .filter(isModificationChange)
+      .filter(change => (
+        getTopicsForObjects(change.data.before) !== getTopicsForObjects(change.data.after)
+      ))
+      .map(getChangeElement)
+
+    const topicsToSet = [...newObjectTopicsToSet, ...changedObjectTopics]
+    if (topicsToSet.length === 0) {
       return []
     }
-
-    // No change
-    const topicsBefore = getTopicsForObjects(before)
-    const topicsAfter = getTopicsForObjects(after)
-    if (_.isEqual(topicsAfter[ENABLE_TOPICS], topicsBefore[ENABLE_TOPICS])) {
-      return []
-    }
-
-    // In case that the topicsForObjects doesn't exist anymore -> enable_topics=false
-    const topicsEnabled = _.isUndefined(topicsAfter[ENABLE_TOPICS])
-      ? false : boolValue(topicsAfter[ENABLE_TOPICS])
-
-    return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
-      new TopicsForObjectsInfo(apiName(after), apiName(after), topicsEnabled))
+    return client.update(
+      TOPICS_FOR_OBJECTS_METADATA_TYPE,
+      topicsToSet.map(obj => {
+        const topics = getTopicsForObjects(obj)
+        const topicsEnabled = boolValue(topics[ENABLE_TOPICS] ?? false)
+        return new TopicsForObjectsInfo(apiName(obj), apiName(obj), topicsEnabled)
+      })
+    )
   },
 })
 

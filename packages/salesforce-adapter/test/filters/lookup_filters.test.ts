@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes,
+  ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, toChange,
 } from '@salto-io/adapter-api'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/lookup_filters'
@@ -65,7 +65,7 @@ describe('lookup filters filter', () => {
       },
     })
     const { client } = mockClient()
-    const filter = filterCreator({ client, config: {} }) as FilterWith<'onAdd'>
+    const filter = filterCreator({ client, config: {} }) as FilterWith<'onDeploy'>
 
     const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
     beforeEach(() => {
@@ -73,8 +73,8 @@ describe('lookup filters filter', () => {
       updateSpy.mockReset()
     })
 
-    it('should add lookupFilter data to a customField with lookupFilter upon the customObject creation', () => {
-      filter.onAdd(mockObject)
+    it('should add lookupFilter data to a customField with lookupFilter upon the customObject creation', async () => {
+      await filter.onDeploy([toChange({ after: mockObject })])
       expect(updateSpy).toHaveBeenCalled()
       expect(updateSpy).toHaveBeenCalledWith(constants.CUSTOM_FIELD, [expect.objectContaining(
         {
@@ -101,14 +101,14 @@ describe('lookup filters filter', () => {
       )])
     })
 
-    it('should ignore lookupFilter for fields with no lookupFilter upon the customObject creation', () => {
+    it('should ignore lookupFilter for fields with no lookupFilter upon the customObject creation', async () => {
       delete mockObject.fields.lookup.annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      filter.onAdd(mockObject)
+      await filter.onDeploy([toChange({ after: mockObject })])
       expect(updateSpy).not.toHaveBeenCalled()
     })
 
-    it('should ignore lookupFilter for non objectType', () => {
-      filter.onAdd(new InstanceElement('test', mockObject, {}))
+    it('should ignore lookupFilter for non objectType', async () => {
+      await filter.onDeploy([toChange({ after: new InstanceElement('test', mockObject, {}) })])
       expect(updateSpy).not.toHaveBeenCalled()
     })
   })
@@ -150,7 +150,7 @@ describe('lookup filters filter', () => {
       .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER] = lookupFilter
 
     const { client } = mockClient()
-    const filter = filterCreator({ client, config: {} }) as FilterWith<'onUpdate'>
+    const filter = filterCreator({ client, config: {} }) as FilterWith<'onDeploy'>
     const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
     beforeEach(() => {
       beforeObject = origBeforeObject.clone()
@@ -158,10 +158,9 @@ describe('lookup filters filter', () => {
       updateSpy.mockReset()
     })
 
-    it('should add lookupFilter data to a customField with lookupFilter upon the lookup customField creation', () => {
+    it('should add lookupFilter data to a customField with lookupFilter upon the lookup customField creation', async () => {
       delete beforeObject.fields.lookup
-      filter.onUpdate(beforeObject, afterObject,
-        [{ action: 'add', data: { after: afterObject.fields.lookup } }])
+      await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
       expect(updateSpy).toHaveBeenCalledWith(constants.CUSTOM_FIELD, [expect.objectContaining(
         {
           lookupFilter: {
@@ -187,9 +186,8 @@ describe('lookup filters filter', () => {
       )])
     })
 
-    it('should add lookupFilter data to a customField with lookupFilter upon the lookup customField update', () => {
-      filter.onUpdate(beforeObject, afterObject, [{ action: 'modify',
-        data: { before: beforeObject.fields.lookup, after: afterObject.fields.lookup } }])
+    it('should add lookupFilter data to a customField with lookupFilter upon the lookup customField update', async () => {
+      await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
       expect(updateSpy).toHaveBeenCalledWith(constants.CUSTOM_FIELD, [expect.objectContaining(
         {
           lookupFilter: {
@@ -215,17 +213,20 @@ describe('lookup filters filter', () => {
       )])
     })
 
-    it('should ignore lookupFilter for fields with no lookupFilter upon the customField update', () => {
+    it('should ignore lookupFilter for fields with no lookupFilter upon the customField update', async () => {
       delete beforeObject.fields.lookup.annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
       delete afterObject.fields.lookup.annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      filter.onUpdate(beforeObject, afterObject, [{ action: 'modify',
-        data: { before: beforeObject.fields.lookup, after: afterObject.fields.lookup } }])
+      await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
       expect(updateSpy).not.toHaveBeenCalled()
     })
 
-    it('should ignore lookupFilter for non objectType', () => {
-      filter.onUpdate(new InstanceElement('test', beforeObject, {}),
-        new InstanceElement('test', afterObject, {}), [])
+    it('should ignore lookupFilter for non objectType', async () => {
+      await filter.onDeploy([
+        toChange({
+          before: new InstanceElement('test', afterObject, { a: 1 }),
+          after: new InstanceElement('test', afterObject, { a: 2 }),
+        }),
+      ])
       expect(updateSpy).not.toHaveBeenCalled()
     })
   })

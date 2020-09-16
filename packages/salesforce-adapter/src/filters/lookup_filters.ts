@@ -15,14 +15,13 @@
 */
 import _ from 'lodash'
 import {
-  Element, Field, isObjectType, ObjectType, Change, getChangeElement,
-  isField, Values,
+  Field, getChangeElement, Values, isAdditionChange, isAdditionOrModificationChange,
+  isObjectTypeChange, isModificationChange,
 } from '@salto-io/adapter-api'
-import { SaveResult } from 'jsforce'
 import { FilterCreator } from '../filter'
 import { CUSTOM_FIELD, FIELD_ANNOTATIONS } from '../constants'
 import { CustomField } from '../client/types'
-import { toCustomField } from '../transformers/transformer'
+import { toCustomField, isCustomObject } from '../transformers/transformer'
 
 const getLookupFilter = (field: Field): Values =>
   field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
@@ -30,8 +29,10 @@ const getLookupFilter = (field: Field): Values =>
 const hasLookupFilter = (field: Field): boolean =>
   getLookupFilter(field) !== undefined
 
-const getFieldsWithLookupFilter = (obj: ObjectType): Field[] =>
-  Object.values(obj.fields).filter(hasLookupFilter)
+const isLookupFilterChanged = (field: Field, beforeField?: Field): boolean => (
+  hasLookupFilter(field)
+  && (beforeField === undefined || !_.isEqual(getLookupFilter(field), getLookupFilter(beforeField)))
+)
 
 const createCustomFieldWithLookupFilter = (fieldWithLookupFilter: Field):
   CustomField => {
@@ -53,43 +54,33 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * the field's creation (and thus also upon an object creation).
    * Thus, we need to first create the field and then update it using filter
    */
-  onAdd: async (after: Element): Promise<SaveResult[]> => {
-    if (!isObjectType(after)) {
+  onDeploy: async changes => {
+    const customObjectChanges = changes
+      .filter(isObjectTypeChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => isCustomObject(getChangeElement(change)))
+
+    const lookupFieldsInNewObjects = customObjectChanges
+      .filter(isAdditionChange)
+      .map(getChangeElement)
+      .flatMap(obj => Object.values(obj.fields))
+      .filter(hasLookupFilter)
+
+    const changedLookupFields = customObjectChanges
+      .filter(isModificationChange)
+      .flatMap(
+        change => Object.entries(change.data.after.fields)
+          .filter(([name, field]) => isLookupFilterChanged(field, change.data.before.fields[name]))
+          .map(([_name, field]) => field)
+      )
+
+    const fieldsToUpdate = [...lookupFieldsInNewObjects, ...changedLookupFields]
+
+    if (fieldsToUpdate.length === 0) {
       return []
     }
-    const customFieldsWithLookupFilter = getFieldsWithLookupFilter(after)
-      .map(fieldWithLookupFilter =>
-        createCustomFieldWithLookupFilter(fieldWithLookupFilter))
-    if (customFieldsWithLookupFilter && customFieldsWithLookupFilter.length > 0) {
-      return client.update(CUSTOM_FIELD, customFieldsWithLookupFilter)
-    }
-    return []
-  },
 
-  /**
-   * In Salesforce you can't add a lookup/masterdetail relationship with a lookupFilter upon
-   * the field's creation. Thus, we need to first create the field and then update it using filter
-   */
-  onUpdate: async (before: Element, after: Element, changes: ReadonlyArray<Change>):
-    Promise<SaveResult[]> => {
-    if (!(isObjectType(before) && isObjectType(after))) {
-      return []
-    }
-
-    const fieldsToUpdate = changes
-      .filter(c => isField(getChangeElement(c)))
-      .map(c => [_.get(c.data, 'before'), _.get(c.data, 'after')])
-      .filter(([b, a]) => !_.isEqual(b ? getLookupFilter(b) : undefined,
-        a ? getLookupFilter(a) : undefined))
-      .map(([_b, a]) => a)
-      .filter(f => f)
-
-    if (fieldsToUpdate.length > 0) {
-      return client.update(CUSTOM_FIELD, fieldsToUpdate
-        .map(field => createCustomFieldWithLookupFilter(field)))
-    }
-
-    return []
+    return client.update(CUSTOM_FIELD, fieldsToUpdate.map(createCustomFieldWithLookupFilter))
   },
 })
 

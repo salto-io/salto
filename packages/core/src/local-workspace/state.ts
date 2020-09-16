@@ -119,8 +119,9 @@ export const localState = (filePrefix: string): state.State => {
   const inMemState = state.buildInMemState(loadFromFile)
 
   const createStateTextPerService = async (): Promise<Record<string, string>> => {
-    const elements = _.groupBy(await inMemState.getAll(), element => element.elemID.adapter)
-    const serviceToElementStrings = _.mapValues(elements,
+    const elements = await inMemState.getAll()
+    const elementsByService = _.groupBy(elements, element => element.elemID.adapter)
+    const serviceToElementStrings = _.mapValues(elementsByService,
       serviceElements => serialize(serviceElements))
     const serviceToDates = await inMemState.getServicesUpdateDates()
     const serviceToPathIndex = pathIndex.serializePathIndexByService(
@@ -171,10 +172,10 @@ export const localState = (filePrefix: string): state.State => {
       }
       await mkdirp(path.dirname(currentFilePrefix))
       const stateTextPerService = await createStateTextPerService()
-      Object.entries(stateTextPerService).forEach(async ([service, stateText]) => {
-        await replaceContents(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
-          await generateZipString(stateText))
-      })
+      await Promise.all(Object.keys(stateTextPerService).map(async service => (
+        replaceContents(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
+          await generateZipString(stateTextPerService[service]))
+      )))
       if (pathToClean !== '') {
         await rm(pathToClean)
       }

@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ElemID, Field, ObjectType, PrimitiveType, ReferenceExpression, toChange,
+  ChangeError, ElemID, Field, ObjectType, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import picklistStandardFieldValidator from '../../src/change_validators/picklist_standard_field'
-import {
-  API_NAME, FIELD_ANNOTATIONS, SALESFORCE, VALUE_SET_FIELDS,
-} from '../../src/constants'
+import { FIELD_ANNOTATIONS, SALESFORCE, VALUE_SET_FIELDS } from '../../src/constants'
+import { createField } from '../utils'
 
 
 describe('picklist standard field change validator', () => {
@@ -31,15 +30,6 @@ describe('picklist standard field change validator', () => {
         elemID: new ElemID('salesforce', 'obj'),
       })
     })
-
-    const createField = (fieldType: PrimitiveType, fieldApiName: string): Field => {
-      const newField = new Field(obj, 'field', fieldType, {
-        [API_NAME]: fieldApiName,
-        modifyMe: 'modifyMe',
-      })
-      obj.fields.field = newField
-      return newField
-    }
 
     const createAfterField = (beforeField: Field): Field => {
       const afterField = beforeField.clone()
@@ -52,7 +42,7 @@ describe('picklist standard field change validator', () => {
       picklistStandardFieldValidator([toChange({ before, after })])
 
     it('should have error for picklist standard field without API_NAME_SEPARATOR', async () => {
-      const beforeField = createField(Types.primitiveDataTypes.Picklist, 'Standard')
+      const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Standard')
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
@@ -62,21 +52,21 @@ describe('picklist standard field change validator', () => {
     })
 
     it('should have error for picklist standard field with API_NAME_SEPARATOR', async () => {
-      const beforeField = createField(Types.primitiveDataTypes.Picklist, 'Obj.Standard')
+      const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Obj.Standard')
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
     })
 
     it('should have error for multi picklist standard field', async () => {
-      const beforeField = createField(Types.primitiveDataTypes.MultiselectPicklist, 'Standard')
+      const beforeField = createField(obj, Types.primitiveDataTypes.MultiselectPicklist, 'Standard')
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
     })
 
     it('should have error for GlobalValueSet picklist standard field', async () => {
-      const beforeField = createField(Types.primitiveDataTypes.Picklist, 'Standard')
+      const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Standard')
       beforeField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = 'valueSet'
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
@@ -84,7 +74,7 @@ describe('picklist standard field change validator', () => {
     })
 
     it('should have no error for StandardValueSet picklist standard field', async () => {
-      const beforeField = createField(Types.primitiveDataTypes.Picklist, 'Standard')
+      const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Standard')
       const dummyElemID = new ElemID(SALESFORCE, 'referenced')
       beforeField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = new ReferenceExpression(dummyElemID)
       const afterField = createAfterField(beforeField)
@@ -93,14 +83,14 @@ describe('picklist standard field change validator', () => {
     })
 
     it('should not have error for picklist custom field', async () => {
-      const beforeField = createField(Types.primitiveDataTypes.Picklist, 'Custom__c')
+      const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Custom__c')
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have no error for non-picklist standard field', async () => {
-      const beforeField = createField(Types.primitiveDataTypes.Text, 'Standard')
+      const beforeField = createField(obj, Types.primitiveDataTypes.Text, 'Standard')
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)

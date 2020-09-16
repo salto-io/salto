@@ -36,7 +36,7 @@ import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
-  FOLDER,
+  FOLDER, ENTRY_FORM, TRANSACTION_FORM,
 } from '../constants'
 
 const { makeArray } = collections.array
@@ -419,10 +419,20 @@ export default class NetsuiteClient {
 
   private async importObjectsByTypes(typeNames: string[],
     executor: CommandActionExecutorType): Promise<string[]> {
+    const orderTypesByFetchDuration = (): string[] => {
+      // Fetching the below types takes statistically much more time than the others, and sometimes
+      // they even fail on SDF internal timeout. We can save some fetch time if fetching them first.
+      const typesWithLongFetchDuration = new Set([TRANSACTION_FORM, ENTRY_FORM])
+      return [
+        ...typeNames.filter(typeName => typesWithLongFetchDuration.has(typeName)),
+        ...typeNames.filter(typeName => !typesWithLongFetchDuration.has(typeName)),
+      ]
+    }
+
     const failedTypes: string[] = []
     log.debug('Fetching custom objects one by one')
     await withLimitedConcurrency( // limit the number of open promises
-      typeNames.map(typeName => async () => {
+      orderTypesByFetchDuration().map(typeName => async () => {
         try {
           log.debug(`Starting to fetch objects of type: ${typeName}`)
           await this.runImportObjectsCommand(typeName, executor)

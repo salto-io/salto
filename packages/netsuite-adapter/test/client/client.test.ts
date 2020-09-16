@@ -22,6 +22,9 @@ import NetsuiteClient, {
   fileCabinetTopLevelFolders, FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX,
   FolderCustomizationInfo, SDF_PATH_SEPARATOR, TemplateCustomTypeInfo,
 } from '../../src/client/client'
+import {
+  CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, WORKFLOW,
+} from '../../src/constants'
 
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
@@ -217,6 +220,34 @@ describe('netsuite client', () => {
         .toHaveBeenNthCalledWith(numberOfCallsToImport + 3, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
+    })
+
+    it('should call import objects by fetch duration order', async () => {
+      const importObjectTypeCommandMatcher = (typeName: string): string =>
+        expect.objectContaining({
+          commandName: COMMANDS.IMPORT_OBJECTS,
+          arguments: expect.objectContaining({
+            type: typeName,
+          }),
+        })
+
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
+      const typesToFetch = [CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, WORKFLOW]
+      await client.getCustomObjects(typesToFetch, false)
+      const numberOfCallsToImport = typesToFetch.length
+      expect(mockExecuteAction).toHaveBeenCalledTimes(
+        numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
+      )
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(3, importObjectTypeCommandMatcher(ENTRY_FORM))
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(5, importObjectTypeCommandMatcher(CUSTOM_RECORD_TYPE))
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(4, importObjectTypeCommandMatcher(TRANSACTION_FORM))
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectTypeCommandMatcher(WORKFLOW))
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed', async () => {

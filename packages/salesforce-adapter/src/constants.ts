@@ -76,6 +76,13 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
     // name is handled differently with nameField
   }
 
+// target types for creating / updating custom fields:
+export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES = [
+  // other valid field types that we do not currently support are:
+  // MetadataRelationship, ExternalLookup, IndirectLookup, Hierarchy, File
+  ...(FIELD_TYPE_NAME_VALUES.filter(type => type !== FIELD_TYPE_NAMES.UNKNOWN)),
+  COMPOUND_FIELD_TYPE_NAMES.LOCATION]
+
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, FIELD_TYPE_NAMES> = {
   anyType: FIELD_TYPE_NAMES.ANYTYPE,

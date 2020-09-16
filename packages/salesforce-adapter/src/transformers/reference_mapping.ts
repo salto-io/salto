@@ -25,8 +25,7 @@ import {
   CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CUSTOM_FIELD,
   CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD, CPQ_OBJECT_NAME, CPQ_FIELD_METADATA,
   VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE,
-  SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
+  WEBLINK_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -55,13 +54,17 @@ const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName = 'none' | 'instanceParent'
+export type ReferenceContextStrategyName = 'none' | 'instanceParent' | 'neighborTypeWorkflow'
 
+type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
+type MetadataTypeArgs = {
+  type: string
+  typeContext: ReferenceContextStrategyName
+}
 type ReferenceTargetDefinition = {
   parentContext?: ReferenceContextStrategyName
-  type: string
   name?: string
-}
+} & (PickOne<MetadataTypeArgs, 'type'> | PickOne<MetadataTypeArgs, 'typeContext'>)
 export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
 
 type SourceDef = {
@@ -113,6 +116,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
       target: { parentContext: 'instanceParent', type: targetType },
     })
   )),
+  {
+    src: { field: 'name', parentTypes: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', typeContext: 'neighborTypeWorkflow' },
+  },
   {
     src: { field: 'name', parentTypes: ['GlobalQuickActionTranslation'] },
     target: { type: 'QuickAction' },

@@ -35,7 +35,6 @@ import {
 } from './transformers/transformer'
 import { createDeployPackage } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
-import workflowRuleFilter from './filters/workflow_rule'
 import customObjectsFilter from './filters/custom_objects'
 import customObjectsSplitFilter from './filters/custom_object_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
@@ -93,8 +92,6 @@ export const DEFAULT_FILTERS = [
   // addMissingIdsFilter should run after customObjectsFilter
   addMissingIdsFilter,
   layoutFilter,
-  // workflowRuleFilter depend on workflowFilter
-  workflowRuleFilter,
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   profilePermissionsFilter,

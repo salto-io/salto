@@ -15,9 +15,9 @@
 */
 import {
   Field, Element, isInstanceElement, Value, Values, isObjectType, isReferenceExpression,
-  ReferenceExpression, InstanceElement, INSTANCE_ANNOTATIONS,
+  ReferenceExpression, InstanceElement, INSTANCE_ANNOTATIONS, ElemID,
 } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues, resolvePath } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -27,16 +27,44 @@ import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
   generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition,
 } from '../transformers/reference_mapping'
+import { WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE, WORKFLOW_TASK_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 type ElemLookupMapping = Record<string, Record<string, Element>>
 type ElemIDToApiNameLookup = Record<string, string>
+type ContextValueMapperFunc = (val: string) => string | undefined
 type ContextFunc = (
   instance: InstanceElement,
   elemIdToApiName: ElemIDToApiNameLookup,
+  fieldPath?: ElemID,
 ) => string | undefined
+
+const neighborContextFunc = (
+  contextFieldName: string,
+  contextValueMapper: ContextValueMapperFunc,
+): ContextFunc => (
+  (instance, _elemIdToApiName, fieldPath) => {
+    if (fieldPath === undefined || contextFieldName === undefined) {
+      return undefined
+    }
+    const contextPath = fieldPath.createParentID().createNestedID(contextFieldName)
+    const context = resolvePath(instance, contextPath)
+    return contextValueMapper ? contextValueMapper(context) : context
+  }
+)
+
+const workflowActionMapper: ContextValueMapperFunc = (val: string) => {
+  const workflowActionTypeMapping: Record<string, string> = {
+    Alert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
+    FieldUpdate: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+    FlowAction: WORKFLOW_FLOW_ACTION_METADATA_TYPE,
+    OutboundMessage: WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
+    Task: WORKFLOW_TASK_METADATA_TYPE,
+  }
+  return workflowActionTypeMapping[val]
+}
 
 const ContextStrategyLookup: Record<
   ReferenceContextStrategyName, ContextFunc
@@ -46,6 +74,7 @@ const ContextStrategyLookup: Record<
     const parent = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])[0]
     return isReferenceExpression(parent) ? elemIdToApiName[parent.elemId.getFullName()] : undefined
   },
+  neighborTypeWorkflow: neighborContextFunc('type', workflowActionMapper),
 }
 
 const replaceReferenceValues = (
@@ -56,23 +85,28 @@ const replaceReferenceValues = (
   elemIdToApiName: ElemIDToApiNameLookup,
 ): Values => {
   const getRefElem = (
-    val: string, target: ExtendedReferenceTargetDefinition,
+    val: string, target: ExtendedReferenceTargetDefinition, path?: ElemID
   ): Element | undefined => {
-    const findElem = (targetType: string, value: string): Element | undefined => (
-      elemLookupMap[targetType]?.[value]
+    const findElem = (value: string, targetType?: string): Element | undefined => (
+      targetType !== undefined ? elemLookupMap[targetType]?.[value] : undefined
     )
 
     const contextFunc = ContextStrategyLookup[target.parentContext ?? 'none']
     if (contextFunc === undefined) {
       return undefined
     }
+    const typeContextFunc = ContextStrategyLookup[target.typeContext ?? 'none']
+    if (typeContextFunc === undefined) {
+      return undefined
+    }
+    const elemType = target.type ?? typeContextFunc(instance, elemIdToApiName, path)
     return findElem(
-      target.type,
-      target.lookup(val, contextFunc(instance, elemIdToApiName)),
+      target.lookup(val, contextFunc(instance, elemIdToApiName, path)),
+      elemType,
     )
   }
 
-  const replacePrimitive = (val: string, field: Field): Value => {
+  const replacePrimitive = (val: string, field: Field, path?: ElemID): Value => {
     const toValidatedReference = (
       serializer: ReferenceSerializationStrategy,
       elem: Element | undefined,
@@ -91,7 +125,7 @@ const replaceReferenceValues = (
       .filter(refResolver => refResolver.target !== undefined)
       .map(refResolver => toValidatedReference(
         refResolver.serializationStrategy,
-        getRefElem(val, refResolver.target as ExtendedReferenceTargetDefinition),
+        getRefElem(val, refResolver.target as ExtendedReferenceTargetDefinition, path),
       ))
       .filter(isDefined)
       .pop()
@@ -99,8 +133,8 @@ const replaceReferenceValues = (
     return reference ?? val
   }
 
-  const transformPrimitive: TransformFunc = ({ value, field }) => (
-    (!_.isUndefined(field) && _.isString(value)) ? replacePrimitive(value, field) : value
+  const transformPrimitive: TransformFunc = ({ value, field, path }) => (
+    (!_.isUndefined(field) && _.isString(value)) ? replacePrimitive(value, field, path) : value
   )
 
   return transformValues(
@@ -109,6 +143,7 @@ const replaceReferenceValues = (
       type: instance.type,
       transformFunc: transformPrimitive,
       strict: false,
+      pathID: instance.elemID,
     }
   ) || instance.value
 }

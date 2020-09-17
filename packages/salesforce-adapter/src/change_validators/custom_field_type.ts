@@ -18,10 +18,7 @@ import {
   ChangeValidator, Change, isAdditionChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES, FIELD_TYPE_NAMES, COMPOUND_FIELD_TYPE_NAMES } from '../constants'
-import { isCustomObject } from '../transformers/transformer'
-
-const isCustomFieldChange = (change: Change<Field>): boolean =>
-  (isCustomObject(getChangeElement(change).parent))
+import { isCustomField } from '../transformers/transformer'
 
 const isInvalidTypeChange = (change: Change<Field>): boolean => {
   const afterFieldType = getChangeElement(change).type.elemID.typeName as
@@ -37,21 +34,21 @@ const isInvalidTypeChange = (change: Change<Field>): boolean => {
   return change.data.before.type.elemID.typeName !== afterFieldType
 }
 
-const createChangeError = (changedElement: Field): ChangeError => ({
-  elemID: changedElement.elemID,
+const createChangeError = (field: Field): ChangeError => ({
+  elemID: field.elemID,
   severity: 'Error',
-  message: `You cannot create or modify a custom field type to ${changedElement.type.elemID.typeName}. Field: ${changedElement.name}`,
-  detailedMessage: `You cannot create or modify a custom field type to ${changedElement.type.elemID.typeName}. Valid types can be found at:\nhttps://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype`,
+  message: `You cannot create or modify a custom field type to ${field.type.elemID.typeName}. Field: ${field.name}`,
+  detailedMessage: `You cannot create or modify a custom field type to ${field.type.elemID.typeName}. Valid types can be found at:\nhttps://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype`,
 })
 
 /**
-   * Modification of a custom field type is restriced to certain types,
-   * as well as the type of new custom fields.
-   */
+ * Modification of a custom field type is restriced to certain types,
+ * as well as the type of new custom fields.
+ */
 const changeValidator: ChangeValidator = async changes => changes
   .filter(isAdditionOrModificationChange)
   .filter(isFieldChange)
-  .filter(isCustomFieldChange)
+  .filter(change => isCustomField(getChangeElement(change)))
   .filter(isInvalidTypeChange)
   .map(getChangeElement)
   .map(createChangeError)

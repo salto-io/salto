@@ -25,21 +25,23 @@
     "clean-ts": "../../build_utils/clean-old-ts.sh",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
-    "build-ts": "tsc -b && yarn clean-ts",
+    "build-ts": "tsc -b && yarn generate && yarn clean-ts",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn lint --fix",
     "generate": "./generate.sh"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.28",
-    "@salto-io/lowerdash": "0.1.28",
+    "@salto-io/adapter-api": "0.1.29",
+    "@salto-io/adapter-utils": "0.1.29",
+    "@salto-io/lowerdash": "0.1.29",
     "lodash": "^4.17.19",
     "seedrandom": "^3.0.5",
     "unique-names-generator": "^4.3.1"
   },
   "devDependencies": {
     "@types/lorem-ipsum": "^2.0.0",
-    "@types/seedrandom": "^2.4.28"
+    "@types/seedrandom": "^2.4.28",
+    "@types/stats-lite": "^2.2.0"
   }
 }

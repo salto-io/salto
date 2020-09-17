@@ -53,31 +53,31 @@ export type GeneratorParams = {
 
 export const defaultParams: GeneratorParams = {
   seed: 123456,
-  numOfPrimitiveTypes: 100,
-  numOfTypes: 100,
-  numOfObjs: 100,
-  numOfRecords: 100,
-  primitiveFieldFreq: 0.3,
-  builtinFieldFreq: 0.3,
-  listFieldFreq: 0.3,
-  numOfProfiles: 30,
-  maxRank: 4,
-  multilineFreq: 0.1,
-  fieldsNumMean: 5,
-  fieldsNumStd: 2,
-  objectAnnoMean: 5,
-  objectAnnoStd: 2,
-  primAnnoMean: 5,
-  primAnnoStd: 2,
-  typetAnnoMean: 5,
-  typetAnnoStd: 2,
-  staticFileFreq: 0.05,
-  parentFreq: 0.3,
-  refFreq: 0.05,
-  multilLinesStringLinesMean: 10,
-  multilLinesStringLinesStd: 4,
-  staticFileLinesMean: 20,
-  staticFileLinesStd: 10,
+  numOfRecords: 522,
+  numOfPrimitiveTypes: 44,
+  numOfObjs: 103,
+  numOfProfiles: 0,
+  numOfTypes: 496,
+  maxRank: 9,
+  primitiveFieldFreq: 0.349,
+  builtinFieldFreq: 0.56,
+  listFieldFreq: 0.0272,
+  fieldsNumMean: 8.8,
+  fieldsNumStd: 10.9,
+  objectAnnoMean: 20.3,
+  objectAnnoStd: 2.48,
+  primAnnoMean: 10.6,
+  primAnnoStd: 7.0,
+  typetAnnoMean: 5.8,
+  typetAnnoStd: 1.12,
+  parentFreq: 2.12,
+  refFreq: 0.015,
+  staticFileFreq: 0.00278,
+  multilLinesStringLinesMean: 3.2,
+  multilLinesStringLinesStd: 0.97,
+  multilineFreq: 0.002,
+  staticFileLinesMean: 9.1,
+  staticFileLinesStd: 4.85,
 }
 
 export const DUMMY_ADAPTER = 'dummy'
@@ -152,7 +152,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
 
   const getFieldType = (allowLists = false): TypeElement => {
     const fieldTypeOptions = [
-      Object.values(BuiltinTypes),
+      Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN),
       weightedRandomSelect(primitiveByRank.slice(0, -1)) || [],
       weightedRandomSelect(objByRank.slice(0, -1)) || [],
     ]
@@ -227,6 +227,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   const generateValue = (ref: TypeElement): Value => {
     if (staticFileIds.has(ref.elemID.getFullName())) {
       const content = generateFileContent()
+      console.log("YAY WE DOING FILE VALUE")
       return new StaticFile({
         content,
         hash: calculateStaticFileHash(content),
@@ -296,8 +297,10 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       path: [DUMMY_ADAPTER, 'Types', name],
     })
     updateElementRank(element)
+    console.log("HI!<<>>>")
     if (element.primitive === PrimitiveTypes.STRING
-        && Math.random() < defaultParams.staticFileFreq) {
+        && Math.random() < 1 ){//defaultParams.staticFileFreq) {
+      console.log("YES WE HERE")
       staticFileIds.add(element.elemID.getFullName())
     } else if (Math.random() < defaultParams.staticFileFreq) {
       referenceFields.add(element.elemID.getFullName())

@@ -22,12 +22,15 @@ import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents,
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
-import glob from 'glob'
+import origGlob from 'glob'
 import semver from 'semver'
+import { promisify } from 'util'
 import { version } from '../generated/version.json'
 
 const { serialize, deserialize } = serialization
 const { toMD5 } = hash
+
+const glob = promisify(origGlob)
 
 const log = logger(module)
 
@@ -87,17 +90,15 @@ export const localState = (filePrefix: string): state.State => {
     let elementsData: string[] = []
     let updateDateData: string[] = []
     let pathIndexData: string[] = []
-    let currentFilePaths: string[] = []
     let versions: string[] = []
-    await new Promise<void>(resolve => {
-      glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`, (_err: Error | null, files: string[]) => {
-        currentFilePaths = files
-        resolve()
-      })
-    })
+    const currentFilePaths = await glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`)
     if (currentFilePaths.length > 0) {
       [elementsData, updateDateData, pathIndexData,
         versions] = await readFromPaths(currentFilePaths)
+    } else if (await exists(`${filePrefix}${ZIPPED_STATE_EXTENSION}`)) {
+      pathToClean = `${filePrefix}${ZIPPED_STATE_EXTENSION}`;
+      [elementsData, updateDateData, pathIndexData,
+        versions] = await readFromPaths([`${filePrefix}${ZIPPED_STATE_EXTENSION}`])
     } else if (await exists(filePrefix + STATE_EXTENSION)) {
       pathToClean = filePrefix + STATE_EXTENSION;
       [elementsData[0], updateDateData[0], pathIndexData[0]] = [...(
@@ -157,13 +158,14 @@ export const localState = (filePrefix: string): state.State => {
       dirty = true
     },
     rename: async (newPrefix: string): Promise<void> => {
-      glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`, async (_err: Error | null, files: string[]) => {
-        files.forEach(async filename => {
+      const files = await glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`)
+      await Promise.all(
+        files.map(async filename => {
           const newFilePath = filename.replace(currentFilePrefix,
             path.join(path.dirname(currentFilePrefix), newPrefix))
           await rename(filename, newFilePath)
         })
-      })
+      )
       currentFilePrefix = newPrefix
     },
     flush: async (): Promise<void> => {

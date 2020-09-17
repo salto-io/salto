@@ -57,7 +57,7 @@ jest.mock('@salto-io/file', () => ({
     if (filename === 'error.jsonl.zip') {
       return Promise.resolve('blabl{,.')
     }
-    if (['full.jsonl.zip', 'multiple_files.salesforce.jsonl.zip', 'multiple_files_extra.salesforce.jsonl.zip'].includes(filename)) {
+    if (['full.jsonl.zip', 'multiple_files.salesforce.jsonl.zip', 'multiple_files_extra.salesforce.jsonl.zip', 'deprecated_file_zip.jsonl.zip'].includes(filename)) {
       return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "salesforce" :"2020-04-21T09:44:20.824Z"}\n[]\n0.0.1')
     }
     if (filename === 'multiple_files.salesforce2.jsonl.zip') {
@@ -75,6 +75,9 @@ jest.mock('@salto-io/file', () => ({
   rename: jest.fn().mockImplementation(),
   mkdirp: jest.fn().mockImplementation(),
   exists: jest.fn().mockImplementation((filename: string) => {
+    if (filename === 'deprecated_file_zip.jsonl.zip') {
+      return Promise.resolve(true)
+    }
     if (filename.startsWith('deprecated_file')) {
       return Promise.resolve(filename.endsWith('jsonl'))
     }
@@ -138,14 +141,13 @@ describe('local state', () => {
     })
 
     describe('clear', () => {
-      const mockRm = rm as jest.Mock
       it('should delete two state files', async () => {
+        const mockRm = rm as jest.Mock
+        mockRm.mockClear()
         await state.clear()
         expect(mockRm).toHaveBeenCalledTimes(2)
         expect(mockRm).toHaveBeenCalledWith(`multiple_files.salesforce${ZIPPED_STATE_EXTENSION}`)
         expect(mockRm).toHaveBeenCalledWith(`multiple_files.salesforce2${ZIPPED_STATE_EXTENSION}`)
-
-        mockRm.mockClear()
       })
     })
   })
@@ -265,19 +267,38 @@ describe('local state', () => {
   describe('deprecated state file', () => {
     let state: wsState.State
 
-    beforeEach(() => {
+    beforeEach(async () => {
       state = localState('deprecated_file')
-      state.getAll() // force read file
+      await state.getAll() // force read file
     })
 
     it('should read deprecated file and delete it on write', async () => {
-      await state.flush()
       const mockRm = rm as jest.Mock
+      mockRm.mockClear()
+      await state.flush()
       const onFlush = findReplaceContentCall('deprecated_file.salesforce.jsonl.zip')
       expect(onFlush).toBeDefined()
       expect(mockRm).toHaveBeenCalledTimes(1)
       expect(mockRm).toHaveBeenCalledWith('deprecated_file.jsonl')
+    })
+  })
+
+  describe('deprecated zip state file', () => {
+    let state: wsState.State
+
+    beforeEach(async () => {
+      state = localState('deprecated_file_zip')
+      await state.getAll() // force read file
+    })
+
+    it('should read deprecated file and delete it on write', async () => {
+      const mockRm = rm as jest.Mock
       mockRm.mockClear()
+      await state.flush()
+      const onFlush = findReplaceContentCall('deprecated_file_zip.salesforce.jsonl.zip')
+      expect(onFlush).toBeDefined()
+      expect(mockRm).toHaveBeenCalledTimes(1)
+      expect(mockRm).toHaveBeenCalledWith('deprecated_file_zip.jsonl.zip')
     })
   })
 
@@ -355,13 +376,13 @@ describe('local state', () => {
   })
 
   describe('clear', () => {
-    const mockRm = rm as jest.Mock
     it('should delete state file', async () => {
+      const mockRm = rm as jest.Mock
+      mockRm.mockClear()
       const state = localState('on-delete')
       await state.clear()
       expect(mockRm).toHaveBeenCalledTimes(1)
       expect(mockRm).toHaveBeenCalledWith(`on-delete.salto${ZIPPED_STATE_EXTENSION}`)
-      mockRm.mockClear()
     })
   })
 

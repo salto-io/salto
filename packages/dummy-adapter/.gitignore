@@ -1,0 +1,5 @@
+# Coverage reports
+coverage
+/reports
+/dist
+

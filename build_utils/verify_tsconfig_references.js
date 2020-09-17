@@ -117,7 +117,6 @@ const main = async () => {
       success = false
     }
   }
-
   verifyNoReferences(missingReferences, 'missing', 'add')
   verifyNoReferences(extraneousReferences, 'extraneous', 'remove')
 

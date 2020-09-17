@@ -1,0 +1,45 @@
+{
+  "name": "@salto-io/dummy-adapter",
+  "version": "0.1.30",
+  "license": "Apache-2.0",
+  "description": "Salto Salesforce adapter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto_monorepo"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src",
+    "e2e_test",
+    "index.ts"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "yarn generate && yarn lint && yarn build-ts",
+    "test": "jest",
+    "clean": "rm -rf ./dist .eslintcache",
+    "clean-ts": "../../build_utils/clean-old-ts.sh",
+    "clean-ts-test": "yarn clean-ts && yarn test",
+    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
+    "build-ts": "tsc -b",
+    "watch-ts": "tsc -b -w",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn lint --fix",
+    "generate": "./generate.sh"
+  },
+  "dependencies": {
+    "@salto-io/adapter-api": "0.1.30",
+    "@salto-io/adapter-utils": "0.1.30",
+    "@salto-io/lowerdash": "0.1.30",
+    "lodash": "^4.17.19",
+    "seedrandom": "^3.0.5",
+    "unique-names-generator": "^4.3.1"
+  },
+  "devDependencies": {
+    "@types/seedrandom": "^2.4.28"
+  }
+}

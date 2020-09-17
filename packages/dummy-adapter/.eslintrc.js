@@ -13,17 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter } from '@salto-io/adapter-api'
-import { adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
-import { adapter as hubspotAdapter } from '@salto-io/hubspot-adapter'
-import { adapter as netsuiteAdapter } from '@salto-io/netsuite-adapter'
-import { adapter as dummyAdapter } from '@salto-io/dummy-adapter'
+const deepMerge = require('../../build_utils/deep_merge')
+const path = require('path')
 
-const adapterCreators: Record<string, Adapter> = {
-  salesforce: salesforceAdapter,
-  hubspot: hubspotAdapter,
-  netsuite: netsuiteAdapter,
-  dummy: dummyAdapter,
-}
+module.exports = deepMerge(
+  require('../../eslintrc.js'),
+  {
+    parserOptions: {
+      tsconfigRootDir: __dirname,
+      project: path.resolve(__dirname, './tsconfig.json'),
+    },
+  },
+)
 
-export default adapterCreators

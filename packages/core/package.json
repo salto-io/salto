@@ -35,6 +35,7 @@
     "@salto-io/adapter-api": "0.1.30",
     "@salto-io/adapter-utils": "0.1.30",
     "@salto-io/dag": "0.1.30",
+    "@salto-io/dummy-adapter": "0.1.30",
     "@salto-io/file": "0.1.30",
     "@salto-io/hubspot-adapter": "0.1.30",
     "@salto-io/logging": "0.1.30",

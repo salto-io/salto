@@ -13,17 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter } from '@salto-io/adapter-api'
-import { adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
-import { adapter as hubspotAdapter } from '@salto-io/hubspot-adapter'
-import { adapter as netsuiteAdapter } from '@salto-io/netsuite-adapter'
-import { adapter as dummyAdapter } from '@salto-io/dummy-adapter'
 
-const adapterCreators: Record<string, Adapter> = {
-  salesforce: salesforceAdapter,
-  hubspot: hubspotAdapter,
-  netsuite: netsuiteAdapter,
-  dummy: dummyAdapter,
-}
-
-export default adapterCreators
+export { default } from './src/adapter'
+export { adapter } from './src/adapter_creator'
+export { GeneratorParams } from './src/generator'

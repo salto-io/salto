@@ -23,6 +23,9 @@ dataManagement = {
     "^SBQQ__QuoteLineCosumptionSchedule__c$",
     "^SBQQ__QuoteLineConsumptionsRate__c$",
     "^SBQQ__InstallProcessorLog__c$",
+    "^SBQQ__ProcessInputValue__c$",
+    "^SBQQ__RecordJob__c$",
+    "^SBQQ__TimingLog__c$",
   ]
   allowReferenceTo = [
     "^Product2$",

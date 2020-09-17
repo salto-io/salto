@@ -61,17 +61,20 @@ export const isRemovalOrModificationChange = <T extends Change<unknown>>(
 export const getChangeElement = <T>(change: Change<T>): T =>
   (change.action === 'remove' ? change.data.before : change.data.after)
 
-export const isInstanceChange = (change: Change): change is Change<InstanceElement> => (
-  isInstanceElement(getChangeElement(change))
-)
+export const isInstanceChange = <T extends Change<unknown>>(change: T):
+  change is T & Change<InstanceElement> => (
+    isInstanceElement(getChangeElement(change))
+  )
 
-export const isObjectTypeChange = (change: Change): change is Change<ObjectType> => (
-  isObjectType(getChangeElement(change))
-)
+export const isObjectTypeChange = <T extends Change<unknown>>(change: T):
+  change is T & Change<ObjectType> => (
+    isObjectType(getChangeElement(change))
+  )
 
-export const isFieldChange = (change: Change): change is Change<Field> => (
-  isField(getChangeElement(change))
-)
+export const isFieldChange = <T extends Change<unknown>>(change: T):
+  change is T & Change<Field> => (
+    isField(getChangeElement(change))
+  )
 
 export type DetailedChange<T = ChangeDataType | Values | Value> =
   Change<T> & {

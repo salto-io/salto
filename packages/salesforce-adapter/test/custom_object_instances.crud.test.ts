@@ -650,7 +650,7 @@ describe('Custom Object Instances CRUD', () => {
             })
           })
         })
-        describe('Remove group', async () => {
+        describe('Remove group', () => {
           it('should fail', async () => {
             result = await adapter.deploy({
               groupID: 'badGroup',

@@ -24,7 +24,6 @@ import { BatchResultInfo } from 'jsforce-types'
 import { isInstanceOfCustomObject, instancesToCreateRecords, apiName, instancesToDeleteRecords, instancesToUpdateRecords, Types } from './transformers/transformer'
 import SalesforceClient from './client/client'
 import { CUSTOM_OBJECT_ID_FIELD } from './constants'
-import { Filter } from './filter'
 import { DataManagementConfig } from './types'
 import { getIdFields, buildSelectStr, transformCompoundNameValues } from './filters/custom_objects_instances'
 import { SalesforceRecord } from './client/types'
@@ -180,7 +179,6 @@ const deployAddInstances = async (
   instances: InstanceElement[],
   idFields: Field[],
   client: SalesforceClient,
-  filtersRunner: Required<Filter>,
 ): Promise<DeployResult> => {
   const { type } = instances[0]
   const typeName = apiName(type)
@@ -229,9 +227,6 @@ const deployAddInstances = async (
     client
   )
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
-  await Promise.all(
-    allSuccessInstances.map(postInstance => filtersRunner.onAdd(postInstance))
-  )
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
     errors: [...insertErrorMessages, ...updateErrorMessages].map(error => new Error(error)),
@@ -241,14 +236,12 @@ const deployAddInstances = async (
 const deployRemoveInstances = async (
   instances: InstanceElement[],
   client: SalesforceClient,
-  filtersRunner: Required<Filter>,
 ): Promise<DeployResult> => {
   const { successInstances, errorMessages } = await deleteInstances(
     apiName(instances[0].type),
     instances,
     client
   )
-  await Promise.all(successInstances.map(element => filtersRunner.onRemove(element)))
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
     errors: errorMessages.map(error => new Error(error)),
@@ -258,7 +251,6 @@ const deployRemoveInstances = async (
 const deployModifyChanges = async (
   changes: Readonly<ModificationChange<InstanceElement>[]>,
   client: SalesforceClient,
-  filtersRunner: Required<Filter>,
 ): Promise<DeployResult> => {
   const changesData = changes
     .map(change => change.data)
@@ -272,11 +264,6 @@ const deployModifyChanges = async (
   const successData = validData
     .filter(changeData =>
       successInstances.find(instance => instance.isEqual(changeData.after)))
-  await Promise.all(
-    successData
-      .map(changeData =>
-        filtersRunner.onUpdate(changeData.before, changeData.after, changes))
-  )
   const diffApiNameErrors = diffApiNameData.map(data => new Error(`Failed to update as api name prev=${apiName(
     data.before
   )} and new=${apiName(data.after)} are different`))
@@ -299,7 +286,6 @@ export const deployCustomObjectInstancesGroup = async (
     changes: ReadonlyArray<Change<InstanceElement>>
     },
   client: SalesforceClient,
-  filtersRunner: Required<Filter>,
   dataManagementConfig?: DataManagementConfig,
 ): Promise<DeployResult> => {
   try {
@@ -316,13 +302,13 @@ export const deployCustomObjectInstancesGroup = async (
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }
-      return await deployAddInstances(instances, idFields, client, filtersRunner)
+      return await deployAddInstances(instances, idFields, client)
     }
     if (isRemovalGroup(changeGroup)) {
-      return await deployRemoveInstances(instances, client, filtersRunner)
+      return await deployRemoveInstances(instances, client)
     }
     if (isModificationGroup(changeGroup)) {
-      return await deployModifyChanges(changeGroup.changes, client, filtersRunner)
+      return await deployModifyChanges(changeGroup.changes, client)
     }
     throw new Error('Custom Object Instances change group must have one action')
   } catch (error) {

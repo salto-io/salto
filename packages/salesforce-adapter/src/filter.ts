@@ -15,7 +15,7 @@
 */
 import { Element, Change } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce-types'
-import { types } from '@salto-io/lowerdash'
+import { types, promises, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
 import { ConfigChangeSuggestion, FilterContext } from './types'
@@ -24,16 +24,14 @@ import { ConfigChangeSuggestion, FilterContext } from './types'
 // operations. The filter will be responsible for specific business logic.
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<ConfigChangeSuggestion[] | void>
-  onAdd(after: Element): Promise<(SaveResult| UpsertResult)[]>
-  onUpdate(before: Element, after: Element, changes: Iterable<Change>):
-    Promise<(SaveResult| UpsertResult)[]>
-  onRemove(before: Element): Promise<SaveResult[]>
+  onDeploy(changes: ReadonlyArray<Change>): Promise<(SaveResult | UpsertResult)[]>
 }>
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
 
-export type FilterCreator = (opts: { client: SalesforceClient; config: FilterContext })
-  => Filter
+export type FilterCreator = (
+  opts: { client: SalesforceClient; config: FilterContext }
+) => Filter
 
 export const filtersRunner = (client: SalesforceClient,
   config: FilterContext,
@@ -46,22 +44,12 @@ export const filtersRunner = (client: SalesforceClient,
     _.flatten(await Promise.all(filtersWith(m).map(run)))
 
   return {
-    onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> =>
-      filtersWith('onFetch').reduce(
-        async (prevRes, filter) =>
-          (await prevRes)
-            .concat(((await filter.onFetch(elements)) ?? []) as ConfigChangeSuggestion[]),
-        Promise.resolve([] as ConfigChangeSuggestion[]),
-      ),
-
-    onAdd: async (after: Element): Promise<(SaveResult| UpsertResult)[]> =>
-      runFiltersInParallel('onAdd', filter => filter.onAdd(after)),
-
-    onUpdate: async (before: Element, after: Element, changes: Iterable<Change>):
-      Promise<(SaveResult| UpsertResult)[]> =>
-      runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after, changes)),
-
-    onRemove: async (before: Element): Promise<SaveResult[]> =>
-      runFiltersInParallel('onRemove', filter => filter.onRemove(before)),
+    onFetch: async elements => {
+      const configChanges = await promises.array.series(
+        filtersWith('onFetch').map(filter => () => filter.onFetch(elements))
+      )
+      return configChanges.filter(values.isDefined).flat()
+    },
+    onDeploy: changes => runFiltersInParallel('onDeploy', filter => filter.onDeploy(changes)),
   }
 }

@@ -491,7 +491,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       results = [await deployCustomObjectInstancesGroup(
         resolvedChangeGroup,
         this.client,
-        this.filtersRunner,
         this.userConfig.dataManagement,
       )]
     } else {
@@ -508,6 +507,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     )
     const appliedChanges = _.flatten(results.map(res => res.appliedChanges))
       .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
+
+    await this.filtersRunner.onDeploy(appliedChanges)
     return {
       appliedChanges,
       errors: _.flatten(results.map(res => res.errors)),
@@ -526,7 +527,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       ? await this.addObject(element)
       : await this.addInstance(element as InstanceElement)
 
-    await this.filtersRunner.onAdd(post)
     return post as T
   }
 
@@ -595,7 +595,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     } else if (!(isInstanceElement(element) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(element))
     }
-    await this.filtersRunner.onRemove(element)
   }
 
   /**
@@ -612,8 +611,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       ? await this.updateObject(before, after, changes as ReadonlyArray<Change<Field | ObjectType>>)
       : await this.updateInstance(before as InstanceElement, after as InstanceElement)
 
-    // Aspects should be updated once all object related properties updates are over
-    await this.filtersRunner.onUpdate(before, result, changes)
     return result as T
   }
 

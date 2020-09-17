@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, toChange } from '@salto-io/adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
 import { API_NAME } from '../../src/constants'
 import mockAdapter from '../adapter'
-import { id } from '../../src/filters/utils'
+import { mockFunction, MockInterface } from '../utils'
 
 describe('SalesforceAdapter filters', () => {
   const object = new ObjectType({
@@ -33,14 +33,12 @@ describe('SalesforceAdapter filters', () => {
   ): SalesforceAdapter => mockAdapter({ adapterParams: { filterCreators } }).adapter
 
   describe('when filter methods are implemented', () => {
-    let filter: FilterWith<'onFetch' | 'onAdd' | 'onUpdate' | 'onRemove'>
+    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy'>>
 
     beforeEach(() => {
       filter = {
-        onFetch: jest.fn().mockImplementationOnce(elements => elements),
-        onAdd: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
-        onUpdate: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
-        onRemove: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
+        onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
+        onDeploy: mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue([]),
       }
 
       adapter = createAdapter([() => filter])
@@ -48,41 +46,16 @@ describe('SalesforceAdapter filters', () => {
 
     it('should call inner aspects upon fetch', async () => {
       await adapter.fetch()
-      const { mock } = filter.onFetch as jest.Mock
-      expect(mock.calls.length).toBe(1)
+      expect(filter.onFetch).toHaveBeenCalledTimes(1)
     })
 
-    it('should call inner aspects upon add', async () => {
-      await adapter.deploy({
-        groupID: object.elemID.getFullName(),
-        changes: [{ action: 'add', data: { after: object } }],
-      })
-      const { mock } = filter.onAdd as jest.Mock
-      expect(mock.calls.length).toBe(1)
-      expect(id(mock.calls[0][0])).toEqual(id(object))
-    })
-
-    it('should call inner aspects upon remove', async () => {
-      await adapter.deploy({
-        groupID: object.elemID.getFullName(),
-        changes: [{ action: 'remove', data: { before: object } }],
-      })
-      const { mock } = filter.onRemove as jest.Mock
-      expect(mock.calls.length).toBe(1)
-      expect(id(mock.calls[0][0])).toEqual(id(object))
-    })
-
-    it('should call inner aspects upon update', async () => {
-      await adapter.deploy({
-        groupID: object.elemID.getFullName(),
-        changes: [{ action: 'modify', data: { before: object, after: object } }],
-      })
-      const { mock } = filter.onUpdate as jest.Mock
-      expect(mock.calls.length).toBe(1)
-      expect(mock.calls[0][0]).toEqual(object)
-      expect(id(mock.calls[0][1])).toEqual(id(object))
-      expect(mock.calls[0][2]).toHaveLength(1)
-      expect(mock.calls[0][2][0].action).toBe('modify')
+    it('should call inner aspects upon deploy', async () => {
+      const changes = [toChange({ after: object })]
+      await adapter.deploy({ groupID: object.elemID.getFullName(), changes })
+      expect(filter.onDeploy).toHaveBeenCalledTimes(1)
+      const deployArgs = filter.onDeploy.mock.calls[0][0]
+      expect(deployArgs).toHaveLength(1)
+      expect(deployArgs[0]).toMatchObject(changes[0])
     })
   })
 })

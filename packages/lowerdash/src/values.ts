@@ -13,4 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const isDefined = <T>(val: T | undefined): val is T => val !== undefined
+export const isDefined = <T>(val: T | undefined | void): val is T => val !== undefined

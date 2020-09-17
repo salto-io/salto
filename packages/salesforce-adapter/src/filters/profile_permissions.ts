@@ -14,11 +14,9 @@
 * limitations under the License.
 */
 import {
-  ObjectType, Element, Field, isObjectType, isField, Change,
-  getChangeElement, CORE_ANNOTATIONS,
+  ObjectType, Field, getChangeElement, CORE_ANNOTATIONS, isAdditionChange, isObjectTypeChange,
+  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
-import { SaveResult } from 'jsforce'
-import wu from 'wu'
 import { logger } from '@salto-io/logging'
 import { PROFILE_METADATA_TYPE, ADMIN_PROFILE, API_NAME } from '../constants'
 import { isCustomObject, apiName, Types, isCustom } from '../transformers/transformer'
@@ -55,45 +53,41 @@ const getObjectPermissions = (object: ObjectType): ObjectPermissions => ({
  * creates default Admin Profile.fieldsPermissions and Profile.objectsPermissions.
  */
 const filterCreator: FilterCreator = ({ client }) => ({
-  onAdd: async (after: Element): Promise<SaveResult[]> => {
-    if (isObjectType(after) && isCustomObject(after)) {
-      // Make sure Admin has permissions to the object and the new fields
-      const adminProfile = new ProfileInfo(
-        ADMIN_PROFILE,
-        Object.values(after.fields).filter(shouldSetDefaultPermissions).map(getFieldPermissions),
-        [getObjectPermissions(after)],
-      )
-      log.debug('Adding admin permissions to %s', after.elemID.getFullName())
-      return client.update(PROFILE_METADATA_TYPE, adminProfile)
-    }
-    return []
-  },
+  onDeploy: async changes => {
+    const customObjectChanges = changes
+      .filter(isObjectTypeChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => isCustomObject(getChangeElement(change)))
 
-  onUpdate: async (before: Element, after: Element, changes: ReadonlyArray<Change>):
-    Promise<SaveResult[]> => {
-    if (!(isObjectType(before) && isObjectType(after) && isCustomObject(before))) {
-      return []
-    }
-
-    // Make sure Admin has permissions to all new fields
-    const newFields = wu(changes)
-      .filter(change => change.action === 'add')
+    const newCustomObjects = customObjectChanges
+      .filter(isAdditionChange)
       .map(getChangeElement)
-      .filter(isField)
-      .map(fieldAddition => after.fields[fieldAddition.name])
-      .filter(shouldSetDefaultPermissions)
-      .toArray()
 
-    if (newFields.length === 0) {
+    const newFieldsForPermissions = customObjectChanges
+      .flatMap(change => (
+        isAdditionChange(change)
+          ? Object.values(change.data.after.fields)
+          : Object.entries(change.data.after.fields)
+            .filter(([name]) => change.data.before.fields[name] === undefined)
+            .map(([_name, field]) => field)
+      ))
+      .filter(shouldSetDefaultPermissions)
+
+    if (newFieldsForPermissions.length === 0 && newCustomObjects.length === 0) {
       return []
     }
 
+    // Make sure Admin has permissions to new custom objects and the new custom fields
     const adminProfile = new ProfileInfo(
       ADMIN_PROFILE,
-      newFields.map(getFieldPermissions),
+      newFieldsForPermissions.map(getFieldPermissions),
+      newCustomObjects.map(getObjectPermissions)
     )
-    log.debug('Adding admin permissions to %d new fields in %s', newFields.length, after.elemID.getFullName())
-
+    log.debug(
+      'adding admin permissions to new custom objects %s and new custom fields %s',
+      newCustomObjects.map(obj => obj.elemID.getFullName()).join(', '),
+      newFieldsForPermissions.map(field => field.elemID.getFullName()).join(', ')
+    )
     return client.update(PROFILE_METADATA_TYPE, adminProfile)
   },
 })

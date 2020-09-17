@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Field, PrimitiveType, PrimitiveTypes, CORE_ANNOTATIONS, FieldMap,
+  ObjectType, ElemID, Field, PrimitiveType, PrimitiveTypes, CORE_ANNOTATIONS, FieldMap, toChange,
 } from '@salto-io/adapter-api'
 import { ProfileInfo } from '../../src/client/types'
 import filterCreator from '../../src/filters/profile_permissions'
@@ -48,7 +48,7 @@ describe('Object Permissions filter', () => {
 
   let mockUpdate: jest.Mock
 
-  type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
+  type FilterType = FilterWith<'onFetch' | 'onDeploy'>
   const filter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
 
   const verifyUpdateCall = (objectName: string, fieldNames: string[],
@@ -81,7 +81,7 @@ describe('Object Permissions filter', () => {
 
   it('should update object permissions upon new salesforce type', async () => {
     const after = mockObject.clone()
-    await filter().onAdd(after)
+    await filter().onDeploy([toChange({ after })])
 
     verifyUpdateCall('Test__c', [`Test__c.${descriptionFieldName}`])
   })
@@ -105,15 +105,10 @@ describe('Object Permissions filter', () => {
       after.fields,
       createField(after, appleFieldName),
     )
-    await filter().onUpdate(before, after,
-      [
-        { action: 'add', data: { after: after.fields[appleFieldName] } },
-        { action: 'modify',
-          data: {
-            before: before.fields[descriptionFieldName],
-            after: after.fields[descriptionFieldName],
-          } },
-      ])
+
+    // Current implementation is that deploy returns a modification change on the full object
+    // for custom object deploy
+    await filter().onDeploy([toChange({ before, after })])
 
     verifyUpdateCall('Test__c', [`Test__c.${appleFieldName}`],
       false)
@@ -125,7 +120,7 @@ describe('Object Permissions filter', () => {
       f.annotations[CORE_ANNOTATIONS.REQUIRED] = true
     })
 
-    await filter().onAdd(after)
+    await filter().onDeploy([toChange({ after })])
 
     verifyUpdateCall('Test__c', [], true)
   })
@@ -134,7 +129,7 @@ describe('Object Permissions filter', () => {
     const after = mockObject.clone()
     after.fields[descriptionFieldName].annotations[constants.API_NAME] = 'NotCustomField'
 
-    await filter().onAdd(after)
+    await filter().onDeploy([toChange({ after })])
 
     verifyUpdateCall('Test__c', [], true)
   })
@@ -145,7 +140,7 @@ describe('Object Permissions filter', () => {
       f.type = Types.primitiveDataTypes.MasterDetail
     })
 
-    await filter().onAdd(after)
+    await filter().onDeploy([toChange({ after })])
 
     verifyUpdateCall('Test__c', [], true)
   })
@@ -156,13 +151,7 @@ describe('Object Permissions filter', () => {
 
     after.fields[descriptionFieldName].annotations[CORE_ANNOTATIONS.REQUIRED] = true
 
-    await filter().onUpdate(before, after, [
-      { action: 'modify',
-        data: {
-          before: before.fields[descriptionFieldName],
-          after: after.fields[descriptionFieldName],
-        } },
-    ])
+    await filter().onDeploy([toChange({ before, after })])
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 
@@ -172,13 +161,7 @@ describe('Object Permissions filter', () => {
 
     after.fields[descriptionFieldName].annotations[constants.API_NAME] = 'NotCustomField'
 
-    await filter().onUpdate(before, after, [
-      { action: 'modify',
-        data: {
-          before: before.fields[descriptionFieldName],
-          after: after.fields[descriptionFieldName],
-        } },
-    ])
+    await filter().onDeploy([toChange({ before, after })])
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 
@@ -188,13 +171,8 @@ describe('Object Permissions filter', () => {
 
     after.fields[descriptionFieldName].type = Types.primitiveDataTypes.MasterDetail
 
-    await filter().onUpdate(before, after, [
-      { action: 'modify',
-        data: {
-          before: before.fields[descriptionFieldName],
-          after: after.fields[descriptionFieldName],
-        } },
-    ])
+    await filter().onDeploy([toChange({ before, after })])
+    // TODO:ORI - make the same change in other filters / tests
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 
@@ -208,7 +186,7 @@ describe('Object Permissions filter', () => {
       ],
     }]))
     const after = mockObject.clone()
-    const result = await filter().onAdd(after)
+    const result = await filter().onDeploy([toChange({ after })])
 
     expect(result[0].success).toBe(false)
   })

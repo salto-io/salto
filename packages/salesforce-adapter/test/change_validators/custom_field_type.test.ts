@@ -17,31 +17,27 @@ import {
   ChangeError, ElemID, Field, ObjectType, toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
-import unknownFieldValidator from '../../src/change_validators/unknown_field'
+import customFieldTypeValidator from '../../src/change_validators/custom_field_type'
+import { CUSTOM_OBJECT } from '../../src/constants'
 import { createField } from '../utils'
 
-describe('unknown field change validator', () => {
+describe('custom field type change validator', () => {
   describe('onUpdate', () => {
-    let obj: ObjectType
+    let customObj: ObjectType
     beforeEach(() => {
-      obj = new ObjectType({
+      customObj = new ObjectType({
         elemID: new ElemID('salesforce', 'obj'),
+        annotations: { metadataType: CUSTOM_OBJECT },
       })
     })
 
-    const createAfterField = (beforeField: Field): Field => {
-      const afterField = beforeField.clone()
-      afterField.annotations.modifyMe = 'modified'
-      return afterField
-    }
-
     const runChangeValidator = (before: Field | undefined, after: Field):
-      Promise<ReadonlyArray<ChangeError>> =>
-      unknownFieldValidator([toChange({ before, after })])
+        Promise<ReadonlyArray<ChangeError>> =>
+      customFieldTypeValidator([toChange({ before, after })])
 
-    it('should have error for unknown field modification', async () => {
-      const beforeField = createField(obj, Types.primitiveDataTypes.Unknown, 'Something')
-      const afterField = createAfterField(beforeField)
+    it('should have error for custom field type change to an invalid field type', async () => {
+      const beforeField = createField(customObj, Types.primitiveDataTypes.Time, 'Something')
+      const afterField = createField(customObj, Types.compoundDataTypes.Address, 'Something')
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
@@ -49,8 +45,8 @@ describe('unknown field change validator', () => {
       expect(changeError.severity).toEqual('Error')
     })
 
-    it('should have error for unknown field creation', async () => {
-      const field = createField(obj, Types.primitiveDataTypes.Unknown, 'Something')
+    it('should have error for field creation with invalid field type', async () => {
+      const field = createField(customObj, Types.compoundDataTypes.Address, 'Something')
       const changeErrors = await runChangeValidator(undefined, field)
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
@@ -58,22 +54,30 @@ describe('unknown field change validator', () => {
       expect(changeError.severity).toEqual('Error')
     })
 
-    it('should have no error when changing a field with a valid type', async () => {
-      const beforeField = createField(obj, Types.primitiveDataTypes.Text, 'Something')
-      const afterField = createAfterField(beforeField)
+    it('should have no error when changing a field but not its type', async () => {
+      const beforeField = createField(customObj, Types.compoundDataTypes.Address, 'Something')
+      const afterField = beforeField.clone()
+      afterField.annotate({ testAnnotation: 'testAnnotationValue' })
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('should have no error when creating a field with a valid type', async () => {
-      const field = createField(obj, Types.primitiveDataTypes.Checkbox, 'Something')
+    it('should have no error when changing a field type to a valid type', async () => {
+      const beforeField = createField(customObj, Types.primitiveDataTypes.Text, 'Something')
+      const afterField = createField(customObj, Types.primitiveDataTypes.Time, 'Somthing')
+      const changeErrors = await runChangeValidator(beforeField, afterField)
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('should have no error when creating a field with a valid field type', async () => {
+      const field = createField(customObj, Types.primitiveDataTypes.Checkbox, 'Something')
       const changeErrors = await runChangeValidator(undefined, field)
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have no error for object', async () => {
-      const changeErrors = await unknownFieldValidator([
-        toChange({ before: obj, after: obj.clone() }),
+      const changeErrors = await customFieldTypeValidator([
+        toChange({ before: customObj, after: customObj.clone() }),
       ])
       expect(changeErrors).toHaveLength(0)
     })

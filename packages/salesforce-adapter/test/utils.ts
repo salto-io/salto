@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, ElemID, Values, ObjectType,
+  Element, ElemID, Values, ObjectType, Field, TypeElement,
 } from '@salto-io/adapter-api'
 import {
   findElements as findElementsByID,
@@ -34,6 +34,16 @@ export const findElements = (
     ? new ElemID(constants.SALESFORCE, name[0])
     : new ElemID(constants.SALESFORCE, name[0], 'instance', ...name.slice(1))
   return [...findElementsByID(elements, expectedElemId)]
+}
+
+export const createField = (parent: ObjectType, fieldType: TypeElement,
+  fieldApiName: string): Field => {
+  const newField = new Field(parent, 'field', fieldType, {
+    [constants.API_NAME]: fieldApiName,
+    modifyMe: 'modifyMe',
+  })
+  parent.fields.field = newField
+  return newField
 }
 
 export const createValueSetEntry = (

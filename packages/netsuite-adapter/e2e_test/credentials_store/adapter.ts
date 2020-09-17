@@ -38,7 +38,7 @@ const adapter: Adapter<Args, Credentials> = {
       demand: true,
     },
   },
-  credentials: args => ({
+  credentials: async args => ({
     accountId: args.accountId,
     tokenId: args.tokenId,
     tokenSecret: args.tokenSecret,

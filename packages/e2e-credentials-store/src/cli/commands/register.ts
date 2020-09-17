@@ -52,7 +52,7 @@ const commandModule = ({
           return args as Argv<RegisterArgs>
         },
         handler: asyncHandler(async (args: Arguments<RegisterArgs>) => {
-          const creds = adapter.credentials(args)
+          const creds = await adapter.credentials(args)
           try {
             await adapter.validateCredentials(creds)
           } catch (e) {

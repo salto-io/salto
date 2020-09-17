@@ -123,6 +123,7 @@ export type Credentials = {
   username: string
   password: string
   apiToken?: string
+  consumerKey?: string
   isSandbox: boolean
 }
 

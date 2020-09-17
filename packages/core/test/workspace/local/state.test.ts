@@ -32,7 +32,7 @@ jest.mock('glob', () => (query: string, f: (_err: Error | null, files: string[])
   } else if (query.includes('multiple_files')) {
     f(null, ['multiple_files.salesforce.jsonl.zip', 'multiple_files.salesforce2.jsonl.zip'])
   } else {
-    f(null, [`${query.substring(0, query.indexOf('*'))}.jsonl.zip`])
+    f(null, [`${query.substring(0, query.indexOf('*'))}jsonl.zip`])
   }
 })
 jest.mock('@salto-io/file', () => ({
@@ -57,7 +57,7 @@ jest.mock('@salto-io/file', () => ({
     if (filename === 'error.jsonl.zip') {
       return Promise.resolve('blabl{,.')
     }
-    if (filename === 'full.jsonl.zip' || filename === 'multiple_files.salesforce.jsonl.zip') {
+    if (['full.jsonl.zip', 'multiple_files.salesforce.jsonl.zip', 'multiple_files_extra.salesforce.jsonl.zip'].includes(filename)) {
       return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "salesforce" :"2020-04-21T09:44:20.824Z"}\n[]\n0.0.1')
     }
     if (filename === 'multiple_files.salesforce2.jsonl.zip') {
@@ -93,15 +93,24 @@ describe('local state', () => {
   const findReplaceContentCall = (filename: string): unknown[] =>
     replaceContentMock.mock.calls.find(c => c[0] === filename)
 
+  const findReadZipFileCall = (filename: string): unknown[] =>
+    readZipFileMock.mock.calls.find(c => c[0] === filename)
+
   describe('multiple state files', () => {
     let state: wsState.State
     beforeEach(() => {
       state = localState('multiple_files')
     })
 
-    it('reads all from both files', async () => {
+    it('reads all from both files but not from files with an additional suffix', async () => {
       const elements = await state.getAll()
       expect(elements).toHaveLength(4)
+      const sf1 = findReadZipFileCall('multiple_files.salesforce.jsonl.zip')
+      const sf2 = findReadZipFileCall('multiple_files.salesforce2.jsonl.zip')
+      const multiExtra = findReadZipFileCall('multiple_files_extra.salesforce.jsonl.zip')
+      expect(sf1).toBeDefined()
+      expect(sf2).toBeDefined()
+      expect(multiExtra).toBeUndefined()
     })
 
     it('should have two items in service update list', async () => {
@@ -364,7 +373,7 @@ describe('local state', () => {
       const state = localState(filePath)
       await state.rename('new')
       expect(mockRename).toHaveBeenCalledTimes(1)
-      expect(mockRename).toHaveBeenCalledWith(filePath + ZIPPED_STATE_EXTENSION, `/base/new${ZIPPED_STATE_EXTENSION}`)
+      expect(mockRename).toHaveBeenCalledWith(`${filePath}${ZIPPED_STATE_EXTENSION}`, `/base/new${ZIPPED_STATE_EXTENSION}`)
     })
   })
 

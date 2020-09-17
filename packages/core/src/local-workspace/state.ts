@@ -90,7 +90,7 @@ export const localState = (filePrefix: string): state.State => {
     let currentFilePaths: string[] = []
     let versions: string[] = []
     await new Promise<void>(resolve => {
-      glob(`${currentFilePrefix}*${ZIPPED_STATE_EXTENSION}`, (_err: Error | null, files: string[]) => {
+      glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`, (_err: Error | null, files: string[]) => {
         currentFilePaths = files
         resolve()
       })
@@ -157,7 +157,7 @@ export const localState = (filePrefix: string): state.State => {
       dirty = true
     },
     rename: async (newPrefix: string): Promise<void> => {
-      glob(`${currentFilePrefix}*${ZIPPED_STATE_EXTENSION}`, async (_err: Error | null, files: string[]) => {
+      glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`, async (_err: Error | null, files: string[]) => {
         files.forEach(async filename => {
           const newFilePath = filename.replace(currentFilePrefix,
             path.join(path.dirname(currentFilePrefix), newPrefix))

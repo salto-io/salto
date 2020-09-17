@@ -18,7 +18,7 @@ import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, Chan
 import {
   findElement,
 } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
 import { SalesforceRecord } from '../src/client/types'
 import { filtersRunner } from '../src/filter'
@@ -91,7 +91,9 @@ export const fetchTypes = async (
   const typeInfos = await client.listMetadataTypes()
   const topLevelTypes = typeInfos.filter(info => types.includes(info.xmlName))
   const baseTypeNames = new Set(topLevelTypes.map(info => info.xmlName))
-  const childTypeNames = new Set(topLevelTypes.flatMap(info => info.childXmlNames))
+  const childTypeNames = new Set(
+    topLevelTypes.flatMap(info => info.childXmlNames).filter(values.isDefined)
+  )
   const additionalTypeInfos = types
     .filter(typeName => !baseTypeNames.has(typeName))
     .map(typeName => ({

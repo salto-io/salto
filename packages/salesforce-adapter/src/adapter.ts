@@ -25,7 +25,7 @@ import {
 import { SaveResult, UpsertResult, MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { decorators, collections } from '@salto-io/lowerdash'
+import { decorators, collections, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
@@ -835,7 +835,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
     )
     const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
-    const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames))
+    const childTypeNames = new Set(
+      typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined)
+    )
     return (await Promise.all(typeInfos.map(typeInfo => fetchMetadataType(
       this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames,
     )))).flat()

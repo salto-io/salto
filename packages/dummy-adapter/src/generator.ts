@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType, FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement, Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values, CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType, FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement, Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values, CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression, INSTANCE_ANNOTATIONS, getDeepInnerType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
@@ -49,6 +49,8 @@ export type GeneratorParams = {
     multilLinesStringLinesStd: number
     staticFileLinesMean: number
     staticFileLinesStd: number
+    listLengthMean: number
+    listLengthStd: number
 }
 
 export const defaultParams: GeneratorParams = {
@@ -78,6 +80,8 @@ export const defaultParams: GeneratorParams = {
   multilineFreq: 0.002,
   staticFileLinesMean: 9.1,
   staticFileLinesStd: 4.85,
+  listLengthMean: 8.7,
+  listLengthStd: 3.6,
 }
 
 export const DUMMY_ADAPTER = 'dummy'
@@ -183,7 +187,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
 
   const getMaxRank = (elements: Element[]): number => (elements.length > 0
     ? Math.max(...elements
-      .map(e => (isListType(e) ? e.innerType : e))
+      .map(e => (isListType(e) ? getDeepInnerType(e) : e))
       .map(e => elementRanks[e.elemID.getFullName()] || 0)) : 0)
 
   const updateElementRank = (element: TypeElement): void => {
@@ -201,7 +205,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     }
   }
 
-  const getListLength = (): number => 10
+  const getListLength = (): number => normalRandom(params.listLengthMean, params.listLengthStd)
 
   const getSingleLine = (): string => (
     stringLinesOpts[Math.floor(Math.random() * stringLinesOpts.length)]
@@ -254,7 +258,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     return undefined
   }
 
-  const generateFields = (): Record<string, FieldDefinition> => _.fromPairs(
+  const generateFields = (): Record<string, FieldDefinition> => Object.fromEntries(
     arrayOf(
       normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd),
       () => {
@@ -266,7 +270,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   )
 
 
-  const generateAnnotationTypes = (annoNum: number): TypeMap => _.fromPairs(
+  const generateAnnotationTypes = (annoNum: number): TypeMap => Object.fromEntries(
     arrayOf(annoNum, () => [getName(), getFieldType()])
   )
 
@@ -323,37 +327,36 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   })
 
 
-  const generateObjects = (): ObjectType[] => _.flatten(
-    arrayOf(params.numOfObjs, () => {
-      const name = getName()
-      const annotationTypes = generateAnnotationTypes(
-        normalRandom(defaultParams.objectAnnoMean, defaultParams.objectAnnoStd)
-      )
-      const fullObjType = new ObjectType({
-        elemID: new ElemID(DUMMY_ADAPTER, name),
-        fields: generateFields(),
-        annotationTypes,
-        annotations: generateAnnotations(annotationTypes),
-      })
-      const fieldsObjType = new ObjectType({
-        elemID: fullObjType.elemID,
-        fields: fullObjType.fields,
-        path: [DUMMY_ADAPTER, 'Objects', name, `${name}Fields`],
-      })
-      const annoTypesObjType = new ObjectType({
-        elemID: fullObjType.elemID,
-        annotationTypes: fullObjType.annotationTypes,
-        annotations: fullObjType.annotations,
-        path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
-      })
-      updateElementRank(fullObjType)
-      return [fieldsObjType, annoTypesObjType]
+  const generateObjects = (): ObjectType[] => arrayOf(params.numOfObjs, () => {
+    const name = getName()
+    const annotationTypes = generateAnnotationTypes(
+      normalRandom(defaultParams.objectAnnoMean, defaultParams.objectAnnoStd)
+    )
+    const fullObjType = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, name),
+      fields: generateFields(),
+      annotationTypes,
+      annotations: generateAnnotations(annotationTypes),
     })
-  )
+    const fieldsObjType = new ObjectType({
+      elemID: fullObjType.elemID,
+      fields: fullObjType.fields,
+      path: [DUMMY_ADAPTER, 'Objects', name, `${name}Fields`],
+    })
+    const annoTypesObjType = new ObjectType({
+      elemID: fullObjType.elemID,
+      annotationTypes: fullObjType.annotationTypes,
+      annotations: fullObjType.annotations,
+      path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
+    })
+    updateElementRank(fullObjType)
+    return [fieldsObjType, annoTypesObjType]
+  }).flat()
+
 
   const generateRecords = (
   ): InstanceElement[] => arrayOf(params.numOfRecords, () => {
-    const objectTypes = _.flatten(objByRank)
+    const objectTypes = objByRank.flat()
     const name = getName()
     const instanceType = weightedRandomSelect(objectTypes)
     const record = new InstanceElement(
@@ -371,7 +374,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   })
 
   const generateProfileLike = (): InstanceElement[] => {
-    const objects = _.flatten(objByRank)
+    const objects = objByRank.flat()
     const allObjectsIDs = objects.map(obj => obj.elemID.getFullName())
     const allFieldsIDs = objects.flatMap(
       obj => Object.values(obj.fields).map(field => field.elemID.getFullName())

@@ -25,7 +25,7 @@
     "clean-ts": "../../build_utils/clean-old-ts.sh",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
-    "build-ts": "tsc -b && yarn generate && yarn clean-ts",
+    "build-ts": "tsc -b && yarn clean-ts",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn lint --fix",
@@ -40,8 +40,6 @@
     "unique-names-generator": "^4.3.1"
   },
   "devDependencies": {
-    "@types/lorem-ipsum": "^2.0.0",
-    "@types/seedrandom": "^2.4.28",
-    "@types/stats-lite": "^2.2.0"
+    "@types/seedrandom": "^2.4.28"
   }
 }

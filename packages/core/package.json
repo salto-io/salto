@@ -42,7 +42,7 @@
     "@salto-io/lowerdash": "0.1.30",
     "@salto-io/netsuite-adapter": "0.1.30",
     "@salto-io/salesforce-adapter": "0.1.30",
-    "@salto-io/workspace": "0.1.30",  
+    "@salto-io/workspace": "0.1.30",
     "axios": "^0.19.2",
     "glob": "^7.1.6",
     "lodash": "^4.17.19",

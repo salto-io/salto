@@ -16,11 +16,6 @@
 import DummyAdapter from '../src/adapter'
 import * as generator from '../src/generator'
 
-jest.mock('../src/generator', () => ({
-  ...jest.requireActual('../src/generator'),
-  generateElements: jest.fn().mockReturnValue([]),
-}))
-
 describe('dummy adapter', () => {
   const adapter = new DummyAdapter(generator.defaultParams)
   describe('deploy', () => {
@@ -38,7 +33,7 @@ describe('dummy adapter', () => {
   describe('fetch', () => {
     it('should return the result of the generateElement command withuot modifications', async () => {
       const fetchResult = await adapter.fetch()
-      expect(fetchResult).toEqual({ elements: [] })
+      expect(fetchResult).toEqual({ elements: generator.generateElements(generator.defaultParams) })
     })
   })
 })

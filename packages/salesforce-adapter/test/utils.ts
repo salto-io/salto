@@ -83,6 +83,23 @@ export const findAnnotationsObject = (elements: Element[], name: string): Object
     .find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
 }
 
+export const findFullCustomObject = (elements: Element[], name: string): ObjectType => {
+  const customObjects = findElements(elements, name) as ObjectType[]
+  return new ObjectType({
+    elemID: customObjects[0].elemID,
+    annotationTypes: Object.fromEntries(
+      customObjects.flatMap(obj => Object.entries(obj.annotationTypes))
+    ),
+    annotations: Object.fromEntries(
+      customObjects.flatMap(obj => Object.entries(obj.annotations))
+    ),
+    fields: Object.fromEntries(
+      customObjects.flatMap(obj => Object.entries(obj.fields))
+    ),
+    isSettings: customObjects[0].isSettings,
+  })
+}
+
 export type MockFunction<T extends (...args: never[]) => unknown> =
   jest.Mock<ReturnType<T>, Parameters<T>>
 

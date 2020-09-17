@@ -44,6 +44,7 @@ import {
 import realAdapter from './adapter'
 import {
   findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject,
+  findFullCustomObject,
 } from '../test/utils'
 import SalesforceClient, { API_VERSION, Credentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
@@ -2161,7 +2162,7 @@ describe('Salesforce adapter E2E with real account', () => {
         }
 
         beforeAll(async () => {
-          const customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
+          const customFieldsObject = findFullCustomObject(result, customObjectWithFieldsName)
           const newCustomObject = customFieldsObject.clone()
           updateAnnotations(newCustomObject, customFieldsObject, fieldNamesToAnnotations)
           await adapter.deploy({

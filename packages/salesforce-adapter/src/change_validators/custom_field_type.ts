@@ -15,24 +15,30 @@
 */
 import {
   ChangeDataType, ChangeError, Field, getChangeElement, isAdditionOrModificationChange,
-  ChangeValidator, isField, Change, isModificationChange,
+  ChangeValidator, isField, Change, isAdditionChange,
 } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES, FIELD_TYPE_NAMES, COMPOUND_FIELD_TYPE_NAMES } from '../constants'
 import { isCustomObject } from '../transformers/transformer'
 
-export const isInvalidCustomFieldType = (change: Change<ChangeDataType>): boolean => {
-  let isFieldTypeModification = true
+const isCustomField = (changedElement: ChangeDataType): changedElement is Field =>
+  (isField(changedElement) && isCustomObject(changedElement.parent))
+
+const isInvalidCustomFieldType = (change: Change<ChangeDataType>): boolean => {
   const afterElement = getChangeElement(change)
-  if (isField(afterElement) && isCustomObject(afterElement.parent)) {
+  if (isCustomField(afterElement)) {
     const afterFieldType = afterElement.type.elemID.typeName as
-     FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES
-    if (isModificationChange(change)) {
-      const beforeFieldType = (change.data.before as Field).type.elemID.typeName as
-      FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES
-      isFieldTypeModification = (afterFieldType !== beforeFieldType)
+    FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES
+    const isAfterTypeAllowed = CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
+    if (isAfterTypeAllowed) {
+      return false
+    } if (isAdditionChange(change)) {
+      return true
     }
-    return isFieldTypeModification
-     && !CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
+
+    // modification change and the target type is invalid
+    const beforeElement = change.data.before
+    return isField(beforeElement)
+      && beforeElement.type.elemID.typeName !== afterFieldType
   }
   return false
 }

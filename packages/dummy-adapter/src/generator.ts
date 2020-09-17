@@ -227,7 +227,6 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   const generateValue = (ref: TypeElement): Value => {
     if (staticFileIds.has(ref.elemID.getFullName())) {
       const content = generateFileContent()
-      console.log("YAY WE DOING FILE VALUE")
       return new StaticFile({
         content,
         hash: calculateStaticFileHash(content),
@@ -297,10 +296,8 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       path: [DUMMY_ADAPTER, 'Types', name],
     })
     updateElementRank(element)
-    console.log("HI!<<>>>")
     if (element.primitive === PrimitiveTypes.STRING
-        && Math.random() < 1 ){//defaultParams.staticFileFreq) {
-      console.log("YES WE HERE")
+        && Math.random() < 1) { // defaultParams.staticFileFreq) {
       staticFileIds.add(element.elemID.getFullName())
     } else if (Math.random() < defaultParams.staticFileFreq) {
       referenceFields.add(element.elemID.getFullName())

@@ -29,10 +29,12 @@ jest.mock('glob', () => (query: string, f: (_err: Error | null, files: string[])
   if (query.includes('deprecated_file') || query.includes('empty')) {
     // deprecated file would not be found by this schema
     f(null, [])
+  } else if (query.includes('@(.jsonl')) {
+    f(null, [`${query.substring(0, query.indexOf('@'))}.jsonl.zip`])
   } else if (query.includes('multiple_files')) {
-    f(null, ['multiple_files.salesforce.jsonl.zip', 'multiple_files.salesforce2.jsonl.zip'])
+    f(null, ['multiple_files.salesforce.jsonl.zip', 'multiple_files.netsuite.jsonl.zip'])
   } else {
-    f(null, [`${query.substring(0, query.indexOf('*'))}jsonl.zip`])
+    f(null, [`${query.substring(0, query.indexOf('@'))}jsonl.zip`])
   }
 })
 jest.mock('@salto-io/file', () => ({
@@ -60,8 +62,8 @@ jest.mock('@salto-io/file', () => ({
     if (['full.jsonl.zip', 'multiple_files.salesforce.jsonl.zip', 'multiple_files_extra.salesforce.jsonl.zip', 'deprecated_file_zip.jsonl.zip'].includes(filename)) {
       return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "salesforce" :"2020-04-21T09:44:20.824Z"}\n[]\n0.0.1')
     }
-    if (filename === 'multiple_files.salesforce2.jsonl.zip') {
-      return Promise.resolve('[{"elemID":{"adapter":"salesforce2","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce2","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce2","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce2","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce2","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce2","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "salesforce2" :"2020-04-21T09:44:20.824Z"}')
+    if (filename === 'multiple_files.netsuite.jsonl.zip') {
+      return Promise.resolve('[{"elemID":{"adapter":"netsuite","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"netsuite","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"netsuite","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"netsuite","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"netsuite","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "netsuite" :"2020-04-21T09:44:20.824Z"}')
     }
     if (filename === 'mutiple_adapters.jsonl.zip') {
       return Promise.resolve('[{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"hubspot","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "hubspot":"2020-04-21T09:44:20.824Z"}')
@@ -108,35 +110,37 @@ describe('local state', () => {
     it('reads all from both files but not from files with an additional suffix', async () => {
       const elements = await state.getAll()
       expect(elements).toHaveLength(4)
-      const sf1 = findReadZipFileCall('multiple_files.salesforce.jsonl.zip')
-      const sf2 = findReadZipFileCall('multiple_files.salesforce2.jsonl.zip')
+      const salesforceState = findReadZipFileCall('multiple_files.salesforce.jsonl.zip')
+      const netsuiteState = findReadZipFileCall('multiple_files.netsuite.jsonl.zip')
       const multiExtra = findReadZipFileCall('multiple_files_extra.salesforce.jsonl.zip')
-      expect(sf1).toBeDefined()
-      expect(sf2).toBeDefined()
+      expect(salesforceState).toBeDefined()
+      expect(netsuiteState).toBeDefined()
       expect(multiExtra).toBeUndefined()
     })
 
     it('should have two items in service update list', async () => {
-      expect(Object.keys(await (state.getServicesUpdateDates()))).toEqual(['salesforce', 'salesforce2'])
+      expect(Object.keys(await (state.getServicesUpdateDates()))).toEqual(['salesforce', 'netsuite'])
     })
 
     it('should write two files', async () => {
       await state.set(mockElement)
       await state.flush()
-      const salesforceOne = findReplaceContentCall('multiple_files.salesforce.jsonl.zip')
-      const salesforceTwo = findReplaceContentCall('multiple_files.salesforce2.jsonl.zip')
-      expect(salesforceOne).toBeDefined()
-      expect(salesforceTwo).toBeDefined()
+      const salesforceState = findReplaceContentCall('multiple_files.salesforce.jsonl.zip')
+      const netsuiteState = findReplaceContentCall('multiple_files.netsuite.jsonl.zip')
+      expect(salesforceState).toBeDefined()
+      expect(netsuiteState).toBeDefined()
     })
 
     const mockRename = rename as jest.Mock
-    it('should rename two files', async () => {
+    it('should rename files in new and old format', async () => {
       await state.rename('new')
-      expect(mockRename).toHaveBeenCalledTimes(2)
+      expect(mockRename).toHaveBeenCalledTimes(3)
       expect(mockRename).toHaveBeenCalledWith(`multiple_files.salesforce${ZIPPED_STATE_EXTENSION}`,
         `new.salesforce${ZIPPED_STATE_EXTENSION}`)
-      expect(mockRename).toHaveBeenCalledWith(`multiple_files.salesforce2${ZIPPED_STATE_EXTENSION}`,
-        `new.salesforce2${ZIPPED_STATE_EXTENSION}`)
+      expect(mockRename).toHaveBeenCalledWith(`multiple_files.netsuite${ZIPPED_STATE_EXTENSION}`,
+        `new.netsuite${ZIPPED_STATE_EXTENSION}`)
+      expect(mockRename).toHaveBeenCalledWith(`multiple_files${ZIPPED_STATE_EXTENSION}`,
+        `new${ZIPPED_STATE_EXTENSION}`)
       mockRename.mockClear()
     })
 
@@ -145,9 +149,10 @@ describe('local state', () => {
         const mockRm = rm as jest.Mock
         mockRm.mockClear()
         await state.clear()
-        expect(mockRm).toHaveBeenCalledTimes(2)
+        expect(mockRm).toHaveBeenCalledTimes(3)
         expect(mockRm).toHaveBeenCalledWith(`multiple_files.salesforce${ZIPPED_STATE_EXTENSION}`)
-        expect(mockRm).toHaveBeenCalledWith(`multiple_files.salesforce2${ZIPPED_STATE_EXTENSION}`)
+        expect(mockRm).toHaveBeenCalledWith(`multiple_files.netsuite${ZIPPED_STATE_EXTENSION}`)
+        expect(mockRm).toHaveBeenCalledWith(`multiple_files${ZIPPED_STATE_EXTENSION}`)
       })
     })
   })
@@ -372,29 +377,6 @@ describe('local state', () => {
       await state.set(BuiltinTypes.STRING)
       const overrideDate = await state.getServicesUpdateDates()
       expect(overrideDate).toEqual({})
-    })
-  })
-
-  describe('clear', () => {
-    it('should delete state file', async () => {
-      const mockRm = rm as jest.Mock
-      mockRm.mockClear()
-      const state = localState('on-delete')
-      await state.clear()
-      expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith(`on-delete.salto${ZIPPED_STATE_EXTENSION}`)
-    })
-  })
-
-  describe('rename', () => {
-    const mockRename = rename as jest.Mock
-    const filePath = '/base/old'
-
-    it('should rename state file', async () => {
-      const state = localState(filePath)
-      await state.rename('new')
-      expect(mockRename).toHaveBeenCalledTimes(1)
-      expect(mockRename).toHaveBeenCalledWith(`${filePath}${ZIPPED_STATE_EXTENSION}`, `/base/new${ZIPPED_STATE_EXTENSION}`)
     })
   })
 

@@ -25,6 +25,8 @@ import { hash } from '@salto-io/lowerdash'
 import origGlob from 'glob'
 import semver from 'semver'
 import { promisify } from 'util'
+import { adapterCreators } from '../core/adapters'
+
 import { version } from '../generated/version.json'
 
 const { serialize, deserialize } = serialization
@@ -36,6 +38,16 @@ const log = logger(module)
 
 export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
+
+const supportedAdapters = Object.keys(adapterCreators)
+const filePathGlob = (currentFilePrefix: string): string => (
+  `${currentFilePrefix}.@(${supportedAdapters.join('|')})${ZIPPED_STATE_EXTENSION}`
+)
+const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
+  const stateFiles = await glob(filePathGlob(currentFilePrefix))
+  const oldStateFiles = await glob(`${currentFilePrefix}@(${ZIPPED_STATE_EXTENSION}|${STATE_EXTENSION})`)
+  return [...stateFiles, ...oldStateFiles]
+}
 
 const readFromPaths = async (paths: string[]): Promise<string[][]> => {
   const elementsData: string[] = []
@@ -91,7 +103,7 @@ export const localState = (filePrefix: string): state.State => {
     let updateDateData: string[] = []
     let pathIndexData: string[] = []
     let versions: string[] = []
-    const currentFilePaths = await glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`)
+    const currentFilePaths = await glob(filePathGlob(currentFilePrefix))
     if (currentFilePaths.length > 0) {
       [elementsData, updateDateData, pathIndexData,
         versions] = await readFromPaths(currentFilePaths)
@@ -158,9 +170,9 @@ export const localState = (filePrefix: string): state.State => {
       dirty = true
     },
     rename: async (newPrefix: string): Promise<void> => {
-      const files = await glob(`${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`)
+      const stateFiles = await findStateFiles(currentFilePrefix)
       await Promise.all(
-        files.map(async filename => {
+        stateFiles.map(async filename => {
           const newFilePath = filename.replace(currentFilePrefix,
             path.join(path.dirname(currentFilePrefix), newPrefix))
           await rename(filename, newFilePath)
@@ -188,9 +200,9 @@ export const localState = (filePrefix: string): state.State => {
       return toMD5(safeJsonStringify(stateText))
     },
     clear: async (): Promise<void> => {
-      const existingServices = await inMemState.existingServices()
+      const stateFiles = await findStateFiles(currentFilePrefix)
       await inMemState.clear()
-      await Promise.all(existingServices.map(service => rm(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`)))
+      await Promise.all(stateFiles.map(filename => rm(filename)))
     },
   }
 }

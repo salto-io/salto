@@ -32,9 +32,9 @@
     "generate": "./generate.sh"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.29",
-    "@salto-io/adapter-utils": "0.1.29",
-    "@salto-io/lowerdash": "0.1.29",
+    "@salto-io/adapter-api": "0.1.30",
+    "@salto-io/adapter-utils": "0.1.30",
+    "@salto-io/lowerdash": "0.1.30",
     "lodash": "^4.17.19",
     "seedrandom": "^3.0.5",
     "unique-names-generator": "^4.3.1"

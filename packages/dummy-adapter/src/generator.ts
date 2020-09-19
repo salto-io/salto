@@ -182,7 +182,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       style: 'capital',
       separator: '',
     })
-    return name
+    return name.replace(/\W/g, '')
   }
 
   const getMaxRank = (elements: Element[]): number => (elements.length > 0

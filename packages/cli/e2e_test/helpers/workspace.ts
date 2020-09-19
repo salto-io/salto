@@ -25,6 +25,7 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
+import { adapter as DummyAdapter } from '@salto-io/dummy-adapter'
 import { command as fetch } from '../../src/commands/fetch'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
@@ -33,6 +34,9 @@ import { DeployCommand } from '../../src/commands/deploy'
 import { command as servicesCommand } from '../../src/commands/service'
 import { command as initCommand } from '../../src/commands/init'
 import { command as envCommand } from '../../src/commands/env'
+import { command as elementCommand } from '../../src/commands/element'
+import { command as diffCommand } from '../../src/commands/diff'
+
 import { getCliTelemetry } from '../../src/telemetry'
 
 declare global {
@@ -104,6 +108,18 @@ export const runAddSalesforceService = async (
   ).execute()
 }
 
+export const runAddDummhService = async (workspaceDir: string): Promise<void> => {
+  await servicesCommand(
+    workspaceDir,
+    'add',
+    mockCliOutput(),
+    () => Promise.resolve(
+      new InstanceElement(ElemID.CONFIG_NAME, DummyAdapter.credentialsType, {})
+    ),
+    'dummy'
+  ).execute()
+}
+
 export const runSalesforceLogin = async (
   workspaceDir: string,
   sfCredsInstance: InstanceElement
@@ -156,8 +172,17 @@ export const runCreateEnv = async (
   workspaceDir: string,
   envName: string,
   force?: boolean,
+  acceptSuggestions?: boolean
 ): Promise<void> => {
-  await envCommand(workspaceDir, 'create', mockCliOutput(), envName, undefined, force).execute()
+  await envCommand(
+    workspaceDir,
+    'create',
+    mockCliOutput(),
+    envName,
+    undefined,
+    force,
+    acceptSuggestions
+  ).execute()
 }
 
 export const runSetEnv = async (workspaceDir: string, envName: string): Promise<void> => {
@@ -177,6 +202,7 @@ export const runFetch = async (
   fetchOutputDir: string,
   isolated = false,
   inputEnvironment?: string,
+  inputServices?: string[]
 ): Promise<void> => {
   const result = await fetch(
     fetchOutputDir,
@@ -187,7 +213,7 @@ export const runFetch = async (
     mockSpinnerCreator([]),
     isolated ? 'isolated' : 'override',
     true,
-    services,
+    inputServices || services,
     inputEnvironment,
   ).execute()
   expect(result).toEqual(CliExitCode.Success)
@@ -236,6 +262,34 @@ export const runDeploy = async ({
 export const runPreview = async (fetchOutputDir: string): Promise<void> => (
   runDeploy({ fetchOutputDir, allowErrors: false, dryRun: true })
 )
+
+export const runMoveToCommon = async (baseDir: string, selectors: string[]): Promise<void> => {
+  elementCommand(
+    baseDir,
+    mockCliOutput(),
+    getCliTelemetry(telemetry, 'element'),
+    mockSpinnerCreator([]),
+    'move-to-common',
+    true,
+    selectors
+  )
+}
+
+export const runMoveToEnvs = async (baseDir: string, selectors: string[]): Promise<void> => {
+  elementCommand(
+    baseDir,
+    mockCliOutput(),
+    getCliTelemetry(telemetry, 'element'),
+    mockSpinnerCreator([]),
+    'move-to-envs',
+    true,
+    selectors
+  )
+}
+
+export const runDiff = async (baseDir: string, fromEnv: string, toEnv: string): Promise<void> => {
+  diffCommand(baseDir, false, getCliTelemetry(telemetry, 'element'), mockCliOutput(), fromEnv, toEnv)
+}
 
 export const loadValidWorkspace = async (
   fetchOutputDir: string,

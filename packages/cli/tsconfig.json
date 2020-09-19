@@ -26,6 +26,7 @@
       { "path": "../adapter-utils" },
       { "path": "../core" },
       { "path": "../dag" },
+      { "path": "../dummy-adapter" },
       { "path": "../e2e-credentials-store" },
       { "path": "../file" },
       { "path": "../logging" },

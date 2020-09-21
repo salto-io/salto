@@ -326,20 +326,6 @@ Syncs this workspace's NaCl files with the services' current state
 * `--env, -e` : The name of the environment to use
 * `--state-only, --st` : Fetch remote changes to the state file without modifying the NaCL files. [boolean] [default: false]
 
-### **salto restore**
-
-Syncs this workspace with the current local state
-
-**Options:**
-* `--force, -f ` : Accept all incoming changes [boolean] [default: false]
-* `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
-* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
-* `--dry-run, -d` : Preview the restore plan without making changes [boolean] [default: false]
-* `--detailed-plan, -p` : Print detailed changes including values [boolean] [default: false]
-* `--list-planned-changes, -l` : Print a summary of the expected changes [boolean] [default: false]
-* `--services, -s` : Specific services to perform this action for (default=all) [array]
-* `--env, -e` : The name of the environment to use [string]
-
 ### **salto deploy**
 
 Deploys the current NaCl files config to the target services
@@ -351,9 +337,28 @@ Deploys the current NaCl files config to the target services
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
 
+
+### **salto restore [element-selector..]**
+
+Restore configuration element(s) from the state file
+
+**Arguments**:
+
+`element-selector` Array of configuration element patterns [array]
+
+**Options:**
+* `--force, -f ` : Accept all incoming changes [boolean] [default: false]
+* `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
+* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
+* `--dry-run, -d` : Preview the restore plan without making changes [boolean] [default: false]
+* `--detailed-plan, -p` : Print detailed changes including values [boolean] [default: false]
+* `--list-planned-changes, -l` : Print a summary of the expected changes [boolean] [default: false]
+* `--services, -s` : Specific services to perform this action for (default=all) [array]
+* `--env, -e` : The name of the environment to use [string]
+
 ### **salto service \<command> [name]**
 
-Manage your environments' services
+Manage your environment services
 
 **Arguments:**
 * `command` : The services management command [string] [required] [choices: "add", "login", "list"]
@@ -364,18 +369,6 @@ Manage your environments' services
 * `--env, -e` : The name of the environment to use
 * `--nologin, -n` : Do not login to service when adding it. Example usage: `service add <service-name> --nologin`) [boolean] [default: false]
 
-### **salto element \<command> \<elm-id-selectors>**
-
-Manage your workspace environments
-
-**Arguments:**
-* `command` : The element management command [string] [required] [choices: "move-to-common", "move-to-envs", "clone"]
-* `elm-id-selectors` : A list of element id selectors [array]
-
-**Options:**
-* `—-from-env` : Source env name for the clone command [string] [required]
-* `—-to-env` : Target env names for the clone command [array] [required] 
-
 
 ### **salto env \<command> [\<name>] [\<new-name>]**
 
@@ -385,6 +378,35 @@ Manage your workspace environments
 * `command` : The environment management command [string] [required] [choices: "create", "set", "list", "current", "delete", "rename"]
 * `name` : The name of the environment (required for create, set, delete & rename) [string]
 * `new-name` : The new name of the environment (required for rename) [string]
+
+### **salto element \<command> \<element-selector..>**
+
+Manage your workspace environments
+
+**Arguments:**
+* `command` : The element management command [string] [required] [choices: "move-to-common", "move-to-envs", "clone"]
+* `element-selector` : Array of configuration element patterns [array]
+
+**Options:**
+* `—-from-env` : Source env name for the clone command [string] [required]
+* `—-to-env` : Target env names for the clone command [array] [required] 
+
+
+### **salto diff \<from-env> \<to-env> [element-selector..]**
+
+Compare two workspace environments
+
+**Arguments:**
+* `from-env` : The environment to be align from [string] [required]
+* `to-env` : The environment to align
+* `element-selector` : Array of configuration element patterns [array]
+
+**Options:**
+* `--detailed-plan, -p` : Print detailed changes between envs [boolean] [default: false]
+* `—-hidden` : Display changes in hidden values [boolean] [default: false]
+*  `—-state` : Use the latest state files to compare the environments [boolean] [default: false]
+* `--services, -s` : Specific services to perform this action for (default=all) [array]
+
 
 ### Generic Flags
 

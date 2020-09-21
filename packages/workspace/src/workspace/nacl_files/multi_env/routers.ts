@@ -42,7 +42,7 @@ const filterByFile = (
   id => !_.isEmpty((fileElements).filter(e => resolvePath(e, id) !== undefined))
 )
 
-const toPath = (filename: string): string[] => {
+const toPathHint = (filename: string): string[] => {
   const parsedPath = path.parse(filename)
   const dirPath = _.isEmpty(parsedPath.dir) ? [] : parsedPath.dir.split(path.sep)
   return [...dirPath, parsedPath.name]
@@ -60,7 +60,7 @@ const separateChangeByFiles = async (
         change,
         changeData => filterByFile(change.id, changeData, fileElements),
       )
-      return { ...filteredChange, path: toPath(filename) }
+      return { ...filteredChange, path: toPathHint(filename) }
     })
 )
 

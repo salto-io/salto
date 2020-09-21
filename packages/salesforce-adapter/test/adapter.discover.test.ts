@@ -44,7 +44,7 @@ describe('SalesforceAdapter fetch', () => {
   ]
   const testMaxConcurrentRetrieveRequests = 4
   const testMaxItemsInRetrieveRequest = 100
-  const testEnableHideTypesInNacls = true
+  const testEnableHideTypesInNacls = false
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)

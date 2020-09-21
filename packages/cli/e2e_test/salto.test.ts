@@ -187,9 +187,9 @@ describe('cli e2e', () => {
     it('should create statePath', async () => {
       expect(await exists(statePath)).toBe(true)
     })
-    it('should hide Types folder', async () => {
+    it('should not hide Types folder', async () => {
       expect(await exists(`${fetchOutputDir}/salesforce/Types`))
-        .toBe(false)
+        .toBe(true)
     })
     afterAll(async () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
@@ -321,7 +321,7 @@ describe('cli e2e', () => {
     })
   })
 
-  describe('fetch with enableHideTypesInNacls false value', () => {
+  describe('fetch with enableHideTypesInNacls true value', () => {
     beforeAll(async () => {
       await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
 
@@ -331,7 +331,7 @@ describe('cli e2e', () => {
 
     it('should not hide Types folder', async () => {
       expect(await exists(`${fetchOutputDir}/salesforce/Types`))
-        .toBe(true)
+        .toBe(false)
     })
 
     afterAll(async () => {

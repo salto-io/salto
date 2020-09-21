@@ -12,5 +12,5 @@ salesforce {
   ]
   maxConcurrentRetrieveRequests = 3
   maxItemsInRetrieveRequest = 2500
-  enableHideTypesInNacls = false
+  enableHideTypesInNacls = true
 }

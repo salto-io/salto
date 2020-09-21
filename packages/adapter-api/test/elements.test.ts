@@ -20,7 +20,7 @@ import {
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
   isVariable,
 } from '../src/elements'
-import { ElemID } from '../src/element_id'
+import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -647,6 +647,34 @@ describe('Test elements.ts', () => {
             expect(path).toEqual(['nested', 'value'])
           })
         })
+      })
+    })
+    describe('isAttrID', () => {
+      it('should identify non-instance element annotation IDs', () => {
+        const objectAnno = new ElemID('salto', 'obj', 'attr', 'something')
+        const nonAnno = new ElemID('salto', 'obj', 'field', 'ok')
+        expect(objectAnno.isAttrID()).toBeTruthy()
+        expect(nonAnno.isAttrID()).toBeFalsy()
+      })
+      it('should identify instance annotation IDs', () => {
+        const instAnno = new ElemID(
+          'salto',
+          'obj',
+          'instance',
+          'inst',
+          INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES
+        )
+
+        const nonAnno = new ElemID(
+          'salto',
+          'obj',
+          'instance',
+          'inst',
+          'whatevsman'
+        )
+
+        expect(instAnno.isAttrID()).toBeTruthy()
+        expect(nonAnno.isAttrID()).toBeFalsy()
       })
     })
   })

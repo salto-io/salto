@@ -1078,6 +1078,12 @@ describe('Test utils.ts', () => {
         mockInstance.elemID.createNestedID('str')
       )).toBe('val')
     })
+    it('should resolve an instance annotation value path', () => {
+      expect(resolvePath(
+        mockInstance,
+        mockInstance.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON)
+      )).toBe(valueRef)
+    })
   })
 
   describe('findElement functions', () => {
@@ -1243,6 +1249,8 @@ describe('Test utils.ts', () => {
     const inst = new InstanceElement('inst', obj, {
       obj: { str: 'Well I do', num: 42 },
       list: ['Do', 'you', 'get', 'it', '?'],
+    }, [], {
+      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ObjectType({ elemID: new ElemID('salto', 'dep') })],
     })
     const prim = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
@@ -1349,6 +1357,7 @@ describe('Test utils.ts', () => {
         id => !id.getFullNameParts().includes('list')
       )
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj })
+      expect(filteredInstance?.annotations).toEqual(inst.annotations)
     })
 
     it('should return undefined if the base item fails the filter func', async () => {

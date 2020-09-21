@@ -405,7 +405,7 @@ const getPath = (
   const { parent, path } = fullElemID.createTopLevelParentID()
   if (!_.isEqual(parent, rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []
-  if (isInstanceElement(rootElement) && fullElemID.isAttrID()) {
+  if (fullElemID.isAttrID()) {
     return ['annotations', ...path]
   }
   if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {
@@ -417,10 +417,6 @@ const getPath = (
     const fieldAnnoPath = path.slice(1)
     if (_.isEmpty(fieldAnnoPath)) return ['fields', fieldName]
     return ['fields', fieldName, 'annotations', ...fieldAnnoPath]
-  }
-
-  if (isType(rootElement) && fullElemID.idType === 'attr') {
-    return ['annotations', ...path]
   }
 
   if (isType(rootElement) && fullElemID.idType === 'annotation') {

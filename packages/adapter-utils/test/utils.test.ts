@@ -1078,7 +1078,7 @@ describe('Test utils.ts', () => {
         mockInstance.elemID.createNestedID('str')
       )).toBe('val')
     })
-    it('should resove an instance annotation value path', () => {
+    it('should resolve an instance annotation value path', () => {
       expect(resolvePath(
         mockInstance,
         mockInstance.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON)
@@ -1250,7 +1250,7 @@ describe('Test utils.ts', () => {
       obj: { str: 'Well I do', num: 42 },
       list: ['Do', 'you', 'get', 'it', '?'],
     }, [], {
-      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ObjectType({ elemID: new ElemID('salto', 'dep') }),
+      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ObjectType({ elemID: new ElemID('salto', 'dep') })],
     })
     const prim = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),

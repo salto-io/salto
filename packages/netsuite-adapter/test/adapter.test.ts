@@ -25,7 +25,7 @@ import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
-  FILE_PATHS_REGEX_SKIP_LIST,
+  FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
 } from '../src/constants'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
@@ -55,6 +55,7 @@ describe('Adapter', () => {
   const config = {
     [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
     [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
+    [FETCH_ALL_TYPES_AT_ONCE]: true,
   }
   const netsuiteAdapter = new NetsuiteAdapter({
     client,

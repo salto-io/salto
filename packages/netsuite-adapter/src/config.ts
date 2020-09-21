@@ -28,7 +28,7 @@ const { makeArray } = collections.array
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_SDF_CONCURRENCY = 4
-export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = true
+export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 
 const configID = new ElemID(NETSUITE)
 export const configType = new ObjectType({

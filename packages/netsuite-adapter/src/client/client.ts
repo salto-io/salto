@@ -423,10 +423,15 @@ export default class NetsuiteClient {
       // Fetching the below types takes statistically much more time than the others, and sometimes
       // they even fail on SDF internal timeout. We can save some fetch time if fetching them first.
       const typesWithLongFetchDuration = new Set([TRANSACTION_FORM, ENTRY_FORM])
-      return [
-        ...typeNames.filter(typeName => typesWithLongFetchDuration.has(typeName)),
-        ...typeNames.filter(typeName => !typesWithLongFetchDuration.has(typeName)),
-      ]
+      return [...typeNames].sort((typeA: string, typeB: string): number => {
+        if (typesWithLongFetchDuration.has(typeA) && !typesWithLongFetchDuration.has(typeB)) {
+          return -1
+        }
+        if (typesWithLongFetchDuration.has(typeB) && !typesWithLongFetchDuration.has(typeA)) {
+          return 1
+        }
+        return 0
+      })
     }
 
     const failedTypes: string[] = []

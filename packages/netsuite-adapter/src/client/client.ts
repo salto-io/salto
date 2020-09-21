@@ -307,9 +307,9 @@ export default class NetsuiteClient {
     return actionResult
   }
 
-  // When SDF accesses the authIds data in parallel, it might have race and override one each other.
-  // We can't control it as it's part of the Java SDK, thus we should use a lock to control it.
-  private async useAuthIdsLock(fn: (() => Promise<void>)): Promise<void> {
+  // The SDF Java SDK has a race when accessing the authIds file concurrently that causes it to
+  // override credentials so we have to make sure we never call auth related operations concurrently
+  private async withAuthIdsLock(fn: (() => Promise<void>)): Promise<void> {
     await this.setupAccountLock.acquire('authIdManipulation', fn)
   }
 
@@ -317,7 +317,7 @@ export default class NetsuiteClient {
     projectCommandActionExecutor: CommandActionExecutorType,
     authId: string
   ): Promise<void> {
-    await this.useAuthIdsLock(async () => {
+    await this.withAuthIdsLock(async () => {
       log.debug(`Setting up account using authId: ${authId}`)
       await this.executeProjectAction(
         COMMANDS.SETUP_ACCOUNT,
@@ -349,7 +349,7 @@ export default class NetsuiteClient {
   }
 
   private async deleteAuthId(authId: string): Promise<void> {
-    await this.useAuthIdsLock(async () => {
+    await this.withAuthIdsLock(async () => {
       log.debug(`Removing authId: ${authId}`)
       await this.baseCommandExecutor.executeAction({
         commandName: COMMANDS.MANAGE_AUTH,

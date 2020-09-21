@@ -631,12 +631,6 @@ describe('transformer', () => {
       const customField = toCustomField(field)
       expect(customField.label).toEqual('Labelo')
     })
-
-    it('should not have label for standard field', () => {
-      field.annotations[API_NAME] = 'Test__c.Standard'
-      const customField = toCustomField(field)
-      expect(customField).not.toHaveProperty('label')
-    })
   })
 
   describe('toCustomObject', () => {

@@ -836,8 +836,6 @@ export const toCustomField = (
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
-    // Cannot specify label on standard field
-    && (annotationName !== LABEL || isCustom(newField.fullName))
   )
 
   // Convert the annotations' names to the required API name

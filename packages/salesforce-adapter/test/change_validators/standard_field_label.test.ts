@@ -41,16 +41,16 @@ describe('standard field label modification change validator', () => {
           Promise<ReadonlyArray<ChangeError>> =>
       standardFieldLabelValidator([toChange({ before, after })])
 
-    it('should have warning for standard field label modification', async () => {
+    it('should have Error for standard field label modification', async () => {
       afterField.annotations[LABEL] = 'differentLabel'
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       expect(changeError.elemID).toEqual(beforeField.elemID)
-      expect(changeError.severity).toEqual('Warning')
+      expect(changeError.severity).toEqual('Error')
     })
 
-    it('should have no warnings for custom field label modification', async () => {
+    it('should have no errors for custom field label modification', async () => {
       beforeField.name = 'field__c' // make it a custom field
       afterField = beforeField.clone()
       afterField.annotations[LABEL] = 'differentLabel'
@@ -58,7 +58,7 @@ describe('standard field label modification change validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('should have no warnings for modification of different annotations in standard field', async () => {
+    it('should have no errors for modification of different annotations in standard field', async () => {
       afterField.annotations.modifyMe = 'modified'
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)

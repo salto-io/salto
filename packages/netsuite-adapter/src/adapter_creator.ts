@@ -20,7 +20,7 @@ import {
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { SDKDownloadService } from '@salto-io/suitecloud-cli'
+import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import NetsuiteClient, { Credentials } from './client/client'
@@ -105,7 +105,7 @@ export const adapter: Adapter = {
   },
   install: async (): Promise<AdapterInstallResult> => {
     try {
-      return await SDKDownloadService.download()
+      return await SdkDownloadService.download()
     } catch (err) {
       return { success: false, errors: [err.message ?? err] }
     }

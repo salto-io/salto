@@ -1279,10 +1279,10 @@
   dependencies:
     "@types/node" ">= 8"
 
-"@oracle/suitecloud-cli-localserver-command@^1.0.2":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@oracle/suitecloud-cli-localserver-command/-/suitecloud-cli-localserver-command-1.0.3.tgz#21385fa7430eb1ecfc3a584c8a949824c14fc680"
-  integrity sha512-5ZNzVjOUjTUfTs6JYKgke0l1iwOOzb75JM0HsyqqibqDAyTIhCn2gybzmnSN47r0f8+0Oesg7Nlh57aP4uXMBg==
+"@oracle/suitecloud-cli-localserver-command@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@oracle/suitecloud-cli-localserver-command/-/suitecloud-cli-localserver-command-1.1.0.tgz#ee284ead21c74a93b6e44eabac37550927ce33f3"
+  integrity sha512-ynTZLrpsdajJDx1N3svTlhkV1d54vXYFCwoUg/7NWgms/CgDhmXQRZ62J3xUYr3++H1QVbByUkL5nNwBqdb/sg==
   dependencies:
     async "3.0.1"
     cors "2.8.5"
@@ -1294,17 +1294,17 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/suitecloud-cli@1.0.2-salto-17":
-  version "1.0.2-salto-17"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.0.2-salto-17.tgz#2d885009eca34700c9eda37227b3fda90968f533"
-  integrity sha512-bQBZbdCTqmCuJHKuI9KQ7C1ZO2dm0+vzYVXkUU5KS9lBKZWkpj1Ks2hsQwd9o6vahdL2MYOUMVEe0TVv90LeoQ==
+"@salto-io/suitecloud-cli@1.1.0-salto-1":
+  version "1.1.0-salto-1"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.0-salto-1.tgz#2047108bde0173fe779686bdd43c702fbcafeef2"
+  integrity sha512-+BlllBvR4nEvltn1mFk9C9KLRwd9a3KgGeKdoVHvuH8UZzAMyAeMJ5rH6E/cTWqON8go6lxFK2PWa65l2+RVmg==
   dependencies:
-    "@oracle/suitecloud-cli-localserver-command" "^1.0.2"
-    chalk "^2.4.2"
+    "@oracle/suitecloud-cli-localserver-command" "^1.1.0"
+    "@salto-io/logging" "*"
+    chalk "^4.0.0"
     cli-spinner "^0.2.10"
-    commander "^2.20.0"
-    inquirer "^6.3.1"
-    lodash "^4.17.20"
+    commander "^5.1.0"
+    inquirer "^7.1.0"
     request-promise-native "^1.0.7"
     xml2js "^0.4.19"
 
@@ -3166,6 +3166,14 @@ chalk@^3.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
+chalk@^4.0.0, chalk@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/chalk/-/chalk-4.1.0.tgz#4e14870a618d9e2edd97dd8345fd9d9dc315646a"
+  integrity sha512-qwx12AxXe2Q5xQ43Ac//I6v5aXTipYrSESdOgzrN+9XjgEpyjpKuvSGaN4qE93f7TQTlerQQ8S+EQ0EyDoVL1A==
+  dependencies:
+    ansi-styles "^4.1.0"
+    supports-color "^7.1.0"
+
 chardet@^0.7.0:
   version "0.7.0"
   resolved "https://registry.yarnpkg.com/chardet/-/chardet-0.7.0.tgz#90094849f0937f2eedc2425d0d28a9e5f0cbad9e"
@@ -3286,6 +3294,11 @@ cli-width@^2.0.0:
   resolved "https://registry.yarnpkg.com/cli-width/-/cli-width-2.2.1.tgz#b0433d0b4e9c847ef18868a4ef16fd5fc8271c48"
   integrity sha512-GRMWDxpOB6Dgk2E5Uo+3eEBvtOOlimMmpbFiKuLFnQzYDavtLFY3K5ona41jgN/WdRZtG7utuVSVTL4HbZHGkw==
 
+cli-width@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/cli-width/-/cli-width-3.0.0.tgz#a2f48437a2caa9a22436e794bf071ec9e61cedf6"
+  integrity sha512-FxqpkPPwu1HjuN93Omfm4h8uIanXofW0RxVEW3k5RKx+mJJYSthzNhp32Kzxxy3YAEZ/Dc/EWN1vZRY0+kOhbw==
+
 cliui@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/cliui/-/cliui-3.2.0.tgz#120601537a916d29940f934da3b48d585a39213d"
@@ -3403,6 +3416,11 @@ commander@^2.11.0, commander@^2.12.1, commander@^2.19.0, commander@^2.20.0, comm
   version "2.20.3"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.3.tgz#fd485e84c03eb4881c20722ba48035e8531aeb33"
   integrity sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==
+
+commander@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-5.1.0.tgz#46abbd1652f8e059bddaef99bbdcb2ad9cf179ae"
+  integrity sha512-P0CysNDQ7rtVw4QIQtm+MRxV66vKFSvlsQvGYXZWR3qFU0jlMKHZZZgw8e+8DSah4UDKMqnknRDQz+xuQXQ/Zg==
 
 commander@~2.8.1:
   version "2.8.1"
@@ -6156,7 +6174,7 @@ init-package-json@^1.10.3:
     validate-npm-package-license "^3.0.1"
     validate-npm-package-name "^3.0.0"
 
-inquirer@^6.2.0, inquirer@^6.3.1:
+inquirer@^6.2.0:
   version "6.5.2"
   resolved "https://registry.yarnpkg.com/inquirer/-/inquirer-6.5.2.tgz#ad50942375d036d327ff528c08bd5fab089928ca"
   integrity sha512-cntlB5ghuB0iuO65Ovoi8ogLHiWGs/5yNrtUcKjFhSSiVeAIVpD7koaSU9RM8mpXw5YDi9RdYXGQMaOURB7ycQ==
@@ -6190,6 +6208,25 @@ inquirer@^7.0.0:
     mute-stream "0.0.8"
     run-async "^2.4.0"
     rxjs "^6.5.3"
+    string-width "^4.1.0"
+    strip-ansi "^6.0.0"
+    through "^2.3.6"
+
+inquirer@^7.1.0:
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/inquirer/-/inquirer-7.3.3.tgz#04d176b2af04afc157a83fd7c100e98ee0aad003"
+  integrity sha512-JG3eIAj5V9CwcGvuOmoo6LB9kbAYT8HXffUl6memuszlwDC/qvFAJw49XJ5NROSFNPxp3iQg1GqkFhaY/CR0IA==
+  dependencies:
+    ansi-escapes "^4.2.1"
+    chalk "^4.1.0"
+    cli-cursor "^3.1.0"
+    cli-width "^3.0.0"
+    external-editor "^3.0.3"
+    figures "^3.0.0"
+    lodash "^4.17.19"
+    mute-stream "0.0.8"
+    run-async "^2.4.0"
+    rxjs "^6.6.0"
     string-width "^4.1.0"
     strip-ansi "^6.0.0"
     through "^2.3.6"
@@ -7559,11 +7596,6 @@ lodash@^4.0.0, lodash@^4.15.0, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.13
   version "4.17.19"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.19.tgz#e48ddedbe30b3321783c5b4301fbd353bc1e4a4b"
   integrity sha512-JNvd8XER9GQX0v2qJgsaN/mzFCNA5BRe/j8JN9d+tWyGLSodKQHKFicdwNYzWwI3wjRnaKPsGj1XkBjx/F96DQ==
-
-lodash@^4.17.20:
-  version "4.17.20"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
-  integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
 
 log-symbols@^2.2.0:
   version "2.2.0"
@@ -10026,6 +10058,13 @@ rxjs@^6.4.0, rxjs@^6.5.2, rxjs@^6.5.3:
   version "6.5.5"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-6.5.5.tgz#c5c884e3094c8cfee31bf27eb87e54ccfc87f9ec"
   integrity sha512-WfQI+1gohdf0Dai/Bbmk5L5ItH5tYqm3ki2c5GdWhKjalzjg93N3avFjVStyZZz+A2Em+ZxKH5bNghw9UeylGQ==
+  dependencies:
+    tslib "^1.9.0"
+
+rxjs@^6.6.0:
+  version "6.6.3"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-6.6.3.tgz#8ca84635c4daa900c0d3967a6ee7ac60271ee552"
+  integrity sha512-trsQc+xYYXZ3urjOiJOuCOa5N3jAZ3eiSpQB5hIT8zGlL2QfnHLJ2r7GMkBGuIausdJN1OneaI6gQlsqNHHmZQ==
   dependencies:
     tslib "^1.9.0"
 

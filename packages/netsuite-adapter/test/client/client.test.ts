@@ -65,16 +65,11 @@ jest.mock('@salto-io/lowerdash', () => ({
 const mockExecuteAction = jest.fn()
 
 jest.mock('@salto-io/suitecloud-cli', () => ({
-  SDKOperationResultUtils: {
-    hasErrors: jest.fn().mockImplementation(operationResult =>
-      operationResult.status === 'ERROR'),
+  ActionResultUtils: {
     getErrorMessagesString: jest.fn().mockReturnValue('Error message'),
   },
-  CommandOutputHandler: jest.fn(),
-  CommandOptionsValidator: jest.fn(),
   CLIConfigurationService: jest.fn(),
-  CommandInstanceFactory: jest.fn(),
-  AuthenticationService: jest.fn(),
+  NodeConsoleLogger: jest.fn(),
   CommandsMetadataService: jest.fn().mockImplementation(() => ({
     initializeCommandsMetadata: jest.fn(),
   })),
@@ -93,15 +88,17 @@ describe('netsuite client', () => {
     commandName: COMMANDS.SETUP_ACCOUNT,
     arguments: {
       authid: expectedAuthId,
+      savetoken: false,
     },
   })
   const saveTokenCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
     arguments: {
-      accountid: transformedAccountId,
+      account: transformedAccountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
       authid: expectedAuthId,
+      savetoken: true,
     },
   })
 
@@ -125,9 +122,9 @@ describe('netsuite client', () => {
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       await expect(NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
@@ -139,10 +136,10 @@ describe('netsuite client', () => {
     it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT
-          && _.isUndefined(context.arguments.accountid)) {
-          return Promise.resolve({ status: 'ERROR' })
+          && _.isUndefined(context.arguments.account)) {
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const accountId = await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -152,7 +149,7 @@ describe('netsuite client', () => {
     })
 
     it('should succeed', async () => {
-      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const accountId = await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
@@ -170,9 +167,9 @@ describe('netsuite client', () => {
     it('should fail when CREATE_PROJECT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.CREATE_PROJECT) {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
@@ -184,9 +181,9 @@ describe('netsuite client', () => {
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
@@ -199,9 +196,9 @@ describe('netsuite client', () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.IMPORT_OBJECTS
           && ['TypeA', 'ALL'].includes(context.arguments.type)) {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, true)
       const numberOfCallsToImport = typeNames.length + 1 // 1 stands for import 'ALL'
@@ -221,9 +218,9 @@ describe('netsuite client', () => {
     it('should return all types as failedTypes and failedToFetchAllAtOnce when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'TypeA') {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, false)
       const numberOfCallsToImport = typeNames.length
@@ -243,10 +240,10 @@ describe('netsuite client', () => {
     it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT
-          && _.isUndefined(context.arguments.accountid)) {
-          return Promise.resolve({ status: 'ERROR' })
+          && _.isUndefined(context.arguments.account)) {
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       await client.getCustomObjects(typeNames, true)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -256,7 +253,7 @@ describe('netsuite client', () => {
     })
 
     it('should succeed', async () => {
-      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const { elements: customizationInfos, failedToFetchAllAtOnce, failedTypes } = await client
         .getCustomObjects(typeNames, true)
       expect(failedToFetchAllAtOnce).toBe(false)
@@ -298,9 +295,9 @@ describe('netsuite client', () => {
     it('should fail when CREATE_PROJECT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.CREATE_PROJECT) {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       await expect(client.importFileCabinetContent([])).rejects.toThrow()
       expect(rmMock).toHaveBeenCalledTimes(0)
@@ -309,9 +306,9 @@ describe('netsuite client', () => {
     it('should return failed paths when LIST_FILES has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_FILES) {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
       expect(elements).toHaveLength(0)
@@ -319,7 +316,7 @@ describe('netsuite client', () => {
     })
 
     it('should not call listFiles for folders in skip list', async () => {
-      mockExecuteAction.mockResolvedValue(Promise.resolve({ status: 'SUCCESS' }))
+      mockExecuteAction.mockResolvedValue(Promise.resolve({ isSuccess: () => true }))
       const { elements, failedPaths } = await client
         .importFileCabinetContent([new RegExp(fileCabinetTopLevelFolders[0])])
 
@@ -336,9 +333,9 @@ describe('netsuite client', () => {
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
-          return Promise.resolve({ status: 'ERROR' })
+          return Promise.resolve({ isSuccess: () => false })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       await expect(client.importFileCabinetContent([])).rejects.toThrow()
     })
@@ -347,19 +344,19 @@ describe('netsuite client', () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_FILES) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: [],
           })
         }
         if (context.commandName === COMMANDS.IMPORT_FILES) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: {
               results: [],
             },
           })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
@@ -383,21 +380,21 @@ describe('netsuite client', () => {
         if (context.commandName === COMMANDS.LIST_FILES
           && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: filesPathResult,
           })
         }
         if (context.commandName === COMMANDS.IMPORT_FILES) {
           if (context.arguments.paths.includes(failedPath)) {
             return Promise.resolve({
-              status: 'ERROR',
+              isSuccess: () => false,
               data: {
                 results: [],
               },
             })
           }
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: {
               results: [
                 {
@@ -420,7 +417,7 @@ describe('netsuite client', () => {
             },
           })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
       expect(mockExecuteAction).toHaveBeenCalledTimes(8)
@@ -445,14 +442,14 @@ describe('netsuite client', () => {
         if (context.commandName === COMMANDS.LIST_FILES
           && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: filesPathResult,
           })
         }
         if (context.commandName === COMMANDS.IMPORT_FILES
           && _.isEqual(context.arguments.paths, filesPathResult)) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: {
               results: [
                 {
@@ -475,7 +472,7 @@ describe('netsuite client', () => {
             },
           })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
       expect(readFileMock).toHaveBeenCalledTimes(3)
@@ -512,14 +509,14 @@ describe('netsuite client', () => {
         if (context.commandName === COMMANDS.LIST_FILES
           && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: filesPathResult,
           })
         }
         if (context.commandName === COMMANDS.IMPORT_FILES) {
           if (_.isEqual(context.arguments.paths, filesPathResult)) {
             return Promise.resolve({
-              status: 'SUCCESS',
+              isSuccess: () => true,
               data: {
                 results: [
                   {
@@ -539,13 +536,13 @@ describe('netsuite client', () => {
             })
           }
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: {
               results: [],
             },
           })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent(
         [new RegExp(MOCK_FILE_PATH)]
@@ -570,14 +567,14 @@ describe('netsuite client', () => {
         if (context.commandName === COMMANDS.LIST_FILES
           && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: filesPathResult,
           })
         }
         if (context.commandName === COMMANDS.IMPORT_FILES
           && _.isEqual(context.arguments.paths, filesPathResult)) {
           return Promise.resolve({
-            status: 'SUCCESS',
+            isSuccess: () => true,
             data: {
               results: [
                 {
@@ -596,7 +593,7 @@ describe('netsuite client', () => {
             },
           })
         }
-        return Promise.resolve({ status: 'SUCCESS' })
+        return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
       expect(readFileMock).toHaveBeenCalledTimes(1)
@@ -623,10 +620,10 @@ describe('netsuite client', () => {
       it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.SETUP_ACCOUNT
-            && _.isUndefined(context.arguments.accountid)) {
-            return Promise.resolve({ status: 'ERROR' })
+            && _.isUndefined(context.arguments.account)) {
+            return Promise.resolve({ isSuccess: () => false })
           }
-          return Promise.resolve({ status: 'SUCCESS' })
+          return Promise.resolve({ isSuccess: () => true })
         })
         const scriptId = 'filename'
         const customTypeInfo = {
@@ -646,7 +643,7 @@ describe('netsuite client', () => {
       })
 
       it('should succeed for CustomTypeInfo', async () => {
-        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
         const customTypeInfo = {
           typeName: 'typeName',
@@ -667,7 +664,7 @@ describe('netsuite client', () => {
       })
 
       it('should succeed for TemplateCustomTypeInfo', async () => {
-        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
         const templateCustomTypeInfo = {
           typeName: 'typeName',
@@ -712,7 +709,7 @@ describe('netsuite client', () => {
 
     describe('deployFolder', () => {
       it('should succeed', async () => {
-        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const folderCustomizationInfo: FolderCustomizationInfo = {
           typeName: 'folder',
           values: {
@@ -737,7 +734,7 @@ describe('netsuite client', () => {
 
     describe('deployFile', () => {
       it('should succeed', async () => {
-        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const dummyFileContent = Buffer.from('dummy file content')
         const fileCustomizationInfo: FileCustomizationInfo = {
           typeName: 'file',
@@ -767,7 +764,7 @@ describe('netsuite client', () => {
     })
 
     it('should deploy multiple CustomizationInfos in a single project', async () => {
-      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const scriptId1 = 'filename'
       const customTypeInfo1: CustomTypeInfo = {
         typeName: 'typeName',

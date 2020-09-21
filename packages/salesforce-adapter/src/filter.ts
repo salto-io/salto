@@ -24,6 +24,7 @@ import { ConfigChangeSuggestion, FilterContext } from './types'
 // operations. The filter will be responsible for specific business logic.
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<ConfigChangeSuggestion[] | void>
+  preDeploy(changes: ReadonlyArray<Change>): Promise<void>
   onDeploy(changes: ReadonlyArray<Change>): Promise<(SaveResult | UpsertResult)[]>
 }>
 
@@ -49,6 +50,10 @@ export const filtersRunner = (client: SalesforceClient,
         filtersWith('onFetch').map(filter => () => filter.onFetch(elements))
       )
       return configChanges.filter(values.isDefined).flat()
+    },
+    preDeploy: async changes => {
+      await promises.array.series(filtersWith('preDeploy').map(filter => () => filter.preDeploy(changes)))
+      Promise.resolve()
     },
     onDeploy: changes => runFiltersInParallel('onDeploy', filter => filter.onDeploy(changes)),
   }

@@ -477,7 +477,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       }
       return { action: 'modify', data: getBeforeAndAfterElements() }
     }
-
+    await this.filtersRunner.preDeploy(changeGroup.changes)
     const resolvedChanges = changeGroup.changes
       .map(change => resolveChangeElement(change, getLookUpName))
     const resolvedChangeGroup = { groupID: changeGroup.groupID, changes: resolvedChanges }
@@ -503,7 +503,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     )
     const appliedChanges = _.flatten(results.map(res => res.appliedChanges))
       .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
-
     await this.filtersRunner.onDeploy(appliedChanges)
     return {
       appliedChanges,

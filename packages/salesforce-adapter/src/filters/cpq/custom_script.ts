@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, ChangeDataType } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { getCustomObjects } from '../utils'
 import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS } from '../../constants'
@@ -38,16 +39,37 @@ const changeRefListFieldsType = (cpqCustomScriptObject: ObjectType): void => {
     })
 }
 
-const changeRefListsValues = (cpqCustomScriptInstances: InstanceElement[]): void => {
-  cpqCustomScriptInstances.forEach(instance => {
-    refListFieldNames.forEach(fieldName => {
-      const fieldValue = instance.value[fieldName]
-      if (_.isString(fieldValue)) {
-        instance.value[fieldName] = fieldValue.split('\r\n')
-      }
-    })
+const refListValuesToList = (cpqCustomScriptInstance: InstanceElement): InstanceElement => {
+  refListFieldNames.forEach(fieldName => {
+    const fieldValue = cpqCustomScriptInstance.value[fieldName]
+    if (_.isString(fieldValue)) {
+      cpqCustomScriptInstance.value[fieldName] = fieldValue.split('\r\n')
+    }
   })
+  return cpqCustomScriptInstance
 }
+
+const refListValuesToString = (cpqCustomScriptInstance: InstanceElement): InstanceElement => {
+  refListFieldNames.forEach(fieldName => {
+    const fieldValue = cpqCustomScriptInstance.value[fieldName]
+    if (Array.isArray(fieldValue) && fieldValue.every(_.isString)) {
+      cpqCustomScriptInstance.value[fieldName] = fieldValue.join('\r\n')
+    }
+  })
+  return cpqCustomScriptInstance
+}
+
+const isInstanceOfCustomScript = (instance: InstanceElement): boolean =>
+  (apiName(instance.type) === CPQ_CUSTOM_SCRIPT)
+
+const getCustomScriptInstanceChanges = (
+  changes: ReadonlyArray<Change<ChangeDataType>>
+): ReadonlyArray<Change<InstanceElement>> =>
+  (changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(change =>
+      (isInstanceOfCustomScript(getChangeElement(change)))))
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
@@ -59,8 +81,25 @@ const filter: FilterCreator = () => ({
     changeRefListFieldsType(cpqCustomScriptObject)
     const cpqCustomScriptInstances = elements
       .filter(isInstanceOfCustomObject)
-      .filter(inst => apiName(inst.type) === CPQ_CUSTOM_SCRIPT)
-    changeRefListsValues(cpqCustomScriptInstances)
+      .filter(isInstanceOfCustomScript)
+    cpqCustomScriptInstances.forEach(refListValuesToList)
+  },
+  preDeploy: async changes => {
+    const customScriptInstanceChanges = getCustomScriptInstanceChanges(changes)
+    customScriptInstanceChanges.forEach(customScriptInstanceChange =>
+      applyFunctionToChangeData(
+        customScriptInstanceChange,
+        changeData => refListValuesToString(changeData)
+      ))
+  },
+  onDeploy: async changes => {
+    const customScriptInstanceChanges = getCustomScriptInstanceChanges(changes)
+    customScriptInstanceChanges.forEach(customScriptInstanceChange =>
+      applyFunctionToChangeData(
+        customScriptInstanceChange,
+        changeData => refListValuesToList(changeData)
+      ))
+    return []
   },
 })
 

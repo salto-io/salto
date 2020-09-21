@@ -15,17 +15,8 @@
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
 import { Connection, MetadataInfo } from 'jsforce'
+import { strings } from '@salto-io/lowerdash'
 import { Credentials, validateCredentials } from '../../src/client/client'
-
-const randomString = (length: number, chars: string): string => {
-  let result = ''
-  for (let i = length; i > 0; i -= 1) {
-    result += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return result
-}
-const randomAlphaNumericString = (length: number): string =>
-  randomString(length, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
 interface OauthConfig {
   consumerKey: string
@@ -40,8 +31,7 @@ export const createConnectedApp = async (username: string, password: string,
   email: string, callbackUrl: string): Promise<string> => {
   const conn = new Connection({})
   const fullName = `SaltoApp${Math.floor(Math.random() * 10000)}`
-  let consumerKey = ''
-  const consumerSecret = randomAlphaNumericString(32)
+  const consumerSecret = strings.insecureRandomString({ length: 32 })
   const requestMetadata = [{
     contactEmail: email,
     description: 'Salto oauth app',
@@ -61,9 +51,7 @@ export const createConnectedApp = async (username: string, password: string,
   }]
   await conn.login(username, password)
   await conn.metadata.create('ConnectedApp', requestMetadata)
-  await conn.metadata.read('ConnectedApp', fullName, (_err: Error | null, connectedAppData: MetadataInfo | MetadataInfo[]) => {
-    consumerKey = (connectedAppData as OauthConfigMetadataInfo).oauthConfig.consumerKey
-  })
+  const { consumerKey } = (await conn.metadata.read('ConnectedApp', fullName) as OauthConfigMetadataInfo).oauthConfig
   return consumerKey
 }
 

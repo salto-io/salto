@@ -42,6 +42,12 @@ const filterByFile = (
   id => !_.isEmpty((fileElements).filter(e => resolvePath(e, id) !== undefined))
 )
 
+const toPath = (filename: string): string[] => {
+  const parsedPath = path.parse(filename)
+  const dirPath = _.isEmpty(parsedPath.dir) ? [] : parsedPath.dir.split(path.sep)
+  return [...dirPath, parsedPath.name]
+}
+
 const separateChangeByFiles = async (
   change: DetailedChange,
   source: NaclFilesSource
@@ -49,16 +55,12 @@ const separateChangeByFiles = async (
   (await source.getSourceRanges(change.id))
     .map(range => range.filename)
     .map(async filename => {
-      const parsedPath = path.parse(filename)
-      const pathHint = (parsedPath.dir
-        ? [...parsedPath.dir.split(path.sep), parsedPath.name]
-        : [parsedPath.name])
       const fileElements = await source.getElements(filename)
       const filteredChange = applyFunctionToChangeData(
         change,
         changeData => filterByFile(change.id, changeData, fileElements),
       )
-      return { ...filteredChange, path: pathHint }
+      return { ...filteredChange, path: toPath(filename) }
     })
 )
 

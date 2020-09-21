@@ -17,37 +17,36 @@ import {
   ChangeError, Field, getChangeElement,
   ChangeValidator, isModificationChange, ModificationChange, Change, isFieldChange,
 } from '@salto-io/adapter-api'
-import { isCustom, isCustomField } from '../transformers/transformer'
+import { isCustom, isFieldOfCustomObject } from '../transformers/transformer'
 import { LABEL } from '../constants'
 
 
-const isStandardFieldChange = (change: Change<Field>): boolean => (
-  !isCustom(getChangeElement(change).elemID.getFullName())
-)
+const isStandardFieldChange = (change: Change<Field>): boolean =>
+  (!isCustom(getChangeElement(change).elemID.getFullName()))
+
 
 const isLabelModification = (change: ModificationChange<Field>): boolean => {
   const beforeAnnotations = change.data.before.annotations
   const afterAnnotations = change.data.after.annotations
-  return (LABEL in beforeAnnotations) && (LABEL in afterAnnotations)
-    && (beforeAnnotations[LABEL] !== afterAnnotations[LABEL])
+  return beforeAnnotations[LABEL] !== afterAnnotations[LABEL]
 }
 
 
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Warning',
-  message: `You cannot modify labels of standard fields. This change will NOT be deployed. Field: ${field.name}, fieldFullName: ${field.elemID.getFullName()}`,
-  detailedMessage: 'You cannot modify labels of standard fields. This change will NOT be deployed.',
+  message: `You cannot modify labels of standard fields. This change will NOT be deployed. Field: ${field.name}`,
+  detailedMessage: `You cannot modify labels of standard fields. This change will NOT be deployed. Field: ${field.name}`,
 })
 
 /**
-   * It is forbidden to modify a label of a standard field.
-   */
+ * It is forbidden to modify a label of a standard field.
+ */
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isModificationChange)
     .filter(isFieldChange)
-    .filter(change => isCustomField(getChangeElement(change)))
+    .filter(change => isFieldOfCustomObject(getChangeElement(change)))
     .filter(isStandardFieldChange)
     .filter(isLabelModification)
     .map(getChangeElement)

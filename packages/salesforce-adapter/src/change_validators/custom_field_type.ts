@@ -18,7 +18,7 @@ import {
   ChangeValidator, Change, isAdditionChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES, FIELD_TYPE_NAMES, COMPOUND_FIELD_TYPE_NAMES } from '../constants'
-import { isCustomField } from '../transformers/transformer'
+import { isFieldOfCustomObject } from '../transformers/transformer'
 
 const isInvalidTypeChange = (change: Change<Field>): boolean => {
   const afterFieldType = getChangeElement(change).type.elemID.typeName as
@@ -48,7 +48,7 @@ const createChangeError = (field: Field): ChangeError => ({
 const changeValidator: ChangeValidator = async changes => changes
   .filter(isAdditionOrModificationChange)
   .filter(isFieldChange)
-  .filter(change => isCustomField(getChangeElement(change)))
+  .filter(change => isFieldOfCustomObject(getChangeElement(change)))
   .filter(isInvalidTypeChange)
   .map(getChangeElement)
   .map(createChangeError)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ElemID, Field, ObjectType, toChange, TypeElement,
+  ChangeError, ElemID, Field, ObjectType, toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import standardFieldLabelValidator from '../../src/change_validators/standard_field_label'
@@ -23,28 +23,25 @@ import { createField } from '../utils'
 
 describe('standard field label modification change validator', () => {
   describe('onUpdate', () => {
+    let afterField: Field
+    let beforeField: Field
     let customObj: ObjectType
-    beforeEach(() => {
+    beforeAll(() => {
       customObj = new ObjectType({
         elemID: new ElemID('salesforce', 'obj'),
         annotations: { metadataType: CUSTOM_OBJECT },
       })
+      beforeField = createField(customObj, Types.primitiveDataTypes.Text, 'Something', { [LABEL]: 'testLabel' })
     })
-
-    const createAnnotatedField = (parent: ObjectType, fieldType: TypeElement,
-      fieldApiName: string): Field => {
-      const field = createField(parent, fieldType, fieldApiName)
-      field.annotate({ [LABEL]: 'testLabel' })
-      return field
-    }
+    beforeEach(() => {
+      afterField = beforeField.clone()
+    })
 
     const runChangeValidator = (before: Field | undefined, after: Field):
           Promise<ReadonlyArray<ChangeError>> =>
       standardFieldLabelValidator([toChange({ before, after })])
 
     it('should have warning for standard field label modification', async () => {
-      const beforeField = createAnnotatedField(customObj, Types.primitiveDataTypes.Time, 'Something')
-      const afterField = beforeField.clone()
       afterField.annotations[LABEL] = 'differentLabel'
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
@@ -54,17 +51,14 @@ describe('standard field label modification change validator', () => {
     })
 
     it('should have no warnings for custom field label modification', async () => {
-      const beforeField = createAnnotatedField(customObj, Types.primitiveDataTypes.Text, 'Something')
       beforeField.name = 'field__c' // make it a custom field
-      const afterField = beforeField.clone()
+      afterField = beforeField.clone()
       afterField.annotations[LABEL] = 'differentLabel'
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have no warnings for modification of different annotations in standard field', async () => {
-      const beforeField = createAnnotatedField(customObj, Types.primitiveDataTypes.Text, 'Something')
-      const afterField = beforeField.clone()
       afterField.annotations.modifyMe = 'modified'
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)

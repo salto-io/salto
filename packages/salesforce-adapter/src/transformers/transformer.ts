@@ -62,7 +62,7 @@ export const metadataType = (element: Element): string => {
 export const isCustomObject = (element: Element): boolean =>
   metadataType(element) === CUSTOM_OBJECT
 
-export const isCustomField = (field: Field): boolean =>
+export const isFieldOfCustomObject = (field: Field): boolean =>
   isCustomObject(field.parent)
 
 export const isInstanceOfCustomObject = (element: Element): element is InstanceElement =>

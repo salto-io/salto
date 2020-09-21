@@ -405,6 +405,9 @@ const getPath = (
   const { parent, path } = fullElemID.createTopLevelParentID()
   if (!_.isEqual(parent, rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []
+  if (isInstanceElement(rootElement) && fullElemID.isAttrID()) {
+    return ['annotations', ...path]
+  }
   if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {
     return ['value', ...path]
   }
@@ -542,6 +545,10 @@ export const filterByID = <T extends Element | Values>(
   id: ElemID, value: T,
   filterFunc: (id: ElemID) => boolean
 ): T | undefined => {
+  const filterInstanceAnnotations = (annotations: Value): Value => (
+    filterByID(id, annotations, filterFunc)
+  )
+
   const filterAnnotations = (annotations: Value): Value => (
     filterByID(id.createNestedID('attr'), annotations, filterFunc)
   )
@@ -591,7 +598,7 @@ export const filterByID = <T extends Element | Values>(
       value.type,
       filterByID(value.elemID, value.value, filterFunc),
       value.path,
-      filterAnnotations(value.annotations)
+      filterInstanceAnnotations(value.annotations)
     ) as Value as T
   }
 

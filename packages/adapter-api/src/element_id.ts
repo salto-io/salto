@@ -19,6 +19,12 @@ export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' |
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
 export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
 
+export const INSTANCE_ANNOTATIONS = {
+  DEPENDS_ON: '_depends_on',
+  PARENT: '_parent',
+  GENERATED_DEPENDENCIES: '_generated_dependencies',
+}
+
 export class ElemID {
   static readonly NAMESPACE_SEPARATOR = '.'
   static readonly CONFIG_NAME = '_config'
@@ -202,5 +208,13 @@ export class ElemID {
       }
     }
     return { parent, path }
+  }
+
+  isAttrID(): boolean {
+    return this.idType === 'attr'
+      || (
+        this.idType === 'instance'
+        && Object.values(INSTANCE_ANNOTATIONS).includes(this.nameParts[1])
+      )
   }
 }

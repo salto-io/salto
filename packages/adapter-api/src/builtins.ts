@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID } from './element_id'
+import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
 
 export const GLOBAL_ADAPTER = ''
@@ -50,12 +50,6 @@ export const CORE_ANNOTATIONS = {
   REQUIRED: '_required',
   RESTRICTION: '_restriction',
   HIDDEN: '_hidden',
-}
-
-export const INSTANCE_ANNOTATIONS = {
-  DEPENDS_ON: '_depends_on',
-  PARENT: '_parent',
-  GENERATED_DEPENDENCIES: '_generated_dependencies',
 }
 
 export const InstanceAnnotationTypes: TypeMap = {

@@ -82,24 +82,15 @@ describe('netsuite client', () => {
   const transformedAccountId = 'TSTDRV123456_SB'
   const createProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
-  const expectedAuthId = transformedAccountId + DUMMY_CREDENTIALS.tokenId
-    + DUMMY_CREDENTIALS.tokenSecret
-  const reuseAuthIdCommandMatcher = expect.objectContaining({
-    commandName: COMMANDS.SETUP_ACCOUNT,
-    arguments: {
-      authid: expectedAuthId,
-      savetoken: false,
-    },
-  })
   const saveTokenCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
-    arguments: {
+    arguments: expect.objectContaining({
       account: transformedAccountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
-      authid: expectedAuthId,
+      authid: expect.anything(),
       savetoken: true,
-    },
+    }),
   })
 
   const typeNames = ['TypeA', 'TypeB']
@@ -113,6 +104,12 @@ describe('netsuite client', () => {
     .objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
   const deployProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.DEPLOY_PROJECT })
+  const deleteAuthIdCommandMatcher = expect.objectContaining({
+    commandName: COMMANDS.MANAGE_AUTH,
+    arguments: expect.objectContaining({
+      remove: expect.anything(),
+    }),
+  })
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -128,32 +125,15 @@ describe('netsuite client', () => {
       })
       await expect(NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
-    })
-
-    it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
-      mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT
-          && _.isUndefined(context.arguments.account)) {
-          return Promise.resolve({ isSuccess: () => false })
-        }
-        return Promise.resolve({ isSuccess: () => true })
-      })
-      const accountId = await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
-      expect(accountId).toEqual(transformedAccountId)
     })
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const accountId = await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(accountId).toEqual(transformedAccountId)
     })
   })
@@ -173,7 +153,6 @@ describe('netsuite client', () => {
       })
       await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
     })
@@ -187,7 +166,6 @@ describe('netsuite client', () => {
       })
       await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
     })
@@ -202,15 +180,17 @@ describe('netsuite client', () => {
       })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, true)
       const numberOfCallsToImport = typeNames.length + 1 // 1 stands for import 'ALL'
-      expect(mockExecuteAction)
-        .toHaveBeenCalledTimes(numberOfCallsToImport + 2 /* createProject & setupAccount */)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(
+        numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
+      )
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       // eslint-disable-next-line no-plusplus
       for (let i = 0; i < numberOfCallsToImport; i++) {
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3 + i, importObjectsCommandMatcher)
       }
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(numberOfCallsToImport + 3, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
     })
@@ -224,32 +204,19 @@ describe('netsuite client', () => {
       })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, false)
       const numberOfCallsToImport = typeNames.length
-      expect(mockExecuteAction)
-        .toHaveBeenCalledTimes(numberOfCallsToImport + 2 /* createProject & setupAccount */)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(
+        numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
+      )
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       // eslint-disable-next-line no-plusplus
       for (let i = 0; i < numberOfCallsToImport; i++) {
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3 + i, importObjectsCommandMatcher)
       }
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(numberOfCallsToImport + 3, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
-    })
-
-    it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
-      mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT
-          && _.isUndefined(context.arguments.account)) {
-          return Promise.resolve({ isSuccess: () => false })
-        }
-        return Promise.resolve({ isSuccess: () => true })
-      })
-      await client.getCustomObjects(typeNames, true)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
     })
 
     it('should succeed', async () => {
@@ -280,9 +247,8 @@ describe('netsuite client', () => {
       }])
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
     })
   })
 
@@ -320,12 +286,13 @@ describe('netsuite client', () => {
       const { elements, failedPaths } = await client
         .importFileCabinetContent([new RegExp(fileCabinetTopLevelFolders[0])])
 
-      expect(mockExecuteAction).toHaveBeenCalledTimes(5)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)
     })
@@ -359,13 +326,14 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
-      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(7)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)
     })
@@ -420,15 +388,16 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
-      expect(mockExecuteAction).toHaveBeenCalledTimes(8)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(9)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(2)
       expect(failedPaths).toEqual([failedPath])
       expect(rmMock).toHaveBeenCalledTimes(1)
@@ -494,7 +463,7 @@ describe('netsuite client', () => {
       }])
       expect(failedPaths).toHaveLength(0)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
@@ -550,13 +519,14 @@ describe('netsuite client', () => {
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)
-      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(7)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
     })
 
     it('should return only loaded files', async () => {
@@ -617,31 +587,6 @@ describe('netsuite client', () => {
     })
 
     describe('deployCustomObject', () => {
-      it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
-        mockExecuteAction.mockImplementation(context => {
-          if (context.commandName === COMMANDS.SETUP_ACCOUNT
-            && _.isUndefined(context.arguments.account)) {
-            return Promise.resolve({ isSuccess: () => false })
-          }
-          return Promise.resolve({ isSuccess: () => true })
-        })
-        const scriptId = 'filename'
-        const customTypeInfo = {
-          typeName: 'typeName',
-          values: {
-            key: 'val',
-          },
-          scriptId,
-        } as CustomTypeInfo
-        await client.deploy([customTypeInfo])
-        expect(writeFileMock).toHaveBeenCalledTimes(1)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, addDependenciesCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(5, deployProjectCommandMatcher)
-      })
-
       it('should succeed for CustomTypeInfo', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
@@ -657,10 +602,9 @@ describe('netsuite client', () => {
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-        expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       })
 
       it('should succeed for TemplateCustomTypeInfo', async () => {
@@ -682,10 +626,9 @@ describe('netsuite client', () => {
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.template.html`), MOCK_TEMPLATE_CONTENT)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-        expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       })
 
       it('should wrap the thrown string with Error object', async () => {
@@ -726,7 +669,7 @@ describe('netsuite client', () => {
           '<folder><description>folder description</description></folder>')
         expect(rmMock).toHaveBeenCalledTimes(1)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
       })
@@ -757,7 +700,7 @@ describe('netsuite client', () => {
           dummyFileContent)
         expect(rmMock).toHaveBeenCalledTimes(1)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
       })
@@ -784,10 +727,9 @@ describe('netsuite client', () => {
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
     })
   })
 })

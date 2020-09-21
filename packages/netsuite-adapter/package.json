@@ -37,6 +37,7 @@
     "@salto-io/logging": "0.1.30",
     "@salto-io/lowerdash": "0.1.30",
     "@salto-io/suitecloud-cli": "1.1.0-salto-1",
+    "async-lock": "^1.2.4",
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^3.15.0",
     "he": "^1.2.0",
@@ -45,6 +46,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/async-lock": "^1.1.2",
     "@types/he": "^1.1.1",
     "@types/jest": "^24.0.0",
     "@types/lodash": "^4.14.133",

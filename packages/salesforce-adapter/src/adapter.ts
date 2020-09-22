@@ -60,7 +60,6 @@ import customObjectInstanceReferencesFilter from './filters/custom_object_instan
 import foreignKeyReferences from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupObjectsFilter from './filters/cpq/lookup_object'
-import cpqFieldsWithContextRefFilter from './filters/cpq/fields_with_context_references'
 import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
@@ -100,8 +99,6 @@ export const DEFAULT_FILTERS = [
   lookupFiltersFilter,
   customObjectInstanceReferencesFilter,
   cpqLookupObjectsFilter,
-  // cpqFieldsWithContextRefFilter should run before instanceReferences filter
-  cpqFieldsWithContextRefFilter,
   animationRulesFilter,
   samlInitMethodFilter,
   topicsForObjectsFilter,

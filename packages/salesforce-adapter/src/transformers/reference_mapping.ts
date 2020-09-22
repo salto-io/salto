@@ -54,7 +54,7 @@ const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName = 'none' | 'instanceParent' | 'neighborTypeWorkflow'
+export type ReferenceContextStrategyName = 'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
 
 type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 type MetadataTypeArgs = {
@@ -207,35 +207,35 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'relatedList', parentTypes: ['RelatedListItem'] },
     target: { type: CUSTOM_FIELD },
   },
-
-  // serialization-only
-  {
-    src: { field: 'name', parentTypes: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE] },
-    serializationStrategy: 'relativeApiName',
-  },
   {
     src: { field: CPQ_LOOKUP_FIELD, parentTypes: [CPQ_LOOKUP_QUERY] },
     serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborCPQRuleLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: CPQ_SOURCE_LOOKUP_FIELD, parentTypes: [CPQ_PRICE_ACTION] },
     serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborCPQRuleLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: CPQ_LOOKUP_MESSAGE_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: CPQ_LOOKUP_REQUIRED_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: CPQ_LOOKUP_TYPE_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
 ]
 

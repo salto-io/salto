@@ -29,7 +29,6 @@ import {
   transformAfterUpdateOrAdd, getLookUpName, resolveValues,
 } from './transformers/transformer'
 import { FilterCreator } from './filter'
-import hideTypesFilter from './filters/hide_types'
 import formFieldFilter from './filters/form_field'
 import useridentifierFilter from './filters/useridentifier'
 import instanceTransformFilter from './filters/instance_transform'
@@ -60,7 +59,6 @@ export default class HubspotAdapter implements AdapterOperations {
   public constructor({
     client,
     filtersCreators = [
-      hideTypesFilter,
       useridentifierFilter,
       formFieldFilter,
       instanceTransformFilter,

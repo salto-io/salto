@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Element, InstanceElement, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType, Change, toChange, getChangeElement, isModificationChange, isAdditionChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../../../src/filter'
 import SalesforceClient from '../../../src/client/client'
 import { SALESFORCE, CPQ_CUSTOM_SCRIPT, API_NAME, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_GROUP_FIELS, METADATA_TYPE, CUSTOM_OBJECT } from '../../../src/constants'
@@ -23,7 +23,7 @@ import mockAdapter from '../../adapter'
 
 describe('cpq custom script filter', () => {
   let client: SalesforceClient
-  type FilterType = FilterWith<'onFetch'>
+  type FilterType = FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
   let filter: FilterType
   let elements: Element[]
 
@@ -55,7 +55,7 @@ describe('cpq custom script filter', () => {
       [METADATA_TYPE]: CUSTOM_OBJECT,
     },
   })
-  const mockCustomScriptValues = {
+  const fromServiceCustomScriptValues = {
     [CPQ_CONSUMPTION_RATE_FIELDS]: 'lala\r\nzaza\r\nbaba',
     [CPQ_GROUP_FIELS]: null,
     randomField: 'stayLikeThis',
@@ -63,7 +63,17 @@ describe('cpq custom script filter', () => {
   const mockCustomScriptInstance = new InstanceElement(
     'customScriptInst',
     mockCustomScriptObject,
-    mockCustomScriptValues,
+    fromServiceCustomScriptValues,
+  )
+  const afterOnFetchCustomScriptValues = {
+    [CPQ_CONSUMPTION_RATE_FIELDS]: ['lala', 'zaza', 'baba'],
+    [CPQ_GROUP_FIELS]: null,
+    randomField: 'stayLikeThis',
+  }
+  const mockAfterOnFetchCustomScriptInstance = new InstanceElement(
+    'afterOnFetchcustomScriptInst',
+    mockCustomScriptObject,
+    afterOnFetchCustomScriptValues,
   )
 
   beforeAll(async () => {
@@ -72,30 +82,127 @@ describe('cpq custom script filter', () => {
       },
     }))
     filter = filterCreator({ client, config: {} }) as FilterType
-    elements = [
-      mockCustomScriptObject.clone(),
-      mockCustomScriptInstance.clone(),
-    ]
-    await filter.onFetch(elements)
   })
 
-  it('Should change fieldsRefList fields type to list of text', () => {
-    const customScriptObj = elements
-      .find(element => element.elemID.isEqual(mockCustomScriptObject.elemID)) as ObjectType
-    expect(customScriptObj).toBeDefined()
-    expect(customScriptObj.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
-      .toEqual(new ListType(Types.primitiveDataTypes.Text))
-    expect(customScriptObj.fields[CPQ_GROUP_FIELS].type)
-      .toEqual(new ListType(Types.primitiveDataTypes.Text))
+  describe('onFetch', () => {
+    beforeAll(async () => {
+      elements = [
+        mockCustomScriptObject.clone(),
+        mockCustomScriptInstance.clone(),
+      ]
+      await filter.onFetch(elements)
+    })
+
+    it('Should change fieldsRefList fields type to list of text', () => {
+      const customScriptObj = elements
+        .find(element => element.elemID.isEqual(mockCustomScriptObject.elemID)) as ObjectType
+      expect(customScriptObj).toBeDefined()
+      expect(customScriptObj.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
+        .toEqual(new ListType(Types.primitiveDataTypes.Text))
+      expect(customScriptObj.fields[CPQ_GROUP_FIELS].type)
+        .toEqual(new ListType(Types.primitiveDataTypes.Text))
+    })
+
+    it('Should only change values of multi-line string in fieldsRefList to array of strings', () => {
+      const customScriptInstance = elements
+        .find(element => element.elemID.isEqual(mockCustomScriptInstance.elemID)) as InstanceElement
+      expect(customScriptInstance.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual(['lala', 'zaza', 'baba'])
+      expect(customScriptInstance.value[CPQ_GROUP_FIELS])
+        .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+      expect(customScriptInstance.value.randomField)
+        .toEqual(fromServiceCustomScriptValues.randomField)
+    })
   })
 
-  it('Should only change values of multi-line string in fieldsRefList to array of strings', () => {
-    const customScriptInstance = elements
-      .find(element => element.elemID.isEqual(mockCustomScriptInstance.elemID)) as InstanceElement
-    expect(customScriptInstance.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual(['lala', 'zaza', 'baba'])
-    expect(customScriptInstance.value[CPQ_GROUP_FIELS])
-      .toEqual(mockCustomScriptValues[CPQ_GROUP_FIELS])
-    expect(customScriptInstance.value.randomField)
-      .toEqual(mockCustomScriptValues.randomField)
+  describe('onDeploy', () => {
+    let changes: Change<ChangeDataType>[]
+    beforeAll(async () => {
+      changes = [
+        toChange({
+          before: mockCustomScriptInstance.clone(),
+          after: mockCustomScriptInstance.clone(),
+        }),
+        toChange({ after: mockCustomScriptInstance.clone() }),
+      ]
+      await filter.onDeploy(changes)
+    })
+
+    it('Should only change values of multi-line string in fieldsRefList to array of strings in modification change', () => {
+      const customScriptInstanceModify = changes
+        .find(change =>
+          getChangeElement(change).elemID.isEqual(mockCustomScriptInstance.elemID)
+          && isModificationChange(change))
+      expect(customScriptInstanceModify).toBeDefined()
+      const changeElement = getChangeElement(
+        customScriptInstanceModify as Change
+      ) as InstanceElement
+      expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual(['lala', 'zaza', 'baba'])
+      expect(changeElement.value[CPQ_GROUP_FIELS])
+        .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+      expect(changeElement.value.randomField)
+        .toEqual(fromServiceCustomScriptValues.randomField)
+    })
+
+    it('Should only change values of multi-line string in fieldsRefList to array of strings in addition change', () => {
+      const customScriptInstanceAdd = changes
+        .find(change =>
+          getChangeElement(change).elemID.isEqual(mockCustomScriptInstance.elemID)
+          && isAdditionChange(change))
+      expect(customScriptInstanceAdd).toBeDefined()
+      const changeElement = getChangeElement(
+        customScriptInstanceAdd as Change
+      ) as InstanceElement
+      expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual(['lala', 'zaza', 'baba'])
+      expect(changeElement.value[CPQ_GROUP_FIELS])
+        .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+      expect(changeElement.value.randomField)
+        .toEqual(fromServiceCustomScriptValues.randomField)
+    })
+  })
+
+  describe('preDeploy', () => {
+    let changes: Change<ChangeDataType>[]
+    beforeAll(async () => {
+      changes = [
+        toChange({
+          before: mockAfterOnFetchCustomScriptInstance.clone(),
+          after: mockAfterOnFetchCustomScriptInstance.clone(),
+        }),
+        toChange({ after: mockAfterOnFetchCustomScriptInstance.clone() }),
+      ]
+      await filter.preDeploy(changes)
+    })
+
+    it('Should only change values of multi-line string in fieldsRefList back to string in modification change', () => {
+      const customScriptInstanceModify = changes
+        .find(change =>
+          getChangeElement(change).elemID.isEqual(mockAfterOnFetchCustomScriptInstance.elemID)
+          && isModificationChange(change))
+      expect(customScriptInstanceModify).toBeDefined()
+      const changeElement = getChangeElement(
+        customScriptInstanceModify as Change
+      ) as InstanceElement
+      expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual('lala\r\nzaza\r\nbaba')
+      expect(changeElement.value[CPQ_GROUP_FIELS])
+        .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+      expect(changeElement.value.randomField)
+        .toEqual(fromServiceCustomScriptValues.randomField)
+    })
+
+    it('Should only change values of multi-line string in fieldsRefList back to string in addition change', () => {
+      const customScriptInstanceAdd = changes
+        .find(change =>
+          getChangeElement(change).elemID.isEqual(mockAfterOnFetchCustomScriptInstance.elemID)
+          && isAdditionChange(change))
+      expect(customScriptInstanceAdd).toBeDefined()
+      const changeElement = getChangeElement(
+        customScriptInstanceAdd as Change
+      ) as InstanceElement
+      expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual('lala\r\nzaza\r\nbaba')
+      expect(changeElement.value[CPQ_GROUP_FIELS])
+        .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+      expect(changeElement.value.randomField)
+        .toEqual(fromServiceCustomScriptValues.randomField)
+    })
   })
 })

@@ -125,11 +125,11 @@ const diffBuilder = createCommandBuilder({
     positional: {
       'from-env': {
         type: 'string',
-        desc: 'The environment to be align from',
+        desc: 'The environment that serves as a baseline for the comparison',
       },
       'to-env': {
         type: 'string',
-        desc: 'The environment to align',
+        desc: 'The environment that is compared to the baseline provided by from-env',
       },
       'element-selector': {
         description: 'Array of configuration element patterns',

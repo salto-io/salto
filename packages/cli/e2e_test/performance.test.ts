@@ -16,7 +16,7 @@
 import tmp from 'tmp-promise'
 import fs from 'fs'
 import path from 'path'
-import { runInit, runAddDummhService, runFetch, runCreateEnv, runDeploy, runSetEnv, runMoveToCommon, runMoveToEnvs } from './helpers/workspace'
+import { runInit, runAddDummyService, runFetch, runCreateEnv, runDeploy, runSetEnv, runMoveToCommon, runMoveToEnvs } from './helpers/workspace'
 
 describe('cli performence with XXX elements', () => {
   jest.setTimeout(15 * 60 * 1000)
@@ -65,7 +65,7 @@ describe('cli performence with XXX elements', () => {
     beforeAll(async () => {
       initTime = await getRunTime(async () => {
         await runInit(WS_NAME, ENV1_NAME, baseDir)
-        await runAddDummhService(baseDir)
+        await runAddDummyService(baseDir)
       })
     })
     it(`should run init and add a service in less than ${initRunTime} ms`, () => {

@@ -108,7 +108,7 @@ export const runAddSalesforceService = async (
   ).execute()
 }
 
-export const runAddDummhService = async (workspaceDir: string): Promise<void> => {
+export const runAddDummyService = async (workspaceDir: string): Promise<void> => {
   await servicesCommand(
     workspaceDir,
     'add',

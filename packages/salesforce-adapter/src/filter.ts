@@ -16,7 +16,6 @@
 import { Element, Change } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types, promises, values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import SalesforceClient from './client/client'
 import { ConfigChangeSuggestion, FilterContext } from './types'
 
@@ -40,10 +39,6 @@ export const filtersRunner = (client: SalesforceClient,
   const filtersWith = <M extends keyof Filter>(m: M): FilterWith<M>[] =>
     types.filterHasMember<Filter, M>(m, filterCreators.map(f => f({ client, config })))
 
-  const runFiltersInParallel = async <M extends keyof Filter>(m: M,
-    run: (f: FilterWith<M>) => Promise<SaveResult[]>): Promise<SaveResult[]> =>
-    _.flatten(await Promise.all(filtersWith(m).map(run)))
-
   return {
     onFetch: async elements => {
       const configChanges = await promises.array.series(
@@ -55,6 +50,7 @@ export const filtersRunner = (client: SalesforceClient,
       await promises.array.series(filtersWith('preDeploy').map(filter => () => filter.preDeploy(changes)))
       Promise.resolve()
     },
-    onDeploy: changes => runFiltersInParallel('onDeploy', filter => filter.onDeploy(changes)),
+    onDeploy: async changes =>
+      ((await promises.array.series(filtersWith('onDeploy').map(filter => () => filter.onDeploy(changes)))).flat()),
   }
 }

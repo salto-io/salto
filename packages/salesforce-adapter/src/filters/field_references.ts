@@ -38,13 +38,14 @@ const log = logger(module)
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 type ElemLookupMapping = Record<string, Record<string, Element>>
-type ElemIDToApiNameLookup = Record<string, string>
+type ElemIDToElemLookup = Record<string, Element>
 type ContextValueMapperFunc = (val: string) => string | undefined
-type ContextFunc = (
-  instance: InstanceElement,
-  elemIdToApiName: ElemIDToApiNameLookup,
-  fieldPath?: ElemID,
-) => string | undefined
+type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
+  instance: InstanceElement
+  elemByElemID: ElemIDToElemLookup
+  field: Field
+  fieldPath?: ElemID
+}) => string | undefined
 
 const noop = (val: string): string => val
 
@@ -57,20 +58,26 @@ const noop = (val: string): string => val
 const neighborContextFunc = (
   contextFieldName: string,
   contextValueMapper: ContextValueMapperFunc = noop,
-): ContextFunc => (
-  (instance, _elemIdToApiName, fieldPath) => {
-    if (fieldPath === undefined || contextFieldName === undefined) {
-      return undefined
-    }
-    const contextPath = fieldPath.createParentID().createNestedID(contextFieldName)
-    const context = resolvePath(instance, contextPath)
-    const contextStr = isReferenceExpression(context)
-      // TODO need to access the field in order to resolve absolute/relative correctly
-      ? getLookUpName({ ref: context, field: undefined, path: contextPath })
-      : context
-    return contextValueMapper ? contextValueMapper(contextStr) : contextStr
+): ContextFunc => (({ instance, elemByElemID, fieldPath, field }) => {
+  const resolveReference = (context: ReferenceExpression, path?: ElemID): string => {
+    const contextField = field.parent.fields[contextFieldName]
+    const refWithValue = new ReferenceExpression(
+      context.elemId,
+      context.value ?? elemByElemID[context.elemId.getFullName()],
+    )
+    return getLookUpName({ ref: refWithValue, field: contextField, path })
   }
-)
+
+  if (fieldPath === undefined || contextFieldName === undefined) {
+    return undefined
+  }
+  const contextPath = fieldPath.createParentID().createNestedID(contextFieldName)
+  const context = resolvePath(instance, contextPath)
+  const contextStr = isReferenceExpression(context)
+    ? resolveReference(context, contextPath)
+    : context
+  return contextValueMapper ? contextValueMapper(contextStr) : contextStr
+})
 
 const workflowActionMapper: ContextValueMapperFunc = (val: string) => {
   const workflowActionTypeMapping: Record<string, string> = {
@@ -87,9 +94,11 @@ const ContextStrategyLookup: Record<
   ReferenceContextStrategyName, ContextFunc
 > = {
   none: () => undefined,
-  instanceParent: (instance, elemIdToApiName) => {
+  instanceParent: ({ instance, elemByElemID }) => {
     const parent = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])[0]
-    return isReferenceExpression(parent) ? elemIdToApiName[parent.elemId.getFullName()] : undefined
+    return (isReferenceExpression(parent)
+      ? apiName(elemByElemID[parent.elemId.getFullName()])
+      : undefined)
   },
   neighborTypeWorkflow: neighborContextFunc('type', workflowActionMapper),
   neighborCPQLookup: neighborContextFunc(CPQ_LOOKUP_OBJECT_NAME),
@@ -101,10 +110,10 @@ const replaceReferenceValues = (
   resolverFinder: ReferenceResolverFinder,
   elemLookupMap: ElemLookupMapping,
   fieldsWithResolvedReferences: Set<string>,
-  elemIdToApiName: ElemIDToApiNameLookup,
+  elemByElemID: ElemIDToElemLookup,
 ): Values => {
   const getRefElem = (
-    val: string, target: ExtendedReferenceTargetDefinition, path?: ElemID
+    val: string, target: ExtendedReferenceTargetDefinition, field: Field, path?: ElemID
   ): Element | undefined => {
     const findElem = (value: string, targetType?: string): Element | undefined => (
       targetType !== undefined ? elemLookupMap[targetType]?.[value] : undefined
@@ -118,9 +127,11 @@ const replaceReferenceValues = (
     if (typeContextFunc === undefined) {
       return undefined
     }
-    const elemType = target.type ?? typeContextFunc(instance, elemIdToApiName, path)
+    const elemType = target.type ?? typeContextFunc({
+      instance, elemByElemID, field, fieldPath: path,
+    })
     return findElem(
-      target.lookup(val, parentContextFunc(instance, elemIdToApiName, path)),
+      target.lookup(val, parentContextFunc({ instance, elemByElemID, field, fieldPath: path })),
       elemType,
     )
   }
@@ -147,7 +158,7 @@ const replaceReferenceValues = (
       .filter(refResolver => refResolver.target !== undefined)
       .map(refResolver => toValidatedReference(
         refResolver.serializationStrategy,
-        getRefElem(val, refResolver.target as ExtendedReferenceTargetDefinition, path),
+        getRefElem(val, refResolver.target as ExtendedReferenceTargetDefinition, field, path),
       ))
       .filter(isDefined)
       .pop()
@@ -190,9 +201,9 @@ const groupByMetadataTypeAndApiName = (elements: Element[]): ElemLookupMapping =
     .value()
 )
 
-const mapElemIdToApiName = (elements: Element[]): ElemIDToApiNameLookup => (
+const mapElemIdToElem = (elements: Element[]): ElemIDToElemLookup => (
   Object.fromEntries(toObjectsAndFields(elements)
-    .map(e => [e.elemID.getFullName(), apiName(e)]))
+    .map(e => [e.elemID.getFullName(), e]))
 )
 
 export const addReferences = (
@@ -202,14 +213,14 @@ export const addReferences = (
   const resolverFinder = generateReferenceResolverFinder(defs)
   const elemLookup = groupByMetadataTypeAndApiName(elements)
   const fieldsWithResolvedReferences = new Set<string>()
-  const elemIdToApiName = mapElemIdToApiName(elements)
+  const elemByElemID = mapElemIdToElem(elements)
   elements.filter(isInstanceElement).forEach(instance => {
     instance.value = replaceReferenceValues(
       instance,
       resolverFinder,
       elemLookup,
       fieldsWithResolvedReferences,
-      elemIdToApiName,
+      elemByElemID,
     )
   })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])

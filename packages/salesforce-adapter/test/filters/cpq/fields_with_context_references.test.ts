@@ -123,6 +123,16 @@ describe('fields with context references filter', () => {
       [CPQ_LOOKUP_MESSAGE_FIELD]: 'message',
     }
   )
+  const productRuleValuesWithReference = {
+    [CPQ_LOOKUP_OBJECT_NAME]: new ReferenceExpression(mockLookupDataElemID),
+    [CPQ_LOOKUP_PRODUCT_FIELD]: 'not a real product',
+    [CPQ_LOOKUP_MESSAGE_FIELD]: 'message',
+  }
+  const productRuleInstanceWithReference = new InstanceElement(
+    'productRuleInstWithRef',
+    mockProductRuleObject,
+    productRuleValuesWithReference,
+  )
 
   const getCloneOfAllObjects = (): ObjectType[] =>
     [mockLookupQueryObject.clone(), mockProductRuleObject.clone(), mockLookupDataObject.clone()]
@@ -138,6 +148,7 @@ describe('fields with context references filter', () => {
         ...getCloneOfAllObjects(),
         productRuleWithBadLookupObjInstance.clone(),
         productRuleInstance.clone(),
+        productRuleInstanceWithReference.clone(),
       ]
       await filter.onFetch(elements)
     })
@@ -170,6 +181,26 @@ describe('fields with context references filter', () => {
       beforeAll(() => {
         productRule = elements
           .find(element => element.elemID.isEqual(productRuleInstance.elemID)) as InstanceElement
+      })
+
+      it('Should not change value if field name does not exist in lookup object', () => {
+        expect(productRule).toBeDefined()
+        expect(productRule.value.SBQQ__LookupProductField__c)
+          .toEqual(productRuleValues.SBQQ__LookupProductField__c)
+      })
+      it('Should replace value of field that exists in lookup object with reference', () => {
+        expect(productRule.value.SBQQ__LookupMessageField__c)
+          .toEqual(new ReferenceExpression(mockLookupDataObject.fields.message.elemID))
+      })
+    })
+
+    describe('When product rule (field context based) uses good lookup object and the context field is itself a reference', () => {
+      let productRule: InstanceElement
+      beforeAll(() => {
+        productRule = elements
+          .find(element => element.elemID.isEqual(
+            productRuleInstanceWithReference.elemID
+          )) as InstanceElement
       })
 
       it('Should not change value if field name does not exist in lookup object', () => {

@@ -20,6 +20,7 @@ import picklistStandardFieldValidator from './change_validators/picklist_standar
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
 import unknownFieldValidator from './change_validators/unknown_field'
 import customFieldTypeValidator from './change_validators/custom_field_type'
+import standardFieldLabelValidator from './change_validators/standard_field_label'
 
 const changeValidators: ChangeValidator[] = [
   packageValidator,
@@ -27,6 +28,7 @@ const changeValidators: ChangeValidator[] = [
   customObjectInstancesValidator,
   unknownFieldValidator,
   customFieldTypeValidator,
+  standardFieldLabelValidator,
 ]
 
 export default createChangeValidator(changeValidators)

@@ -62,7 +62,7 @@ export const metadataType = (element: Element): string => {
 export const isCustomObject = (element: Element): boolean =>
   metadataType(element) === CUSTOM_OBJECT
 
-export const isCustomField = (field: Field): boolean =>
+export const isFieldOfCustomObject = (field: Field): boolean =>
   isCustomObject(field.parent)
 
 export const isInstanceOfCustomObject = (element: Element): element is InstanceElement =>
@@ -836,8 +836,6 @@ export const toCustomField = (
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
-    // Cannot specify label on standard field
-    && (annotationName !== LABEL || isCustom(newField.fullName))
   )
 
   // Convert the annotations' names to the required API name

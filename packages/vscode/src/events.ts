@@ -57,8 +57,8 @@ export const onFileOpen = (): void => {
   vscode.commands.executeCommand('editor.foldAllMarkerRegions')
 }
 
-const showReloadWSPrompte = _.debounce(async (): Promise<void> => {
-  const msg = 'Some workspace files has changed. Reload vs-code for the change to take effect.'
+const showReloadWSPrompt = _.debounce(async (): Promise<void> => {
+  const msg = 'Some workspace files have changed. Reload vs-code for the change to take effect.'
   const action = 'Reload'
   const choice = await vscode.window.showInformationMessage(
     msg,
@@ -74,6 +74,6 @@ export const onFileChange = async (
   filename: string
 ): Promise<void> => {
   if (!(await workspace.listNaclFiles()).includes(filename)) {
-    showReloadWSPrompte()
+    showReloadWSPrompt()
   }
 }

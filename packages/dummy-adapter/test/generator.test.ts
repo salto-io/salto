@@ -15,26 +15,27 @@
 */
 import { isObjectType, isInstanceElement, isPrimitiveType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { generateElements, defaultParams } from '../src/generator'
+import { generateElements } from '../src/generator'
+import testParams from './test_params'
 
 
 describe('elements generator', () => {
   describe('consistency', () => {
     it('should create the same set of elements when invoked with the same seed and params', () => {
-      const run1 = generateElements(defaultParams)
-      const run2 = generateElements(defaultParams)
+      const run1 = generateElements(testParams)
+      const run2 = generateElements(testParams)
       expect(run1).toEqual(run2)
     })
     it('should create different results when invoked with different seeds', () => {
-      const run1 = generateElements(defaultParams)
+      const run1 = generateElements(testParams)
       const run2 = generateElements({
-        ...defaultParams,
+        ...testParams,
         seed: 3.14,
       })
       expect(run1).not.toEqual(run2)
     })
     it('should create the amount of elements as the params specified', () => {
-      const elements = generateElements(defaultParams)
+      const elements = generateElements(testParams)
       const primitives = elements.filter(isPrimitiveType)
       const [types, objects] = _.partition(
         elements.filter(isObjectType),
@@ -44,13 +45,13 @@ describe('elements generator', () => {
         elements.filter(isInstanceElement),
         e => e.path !== undefined && e.path[2] === 'Profile'
       )
-      expect(primitives).toHaveLength(defaultParams.numOfPrimitiveTypes)
-      expect(types).toHaveLength(defaultParams.numOfTypes)
+      expect(primitives).toHaveLength(testParams.numOfPrimitiveTypes)
+      expect(types).toHaveLength(testParams.numOfTypes)
       expect(
         _.uniq(objects.map(obj => obj.elemID.getFullName()))
-      ).toHaveLength(defaultParams.numOfObjs + 3) // 3 default types
-      expect(profiles).toHaveLength(defaultParams.numOfProfiles)
-      expect(records).toHaveLength(defaultParams.numOfRecords)
+      ).toHaveLength(testParams.numOfObjs + 3) // 3 default types
+      expect(profiles).toHaveLength(testParams.numOfProfiles)
+      expect(records).toHaveLength(testParams.numOfRecords)
     })
   })
 })

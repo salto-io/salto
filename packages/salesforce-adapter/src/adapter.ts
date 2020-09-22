@@ -35,7 +35,6 @@ import {
 } from './transformers/transformer'
 import { createDeployPackage } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
-import workflowRuleFilter from './filters/workflow_rule'
 import customObjectsFilter from './filters/custom_objects'
 import customObjectsSplitFilter from './filters/custom_object_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
@@ -61,7 +60,6 @@ import customObjectInstanceReferencesFilter from './filters/custom_object_instan
 import foreignKeyReferences from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupObjectsFilter from './filters/cpq/lookup_object'
-import cpqFieldsWithContextRefFilter from './filters/cpq/fields_with_context_references'
 import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
@@ -93,8 +91,6 @@ export const DEFAULT_FILTERS = [
   // addMissingIdsFilter should run after customObjectsFilter
   addMissingIdsFilter,
   layoutFilter,
-  // workflowRuleFilter depend on workflowFilter
-  workflowRuleFilter,
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   profilePermissionsFilter,
@@ -103,8 +99,6 @@ export const DEFAULT_FILTERS = [
   lookupFiltersFilter,
   customObjectInstanceReferencesFilter,
   cpqLookupObjectsFilter,
-  // cpqFieldsWithContextRefFilter should run before instanceReferences filter
-  cpqFieldsWithContextRefFilter,
   animationRulesFilter,
   samlInitMethodFilter,
   topicsForObjectsFilter,

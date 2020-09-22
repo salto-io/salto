@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value,
-  INSTANCE_ANNOTATIONS, isInstanceElement, Field, isObjectType,
+  INSTANCE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
@@ -24,91 +24,92 @@ import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_map
 import mockClient from '../client'
 import {
   OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
-  CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR,
+  CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE,
 } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
 
-describe('WorklowFieldUpdate filter', () => {
+const customObjectType = new ObjectType({
+  elemID: CUSTOM_OBJECT_TYPE_ID,
+  fields: {
+    [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+  },
+  annotations: {
+    [METADATA_TYPE]: CUSTOM_OBJECT,
+  },
+})
+
+const generateObjectAndInstance = ({
+  type,
+  objType = CUSTOM_OBJECT,
+  instanceName,
+  fieldName,
+  fieldValue,
+  parentType,
+}: {
+  type: string
+  objType?: string
+  instanceName?: string
+  fieldName: string
+  fieldValue?: Value
+  parentType?: string
+}): Element[] => {
+  const addFields = (obj: ObjectType): void => {
+    const createField = (name: string, fieldType = BuiltinTypes.STRING): Field => (
+      new Field(obj, name, fieldType, { [API_NAME]: [type, name].join(API_NAME_SEPARATOR) })
+    )
+    obj.fields = {
+      [fieldName]: createField(fieldName),
+      other: createField('other'),
+      ignore: createField('ignore', BuiltinTypes.NUMBER),
+    }
+    if (objType === CUSTOM_OBJECT) {
+      obj.fields[CUSTOM_OBJECT_ID_FIELD] = createField(CUSTOM_OBJECT_ID_FIELD)
+    }
+  }
+  if (objType === CUSTOM_OBJECT || fieldValue === undefined) {
+    const customObj = new ObjectType({
+      elemID: new ElemID(SALESFORCE, type, 'type', type),
+      annotations: {
+        [METADATA_TYPE]: objType,
+        [API_NAME]: type,
+      },
+    })
+    addFields(customObj)
+    return [customObj]
+  }
+  const obj = new ObjectType({
+    elemID: new ElemID(SALESFORCE, type),
+    annotations: { [METADATA_TYPE]: objType },
+  })
+  addFields(obj)
+  const realInstanceName = instanceName || `${type}Inst`
+  const instance = new InstanceElement(
+    realInstanceName,
+    obj,
+    {
+      [INSTANCE_FULL_NAME_FIELD]: parentType
+        ? [parentType, realInstanceName].join(API_NAME_SEPARATOR)
+        : realInstanceName,
+      [fieldName]: fieldValue,
+      other: fieldValue,
+      ignore: 125,
+    },
+    [SALESFORCE, OBJECTS_PATH, ...(parentType ? [parentType] : []), realInstanceName],
+    { ...(parentType
+      ? { [INSTANCE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(new ElemID(SALESFORCE, parentType)),
+      ] }
+      : {}) },
+  )
+  return [obj, instance]
+}
+
+describe('FieldReferences filter', () => {
   const { client } = mockClient()
 
   const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
-
-  const customObjectType = new ObjectType({
-    elemID: CUSTOM_OBJECT_TYPE_ID,
-    fields: {
-      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
-    },
-    annotations: {
-      [METADATA_TYPE]: CUSTOM_OBJECT,
-    },
-  })
-
-  const generateObjectAndInstance = ({
-    type,
-    objType = CUSTOM_OBJECT,
-    instanceName,
-    fieldName,
-    fieldValue,
-    parentType,
-  }: {
-    type: string
-    objType?: string
-    instanceName?: string
-    fieldName: string
-    fieldValue?: Value
-    parentType?: string
-  }): Element[] => {
-    const addFields = (obj: ObjectType): void => {
-      const createField = (name: string, fieldType = BuiltinTypes.STRING): Field => (
-        new Field(obj, name, fieldType, { [API_NAME]: [type, name].join(API_NAME_SEPARATOR) })
-      )
-      obj.fields = {
-        [fieldName]: createField(fieldName),
-        other: createField('other'),
-        ignore: createField('ignore', BuiltinTypes.NUMBER),
-      }
-      if (objType === CUSTOM_OBJECT) {
-        obj.fields[CUSTOM_OBJECT_ID_FIELD] = createField(CUSTOM_OBJECT_ID_FIELD)
-      }
-    }
-    if (objType === CUSTOM_OBJECT || fieldValue === undefined) {
-      const customObj = new ObjectType({
-        elemID: new ElemID(SALESFORCE, type, 'type', type),
-        annotations: {
-          [METADATA_TYPE]: objType,
-          [API_NAME]: type,
-        },
-      })
-      addFields(customObj)
-      return [customObj]
-    }
-    const obj = new ObjectType({
-      elemID: new ElemID(SALESFORCE, type),
-      annotations: { [METADATA_TYPE]: objType },
-    })
-    addFields(obj)
-    const realInstanceName = instanceName || `${type}Inst`
-    const instance = new InstanceElement(
-      realInstanceName,
-      obj,
-      {
-        [INSTANCE_FULL_NAME_FIELD]: parentType
-          ? [parentType, realInstanceName].join(API_NAME_SEPARATOR)
-          : realInstanceName,
-        [fieldName]: fieldValue,
-        other: fieldValue,
-        ignore: 125,
-      },
-      [SALESFORCE, OBJECTS_PATH, ...(parentType ? [parentType] : []), realInstanceName],
-      { ...(parentType
-        ? { [INSTANCE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(new ElemID(SALESFORCE, parentType)),
-        ] }
-        : {}) },
-    )
-    return [obj, instance]
-  }
 
   const generateElements = (
   ): Element[] => ([
@@ -253,6 +254,157 @@ describe('WorklowFieldUpdate filter', () => {
       )[0] as InstanceElement
       expect(inst.value.field).not.toBeInstanceOf(ReferenceExpression)
       expect(inst.value.field).toEqual('name')
+    })
+  })
+})
+
+describe('FieldReferences filter - neighbor context strategy', () => {
+  const { client } = mockClient()
+
+  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+
+  const parentName = 'User'
+  type WorkflowActionReference = {
+    name: string | ReferenceExpression
+    type: string
+  }
+  const generateWorkFlowRuleInstance = (
+    workflowRuleInstanceName: string,
+    actions: WorkflowActionReference | WorkflowActionReference[]
+  ): InstanceElement => {
+    const workflowActionReferenceObjectType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE),
+      annotations: {
+        [METADATA_TYPE]: WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+      },
+    })
+    workflowActionReferenceObjectType.fields = {
+      name: new Field(
+        workflowActionReferenceObjectType,
+        'name',
+        BuiltinTypes.STRING,
+        { [API_NAME]: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, 'name'].join(API_NAME_SEPARATOR) }
+      ),
+      type: new Field(
+        workflowActionReferenceObjectType,
+        'type',
+        BuiltinTypes.STRING,
+        { [API_NAME]: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, 'type'].join(API_NAME_SEPARATOR) }
+      ),
+    }
+    const workflowRuleObjectType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, WORKFLOW_RULE_METADATA_TYPE),
+      annotations: {
+        [METADATA_TYPE]: WORKFLOW_RULE_METADATA_TYPE,
+      },
+    })
+    workflowRuleObjectType.fields = {
+      actions: new Field(
+        workflowRuleObjectType,
+        'actions',
+        new ListType(workflowActionReferenceObjectType),
+        { [API_NAME]: [WORKFLOW_RULE_METADATA_TYPE, 'actions'].join(API_NAME_SEPARATOR) }
+      ),
+    }
+    const instanceName = `${parentName}_${workflowRuleInstanceName}`
+    return new InstanceElement(
+      instanceName,
+      workflowRuleObjectType,
+      {
+        [INSTANCE_FULL_NAME_FIELD]: `${parentName}${API_NAME_SEPARATOR}${workflowRuleInstanceName}`,
+        actions,
+      },
+      [SALESFORCE, OBJECTS_PATH, WORKFLOW_RULE_METADATA_TYPE, instanceName],
+      { [INSTANCE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(new ElemID(SALESFORCE, parentName)),
+      ] },
+    )
+  }
+
+  describe('on fetch', () => {
+    let instanceSingleAction: InstanceElement
+    let instanceMultiAction: InstanceElement
+    let instanceUnkownActionName: InstanceElement
+    let instanceMissingActionForType: InstanceElement
+    let instanceInvalidActionType: InstanceElement
+    let elements: Element[]
+    let actionInstances: InstanceElement[]
+
+    beforeAll(async () => {
+      const actionTypeObjects = ['WorkflowAlert', 'WorkflowFieldUpdate'].map(actionType => (
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, actionType),
+          annotations: {
+            [METADATA_TYPE]: actionType,
+          },
+        })
+      ))
+      const actionName = 'foo'
+      const instanceName = `${parentName}_${actionName}`
+      // creating two objects of different types with the same api name
+      actionInstances = actionTypeObjects.map(actionTypeObj => (
+        new InstanceElement(
+          instanceName,
+          actionTypeObj,
+          {
+            [INSTANCE_FULL_NAME_FIELD]: `${parentName}${API_NAME_SEPARATOR}${actionName}`,
+          },
+          [SALESFORCE, OBJECTS_PATH, actionTypeObj.elemID.typeName, instanceName],
+          { [INSTANCE_ANNOTATIONS.PARENT]: [
+            new ReferenceExpression(new ElemID(SALESFORCE, parentName)),
+          ] },
+        )
+      ))
+
+      const actionReferences = ['Alert', 'FieldUpdate'].map(actionType => ({
+        name: actionName,
+        type: actionType,
+      }))
+
+      instanceSingleAction = generateWorkFlowRuleInstance('single', actionReferences[0])
+      instanceMultiAction = generateWorkFlowRuleInstance('multi', actionReferences)
+      instanceUnkownActionName = generateWorkFlowRuleInstance('unknownActionName', { name: 'unkown', type: 'Alert' })
+      instanceMissingActionForType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'Task' })
+      instanceInvalidActionType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'InvalidType' })
+      const workflowRuleType = instanceSingleAction.type
+
+      elements = [
+        customObjectType,
+        ...generateObjectAndInstance({
+          type: parentName,
+          fieldName: 'name',
+        }),
+        workflowRuleType,
+        instanceSingleAction, instanceMultiAction,
+        instanceUnkownActionName, instanceMissingActionForType, instanceInvalidActionType,
+        ...actionTypeObjects, ...actionInstances,
+      ]
+      await filter.onFetch(elements)
+    })
+
+    it('should have references to the right actions', () => {
+      const getFullName = (action: WorkflowActionReference): string => {
+        expect(action.name).toBeInstanceOf(ReferenceExpression)
+        return (action.name as ReferenceExpression).elemId.getFullName()
+      }
+      expect(getFullName(instanceSingleAction.value.actions)).toEqual(
+        actionInstances[0].elemID.getFullName()
+      )
+      expect(getFullName(instanceSingleAction.value.actions)).not.toEqual(
+        actionInstances[1].elemID.getFullName()
+      )
+      expect(getFullName(instanceMultiAction.value.actions[0])).toEqual(
+        actionInstances[0].elemID.getFullName()
+      )
+      expect(getFullName(instanceMultiAction.value.actions[1])).toEqual(
+        actionInstances[1].elemID.getFullName()
+      )
+    })
+
+    it('should not have references when lookup fails', () => {
+      expect(instanceUnkownActionName.value.actions.name).toEqual('unkown')
+      expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
+      expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
     })
   })
 })

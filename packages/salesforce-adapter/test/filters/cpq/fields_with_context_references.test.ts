@@ -16,9 +16,9 @@
 import { ObjectType, ElemID, Element, InstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { FilterWith } from '../../../src/filter'
 import SalesforceClient from '../../../src/client/client'
-import { SALESFORCE, CPQ_PRODUCT_RULE, CPQ_LOOKUP_OBJECT_NAME, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_MESSAGE_FIELD } from '../../../src/constants'
+import { SALESFORCE, CPQ_PRODUCT_RULE, CPQ_LOOKUP_OBJECT_NAME, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, API_NAME_SEPARATOR } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
-import filterCreator from '../../../src/filters/cpq/fields_with_context_references'
+import filterCreator from '../../../src/filters/field_references'
 import mockAdapter from '../../adapter'
 
 describe('fields with context references filter', () => {
@@ -36,13 +36,13 @@ describe('fields with context references filter', () => {
       product: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: 'product',
+          [API_NAME]: [lookupDataName, 'product'].join(API_NAME_SEPARATOR),
         },
       },
       message: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: 'message',
+          [API_NAME]: [lookupDataName, 'message'].join(API_NAME_SEPARATOR),
         },
       },
     },
@@ -65,13 +65,13 @@ describe('fields with context references filter', () => {
       [CPQ_LOOKUP_PRODUCT_FIELD]: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: CPQ_LOOKUP_PRODUCT_FIELD,
+          [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_PRODUCT_FIELD].join(API_NAME_SEPARATOR),
         },
       },
       [CPQ_LOOKUP_MESSAGE_FIELD]: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: CPQ_LOOKUP_MESSAGE_FIELD,
+          [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_MESSAGE_FIELD].join(API_NAME_SEPARATOR),
         },
       },
     },
@@ -88,13 +88,13 @@ describe('fields with context references filter', () => {
       [CPQ_LOOKUP_FIELD]: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: CPQ_LOOKUP_FIELD,
+          [API_NAME]: [CPQ_LOOKUP_QUERY, CPQ_LOOKUP_FIELD].join(API_NAME_SEPARATOR),
         },
       },
       anotherField: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: 'anotherField',
+          [API_NAME]: [CPQ_LOOKUP_QUERY, 'anotherField'].join(API_NAME_SEPARATOR),
         },
       },
     },
@@ -123,6 +123,16 @@ describe('fields with context references filter', () => {
       [CPQ_LOOKUP_MESSAGE_FIELD]: 'message',
     }
   )
+  const productRuleValuesWithReference = {
+    [CPQ_LOOKUP_OBJECT_NAME]: new ReferenceExpression(mockLookupDataElemID),
+    [CPQ_LOOKUP_PRODUCT_FIELD]: 'not a real product',
+    [CPQ_LOOKUP_MESSAGE_FIELD]: 'message',
+  }
+  const productRuleInstanceWithReference = new InstanceElement(
+    'productRuleInstWithRef',
+    mockProductRuleObject,
+    productRuleValuesWithReference,
+  )
 
   const getCloneOfAllObjects = (): ObjectType[] =>
     [mockLookupQueryObject.clone(), mockProductRuleObject.clone(), mockLookupDataObject.clone()]
@@ -138,6 +148,7 @@ describe('fields with context references filter', () => {
         ...getCloneOfAllObjects(),
         productRuleWithBadLookupObjInstance.clone(),
         productRuleInstance.clone(),
+        productRuleInstanceWithReference.clone(),
       ]
       await filter.onFetch(elements)
     })
@@ -170,6 +181,26 @@ describe('fields with context references filter', () => {
       beforeAll(() => {
         productRule = elements
           .find(element => element.elemID.isEqual(productRuleInstance.elemID)) as InstanceElement
+      })
+
+      it('Should not change value if field name does not exist in lookup object', () => {
+        expect(productRule).toBeDefined()
+        expect(productRule.value.SBQQ__LookupProductField__c)
+          .toEqual(productRuleValues.SBQQ__LookupProductField__c)
+      })
+      it('Should replace value of field that exists in lookup object with reference', () => {
+        expect(productRule.value.SBQQ__LookupMessageField__c)
+          .toEqual(new ReferenceExpression(mockLookupDataObject.fields.message.elemID))
+      })
+    })
+
+    describe('When product rule (field context based) uses good lookup object and the context field is itself a reference', () => {
+      let productRule: InstanceElement
+      beforeAll(() => {
+        productRule = elements
+          .find(element => element.elemID.isEqual(
+            productRuleInstanceWithReference.elemID
+          )) as InstanceElement
       })
 
       it('Should not change value if field name does not exist in lookup object', () => {

@@ -15,9 +15,10 @@
 */
 import DummyAdapter from '../src/adapter'
 import * as generator from '../src/generator'
+import testParams from './test_params'
 
 describe('dummy adapter', () => {
-  const adapter = new DummyAdapter(generator.defaultParams)
+  const adapter = new DummyAdapter(testParams)
   describe('deploy', () => {
     it('should be defined', () => {
       expect(adapter.deploy).toBeDefined()
@@ -33,7 +34,7 @@ describe('dummy adapter', () => {
   describe('fetch', () => {
     it('should return the result of the generateElement command withuot modifications', async () => {
       const fetchResult = await adapter.fetch()
-      expect(fetchResult).toEqual({ elements: generator.generateElements(generator.defaultParams) })
+      expect(fetchResult).toEqual({ elements: generator.generateElements(testParams) })
     })
   })
 })

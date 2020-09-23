@@ -18,8 +18,8 @@ import { types, collections, values } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
-  ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile, isPrimitiveValue, ListType,
+  Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
+  isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -195,7 +195,7 @@ const validateAnnotationsValue = (
   const restrictions = getRestriction({ annotations })
   const shouldEnforceValue = (): boolean =>
     restrictions.enforce_value !== false
-    && !(value instanceof ReferenceExpression && isElement(value.value))
+    && !(isReferenceExpression(value) && isElement(value.value))
 
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
@@ -331,6 +331,14 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
 }
 
 const validateValue = (elemID: ElemID, value: Value, type: TypeElement): ValidationError[] => {
+  if (Array.isArray(value) && !isListType(type)) {
+    if (value.length === 0) {
+      // return an error if value is required
+      return validateAnnotationsValue(elemID, undefined, type.annotations, type) ?? []
+    }
+    return validateValue(elemID, value, new ListType(type))
+  }
+
   if (isReferenceExpression(value)) {
     return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }
@@ -349,17 +357,8 @@ const validateValue = (elemID: ElemID, value: Value, type: TypeElement): Validat
   }
 
   if (isPrimitiveType(type)) {
-    const validatePrimitiveValue = (val: Value, eid: ElemID): InvalidValueTypeValidationError[] => (
-      !primitiveValidators[type.primitive](val)
-        ? [new InvalidValueTypeValidationError({ elemID: eid, value: val, type })]
-        : []
-    )
-
-    const primitiveValidationErrors = mapAsArrayWithIds(value, elemID).flatMap(
-      item => validatePrimitiveValue(item.value, item.nestedID)
-    )
-    if (primitiveValidationErrors.length > 0) {
-      return primitiveValidationErrors
+    if (!primitiveValidators[type.primitive](value)) {
+      return [new InvalidValueTypeValidationError({ elemID, value, type })]
     }
   }
 
@@ -375,13 +374,6 @@ const validateValue = (elemID: ElemID, value: Value, type: TypeElement): Validat
   if (isObjectType(type)) {
     if (!_.isObjectLike(value)) {
       return [new InvalidValueTypeValidationError({ elemID, value, type })]
-    }
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        // return an error if value is required
-        return validateAnnotationsValue(elemID, undefined, type.annotations, type) ?? []
-      }
-      return validateValue(elemID, value, new ListType(type))
     }
     return Object.keys(value).filter(k => type.fields[k]).flatMap(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define

@@ -874,6 +874,18 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(0)
       })
 
+      it('should not return error list/object mismatch with non-empty array with reference expressions', () => {
+        extInst.value = {
+          flatnum: 32,
+          nested: [{
+            bool: true,
+            num: new ReferenceExpression(extInst.elemID.createNestedID('flatnum')),
+          }],
+        }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
 
       it('should not return an error when matching list item', () => {
         extInst.value.list.push('abc')

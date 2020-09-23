@@ -36,7 +36,7 @@ import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
-  FOLDER, ENTRY_FORM, TRANSACTION_FORM,
+  FOLDER, ENTRY_FORM, TRANSACTION_FORM, ROLE, WORKFLOW,
 } from '../constants'
 
 const { makeArray } = collections.array
@@ -422,7 +422,7 @@ export default class NetsuiteClient {
     const orderTypesByFetchDuration = (): string[] => {
       // Fetching the below types takes statistically much more time than the others, and sometimes
       // they even fail on SDF internal timeout. We can save some fetch time if fetching them first.
-      const typesWithLongFetchDuration = new Set([TRANSACTION_FORM, ENTRY_FORM])
+      const typesWithLongFetchDuration = new Set([ENTRY_FORM, ROLE, TRANSACTION_FORM, WORKFLOW])
       return [...typeNames].sort((typeA: string, typeB: string): number => {
         if (typesWithLongFetchDuration.has(typeA) && !typesWithLongFetchDuration.has(typeB)) {
           return -1

@@ -23,7 +23,7 @@ import NetsuiteClient, {
   FolderCustomizationInfo, SDF_PATH_SEPARATOR, TemplateCustomTypeInfo,
 } from '../../src/client/client'
 import {
-  CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, WORKFLOW,
+  CUSTOM_RECORD_TYPE, ENTRY_FORM, ROLE, SAVED_SEARCH, TRANSACTION_FORM, WORKFLOW,
 } from '../../src/constants'
 
 
@@ -232,7 +232,9 @@ describe('netsuite client', () => {
         })
 
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const typesToFetch = [CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, WORKFLOW]
+      const typesToFetch = [
+        CUSTOM_RECORD_TYPE, ENTRY_FORM, ROLE, SAVED_SEARCH, TRANSACTION_FORM, WORKFLOW,
+      ]
       await client.getCustomObjects(typesToFetch, false)
       const numberOfCallsToImport = typesToFetch.length
       expect(mockExecuteAction).toHaveBeenCalledTimes(
@@ -242,12 +244,15 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(3, importObjectTypeCommandMatcher(ENTRY_FORM))
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectTypeCommandMatcher(ROLE))
       expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(5, importObjectTypeCommandMatcher(CUSTOM_RECORD_TYPE))
-      expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(4, importObjectTypeCommandMatcher(TRANSACTION_FORM))
+        .toHaveBeenNthCalledWith(5, importObjectTypeCommandMatcher(TRANSACTION_FORM))
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectTypeCommandMatcher(WORKFLOW))
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(7, importObjectTypeCommandMatcher(CUSTOM_RECORD_TYPE))
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(8, importObjectTypeCommandMatcher(SAVED_SEARCH))
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed', async () => {

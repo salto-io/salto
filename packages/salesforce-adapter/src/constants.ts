@@ -50,11 +50,11 @@ export enum FIELD_TYPE_NAMES {
   LOOKUP = 'Lookup',
   MASTER_DETAIL = 'MasterDetail',
   ROLLUP_SUMMARY = 'Summary',
+  ANY_TYPE = 'AnyType',
 }
 
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
-  ANY = 'AnyType',
 }
 
 export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES
@@ -87,7 +87,7 @@ export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES = [
 
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, ALL_FIELD_TYPE_NAMES> = {
-  anyType: INTERNAL_FIELD_TYPE_NAMES.ANY,
+  anyType: FIELD_TYPE_NAMES.ANY_TYPE,
   base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   boolean: FIELD_TYPE_NAMES.CHECKBOX,
   combobox: FIELD_TYPE_NAMES.PICKLIST,

@@ -567,7 +567,7 @@ export class Types {
       },
     }),
     AnyType: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.ANY),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ANY_TYPE),
       primitive: PrimitiveTypes.UNKNOWN,
       annotationTypes: {
         ...Types.commonAnnotationTypes,

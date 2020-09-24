@@ -17,7 +17,7 @@ import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType,
 import { FilterWith } from '../../../src/filter'
 import { fullApiName } from '../../../src/filters/utils'
 import SalesforceClient from '../../../src/client/client'
-import { SALESFORCE, CPQ_CUSTOM_SCRIPT, API_NAME, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_GROUP_FIELS, METADATA_TYPE, CUSTOM_OBJECT } from '../../../src/constants'
+import { SALESFORCE, CPQ_CUSTOM_SCRIPT, API_NAME, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_GROUP_FIELDS, METADATA_TYPE, CUSTOM_OBJECT } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/cpq/custom_script'
 import mockAdapter from '../../adapter'
@@ -38,10 +38,10 @@ describe('cpq custom script filter', () => {
           [API_NAME]: fullApiName(CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_RATE_FIELDS),
         },
       },
-      [CPQ_GROUP_FIELS]: {
+      [CPQ_GROUP_FIELDS]: {
         type: Types.primitiveDataTypes.LongTextArea,
         annotations: {
-          [API_NAME]: fullApiName(CPQ_CUSTOM_SCRIPT, CPQ_GROUP_FIELS),
+          [API_NAME]: fullApiName(CPQ_CUSTOM_SCRIPT, CPQ_GROUP_FIELDS),
         },
       },
       randomField: {
@@ -58,7 +58,7 @@ describe('cpq custom script filter', () => {
   })
   const fromServiceCustomScriptValues = {
     [CPQ_CONSUMPTION_RATE_FIELDS]: 'lala\r\nzaza\nbaba',
-    [CPQ_GROUP_FIELS]: null,
+    [CPQ_GROUP_FIELDS]: null,
     randomField: 'stayLikeThis',
   }
   const mockCustomScriptInstance = new InstanceElement(
@@ -68,7 +68,7 @@ describe('cpq custom script filter', () => {
   )
   const afterOnFetchCustomScriptValues = {
     [CPQ_CONSUMPTION_RATE_FIELDS]: ['lala', 'zaza', 'baba'],
-    [CPQ_GROUP_FIELS]: null,
+    [CPQ_GROUP_FIELDS]: null,
     randomField: 'stayLikeThis',
   }
   const mockAfterOnFetchCustomScriptInstance = new InstanceElement(
@@ -100,7 +100,7 @@ describe('cpq custom script filter', () => {
       expect(customScriptObj).toBeDefined()
       expect(customScriptObj.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
         .toEqual(new ListType(Types.primitiveDataTypes.Text))
-      expect(customScriptObj.fields[CPQ_GROUP_FIELS].type)
+      expect(customScriptObj.fields[CPQ_GROUP_FIELDS].type)
         .toEqual(new ListType(Types.primitiveDataTypes.Text))
     })
 
@@ -108,8 +108,8 @@ describe('cpq custom script filter', () => {
       const customScriptInstance = elements
         .find(element => element.elemID.isEqual(mockCustomScriptInstance.elemID)) as InstanceElement
       expect(customScriptInstance.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual(['lala', 'zaza', 'baba'])
-      expect(customScriptInstance.value[CPQ_GROUP_FIELS])
-        .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+      expect(customScriptInstance.value[CPQ_GROUP_FIELDS])
+        .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
       expect(customScriptInstance.value.randomField)
         .toEqual(fromServiceCustomScriptValues.randomField)
     })
@@ -136,7 +136,7 @@ describe('cpq custom script filter', () => {
         const object = getChangeElement(cpqCustomScriptObjAddChange as AdditionChange<ObjectType>)
         expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(object.fields[CPQ_GROUP_FIELS].type)
+        expect(object.fields[CPQ_GROUP_FIELDS].type)
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
@@ -150,8 +150,8 @@ describe('cpq custom script filter', () => {
           customScriptInstanceAdd as Change
         ) as InstanceElement
         expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual(['lala', 'zaza', 'baba'])
-        expect(changeElement.value[CPQ_GROUP_FIELS])
-          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+        expect(changeElement.value[CPQ_GROUP_FIELDS])
+          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
         expect(changeElement.value.randomField)
           .toEqual(fromServiceCustomScriptValues.randomField)
       })
@@ -182,13 +182,13 @@ describe('cpq custom script filter', () => {
           .data.after
         expect(afterData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(afterData.fields[CPQ_GROUP_FIELS].type)
+        expect(afterData.fields[CPQ_GROUP_FIELDS].type)
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
         const beforeData = (cpqCustomScriptObjModificationChange as ModificationChange<ObjectType>)
           .data.before
         expect(beforeData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(beforeData.fields[CPQ_GROUP_FIELS].type)
+        expect(beforeData.fields[CPQ_GROUP_FIELDS].type)
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
@@ -202,8 +202,8 @@ describe('cpq custom script filter', () => {
           customScriptInstanceModify as Change
         ) as InstanceElement
         expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual(['lala', 'zaza', 'baba'])
-        expect(changeElement.value[CPQ_GROUP_FIELS])
-          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+        expect(changeElement.value[CPQ_GROUP_FIELDS])
+          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
         expect(changeElement.value.randomField)
           .toEqual(fromServiceCustomScriptValues.randomField)
       })
@@ -216,7 +216,7 @@ describe('cpq custom script filter', () => {
     mockAfterOnFetchCustomScriptObject
       .fields[CPQ_CONSUMPTION_RATE_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
     mockAfterOnFetchCustomScriptObject
-      .fields[CPQ_GROUP_FIELS].type = new ListType(Types.primitiveDataTypes.Text)
+      .fields[CPQ_GROUP_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
     describe('Modification changes', () => {
       beforeAll(async () => {
         changes = [
@@ -256,15 +256,15 @@ describe('cpq custom script filter', () => {
         const afterElement = (customScriptInstanceModify as ModificationChange<InstanceElement>)
           .data.after
         expect(afterElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual('lala\nzaza\nbaba')
-        expect(afterElement.value[CPQ_GROUP_FIELS])
-          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+        expect(afterElement.value[CPQ_GROUP_FIELDS])
+          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
         expect(afterElement.value.randomField)
           .toEqual(fromServiceCustomScriptValues.randomField)
         const beforeElement = (customScriptInstanceModify as ModificationChange<InstanceElement>)
           .data.before
         expect(beforeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual('lala\nzaza\nbaba')
-        expect(beforeElement.value[CPQ_GROUP_FIELS])
-          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+        expect(beforeElement.value[CPQ_GROUP_FIELDS])
+          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
         expect(beforeElement.value.randomField)
           .toEqual(fromServiceCustomScriptValues.randomField)
       })
@@ -310,8 +310,8 @@ describe('cpq custom script filter', () => {
           customScriptInstanceAdd as Change
         ) as InstanceElement
         expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS]).toEqual('lala\nzaza\nbaba')
-        expect(changeElement.value[CPQ_GROUP_FIELS])
-          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELS])
+        expect(changeElement.value[CPQ_GROUP_FIELDS])
+          .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
         expect(changeElement.value.randomField)
           .toEqual(fromServiceCustomScriptValues.randomField)
       })

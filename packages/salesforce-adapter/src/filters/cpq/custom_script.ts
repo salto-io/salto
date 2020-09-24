@@ -18,13 +18,13 @@ import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificatio
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { getCustomObjects } from '../utils'
-import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS } from '../../constants'
+import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS } from '../../constants'
 import { Types, apiName, isInstanceOfCustomObject, isCustomObject } from '../../transformers/transformer'
 
 export const refListFieldsToObject: Record<string, string> = {
   [CPQ_CONSUMPTION_RATE_FIELDS]: 'ConsumptionRate',
   [CPQ_CONSUMPTION_SCHEDULE_FIELDS]: 'ConsumptionSchedule',
-  [CPQ_GROUP_FIELS]: 'SBQQ__QuoteLineGroup__c',
+  [CPQ_GROUP_FIELDS]: 'SBQQ__QuoteLineGroup__c',
   [CPQ_QUOTE_FIELDS]: 'SBQQ__QuoteLine__c',
   [CPQ_QUOTE_LINE_FIELDS]: 'SBQQ__Quote__c',
 }
@@ -73,8 +73,8 @@ const refListValuesToString = (cpqCustomScriptInstance: InstanceElement): Instan
   return cpqCustomScriptInstance
 }
 
-const isInstanceOfCustomScript = (instance: InstanceElement): boolean =>
-  (isInstanceOfCustomObject(instance) && apiName(instance.type) === CPQ_CUSTOM_SCRIPT)
+const isInstanceOfCustomScript = (element: Element): element is InstanceElement =>
+  (isInstanceOfCustomObject(element) && apiName(element.type) === CPQ_CUSTOM_SCRIPT)
 
 const getCustomScriptInstanceChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
@@ -124,9 +124,7 @@ const filter: FilterCreator = () => ({
       return
     }
     refListFieldsToTextLists(cpqCustomScriptObject)
-    const cpqCustomScriptInstances = elements
-      .filter(isInstanceOfCustomObject)
-      .filter(isInstanceOfCustomScript)
+    const cpqCustomScriptInstances = elements.filter(isInstanceOfCustomScript)
     cpqCustomScriptInstances.forEach(refListValuesToList)
   },
   preDeploy: async changes => {

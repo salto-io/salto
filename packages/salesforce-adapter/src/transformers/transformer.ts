@@ -29,7 +29,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { naclCase, TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
-  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
+  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, DESCRIPTION,
@@ -40,7 +40,7 @@ import {
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
-  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD,
+  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -348,7 +348,7 @@ export class Types {
   }
 
   // Type mapping for custom objects
-  public static primitiveDataTypes: Record<FIELD_TYPE_NAMES, PrimitiveType> = {
+  public static primitiveDataTypes: Record<ALL_FIELD_TYPE_NAMES, PrimitiveType> = {
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
@@ -560,14 +560,14 @@ export class Types {
       },
     }),
     Unknown: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.UNKNOWN),
+      elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.UNKNOWN),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     AnyType: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ANYTYPE),
+      elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.ANY),
       primitive: PrimitiveTypes.UNKNOWN,
       annotationTypes: {
         ...Types.commonAnnotationTypes,

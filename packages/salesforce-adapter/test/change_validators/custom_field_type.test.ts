@@ -42,7 +42,7 @@ describe('custom field type change validator', () => {
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       expect(changeError.elemID).toEqual(beforeField.elemID)
-      expect(changeError.severity).toEqual('Error')
+      expect(changeError.severity).toEqual('Warning')
     })
 
     it('should have error for field creation with invalid field type', async () => {
@@ -51,7 +51,7 @@ describe('custom field type change validator', () => {
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       expect(changeError.elemID).toEqual(field.elemID)
-      expect(changeError.severity).toEqual('Error')
+      expect(changeError.severity).toEqual('Warning')
     })
 
     it('should have no error when changing a field but not its type', async () => {
@@ -64,7 +64,14 @@ describe('custom field type change validator', () => {
 
     it('should have no error when changing a field type to a valid type', async () => {
       const beforeField = createField(customObj, Types.primitiveDataTypes.Text, 'Something')
-      const afterField = createField(customObj, Types.primitiveDataTypes.Time, 'Somthing')
+      const afterField = createField(customObj, Types.primitiveDataTypes.Time, 'Something')
+      const changeErrors = await runChangeValidator(beforeField, afterField)
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('should have no error when changing a field type to a valid formula type', async () => {
+      const beforeField = createField(customObj, Types.primitiveDataTypes.Number, 'Something')
+      const afterField = createField(customObj, Types.formulaDataTypes.FormulaNumber, 'Something')
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)
     })

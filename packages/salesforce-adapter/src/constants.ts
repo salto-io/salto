@@ -50,18 +50,14 @@ export enum FIELD_TYPE_NAMES {
   LOOKUP = 'Lookup',
   MASTER_DETAIL = 'MasterDetail',
   ROLLUP_SUMMARY = 'Summary',
-  // internal-only placeholder for fields whose type is unknown
-  UNKNOWN = 'Unknown',
-  ANYTYPE = 'AnyType'
 }
-export const FIELD_TYPE_NAME_VALUES = [FIELD_TYPE_NAMES.AUTONUMBER, FIELD_TYPE_NAMES.TEXT,
-  FIELD_TYPE_NAMES.NUMBER, FIELD_TYPE_NAMES.PERCENT, FIELD_TYPE_NAMES.CHECKBOX,
-  FIELD_TYPE_NAMES.DATE, FIELD_TYPE_NAMES.TIME, FIELD_TYPE_NAMES.DATETIME,
-  FIELD_TYPE_NAMES.CURRENCY, FIELD_TYPE_NAMES.PICKLIST, FIELD_TYPE_NAMES.MULTIPICKLIST,
-  FIELD_TYPE_NAMES.EMAIL, FIELD_TYPE_NAMES.PHONE, FIELD_TYPE_NAMES.LONGTEXTAREA,
-  FIELD_TYPE_NAMES.RICHTEXTAREA, FIELD_TYPE_NAMES.TEXTAREA, FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
-  FIELD_TYPE_NAMES.URL, FIELD_TYPE_NAMES.LOOKUP, FIELD_TYPE_NAMES.MASTER_DETAIL,
-  FIELD_TYPE_NAMES.ROLLUP_SUMMARY, FIELD_TYPE_NAMES.UNKNOWN]
+
+export enum INTERNAL_FIELD_TYPE_NAMES {
+  UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
+  ANY = 'AnyType',
+}
+
+export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES
 
 export enum COMPOUND_FIELD_TYPE_NAMES {
   ADDRESS = 'Address',
@@ -78,14 +74,20 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
 
 // target types for creating / updating custom fields:
 export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES = [
-  // other valid field types that we do not currently support are:
-  // MetadataRelationship, ExternalLookup, IndirectLookup, Hierarchy, File
-  ...(FIELD_TYPE_NAME_VALUES.filter(type => type !== FIELD_TYPE_NAMES.UNKNOWN)),
-  COMPOUND_FIELD_TYPE_NAMES.LOCATION]
+  ...Object.values(FIELD_TYPE_NAMES),
+  COMPOUND_FIELD_TYPE_NAMES.LOCATION,
+  // The following types are valid according to the documentation
+  // TODO - support these field types
+  'MetadataRelationship',
+  'ExternalLookup',
+  'IndirectLookup',
+  'Hierarchy',
+  'File',
+]
 
 export const FIELD_SOAP_TYPE_NAMES:
-Record<string, FIELD_TYPE_NAMES> = {
-  anyType: FIELD_TYPE_NAMES.ANYTYPE,
+Record<string, ALL_FIELD_TYPE_NAMES> = {
+  anyType: INTERNAL_FIELD_TYPE_NAMES.ANY,
   base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   boolean: FIELD_TYPE_NAMES.CHECKBOX,
   combobox: FIELD_TYPE_NAMES.PICKLIST,

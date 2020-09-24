@@ -60,6 +60,7 @@ import customObjectInstanceReferencesFilter from './filters/custom_object_instan
 import foreignKeyReferences from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupObjectsFilter from './filters/cpq/lookup_object'
+import cpqCustomScriptFilter from './filters/cpq/custom_script'
 import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
@@ -98,6 +99,7 @@ export const DEFAULT_FILTERS = [
   flowFilter,
   lookupFiltersFilter,
   customObjectInstanceReferencesFilter,
+  cpqCustomScriptFilter,
   cpqLookupObjectsFilter,
   animationRulesFilter,
   samlInitMethodFilter,
@@ -475,7 +477,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       }
       return { action: 'modify', data: getBeforeAndAfterElements() }
     }
-
+    await this.filtersRunner.preDeploy(changeGroup.changes)
     const resolvedChanges = changeGroup.changes
       .map(change => resolveChangeElement(change, getLookUpName))
     const resolvedChangeGroup = { groupID: changeGroup.groupID, changes: resolvedChanges }
@@ -501,7 +503,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     )
     const appliedChanges = _.flatten(results.map(res => res.appliedChanges))
       .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
-
     await this.filtersRunner.onDeploy(appliedChanges)
     return {
       appliedChanges,

@@ -33,11 +33,12 @@ describe('SalesforceAdapter filters', () => {
   ): SalesforceAdapter => mockAdapter({ adapterParams: { filterCreators } }).adapter
 
   describe('when filter methods are implemented', () => {
-    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy'>>
+    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>>
 
     beforeEach(() => {
       filter = {
         onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
+        preDeploy: mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
         onDeploy: mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue([]),
       }
 

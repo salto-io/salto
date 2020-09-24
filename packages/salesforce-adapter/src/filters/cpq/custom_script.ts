@@ -74,7 +74,7 @@ const refListValuesToString = (cpqCustomScriptInstance: InstanceElement): Instan
 }
 
 const isInstanceOfCustomScript = (instance: InstanceElement): boolean =>
-  (apiName(instance.type) === CPQ_CUSTOM_SCRIPT)
+  (isInstanceOfCustomObject(instance) && apiName(instance.type) === CPQ_CUSTOM_SCRIPT)
 
 const getCustomScriptInstanceChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
@@ -104,6 +104,18 @@ const getRefListFieldChanges = (
     .filter(change =>
       refListFieldNames.includes(apiName(getChangeElement(change), true))))
 
+const applyFuncOnCustomScriptInstanceChanges = (
+  changes: ReadonlyArray<Change<ChangeDataType>>,
+  fn: (inst: InstanceElement) => InstanceElement
+): void => {
+  const customScriptInstanceChanges = getCustomScriptInstanceChanges(changes)
+  customScriptInstanceChanges.forEach(customScriptInstanceChange =>
+    applyFunctionToChangeData(
+      customScriptInstanceChange,
+      fn
+    ))
+}
+
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const customObjects = getCustomObjects(elements)
@@ -118,12 +130,7 @@ const filter: FilterCreator = () => ({
     cpqCustomScriptInstances.forEach(refListValuesToList)
   },
   preDeploy: async changes => {
-    const customScriptInstanceChanges = getCustomScriptInstanceChanges(changes)
-    customScriptInstanceChanges.forEach(customScriptInstanceChange =>
-      applyFunctionToChangeData(
-        customScriptInstanceChange,
-        refListValuesToString
-      ))
+    applyFuncOnCustomScriptInstanceChanges(changes, refListValuesToString)
     const refListFieldChanges = getRefListFieldChanges(changes)
     refListFieldChanges.forEach(refListFieldChange =>
       applyFunctionToChangeData(
@@ -132,12 +139,7 @@ const filter: FilterCreator = () => ({
       ))
   },
   onDeploy: async changes => {
-    const customScriptInstanceChanges = getCustomScriptInstanceChanges(changes)
-    customScriptInstanceChanges.forEach(customScriptInstanceChange =>
-      applyFunctionToChangeData(
-        customScriptInstanceChange,
-        refListValuesToList
-      ))
+    applyFuncOnCustomScriptInstanceChanges(changes, refListValuesToList)
     const customScriptObjectChange = getCustomScriptObjectChange(changes)
     if (customScriptObjectChange !== undefined) {
       applyFunctionToChangeData(

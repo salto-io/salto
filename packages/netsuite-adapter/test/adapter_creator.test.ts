@@ -23,6 +23,7 @@ import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
+  DEPLOY_REFERENCED_ELEMENTS,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import { DEFAULT_SDF_CONCURRENCY } from '../src/config'
@@ -53,6 +54,7 @@ describe('NetsuiteAdapter creator', () => {
       [TYPES_TO_SKIP]: ['test1'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
       [FETCH_ALL_TYPES_AT_ONCE]: false,
+      [DEPLOY_REFERENCED_ELEMENTS]: false,
       [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
       notExist: ['not exist'],
     }
@@ -99,6 +101,7 @@ describe('NetsuiteAdapter creator', () => {
           [TYPES_TO_SKIP]: ['test1'],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
           [FETCH_ALL_TYPES_AT_ONCE]: false,
+          [DEPLOY_REFERENCED_ELEMENTS]: false,
           [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
         },
         getElemIdFunc: mockGetElemIdFunc,

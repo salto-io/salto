@@ -28,7 +28,7 @@ import NetsuiteAdapter from './adapter'
 import { configType, DEFAULT_SDF_CONCURRENCY, NetsuiteConfig } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
-  SDF_CONCURRENCY_LIMIT,
+  SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS,
 } from './constants'
 
 const log = logger(module)
@@ -64,6 +64,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   const netsuiteConfig = {
     [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
     [FETCH_ALL_TYPES_AT_ONCE]: config?.value?.[FETCH_ALL_TYPES_AT_ONCE],
+    [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
     [SDF_CONCURRENCY_LIMIT]: config?.value?.[SDF_CONCURRENCY_LIMIT],
     [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
   }

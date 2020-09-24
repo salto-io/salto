@@ -16,29 +16,38 @@
 
 import {
   ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement,
-  ReferenceExpression, ObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveValues } from '@salto-io/adapter-utils'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
-  FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+  FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
 } from '../src/constants'
-import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
+import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
   convertToCustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
 } from '../src/client/client'
 import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
+import * as referenceDependenciesModule from '../src/reference_dependencies'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual('../src/config'),
   getConfigFromConfigChanges: jest.fn(),
 }))
+jest.mock('../src/reference_dependencies')
+const getAllReferencedInstancesMock = referenceDependenciesModule
+  .getAllReferencedInstances as jest.Mock
+getAllReferencedInstancesMock
+  .mockImplementation((sourceInstances: ReadonlyArray<InstanceElement>) => sourceInstances)
+
+const getRequiredReferencedInstancesMock = referenceDependenciesModule
+  .getRequiredReferencedInstances as jest.Mock
+getRequiredReferencedInstancesMock
+  .mockImplementation((sourceInstances: ReadonlyArray<InstanceElement>) => sourceInstances)
 
 const onFetchMock = jest.fn().mockImplementation(async _arg => undefined)
 const firstDummyFilter: FilterCreator = () => ({
@@ -56,6 +65,7 @@ describe('Adapter', () => {
     [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
     [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
     [FETCH_ALL_TYPES_AT_ONCE]: true,
+    [DEPLOY_REFERENCED_ELEMENTS]: false,
   }
   const netsuiteAdapter = new NetsuiteAdapter({
     client,
@@ -390,46 +400,33 @@ describe('Adapter', () => {
       })
     })
 
-    describe('depending instances', () => {
-      const dependsOn1Instance = new InstanceElement('dependsOn1Instance', customTypes[ENTITY_CUSTOM_FIELD], {
-        [SCRIPT_ID]: 'custentity_depends_on_1_instance',
-        label: new ReferenceExpression(fileInstance.elemID.createNestedID(PATH),
-          fileInstance.value[PATH], fileInstance),
+    it('should call getAllReferencedInstances when deployReferencedElements is set to true', async () => {
+      const configWithDeployReferencedElements = {
+        [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+        [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
+        [FETCH_ALL_TYPES_AT_ONCE]: true,
+        [DEPLOY_REFERENCED_ELEMENTS]: true,
+      }
+      const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
+        client,
+        filtersCreators: [firstDummyFilter, secondDummyFilter],
+        config: configWithDeployReferencedElements,
+        getElemIdFunc: mockGetElemIdFunc,
       })
 
-      const anotherAdapterInstance = new InstanceElement(
-        'anotherAdapterInstance',
-        new ObjectType({ elemID: new ElemID('another', 'type'),
-          fields: {
-            id: { type: BuiltinTypes.SERVICE_ID },
-          } }),
-        { id: 'serviceIdValue' },
-      )
-
-      const instanceWithManyRefs = new InstanceElement('dependsOn2Instances', customTypes[ENTITY_CUSTOM_FIELD], {
-        [SCRIPT_ID]: 'custentity_depends_on_2',
-        label: new ReferenceExpression(dependsOn1Instance.elemID.createNestedID(SCRIPT_ID),
-          dependsOn1Instance.value[SCRIPT_ID], dependsOn1Instance),
-        description: new ReferenceExpression(origInstance.elemID.createNestedID('label'),
-          origInstance.value.label, origInstance),
-        help: new ReferenceExpression(anotherAdapterInstance.elemID.createNestedID('id'),
-          anotherAdapterInstance.value.id, anotherAdapterInstance),
+      await netsuiteAdapterWithDeployReferencedElements.deploy({
+        groupID: instance.elemID.getFullName(),
+        changes: [{ action: 'add', data: { after: instance } }],
       })
 
-      it('should deploy depending', async () => {
-        const result = await adapterAdd(instanceWithManyRefs)
-        expect(result.errors).toHaveLength(0)
-        expect(result.appliedChanges).toHaveLength(1)
-        expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
-          [toCustomizationInfo(resolveValues(instanceWithManyRefs, getLookUpName)),
-            toCustomizationInfo(resolveValues(dependsOn1Instance, getLookUpName)),
-            toCustomizationInfo(resolveValues(fileInstance, getLookUpName))]
-        ))
-        expect(client.deploy).not.toHaveBeenCalledWith(expect.arrayContaining(
-          [toCustomizationInfo(resolveValues(origInstance, getLookUpName)),
-            toCustomizationInfo(resolveValues(anotherAdapterInstance, getLookUpName))]
-        ))
-      })
+      expect(getAllReferencedInstancesMock).toHaveBeenCalledTimes(1)
+      expect(getRequiredReferencedInstancesMock).not.toHaveBeenCalled()
+    })
+
+    it('should call getRequiredReferencedInstances when deployReferencedElements is set to false', async () => {
+      await adapterAdd(instance)
+      expect(getRequiredReferencedInstancesMock).toHaveBeenCalledTimes(1)
+      expect(getAllReferencedInstancesMock).not.toHaveBeenCalled()
     })
   })
 })

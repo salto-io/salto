@@ -164,6 +164,38 @@ export const transformValues = (
   return _.isEmpty(result) ? undefined : result
 }
 
+export const transformElementAnnotations = <T extends Element>(
+  {
+    element,
+    transformFunc,
+    strict,
+  }: {
+    element: T
+    transformFunc: TransformFunc
+    strict?: boolean
+  }
+): Values => {
+  const elementAnnotationTypes = (): TypeMap => {
+    if (isInstanceElement(element)) {
+      return InstanceAnnotationTypes
+    }
+
+    if (isField(element)) {
+      return element.type.annotationTypes
+    }
+
+    return element.annotationTypes
+  }
+
+  return transformValues({
+    values: element.annotations,
+    type: elementAnnotationTypes(),
+    transformFunc,
+    strict,
+    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+  }) || {}
+}
+
 export const transformElement = <T extends Element>(
   {
     element,
@@ -177,25 +209,7 @@ export const transformElement = <T extends Element>(
 ): T => {
   let newElement: Element
 
-  const elementAnnotationTypes = (): TypeMap => {
-    if (isInstanceElement(element)) {
-      return InstanceAnnotationTypes
-    }
-
-    if (isField(element)) {
-      return element.type.annotationTypes
-    }
-
-    return element.annotationTypes
-  }
-
-  const transformedAnnotations = transformValues({
-    values: element.annotations,
-    type: elementAnnotationTypes(),
-    transformFunc,
-    strict,
-    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
-  }) || {}
+  const transformedAnnotations = transformElementAnnotations({ element, transformFunc, strict })
 
   if (isInstanceElement(element)) {
     const transformedValues = transformValues({
@@ -695,7 +709,7 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
 
 export const safeJsonStringify = (value: Value): string => safeStringify(value)
 
-export const getAllReferencedIds = (element: Element): Set<string> => {
+export const getAllReferencedIds = (element: Element, onlyAnnotations = false): Set<string> => {
   const allReferencedIds = new Set<string>()
   const transformFunc: TransformFunc = ({ value }) => {
     if (isReferenceExpression(value)) {
@@ -704,7 +718,8 @@ export const getAllReferencedIds = (element: Element): Set<string> => {
     return value
   }
 
-  transformElement({ element, transformFunc, strict: false })
+  const transform = onlyAnnotations ? transformElementAnnotations : transformElement
+  transform({ element, transformFunc, strict: false })
 
   return allReferencedIds
 }

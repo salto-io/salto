@@ -255,18 +255,29 @@ describe('dependency changers', () => {
   describe('addReferencesDependency', () => {
     const testTypeId = new ElemID('test', 'type')
     let testAnnoType: PrimitiveType
+    let fieldRefType: PrimitiveType
     let testType: ObjectType
     let testParent: InstanceElement
     let testInstance: InstanceElement
 
     beforeEach(() => {
+      fieldRefType = new PrimitiveType({
+        elemID: new ElemID('test', 'other'),
+        primitive: PrimitiveTypes.NUMBER,
+      })
       testAnnoType = new PrimitiveType({
         elemID: new ElemID('test', 'anno'),
         primitive: PrimitiveTypes.STRING,
       })
       testType = new ObjectType({
         elemID: testTypeId,
-        fields: { ref: { type: BuiltinTypes.STRING } },
+        fields: {
+          ref: { type: BuiltinTypes.STRING },
+          fieldWithRef: {
+            type: BuiltinTypes.STRING,
+            annotations: { fieldRef: new ReferenceExpression(fieldRefType.elemID) },
+          },
+        },
         annotations: { annoRef: new ReferenceExpression(testAnnoType.elemID) },
         annotationTypes: { annoRef: testAnnoType },
       })
@@ -342,6 +353,33 @@ describe('dependency changers', () => {
       })
       it('should not add dependency', () => {
         expect(dependencyChanges).toHaveLength(0)
+      })
+    })
+    describe('when reference source is a type', () => {
+      beforeEach(async () => {
+        const inputChanges = new Map([
+          [0, toChange({ after: testType })],
+          [1, toChange({ after: testType.fields.ref })],
+          [2, toChange({ after: testType.fields.fieldWithRef })],
+          [3, toChange({ after: testAnnoType })],
+          [4, toChange({ after: fieldRefType })],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+      it('should add references from field annotations to field nodes', () => {
+        expect(dependencyChanges).toContainEqual(
+          { action: 'add', dependency: { source: 2, target: 4 } }
+        )
+      })
+      it('should add references from type annotations to type', () => {
+        expect(dependencyChanges).toContainEqual(
+          { action: 'add', dependency: { source: 0, target: 3 } }
+        )
+      })
+      it('should not add references from field annotations to type', () => {
+        expect(dependencyChanges).not.toContainEqual(
+          { action: 'add', dependency: { source: 0, target: 4 } }
+        )
       })
     })
   })

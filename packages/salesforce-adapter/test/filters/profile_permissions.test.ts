@@ -172,7 +172,6 @@ describe('Object Permissions filter', () => {
     after.fields[descriptionFieldName].type = Types.primitiveDataTypes.MasterDetail
 
     await filter().onDeploy([toChange({ before, after })])
-    // TODO:ORI - make the same change in other filters / tests
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 

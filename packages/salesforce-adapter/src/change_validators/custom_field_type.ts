@@ -17,12 +17,11 @@ import {
   ChangeError, Field, getChangeElement, isAdditionOrModificationChange,
   ChangeValidator, Change, isAdditionChange, isFieldChange,
 } from '@salto-io/adapter-api'
-import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES, FIELD_TYPE_NAMES, COMPOUND_FIELD_TYPE_NAMES } from '../constants'
-import { isFieldOfCustomObject } from '../transformers/transformer'
+import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES } from '../constants'
+import { isFieldOfCustomObject, toCustomField } from '../transformers/transformer'
 
 const isInvalidTypeChange = (change: Change<Field>): boolean => {
-  const afterFieldType = getChangeElement(change).type.elemID.typeName as
-  FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES
+  const afterFieldType = toCustomField(getChangeElement(change)).type
   const isAfterTypeAllowed = CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
   if (isAfterTypeAllowed) {
     return false
@@ -36,7 +35,7 @@ const isInvalidTypeChange = (change: Change<Field>): boolean => {
 
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
-  severity: 'Error',
+  severity: 'Warning',
   message: `You cannot create or modify a custom field type to ${field.type.elemID.typeName}. Field: ${field.name}`,
   detailedMessage: `You cannot create or modify a custom field type to ${field.type.elemID.typeName}. Valid types can be found at:\nhttps://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype`,
 })

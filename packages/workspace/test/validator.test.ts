@@ -52,7 +52,6 @@ describe('Elements validation', () => {
       annostr: 'str',
     },
   })
-
   const restrictedType = new PrimitiveType({
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedType'),
     primitive: PrimitiveTypes.STRING,
@@ -123,6 +122,7 @@ describe('Elements validation', () => {
       flatbool: { type: BuiltinTypes.BOOLEAN },
       list: { type: new ListType(BuiltinTypes.STRING) },
       listOfList: { type: new ListType(new ListType(BuiltinTypes.STRING)) },
+      listOfListOfList: { type: new ListType(new ListType(new ListType(BuiltinTypes.STRING))) },
       listOfObject: { type: new ListType(simpleType) },
       reqStr: { type: BuiltinTypes.STRING },
       restrictStr: {
@@ -753,11 +753,17 @@ describe('Elements validation', () => {
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
-      it('should return error on bad str primitive type with list', () => {
+      it('should not return error on str primitive type with list', () => {
         extInst.value.flatstr = ['str1', 'str2']
         const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should return error on str primitive type with invalid list', () => {
+        extInst.value.flatstr = ['str1', 57]
+        const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr', '1'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
@@ -814,21 +820,72 @@ describe('Elements validation', () => {
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
       })
 
-      it('should return error list/primitive mismatch', () => {
+      it('should not return error on list/primitive mismatch if inner type is valid', () => {
         extInst.value.list = 'not a list'
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should return error on list/primitive mismatch if inner type is invalid', () => {
+        extInst.value.list = 75
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list'))
       })
 
-      it('should return error list/object mismatch', () => {
+      it('should not return error for list/object mismatch with empty array', () => {
         extInst.value = { nested: [] }
         const errors = validateElements([extInst])
-        expect(errors).toHaveLength(2)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
-        // TODO: The second error is a stange UX and we should not have it
-        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
+        expect(errors).toHaveLength(0)
       })
+
+      it('should return error for list/object mismatch with empty array on required field', () => {
+        const nestedRequiredType = nestedType.clone()
+        nestedRequiredType.fields.nested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+        extInst.type = nestedRequiredType
+        extInst.value = { nested: [] }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
+        expect(errors[0].error).toMatch('is required but has no value')
+      })
+
+      it('should return error for list/object mismatch with empty array on required field-object', () => {
+        const requiredType = nestedType.clone()
+        requiredType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+        extInst.type = requiredType
+        extInst.value = []
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID)
+        expect(errors[0].toString()).toMatch('is required but has no value')
+      })
+
+      it('should return inner error for list/object mismatch with non-empty invalid array', () => {
+        extInst.value = { nested: [{ bool: true }, { str: 'str' }] }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', '1', 'bool'))
+      })
+
+      it('should not return error list/object mismatch with non-empty valid array', () => {
+        extInst.value = { nested: [{ bool: true }] }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should not return error list/object mismatch with non-empty array with reference expressions', () => {
+        extInst.value = {
+          flatnum: 32,
+          nested: [{
+            bool: true,
+            num: new ReferenceExpression(extInst.elemID.createNestedID('flatnum')),
+          }],
+        }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
 
       it('should not return an error when matching list item', () => {
         extInst.value.list.push('abc')
@@ -840,7 +897,7 @@ describe('Elements validation', () => {
         extInst.value.listOfList[0].push(1)
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfList', '0'))
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfList', '0', '2'))
       })
 
       it('should not return an error when matching list object item', () => {
@@ -853,22 +910,43 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(0)
       })
 
-      it('should return error when not a list in list of lists', () => {
-        extInst.value.listOfList = [1]
+      it('should not return error when inner is not a list in list of lists', () => {
+        extInst.value.listOfList = ['a']
         const errors = validateElements([extInst])
-        expect(errors).toHaveLength(1)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfList', '0'))
+        expect(errors).toHaveLength(0)
       })
 
-      it('should return error when item instead of list', () => {
+      it('should not return error when not a list in list of lists', () => {
+        extInst.value.listOfList = 'a'
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should not return error when not a list in list-of-lists-of-lists', () => {
+        extInst.value.listOfListOfList = 'a'
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should not return error when item instead of list if item is of inner type', () => {
         extInst.value.listOfObject = {
           str: 'str',
           num: 3,
           bool: false,
         }
         const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should return error when item instead of list if item is of incorrect type', () => {
+        extInst.value.listOfObject = {
+          str: 'str',
+          num: 'str',
+          bool: false,
+        }
+        const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject'))
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', 'num'))
       })
 
       it('should return an error when not matching list object item (missing req)', () => {

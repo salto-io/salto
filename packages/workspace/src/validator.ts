@@ -18,8 +18,8 @@ import { types, collections, values } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
-  ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile, isPrimitiveValue,
+  Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
+  isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -56,10 +56,10 @@ const primitiveValidators = {
 const validateAnnotations = (elemID: ElemID, value: Value, type: TypeElement):
 ValidationError[] => {
   if (isObjectType(type)) {
-    return _.flatten(Object.keys(type.fields).map(
+    return Object.keys(type.fields).flatMap(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       k => validateFieldAnnotations(elemID.createNestedID(k), value[k], type.fields[k])
-    ))
+    )
   }
 
   return []
@@ -195,13 +195,13 @@ const validateAnnotationsValue = (
   const restrictions = getRestriction({ annotations })
   const shouldEnforceValue = (): boolean =>
     restrictions.enforce_value !== false
-    && !(value instanceof ReferenceExpression && isElement(value.value))
+    && !(isReferenceExpression(value) && isElement(value.value))
 
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
     // When value is array we iterate (validate) each element
     if (_.isArray(val)) {
-      return _.flatten(val.map(v => validateRestrictionsValue(v)))
+      return val.flatMap(v => validateRestrictionsValue(v))
     }
 
     const validateValueInsideRange = (): ValidationError[] => {
@@ -247,7 +247,7 @@ const validateAnnotationsValue = (
       validateValueInList,
       validateRegexMatches,
     ]
-    return _.flatten(restrictionValidations.map(validation => validation()))
+    return restrictionValidations.flatMap(validation => validation())
   }
 
   const validateRequiredValue = (): ValidationError[] =>
@@ -270,6 +270,17 @@ const validateAnnotationsValue = (
   return undefined
 }
 
+type ItemWithNestedId<T> = {
+  value: T
+  nestedID: ElemID
+}
+const mapAsArrayWithIds = <T>(value: T | T[], elemID: ElemID): ItemWithNestedId<T>[] => {
+  if (Array.isArray(value)) {
+    return value.flatMap((val, i) => ({ value: val, nestedID: elemID.createNestedID(String(i)) }))
+  }
+  return [{ value, nestedID: elemID }]
+}
+
 /**
  * Validate that field values corresponding with core annotations (_required, _values, _restriction)
  * @param value- the field value
@@ -283,18 +294,11 @@ const validateFieldAnnotations = (
     return errors
   }
 
-  const fieldType = field.type
-  // Apply validateAnnotations for each element in our values list
-  if (isListType(fieldType)) {
-    return _.isArray(value)
-      ? _.flatten(value.map((v, i) => validateAnnotations(
-        elemID.createNestedID(String(i)),
-        v,
-        fieldType.innerType
-      ))) : []
-  }
-
-  return validateAnnotations(elemID, value, field.type)
+  return mapAsArrayWithIds(value, elemID).flatMap(item => validateAnnotations(
+    item.nestedID,
+    item.value,
+    isListType(field.type) ? field.type.innerType : field.type,
+  ))
 }
 
 export class InvalidValueTypeValidationError extends ValidationError {
@@ -326,8 +330,15 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
   return []
 }
 
-const validateValue = (elemID: ElemID, value: Value,
-  type: TypeElement, isAnnotations = false): ValidationError[] => {
+const validateValue = (elemID: ElemID, value: Value, type: TypeElement): ValidationError[] => {
+  if (Array.isArray(value) && !isListType(type)) {
+    if (value.length === 0) {
+      // return an error if value is required
+      return validateAnnotationsValue(elemID, undefined, type.annotations, type) ?? []
+    }
+    return validateValue(elemID, value, new ListType(type))
+  }
+
   if (isReferenceExpression(value)) {
     return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }
@@ -343,12 +354,6 @@ const validateValue = (elemID: ElemID, value: Value,
 
   if (value instanceof StaticFile) {
     return []
-  }
-
-  // NOTE: this area should be deleted as soon as
-  //  we complete the implementation of SALTO-228 (Support annotationTypes list)
-  if (isAnnotations && !isListType(type) && _.isArray(value)) {
-    return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, isAnnotations)))
   }
 
   if (isPrimitiveType(type)) {
@@ -368,71 +373,58 @@ const validateValue = (elemID: ElemID, value: Value,
 
   if (isObjectType(type)) {
     if (!_.isObjectLike(value)) {
-      // NOTE: this area should be deleted as soon as
-      //  we complete the implementation of SALTO-228 (Support annotationTypes list)
       return [new InvalidValueTypeValidationError({ elemID, value, type })]
     }
-    if (_.isArray(value)) {
-      return [new InvalidValueTypeValidationError({ elemID, value, type })]
-    }
-    return _.flatten(Object.keys(value).filter(k => type.fields[k]).map(
+    return Object.keys(value).filter(k => type.fields[k]).flatMap(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateFieldValue(elemID.createNestedID(k), value[k], type.fields[k], isAnnotations)
-    ))
+      k => validateFieldValue(elemID.createNestedID(k), value[k], type.fields[k])
+    )
   }
 
   if (isListType(type)) {
-    if (!_.isArray(value)) {
-      return [new InvalidValueTypeValidationError({ elemID, value, type })]
-    }
-    return _.flatten(
-      value.map((val: Value) => validateValue(elemID, val, type.innerType, isAnnotations))
-    )
+    return mapAsArrayWithIds(value, elemID).flatMap(item => validateValue(
+      item.nestedID,
+      item.value,
+      type.innerType,
+    ))
   }
 
   return validateAnnotationsValue(elemID, value, type.annotations, type) || []
 }
 
-const validateFieldValue = (elemID: ElemID, value: Value, field: Field, isAnnotations: boolean):
-  ValidationError[] => {
-  const fieldType = field.type
-  if (isListType(fieldType)) {
-    // NOTE: the second part of the condition should be deleted as soon as
-    //  we complete the implementation of SALTO-228 (Support annotationTypes list)
-    if (!_.isArray(value) && !isAnnotations) {
-      return [new InvalidValueValidationError({ elemID, value, fieldName: field.name, expectedValue: 'a list' })]
-    }
-    return _.flatten(
-      makeArray(value).map((v, i) =>
-        validateValue(elemID.createNestedID(String(i)), v, fieldType.innerType, isAnnotations))
-    )
+const validateFieldValue = (elemID: ElemID, value: Value, field: Field): ValidationError[] => {
+  if (!isListType(field.type) && Array.isArray(value) && value.length === 0) {
+    // return an error if value is required
+    return validateAnnotationsValue(elemID, undefined, field.annotations, field.type) ?? []
   }
-  return validateValue(elemID, value, field.type, isAnnotations)
+  return mapAsArrayWithIds(value, elemID).flatMap(item => validateValue(
+    item.nestedID,
+    item.value,
+    isListType(field.type) ? field.type.innerType : field.type,
+  ))
 }
 
 const validateField = (field: Field): ValidationError[] =>
-  _.flatten(Object.keys(field.annotations)
+  Object.keys(field.annotations)
     .filter(k => field.type.annotationTypes[k])
-    .map(k => validateValue(
+    .flatMap(k => validateValue(
       field.elemID.createNestedID(k),
       field.annotations[k],
       field.type.annotationTypes[k],
-      true
-    )))
+    ))
 
 const validateType = (element: TypeElement): ValidationError[] => {
-  const errors = _.flatten(Object.keys(element.annotations)
-    .filter(k => element.annotationTypes[k]).map(
+  const errors = Object.keys(element.annotations)
+    .filter(k => element.annotationTypes[k]).flatMap(
       k => validateValue(
         element.elemID.createNestedID('attr', k),
         element.annotations[k],
         element.annotationTypes[k],
-        true
       )
-    ))
+    )
 
   if (isObjectType(element)) {
-    return [...errors, ..._.flatten(Object.values(element.fields).map(validateField))]
+    return [...errors, ...Object.values(element.fields).flatMap(validateField)]
   }
   return errors
 }
@@ -443,7 +435,7 @@ const instanceElementValidators = [
 ]
 
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
-  _.flatten(instanceElementValidators.map(v => v(element.elemID, element.value, element.type)))
+  instanceElementValidators.flatMap(v => v(element.elemID, element.value, element.type))
 
 const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] => {
   if (isReferenceExpression(value)) {

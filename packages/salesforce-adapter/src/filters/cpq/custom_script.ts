@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isFieldChange, isObjectTypeChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isFieldChange, isObjectTypeChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { getCustomObjects } from '../utils'
-import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS } from '../../constants'
+import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CODE_FIELD } from '../../constants'
 import { Types, apiName, isInstanceOfCustomObject, isCustomObject } from '../../transformers/transformer'
 
 export const refListFieldsToObject: Record<string, string> = {
@@ -53,23 +53,38 @@ const refListFieldsToTextLists = (cpqCustomScriptObject: ObjectType): ObjectType
   return cpqCustomScriptObject
 }
 
-const refListValuesToList = (cpqCustomScriptInstance: InstanceElement): InstanceElement => {
+const transformInstanceToSaltoValues = (
+  cpqCustomScriptInstance: InstanceElement
+): InstanceElement => {
   refListFieldNames.forEach(fieldName => {
     const fieldValue = cpqCustomScriptInstance.value[fieldName]
     if (_.isString(fieldValue)) {
       cpqCustomScriptInstance.value[fieldName] = fieldValue.split(/\r?\n/)
     }
   })
+  if (_.isString(cpqCustomScriptInstance.value[CPQ_CODE_FIELD])) {
+    cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = new StaticFile({
+      filepath: (cpqCustomScriptInstance.path ?? []).join('/'),
+      content: Buffer.from(cpqCustomScriptInstance.value[CPQ_CODE_FIELD]),
+    })
+  }
   return cpqCustomScriptInstance
 }
 
-const refListValuesToString = (cpqCustomScriptInstance: InstanceElement): InstanceElement => {
+const transformInstanceToSFValues = (
+  cpqCustomScriptInstance: InstanceElement
+): InstanceElement => {
   refListFieldNames.forEach(fieldName => {
     const fieldValue = cpqCustomScriptInstance.value[fieldName]
     if (Array.isArray(fieldValue) && fieldValue.every(_.isString)) {
       cpqCustomScriptInstance.value[fieldName] = fieldValue.join('\n')
     }
   })
+  // TODO: Remove this when SALTO-881 is done
+  const codeValue = cpqCustomScriptInstance.value[CPQ_CODE_FIELD]
+  if (isStaticFile(codeValue) && codeValue.content !== undefined) {
+    cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = codeValue.content.toString('utf8')
+  }
   return cpqCustomScriptInstance
 }
 
@@ -125,10 +140,10 @@ const filter: FilterCreator = () => ({
     }
     refListFieldsToTextLists(cpqCustomScriptObject)
     const cpqCustomScriptInstances = elements.filter(isInstanceOfCustomScript)
-    cpqCustomScriptInstances.forEach(refListValuesToList)
+    cpqCustomScriptInstances.forEach(transformInstanceToSaltoValues)
   },
   preDeploy: async changes => {
-    applyFuncOnCustomScriptInstanceChanges(changes, refListValuesToString)
+    applyFuncOnCustomScriptInstanceChanges(changes, transformInstanceToSFValues)
     const refListFieldChanges = getRefListFieldChanges(changes)
     refListFieldChanges.forEach(refListFieldChange =>
       applyFunctionToChangeData(
@@ -137,7 +152,7 @@ const filter: FilterCreator = () => ({
       ))
   },
   onDeploy: async changes => {
-    applyFuncOnCustomScriptInstanceChanges(changes, refListValuesToList)
+    applyFuncOnCustomScriptInstanceChanges(changes, transformInstanceToSaltoValues)
     const customScriptObjectChange = getCustomScriptObjectChange(changes)
     if (customScriptObjectChange !== undefined) {
       applyFunctionToChangeData(

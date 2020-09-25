@@ -323,3 +323,4 @@ export const CPQ_CONSUMPTION_SCHEDULE_FIELDS = 'SBQQ__ConsumptionScheduleFields_
 export const CPQ_GROUP_FIELDS = 'SBQQ__GroupFields__c'
 export const CPQ_QUOTE_FIELDS = 'SBQQ__QuoteFields__c'
 export const CPQ_QUOTE_LINE_FIELDS = 'SBQQ__QuoteLineFields__c'
+export const CPQ_CODE_FIELD = 'SBQQ__Code__c'

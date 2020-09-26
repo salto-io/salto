@@ -79,7 +79,7 @@ export const getAllReferencedInstances = (
 /*
  * Due to SDF bugs, sometimes referenced objects are required to be as part of the project as part
  * of deploy and writing them in the manifest.xml doesn't suffice.
- * Here we add manually all of the quirks we identified manually.
+ * Here we add manually all of the quirks we identified.
  */
 export const getRequiredReferencedInstances = (
   sourceInstances: ReadonlyArray<InstanceElement>
@@ -108,11 +108,9 @@ export const getRequiredReferencedInstances = (
         return undefined
     }
   }
-  const sourceInstancesIds = new Set(sourceInstances.map(inst => inst.elemID.getFullName()))
   const requiredReferencedInstances = sourceInstances
     .map(getInstanceRequiredDependency)
     .filter(isDefined)
-    .filter(inst => !sourceInstancesIds.has(inst.elemID.getFullName()))
 
-  return sourceInstances.concat(requiredReferencedInstances)
+  return Array.from(new Set(sourceInstances.concat(requiredReferencedInstances)))
 }

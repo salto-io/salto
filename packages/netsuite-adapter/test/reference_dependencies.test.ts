@@ -145,5 +145,21 @@ describe('reference dependencies', () => {
       const result = await getRequiredReferencedInstances(input)
       expect(result).toEqual(input)
     })
+
+    it('should not add new dependencies more then once', async () => {
+      const customRecordTypeInstance2 = new InstanceElement('customRecordTypeInstance2',
+        customTypes[CUSTOM_RECORD_TYPE], {
+          [SCRIPT_ID]: 'customrecord_my_script_id_2',
+          customsegment: new ReferenceExpression(
+            customSegmentInstance.elemID, 'val', customSegmentInstance
+          ),
+        })
+
+      const result = await getRequiredReferencedInstances(
+        [customRecordTypeInstance, customRecordTypeInstance2]
+      )
+      expect(result)
+        .toEqual([customRecordTypeInstance, customRecordTypeInstance2, customSegmentInstance])
+    })
   })
 })

@@ -52,10 +52,15 @@ stat.notFoundAsUndefined = notFoundAsUndefined(stat)
 
 export const isSubDirectory = (
   subFolder: string,
-  folder: string
+  folder: string,
+  strict = false,
 ): boolean => {
   const relative = path.relative(folder, subFolder)
-  return !relative.startsWith('..') && !path.isAbsolute(relative)
+  return (
+    !relative.startsWith('..')
+    && !path.isAbsolute(relative)
+    && (!strict || relative !== path.relative(folder, folder))
+  )
 }
 
 export const isEmptyDir = async (

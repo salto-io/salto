@@ -632,3 +632,7 @@ export const formatInvalidElementCommand = (command: string): string => [
   formatSimpleError(Prompts.INVALID_MOVE_ARG(command)),
   emptyLine(),
 ].join('\n')
+
+export const formatCleanWorkspace = (parts: string[]): string => (
+  Prompts.CLEAN_WORKSPACE_SUMMARY(parts)
+)

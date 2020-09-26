@@ -34,7 +34,7 @@ export const buildLocalStaticFilesCache = (
   const initCache = async (): Promise<StaticFilesCacheState> =>
     (!(await exists(currentCacheFile)) ? {} : JSON.parse(await readTextFile(currentCacheFile)))
 
-  const cache: Promise<StaticFilesCacheState> = initCacheState || initCache()
+  let cache: Promise<StaticFilesCacheState> = initCacheState || initCache()
 
   return {
     get: async (filepath: string): Promise<staticFiles.StaticFilesCacheResult> => (
@@ -51,6 +51,7 @@ export const buildLocalStaticFilesCache = (
     },
     clear: async () => {
       await rm(currentCacheFile)
+      cache = initCacheState ?? Promise.resolve({})
     },
     rename: async (newName: string) => {
       const newCacheDir = path.join(baseDir, newName)

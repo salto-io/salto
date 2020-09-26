@@ -22,6 +22,7 @@ import envsBuilder from './env'
 import restoreBuilder from './restore'
 import elementBuilder from './element'
 import diffBuilder from './diff'
+import cleanBuilder from './clean'
 
 
 // The order of the builders determines order of appearance in help text
@@ -34,4 +35,5 @@ export default [
   envsBuilder,
   elementBuilder,
   diffBuilder,
+  cleanBuilder,
 ] as YargsCommandBuilder[]

@@ -15,7 +15,7 @@
 */
 import {
   FetchResult, isInstanceElement, ObjectType, AdapterOperations, DeployResult, ChangeGroup,
-  ElemIdGetter, Element, getChangeElement,
+  ElemIdGetter, Element, getChangeElement, InstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -28,16 +28,16 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import {
-  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
-  DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
 } from './config'
-import { getAllReferencedInstances } from './reference_dependencies'
+import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 
 const { makeArray } = collections.array
 
@@ -51,6 +51,9 @@ export interface NetsuiteAdapterParams {
   filePathRegexSkipList?: string[]
   // Determines whether to attempt fetching all custom objects in a single call or type by type
   fetchAllTypesAtOnce?: boolean
+  // Determines whether to attempt deploying all the elements that are referenced by the changed
+  // elements. It's needed as a workaround in cases deploy fails due to SDF inconsistent behavior
+  deployReferencedElements?: boolean
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   // config that is determined by the user
@@ -63,6 +66,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: RegExp[]
   private readonly fetchAllTypesAtOnce: boolean
+  private readonly deployReferencedElements: boolean
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
 
@@ -75,6 +79,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     typesToSkip = [],
     filePathRegexSkipList = [],
     fetchAllTypesAtOnce = DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
+    deployReferencedElements = DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
     getElemIdFunc,
     config,
   }: NetsuiteAdapterParams) {
@@ -85,6 +90,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
       .map(e => new RegExp(e))
     this.fetchAllTypesAtOnce = config[FETCH_ALL_TYPES_AT_ONCE] ?? fetchAllTypesAtOnce
+    this.deployReferencedElements = config[DEPLOY_REFERENCED_ELEMENTS] ?? deployReferencedElements
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
   }
@@ -129,9 +135,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return this.typesToSkip.includes(type.elemID.name)
   }
 
+  private getAllRequiredReferencedInstances(
+    changedInstances: ReadonlyArray<InstanceElement>
+  ): ReadonlyArray<InstanceElement> {
+    if (this.deployReferencedElements) {
+      return getAllReferencedInstances(changedInstances)
+    }
+    return getRequiredReferencedInstances(changedInstances)
+  }
+
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
-    const customizationInfosToDeploy = getAllReferencedInstances(changedInstances)
+    const customizationInfosToDeploy = this.getAllRequiredReferencedInstances(changedInstances)
       .map(instance => resolveValues(instance, getLookUpName))
       .map(toCustomizationInfo)
     try {

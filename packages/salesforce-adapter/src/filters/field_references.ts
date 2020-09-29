@@ -104,6 +104,8 @@ const ContextStrategyLookup: Record<
   neighborCPQLookup: neighborContextFunc(CPQ_LOOKUP_OBJECT_NAME),
   neighborCPQRuleLookup: neighborContextFunc(CPQ_RULE_LOOKUP_OBJECT_FIELD),
   neighborLookupValueTypeLookup: neighborContextFunc('lookupValueType'),
+  neighborObjectLookup: neighborContextFunc('object'),
+  neighborPicklistObjectLookup: neighborContextFunc('picklistObject'),
 }
 
 const replaceReferenceValues = (

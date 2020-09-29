@@ -23,7 +23,7 @@ import {
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData, ListType,
+  ChangeData, ListType, CoreAnnotationTypes,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -180,11 +180,11 @@ export const transformElementAnnotations = <T extends Element>(
       return InstanceAnnotationTypes
     }
 
-    if (isField(element)) {
-      return element.type.annotationTypes
+    return {
+      ...InstanceAnnotationTypes,
+      ...CoreAnnotationTypes,
+      ...(isField(element) ? element.type.annotationTypes : element.annotationTypes),
     }
-
-    return element.annotationTypes
   }
 
   return transformValues({

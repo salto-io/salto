@@ -82,6 +82,7 @@ export const CoreAnnotationTypes: TypeMap = {
   [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
   [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
   [CORE_ANNOTATIONS.RESTRICTION]: restrictionType,
+  [CORE_ANNOTATIONS.HIDDEN]: BuiltinTypes.BOOLEAN,
 }
 
 export const getRestriction = (

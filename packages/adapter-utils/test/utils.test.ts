@@ -516,7 +516,13 @@ describe('Test utils.ts', () => {
         elemID: new ElemID('test', 'test'),
         fields: {
           f1: { type: BuiltinTypes.STRING },
-          f2: { type: listType, annotations: { a1: 'foo' } },
+          f2: {
+            type: listType,
+            annotations: {
+              a1: 'foo',
+              [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
+            },
+          },
         },
         annotationTypes: { a2: BuiltinTypes.STRING },
         annotations: { a2: 1 },
@@ -576,6 +582,11 @@ describe('Test utils.ts', () => {
       it('should transform field annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
           value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+        })
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: new ReferenceExpression(primType.elemID),
+          field: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          path: objType.fields.f2.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON, '0'),
         })
       })
     })

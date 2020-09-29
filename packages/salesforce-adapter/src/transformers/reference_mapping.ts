@@ -54,7 +54,7 @@ const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName = 'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
+export type ReferenceContextStrategyName = 'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup' | 'neighborLookupValueTypeLookup'
 
 type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 type MetadataTypeArgs = {
@@ -96,12 +96,21 @@ export type FieldReferenceDefinition = {
  */
 export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE] },
+    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'fields', parentTypes: ['WorkflowOutboundMessage'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
     src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem'] },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'offsetFromField', parentTypes: ['WorkflowTask', 'WorkflowTimeTrigger'] },
     target: { type: CUSTOM_FIELD },
   },
   {
@@ -180,6 +189,18 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
+    src: { field: 'targetObject', parentTypes: ['QuickAction', 'AnalyticSnapshot'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'targetObject', parentTypes: ['WorkflowFieldUpdate'] },
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'targetField', parentTypes: ['AnalyticSnapshot'] },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
     src: { field: 'name', parentTypes: ['ObjectSearchSetting'] },
     target: { type: CUSTOM_OBJECT },
   },
@@ -206,6 +227,12 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'relatedList', parentTypes: ['RelatedListItem'] },
     target: { type: CUSTOM_FIELD },
+  },
+  {
+    // sometimes has a value that is not a reference - should only convert to reference
+    // if lookupValueType exists
+    src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },
+    target: { typeContext: 'neighborLookupValueTypeLookup' },
   },
   {
     src: { field: CPQ_LOOKUP_FIELD, parentTypes: [CPQ_LOOKUP_QUERY] },

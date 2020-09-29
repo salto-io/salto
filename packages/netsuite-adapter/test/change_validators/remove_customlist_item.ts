@@ -1,0 +1,89 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import removeCustomListItemValidator from '../../src/change_validators/remove_customlist_item'
+import { customTypes } from '../../src/types'
+import { CUSTOM_LIST } from '../../src/constants'
+
+
+describe('remove customlist item change validator', () => {
+  const origInstance = new InstanceElement(
+    'instance',
+    customTypes[CUSTOM_LIST],
+    {
+      customvalues: {
+        customvalue: [
+          {
+            scriptid: 'val_1',
+            value: 'Value 1',
+          },
+          {
+            scriptid: 'val_1',
+            value: 'Value 2',
+          },
+        ],
+      },
+    }
+  )
+  let instance: InstanceElement
+  beforeEach(() => {
+    instance = origInstance.clone()
+  })
+
+  describe('When adding new customlist', () => {
+    it('should have no change errors when adding a customlist', async () => {
+      const changeErrors = await removeCustomListItemValidator([toChange({ after: instance })])
+      expect(changeErrors).toHaveLength(0)
+    })
+  })
+
+  describe('When modifying customlist', () => {
+    it('should have no change errors when adding a customvalue', async () => {
+      const after = instance.clone()
+      after.value.customvalues.customvalue = [
+        ...instance.value.customvalues.customvalue,
+        {
+          scriptid: 'val_3',
+          value: 'Value 3',
+        },
+      ]
+      const changeErrors = await removeCustomListItemValidator(
+        [toChange({ before: instance, after })]
+      )
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('should have no change error when modifying a customvalue', async () => {
+      const after = instance.clone()
+      after.value.customvalues.customvalue[0].value = 'Some Edited Value'
+      const changeErrors = await removeCustomListItemValidator(
+        [toChange({ before: instance, after })]
+      )
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('should have change error when removing a customvalue', async () => {
+      const after = instance.clone()
+      after.value.customvalues.customvalue.pop()
+      const changeErrors = await removeCustomListItemValidator(
+        [toChange({ before: instance, after })]
+      )
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    })
+  })
+})

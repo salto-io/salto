@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import wu from 'wu'
-import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isInstanceElement, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isInstanceElement, ChangeGroupIdFunction, isField } from '@salto-io/adapter-api'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
 import { mockFunction } from '../../common/helpers'
@@ -30,6 +30,7 @@ type PlanGenerators = {
   planWithAnnotationTypesChanges: () => Promise<[Plan, ObjectType]>
   planWithFieldIsListChanges: () => Promise<[Plan, ObjectType]>
   planWithSplitElem: (isAdd: boolean) => Promise<[Plan, ObjectType]>
+  planWithDependencyCycle: (withValidator: boolean) => Promise<Plan>
 }
 
 export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerators => ({
@@ -128,6 +129,31 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       : await getPlan({ before: afterElements, after: [], dependencyChangers: [depChanger] })
     return [plan, saltoOffice]
   },
+
+  planWithDependencyCycle: async withValidator => {
+    const afterElements = mock.getAllElements()
+    const [,, saltoOffice] = afterElements
+    const depChanger: DependencyChanger = async changes => {
+      const officeFieldChangeIds = wu(changes)
+        .filter(([_id, change]) => {
+          const elem = getChangeElement(change)
+          return isField(elem) && elem.parent.elemID.isEqual(saltoOffice.elemID)
+        })
+        .map(([id]) => id)
+        .slice(0, 2)
+        .toArray()
+      return [
+        dependencyChange('add', officeFieldChangeIds[0], officeFieldChangeIds[1]),
+        dependencyChange('add', officeFieldChangeIds[1], officeFieldChangeIds[0]),
+      ]
+    }
+    return getPlan({
+      before: [],
+      after: afterElements,
+      dependencyChangers: [depChanger],
+      changeValidators: withValidator ? { salto: async () => [] } : {},
+    })
+  },
 })
 
 describe('getPlan', () => {
@@ -138,6 +164,7 @@ describe('getPlan', () => {
     planWithFieldChanges,
     planWithNewType,
     planWithSplitElem,
+    planWithDependencyCycle,
   } = planGenerators(allElements)
 
   it('should create empty plan', async () => {
@@ -226,6 +253,13 @@ describe('getPlan', () => {
     expect(splitElemChanges).toHaveLength(2)
     expect(splitElemChanges[0].action).toEqual('modify')
     expect(splitElemChanges[1].action).toEqual('remove')
+  })
+
+  it('should fail when plan has dependency cycle', async () => {
+    // Without change validators
+    await expect(planWithDependencyCycle(false)).rejects.toThrow()
+    // With change validators
+    await expect(planWithDependencyCycle(true)).rejects.toThrow()
   })
 
   describe('with custom group key function', () => {

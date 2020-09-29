@@ -103,6 +103,7 @@ const ContextStrategyLookup: Record<
   neighborTypeWorkflow: neighborContextFunc('type', workflowActionMapper),
   neighborCPQLookup: neighborContextFunc(CPQ_LOOKUP_OBJECT_NAME),
   neighborCPQRuleLookup: neighborContextFunc(CPQ_RULE_LOOKUP_OBJECT_FIELD),
+  neighborLookupValueTypeLookup: neighborContextFunc('lookupValueType'),
 }
 
 const replaceReferenceValues = (

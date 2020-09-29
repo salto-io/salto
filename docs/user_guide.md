@@ -137,7 +137,7 @@ From now on, you can use standard Git commands to record changes, create feature
 
 ### Salto Configuration Elements
 
-In it's core, Salto fetches the configuration of business system accounts and builds an hierarchy of configuration elements where each element is represented by a unique `Salto Element ID`.
+In its core, Salto fetches the configuration of business system accounts and builds an hierarchy of configuration elements where each element is represented by a unique `Salto Element ID`.
 
 A `Salto Element ID` conforms with the following schema:
 

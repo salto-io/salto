@@ -206,15 +206,6 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       updated = {}
       deleted = []
       await deleteAllEmptyDirectories()
-
-      // attempt to remove parent if this is the last environment, but avoid removing the workspace
-      const currentStoreParent = path.dirname(currentBaseDir)
-      if (
-        fileUtils.isSubDirectory(currentStoreParent, baseDir, true)
-        && await fileUtils.isEmptyDir.notFoundAsUndefined(currentStoreParent)
-      ) {
-        await fileUtils.rm(currentStoreParent)
-      }
     },
 
     rename: async (name: string): Promise<void> => {

@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import path from 'path'
+import { Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
-import { exists } from '@salto-io/file'
+import * as file from '@salto-io/file'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, COMMON_ENV_PREFIX, CREDENTIALS_CONFIG_PATH,
@@ -29,6 +30,10 @@ const { ENVS_PREFIX } = ws.nacl
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
   exists: jest.fn(),
+  rm: jest.fn(),
+  isEmptyDir: {
+    notFoundAsUndefined: jest.fn(() => true),
+  },
 }))
 jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual('@salto-io/workspace'),
@@ -42,7 +47,7 @@ jest.mock('../../../src/local-workspace/static_files_cache', () => ({
   }),
 }))
 describe('local workspace', () => {
-  const mockExists = exists as jest.Mock
+  const mockExists = file.exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
   const mockDirStoreInstance = (): ws.dirStore.DirectoryStore<string> => ({
     get: jest.fn().mockResolvedValue({ buffer: '', filename: '' }),
@@ -285,6 +290,43 @@ describe('local workspace', () => {
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
+    })
+  })
+
+  describe('clear', () => {
+    let lastWorkspace: Value
+    beforeEach(() => {
+      jest.spyOn(ws, 'loadWorkspace').mockImplementation(() => {
+        lastWorkspace = {
+          clear: jest.fn(),
+        }
+        return Promise.resolve(lastWorkspace)
+      })
+    })
+    it('calls workspace clear with the specified parameters and removes the empty envs folder', async () => {
+      const workspace = await loadLocalWorkspace('/west')
+      const args = {
+        nacl: true, state: true, cache: true, staticResources: true, credentials: true,
+      }
+      await workspace.clear(args)
+      expect(lastWorkspace.clear).toHaveBeenCalledTimes(1)
+      expect(lastWorkspace.clear).toHaveBeenCalledWith(args)
+      expect(file.isEmptyDir.notFoundAsUndefined).toHaveBeenCalledTimes(1)
+      expect(file.rm).toHaveBeenCalledTimes(1)
+      expect(file.rm).toHaveBeenCalledWith('/west/envs')
+    })
+
+    it('does not remove the envs folder if not empty', async () => {
+      jest.spyOn(file.isEmptyDir, 'notFoundAsUndefined').mockReturnValueOnce(Promise.resolve(false))
+      const workspace = await loadLocalWorkspace('/west')
+      const args = {
+        nacl: true, state: true, cache: true, staticResources: false, credentials: true,
+      }
+      await workspace.clear(args)
+      expect(lastWorkspace.clear).toHaveBeenCalledTimes(1)
+      expect(lastWorkspace.clear).toHaveBeenCalledWith(args)
+      expect(file.isEmptyDir.notFoundAsUndefined).toHaveBeenCalledTimes(1)
+      expect(file.rm).not.toHaveBeenCalled()
     })
   })
 })

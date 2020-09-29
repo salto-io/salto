@@ -413,10 +413,10 @@ describe('cli e2e', () => {
     })
 
     it('should clear out only the requested parts - nacl', async () => {
-      expect(await exists(`${fetchOutputDir}/envs/default/salesforce`)).toBe(true)
-      expect(await exists(`${fetchOutputDir}/envs/default/static-resources`)).toBe(true)
-      expect(await exists(`${fetchOutputDir}/salesforce`)).toBe(false) // not checking common folder for now
-      expect(await exists(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`)).toBe(true)
+      expect(`${fetchOutputDir}/envs/default/salesforce`).toExist()
+      expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
+      expect(`${fetchOutputDir}/salesforce`).not.toExist() // not checking common folder for now
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
       await runClean(fetchOutputDir, {
         nacl: true,
         cache: false,
@@ -425,14 +425,14 @@ describe('cli e2e', () => {
         serviceConfig: false,
         credentials: false,
       })
-      expect(await exists(`${fetchOutputDir}/envs/default/salesforce`)).toBe(false)
-      expect(await exists(`${fetchOutputDir}/envs/default/static-resources`)).toBe(true)
-      expect(await exists(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`)).toBe(true)
+      expect(`${fetchOutputDir}/envs/default/salesforce`).not.toExist()
+      expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
     })
 
     it('should clear out only the requested parts - state + static resources', async () => {
-      expect(await exists(`${fetchOutputDir}/envs/default/static-resources`)).toBe(true)
-      expect(await exists(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`)).toBe(true)
+      expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
       await runClean(fetchOutputDir, {
         nacl: true,
         cache: true,
@@ -441,8 +441,8 @@ describe('cli e2e', () => {
         serviceConfig: false,
         credentials: false,
       })
-      expect(await exists(`${fetchOutputDir}/envs`)).toBe(false)
-      expect(await exists(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`)).toBe(false)
+      expect(`${fetchOutputDir}/envs`).not.toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).not.toExist()
     })
 
     it('should clear out only the requested parts - service config', async () => {

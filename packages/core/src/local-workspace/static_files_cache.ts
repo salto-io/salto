@@ -51,7 +51,7 @@ export const buildLocalStaticFilesCache = (
     },
     clear: async () => {
       await rm(currentCacheFile)
-      cache = initCacheState ?? Promise.resolve({})
+      cache = Promise.resolve({})
     },
     rename: async (newName: string) => {
       const newCacheDir = path.join(baseDir, newName)

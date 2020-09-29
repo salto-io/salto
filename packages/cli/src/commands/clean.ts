@@ -107,7 +107,7 @@ export const command = (
 const diffBuilder = createCommandBuilder({
   options: {
     command: 'clean',
-    // this is a hidden command
+    // marking description as false will make this a hidden command (only accessible directly)
     description: false as unknown as string,
     keyed: {
       force: {

@@ -307,28 +307,7 @@ describe('localDirectoryStore', () => {
       expect(mockRm).toHaveBeenCalledWith(baseDir)
     })
 
-    it('should delete one level up if not the entire workspace', async () => {
-      const store = localDirectoryStore({ baseDir, name: 'first/second', encoding })
-      const filePath = `${baseDir}/first/second`
-      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(
-        true
-      )
-      mockFileExists.mockResolvedValue(true)
-      mockReaddirp.mockResolvedValueOnce([
-        { fullPath: path.join(filePath, 'test1') },
-        { fullPath: path.join(filePath, 'test2') },
-      ])
-      await store.clear()
-      expect(mockRm).toHaveBeenCalledTimes(4)
-      expect(mockRm).toHaveBeenCalledWith(path.join(filePath, 'test1'))
-      expect(mockRm).toHaveBeenCalledWith(path.join(filePath, 'test2'))
-      expect(mockRm).toHaveBeenCalledWith(filePath)
-      expect(mockRm).toHaveBeenCalledWith(`${baseDir}/first`)
-      expect(mockRm).not.toHaveBeenCalledWith(baseDir)
-      expect(mockRm).not.toHaveBeenCalledWith(path.dirname(baseDir))
-    })
-
-    it('should not delete one level up if it is the entire workspace', async () => {
+    it('should not delete parent', async () => {
       const store = localDirectoryStore({ baseDir, name: 'name', encoding })
       const filePath = `${baseDir}/name`
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(
@@ -345,7 +324,6 @@ describe('localDirectoryStore', () => {
       expect(mockRm).toHaveBeenCalledWith(path.join(filePath, 'test2'))
       expect(mockRm).toHaveBeenCalledWith(filePath)
       expect(mockRm).not.toHaveBeenCalledWith(baseDir)
-      expect(mockRm).not.toHaveBeenCalledWith(path.dirname(baseDir))
     })
   })
 

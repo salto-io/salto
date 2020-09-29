@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isFieldChange, isObjectTypeChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { getCustomObjects } from '../utils'
@@ -44,6 +44,13 @@ const fieldTypeFromLongTextToTextList = (field: Field): Field => {
     field.type = listOfText
   }
   return field
+}
+
+const refListFieldsToLongText = (cpqCustomScriptObject: ObjectType): ObjectType => {
+  Object.values(cpqCustomScriptObject.fields)
+    .filter(field => refListFieldNames.includes(apiName(field, true)))
+    .forEach(fieldTypeFromTextListToLongText)
+  return cpqCustomScriptObject
 }
 
 const refListFieldsToTextLists = (cpqCustomScriptObject: ObjectType): ObjectType => {
@@ -110,15 +117,6 @@ const getCustomScriptObjectChange = (
       ((isCustomObject(getChangeElement(change))
         && apiName(getChangeElement(change)) === CPQ_CUSTOM_SCRIPT))))
 
-const getRefListFieldChanges = (
-  changes: ReadonlyArray<Change<ChangeDataType>>
-): ReadonlyArray<Change<Field>> =>
-  (changes
-    .filter(isAdditionOrModificationChange)
-    .filter(isFieldChange)
-    .filter(change =>
-      refListFieldNames.includes(apiName(getChangeElement(change), true))))
-
 const applyFuncOnCustomScriptInstanceChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>,
   fn: (inst: InstanceElement) => InstanceElement
@@ -129,6 +127,19 @@ const applyFuncOnCustomScriptInstanceChanges = (
       customScriptInstanceChange,
       fn
     ))
+}
+
+const applyFuncOnCustomScriptObjectChange = (
+  changes: ReadonlyArray<Change<ChangeDataType>>,
+  fn: (customScriptObject: ObjectType) => ObjectType
+): void => {
+  const customScriptObjectChange = getCustomScriptObjectChange(changes)
+  if (customScriptObjectChange !== undefined) {
+    applyFunctionToChangeData(
+      customScriptObjectChange,
+      fn,
+    )
+  }
 }
 
 const filter: FilterCreator = () => ({
@@ -144,22 +155,11 @@ const filter: FilterCreator = () => ({
   },
   preDeploy: async changes => {
     applyFuncOnCustomScriptInstanceChanges(changes, transformInstanceToSFValues)
-    const refListFieldChanges = getRefListFieldChanges(changes)
-    refListFieldChanges.forEach(refListFieldChange =>
-      applyFunctionToChangeData(
-        refListFieldChange,
-        fieldTypeFromTextListToLongText,
-      ))
+    applyFuncOnCustomScriptObjectChange(changes, refListFieldsToLongText)
   },
   onDeploy: async changes => {
     applyFuncOnCustomScriptInstanceChanges(changes, transformInstanceToSaltoValues)
-    const customScriptObjectChange = getCustomScriptObjectChange(changes)
-    if (customScriptObjectChange !== undefined) {
-      applyFunctionToChangeData(
-        customScriptObjectChange,
-        refListFieldsToTextLists,
-      )
-    }
+    applyFuncOnCustomScriptObjectChange(changes, refListFieldsToTextLists)
     return []
   },
 })

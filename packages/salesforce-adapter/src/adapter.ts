@@ -501,9 +501,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       Object.values(changesByElem).map(change => getChangeElement(getMainElemChange(change))),
       changeElement => changeElement.elemID.getFullName(),
     )
-    const appliedChanges = _.flatten(results.map(res => res.appliedChanges))
+    const appliedChangesBeforeRestore = results.flatMap(res => res.appliedChanges)
+    await this.filtersRunner.onDeploy(appliedChangesBeforeRestore)
+    const appliedChanges = appliedChangesBeforeRestore
       .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
-    await this.filtersRunner.onDeploy(appliedChanges)
     return {
       appliedChanges,
       errors: _.flatten(results.map(res => res.errors)),

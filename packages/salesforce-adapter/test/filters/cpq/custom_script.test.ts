@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType, Change, toChange, getChangeElement, isModificationChange, isAdditionChange, isFieldChange, Field, ModificationChange, isObjectTypeChange, AdditionChange, StaticFile } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType, Change, toChange, getChangeElement, isModificationChange, isAdditionChange, ModificationChange, isObjectTypeChange, AdditionChange, StaticFile } from '@salto-io/adapter-api'
 import { FilterWith } from '../../../src/filter'
 import { fullApiName } from '../../../src/filters/utils'
 import SalesforceClient from '../../../src/client/client'
@@ -247,26 +247,31 @@ describe('cpq custom script filter', () => {
             after: mockAfterOnFetchCustomScriptInstance.clone(),
           }),
           toChange({
-            before: mockAfterOnFetchCustomScriptObject.fields[CPQ_CONSUMPTION_RATE_FIELDS].clone(),
-            after: mockAfterOnFetchCustomScriptObject.fields[CPQ_CONSUMPTION_RATE_FIELDS].clone(),
+            before: mockAfterOnFetchCustomScriptObject.clone(),
+            after: mockAfterOnFetchCustomScriptObject.clone(),
           }),
         ]
         await filter.preDeploy(changes)
       })
 
       it('Should change fieldsRefList fields type to long text on modification change', () => {
-        const cosRateFieldModifChange = changes
+        const cpqCustomScriptObjModificationChange = changes
           .find(change =>
-            (isModificationChange(change) && isFieldChange(change)
-              && getChangeElement(change).elemID
-                .isEqual(mockCustomScriptObject.fields[CPQ_CONSUMPTION_RATE_FIELDS].elemID)))
-        expect(cosRateFieldModifChange).toBeDefined()
-        expect(
-          ((cosRateFieldModifChange as ModificationChange<Field>).data.after).type
-        ).toEqual(Types.primitiveDataTypes.LongTextArea)
-        expect(
-          ((cosRateFieldModifChange as ModificationChange<Field>).data.before).type
-        ).toEqual(Types.primitiveDataTypes.LongTextArea)
+            (isModificationChange(change) && isObjectTypeChange(change)
+              && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
+        expect(cpqCustomScriptObjModificationChange).toBeDefined()
+        const afterData = (cpqCustomScriptObjModificationChange as ModificationChange<ObjectType>)
+          .data.after
+        expect(afterData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
+          .toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(afterData.fields[CPQ_GROUP_FIELDS].type)
+          .toEqual(Types.primitiveDataTypes.LongTextArea)
+        const beforeData = (cpqCustomScriptObjModificationChange as ModificationChange<ObjectType>)
+          .data.before
+        expect(beforeData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
+          .toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(beforeData.fields[CPQ_GROUP_FIELDS].type)
+          .toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 
       it('Should only change values of multi-line string in fieldsRefList and code back to string', () => {
@@ -299,30 +304,22 @@ describe('cpq custom script filter', () => {
     describe('Addition changes', () => {
       beforeAll(async () => {
         changes = [
-          toChange({
-            before: mockAfterOnFetchCustomScriptInstance.clone(),
-            after: mockAfterOnFetchCustomScriptInstance.clone(),
-          }),
           toChange({ after: mockAfterOnFetchCustomScriptInstance.clone() }),
-          toChange({
-            before: mockAfterOnFetchCustomScriptObject.fields[CPQ_CONSUMPTION_RATE_FIELDS].clone(),
-            after: mockAfterOnFetchCustomScriptObject.fields[CPQ_CONSUMPTION_RATE_FIELDS].clone(),
-          }),
-          toChange({
-            after: mockAfterOnFetchCustomScriptObject.fields[CPQ_CONSUMPTION_RATE_FIELDS].clone(),
-          }),
+          toChange({ after: mockAfterOnFetchCustomScriptObject.clone() }),
         ]
         await filter.preDeploy(changes)
       })
 
       it('Should change fieldsRefList fields type to long text on addition change', () => {
-        const cpqConsumptionRateFieldAddChange = changes
+        const cpqCustomScriptObjAddChange = changes
           .find(change =>
-            (isAdditionChange(change) && isFieldChange(change)
-              && getChangeElement(change).elemID
-                .isEqual(mockCustomScriptObject.fields[CPQ_CONSUMPTION_RATE_FIELDS].elemID)))
-        expect(cpqConsumptionRateFieldAddChange).toBeDefined()
-        expect((getChangeElement(cpqConsumptionRateFieldAddChange as Change) as Field).type)
+            (isAdditionChange(change) && isObjectTypeChange(change)
+              && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
+        expect(cpqCustomScriptObjAddChange).toBeDefined()
+        const object = getChangeElement(cpqCustomScriptObjAddChange as AdditionChange<ObjectType>)
+        expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
+          .toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(object.fields[CPQ_GROUP_FIELDS].type)
           .toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 

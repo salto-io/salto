@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { getCustomObjects } from '../utils'
@@ -60,7 +60,7 @@ const refListFieldsToTextLists = (cpqCustomScriptObject: ObjectType): ObjectType
   return cpqCustomScriptObject
 }
 
-const transformInstanceToSaltoValues = (
+const refListValuesToArray = (
   cpqCustomScriptInstance: InstanceElement
 ): InstanceElement => {
   refListFieldNames.forEach(fieldName => {
@@ -69,9 +69,15 @@ const transformInstanceToSaltoValues = (
       cpqCustomScriptInstance.value[fieldName] = fieldValue.split(/\r?\n/)
     }
   })
+  return cpqCustomScriptInstance
+}
+
+const codeValueToFile = (
+  cpqCustomScriptInstance: InstanceElement
+): InstanceElement => {
   if (_.isString(cpqCustomScriptInstance.value[CPQ_CODE_FIELD])) {
     cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = new StaticFile({
-      filepath: (cpqCustomScriptInstance.path ?? []).join('/'),
+      filepath: `${(cpqCustomScriptInstance.path ?? []).join('/')}.js`,
       content: Buffer.from(cpqCustomScriptInstance.value[CPQ_CODE_FIELD]),
     })
   }
@@ -89,8 +95,8 @@ const transformInstanceToSFValues = (
   })
   // TODO: Remove this when SALTO-881 is done
   const codeValue = cpqCustomScriptInstance.value[CPQ_CODE_FIELD]
-  if (isStaticFile(codeValue) && codeValue.content !== undefined) {
-    cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = codeValue.content.toString('utf8')
+  if (Buffer.isBuffer(codeValue)) {
+    cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = codeValue.toString('utf8')
   }
   return cpqCustomScriptInstance
 }
@@ -151,14 +157,17 @@ const filter: FilterCreator = () => ({
     }
     refListFieldsToTextLists(cpqCustomScriptObject)
     const cpqCustomScriptInstances = elements.filter(isInstanceOfCustomScript)
-    cpqCustomScriptInstances.forEach(transformInstanceToSaltoValues)
+    cpqCustomScriptInstances.forEach(instance => {
+      refListValuesToArray(instance)
+      codeValueToFile(instance)
+    })
   },
   preDeploy: async changes => {
     applyFuncOnCustomScriptInstanceChanges(changes, transformInstanceToSFValues)
     applyFuncOnCustomScriptObjectChange(changes, refListFieldsToLongText)
   },
   onDeploy: async changes => {
-    applyFuncOnCustomScriptInstanceChanges(changes, transformInstanceToSaltoValues)
+    applyFuncOnCustomScriptInstanceChanges(changes, refListValuesToArray)
     applyFuncOnCustomScriptObjectChange(changes, refListFieldsToTextLists)
     return []
   },

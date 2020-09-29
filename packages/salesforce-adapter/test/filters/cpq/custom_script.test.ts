@@ -80,7 +80,7 @@ describe('cpq custom script filter', () => {
     [CPQ_GROUP_FIELDS]: null,
     [CPQ_CODE_FIELD]: new StaticFile({
       content: Buffer.from('if (this === "code") return true'),
-      filepath: mockCustomScripInstancePath.join('/'),
+      filepath: `${mockCustomScripInstancePath.join('/')}.js`,
     }),
     randomField: 'stayLikeThis',
   }
@@ -156,7 +156,7 @@ describe('cpq custom script filter', () => {
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
-      it('Should only change values of multi-line string in fieldsRefList to array of strings and code to static file', () => {
+      it('Should only change values of multi-line string in fieldsRefList to array of strings', () => {
         const customScriptInstanceAdd = changes
           .find(change =>
             getChangeElement(change).elemID.isEqual(mockCustomScriptInstance.elemID)
@@ -167,8 +167,8 @@ describe('cpq custom script filter', () => {
         ) as InstanceElement
         expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS])
           .toEqual(afterOnFetchCustomScriptValues[CPQ_CONSUMPTION_RATE_FIELDS])
-        expect(changeElement.value[CPQ_CODE_FIELD])
-          .toEqual(afterOnFetchCustomScriptValues[CPQ_CODE_FIELD])
+        expect(fromServiceCustomScriptValues[CPQ_CODE_FIELD])
+          .toEqual(fromServiceCustomScriptValues[CPQ_CODE_FIELD])
         expect(changeElement.value[CPQ_GROUP_FIELDS])
           .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
         expect(changeElement.value.randomField)
@@ -211,7 +211,7 @@ describe('cpq custom script filter', () => {
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
-      it('Should only change values of multi-line string in fieldsRefList to array of strings and code to static file', () => {
+      it('Should only change values of multi-line string in fieldsRefList to array of strings', () => {
         const customScriptInstanceModify = changes
           .find(change =>
             getChangeElement(change).elemID.isEqual(mockCustomScriptInstance.elemID)
@@ -223,7 +223,7 @@ describe('cpq custom script filter', () => {
         expect(changeElement.value[CPQ_CONSUMPTION_RATE_FIELDS])
           .toEqual(afterOnFetchCustomScriptValues[CPQ_CONSUMPTION_RATE_FIELDS])
         expect(changeElement.value[CPQ_CODE_FIELD])
-          .toEqual(afterOnFetchCustomScriptValues[CPQ_CODE_FIELD])
+          .toEqual(fromServiceCustomScriptValues[CPQ_CODE_FIELD])
         expect(changeElement.value[CPQ_GROUP_FIELDS])
           .toEqual(fromServiceCustomScriptValues[CPQ_GROUP_FIELDS])
         expect(changeElement.value.randomField)
@@ -239,12 +239,16 @@ describe('cpq custom script filter', () => {
       .fields[CPQ_CONSUMPTION_RATE_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
     mockAfterOnFetchCustomScriptObject
       .fields[CPQ_GROUP_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
+    const mockAfterRestoreCustomScriptInstance = mockAfterOnFetchCustomScriptInstance
+      .clone()
+    mockAfterRestoreCustomScriptInstance
+      .value[CPQ_CODE_FIELD] = mockAfterRestoreCustomScriptInstance.value[CPQ_CODE_FIELD].content
     describe('Modification changes', () => {
       beforeAll(async () => {
         changes = [
           toChange({
-            before: mockAfterOnFetchCustomScriptInstance.clone(),
-            after: mockAfterOnFetchCustomScriptInstance.clone(),
+            before: mockAfterRestoreCustomScriptInstance.clone(),
+            after: mockAfterRestoreCustomScriptInstance.clone(),
           }),
           toChange({
             before: mockAfterOnFetchCustomScriptObject.clone(),
@@ -304,7 +308,7 @@ describe('cpq custom script filter', () => {
     describe('Addition changes', () => {
       beforeAll(async () => {
         changes = [
-          toChange({ after: mockAfterOnFetchCustomScriptInstance.clone() }),
+          toChange({ after: mockAfterRestoreCustomScriptInstance.clone() }),
           toChange({ after: mockAfterOnFetchCustomScriptObject.clone() }),
         ]
         await filter.preDeploy(changes)

@@ -15,7 +15,7 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { customTypes } from '../../src/types'
-import { DATASET, ENTITY_CUSTOM_FIELD } from '../../src/constants'
+import { DATASET, ENTITY_CUSTOM_FIELD, SAVED_CSV_IMPORT } from '../../src/constants'
 import filterCreator from '../../src/filters/convert_lists'
 
 describe('convert_lists filter', () => {
@@ -42,13 +42,43 @@ describe('convert_lists filter', () => {
     expect(instance.value.dependencies.dependency).toEqual(['singleValue'])
   })
 
-  it('should sort list values if in fieldsToSort', async () => {
+  it('should sort primitive list values if in unorderedListFields', async () => {
     instance.value.dependencies.dependency = ['b', 'a', 'c']
     await filterCreator().onFetch([instance])
     expect(instance.value.dependencies.dependency).toEqual(['a', 'b', 'c'])
   })
 
-  it('should not sort list if in fieldsToSort', async () => {
+  it('should sort object list values if in unorderedListFields', async () => {
+    const savedCsvImportInstance = new InstanceElement('instance',
+      customTypes[SAVED_CSV_IMPORT],
+      {
+        filemappings: {
+          filemapping: [
+            {
+              file: 'VENDORBILL:EXPENSE',
+              foreignkey: 'External ID',
+            },
+            {
+              file: 'VENDORBILL',
+              primarykey: 'External ID',
+            },
+          ],
+        },
+      })
+    await filterCreator().onFetch([savedCsvImportInstance])
+    expect(savedCsvImportInstance.value.filemappings.filemapping).toEqual([
+      {
+        file: 'VENDORBILL',
+        primarykey: 'External ID',
+      },
+      {
+        file: 'VENDORBILL:EXPENSE',
+        foreignkey: 'External ID',
+      },
+    ])
+  })
+
+  it('should not sort list if in unorderedListFields', async () => {
     const roleAccessesValue = [
       {
         accesslevel: '1',

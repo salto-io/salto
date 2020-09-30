@@ -496,6 +496,7 @@ def generate_file_per_type(type_name_to_types_defs):
 
 inner_types_to_export = {
     'dataset_dependencies',
+    'savedcsvimport_filemappings',
 }
 
 should_not_be_required = {

@@ -98,7 +98,7 @@ savedcsvimportInnerTypes.push(savedcsvimport_filemappings_filemapping)
 
 const savedcsvimport_filemappingsElemID = new ElemID(constants.NETSUITE, 'savedcsvimport_filemappings')
 
-const savedcsvimport_filemappings = new ObjectType({
+export const savedcsvimport_filemappings = new ObjectType({
   elemID: savedcsvimport_filemappingsElemID,
   annotations: {
   },

@@ -15,23 +15,26 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  Element, Field, isInstanceElement, isListType, ObjectType, ElemID, Values, Value,
+  Element, Field, isInstanceElement, isListType, ObjectType, Values, Value,
 } from '@salto-io/adapter-api'
 import { applyRecursive } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { dataset_dependencies } from '../types/custom_types/dataset'
+import { savedcsvimport_filemappings } from '../types/custom_types/savedcsvimport'
 
-const fieldsToSort: ElemID[] = [
-  dataset_dependencies.fields.dependency.elemID,
-]
+type FieldFullNameToOrderBy = Map<string, string | undefined>
+
+const unorderedListFields: FieldFullNameToOrderBy = new Map([
+  [dataset_dependencies.fields.dependency.elemID.getFullName(), undefined],
+  [savedcsvimport_filemappings.fields.filemapping.elemID.getFullName(), 'file'],
+])
 
 const castAndOrderListsRecursively = (
   type: ObjectType,
   values: Values,
 ): void => {
-  const fieldFullNamesToSort = fieldsToSort.map(e => e.getFullName())
-  // Cast all values of list type to list and order lists according to fieldsToSort
+  // Cast all values of list type to list and order lists according to unorderedListFields
   const castAndOrderLists = (field: Field, value: Value): Value => {
     if (!isListType(field.type)) {
       return value
@@ -40,8 +43,8 @@ const castAndOrderListsRecursively = (
       return [value]
     }
     // order lists
-    return fieldFullNamesToSort.includes(field.elemID.getFullName())
-      ? value.sort()
+    return unorderedListFields.has(field.elemID.getFullName())
+      ? _.orderBy(value, unorderedListFields.get(field.elemID.getFullName()))
       : value
   }
   applyRecursive(type, values, castAndOrderLists)

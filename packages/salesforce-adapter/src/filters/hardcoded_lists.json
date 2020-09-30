@@ -180,13 +180,13 @@
   "salesforce.PermissionSet.field.applicationVisibilities",
   "salesforce.PermissionSet.field.classAccesses",
   "salesforce.PermissionSet.field.customMetadataTypeAccesses",
-  "salesforce.PermissionSet.fieldcustomPermissions",
-  "salesforce.PermissionSet.fieldcustomSettingAccesses",
-  "salesforce.PermissionSet.fieldexternalDataSourceAccesses",
-  "salesforce.PermissionSet.fieldfieldPermissions",
-  "salesforce.PermissionSet.fieldobjectPermissions",
-  "salesforce.PermissionSet.fiepageAccesses",
-  "salesforce.PermissionSet.fierecordTypeVisibilities",
-  "salesforce.PermissionSet.fietabSettings",
-  "salesforce.PermissionSet.fieuserPermissions"
+  "salesforce.PermissionSet.field.customPermissions",
+  "salesforce.PermissionSet.field.customSettingAccesses",
+  "salesforce.PermissionSet.field.externalDataSourceAccesses",
+  "salesforce.PermissionSet.field.fieldPermissions",
+  "salesforce.PermissionSet.field.objectPermissions",
+  "salesforce.PermissionSet.field.pageAccesses",
+  "salesforce.PermissionSet.field.recordTypeVisibilities",
+  "salesforce.PermissionSet.field.tabSettings",
+  "salesforce.PermissionSet.field.userPermissions"
 ]

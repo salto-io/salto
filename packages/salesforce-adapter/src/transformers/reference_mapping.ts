@@ -54,7 +54,10 @@ const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName = 'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup' | 'neighborLookupValueTypeLookup'
+export type ReferenceContextStrategyName = (
+  'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
+  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
+)
 
 type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 type MetadataTypeArgs = {
@@ -145,6 +148,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'ApexPage' },
   },
   {
+    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable'] },
+    target: { type: 'ApexClass' },
+  },
+  {
     src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
     target: { type: 'Role' },
   },
@@ -185,11 +192,19 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
+    src: { field: 'object', parentTypes: ['ProfileObjectPermissions', 'FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'picklistObject', parentTypes: ['FlowDynamicChoiceSet'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
     src: { field: 'targetObject', parentTypes: ['QuickAction', 'AnalyticSnapshot'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'typeValue', parentTypes: ['FlowDataTypeMapping'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
@@ -233,6 +248,25 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     // if lookupValueType exists
     src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },
     target: { typeContext: 'neighborLookupValueTypeLookup' },
+  },
+  ...(['displayField', 'sortField', 'valueField'].map(
+    (fieldName): FieldReferenceDefinition => ({
+      src: { field: fieldName, parentTypes: ['FlowDynamicChoiceSet'] },
+      serializationStrategy: 'relativeApiName',
+      target: { parentContext: 'neighborObjectLookup', type: CUSTOM_FIELD },
+    })
+  )),
+  ...(['queriedFields', 'sortField'].map(
+    (fieldName): FieldReferenceDefinition => ({
+      src: { field: fieldName, parentTypes: ['FlowRecordLookup'] },
+      serializationStrategy: 'relativeApiName',
+      target: { parentContext: 'neighborObjectLookup', type: CUSTOM_FIELD },
+    })
+  )),
+  {
+    src: { field: 'picklistField', parentTypes: ['FlowDynamicChoiceSet'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborPicklistObjectLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: CPQ_LOOKUP_FIELD, parentTypes: [CPQ_LOOKUP_QUERY] },

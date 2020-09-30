@@ -321,14 +321,51 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     )
   }
 
+  const generateFlowRecordLookupInstance = (
+    flowRecordLookupInstanceName: string,
+    value: { object: string; queriedFields: string[] },
+  ): InstanceElement => {
+    const flowRecordLookupObjectType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'FlowRecordLookup'),
+      annotations: {
+        [METADATA_TYPE]: 'FlowRecordLookup',
+      },
+    })
+    flowRecordLookupObjectType.fields = {
+      object: new Field(
+        flowRecordLookupObjectType,
+        'object',
+        BuiltinTypes.STRING,
+        { [API_NAME]: ['FlowRecordLookupObjectType', 'object'].join(API_NAME_SEPARATOR) }
+      ),
+      queriedFields: new Field(
+        flowRecordLookupObjectType,
+        'queriedFields',
+        new ListType(BuiltinTypes.STRING),
+        { [API_NAME]: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, 'queriedFields'].join(API_NAME_SEPARATOR) }
+      ),
+    }
+    const instanceName = `${parentName}_${flowRecordLookupInstanceName}`
+    return new InstanceElement(
+      instanceName,
+      flowRecordLookupObjectType,
+      {
+        [INSTANCE_FULL_NAME_FIELD]: `${parentName}${API_NAME_SEPARATOR}${flowRecordLookupObjectType}`,
+        ...value,
+      },
+    )
+  }
+
   describe('on fetch', () => {
     let instanceSingleAction: InstanceElement
     let instanceMultiAction: InstanceElement
-    let instanceUnkownActionName: InstanceElement
+    let instanceUnknownActionName: InstanceElement
     let instanceMissingActionForType: InstanceElement
     let instanceInvalidActionType: InstanceElement
     let elements: Element[]
     let actionInstances: InstanceElement[]
+
+    let instanceFlowRecordLookup: InstanceElement
 
     beforeAll(async () => {
       const actionTypeObjects = ['WorkflowAlert', 'WorkflowFieldUpdate'].map(actionType => (
@@ -363,10 +400,12 @@ describe('FieldReferences filter - neighbor context strategy', () => {
 
       instanceSingleAction = generateWorkFlowRuleInstance('single', actionReferences[0])
       instanceMultiAction = generateWorkFlowRuleInstance('multi', actionReferences)
-      instanceUnkownActionName = generateWorkFlowRuleInstance('unknownActionName', { name: 'unkown', type: 'Alert' })
+      instanceUnknownActionName = generateWorkFlowRuleInstance('unknownActionName', { name: 'unknown', type: 'Alert' })
       instanceMissingActionForType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'Task' })
       instanceInvalidActionType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'InvalidType' })
       const workflowRuleType = instanceSingleAction.type
+
+      instanceFlowRecordLookup = generateFlowRecordLookupInstance('single', { object: 'User', queriedFields: ['name'] })
 
       elements = [
         customObjectType,
@@ -376,8 +415,9 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         }),
         workflowRuleType,
         instanceSingleAction, instanceMultiAction,
-        instanceUnkownActionName, instanceMissingActionForType, instanceInvalidActionType,
+        instanceUnknownActionName, instanceMissingActionForType, instanceInvalidActionType,
         ...actionTypeObjects, ...actionInstances,
+        instanceFlowRecordLookup, instanceFlowRecordLookup.type,
       ]
       await filter.onFetch(elements)
     })
@@ -401,8 +441,16 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       )
     })
 
+    it('should have references if referencing field is an array', () => {
+      const getFullName = (val: string | ReferenceExpression): string => {
+        expect(val).toBeInstanceOf(ReferenceExpression)
+        return (val as ReferenceExpression).elemId.getFullName()
+      }
+      expect(getFullName(instanceFlowRecordLookup.value.queriedFields[0])).toEqual('salesforce.User.field.name')
+    })
+
     it('should not have references when lookup fails', () => {
-      expect(instanceUnkownActionName.value.actions.name).toEqual('unkown')
+      expect(instanceUnknownActionName.value.actions.name).toEqual('unknown')
       expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
       expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
     })

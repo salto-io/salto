@@ -68,10 +68,22 @@ const neighborContextFunc = (
     return getLookUpName({ ref: refWithValue, field: contextField, path })
   }
 
+  const getParentPath = (currentFieldPath: ElemID): ElemID => {
+    const isNum = (str: string | undefined): boolean => (
+      !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
+    )
+    let path = currentFieldPath
+    // ignore array indices
+    while (isNum(path.getFullNameParts().pop())) {
+      path = path.createParentID()
+    }
+    return path.createParentID()
+  }
+
   if (fieldPath === undefined || contextFieldName === undefined) {
     return undefined
   }
-  const contextPath = fieldPath.createParentID().createNestedID(contextFieldName)
+  const contextPath = getParentPath(fieldPath).createNestedID(contextFieldName)
   const context = resolvePath(instance, contextPath)
   const contextStr = isReferenceExpression(context)
     ? resolveReference(context, contextPath)

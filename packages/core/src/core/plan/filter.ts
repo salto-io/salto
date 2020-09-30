@@ -16,12 +16,15 @@
 import wu from 'wu'
 import _ from 'lodash'
 
-import { DataNodeMap, DiffGraph, DiffNode } from '@salto-io/dag'
+import { DataNodeMap, DiffGraph, DiffNode, WalkError } from '@salto-io/dag'
 import {
   ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
   ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
 
 type FilterResult = {
   changeErrors: ChangeError[]
@@ -130,7 +133,15 @@ export const filterInvalidChanges = async (
         validDiffGraph.addNode(nodeId, diffGraph.get(nodeId), validChange)
       })
     } catch (e) {
-      // do nothing, we may have errors since we may skip nodes that depends on invalid nodes
+      if (e instanceof WalkError && e.circularDependencyError === undefined) {
+        // do nothing, we may have errors since we may skip nodes that depends on invalid nodes
+        log.warn('removing the following changes from plan: %o', e.handlerErrors)
+      } else {
+        // If we get a different error or a circular dependency, we have to report the error here
+        // If we silence the error here the rest of the code may succeed but with a partial plan
+        // and the user will not be able to know why the plan is partial
+        throw e
+      }
     }
     return validDiffGraph
   }

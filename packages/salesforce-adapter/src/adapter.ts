@@ -477,23 +477,33 @@ export default class SalesforceAdapter implements AdapterOperations {
       }
       return { action: 'modify', data: getBeforeAndAfterElements() }
     }
-    await this.filtersRunner.preDeploy(changeGroup.changes)
-    const resolvedChanges = changeGroup.changes
-      .map(change => resolveChangeElement(change, getLookUpName))
-    const resolvedChangeGroup = { groupID: changeGroup.groupID, changes: resolvedChanges }
-    const resolvedByElem = groupChangesByTopLevelName(resolvedChanges)
+    const topLevelNameToChanges = groupChangesByTopLevelName(changeGroup.changes)
+    const topLevelNameToResolvedMainChange = _.mapValues(
+      topLevelNameToChanges,
+      changes => {
+        const mainElemChange = getMainElemChange(changes)
+        return resolveChangeElement(mainElemChange, getLookUpName)
+      },
+    )
+    const mainElemChanges = Object.values(topLevelNameToResolvedMainChange)
+    await this.filtersRunner.preDeploy(mainElemChanges)
+    const mainElemChangesGroup = { groupID: changeGroup.groupID, changes: mainElemChanges }
     let results: DeployResult[]
-    if (isCustomObjectInstancesGroup(resolvedChangeGroup)) {
+    if (isCustomObjectInstancesGroup(mainElemChangesGroup)) {
       results = [await deployCustomObjectInstancesGroup(
-        resolvedChangeGroup,
+        mainElemChangesGroup,
         this.client,
         this.userConfig.dataManagement,
       )]
     } else {
       results = await Promise.all(
-        Object.values(resolvedByElem)
-          .map(elemChanges =>
-            this.deployElementChanges(elemChanges, getMainElemChange(elemChanges)))
+        Object.keys(topLevelNameToResolvedMainChange).map(
+          topLevelName =>
+            this.deployElementChanges(
+              topLevelNameToChanges[topLevelName],
+              topLevelNameToResolvedMainChange[topLevelName],
+            )
+        )
       )
     }
     const changesByElem = groupChangesByTopLevelName(changeGroup.changes)
@@ -501,9 +511,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       Object.values(changesByElem).map(change => getChangeElement(getMainElemChange(change))),
       changeElement => changeElement.elemID.getFullName(),
     )
-    const appliedChanges = _.flatten(results.map(res => res.appliedChanges))
+    const appliedChangesBeforeRestore = results.flatMap(res => res.appliedChanges)
+    await this.filtersRunner.onDeploy(appliedChangesBeforeRestore)
+    const appliedChanges = appliedChangesBeforeRestore
       .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
-    await this.filtersRunner.onDeploy(appliedChanges)
     return {
       appliedChanges,
       errors: _.flatten(results.map(res => res.errors)),

@@ -138,6 +138,9 @@ const replaceReferenceValues = (
     if (parentContextFunc === undefined) {
       return undefined
     }
+    const elemParent = target.parent ?? parentContextFunc(
+      { instance, elemByElemID, field, fieldPath: path }
+    )
     const typeContextFunc = ContextStrategyLookup[target.typeContext ?? 'none']
     if (typeContextFunc === undefined) {
       return undefined
@@ -146,7 +149,7 @@ const replaceReferenceValues = (
       instance, elemByElemID, field, fieldPath: path,
     })
     return findElem(
-      target.lookup(val, parentContextFunc({ instance, elemByElemID, field, fieldPath: path })),
+      target.lookup(val, elemParent),
       elemType,
     )
   }

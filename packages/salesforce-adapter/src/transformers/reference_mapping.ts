@@ -25,7 +25,9 @@ import {
   CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CUSTOM_FIELD,
   CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD, CPQ_OBJECT_NAME, CPQ_FIELD_METADATA,
   VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
+  WEBLINK_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, CPQ_CUSTOM_SCRIPT, CPQ_QUOTE_FIELDS,
+  CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
+  CPQ_QUOTE_LINE_FIELDS,
 } from '../constants'
 
 const log = logger(module)
@@ -64,10 +66,14 @@ type MetadataTypeArgs = {
   type: string
   typeContext: ReferenceContextStrategyName
 }
+type MetadataParentArgs = {
+  parent?: string
+  parentContext: ReferenceContextStrategyName
+}
 type ReferenceTargetDefinition = {
-  parentContext?: ReferenceContextStrategyName
   name?: string
 } & (PickOne<MetadataTypeArgs, 'type'> | PickOne<MetadataTypeArgs, 'typeContext'>)
+  & (PickOne<MetadataParentArgs, 'parent'> | PickOne<MetadataParentArgs, 'parentContext'>)
 export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
 
 type SourceDef = {
@@ -297,6 +303,31 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: CPQ_LOOKUP_TYPE_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: CPQ_CONSUMPTION_RATE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
+    serializationStrategy: 'relativeApiName',
+    target: { parent: 'ConsumptionRate', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: CPQ_CONSUMPTION_SCHEDULE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
+    serializationStrategy: 'relativeApiName',
+    target: { parent: 'ConsumptionSchedule', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: CPQ_GROUP_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
+    serializationStrategy: 'relativeApiName',
+    target: { parent: 'SBQQ__QuoteLineGroup__c', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: CPQ_QUOTE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
+    serializationStrategy: 'relativeApiName',
+    target: { parent: 'SBQQ__Quote__c', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: CPQ_QUOTE_LINE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
+    serializationStrategy: 'relativeApiName',
+    target: { parent: 'SBQQ__QuoteLine__c', type: CUSTOM_FIELD },
   },
 ]
 

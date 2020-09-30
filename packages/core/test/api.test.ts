@@ -84,16 +84,18 @@ const mockEmptyConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockEmpt
   sandbox: false,
 })
 
-const mockWorkspace = ({
+export const mockWorkspace = ({
   elements = [],
   name = undefined,
   index = undefined,
   stateElements = undefined,
+  services = SERVICES,
 }: {
   elements?: Element[]
   name?: string
   index?: workspace.pathIndex.PathIndex
   stateElements?: Element[]
+  services?: string[]
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
@@ -101,7 +103,7 @@ const mockWorkspace = ({
     name,
     envs: () => ['default'],
     currentEnv: 'default',
-    services: () => SERVICES,
+    services: () => services,
     state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),
     flush: jest.fn(),
@@ -114,6 +116,7 @@ const mockWorkspace = ({
     addService: jest.fn(),
     updateServiceCredentials: jest.fn(),
     updateServiceConfig: jest.fn(),
+    clear: jest.fn(),
   } as unknown as workspace.Workspace
 }
 

@@ -23,7 +23,7 @@ import {
   isStaticFile,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult } from '@salto-io/core'
-import { errors, SourceFragment, parser } from '@salto-io/workspace'
+import { errors, SourceFragment, parser, WorkspaceComponents } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import Prompts from './prompts'
 
@@ -633,6 +633,9 @@ export const formatInvalidElementCommand = (command: string): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatCleanWorkspace = (parts: string[]): string => (
-  Prompts.CLEAN_WORKSPACE_SUMMARY(parts)
-)
+export const formatCleanWorkspace = (cleanArgs: WorkspaceComponents): string => {
+  const componentsToClean = Object.entries(cleanArgs)
+    .filter(([_comp, shouldClean]) => shouldClean)
+    .map(([comp]) => _.startCase(comp).toLowerCase())
+  return Prompts.CLEAN_WORKSPACE_SUMMARY(componentsToClean)
+}

@@ -285,11 +285,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         if (args.staticResources && !(args.state && args.cache && args.nacl)) {
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
         }
-        await naclFilesSource.clear({
-          nacl: args.nacl,
-          cacheData: args.cache,
-          staticResources: args.staticResources,
-        })
+        await naclFilesSource.clear(args)
       }
       if (args.state) {
         await promises.array.series(envs().map(e => (() => state(e).clear())))

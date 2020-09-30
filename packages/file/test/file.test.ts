@@ -692,19 +692,5 @@ describe('file', () => {
         expect(file.isSubDirectory('../base', '../base')).toBe(true)
       })
     })
-
-    describe('when given a subdirectory in strict mode', () => {
-      it('returns true', () => {
-        expect(file.isSubDirectory('/base/child', '/base', true)).toBe(true)
-        expect(file.isSubDirectory('../base/child', '../base', true)).toBe(true)
-      })
-    })
-
-    describe('when given the same directory in strict mode', () => {
-      it('returns false', () => {
-        expect(file.isSubDirectory('/base', '/base', true)).toBe(false)
-        expect(file.isSubDirectory('../base', '../base', true)).toBe(false)
-      })
-    })
   })
 })

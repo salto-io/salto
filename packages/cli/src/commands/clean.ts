@@ -15,9 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
-import _ from 'lodash'
-import { promises } from '@salto-io/lowerdash'
-import { loadLocalWorkspace, getDefaultAdapterConfig } from '@salto-io/core'
+import { loadLocalWorkspace, cleanWorkspace } from '@salto-io/core'
 import { WorkspaceComponents } from '@salto-io/workspace'
 import { ParsedCliInput, CliOutput, CliExitCode, CliCommand, CliTelemetry } from '../types'
 import { createCommandBuilder } from '../command_builder'
@@ -42,14 +40,10 @@ export const command = (
   cleanArgs: WorkspaceComponents,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.debug(`running clean command on '${workspaceDir}', force=${force}, nacl=${
-      cleanArgs.nacl}, state=${cleanArgs.state}, cache=${cleanArgs.cache}, credentials=${
-      cleanArgs.credentials}, staticResources=${cleanArgs.staticResources}, serviceConfig=${cleanArgs.serviceConfig}`)
+    log.debug('running clean command on \'%s\', force=%s, args=%o', workspaceDir, force, cleanArgs)
 
-    const componentsToClean = Object.entries(cleanArgs)
-      .filter(([_comp, shouldClean]) => shouldClean)
-      .map(([comp]) => _.startCase(comp).toLowerCase())
-    if (componentsToClean.length === 0) {
+    const shouldCleanAnything = Object.values(cleanArgs).some(shouldClean => shouldClean)
+    if (!shouldCleanAnything) {
       outputLine(header(Prompts.EMPTY_PLAN), output)
       outputLine(EOL, output)
       return CliExitCode.UserInputError
@@ -64,7 +58,7 @@ export const command = (
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
     outputLine(header(
-      formatCleanWorkspace(componentsToClean)
+      formatCleanWorkspace(cleanArgs)
     ), output)
     if (!(force || await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN))) {
       outputLine(formatCancelCommand, output)
@@ -75,22 +69,7 @@ export const command = (
     cliTelemetry.start(workspaceTags)
 
     try {
-      await workspace.clear(_.omit(cleanArgs, 'serviceConfig'))
-      const configRestoreFailures: string[] = []
-      if (cleanArgs.serviceConfig) {
-        await promises.array.series(workspace.services().map(service => (async () => {
-          const defaultConfig = getDefaultAdapterConfig(service)
-          if (defaultConfig !== undefined) {
-            return workspace.updateServiceConfig(service, defaultConfig)
-          }
-          configRestoreFailures.push(service)
-          return undefined
-        })))
-      }
-      await workspace.flush()
-      if (configRestoreFailures.length > 0) {
-        throw new Error(`Failed to restore config for the following services: ${configRestoreFailures}`)
-      }
+      await cleanWorkspace(workspace, cleanArgs)
     } catch (e) {
       errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
       cliTelemetry.failure(workspaceTags)

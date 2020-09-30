@@ -72,7 +72,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   clear(args?: {
     nacl?: boolean
     staticResources?: boolean
-    cacheData?: boolean
+    cache?: boolean
   }): Promise<void>
 }
 
@@ -391,8 +391,8 @@ const buildNaclFilesSource = (
       )
     },
 
-    clear: async (args = { nacl: true, staticResources: true, cacheData: true }) => {
-      if (args.staticResources && !(args.cacheData && args.nacl)) {
+    clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
+      if (args.staticResources && !(args.cache && args.nacl)) {
         throw new Error('Cannot clear static resources without clearing the cache and nacls')
       }
 
@@ -403,7 +403,7 @@ const buildNaclFilesSource = (
       if (args.nacl) {
         await naclFilesStore.clear()
       }
-      if (args.cacheData) {
+      if (args.cache) {
         await cache.clear()
       }
     },

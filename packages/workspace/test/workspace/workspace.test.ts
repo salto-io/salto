@@ -1073,18 +1073,27 @@ describe('workspace', () => {
       expect(workspace.envs()).toEqual(origEnvs)
       expect(elementSources[''].naclFiles.clear).toHaveBeenCalledWith({
         nacl: true,
-        cacheData: true,
+        cache: true,
         staticResources: true,
+        // ignored
+        credentials: true,
+        state: true,
       })
       expect(elementSources.default.naclFiles.clear).toHaveBeenCalledWith({
         nacl: true,
-        cacheData: true,
+        cache: true,
         staticResources: true,
+        // ignored
+        credentials: true,
+        state: true,
       })
       expect(elementSources.inactive.naclFiles.clear).toHaveBeenCalledWith({
         nacl: true,
-        cacheData: true,
+        cache: true,
         staticResources: true,
+        // ignored
+        credentials: true,
+        state: true,
       })
       expect(stateClears.default).toHaveBeenCalledTimes(1)
       expect(stateClears.inactive).toHaveBeenCalledTimes(1)

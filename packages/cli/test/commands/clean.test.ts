@@ -32,6 +32,7 @@ jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   getDefaultAdapterConfig: jest.fn().mockImplementation(service => ({ a: 'a', serviceName: service })),
   loadLocalWorkspace: jest.fn(),
+  cleanWorkspace: jest.fn(),
 }))
 
 describe('clean command', () => {
@@ -113,18 +114,14 @@ describe('clean command', () => {
       }).execute()).toBe(CliExitCode.Success)
       expect(core.loadLocalWorkspace).toHaveBeenCalled()
       expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
-      expect(lastWorkspace.clear).toHaveBeenCalledWith({
+      expect(core.cleanWorkspace).toHaveBeenCalledWith(lastWorkspace, {
         nacl: true,
         state: true,
         cache: true,
         staticResources: true,
         credentials: true,
+        serviceConfig: true,
       })
-      expect(core.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce')
-      expect(core.getDefaultAdapterConfig).toHaveBeenCalledWith('hubspot')
-      expect(lastWorkspace.updateServiceConfig).toHaveBeenCalledWith('salesforce', core.getDefaultAdapterConfig('salesforce'))
-      expect(lastWorkspace.updateServiceConfig).toHaveBeenCalledWith('hubspot', core.getDefaultAdapterConfig('hubspot'))
-      expect(lastWorkspace.flush).toHaveBeenCalled()
 
       expect(mockTelemetry.getEvents()).toHaveLength(2)
       expect(mockTelemetry.getEventsMap()[eventsNames.start]).toBeDefined()
@@ -135,8 +132,10 @@ describe('clean command', () => {
       expect(cliOutput.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
     })
 
-    it('should flush workspace before failing on config restore failures', async () => {
-      jest.spyOn(core, 'getDefaultAdapterConfig').mockImplementationOnce(() => undefined).mockImplementationOnce(() => undefined)
+    it('should exit cleanly on error', async () => {
+      jest.spyOn(core, 'cleanWorkspace').mockImplementationOnce(
+        () => { throw new Error('something bad happened') }
+      )
       expect(await command('.', mockCliTelemetry, cliOutput, false, {
         nacl: true,
         state: true,
@@ -145,19 +144,12 @@ describe('clean command', () => {
         credentials: true,
         serviceConfig: true,
       }).execute()).toBe(CliExitCode.AppError)
-      expect(core.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce')
-      expect(core.getDefaultAdapterConfig).toHaveBeenCalledWith('hubspot')
-      expect(lastWorkspace.updateServiceConfig).not.toHaveBeenCalled()
-      expect(lastWorkspace.flush).toHaveBeenCalled()
-
       expect(mockTelemetry.getEvents()).toHaveLength(2)
       expect(mockTelemetry.getEventsMap()[eventsNames.start]).toBeDefined()
       expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toBeDefined()
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
 
       expect(cliOutput.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
       expect(cliOutput.stderr.content.search('Error encountered while cleaning')).toBeGreaterThan(0)
-      expect(cliOutput.stderr.content.search('Failed to restore config for the following services: salesforce,hubspot')).toBeGreaterThan(0)
     })
   })
 
@@ -177,12 +169,13 @@ describe('clean command', () => {
       }).execute()).toBe(CliExitCode.Success)
       expect(core.loadLocalWorkspace).toHaveBeenCalled()
       expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
-      expect(lastWorkspace.clear).toHaveBeenCalledWith({
+      expect(core.cleanWorkspace).toHaveBeenCalledWith(lastWorkspace, {
         nacl: true,
         state: true,
         cache: true,
         staticResources: true,
         credentials: true,
+        serviceConfig: true,
       })
       expect(cliOutput.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
       expect(cliOutput.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)

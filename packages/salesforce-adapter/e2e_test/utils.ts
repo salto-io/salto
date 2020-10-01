@@ -23,7 +23,7 @@ import { MetadataInfo } from 'jsforce'
 import { SalesforceRecord } from '../src/client/types'
 import { filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
-import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
+import SalesforceAdapter, { DEFAULT_FILTERS, allSystemFields } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import { ConfigChangeSuggestion, FilterContext } from '../src/types'
@@ -182,6 +182,9 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
   }
+  if (result.appliedChanges.length === 0) {
+    throw new Error(`Failed adding element ${element.elemID.getFullName()}: no applied changes`)
+  }
   return getChangeElement(result.appliedChanges[0]) as T
 }
 
@@ -228,10 +231,14 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
   }
 }
 
+const defaultFilterContext: FilterContext = {
+  systemFields: allSystemFields,
+}
+
 export const runFiltersOnFetch = async (
   client: SalesforceClient,
   context: FilterContext,
   elements: Element[],
   filterCreators = DEFAULT_FILTERS
 ): Promise<void | ConfigChangeSuggestion[]> =>
-  filtersRunner(client, context, filterCreators).onFetch(elements)
+  filtersRunner(client, { ...defaultFilterContext, ...context }, filterCreators).onFetch(elements)

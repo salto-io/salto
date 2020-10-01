@@ -14,16 +14,16 @@
 * limitations under the License.
 */
 import {
-  ObjectType, Element, Values, getAnnotationValue, isObjectTypeChange,
+  ObjectType, Element, Values, getAnnotationValue, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeElement, isAdditionChange, isModificationChange,
+  ElemID, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,
-  TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
-import { isCustomObject, apiName, metadataType } from '../transformers/transformer'
+import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
+import { isCustomObject, apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { getCustomObjects, boolValue, getInstancesOfMetadataType } from './utils'
+import { boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange } from './utils'
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
@@ -39,9 +39,24 @@ const setTopicsForObjects = (object: ObjectType, enableTopics: boolean): void =>
 const setDefaultTopicsForObjects = (object: ObjectType): void => setTopicsForObjects(object,
   DEFAULT_ENABLE_TOPICS_VALUE)
 
-const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch' | 'onDeploy'> => ({
+const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceElement => (
+  createInstanceElement(
+    values,
+    new ObjectType({
+      elemID: new ElemID(SALESFORCE, TOPICS_FOR_OBJECTS_METADATA_TYPE),
+      annotationTypes: _.clone(metadataAnnotationTypes),
+      annotations: {
+        metadataType: TOPICS_FOR_OBJECTS_METADATA_TYPE,
+        dirName: 'topicsForObjects',
+        suffix: 'topicsForObjects',
+      } as MetadataTypeAnnotations,
+    })
+  )
+)
+
+const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const customObjectTypes = getCustomObjects(elements).filter(obj => obj.annotations[API_NAME])
+    const customObjectTypes = elements.filter(isCustomObject)
     if (_.isEmpty(customObjectTypes)) {
       return
     }
@@ -68,11 +83,12 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch' | 'onDep
     _.remove(elements, elem => (metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE))
   },
 
-  onDeploy: async changes => {
+  preDeploy: async changes => {
     const customObjectChanges = changes
       .filter(isObjectTypeChange)
       .filter(isAdditionOrModificationChange)
-      .filter((change): boolean => isCustomObject(getChangeElement(change)))
+      .filter(change => isCustomObject(getChangeElement(change)))
+
     const newObjects = customObjectChanges
       .filter(isAdditionChange)
       .map(getChangeElement)
@@ -93,16 +109,26 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch' | 'onDep
 
     const topicsToSet = [...newObjectTopicsToSet, ...changedObjectTopics]
     if (topicsToSet.length === 0) {
-      return []
+      return
     }
-    return client.update(
-      TOPICS_FOR_OBJECTS_METADATA_TYPE,
-      topicsToSet.map(obj => {
-        const topics = getTopicsForObjects(obj)
-        const topicsEnabled = boolValue(topics[ENABLE_TOPICS] ?? false)
-        return new TopicsForObjectsInfo(apiName(obj), apiName(obj), topicsEnabled)
-      })
+
+    // Add topics for objects instances to the list of changes to deploy
+    changes.push(
+      ...topicsToSet
+        .map(obj => {
+          const topics = getTopicsForObjects(obj)
+          const topicsEnabled = boolValue(topics[ENABLE_TOPICS] ?? false)
+          return new TopicsForObjectsInfo(apiName(obj), apiName(obj), topicsEnabled)
+        })
+        .map(createTopicsForObjectsInstance)
+        .map(after => toChange({ after }))
     )
+  },
+
+  onDeploy: async changes => {
+    // Remove all the topics for objects instance changes that we added in preDeploy
+    _.remove(changes, isInstanceOfTypeChange(TOPICS_FOR_OBJECTS_METADATA_TYPE))
+    return []
   },
 })
 

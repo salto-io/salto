@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import {
-  Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression,
+  Element, ObjectType, InstanceElement, Field, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -158,9 +158,7 @@ const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =
 
 const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[]): void => {
   const svsValuesToName = svsValuesToRef(svsInstances)
-  const customObjectTypeElements = elements
-    .filter(isObjectType)
-    .filter(isCustomObject)
+  const customObjectTypeElements = elements.filter(isCustomObject)
 
   customObjectTypeElements.forEach((custObjType: ObjectType) => {
     const fieldsToUpdate = calculatePicklistFieldsToUpdate(custObjType.fields, svsValuesToName)

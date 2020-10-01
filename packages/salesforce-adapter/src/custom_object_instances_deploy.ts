@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { values, collections, hash, strings } from '@salto-io/lowerdash'
 import {
-  ChangeGroup, getChangeElement, DeployResult, Change, isPrimitiveType,
-  InstanceElement, isAdditionGroup, isRemovalGroup, Value, PrimitiveTypes,
-  ChangeGroupId, ModificationChange, isModificationGroup, Field, ObjectType, isObjectType, Values,
+  getChangeElement, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
+  ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { BatchResultInfo } from 'jsforce-types'
 import { isInstanceOfCustomObject, instancesToCreateRecords, apiName,
@@ -281,22 +281,30 @@ const deployModifyChanges = async (
   }
 }
 
-export const isCustomObjectInstancesGroup = (changeGroup: ChangeGroup): changeGroup is {
-  groupID: ChangeGroupId
-  changes: ReadonlyArray<Change<InstanceElement>>
-  } =>
-  changeGroup.changes.every(change => isInstanceOfCustomObject(getChangeElement(change)))
+export const isInstanceOfCustomObjectChange = (
+  change: Change
+): change is Change<InstanceElement> => (
+  isInstanceOfCustomObject(getChangeElement(change))
+)
+
+export const isCustomObjectInstanceChanges = (
+  changes: Change[]
+): changes is Change<InstanceElement>[] =>
+  changes.every(isInstanceOfCustomObjectChange)
+
+const isModificationChangeList = <T>(
+  changes: ReadonlyArray<Change<T>>
+): changes is ReadonlyArray<ModificationChange<T>> => (
+    changes.every(isModificationChange)
+  )
 
 export const deployCustomObjectInstancesGroup = async (
-  changeGroup: {
-    groupID: ChangeGroupId
-    changes: ReadonlyArray<Change<InstanceElement>>
-    },
+  changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   dataManagementConfig?: DataManagementConfig,
 ): Promise<DeployResult> => {
   try {
-    const instances = changeGroup.changes.map(change => getChangeElement(change))
+    const instances = changes.map(change => getChangeElement(change))
     const instanceTypes = [...new Set(instances.map(inst => apiName(inst.type)))]
     if (instanceTypes.length > 1) {
       throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
@@ -306,18 +314,18 @@ export const deployCustomObjectInstancesGroup = async (
     if (actualDataManagement === undefined) {
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
-    if (isAdditionGroup(changeGroup)) {
+    if (changes.every(isAdditionChange)) {
       const { idFields, invalidFields } = getIdFields(instances[0].type, actualDataManagement)
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }
       return await deployAddInstances(instances, idFields, client)
     }
-    if (isRemovalGroup(changeGroup)) {
+    if (changes.every(isRemovalChange)) {
       return await deployRemoveInstances(instances, client)
     }
-    if (isModificationGroup(changeGroup)) {
-      return await deployModifyChanges(changeGroup.changes, client)
+    if (isModificationChangeList(changes)) {
+      return await deployModifyChanges(changes, client)
     }
     throw new Error('Custom Object Instances change group must have one action')
   } catch (error) {

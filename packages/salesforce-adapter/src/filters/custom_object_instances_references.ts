@@ -17,12 +17,13 @@ import _ from 'lodash'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import {
-  Element, isInstanceElement, Values, ObjectType, Field, isPrimitiveType, InstanceElement,
+  Element, Values, ObjectType, Field, InstanceElement,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { isCustomObject, Types, apiName } from '../transformers/transformer'
+import { apiName, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD } from '../constants'
+import { isLookupField, isMasterDetailField } from './utils'
 
 const { makeArray } = collections.array
 
@@ -32,11 +33,7 @@ const replaceReferenceValues = (
   instances: InstanceElement[]
 ): Values => {
   const shouldReplace = (field: Field): boolean => (
-    isPrimitiveType(field.type)
-    && (
-      Types.primitiveDataTypes.Lookup.isEqual(field.type)
-      || Types.primitiveDataTypes.MasterDetail.isEqual(field.type)
-    )
+    isLookupField(field) || isMasterDetailField(field)
   )
 
   const instancesByType = _.mapValues(
@@ -74,9 +71,7 @@ const replaceReferenceValues = (
 }
 
 const replaceLookupsWithReferences = (elements: Element[]): void => {
-  const customObjectInstances = elements
-    .filter(isInstanceElement)
-    .filter(e => isCustomObject(e.type))
+  const customObjectInstances = elements.filter(isInstanceOfCustomObject)
   customObjectInstances.forEach(instance => {
     instance.value = replaceReferenceValues(
       instance.value,

@@ -23,8 +23,8 @@ import { ConfigChangeSuggestion, FilterContext } from './types'
 // operations. The filter will be responsible for specific business logic.
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<ConfigChangeSuggestion[] | void>
-  preDeploy(changes: ReadonlyArray<Change>): Promise<void>
-  onDeploy(changes: ReadonlyArray<Change>): Promise<(SaveResult | UpsertResult)[]>
+  preDeploy(changes: Change[]): Promise<void>
+  onDeploy(changes: Change[]): Promise<(SaveResult | UpsertResult)[]>
 }>
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
@@ -36,8 +36,11 @@ export type FilterCreator = (
 export const filtersRunner = (client: SalesforceClient,
   config: FilterContext,
   filterCreators: ReadonlyArray<FilterCreator>): Required<Filter> => {
+  // Create all filters in advance to allow them to hold context between calls
+  const allFilters = filterCreators.map(f => f({ client, config }))
+
   const filtersWith = <M extends keyof Filter>(m: M): FilterWith<M>[] =>
-    types.filterHasMember<Filter, M>(m, filterCreators.map(f => f({ client, config })))
+    types.filterHasMember<Filter, M>(m, allFilters)
 
   return {
     onFetch: async elements => {
@@ -47,7 +50,7 @@ export const filtersRunner = (client: SalesforceClient,
       return configChanges.filter(values.isDefined).flat()
     },
     preDeploy: async changes => {
-      await promises.array.series(filtersWith('preDeploy').map(filter => () => filter.preDeploy(changes)))
+      await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => filter.preDeploy(changes)))
       Promise.resolve()
     },
     onDeploy: async changes =>

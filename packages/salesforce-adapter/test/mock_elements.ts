@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import {
-  SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE,
-  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
-} from '../src/constants'
+import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../src/constants'
 import { MetadataTypeAnnotations, MetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
+import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
+
 
 type ObjectTypeCtorParam = ConstructorParameters<typeof ObjectType>[0]
 type CreateMetadataObjectTypeParams = Omit<ObjectTypeCtorParam, 'elemID'> & {
@@ -120,6 +120,19 @@ export const mockTypes = {
       },
     },
   }),
+  Workflow: createMetadataObjectType({
+    annotations: {
+      metadataType: WORKFLOW_METADATA_TYPE,
+      dirName: 'workflows',
+      suffix: 'workflow',
+    },
+    fields: _.mapValues(
+      WORKFLOW_FIELD_TO_TYPE,
+      typeName => ({
+        type: new ListType(createMetadataObjectType({ annotations: { metadataType: typeName } })),
+      }),
+    ),
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
@@ -196,6 +209,73 @@ export const mockDefaultValues = {
         'lightning__HomePage',
       ],
     },
+  },
+  Profile: {
+    fieldPermissions: {
+      Lead: {
+        Fax: {
+          field: 'Lead.Fax',
+          readable: true,
+          editable: false,
+        },
+      },
+      Account: {
+        AccountNumber: {
+          editable: false,
+          field: 'Account.AccountNumber',
+          readable: false,
+        },
+      },
+    },
+    objectPermissions: {
+      Account: {
+        allowCreate: true,
+        allowDelete: true,
+        allowEdit: true,
+        allowRead: true,
+        modifyAllRecords: false,
+        viewAllRecords: false,
+        object: 'Account',
+      },
+    },
+    tabVisibilities: [
+      {
+        tab: 'standard-Account',
+        visibility: 'DefaultOff',
+      },
+    ],
+    userPermissions: {
+      ConvertLeads: {
+        enabled: false,
+        name: 'ConvertLeads',
+      },
+    },
+    applicationVisibilities: {
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      standard__ServiceConsole: {
+        application: 'standard__ServiceConsole',
+        default: false,
+        visible: true,
+      },
+    },
+    pageAccesses: {
+      ApexPageForProfile: {
+        apexPage: 'ApexPageForProfile',
+        enabled: false,
+      },
+    },
+    classAccesses: {
+      ApexClassForProfile: {
+        apexClass: 'ApexClassForProfile',
+        enabled: false,
+      },
+    },
+    loginHours: {
+      sundayStart: 480,
+      sundayEnd: 1380,
+    },
+    description: 'new e2e profile',
+    [INSTANCE_FULL_NAME_FIELD]: 'TestAddProfileInstance__c',
   },
   StaticResource: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestStaticResource',

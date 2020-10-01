@@ -38,12 +38,13 @@ describe('Custom Object Split filter', () => {
       custom_namespace__c: {
         type: BuiltinTypes.STRING,
         annotations: {
-          [API_NAME]: 'namespace__random__c',
+          [API_NAME]: 'objectRandom__c.namespace__random__c',
         },
       },
     },
     annotations: {
       [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'objectRandom__c',
     },
   })
   const withNamespaceOject = new ObjectType({
@@ -60,7 +61,7 @@ describe('Custom Object Split filter', () => {
       custom_namespace__c: {
         type: BuiltinTypes.STRING,
         annotations: {
-          [API_NAME]: 'api-name',
+          [API_NAME]: 'namespace__objectRandom__c.namespace__api_name',
         },
       },
     },

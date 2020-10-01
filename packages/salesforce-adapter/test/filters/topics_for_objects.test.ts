@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange,
+  ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change,
+  getChangeElement, isInstanceChange,
 } from '@salto-io/adapter-api'
-import { metadataType } from '../../src/transformers/transformer'
+import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/topics_for_objects'
-import { TopicsForObjectsInfo } from '../../src/client/types'
 
 const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
@@ -29,14 +29,16 @@ const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 describe('Topics for objects filter', () => {
   const { client } = mockClient()
-  const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockTopicElemID = new ElemID(constants.SALESFORCE, constants.TOPICS_FOR_OBJECTS_ANNOTATION)
-  const mockObject = new ObjectType({
-    elemID: mockElemID,
+  const mockObject = (name: string, withTopics?: boolean): ObjectType => new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, name),
     annotations: {
       label: 'test label',
-      [constants.API_NAME]: 'Test__c',
+      [constants.API_NAME]: name,
       [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+      ...withTopics === undefined
+        ? {}
+        : { [TOPICS_FOR_OBJECTS_ANNOTATION]: { [ENABLE_TOPICS]: withTopics } },
     },
   })
 
@@ -60,29 +62,15 @@ describe('Topics for objects filter', () => {
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Test__c',
     })
 
-  const enableTopicTrue = { [ENABLE_TOPICS]: true }
+  let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
-  let mockUpdate: jest.Mock
-
-  type FilterType = FilterWith<'onFetch' | 'onDeploy'>
-  const filter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
-
-  const verifyUpdateCall = (object: string, enableTopics: boolean): void => {
-    expect(mockUpdate.mock.calls.length).toBe(1)
-    const topicsForObjects = mockUpdate.mock.calls[0][1][0] as TopicsForObjectsInfo
-    expect(topicsForObjects.enableTopics).toBe(enableTopics)
-    expect(topicsForObjects.entityApiName).toBe(object)
-  }
-
-  beforeEach(() => {
-    mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
-    client.update = mockUpdate
-  })
-
-  it('should add topicsForObjects to object types and remove topics type & instances',
-    async () => {
-      const elements = [mockObject.clone(), mockTopicForObject, mockTopic]
-      await filter().onFetch(elements)
+  describe('onFetch', () => {
+    beforeAll(() => {
+      filter = filterCreator({ client, config: {} }) as typeof filter
+    })
+    it('should add topicsForObjects to object types and remove topics type & instances', async () => {
+      const elements = [mockObject('Test__c'), mockTopicForObject, mockTopic]
+      await filter.onFetch(elements)
       const objectTypes = elements.filter(isObjectType)
 
       // Check mockObject has the topic enables
@@ -93,35 +81,53 @@ describe('Topics for objects filter', () => {
       expect(elements
         .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)).toHaveLength(0)
     })
-
-  it('should set default value upon add', async () => {
-    const after = mockObject.clone()
-    await filter().onDeploy([toChange({ after })])
-
-    expect(after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION])
-      .toEqual({ [ENABLE_TOPICS]: false })
-    // Verify that no update calls were made
-    expect(mockUpdate.mock.calls).toHaveLength(0)
   })
 
-  it('should update topicsForObjects value upon add', async () => {
-    const after = mockObject.clone()
-    after.annotate({ [TOPICS_FOR_OBJECTS_ANNOTATION]: enableTopicTrue })
+  describe('preDeploy and onDeploy', () => {
+    let changes: Change[]
+    beforeAll(() => {
+      filter = filterCreator({ client, config: {} }) as typeof filter
+    })
+    describe('preDeploy', () => {
+      beforeAll(async () => {
+        changes = [
+          toChange({ after: mockObject('Test1__c') }),
+          toChange({ after: mockObject('Test2__c', true) }),
+          toChange({ before: mockObject('Test3__c', true), after: mockObject('Test3__c', false) }),
+        ]
+        await filter.preDeploy(changes)
+      })
+      it('should add topics annotation to types that do not have it', () => {
+        expect(getChangeElement(changes[0]).annotations).toHaveProperty(
+          TOPICS_FOR_OBJECTS_ANNOTATION,
+          { [ENABLE_TOPICS]: false },
+        )
+      })
+      it('should add instance change to types that have changed topics enabled value', () => {
+        expect(changes).toHaveLength(5)
+        const topicsInstanceChanges = changes.slice(3)
+        expect(topicsInstanceChanges.map(change => change.action)).toEqual(['add', 'add'])
+        const instances = topicsInstanceChanges.map(getChangeElement) as InstanceElement[]
+        expect(instances.map(inst => apiName(inst))).toEqual(['Test2__c', 'Test3__c'])
+        expect(instances.map(inst => inst.value.enableTopics)).toEqual([true, false])
 
-    await filter().onDeploy([toChange({ after })])
+        const topicsForObjectsType = instances[0].type
+        expect(topicsForObjectsType.annotations).toMatchObject({
+          metadataType: TOPICS_FOR_OBJECTS_METADATA_TYPE,
+          dirName: 'topicsForObjects',
+          suffix: 'topicsForObjects',
+        } as MetadataTypeAnnotations)
+      })
+    })
 
-    expect(after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION])
-      .toEqual({ [ENABLE_TOPICS]: true })
-    verifyUpdateCall('Test__c', true)
-  })
-
-  it('should set new value for enable_topics upon update', async () => {
-    const before = mockObject.clone()
-    const after = before.clone()
-    after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] = enableTopicTrue
-
-    await filter().onDeploy([toChange({ before, after })])
-
-    verifyUpdateCall('Test__c', true)
+    describe('onDeploy', () => {
+      beforeAll(async () => {
+        await filter.onDeploy(changes)
+      })
+      it('should remove topics instance changes', () => {
+        expect(changes).toHaveLength(3)
+        expect(changes.filter(isInstanceChange)).toHaveLength(0)
+      })
+    })
   })
 })

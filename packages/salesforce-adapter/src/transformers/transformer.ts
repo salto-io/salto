@@ -60,8 +60,13 @@ export const metadataType = (element: Element): string => {
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
 
-export const isCustomObject = (element: Element): boolean =>
-  metadataType(element) === CUSTOM_OBJECT
+export const isCustomObject = (element: Element): element is ObjectType => (
+  isObjectType(element)
+  && metadataType(element) === CUSTOM_OBJECT
+  // The last part is so we can tell the difference between a custom object
+  // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
+  && element.annotations[API_NAME] !== undefined
+)
 
 export const isFieldOfCustomObject = (field: Field): boolean =>
   isCustomObject(field.parent)
@@ -87,7 +92,7 @@ export const defaultApiName = (element: Element): string => {
 
 const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
-    return isCustomObject(elem)
+    return isCustomObject(elem.type)
       ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
@@ -793,12 +798,10 @@ export const instancesToCreateRecords = (instances: InstanceElement[]): Salesfor
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
 
-export const toCustomField = (
-  field: Field, fullname = false
-): CustomField => {
+export const toCustomField = (field: Field): CustomField => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
-    apiName(field, !fullname),
+    apiName(field, true),
     fieldTypeName(field.type.elemID.name),
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
@@ -831,6 +834,7 @@ export const toCustomField = (
     FIELD_ANNOTATIONS.RELATIONSHIP_NAME,
     FIELD_ANNOTATIONS.REFERENCE_TO,
     FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS,
+    FIELD_ANNOTATIONS.FIELD_DEPENDENCY,
   ]
 
   // Annotations that are used by the adapter but do not exist in the CustomObject
@@ -844,8 +848,6 @@ export const toCustomField = (
   const annotationsToSkip = [
     ...annotationsHandledInCtor,
     ...internalUseAnnotations,
-    FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
-    FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
   ]
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
@@ -859,7 +861,7 @@ export const toCustomField = (
   return newField
 }
 
-const isLocalOnly = (field?: Field): boolean => (
+export const isLocalOnly = (field?: Field): boolean => (
   field !== undefined && field.annotations[FIELD_ANNOTATIONS.LOCAL_ONLY] === true
 )
 
@@ -1217,7 +1219,7 @@ export type MetadataTypeAnnotations = {
   dirName?: string
 }
 
-const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeElement> = {
+export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeElement> = {
   [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
   hasMetaFile: BuiltinTypes.BOOLEAN,
   folderType: BuiltinTypes.STRING,
@@ -1243,9 +1245,11 @@ export type MetadataInstanceElement = InstanceElement & {
 }
 
 export const isMetadataInstanceElement = (
-  inst: InstanceElement
-): inst is MetadataInstanceElement => (
-  isMetadataObjectType(inst.type) && inst.value[INSTANCE_FULL_NAME_FIELD] !== undefined
+  elem: Element
+): elem is MetadataInstanceElement => (
+  isInstanceElement(elem)
+  && isMetadataObjectType(elem.type)
+  && elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
 )
 
 export const createInstanceElement = (

@@ -16,13 +16,14 @@
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType,
-  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement,
-  Values, INSTANCE_ANNOTATIONS, ReferenceExpression, ListType,
+  ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
+  BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, INSTANCE_ANNOTATIONS,
+  ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
+  isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
 import {
   findObjectType,
-  naclCase, transformValues,
+  naclCase, transformValues, getParents,
 } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
@@ -37,17 +38,24 @@ import {
   WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES,
+  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
-  getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive,
-  formulaTypeName, metadataType, isCustom, isCustomSettings,
+  getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive, MetadataValues,
+  formulaTypeName, metadataType, isCustom, isCustomSettings, metadataAnnotationTypes,
+  MetadataTypeAnnotations, createInstanceElement, toCustomField, toCustomProperties, isLocalOnly,
+  toMetadataInfo,
+  isFieldOfCustomObject,
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
   buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
   parentApiName,
+  getDataFromChanges,
+  isInstanceOfTypeChange,
+  isInstanceOfType,
+  isMasterDetailField,
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
@@ -462,8 +470,8 @@ const createFromSObjectsAndInstances = (
   }))
 
 const removeIrrelevantElements = (elements: Element[]): void => {
-  _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
-  _.remove(elements, elem => elem.elemID.isEqual(CUSTOM_OBJECT_TYPE_ID))
+  _.remove(elements, isInstanceOfType(CUSTOM_OBJECT))
+  _.remove(elements, elem => apiName(elem) === CUSTOM_OBJECT)
   // We currently don't support platform event and article type objects (SALTO-530, SALTO-531)
   _.remove(elements, elem => (isObjectType(elem) && isCustomObject(elem) && apiName(elem)
     && (apiName(elem).endsWith('__e') || apiName(elem).endsWith('__kav'))))
@@ -531,99 +539,310 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
     })
 }
 
+const isCustomObjectChildInstance = (instance: InstanceElement): boolean =>
+  Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME).includes(metadataType(instance))
+
+const isCustomObjectRelatedChange = (change: Change): boolean => {
+  const elem = getChangeElement(change)
+  return isCustomObject(elem)
+  || (isField(elem) && isFieldOfCustomObject(elem))
+  || (isInstanceElement(elem) && isCustomObjectChildInstance(elem))
+}
+
+const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
+  (fieldChange: Change): fieldChange is Change<Field> => {
+    if (!isFieldChange(fieldChange)) {
+      return false
+    }
+    const field = getChangeElement(fieldChange)
+    const isRelevantField = (
+      isField(field) && !isLocalOnly(field) && !fieldsToSkip.includes(apiName(field, true))
+    )
+    return isRelevantField && (
+      isAdditionOrRemovalChange(fieldChange)
+      || !_.isEqual(toCustomField(fieldChange.data.before), toCustomField(fieldChange.data.after))
+    )
+  }
+)
+
+const getNestedCustomObjectValues = (
+  fullName: string,
+  changes: ReadonlyArray<Change>,
+  fieldsToSkip: ReadonlyArray<string>,
+  dataField: 'before' | 'after',
+): MetadataValues => ({
+  fullName,
+  ..._.mapValues(
+    NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
+    fieldType => (
+      getDataFromChanges(dataField, changes.filter(isInstanceOfTypeChange(fieldType)))
+        .map(nestedInstance => ({
+          ...toMetadataInfo(nestedInstance),
+          [INSTANCE_FULL_NAME_FIELD]: apiName(nestedInstance, true),
+        }))
+    )
+  ),
+  fields: getDataFromChanges(dataField, changes.filter(shouldIncludeFieldChange(fieldsToSkip)))
+    .map(field => toCustomField(field)),
+})
+
+const createCustomObjectInstance = (values: MetadataValues): InstanceElement => {
+  const customFieldType = new ObjectType({
+    elemID: new ElemID(SALESFORCE, CUSTOM_FIELD),
+    annotations: { [METADATA_TYPE]: CUSTOM_FIELD },
+  })
+  const customObjectType = new ObjectType({
+    elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+    annotationTypes: _.clone(metadataAnnotationTypes),
+    annotations: {
+      metadataType: CUSTOM_OBJECT,
+      dirName: 'objects',
+      suffix: 'object',
+    } as MetadataTypeAnnotations,
+    fields: {
+      fields: { type: new ListType(customFieldType) },
+      ..._.mapValues(
+        NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
+        fieldType => ({
+          type: new ListType(new ObjectType({
+            elemID: new ElemID(SALESFORCE, fieldType),
+            annotations: { [METADATA_TYPE]: fieldType },
+          })),
+        })
+      ),
+    },
+  })
+  return createInstanceElement(values, customObjectType)
+}
+
+const getCustomObjectFromChange = (change: Change): ObjectType => {
+  const elem = getChangeElement(change)
+  if (isCustomObject(elem)) {
+    return elem
+  }
+  if (isField(elem)) {
+    return elem.parent
+  }
+  return getParents(elem).filter(isCustomObject)[0]
+}
+
+const getCustomObjectApiName = (change: Change): string => (
+  apiName(getCustomObjectFromChange(change))
+)
+
+const createCustomObjectChange = (
+  fieldsToSkip: string[] = [],
+  fullName: string,
+  changes: ReadonlyArray<Change>,
+): Change<InstanceElement> => {
+  const objectChange = changes
+    .filter(isObjectTypeChange)
+    .find(change => isCustomObject(getChangeElement(change)))
+
+  if (objectChange !== undefined && objectChange.action === 'remove') {
+    // if we remove the custom object we don't really need the field changes
+    // We do need to include master-detail field removals explicitly because otherwise salesforce
+    // won't let us delete the custom object
+    const masterDetailFieldRemovals = Object.values(objectChange.data.before.fields)
+      .filter(isMasterDetailField)
+      .map(field => toChange({ before: field }))
+    return {
+      action: 'remove',
+      data: {
+        before: createCustomObjectInstance({
+          ...toCustomProperties(objectChange.data.before, false),
+          ...getNestedCustomObjectValues(
+            fullName, masterDetailFieldRemovals, fieldsToSkip, 'before'
+          ),
+        }),
+      },
+    }
+  }
+
+  // Some of the custom object annotations are required so we have to get the real parent
+  // for deploy even if we are not changing the annotations
+  const afterParent = objectChange?.data.after ?? getCustomObjectFromChange(changes[0])
+  const includeFieldsFromParent = objectChange?.action === 'add'
+  const after = createCustomObjectInstance({
+    ...getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'after'),
+    ...toCustomProperties(afterParent, includeFieldsFromParent, fieldsToSkip),
+  })
+
+  if (objectChange !== undefined && objectChange.action === 'add') {
+    return { action: 'add', data: { after } }
+  }
+
+  // If there was no change to the object type itself, is should be safe to use the object
+  // from one of the changes even if we get a "after" object type since we only take annotations
+  // and those have not changed
+  const beforeParent = objectChange?.data.before ?? getCustomObjectFromChange(changes[0])
+  const before = createCustomObjectInstance({
+    ...getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'before'),
+    ...toCustomProperties(beforeParent, false),
+  })
+
+  return { action: 'modify', data: { before, after } }
+}
+
+const getParentCustomObjectName = (change: Change): string | undefined => {
+  const parent = getParents(getChangeElement(change)).find(isCustomObject)
+  return parent === undefined ? undefined : apiName(parent)
+}
+
+const isSideEffectRemoval = (removedObjectNames: string[]) => (change: Change): boolean => {
+  const parentName = getParentCustomObjectName(change)
+  return isInstanceChange(change)
+    && isRemovalChange(change)
+    && parentName !== undefined && removedObjectNames.includes(parentName)
+}
+
 /**
  * Custom objects filter.
  * Fetches the custom objects via the soap api and adds them to the elements
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
-    const sObjects = await fetchSObjects(client).catch(e => {
-      log.error('failed to fetch sobjects reason: %o', e)
-      return []
-    })
+const filterCreator: FilterCreator = ({ client, config }) => {
+  let originalChanges: Record<string, Change[]> | undefined
+  return {
+    onFetch: async (elements: Element[]): Promise<void> => {
+      const sObjects = await fetchSObjects(client).catch(e => {
+        log.error('failed to fetch sobjects reason: %o', e)
+        return []
+      })
 
-    const customObjectInstances = _(elements)
-      .filter(isCustomObject)
-      .filter(isInstanceElement)
-      .map(instance => [instance.value[INSTANCE_FULL_NAME_FIELD], instance])
-      .fromPairs()
-      .value()
+      const customObjectInstances = _.keyBy(
+        elements.filter(isInstanceOfType(CUSTOM_OBJECT)),
+        instance => apiName(instance),
+      )
 
-    const typesToMergeFromInstance = (): TypesFromInstance => {
-      const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
-        const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as ObjectType
-        listViewType.fields.columns.type = new ListType(listViewType.fields.columns.type)
-        listViewType.fields.filters.type = new ListType(listViewType.fields.filters.type)
-        const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS] as ObjectType
-        fieldSetType.fields.availableFields.type = new ListType(
-          fieldSetType.fields.availableFields.type
-        )
-        fieldSetType.fields.displayedFields.type = new ListType(
-          fieldSetType.fields.displayedFields.type
-        )
-        const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
-          ObjectType
-        compactLayoutType.fields.fields.type = new ListType(compactLayoutType.fields.fields.type)
-      }
-
-      const getAllTypesFromInstance = (): TypeMap => {
-        const customObjectType = findObjectType(elements, CUSTOM_OBJECT_TYPE_ID)
-        if (_.isUndefined(customObjectType)) {
-          return {}
+      const typesToMergeFromInstance = (): TypesFromInstance => {
+        const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
+          const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as
+            ObjectType
+          listViewType.fields.columns.type = new ListType(listViewType.fields.columns.type)
+          listViewType.fields.filters.type = new ListType(listViewType.fields.filters.type)
+          const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS] as
+            ObjectType
+          fieldSetType.fields.availableFields.type = new ListType(
+            fieldSetType.fields.availableFields.type
+          )
+          fieldSetType.fields.displayedFields.type = new ListType(
+            fieldSetType.fields.displayedFields.type
+          )
+          const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
+            ObjectType
+          compactLayoutType.fields.fields.type = new ListType(compactLayoutType.fields.fields.type)
         }
-        const typesFromInstance: TypeMap = _(customObjectType.fields)
-          .entries()
-          .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
-          .map(([name, field]) => [name, field.type])
-          .fromPairs()
-          .value()
 
-        fixTypesDefinitions(typesFromInstance)
-        return typesFromInstance
+        const getAllTypesFromInstance = (): TypeMap => {
+          const customObjectType = findObjectType(elements, CUSTOM_OBJECT_TYPE_ID)
+          if (_.isUndefined(customObjectType)) {
+            return {}
+          }
+          const typesFromInstance: TypeMap = _(customObjectType.fields)
+            .entries()
+            .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
+            .map(([name, field]) => [name, field.type])
+            .fromPairs()
+            .value()
+
+          fixTypesDefinitions(typesFromInstance)
+          return typesFromInstance
+        }
+
+        const typesFromInstance = getAllTypesFromInstance()
+        const nestedMetadataTypes = _.pick(typesFromInstance,
+          Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)) as Record<string, ObjectType>
+        const customOnlyAnnotationTypes = _.pick(typesFromInstance,
+          CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
+        const customSettingsOnlyAnnotationTypes = _.pick(typesFromInstance,
+          CUSTOM_SETTINGS_ONLY_ANNOTATION_TYPE_NAMES)
+        const standardAnnotationTypes = _.omit(typesFromInstance,
+          Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
+        return {
+          standardAnnotationTypes,
+          customAnnotationTypes: { ...standardAnnotationTypes, ...customOnlyAnnotationTypes },
+          customSettingsAnnotationTypes: { ...standardAnnotationTypes,
+            ...customSettingsOnlyAnnotationTypes },
+          nestedMetadataTypes,
+        }
       }
 
-      const typesFromInstance = getAllTypesFromInstance()
-      const nestedMetadataTypes = _.pick(typesFromInstance,
-        Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)) as Record<string, ObjectType>
-      const customOnlyAnnotationTypes = _.pick(typesFromInstance,
-        CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
-      const customSettingsOnlyAnnotationTypes = _.pick(typesFromInstance,
-        CUSTOM_SETTINGS_ONLY_ANNOTATION_TYPE_NAMES)
-      const standardAnnotationTypes = _.omit(typesFromInstance,
-        Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
-      return {
-        standardAnnotationTypes,
-        customAnnotationTypes: { ...standardAnnotationTypes, ...customOnlyAnnotationTypes },
-        customSettingsAnnotationTypes: { ...standardAnnotationTypes,
-          ...customSettingsOnlyAnnotationTypes },
-        nestedMetadataTypes,
+      const typesFromInstance = typesToMergeFromInstance()
+      const newElements: Element[] = createFromSObjectsAndInstances(
+        _.flatten(Object.values(sObjects)),
+        customObjectInstances,
+        typesFromInstance,
+        config[SYSTEM_FIELDS] ?? [],
+      )
+
+      const objectTypeNames = new Set(Object.keys(sObjects))
+      Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
+        // Adds objects that exists in the metadata api but don't exist in the soap api
+        if (!objectTypeNames.has(instanceApiName)) {
+          newElements.push(...createFromInstance(instance, typesFromInstance))
+        }
+      })
+
+      removeIrrelevantElements(elements)
+      const elementFullNames = new Set(elements.map(elem => id(elem)))
+      newElements
+        .filter(newElem => !elementFullNames.has(id(newElem)))
+        .forEach(newElem => elements.push(newElem))
+      fixDependentInstancesPathAndSetParent(elements)
+      removeUnsupportedFields(elements, config[UNSUPPORTED_SYSTEM_FIELDS] ?? [])
+    },
+
+    preDeploy: async changes => {
+      const originalChangeMapping = _.groupBy(
+        changes.filter(isCustomObjectRelatedChange),
+        getCustomObjectApiName,
+      )
+
+      const deployableCustomObjectChanges = Object.entries(originalChangeMapping)
+        .map(entry => createCustomObjectChange(config.systemFields, ...entry))
+
+      // Handle known side effects - if we remove a custom objects we don't need to also remove
+      // its dependent instances (like layouts, custom object translations and so on)
+      const removedCustomObjectNames = Object.keys(originalChangeMapping)
+        .filter(
+          name => originalChangeMapping[name].filter(isObjectTypeChange).some(isRemovalChange)
+        )
+
+      const sideEffectRemovalsByObject = _.groupBy(
+        changes.filter(isSideEffectRemoval(removedCustomObjectNames)),
+        getParentCustomObjectName,
+      )
+      if (!_.isEmpty(sideEffectRemovalsByObject)) {
+        // Store the changes we are about to remove in the original changes so we will restore
+        // them if the custom object is deleted successfully
+        Object.entries(sideEffectRemovalsByObject).forEach(([objectName, sideEffects]) => {
+          originalChangeMapping[objectName].push(...sideEffects)
+        })
+        _.remove(changes, isSideEffectRemoval(removedCustomObjectNames))
       }
-    }
 
-    const typesFromInstance = typesToMergeFromInstance()
-    const newElements: Element[] = createFromSObjectsAndInstances(
-      _.flatten(Object.values(sObjects)),
-      customObjectInstances,
-      typesFromInstance,
-      config[SYSTEM_FIELDS] ?? [],
-    )
+      // Remove all the non-deployable custom object changes from the original list and replace them
+      // with the deployable changes we created here
+      originalChanges = originalChangeMapping
+      _.remove(changes, isCustomObjectRelatedChange)
+      changes.push(...deployableCustomObjectChanges)
+    },
 
-    const objectTypeNames = new Set(Object.keys(sObjects))
-    Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
-      // Adds objects that exists in the metadata api but don't exist in the soap api
-      if (!objectTypeNames.has(instanceApiName)) {
-        newElements.push(...createFromInstance(instance, typesFromInstance))
-      }
-    })
+    onDeploy: async changes => {
+      const appliedCustomObjectApiNames = changes
+        .filter(isInstanceOfTypeChange(CUSTOM_OBJECT))
+        .map(change => apiName(getChangeElement(change)))
 
-    removeIrrelevantElements(elements)
-    const elementFullNames = new Set(elements.map(elem => id(elem)))
-    newElements
-      .filter(newElem => !elementFullNames.has(id(newElem)))
-      .forEach(newElem => elements.push(newElem))
-    fixDependentInstancesPathAndSetParent(elements)
-    removeUnsupportedFields(elements, config[UNSUPPORTED_SYSTEM_FIELDS] ?? [])
-  },
-})
+      const appliedOriginalChanges = appliedCustomObjectApiNames.flatMap(
+        objectApiName => originalChanges?.[objectApiName] ?? []
+      )
+
+      // Remove the changes we generated in preDeploy and replace them with the original changes
+      _.remove(changes, isInstanceOfTypeChange(CUSTOM_OBJECT))
+      changes.push(...appliedOriginalChanges)
+      return []
+    },
+  }
+}
 
 export default filterCreator

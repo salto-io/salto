@@ -353,7 +353,7 @@ const toPackageXml = (manifest: Map<string, string[]>): string => (
 
 export type DeployPackage = {
   add(instance: MetadataInstanceElement): void
-  delete(instance: MetadataInstanceElement): void
+  delete(type: MetadataObjectType, name: string): void
   getZip(): Promise<Buffer>
 }
 
@@ -408,9 +408,9 @@ export const createDeployPackage = (): DeployPackage => {
         }
       }
     },
-    delete: instance => {
-      const typeName = getManifestTypeName(instance.type)
-      deleteManifest.get(typeName).push(apiName(instance))
+    delete: (type, name) => {
+      const typeName = getManifestTypeName(type)
+      deleteManifest.get(typeName).push(name)
     },
     getZip: () => {
       zip.file(`${PACKAGE}/package.xml`, toPackageXml(addManifest))

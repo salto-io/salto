@@ -14,24 +14,36 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import {
-  Change, ChangeGroupIdFunction, getChangeElement, InstanceElement, ChangeEntry,
-} from '@salto-io/adapter-api'
-import { apiName, isInstanceOfCustomObject } from './transformers/transformer'
+import { values } from '@salto-io/lowerdash'
+import { Change, ChangeGroupIdFunction, getChangeElement, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
+import { apiName } from './transformers/transformer'
+import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
 
-export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
-  const isInstanceOfCustomObjectChange = (
-    change: ChangeEntry
-  ): change is ChangeEntry<InstanceElement> => {
-    const changeElement = getChangeElement(change[1])
-    return isInstanceOfCustomObject(changeElement)
-  }
-  const instanceOfCustomObjectChangeToGroupId = (change: Change<InstanceElement>): string =>
-    `${change.action}_${apiName(getChangeElement(change).type)}_instances`
+type ChangeIdFunction = (change: Change) => string | undefined
 
-  return new Map(
+const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = change => (
+  isInstanceOfCustomObjectChange(change)
+    ? `${change.action}_${apiName(getChangeElement(change).type)}_instances`
+    : undefined
+)
+
+// Everything that is not a custom object instance goes into the deploy api
+const deployableMetadataChangeGroupId: ChangeIdFunction = () => 'salesforce_metadata'
+
+const changeIdProviders: ChangeIdFunction[] = [
+  instanceOfCustomObjectChangeToGroupId,
+  deployableMetadataChangeGroupId,
+]
+
+export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
+  new Map(
     wu(changes.entries())
-      .filter(isInstanceOfCustomObjectChange)
-      .map(([id, change]) => [id, instanceOfCustomObjectChangeToGroupId(change)])
+      .map(([id, change]) => {
+        const groupId = changeIdProviders
+          .map(provider => provider(change))
+          .find(values.isDefined)
+        return groupId === undefined ? undefined : [id, groupId] as [ChangeId, ChangeGroupId]
+      })
+      .filter(values.isDefined)
   )
-}
+)

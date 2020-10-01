@@ -63,6 +63,7 @@ const createPicklistObjectType = (
     },
   } },
   annotations: {
+    [constants.API_NAME]: 'Test__c',
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
   },
 })

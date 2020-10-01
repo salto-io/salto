@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, ObjectType, isObjectType, Field, ReferenceExpression, isInstanceElement,
+  Element, ObjectType, Field, ReferenceExpression, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 import { VALUE_SET_FIELDS, INSTANCE_FULL_NAME_FIELD } from '../constants'
@@ -64,7 +64,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     const valueSetNameToRef = getValueSetNameToRef(elements)
-    const customObjects = elements.filter(isObjectType).filter(isCustomObject)
+    const customObjects = elements.filter(isCustomObject)
     customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
   },
 })

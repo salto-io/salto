@@ -15,14 +15,14 @@
 */
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeElement, isInstanceChange, isModificationChange,
+  ChangeValidator, getChangeElement, isModificationChange,
   InstanceElement, ChangeError, isAdditionChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { FIELD_ANNOTATIONS } from '../constants'
-import { isCustomObject } from '../transformers/transformer'
 import { getLookUpName } from '../transformers/reference_mapping'
+import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 
 const getUpdateErrorsForNonUpdateableFields = (
   before: InstanceElement,
@@ -67,16 +67,14 @@ const getCreateErrorsForNonCreatableFields = (
 
 const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = changes
-    .filter(isInstanceChange)
+    .filter(isInstanceOfCustomObjectChange)
     .filter(isModificationChange)
-    .filter(change => isCustomObject(getChangeElement(change)))
     .flatMap(change =>
       getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after))
 
   const createChangeErrors = changes
-    .filter(isInstanceChange)
+    .filter(isInstanceOfCustomObjectChange)
     .filter(isAdditionChange)
-    .filter(change => isCustomObject(getChangeElement(change)))
     .flatMap(change => getCreateErrorsForNonCreatableFields(getChangeElement(change)))
 
   return [

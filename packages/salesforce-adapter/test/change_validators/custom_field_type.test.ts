@@ -27,7 +27,7 @@ describe('custom field type change validator', () => {
     beforeEach(() => {
       customObj = new ObjectType({
         elemID: new ElemID('salesforce', 'obj'),
-        annotations: { metadataType: CUSTOM_OBJECT },
+        annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
       })
     })
 

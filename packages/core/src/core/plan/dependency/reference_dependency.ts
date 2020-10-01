@@ -16,20 +16,15 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
-  getChangeElement, isReferenceExpression, ChangeDataType, INSTANCE_ANNOTATIONS, Change,
-  ChangeEntry, DependencyChange, addReferenceDependency, addParentDependency, isDependentAction,
-  DependencyChanger,
-  isObjectType,
+  getChangeElement, isReferenceExpression, ChangeDataType, Change, ChangeEntry, DependencyChange,
+  addReferenceDependency, addParentDependency, isDependentAction, DependencyChanger, isObjectType,
 } from '@salto-io/adapter-api'
 import {
-  getAllReferencedIds,
+  getAllReferencedIds, getParents,
 } from '@salto-io/adapter-utils'
 
-const isString = (val?: string): val is string => val !== undefined
 const getParentIds = (elem: ChangeDataType): Set<string> => new Set(
-  collections.array.makeArray(elem.annotations[INSTANCE_ANNOTATIONS.PARENT])
-    .map(val => (isReferenceExpression(val) ? val.elemId.getFullName() : undefined))
-    .filter(isString)
+  getParents(elem).filter(isReferenceExpression).map(ref => ref.elemId.getFullName())
 )
 
 const getChangeElemId = (change: Change<ChangeDataType>): string => (

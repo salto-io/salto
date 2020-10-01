@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
-import { IdentityInfo } from 'jsforce'
+import { IdentityInfo, DeployMessage } from 'jsforce'
 import { MetadataObject, DescribeMetadataResult, ValueTypeField, DescribeValueTypeResult, FileProperties, RetrieveResult, RetrieveResultLocator, DeployResultLocator, DeployResult, QueryResult } from 'jsforce-types'
 import Connection, { Metadata, Soap, Bulk, Tooling } from '../src/client/jsforce'
 import { createEncodedZipContent, MockInterface, mockFunction, ZipFile } from './utils'
@@ -105,28 +105,53 @@ export const mockRetrieveResult = (
   }),
 } as RetrieveResultLocator<RetrieveResult>)
 
-export const mockDeployResult = (
-  props: Partial<DeployResult>
-): DeployResultLocator<DeployResult> => ({
-  complete: () => Promise.resolve({
+export const mockDeployMessage = (params: Partial<DeployMessage>): DeployMessage => ({
+  changed: false,
+  columnNumber: 0,
+  componentType: '',
+  created: false,
+  createdDate: '',
+  deleted: false,
+  fileName: '',
+  fullName: '',
+  id: '',
+  lineNumber: 0,
+  problem: '',
+  problemType: '',
+  success: false,
+  ...params,
+})
+
+type GetDeployResultParams = {
+  success?: boolean
+  componentSuccess?: Partial<DeployMessage>[]
+  componentFailure?: Partial<DeployMessage>[]
+}
+export const mockDeployResult = ({
+  success = true, componentSuccess = [], componentFailure = [],
+}: GetDeployResultParams): DeployResultLocator<DeployResult> => ({
+  complete: jest.fn().mockResolvedValue({
     id: _.uniqueId(),
     checkOnly: false,
     completedDate: '2020-05-01T14:31:36.000Z',
     createdDate: '2020-05-01T14:21:36.000Z',
     done: true,
+    details: [{
+      componentFailures: componentFailure.map(mockDeployMessage),
+      componentSuccesses: componentSuccess.map(mockDeployMessage),
+    }],
     lastModifiedDate: '2020-05-01T14:31:36.000Z',
-    numberComponentErrors: 0,
-    numberComponentsDeployed: 0,
-    numberComponentsTotal: 0,
+    numberComponentErrors: componentFailure.length,
+    numberComponentsDeployed: componentSuccess.length,
+    numberComponentsTotal: componentFailure.length + componentSuccess.length,
     numberTestErrors: 0,
     numberTestsCompleted: 0,
     numberTestsTotal: 0,
     startDate: '2020-05-01T14:21:36.000Z',
-    status: 'Succeeded',
-    success: true,
-    ...props,
+    status: success ? 'Succeeded' : 'Failed',
+    success,
   }),
-} as DeployResultLocator<DeployResult>)
+}) as unknown as DeployResultLocator<DeployResult>
 
 export const mockQueryResult = (
   props: Partial<QueryResult<Value>>,

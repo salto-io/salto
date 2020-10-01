@@ -14,24 +14,26 @@
 * limitations under the License.
 */
 import {
-  Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, BuiltinTypes, ListType,
+  Element, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
+  ObjectType, getChangeElement, Change, isAdditionChange, BuiltinTypes, ElemID,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE,
+  INSTANCE_FULL_NAME_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_KNOWLEDGE_PUBLISH_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE,
+  SALESFORCE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
-  apiName, metadataType, createInstanceElement,
+  apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations,
+  toMetadataInfo,
 } from '../transformers/transformer'
-import { fullApiName } from './utils'
+import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfType } from './utils'
 
 const { makeArray } = collections.array
 
@@ -55,55 +57,170 @@ export const WORKFLOW_FIELD_TO_TYPE: Record<string, string> = {
   [WORKFLOW_RULES_FIELD]: WORKFLOW_RULE_METADATA_TYPE,
 }
 
-export const WORKFLOW_TYPE_ID = new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)
-export const isWorkflowType = (type: ObjectType): boolean => type.elemID.isEqual(WORKFLOW_TYPE_ID)
-export const isWorkflowInstance = (instance: InstanceElement): boolean =>
-  isWorkflowType(instance.type)
+const isWorkflowInstance = isInstanceOfType(WORKFLOW_METADATA_TYPE)
 
-const filterCreator: FilterCreator = () => ({
-  /**
-   * Upon fetch, modify the full_names of the inner types of the workflow to contain
-   * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)
-   */
-  onFetch: async (elements: Element[]) => {
-    const splitWorkflow = (workflowInstance: InstanceElement): InstanceElement[] => _.flatten(
-      Object.entries(WORKFLOW_FIELD_TO_TYPE).map(([fieldName, fieldType]) => {
-        const objType = elements.filter(isObjectType)
-          .find(e => metadataType(e) === fieldType)
-        if (_.isUndefined(objType)) {
-          log.debug('failed to find object type for %s', fieldType)
-          return []
-        }
-        const innerInstances = makeArray(workflowInstance.value[fieldName])
-          .map(innerValue => {
-            innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(apiName(workflowInstance),
-              innerValue[INSTANCE_FULL_NAME_FIELD])
-            return createInstanceElement(innerValue, objType)
-          })
-        if (!_.isEmpty(innerInstances)) {
-          workflowInstance.value[fieldName] = innerInstances
-            .map(s => new ReferenceExpression(s.elemID))
-        }
+const isWorkflowChildInstance = (elem: Element): elem is InstanceElement =>
+  isInstanceElement(elem) && Object.values(WORKFLOW_FIELD_TO_TYPE).includes(metadataType(elem))
 
-        return innerInstances
-      })
-    )
+const isWorkflowRelatedChange = (change: Change): change is Change<InstanceElement> => {
+  const elem = getChangeElement(change)
+  return isWorkflowInstance(elem) || isWorkflowChildInstance(elem)
+}
 
-    // Fix fields to expect api names instead of full objects
-    elements
-      .filter(isObjectType)
-      .filter(isWorkflowType)
-      .forEach(wfType => {
-        Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(fieldName => {
-          wfType.fields[fieldName].type = new ListType(BuiltinTypes.STRING)
+const createPartialWorkflowInstance = (
+  fullInstance: InstanceElement,
+  changes: ReadonlyArray<Change>,
+  dataField: 'before' | 'after',
+): InstanceElement => (
+  createInstanceElement(
+    {
+      [INSTANCE_FULL_NAME_FIELD]: fullInstance.value[INSTANCE_FULL_NAME_FIELD],
+      ..._.omit(fullInstance.value, Object.keys(WORKFLOW_FIELD_TO_TYPE)),
+      ..._.mapValues(
+        WORKFLOW_FIELD_TO_TYPE,
+        fieldType => (
+          getDataFromChanges(dataField, changes.filter(isInstanceOfTypeChange(fieldType)))
+            .map(nestedInstance => ({
+              ...toMetadataInfo(nestedInstance),
+              [INSTANCE_FULL_NAME_FIELD]: apiName(nestedInstance, true),
+            }))
+        )
+      ),
+    },
+    fullInstance.type,
+    undefined,
+    fullInstance.annotations,
+  )
+)
+
+const createDummyWorkflowInstance = (
+  changes: ReadonlyArray<Change<InstanceElement>>
+): InstanceElement => {
+  // Unfortunately we do not have access to the real workflow type here so we create it hard coded
+  // using as much known information as possible
+  const realFieldTypes = _.keyBy(
+    changes.map(getChangeElement).map(inst => inst.type),
+    metadataType,
+  )
+  const dummyFieldType = (typeName: string): ObjectType => new ObjectType({
+    elemID: new ElemID(SALESFORCE, typeName),
+    annotationTypes: _.clone(metadataAnnotationTypes),
+    annotations: { metadataType: typeName } as MetadataTypeAnnotations,
+  })
+  const workflowType = new ObjectType({
+    elemID: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
+    fields: {
+      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+      ..._.mapValues(
+        WORKFLOW_FIELD_TO_TYPE,
+        typeName => ({ type: realFieldTypes[typeName] ?? dummyFieldType(typeName) })
+      ),
+    },
+    annotationTypes: metadataAnnotationTypes,
+    annotations: {
+      metadataType: 'Workflow',
+      dirName: 'workflows',
+      suffix: 'workflow',
+    } as MetadataTypeAnnotations,
+  })
+
+  return createInstanceElement(
+    { fullName: parentApiName(getChangeElement(changes[0])) },
+    workflowType,
+  )
+}
+
+const createWorkflowChange = (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+): Change<InstanceElement> => {
+  const workflowChange = changes.find(isInstanceOfTypeChange(WORKFLOW_METADATA_TYPE))
+
+  const parent = workflowChange === undefined
+    ? createDummyWorkflowInstance(changes)
+    : getChangeElement(workflowChange)
+
+  const after = createPartialWorkflowInstance(parent, changes, 'after')
+  if (workflowChange !== undefined && isAdditionChange(workflowChange)) {
+    return { action: 'add', data: { after } }
+  }
+  // we assume the only possible changes are in nested instances and we omit the nested instance
+  // fields from the parent when we create the partial instance. so we can use the same parent as
+  // the after instance here
+  const before = createPartialWorkflowInstance(parent, changes, 'before')
+  return { action: 'modify', data: { before, after } }
+}
+
+const getWorkflowApiName = (change: Change<InstanceElement>): string => {
+  const inst = getChangeElement(change)
+  return isWorkflowInstance(inst) ? apiName(inst) : parentApiName(inst)
+}
+
+const filterCreator: FilterCreator = () => {
+  let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> | undefined
+  return {
+    /**
+     * Upon fetch, modify the full_names of the inner types of the workflow to contain
+     * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)
+     */
+    onFetch: async (elements: Element[]) => {
+      const splitWorkflow = (workflowInst: InstanceElement): InstanceElement[] => _.flatten(
+        Object.entries(WORKFLOW_FIELD_TO_TYPE).map(([fieldName, fieldType]) => {
+          const objType = elements.filter(isObjectType)
+            .find(e => metadataType(e) === fieldType)
+          if (_.isUndefined(objType)) {
+            log.debug('failed to find object type for %s', fieldType)
+            return []
+          }
+          const innerInstances = makeArray(workflowInst.value[fieldName])
+            .map(innerValue => {
+              innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(apiName(workflowInst),
+                innerValue[INSTANCE_FULL_NAME_FIELD])
+              return createInstanceElement(innerValue, objType)
+            })
+          if (!_.isEmpty(innerInstances)) {
+            workflowInst.value[fieldName] = innerInstances
+              .map(s => new ReferenceExpression(s.elemID))
+          }
+
+          return innerInstances
         })
-      })
+      )
 
-    elements.push(..._.flatten(elements
-      .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
-      .map(wfInst => splitWorkflow(wfInst))))
-  },
-})
+      elements.push(...elements
+        .filter(isInstanceElement)
+        .filter(isWorkflowInstance)
+        .flatMap(wfInst => splitWorkflow(wfInst)))
+    },
+
+    preDeploy: async changes => {
+      const allWorkflowRelatedChanges = changes.filter(isWorkflowRelatedChange)
+
+      originalWorkflowChanges = _.groupBy(allWorkflowRelatedChanges, getWorkflowApiName)
+
+      const deployableWorkflowChanges = Object.values(originalWorkflowChanges)
+        .map(createWorkflowChange)
+
+      // Remove all the non-deployable workflow changes from the original list and replace them
+      // with the deployable changes we created here
+      _.remove(changes, isWorkflowRelatedChange)
+      changes.push(...deployableWorkflowChanges)
+    },
+
+    onDeploy: async changes => {
+      const appliedWorkflowApiNames = changes
+        .filter(isWorkflowRelatedChange)
+        .map(getWorkflowApiName)
+
+      const appliedOriginalChanges = appliedWorkflowApiNames.flatMap(
+        workflowName => originalWorkflowChanges?.[workflowName] ?? []
+      )
+
+      // Remove the changes we generated in preDeploy and replace them with the original changes
+      _.remove(changes, isWorkflowRelatedChange)
+      changes.push(...appliedOriginalChanges)
+      return []
+    },
+  }
+}
 
 export default filterCreator

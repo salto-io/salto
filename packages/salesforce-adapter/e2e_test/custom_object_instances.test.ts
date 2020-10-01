@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, isObjectType, InstanceElement, ObjectType,
+  Element, isObjectType, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { SalesforceRecord } from '../src/client/types'
@@ -24,7 +24,7 @@ import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
 import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
-import { isCustomObject, apiName } from '../src/transformers/transformer'
+import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/filters/custom_settings_filter.test'
@@ -67,9 +67,7 @@ describe('custom object instances e2e', () => {
   })
 
   it('should fetch custom object instances', () => {
-    const customObjectInstances = elements
-      .filter(isInstanceElement)
-      .filter(e => isCustomObject(e.type))
+    const customObjectInstances = elements.filter(isInstanceOfCustomObject)
     expect(customObjectInstances.length).toBeGreaterThanOrEqual(1)
   })
 

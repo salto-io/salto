@@ -107,24 +107,6 @@ const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorat
 const validateDeleteResult = validateCRUDResult(true)
 const validateSaveResult = validateCRUDResult(false)
 
-const validateDeployResult = decorators.wrapMethodWith(
-  async (original: decorators.OriginalCall): Promise<unknown> => {
-    const result = await original.call() as DeployResult
-    if (result.success) {
-      return result
-    }
-
-    const errors = _(result.details)
-      .map(detail => detail.componentFailures || [])
-      .flatten()
-      .filter(component => !component.success)
-      .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
-      .value()
-
-    throw new Error(errors.join('\n'))
-  }
-)
-
 export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
@@ -513,7 +495,6 @@ export default class SalesforceClient {
    * @returns The save result of the requested update
    */
   @SalesforceClient.logDecorator()
-  @validateDeployResult
   @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }

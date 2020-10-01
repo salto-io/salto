@@ -68,7 +68,7 @@ type MetadataTypeArgs = {
 }
 type MetadataParentArgs = {
   parent?: string
-  parentContext: ReferenceContextStrategyName
+  parentContext?: ReferenceContextStrategyName
 }
 type ReferenceTargetDefinition = {
   name?: string

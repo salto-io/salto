@@ -91,6 +91,16 @@ void => {
   }
 }
 
+export const validateApiName = (prevElement: Element, newElement: Element): void => {
+  if (apiName(prevElement) !== apiName(newElement)) {
+    throw Error(
+      `Failed to update element as api names prev=${apiName(
+        prevElement
+      )} and new=${apiName(newElement)} are different`
+    )
+  }
+}
+
 export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJECT): void => {
   const { annotations, annotationTypes } = elem
   if (!annotationTypes[METADATA_TYPE]) {
@@ -132,11 +142,11 @@ export const allCustomObjectFields = (elements: Element[], elemID: ElemID): Iter
     .map(elem => Object.values(elem.fields))
     .flatten()
 
-export const apiNameParts = (instance: InstanceElement): string[] =>
-  apiName(instance).split(/\.|-/g)
+export const apiNameParts = (elem: Element): string[] =>
+  apiName(elem).split(/\.|-/g)
 
-export const parentApiName = (instance: InstanceElement): string =>
-  apiNameParts(instance)[0]
+export const parentApiName = (elem: Element): string =>
+  apiNameParts(elem)[0]
 
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {

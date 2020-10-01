@@ -1167,15 +1167,6 @@ export const toDeployableInstance = (element: InstanceElement): InstanceElement 
   })
 }
 
-export const fromMetadataInfo = (info: MetadataInfo): Values => info
-
-export const toMetadataInfo = (instance: InstanceElement):
-  MetadataInfo =>
-  ({
-    fullName: apiName(instance),
-    ...toDeployableInstance(instance).value,
-  })
-
 export const createInstanceServiceIds = (
   serviceIdsValues: Values,
   type: ObjectType,
@@ -1233,9 +1224,11 @@ export type MetadataInstanceElement = InstanceElement & {
 }
 
 export const isMetadataInstanceElement = (
-  inst: InstanceElement
-): inst is MetadataInstanceElement => (
-  isMetadataObjectType(inst.type) && inst.value[INSTANCE_FULL_NAME_FIELD] !== undefined
+  elem: Element
+): elem is MetadataInstanceElement => (
+  isInstanceElement(elem)
+  && isMetadataObjectType(elem.type)
+  && elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
 )
 
 export const createInstanceElement = (

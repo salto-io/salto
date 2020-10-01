@@ -16,14 +16,17 @@
 import { ObjectType, ElemID, toChange } from '@salto-io/adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
-import { API_NAME } from '../../src/constants'
+import { API_NAME, METADATA_TYPE, CUSTOM_OBJECT } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { mockFunction, MockInterface } from '../utils'
 
 describe('SalesforceAdapter filters', () => {
   const object = new ObjectType({
     elemID: new ElemID('bla', 'test'),
-    annotations: { [API_NAME]: 'Bla__c' },
+    annotations: {
+      [API_NAME]: 'Bla__c',
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+    },
   })
 
   let adapter: SalesforceAdapter

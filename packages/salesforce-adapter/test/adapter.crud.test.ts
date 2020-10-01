@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement } from '@salto-io/adapter-api'
-import { MetadataInfo, SaveResult, DeployResult as JSForceDeployResult, DeployDetails } from 'jsforce'
+import { MetadataInfo, SaveResult, DeployResult as JSForceDeployResult, DeployMessage, Package } from 'jsforce'
+import JSZip from 'jszip'
+import xmlParser from 'fast-xml-parser'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types, createInstanceElement } from '../src/transformers/transformer'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createValueSetEntry } from './utils'
-import { WORKFLOW_TYPE_ID } from '../src/filters/workflow'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 
@@ -37,20 +38,45 @@ describe('SalesforceAdapter CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const instanceName = 'Instance'
 
-  const getDeployResult = (
-    success: boolean, details?: DeployDetails[]
-  ): Promise<JSForceDeployResult> =>
+  const getDeployMessage = (params: Partial<DeployMessage>): DeployMessage => ({
+    changed: false,
+    columnNumber: 0,
+    componentType: '',
+    created: false,
+    createdDate: '',
+    deleted: false,
+    fileName: '',
+    fullName: '',
+    id: '',
+    lineNumber: 0,
+    problem: '',
+    problemType: '',
+    success: false,
+    ...params,
+  })
+
+  type GetDeployResultParams = {
+    success?: boolean
+    componentSuccess?: Partial<DeployMessage>[]
+    componentFailure?: Partial<DeployMessage>[]
+  }
+  const getDeployResult = ({
+    success = true, componentSuccess = [], componentFailure = [],
+  }: GetDeployResultParams): Promise<JSForceDeployResult> =>
     Promise.resolve({
       id: '',
       checkOnly: false,
       completedDate: '',
       createdDate: '',
       done: true,
-      details,
+      details: [{
+        componentFailures: componentFailure.map(getDeployMessage),
+        componentSuccesses: componentSuccess.map(getDeployMessage),
+      }],
       lastModifiedDate: '',
-      numberComponentErrors: 0,
-      numberComponentsDeployed: 0,
-      numberComponentsTotal: 0,
+      numberComponentErrors: componentFailure.length,
+      numberComponentsDeployed: componentSuccess.length,
+      numberComponentsTotal: componentFailure.length + componentSuccess.length,
       numberTestErrors: 0,
       numberTestsCompleted: 0,
       numberTestsTotal: 0,
@@ -69,6 +95,32 @@ describe('SalesforceAdapter CRUD', () => {
   let mockDelete: jest.Mock
   let mockUpdate: jest.Mock
   let mockDeploy: jest.Mock
+
+  const mockDeployResultOnce = (params: GetDeployResultParams): void => {
+    mockDeploy.mockReturnValueOnce({
+      complete: () => Promise.resolve(getDeployResult(params)),
+    })
+  }
+
+  type DeployManifests = {
+    manifest?: Package
+    deleteManifest?: Package
+  }
+  const getDeployedManifests = async (zipData: Buffer): Promise<DeployManifests> => {
+    const zip = await JSZip.loadAsync(zipData)
+    const files = {
+      manifest: zip.files['unpackaged/package.xml'],
+      deleteManifest: zip.files['unpackaged/destructiveChanges.xml'],
+    }
+    return promises.object.mapValuesAsync(
+      files,
+      async zipFile => (
+        zipFile === undefined
+          ? undefined
+          : xmlParser.parse(await zipFile.async('string')).Package
+      )
+    )
+  }
 
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({
@@ -99,7 +151,7 @@ describe('SalesforceAdapter CRUD', () => {
     connection.metadata.update = mockUpdate
 
     mockDeploy = jest.fn().mockImplementation(() => ({
-      complete: () => Promise.resolve(getDeployResult(true)),
+      complete: () => Promise.resolve(getDeployResult({ success: true })),
     }))
     connection.metadata.deploy = mockDeploy
   })
@@ -128,6 +180,10 @@ describe('SalesforceAdapter CRUD', () => {
         let result: InstanceElement
 
         beforeEach(async () => {
+          mockDeployResultOnce({
+            success: true,
+            componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+          })
           result = await createElement(adapter, instance)
         })
 
@@ -139,14 +195,10 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.value.token).toBe('instanceTest')
           expect(result.value.Token).toBeUndefined()
 
-          expect(mockUpsert.mock.calls.length).toBe(1)
-          expect(mockUpsert.mock.calls[0].length).toBe(2)
-          expect(mockUpsert.mock.calls[0][0]).toBe('Flow')
-          expect(mockUpsert.mock.calls[0][1]).toHaveLength(1)
-          expect(mockUpsert.mock.calls[0][1][0]).toMatchObject({
-            fullName: instanceName,
-            token: 'instanceTest',
-          })
+          expect(mockDeploy).toHaveBeenCalledTimes(1)
+          const { manifest } = await getDeployedManifests(mockDeploy.mock.calls[0][0])
+          expect(manifest).toBeDefined()
+          expect(manifest?.types).toEqual({ name: 'Flow', members: instanceName })
         })
       })
 
@@ -154,15 +206,14 @@ describe('SalesforceAdapter CRUD', () => {
         let result: DeployResult
 
         beforeEach(async () => {
-          connection.metadata.upsert = jest.fn()
-            .mockImplementationOnce(async () => ([{
-              success: false,
-              fullName: 'Test__c',
-              errors: [
-                { message: 'Failed to add Test__c' },
-                { message: 'Additional message' },
-              ],
-            }]))
+          mockDeployResultOnce({
+            success: false,
+            componentFailure: [{
+              fullName: instanceName,
+              componentType: 'Flow',
+              problem: 'Failed to add Test__c',
+            }],
+          })
 
           const newInst = new InstanceElement(
             instanceName,
@@ -183,7 +234,7 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should return an error', () => {
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Failed to add Test__c\nAdditional message'))
+          expect(result.errors[0].message).toContain('Failed to add Test__c')
         })
       })
     })
@@ -585,44 +636,6 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[18].defaultValue).toBe(true)
       })
     })
-
-    describe('for a type that uses deploy', () => {
-      let result: DeployResult
-      beforeEach(async () => {
-        const inst = createInstanceElement(mockDefaultValues.ApexClass, mockTypes.ApexClass)
-        result = await adapter.deploy({
-          groupID: inst.elemID.getFullName(),
-          changes: [{ action: 'add', data: { after: inst } }],
-        })
-      })
-
-      it('should succeed', () => {
-        expect(result.errors).toHaveLength(0)
-        expect(result.appliedChanges).toHaveLength(1)
-      })
-
-      it('should call deploy and not upsert', () => {
-        expect(mockDeploy).toHaveBeenCalled()
-        expect(mockUpsert).not.toHaveBeenCalled()
-      })
-    })
-
-    describe('for a workflow instance element', () => {
-      const workflowInstance = new InstanceElement(
-        instanceName,
-        new ObjectType({
-          elemID: WORKFLOW_TYPE_ID,
-          annotations: {
-            [constants.METADATA_TYPE]: constants.WORKFLOW_METADATA_TYPE,
-          },
-        }), {}
-      )
-
-      it('should not add the instance in the main flow', async () => {
-        await createElement(adapter, workflowInstance)
-        expect(mockUpsert.mock.calls.length).toBe(0)
-      })
-    })
   })
 
   describe('Remove operation', () => {
@@ -654,10 +667,11 @@ describe('SalesforceAdapter CRUD', () => {
           await removeElement(adapter, element)
         })
 
-        it('should call the connection methods correctly', () => {
-          expect(mockDelete.mock.calls.length).toBe(1)
-          expect(mockDelete.mock.calls[0][0]).toBe('Flow')
-          expect(mockDelete.mock.calls[0][1][0]).toBe('Instance')
+        it('should call the connection methods correctly', async () => {
+          expect(mockDeploy).toHaveBeenCalledTimes(1)
+          const { deleteManifest } = await getDeployedManifests(mockDeploy.mock.calls[0][0])
+          expect(deleteManifest).toBeDefined()
+          expect(deleteManifest?.types).toEqual({ name: 'Flow', members: instanceName })
         })
       })
 
@@ -682,27 +696,6 @@ describe('SalesforceAdapter CRUD', () => {
           expect(fullName).toBe('Test__c')
         })
       })
-
-      describe('for a type that uses deploy', () => {
-        let result: DeployResult
-        beforeEach(async () => {
-          const inst = createInstanceElement(mockDefaultValues.ApexClass, mockTypes.ApexClass)
-          result = await adapter.deploy({
-            groupID: inst.elemID.getFullName(),
-            changes: [{ action: 'remove', data: { before: inst } }],
-          })
-        })
-
-        it('should succeed', () => {
-          expect(result.errors).toHaveLength(0)
-          expect(result.appliedChanges).toHaveLength(1)
-        })
-
-        it('should call deploy and not delete', () => {
-          expect(mockDeploy).toHaveBeenCalled()
-          expect(mockDelete).not.toHaveBeenCalled()
-        })
-      })
     })
 
     describe('when the request fails', () => {
@@ -714,7 +707,6 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       let result: DeployResult
-      // let result: Promise<void>
 
       beforeEach(async () => {
         mockDelete = jest.fn().mockImplementationOnce(async () => ([{
@@ -738,41 +730,65 @@ describe('SalesforceAdapter CRUD', () => {
         expect(result.errors[0]).toEqual(new Error('Failed to remove Test__c'))
       })
     })
-
-    describe('for a workflow instance element', () => {
-      const workflowInstance = new InstanceElement(
-        instanceName,
-        new ObjectType({
-          elemID: WORKFLOW_TYPE_ID,
-          annotations: {
-            [constants.METADATA_TYPE]: constants.WORKFLOW_METADATA_TYPE,
-          },
-        }), {}
-      )
-
-      it('should not remove the instance in the main flow', async () => {
-        await removeElement(adapter, workflowInstance)
-        expect(mockDelete.mock.calls.length).toBe(0)
-      })
-    })
   })
 
   describe('Update operation', () => {
+    let result: DeployResult
     describe('for an instance element', () => {
-      const oldElement = createInstanceElement(
-        { fullName: instanceName },
-        mockTypes.AssignmentRules,
-      )
+      let beforeInstance: InstanceElement
+      let afterInstance: InstanceElement
+
+      beforeEach(() => {
+        beforeInstance = createInstanceElement(
+          mockDefaultValues.Profile,
+          mockTypes.Profile,
+        )
+        afterInstance = createInstanceElement(
+          {
+            ...mockDefaultValues.Profile,
+            description: 'Updated profile description',
+          },
+          mockTypes.Profile,
+        )
+      })
+
+      describe('when the request succeeds', () => {
+        beforeEach(async () => {
+          mockDeployResultOnce({
+            success: true,
+            componentSuccess: [{
+              fullName: mockDefaultValues.Profile.fullName,
+              componentType: constants.PROFILE_METADATA_TYPE,
+            }],
+          })
+          result = await adapter.deploy({
+            groupID: afterInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
+          })
+        })
+
+        it('should return an InstanceElement', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeElement(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
+        })
+
+        it('should call the connection methods correctly', async () => {
+          expect(mockDeploy).toHaveBeenCalledTimes(1)
+          const { manifest } = await getDeployedManifests(mockDeploy.mock.calls[0][0])
+          expect(manifest?.types).toEqual({
+            name: constants.PROFILE_METADATA_TYPE,
+            members: mockDefaultValues.Profile.fullName,
+          })
+        })
+      })
 
       describe('when the request fails because fullNames are not the same', () => {
-        let result: DeployResult
-
         beforeEach(async () => {
-          const newElement = oldElement.clone()
-          newElement.value[constants.INSTANCE_FULL_NAME_FIELD] = 'wrong'
+          afterInstance = beforeInstance.clone()
+          afterInstance.value[constants.INSTANCE_FULL_NAME_FIELD] = 'wrong'
           result = await adapter.deploy({
-            groupID: newElement.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
+            groupID: afterInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
           })
         })
 
@@ -816,10 +832,14 @@ describe('SalesforceAdapter CRUD', () => {
             })
           })
 
-          it('should call delete on remove metadata objects with field names', () => {
-            expect(mockDelete.mock.calls.length).toBe(1)
-            expect(mockDelete.mock.calls[0][1][0]).toEqual('Instance.Val2')
-            expect(mockDelete.mock.calls[0][0]).toEqual('AssignmentRule')
+          it('should delete on remove metadata objects with field names', async () => {
+            expect(mockDeploy).toHaveBeenCalledTimes(1)
+            const { deleteManifest } = await getDeployedManifests(mockDeploy.mock.calls[0][0])
+            expect(deleteManifest).toBeDefined()
+            expect(deleteManifest?.types).toEqual({
+              name: 'AssignmentRule',
+              members: `${instanceName}.Val2`,
+            })
           })
         })
 
@@ -874,25 +894,27 @@ describe('SalesforceAdapter CRUD', () => {
             })
           })
 
-          it('should call delete on remove metadata objects with object names', () => {
-            expect(mockDelete.mock.calls.length).toBe(1)
-            expect(mockDelete.mock.calls[0][1][0]).toEqual('Val2')
-            expect(mockDelete.mock.calls[0][0]).toEqual('CustomLabel')
+          it('should call delete on remove metadata objects with object names', async () => {
+            expect(mockDeploy).toHaveBeenCalledTimes(1)
+            const { deleteManifest } = await getDeployedManifests(mockDeploy.mock.calls[0][0])
+            expect(deleteManifest).toBeDefined()
+            expect(deleteManifest?.types).toEqual({
+              name: 'CustomLabel',
+              members: 'Val2',
+            })
           })
         })
       })
     })
 
     describe('for a type element', () => {
-      const oldElement = new ObjectType({
-        elemID: mockElemID,
-        annotations: {
-          [constants.API_NAME]: 'Test__c',
-        },
-      })
-
       describe('when the request fails because fullNames are not the same', () => {
-        let result: DeployResult
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          annotations: {
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
 
         beforeEach(async () => {
           const newElement = oldElement.clone()
@@ -915,809 +937,531 @@ describe('SalesforceAdapter CRUD', () => {
           expect(mockUpdate.mock.calls.length).toBe(0)
         })
       })
-    })
 
-    describe('when the request succeeds', () => {
-      let result: DeployResult
-
-      describe('for an instance element', () => {
-        const mockProfileType = new ObjectType({
+      describe('when the change requires removing the old type', () => {
+        const oldElement = new ObjectType({
           elemID: mockElemID,
           fields: {
-            [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+            description: { type: stringType },
           },
-          annotationTypes: {},
           annotations: {
-            [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
           },
         })
-        const oldElement = new InstanceElement(
-          instanceName,
-          mockProfileType,
-          {
-            tabVisibilities: [
-              {
-                tab: 'standard-Account',
-                visibility: 'DefaultOff',
-              },
-            ],
-            userPermissions: [
-              {
-                enabled: false,
-                name: 'ConvertLeads',
-              },
-            ],
-            fieldPermissions: [
-              {
-                allowCreate: false,
-                allowDelete: false,
-                allowEdit: false,
-                allowRead: false,
-                modifyAllRecords: false,
-                viewAllRecords: false,
-                object: 'Lead',
-              },
-            ],
-            description: 'old unit test instance profile',
-            [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
-          },
-        )
 
-        const newElement = new InstanceElement(
-          instanceName,
-          mockProfileType,
-          {
-            userPermissions: [
-              {
-                enabled: false,
-                name: 'ConvertLeads',
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: {
+              type: stringType,
+              annotations: {
+                label: 'test2 label',
+                [constants.API_NAME]: 'Test__c.address__c',
               },
-            ],
-            fieldPermissions: [
-              {
-                field: 'Lead.Fax',
-                readable: false,
-                editable: false,
-              },
-              {
-                editable: false,
-                field: 'Account.AccountNumber',
-                readable: false,
-              },
-            ],
-            objectermissions: [
-              {
-                allowCreate: true,
-                allowDelete: true,
-                allowEdit: true,
-                allowRead: true,
-                modifyAllRecords: true,
-                viewAllRecords: true,
-                object: 'Lead',
-              },
-              {
-                allowCreate: true,
-                allowDelete: true,
-                allowEdit: true,
-                allowRead: true,
-                modifyAllRecords: true,
-                viewAllRecords: true,
-                object: 'Account',
-              },
-            ],
-            tabVisibilities: [
-              {
-                tab: 'standard-Account',
-                visibility: 'DefaultOff',
-              },
-            ],
-            applicationVisibilities: [
-              {
-                application: 'standard__ServiceConsole',
-                default: false,
-                visible: true,
-              },
-            ],
-            description: 'new unit test instance profile',
-            [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
+            },
           },
-        )
+          annotations: {
+            label: 'test2 label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
 
         beforeEach(async () => {
           result = await adapter.deploy({
             groupID: oldElement.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
+            changes: [
+              { action: 'modify', data: { before: oldElement, after: newElement } },
+              { action: 'remove', data: { before: oldElement.fields.description } },
+              { action: 'add', data: { after: newElement.fields.address } },
+            ],
           })
         })
 
-        it('should return an InstanceElement', () => {
+        it('should return change applied to the element', () => {
           expect(result.appliedChanges).toHaveLength(1)
-          expect(getChangeElement(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
+          expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
         })
 
         it('should call the connection methods correctly', () => {
+          expect(mockUpsert.mock.calls.length).toBe(1)
+          expect(mockDelete.mock.calls.length).toBe(1)
           expect(mockUpdate.mock.calls.length).toBe(1)
-          expect(mockUpdate.mock.calls[0][0]).toEqual(constants.PROFILE_METADATA_TYPE)
-          const obj = mockUpdate.mock.calls[0][1][0]
-          expect(obj.fullName).toEqual(instanceName)
-          expect(obj.description).toEqual(newElement.value.description)
-          expect(obj.userPermissions).toEqual(newElement.value.userPermissions)
-          expect(obj.fieldPermissions).toEqual(newElement.value.fieldPermissions)
-          expect(obj.objectPermissions).toEqual(newElement.value.objectPermissions)
-          expect(obj.applicationVisibilities).toEqual(newElement.value.applicationVisibilities)
-          expect(obj.tabVisibilities).toEqual(newElement.value.tabVisibilities)
+        })
+
+        it('should not add annotations to the object type', () => {
+          const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+          expect(updatedObj).toBeDefined()
+          expect(updatedObj.annotations).toEqual(newElement.annotations)
         })
       })
 
-      describe('for a type element', () => {
-        describe('when the change requires removing the old type', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              description: { type: stringType },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              address: {
-                type: stringType,
-                annotations: {
-                  label: 'test2 label',
-                  [constants.API_NAME]: 'Test__c.address__c',
-                },
-              },
-            },
-            annotations: {
-              label: 'test2 label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before: oldElement, after: newElement } },
-                { action: 'remove', data: { before: oldElement.fields.description } },
-                { action: 'add', data: { after: newElement.fields.address } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
-          })
-
-          it('should call the connection methods correctly', () => {
-            expect(mockUpsert.mock.calls.length).toBe(1)
-            expect(mockDelete.mock.calls.length).toBe(1)
-            expect(mockUpdate.mock.calls.length).toBe(1)
-          })
-
-          it('should not add annotations to the object type', () => {
-            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
-            expect(updatedObj).toBeDefined()
-            expect(updatedObj.annotations).toEqual(newElement.annotations)
-          })
-        })
-
-        describe('when the new object\'s change is only new fields', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              address: { type: stringType },
-              banana: { type: stringType },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              ...oldElement.fields,
-              description: { type: stringType },
-              apple: { type: stringType },
-            },
-            annotations: oldElement.annotations,
-          })
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'add', data: { after: newElement.fields.description } },
-                { action: 'add', data: { after: newElement.fields.apple } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
-            expect(Object.keys(updatedObj.fields)).toEqual(Object.keys(newElement.fields))
-          })
-
-          it('should call the connection methods correctly', () => {
-            expect(mockUpsert.mock.calls.length).toBe(1)
-            expect(mockDelete.mock.calls.length).toBe(0)
-            expect(mockUpdate.mock.calls.length).toBe(0)
-            // Verify the custom fields creation
-            const fields = mockUpsert.mock.calls[0][1]
-            expect(fields.length).toBe(2)
-            expect(fields[0].fullName).toBe('Test__c.description__c')
-            expect(fields[0].type).toBe('Text')
-            expect(fields[0].length).toBe(80)
-            expect(fields[0].required).toBe(false)
-            expect(fields[1].fullName).toBe('Test__c.apple__c')
-          })
-        })
-
-        describe('when the only change in the new object is that some fields no longer appear', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              address: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Address__c',
-                },
-              },
-              banana: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                },
-              },
-              description: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Description__c',
-                },
-              },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'remove', data: { before: oldElement.fields.address } },
-                { action: 'remove', data: { before: oldElement.fields.banana } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
-            expect(Object.keys(updatedObj.fields)).toEqual(
-              Object.keys(_.omit(oldElement.fields, ['address', 'banana']))
-            )
-          })
-
-          it('should only delete fields', () => {
-            expect(mockUpsert.mock.calls.length).toBe(0)
-            expect(mockUpdate.mock.calls.length).toBe(0)
-            expect(mockDelete.mock.calls.length).toBe(1)
-
-            const fields = mockDelete.mock.calls[0][1]
-            expect(fields.length).toBe(2)
-            expect(fields[0]).toBe('Test__c.Address__c')
-            expect(fields[1]).toBe('Test__c.Banana__c')
-          })
-        })
-
-        describe('when there are new fields and deleted fields', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              address: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Address__c',
-                },
-              },
-              banana: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                },
-              },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              ..._.pick(oldElement.fields, 'banana'),
-              description: { type: stringType },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'remove', data: { before: oldElement.fields.address } },
-                { action: 'add', data: { after: newElement.fields.description } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
-            expect(Object.keys(updatedObj.fields)).toEqual(Object.keys(newElement.fields))
-          })
-
-          it('should only call delete and upsert', () => {
-            expect(mockUpsert).toHaveBeenCalled()
-            expect(mockDelete).toHaveBeenCalled()
-            expect(mockUpdate).not.toHaveBeenCalled()
-          })
-
-          it('should call the connection.upsert method correctly', () => {
-            // Verify the custom fields creation
-            const addedFields = mockUpsert.mock.calls[0][1]
-            expect(addedFields.length).toBe(1)
-            const field = addedFields[0]
-            expect(field.fullName).toBe('Test__c.description__c')
-            expect(field.type).toBe('Text')
-            expect(field.length).toBe(80)
-            expect(field.required).toBe(false)
-          })
-
-          it('should call the connection.delete method correctly', () => {
-            // Verify the custom fields deletion
-            const deletedFields = mockDelete.mock.calls[0][1]
-            expect(deletedFields.length).toBe(1)
-            expect(deletedFields[0]).toBe('Test__c.Address__c')
-          })
-        })
-
-        describe('when the annotation values are changed', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              description: { type: stringType },
-            },
-            annotations: {
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: oldElement.fields,
-            annotations: {
-              label: 'test2 label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before: oldElement, after: newElement } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
-          })
-
-          it('should only call update', () => {
-            expect(mockUpsert.mock.calls.length).toBe(0)
-            expect(mockDelete.mock.calls.length).toBe(0)
-            expect(mockUpdate.mock.calls.length).toBe(1)
-          })
-
-          it('should call the update method correctly', () => {
-            const objectSentForUpdate = mockUpdate.mock.calls[0][1][0]
-            expect(objectSentForUpdate.fullName).toBe('Test__c')
-            expect(objectSentForUpdate.label).toBe('test2 label')
-          })
-        })
-
-        describe('when the annotation values of the remaining fields of the object have changed', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              address: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Address__c',
-                  [constants.LABEL]: 'Address',
-                },
-              },
-              banana: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                  [constants.LABEL]: 'Banana',
-                },
-              },
-              cat: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Cat__c',
-                  [constants.LABEL]: 'Cat',
-                },
-              },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              banana: oldElement.fields.banana.clone({
-                [constants.API_NAME]: 'Test__c.Banana__c',
-                [constants.LABEL]: 'Banana Split',
-              }),
-              cat: oldElement.fields.cat,
-              description: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Description__c',
-                  [constants.LABEL]: 'Description',
-                },
-              },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'remove', data: { before: oldElement.fields.address } },
-                { action: 'modify',
-                  data: {
-                    before: oldElement.fields.banana,
-                    after: newElement.fields.banana,
-                  } },
-                { action: 'add', data: { after: newElement.fields.description } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
-          })
-
-          it('should call delete, upsert and update', () => {
-            expect(mockUpsert).toHaveBeenCalled()
-            expect(mockDelete).toHaveBeenCalled()
-            expect(mockUpdate).toHaveBeenCalled()
-          })
-
-          it('should call the connection methods correctly', () => {
-            const addedFields = mockUpsert.mock.calls[0][1]
-            expect(addedFields.length).toBe(1)
-            const field = addedFields[0]
-            expect(field.fullName).toBe('Test__c.Description__c')
-            expect(field.type).toBe('Text')
-            expect(field.length).toBe(80)
-            expect(field.required).toBe(false)
-            // Verify the custom field label change
-            const changedObject = mockUpdate.mock.calls[0][1]
-            expect(changedObject[0].label).toBe('Banana Split')
-            // Verify the custom fields deletion
-            const deletedFields = mockDelete.mock.calls[0][1]
-            expect(deletedFields.length).toBe(1)
-            expect(deletedFields[0]).toBe('Test__c.Address__c')
-          })
-        })
-
-        describe('when the remaining fields did not change', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              address: { type: stringType },
-              banana: { type: stringType },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              address: oldElement.fields.address.clone({ [constants.API_NAME]: 'Test__c.Address__c' }),
-              banana: oldElement.fields.banana.clone({ [constants.API_NAME]: 'Test__c.Banana__c' }),
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before: oldElement, after: newElement } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
-          })
-
-          it('should not call delete, upsert or update', () => {
-            expect(mockUpsert).not.toHaveBeenCalled()
-            expect(mockDelete).not.toHaveBeenCalled()
-            expect(mockUpdate).not.toHaveBeenCalled()
-          })
-        })
-
-        describe('when object annotations change and fields that remain change', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              banana: {
-                type: stringType,
-                annotations: {
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                },
-              },
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              banana: oldElement.fields.banana.clone({
-                [constants.LABEL]: 'Banana Split',
-                [constants.API_NAME]: 'Test__c.Banana__c',
-              }),
-            },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test2 label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          beforeEach(async () => {
-            result = await adapter.deploy({
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before: oldElement, after: newElement } },
-                { action: 'modify',
-                  data: { before: oldElement.fields.banana,
-                    after: newElement.fields.banana } },
-              ],
-            })
-          })
-
-          it('should return change applied to the element', () => {
-            expect(result.appliedChanges).toHaveLength(1)
-            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
-          })
-
-          it('should call update twice', () => {
-            expect(mockUpsert.mock.calls.length).toBe(0)
-            expect(mockDelete.mock.calls.length).toBe(0)
-            expect(mockUpdate.mock.calls.length).toBe(2)
-          })
-
-          it('should call update correctly the first time for the custom field update', () => {
-            // Verify the custom field update
-            const updatedFields = mockUpdate.mock.calls[0][1]
-            expect(updatedFields.length).toBe(1)
-            const field = updatedFields[0]
-            expect(field.fullName).toBe('Test__c.Banana__c')
-            expect(field.type).toBe('Text')
-            expect(field.label).toBe('Banana Split')
-            expect(field.length).toBe(80)
-            expect(field.required).toBe(false)
-          })
-
-          it('should call update correctly the second time for the object update', () => {
-            const updatedObject = mockUpdate.mock.calls[1][1][0]
-            expect(updatedObject.fullName).toBe('Test__c')
-            expect(updatedObject.label).toBe('test2 label')
-            expect(updatedObject.fields).toBeUndefined()
-          })
-        })
-      })
-    })
-
-    describe('update with deploy', () => {
-      let before: InstanceElement
-      let after: InstanceElement
-      beforeEach(() => {
-        before = createInstanceElement(
-          {
-            fullName: 'deploy_inst',
-            dummy: 'before',
+      describe('when the new object\'s change is only new fields', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: { type: stringType },
+            banana: { type: stringType },
           },
-          mockTypes.AssignmentRules.clone(),
-        )
-        after = before.clone()
-        after.value.dummy = 'after'
-      })
-
-      describe('when the deploy call succeeds', () => {
-        it('should update with deploy for specific types', async () => {
-          await adapter.deploy({
-            groupID: before.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before, after } }],
-          })
-          expect(mockDeploy).toHaveBeenCalled()
-          expect(mockUpdate).not.toHaveBeenCalled()
-        })
-      })
-
-      describe('when the deploy call should not be triggered', () => {
-        it('should not deploy un-deployable metadata types', async () => {
-          // Top level metadata types have a dirname, removing it means we are passing
-          // a metadata type that cannot be deployed
-          delete before.type.annotations.dirName
-          await adapter.deploy({
-            groupID: before.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before, after } }],
-          })
-          expect(mockDeploy).not.toHaveBeenCalled()
-          expect(mockUpdate).not.toHaveBeenCalled()
-        })
-        it('should not update with deploy not listed types', async () => {
-          before.type.annotations[constants.METADATA_TYPE] = 'NotListedType'
-          after.type.annotations[constants.METADATA_TYPE] = 'NotListedType'
-          await adapter.deploy({
-            groupID: before.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before, after } }],
-          })
-          expect(mockDeploy).not.toHaveBeenCalled()
-          expect(mockUpdate).toHaveBeenCalled()
-        })
-      })
-
-      describe('when the deploy call fails', () => {
-        const getDeployDetails = (type: string, name: string, problem: string): DeployDetails => ({
-          componentFailures: [{
-            changed: false,
-            columnNumber: 0,
-            componentType: type,
-            created: false,
-            createdDate: '',
-            deleted: false,
-            fileName: '',
-            fullName: name,
-            id: '',
-            lineNumber: 0,
-            problem,
-            problemType: 'Error',
-            success: false,
-          }],
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
         })
 
-        let result: DeployResult
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            ...oldElement.fields,
+            description: { type: stringType },
+            apple: { type: stringType },
+          },
+          annotations: oldElement.annotations,
+        })
 
         beforeEach(async () => {
-          connection.metadata.deploy = jest.fn().mockImplementationOnce(
-            () => ({
-              complete: () => getDeployResult(false, [
-                getDeployDetails('Component', 'InstName', 'my error'),
-                getDeployDetails('Component', 'OtherInst', 'some error'),
-              ]),
-            })
-          )
           result = await adapter.deploy({
-            groupID: before.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before, after } }],
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'add', data: { after: newElement.fields.description } },
+              { action: 'add', data: { after: newElement.fields.apple } },
+            ],
           })
         })
 
-        it('should not apply changes', () => {
-          expect(result.appliedChanges).toHaveLength(0)
+        it('should return change applied to the element', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+          expect(Object.keys(updatedObj.fields)).toEqual(Object.keys(newElement.fields))
         })
 
-        it('should return error', () => {
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0].message).toMatch(
-            /Component.*InstName.*my error.*Component.*OtherInst.*some error/s
+        it('should call the connection methods correctly', () => {
+          expect(mockUpsert.mock.calls.length).toBe(1)
+          expect(mockDelete.mock.calls.length).toBe(0)
+          expect(mockUpdate.mock.calls.length).toBe(0)
+          // Verify the custom fields creation
+          const fields = mockUpsert.mock.calls[0][1]
+          expect(fields.length).toBe(2)
+          expect(fields[0].fullName).toBe('Test__c.description__c')
+          expect(fields[0].type).toBe('Text')
+          expect(fields[0].length).toBe(80)
+          expect(fields[0].required).toBe(false)
+          expect(fields[1].fullName).toBe('Test__c.apple__c')
+        })
+      })
+
+      describe('when the only change in the new object is that some fields no longer appear', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Address__c',
+              },
+            },
+            banana: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Banana__c',
+              },
+            },
+            description: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Description__c',
+              },
+            },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'remove', data: { before: oldElement.fields.address } },
+              { action: 'remove', data: { before: oldElement.fields.banana } },
+            ],
+          })
+        })
+
+        it('should return change applied to the element', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+          expect(Object.keys(updatedObj.fields)).toEqual(
+            Object.keys(_.omit(oldElement.fields, ['address', 'banana']))
           )
         })
-      })
-    })
 
-    describe('for a workflow instance element', () => {
-      const beforeWorkflowInstance = new InstanceElement(
-        instanceName,
-        new ObjectType({
-          elemID: WORKFLOW_TYPE_ID,
-          annotations: {
-            [constants.METADATA_TYPE]: constants.WORKFLOW_METADATA_TYPE,
-          },
-        }), {}
-      )
+        it('should only delete fields', () => {
+          expect(mockUpsert.mock.calls.length).toBe(0)
+          expect(mockUpdate.mock.calls.length).toBe(0)
+          expect(mockDelete.mock.calls.length).toBe(1)
 
-      it('should not update the instance in the main flow', async () => {
-        await adapter.deploy({
-          groupID: beforeWorkflowInstance.elemID.getFullName(),
-          changes: [{
-            action: 'modify',
-            data: { before: beforeWorkflowInstance, after: beforeWorkflowInstance.clone() },
-          }],
+          const fields = mockDelete.mock.calls[0][1]
+          expect(fields.length).toBe(2)
+          expect(fields[0]).toBe('Test__c.Address__c')
+          expect(fields[1]).toBe('Test__c.Banana__c')
         })
-        expect(mockUpdate.mock.calls.length).toBe(0)
       })
-    })
 
-    it('should update certain metadata types using upsert', async () => {
-      const beforeFlowInstance = new InstanceElement(
-        instanceName,
-        new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'Flow'),
-          annotations: {
-            [constants.METADATA_TYPE]: 'Flow',
+      describe('when there are new fields and deleted fields', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Address__c',
+              },
+            },
+            banana: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Banana__c',
+              },
+            },
           },
-        }), {}
-      )
-      await adapter.deploy({
-        groupID: beforeFlowInstance.elemID.getFullName(),
-        changes: [{
-          action: 'modify',
-          data: { before: beforeFlowInstance, after: beforeFlowInstance.clone() },
-        }],
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            ..._.pick(oldElement.fields, 'banana'),
+            description: { type: stringType },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'remove', data: { before: oldElement.fields.address } },
+              { action: 'add', data: { after: newElement.fields.description } },
+            ],
+          })
+        })
+
+        it('should return change applied to the element', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+          expect(Object.keys(updatedObj.fields)).toEqual(Object.keys(newElement.fields))
+        })
+
+        it('should only call delete and upsert', () => {
+          expect(mockUpsert).toHaveBeenCalled()
+          expect(mockDelete).toHaveBeenCalled()
+          expect(mockUpdate).not.toHaveBeenCalled()
+        })
+
+        it('should call the connection.upsert method correctly', () => {
+          // Verify the custom fields creation
+          const addedFields = mockUpsert.mock.calls[0][1]
+          expect(addedFields.length).toBe(1)
+          const field = addedFields[0]
+          expect(field.fullName).toBe('Test__c.description__c')
+          expect(field.type).toBe('Text')
+          expect(field.length).toBe(80)
+          expect(field.required).toBe(false)
+        })
+
+        it('should call the connection.delete method correctly', () => {
+          // Verify the custom fields deletion
+          const deletedFields = mockDelete.mock.calls[0][1]
+          expect(deletedFields.length).toBe(1)
+          expect(deletedFields[0]).toBe('Test__c.Address__c')
+        })
       })
-      expect(mockUpdate.mock.calls.length).toBe(0)
-      expect(mockUpsert.mock.calls.length).toBe(1)
+
+      describe('when the annotation values are changed', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            description: { type: stringType },
+          },
+          annotations: {
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: oldElement.fields,
+          annotations: {
+            label: 'test2 label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'modify', data: { before: oldElement, after: newElement } },
+            ],
+          })
+        })
+
+        it('should return change applied to the element', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
+        })
+
+        it('should only call update', () => {
+          expect(mockUpsert.mock.calls.length).toBe(0)
+          expect(mockDelete.mock.calls.length).toBe(0)
+          expect(mockUpdate.mock.calls.length).toBe(1)
+        })
+
+        it('should call the update method correctly', () => {
+          const objectSentForUpdate = mockUpdate.mock.calls[0][1][0]
+          expect(objectSentForUpdate.fullName).toBe('Test__c')
+          expect(objectSentForUpdate.label).toBe('test2 label')
+        })
+      })
+
+      describe('when the annotation values of the remaining fields of the object have changed', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Address__c',
+                [constants.LABEL]: 'Address',
+              },
+            },
+            banana: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Banana__c',
+                [constants.LABEL]: 'Banana',
+              },
+            },
+            cat: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Cat__c',
+                [constants.LABEL]: 'Cat',
+              },
+            },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            banana: oldElement.fields.banana.clone({
+              [constants.API_NAME]: 'Test__c.Banana__c',
+              [constants.LABEL]: 'Banana Split',
+            }),
+            cat: oldElement.fields.cat,
+            description: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Description__c',
+                [constants.LABEL]: 'Description',
+              },
+            },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'remove', data: { before: oldElement.fields.address } },
+              { action: 'modify',
+                data: {
+                  before: oldElement.fields.banana,
+                  after: newElement.fields.banana,
+                } },
+              { action: 'add', data: { after: newElement.fields.description } },
+            ],
+          })
+        })
+
+        it('should return change applied to the element', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
+        })
+
+        it('should call delete, upsert and update', () => {
+          expect(mockUpsert).toHaveBeenCalled()
+          expect(mockDelete).toHaveBeenCalled()
+          expect(mockUpdate).toHaveBeenCalled()
+        })
+
+        it('should call the connection methods correctly', () => {
+          const addedFields = mockUpsert.mock.calls[0][1]
+          expect(addedFields.length).toBe(1)
+          const field = addedFields[0]
+          expect(field.fullName).toBe('Test__c.Description__c')
+          expect(field.type).toBe('Text')
+          expect(field.length).toBe(80)
+          expect(field.required).toBe(false)
+          // Verify the custom field label change
+          const changedObject = mockUpdate.mock.calls[0][1]
+          expect(changedObject[0].label).toBe('Banana Split')
+          // Verify the custom fields deletion
+          const deletedFields = mockDelete.mock.calls[0][1]
+          expect(deletedFields.length).toBe(1)
+          expect(deletedFields[0]).toBe('Test__c.Address__c')
+        })
+      })
+
+      describe('when the remaining fields did not change', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: { type: stringType },
+            banana: { type: stringType },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: oldElement.fields.address.clone({ [constants.API_NAME]: 'Test__c.Address__c' }),
+            banana: oldElement.fields.banana.clone({ [constants.API_NAME]: 'Test__c.Banana__c' }),
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'modify', data: { before: oldElement, after: newElement } },
+            ],
+          })
+        })
+
+        it('should return change applied to the element', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
+        })
+
+        it('should not call delete, upsert or update', () => {
+          expect(mockUpsert).not.toHaveBeenCalled()
+          expect(mockDelete).not.toHaveBeenCalled()
+          expect(mockUpdate).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('when object annotations change and fields that remain change', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            banana: {
+              type: stringType,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.Banana__c',
+              },
+            },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            banana: oldElement.fields.banana.clone({
+              [constants.LABEL]: 'Banana Split',
+              [constants.API_NAME]: 'Test__c.Banana__c',
+            }),
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            label: 'test2 label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'modify', data: { before: oldElement, after: newElement } },
+              { action: 'modify',
+                data: { before: oldElement.fields.banana,
+                  after: newElement.fields.banana } },
+            ],
+          })
+        })
+
+        it('should return change applied to the element', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
+        })
+
+        it('should call update twice', () => {
+          expect(mockUpsert.mock.calls.length).toBe(0)
+          expect(mockDelete.mock.calls.length).toBe(0)
+          expect(mockUpdate.mock.calls.length).toBe(2)
+        })
+
+        it('should call update correctly the first time for the custom field update', () => {
+          // Verify the custom field update
+          const updatedFields = mockUpdate.mock.calls[0][1]
+          expect(updatedFields.length).toBe(1)
+          const field = updatedFields[0]
+          expect(field.fullName).toBe('Test__c.Banana__c')
+          expect(field.type).toBe('Text')
+          expect(field.label).toBe('Banana Split')
+          expect(field.length).toBe(80)
+          expect(field.required).toBe(false)
+        })
+
+        it('should call update correctly the second time for the object update', () => {
+          const updatedObject = mockUpdate.mock.calls[1][1][0]
+          expect(updatedObject.fullName).toBe('Test__c')
+          expect(updatedObject.label).toBe('test2 label')
+          expect(updatedObject.fields).toBeUndefined()
+        })
+      })
     })
   })
 })

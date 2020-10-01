@@ -67,7 +67,7 @@ describe('XML Transformer', () => {
         pkg.add(createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout))
         pkg.add(createInstanceElement({ fullName: 'TestLayout2' }, mockTypes.Layout))
         pkg.add(createInstanceElement(profileValues, mockTypes.Profile))
-        pkg.delete(createInstanceElement({ fullName: 'foo' }, mockTypes.Profile))
+        pkg.delete(mockTypes.Profile, 'foo')
         zipFiles = await getZipFiles(pkg)
       })
       it('should have manifest with all added instances', () => {

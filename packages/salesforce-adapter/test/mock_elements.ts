@@ -194,6 +194,68 @@ export const mockDefaultValues = {
       ],
     },
   },
+  Profile: {
+    fieldPermissions: [
+      {
+        field: 'Lead.Fax',
+        readable: true,
+        editable: false,
+      },
+      {
+        editable: false,
+        field: 'Account.AccountNumber',
+        readable: false,
+      },
+    ],
+    objectPermissions: [
+      {
+        allowCreate: true,
+        allowDelete: true,
+        allowEdit: true,
+        allowRead: true,
+        modifyAllRecords: false,
+        viewAllRecords: false,
+        object: 'Account',
+      },
+    ],
+    tabVisibilities: [
+      {
+        tab: 'standard-Account',
+        visibility: 'DefaultOff',
+      },
+    ],
+    userPermissions: [
+      {
+        enabled: false,
+        name: 'ConvertLeads',
+      },
+    ],
+    applicationVisibilities: [
+      {
+        application: 'standard__ServiceConsole',
+        default: false,
+        visible: true,
+      },
+    ],
+    pageAccesses: [
+      {
+        apexPage: 'ApexPageForProfile',
+        enabled: 'false',
+      },
+    ],
+    classAccesses: [
+      {
+        apexClass: 'ApexClassForProfile',
+        enabled: 'false',
+      },
+    ],
+    loginHours: {
+      sundayStart: '480',
+      sundayEnd: '1380',
+    },
+    description: 'new e2e profile',
+    [INSTANCE_FULL_NAME_FIELD]: 'TestAddProfileInstance__c',
+  },
   StaticResource: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestStaticResource',
     cacheControl: 'Private',

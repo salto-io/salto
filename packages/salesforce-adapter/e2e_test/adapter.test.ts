@@ -438,62 +438,12 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should add new profile instance from scratch', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
 
-      const instance = new InstanceElement(instanceElementName, new ObjectType({
-        elemID: mockElemID,
-        annotationTypes: {},
-        annotations: {
-          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
-        },
-      }),
-      {
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: true,
-            editable: false,
-          },
-          {
-            editable: false,
-            field: 'Account.AccountNumber',
-            readable: false,
-          },
-        ],
-        objectPermissions: [
-          {
-            allowCreate: true,
-            allowDelete: true,
-            allowEdit: true,
-            allowRead: true,
-            modifyAllRecords: false,
-            viewAllRecords: false,
-            object: 'Account',
-          },
-        ],
-        tabVisibilities: [
-          {
-            tab: 'standard-Account',
-            visibility: 'DefaultOff',
-          },
-        ],
-        userPermissions: [
-          {
-            enabled: false,
-            name: 'ConvertLeads',
-          },
-        ],
-        applicationVisibilities: [
-          {
-            application: 'standard__ServiceConsole',
-            default: false,
-            visible: true,
-          },
-        ],
-        description: 'new e2e profile',
-        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
-      })
+      const instance = new InstanceElement(
+        instanceElementName,
+        mockTypes.Profile,
+        mockDefaultValues.Profile,
+      )
 
       await removeElementIfAlreadyExists(client, instance)
       await createElementAndVerify(adapter, client, instance)
@@ -680,159 +630,72 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should modify an instance', async () => {
       const instanceElementName = 'TestProfileInstanceUpdate__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const oldInstance = new InstanceElement(instanceElementName, new ObjectType({
-        elemID: mockElemID,
-        annotationTypes: {},
-        annotations: {
-          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
+      const oldInstance = createInstanceElement(
+        {
+          ...mockDefaultValues.Profile,
+          [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
         },
-      }),
-      {
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: 'true',
-            editable: 'false',
+        mockTypes.Profile,
+      )
+      const newInstance = createInstanceElement(
+        {
+          ...oldInstance.value,
+          fieldPermissions: [
+            {
+              field: 'Lead.Fax',
+              readable: 'true',
+              editable: 'true',
+            },
+            {
+              editable: 'false',
+              field: 'Account.AccountNumber',
+              readable: 'false',
+            },
+            {
+              editable: 'false',
+              field: 'Account.AnnualRevenue',
+              readable: 'false',
+            },
+          ],
+          objectPermissions: [
+            {
+              allowCreate: 'true',
+              allowDelete: 'true',
+              allowEdit: 'true',
+              allowRead: 'true',
+              modifyAllRecords: 'true',
+              viewAllRecords: 'true',
+              object: 'Account',
+            },
+          ],
+          userPermissions: [
+            {
+              name: 'ApiEnabled',
+              enabled: 'true',
+            },
+          ],
+          pageAccesses: [
+            {
+              apexPage: 'ApexPageForProfile',
+              enabled: 'true',
+            },
+          ],
+          classAccesses: [
+            {
+              apexClass: 'ApexClassForProfile',
+              enabled: 'true',
+            },
+          ],
+          loginHours: {
+            sundayStart: '300',
+            sundayEnd: '420',
           },
-          {
-            editable: 'false',
-            field: 'Account.AccountNumber',
-            readable: 'false',
-          },
-        ],
-        objectPermissions: [
-          {
-            allowCreate: 'true',
-            allowDelete: 'true',
-            allowEdit: 'true',
-            allowRead: 'true',
-            modifyAllRecords: 'false',
-            viewAllRecords: 'false',
-            object: 'Account',
-          },
-        ],
-        tabVisibilities: [
-          {
-            tab: 'standard-Account',
-            visibility: 'DefaultOff',
-          },
-        ],
-        applicationVisibilities: [
-          {
-            application: 'standard__ServiceConsole',
-            default: 'false',
-            visible: 'true',
-          },
-        ],
-        userPermissions: [
-          {
-            name: 'ApiEnabled',
-            enabled: 'false',
-          },
-        ],
-        pageAccesses: [
-          {
-            apexPage: 'ApexPageForProfile',
-            enabled: 'false',
-          },
-        ],
-        classAccesses: [
-          {
-            apexClass: 'ApexClassForProfile',
-            enabled: 'false',
-          },
-        ],
-        loginHours: {
-          sundayStart: '480',
-          sundayEnd: '1380',
         },
-        description: 'new e2e profile',
-        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
-
-      })
-
-      const newInstance = new InstanceElement(instanceElementName, new ObjectType({
-        elemID: mockElemID,
-        annotationTypes: {},
-        annotations: {
-          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
-        },
-      }),
-      {
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: 'true',
-            editable: 'true',
-          },
-          {
-            editable: 'false',
-            field: 'Account.AccountNumber',
-            readable: 'false',
-          },
-          {
-            editable: 'false',
-            field: 'Account.AnnualRevenue',
-            readable: 'false',
-          },
-        ],
-        objectPermissions: [
-          {
-            allowCreate: 'true',
-            allowDelete: 'true',
-            allowEdit: 'true',
-            allowRead: 'true',
-            modifyAllRecords: 'true',
-            viewAllRecords: 'true',
-            object: 'Account',
-          },
-        ],
-        tabVisibilities: [
-          {
-            tab: 'standard-Account',
-            visibility: 'DefaultOff',
-          },
-        ],
-        applicationVisibilities: [
-          {
-            application: 'standard__ServiceConsole',
-            default: 'false',
-            visible: 'true',
-          },
-        ],
-        userPermissions: [
-          {
-            name: 'ApiEnabled',
-            enabled: 'true',
-          },
-        ],
-        pageAccesses: [
-          {
-            apexPage: 'ApexPageForProfile',
-            enabled: 'true',
-          },
-        ],
-        classAccesses: [
-          {
-            apexClass: 'ApexClassForProfile',
-            enabled: 'true',
-          },
-        ],
-        loginHours: {
-          sundayStart: '300',
-          sundayEnd: '420',
-        },
-        description: 'updated e2e profile',
-        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
-
-      })
+        mockTypes.Profile,
+      )
 
       await removeElementIfAlreadyExists(client, oldInstance)
       const post = await createElement(adapter, oldInstance)
-      // const post = await adapter.add(oldInstance) as InstanceElement
       const updateResult = await adapter.deploy({
         groupID: newInstance.elemID.getFullName(),
         changes: [{ action: 'modify', data: { before: oldInstance, after: newInstance } }],
@@ -2731,7 +2594,7 @@ describe('Salesforce adapter E2E with real account', () => {
         const removeIfAlreadyExists = async (instance: MetadataInstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
             const pkg = createDeployPackage()
-            pkg.delete(instance)
+            pkg.delete(instance.type, apiName(instance))
             await client.deploy(await pkg.getZip())
           }
         }
@@ -3509,8 +3372,14 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
       })
 
-      it('should delete flow', async () => {
-        await removeElementAndVerify(adapter, client, flow)
+      // Unfortunately deleting a flow through the deploy API is not possible
+      // it('should delete flow', async () => {
+      //   await removeElementAndVerify(adapter, client, flow)
+      // })
+
+      afterAll(() => {
+        // Removing the flow through CRUD does work, so we can clean up
+        removeElementIfAlreadyExists(client, flow)
       })
     })
 

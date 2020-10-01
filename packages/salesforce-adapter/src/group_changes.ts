@@ -14,24 +14,47 @@
 * limitations under the License.
 */
 import wu from 'wu'
+import { values } from '@salto-io/lowerdash'
 import {
-  Change, ChangeGroupIdFunction, getChangeElement, InstanceElement, ChangeEntry,
+  Change, ChangeGroupIdFunction, getChangeElement, InstanceElement, ChangeGroupId, ChangeId,
 } from '@salto-io/adapter-api'
-import { apiName, isInstanceOfCustomObject } from './transformers/transformer'
+import { apiName, isInstanceOfCustomObject, isMetadataInstanceElement } from './transformers/transformer'
 
-export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
-  const isInstanceOfCustomObjectChange = (
-    change: ChangeEntry
-  ): change is ChangeEntry<InstanceElement> => {
-    const changeElement = getChangeElement(change[1])
-    return isInstanceOfCustomObject(changeElement)
-  }
-  const instanceOfCustomObjectChangeToGroupId = (change: Change<InstanceElement>): string =>
-    `${change.action}_${apiName(getChangeElement(change).type)}_instances`
+type ChangeIdFunction = (change: Change) => string | undefined
 
-  return new Map(
+const isInstanceOfCustomObjectChange = (
+  change: Change
+): change is Change<InstanceElement> => (
+  isInstanceOfCustomObject(getChangeElement(change))
+)
+
+const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = change => (
+  isInstanceOfCustomObjectChange(change)
+    ? `${change.action}_${apiName(getChangeElement(change).type)}_instances`
+    : undefined
+)
+
+const deployableMetadataChangeGroupId: ChangeIdFunction = change => (
+  // Initial support only for metadata instances
+  isMetadataInstanceElement(getChangeElement(change))
+    ? 'salesforce_metadata'
+    : undefined
+)
+
+const changeIdProviders: ChangeIdFunction[] = [
+  instanceOfCustomObjectChangeToGroupId,
+  deployableMetadataChangeGroupId,
+]
+
+export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
+  new Map(
     wu(changes.entries())
-      .filter(isInstanceOfCustomObjectChange)
-      .map(([id, change]) => [id, instanceOfCustomObjectChangeToGroupId(change)])
+      .map(([id, change]) => {
+        const groupId = changeIdProviders
+          .map(provider => provider(change))
+          .find(values.isDefined)
+        return groupId === undefined ? undefined : [id, groupId] as [ChangeId, ChangeGroupId]
+      })
+      .filter(values.isDefined)
   )
-}
+)

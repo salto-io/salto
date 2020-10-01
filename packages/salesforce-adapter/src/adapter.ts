@@ -354,6 +354,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       'RecordTypeId',
       'SystemModstamp',
       'OwnerId',
+      'SetupOwnerId',
     ],
     unsupportedSystemFields = [
       'LastReferencedDate',

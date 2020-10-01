@@ -72,7 +72,13 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch' | 'onDep
     const customObjectChanges = changes
       .filter(isObjectTypeChange)
       .filter(isAdditionOrModificationChange)
-      .filter(change => isCustomObject(getChangeElement(change)))
+      .filter((change): boolean => {
+        const element = getChangeElement(change)
+        if ('customSettingsType' in element.annotationTypes) {
+          return false
+        }
+        return isCustomObject(element)
+      })
 
     const newObjects = customObjectChanges
       .filter(isAdditionChange)

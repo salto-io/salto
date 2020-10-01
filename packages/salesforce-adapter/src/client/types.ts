@@ -250,10 +250,23 @@ export class CustomField implements MetadataInfo {
   }
 }
 
-export class CustomObject implements MetadataInfo {
-  readonly pluralLabel: string
+export class CustomProperties implements MetadataInfo {
+  customSettingsType?: string
   readonly fields?: CustomField[] | CustomField
 
+  constructor(
+    readonly fullName: string,
+    readonly label: string,
+    fields?: CustomField[]
+  ) {
+    if (fields) {
+      this.fields = fields
+    }
+  }
+}
+
+export class CustomObject extends CustomProperties {
+  readonly pluralLabel: string
   readonly deploymentStatus = 'Deployed'
   readonly sharingModel: string
   readonly nameField = {
@@ -266,10 +279,8 @@ export class CustomObject implements MetadataInfo {
     readonly label: string,
     fields?: CustomField[]
   ) {
+    super(fullName, label, fields)
     this.pluralLabel = `${this.label}s`
-    if (fields) {
-      this.fields = fields
-    }
 
     const hasMasterDetailField = (): boolean|undefined => fields
       && fields.some(field => field.type === FIELD_TYPE_NAMES.MASTER_DETAIL)

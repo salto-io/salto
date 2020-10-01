@@ -98,6 +98,7 @@ export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME = {
 type TypesFromInstance = {
   standardAnnotationTypes: TypeMap
   customAnnotationTypes: TypeMap
+  customSettingsAnnotationTypes: TypeMap
   nestedMetadataTypes: Record<string, ObjectType>
 }
 
@@ -107,6 +108,9 @@ const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = ['allowInChatterGroups', 'customHelp',
   'customSettingsType', 'deploymentStatus', 'deprecated', 'enableActivities', 'enableBulkApi',
   'enableReports', 'enableSearch', 'enableSharing', 'enableStreamingApi', 'gender',
   'nameField', 'pluralLabel', 'sharingModel', 'startsWith', 'visibility']
+
+const CUSTOM_SETTINGS_ANNOTATION_TYPE_NAMES = ['customSettingsType', 'apiName',
+  'metadataType', 'enableFeeds', 'visibility']
 
 const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fields',
   INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay']
@@ -382,10 +386,13 @@ const createFromInstance = (instance: InstanceElement,
     name: objectName,
     label: instance.value[LABEL],
   })
-  transformObjectAnnotations(object, isCustom(objectName)
-    ? typesFromInstance.customAnnotationTypes
-    : typesFromInstance.standardAnnotationTypes, instance)
-
+  let annotationTypes = typesFromInstance.standardAnnotationTypes
+  if (instance.value.customSettingsType) {
+    annotationTypes = typesFromInstance.customSettingsAnnotationTypes
+  } else if (isCustom(objectName)) {
+    annotationTypes = typesFromInstance.customAnnotationTypes
+  }
+  transformObjectAnnotations(object, annotationTypes, instance)
   const instanceFields = makeArray(instance.value.fields)
   instanceFields
     .forEach((field: Values) => {
@@ -437,10 +444,14 @@ const createFromSObjectsAndInstances = (
     if (!instance) {
       return [object]
     }
+    let annotationTypes = typesFromInstance.standardAnnotationTypes
+    if (instance.value.customSettingsType) {
+      annotationTypes = typesFromInstance.customSettingsAnnotationTypes
+    } else if (custom) {
+      annotationTypes = typesFromInstance.customAnnotationTypes
+    }
     mergeCustomObjectWithInstance(
-      object, instance, custom
-        ? typesFromInstance.customAnnotationTypes
-        : typesFromInstance.standardAnnotationTypes
+      object, instance, annotationTypes
     )
     return [object, ...createNestedMetadataInstances(instance, object,
       typesFromInstance.nestedMetadataTypes)]
@@ -572,11 +583,15 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)) as Record<string, ObjectType>
       const customOnlyAnnotationTypes = _.pick(typesFromInstance,
         CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
+      const customSettingsAnnotationTypes = _.pick(typesFromInstance,
+        CUSTOM_SETTINGS_ANNOTATION_TYPE_NAMES)
       const standardAnnotationTypes = _.omit(typesFromInstance,
         Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
       return {
         standardAnnotationTypes,
         customAnnotationTypes: { ...standardAnnotationTypes, ...customOnlyAnnotationTypes },
+        customSettingsAnnotationTypes: { ...standardAnnotationTypes,
+          ...customSettingsAnnotationTypes },
         nestedMetadataTypes,
       }
     }

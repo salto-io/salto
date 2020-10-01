@@ -361,7 +361,8 @@ export default class SalesforceClient {
       sendChunk: chunk => this.conn.metadata.read(type, chunk),
       chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
       isSuppressedError: error => (
-        this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
+        (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid')
+        || (error.name === 'sf:INSUFFICIENT_ACCESS')
       ),
       isUnhandledError,
     })

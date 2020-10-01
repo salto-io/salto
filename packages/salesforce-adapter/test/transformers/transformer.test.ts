@@ -27,7 +27,7 @@ import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject, instancesToUpdateRecords,
   getValueTypeFieldElement, createMetadataTypeElements,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
-  isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance,
+  isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
 } from '../../src/transformers/transformer'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
@@ -1787,6 +1787,90 @@ describe('transformer', () => {
       expect(res.value.Id).toBeUndefined()
       expect(res.value.Name).toBeDefined()
       expect(res.value.LocalAddress).toBeUndefined()
+    })
+  })
+
+  describe('transformPrimitive', () => {
+    let mockObjType: ObjectType
+    beforeAll(() => {
+      mockObjType = new ObjectType({
+        elemID: new ElemID('test', 'obj'),
+        fields: {
+          str: { type: BuiltinTypes.STRING },
+          num: { type: BuiltinTypes.NUMBER },
+          bool: { type: BuiltinTypes.BOOLEAN },
+          obj: { type: new ObjectType({ elemID: new ElemID('test', 'nested') }) },
+          unknown: { type: BuiltinTypes.UNKNOWN },
+        },
+      })
+    })
+    describe('with primitive field', () => {
+      it('should convert number type', () => {
+        expect(
+          transformPrimitive({ value: '1', field: mockObjType.fields.num })
+        ).toEqual(1)
+      })
+      it('should convert string type', () => {
+        expect(
+          transformPrimitive({ value: '1', field: mockObjType.fields.str })
+        ).toEqual('1')
+      })
+      it('should convert boolean type', () => {
+        expect(
+          transformPrimitive({ value: 'true', field: mockObjType.fields.bool })
+        ).toEqual(true)
+      })
+      it('should leave unknown type as-is', () => {
+        expect(
+          transformPrimitive({ value: '1', field: mockObjType.fields.unknown })
+        ).toEqual('1')
+        expect(
+          transformPrimitive({ value: 1, field: mockObjType.fields.unknown })
+        ).toEqual(1)
+      })
+      it('should convert values with xsi:type attribute', () => {
+        expect(
+          transformPrimitive({
+            value: { _: 'true', $: { 'xsi:type': 'xsd:boolean' } },
+            field: mockObjType.fields.bool,
+          })
+        ).toEqual(true)
+        expect(
+          transformPrimitive({
+            value: { _: '12.3', $: { 'xsi:type': 'xsd:double' } },
+            field: mockObjType.fields.num,
+          })
+        ).toEqual(12.3)
+      })
+      it('should convert value by field type if xsi:type is unrecognized', () => {
+        expect(
+          transformPrimitive({
+            value: { _: 'true', $: { 'xsi:type': 'xsd:unknown' } },
+            field: mockObjType.fields.bool,
+          })
+        ).toEqual(true)
+        expect(
+          transformPrimitive({
+            value: { _: 'true', $: { 'xsi:type': 'xsd:unknown' } },
+            field: mockObjType.fields.str,
+          })
+        ).toEqual('true')
+      })
+      it('should omit null values', () => {
+        expect(transformPrimitive({
+          value: { $: { 'xsi:nil': 'true' } }, field: mockObjType.fields.bool,
+        })).toBeUndefined()
+      })
+      it('should not transform object types', () => {
+        expect(transformPrimitive({
+          value: { bla: 'foo' }, field: mockObjType.fields.obj,
+        })).toEqual({ bla: 'foo' })
+      })
+      it('should not transform object values', () => {
+        expect(transformPrimitive({
+          value: { bla: 'foo' }, field: mockObjType.fields.string,
+        })).toEqual({ bla: 'foo' })
+      })
     })
   })
 })

@@ -69,14 +69,7 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 
 export type ErrorFilter = (error: Error) => boolean
 
-const SFDC_UNKNOWN_EXCEPTION = 'sf:UNKNOWN_EXCEPTION'
-const SFDC_INSUFFICIENT_ACCESS = 'sf:INSUFFICIENT_ACCESS'
-const generateUnhandledExceptionFilter = (errorNames: string[]) =>
-  (error: Error): boolean => !errorNames.includes(error.name)
-const unhandledExceptionFilter = generateUnhandledExceptionFilter([SFDC_UNKNOWN_EXCEPTION])
-const unhandledOrInsufficientAccessFilter = generateUnhandledExceptionFilter(
-  [SFDC_UNKNOWN_EXCEPTION, SFDC_INSUFFICIENT_ACCESS]
-)
+const isSFDCUnhandledException = (error: Error): boolean => error.name !== 'sf:UNKNOWN_EXCEPTION'
 
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
@@ -212,7 +205,7 @@ const sendChunked = async <TIn, TOut>({
           operationInfo, chunkInput[0], error)
         throw error
       }
-      log.warn('chunked %s skipping item with error on %o: %o',
+      log.warn('chunked %s unknown error on %o: %o',
         operationInfo, chunkInput[0], error)
       return { result: [], errors: chunkInput }
     }
@@ -341,7 +334,7 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
-    isUnhandledError: ErrorFilter = unhandledExceptionFilter,
+    isUnhandledError: ErrorFilter = isSFDCUnhandledException,
   ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
     return sendChunked({
       operationInfo: 'listMetadataObjects',
@@ -360,7 +353,7 @@ export default class SalesforceClient {
   public async readMetadata(
     type: string,
     name: string | string[],
-    isUnhandledError: ErrorFilter = unhandledOrInsufficientAccessFilter,
+    isUnhandledError: ErrorFilter = isSFDCUnhandledException,
   ): Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({
       operationInfo: `readMetadata (${type})`,
@@ -368,7 +361,8 @@ export default class SalesforceClient {
       sendChunk: chunk => this.conn.metadata.read(type, chunk),
       chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
       isSuppressedError: error => (
-        this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
+        (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid')
+        || (error.name === 'sf:INSUFFICIENT_ACCESS')
       ),
       isUnhandledError,
     })

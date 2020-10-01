@@ -480,6 +480,11 @@ describe('workspace', () => {
         action: 'modify',
         data: { before: 4, after: 5 },
       },
+      { // Change from primitive to object in a list
+        id: new ElemID('salesforce', 'lead', 'field', 'list_field', CORE_ANNOTATIONS.DEFAULT, '4'),
+        action: 'modify',
+        data: { before: 5, after: { foo: 'bla' } },
+      },
       { // Modify field isListValue
         id: newField.elemID,
         action: 'modify',
@@ -750,7 +755,7 @@ describe('workspace', () => {
     })
     it('should update value in list', () => {
       expect(lead.fields.list_field
-        .annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, 5])
+        .annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, { foo: 'bla' }])
     })
     it('should change isList value in fields', () => {
       expect(isListType(lead.fields.not_a_list_yet_field.type)).toBeTruthy()

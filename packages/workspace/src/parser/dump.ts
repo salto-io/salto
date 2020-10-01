@@ -15,9 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  TypeElement, Field, Values, isObjectType, PrimitiveTypes, TypeMap, isListType,
-  isPrimitiveType, Element, isInstanceElement, isField,
-  isElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression,
+  TypeElement, Field, isObjectType, PrimitiveTypes, TypeMap, isListType, isPrimitiveType, Element,
+  isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField,
 } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 
@@ -108,16 +107,17 @@ const dumpAnnotationTypesBlock = (annotationTypes: TypeMap): DumpedHclBlock[] =>
       .map(([key, type]) => dumpAnnotationTypeBlock(key, type)),
   }])
 
-let dumpBlock: (value: Element | Values, functions: Functions) => Promise<DumpedHclBlock>
-
 const dumpElementBlock = async (elem: Element, functions: Functions): Promise<DumpedHclBlock> => {
+  if (isField(elem)) {
+    return dumpFieldBlock(elem, functions)
+  }
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
       labels: [dumpElemID(elem)],
       attrs: await dumpAttributes(elem.annotations, functions),
       blocks: dumpAnnotationTypesBlock(elem.annotationTypes).concat(
-        await Promise.all(Object.values(elem.fields).map(e => dumpBlock(e, functions)))
+        await Promise.all(Object.values(elem.fields).map(field => dumpFieldBlock(field, functions)))
       ),
     }
   }
@@ -152,23 +152,6 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
   throw new Error('Unsupported element type')
 }
 
-dumpBlock = async (value: Element | Values, functions: Functions): Promise<DumpedHclBlock> => {
-  if (isField(value)) {
-    return dumpFieldBlock(value, functions)
-  }
-  if (isElement(value)) {
-    return dumpElementBlock(value, functions)
-  }
-
-  // If we reach this point we are serializing values
-  return {
-    type: '',
-    labels: [],
-    attrs: await dumpAttributes(value, functions),
-    blocks: [],
-  }
-}
-
 const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
   type: '',
   labels: [],
@@ -180,7 +163,7 @@ export const dumpElements = async (
   elements: Element[], functions: Functions = {}, indentationLevel = 0
 ): Promise<string> =>
   hclDump(
-    wrapBlocks(await Promise.all(elements.map(e => dumpBlock(e, functions)))),
+    wrapBlocks(await Promise.all(elements.map(e => dumpElementBlock(e, functions)))),
     indentationLevel
   )
 
@@ -195,11 +178,7 @@ export const dumpAnnotationTypes = (annotationTypes: TypeMap, indentationLevel =
 export const dumpValues = async (
   value: Value, functions: Functions, indentationLevel = 0
 ): Promise<string> => {
-  if (!_.isPlainObject(value)) {
-    // We got a single value (not a values object), we should dump it directly
-    return dumpValue(value, indentationLevel).join('\n')
-  }
-  // We got a values object, we can use the regular HCL serializer flow
-  const objWithSerializedFunctions = await dumpAttributes(value, functions)
-  return hclDump(await dumpBlock(objWithSerializedFunctions, functions), indentationLevel)
+  // Convert potential function values before dumping the value
+  const valueWithSerializedFunctions = await dumpAttributes(value, functions)
+  return dumpValue(valueWithSerializedFunctions, indentationLevel).join('\n').concat('\n')
 }

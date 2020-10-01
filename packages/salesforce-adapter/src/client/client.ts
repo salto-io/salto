@@ -69,7 +69,14 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 
 export type ErrorFilter = (error: Error) => boolean
 
-const isSFDCUnhandledException = (error: Error): boolean => error.name !== 'sf:UNKNOWN_EXCEPTION'
+const SFDC_UNKNOWN_EXCEPTION = 'sf:UNKNOWN_EXCEPTION'
+const SFDC_INSUFFICIENT_ACCESS = 'sf:INSUFFICIENT_ACCESS'
+const generateUnhandledExceptionFilter = (errorNames: string[]) =>
+  (error: Error): boolean => !errorNames.includes(error.name)
+const unhandledExceptionFilter = generateUnhandledExceptionFilter([SFDC_UNKNOWN_EXCEPTION])
+const unhandledOrInsufficientAccessFilter = generateUnhandledExceptionFilter(
+  [SFDC_UNKNOWN_EXCEPTION, SFDC_INSUFFICIENT_ACCESS]
+)
 
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
@@ -205,7 +212,7 @@ const sendChunked = async <TIn, TOut>({
           operationInfo, chunkInput[0], error)
         throw error
       }
-      log.warn('chunked %s unknown error on %o: %o',
+      log.warn('chunked %s skipping item with error on %o: %o',
         operationInfo, chunkInput[0], error)
       return { result: [], errors: chunkInput }
     }
@@ -334,7 +341,7 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
-    isUnhandledError: ErrorFilter = isSFDCUnhandledException,
+    isUnhandledError: ErrorFilter = unhandledExceptionFilter,
   ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
     return sendChunked({
       operationInfo: 'listMetadataObjects',
@@ -353,7 +360,7 @@ export default class SalesforceClient {
   public async readMetadata(
     type: string,
     name: string | string[],
-    isUnhandledError: ErrorFilter = isSFDCUnhandledException,
+    isUnhandledError: ErrorFilter = unhandledOrInsufficientAccessFilter,
   ): Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({
       operationInfo: `readMetadata (${type})`,

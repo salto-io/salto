@@ -14,10 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value,
-  INSTANCE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, INSTANCE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
@@ -25,7 +22,7 @@ import mockClient from '../client'
 import {
   OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
   CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-  WORKFLOW_RULE_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT,
 } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
@@ -118,6 +115,10 @@ describe('FieldReferences filter', () => {
       type: 'Account',
       fieldName: 'name',
     }),
+    ...generateObjectAndInstance({
+      type: 'SBQQ__QuoteLine__c',
+      fieldName: 'name',
+    }),
 
     // site1.authorizationRequiredPage should point to page1
     ...generateObjectAndInstance({
@@ -158,6 +159,14 @@ describe('FieldReferences filter', () => {
       fieldName: 'field',
       fieldValue: 'name',
       parentType: 'Account',
+    }),
+    // customScript1[CPQ_QUOTE_LINE_FIELDS] should pont to SBQQ__QuoteLine__c.name (target parent)
+    ...generateObjectAndInstance({
+      type: CPQ_CUSTOM_SCRIPT,
+      objType: CPQ_CUSTOM_SCRIPT,
+      instanceName: 'customScript1',
+      fieldName: CPQ_QUOTE_LINE_FIELDS,
+      fieldValue: ['name'],
     }),
     // layoutItem436.field will remain the same (Account.fffff doesn't exist)
     ...generateObjectAndInstance({
@@ -209,6 +218,16 @@ describe('FieldReferences filter', () => {
       )[0] as InstanceElement
       expect(inst.value.field).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.field?.elemId.getFullName()).toEqual('salesforce.Account.field.name')
+    })
+
+    it('should resolve field with relative value array using parent target', () => {
+      const inst = elements.find(
+        e => isInstanceElement(e) && apiName(e.type) === CPQ_CUSTOM_SCRIPT
+      ) as InstanceElement
+      expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toBeDefined()
+      expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toHaveLength(1)
+      expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]?.elemId.getFullName()).toEqual('salesforce.SBQQ__QuoteLine__c.field.name')
     })
 
     it('should not resolve if field has no rule', () => {

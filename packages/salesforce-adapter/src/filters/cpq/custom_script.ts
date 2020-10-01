@@ -21,15 +21,12 @@ import { getCustomObjects } from '../utils'
 import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CODE_FIELD } from '../../constants'
 import { Types, apiName, isInstanceOfCustomObject, isCustomObject } from '../../transformers/transformer'
 
-export const refListFieldsToObject: Record<string, string> = {
-  [CPQ_CONSUMPTION_RATE_FIELDS]: 'ConsumptionRate',
-  [CPQ_CONSUMPTION_SCHEDULE_FIELDS]: 'ConsumptionSchedule',
-  [CPQ_GROUP_FIELDS]: 'SBQQ__QuoteLineGroup__c',
-  [CPQ_QUOTE_FIELDS]: 'SBQQ__QuoteLine__c',
-  [CPQ_QUOTE_LINE_FIELDS]: 'SBQQ__Quote__c',
-}
 
-const refListFieldNames = Object.keys(refListFieldsToObject)
+const refListFieldNames = [
+  CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
+  CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS,
+]
+
 const listOfText = new ListType(Types.primitiveDataTypes.Text)
 
 const fieldTypeFromTextListToLongText = (field: Field): Field => {

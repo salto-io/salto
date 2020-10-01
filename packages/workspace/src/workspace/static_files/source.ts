@@ -25,8 +25,13 @@ import {
 export class LazyStaticFile extends StaticFile {
   private dirStore: SyncDirectoryStore<Buffer>
 
-  constructor(filepath: string, hash: string, dirStore: SyncDirectoryStore<Buffer>) {
-    super({ filepath, hash })
+  constructor(
+    filepath: string,
+    hash: string,
+    dirStore: SyncDirectoryStore<Buffer>,
+    encoding?: BufferEncoding
+  ) {
+    super({ filepath, hash, encoding })
     this.dirStore = dirStore
   }
 
@@ -45,6 +50,7 @@ export const buildStaticFilesSource = (
   const staticFilesSource: StaticFilesSource = {
     getStaticFile: async (
       filepath: string,
+      encoding: BufferEncoding,
     ): Promise<StaticFile | InvalidStaticFile> => {
       const cachedResult = await staticFilesCache.get(filepath)
       let modified: number | undefined
@@ -70,6 +76,7 @@ export const buildStaticFilesSource = (
         const staticFileWithHashAndContent = new StaticFile({
           filepath,
           content: staticFileBuffer,
+          encoding,
         })
         await staticFilesCache.put({
           hash: staticFileWithHashAndContent.hash,
@@ -81,7 +88,8 @@ export const buildStaticFilesSource = (
       return new LazyStaticFile(
         filepath,
         cachedResult.hash,
-        staticFilesDirStore
+        staticFilesDirStore,
+        encoding,
       )
     },
     getContent: async (

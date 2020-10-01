@@ -58,13 +58,13 @@ export const parseResultCache = (
       const cacheFileName = resolveCacheFileName(key)
       const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
       if ((cacheTimeMs > key.lastModified) || (cacheTimeMs === key.lastModified)) {
-        const fileContent = (await dirStore.get(cacheFileName))?.buffer
+        const file = await dirStore.get(cacheFileName)
         try {
-          return _.isUndefined(fileContent)
+          return file === undefined
             ? Promise.resolve(undefined)
             : await parseResultSerializer.deserialize(
-              fileContent,
-              val => staticFilesSource.getStaticFile(val.filepath)
+              file.buffer,
+              val => staticFilesSource.getStaticFile(val.filepath, val.encoding)
             )
         } catch (err) {
           log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)

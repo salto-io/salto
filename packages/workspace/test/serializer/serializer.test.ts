@@ -131,6 +131,7 @@ describe('State/cache serialization', () => {
     model,
     {
       file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
+      fileWithEncoding: new StaticFile({ filepath: 'some/pathWithEncoding.ext', hash: 'hash', encoding: 'utf-8' }),
       singleparam: new TestFuncImpl('funcadelic', ['aaa']),
       multipleparams: new TestFuncImpl('george', [false, 321]),
       withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
@@ -248,9 +249,13 @@ describe('State/cache serialization', () => {
         parameters: [1, [1, { aa: '312' }], false, 'aaa'],
       })
     })
-    it('file', () => {
-      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'hash' })
+    it('file with default encoding', () => {
+      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'hash', encoding: 'binary' })
       expect(funcElement.value.file).toBeInstanceOf(StaticFile)
+    })
+    it('file with encoding', () => {
+      expect(funcElement.value).toHaveProperty('fileWithEncoding', { filepath: 'some/pathWithEncoding.ext', hash: 'hash', encoding: 'utf-8' })
+      expect(funcElement.value.fileWithEncoding).toBeInstanceOf(StaticFile)
     })
     it('nested parameter', () => {
       expect(funcElement.value).toHaveProperty('nested', {
@@ -267,10 +272,10 @@ describe('State/cache serialization', () => {
       const serialized = serialize(elementsToSerialize)
       const funcElement = (await deserialize(
         serialized,
-        x => Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG' }))
+        x => Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG', encoding: 'utf-8' }))
       ))[0] as InstanceElement
 
-      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'ZOMGZOMGZOMG' })
+      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'ZOMGZOMGZOMG', encoding: 'utf-8' })
       expect(funcElement.value.file).toBeInstanceOf(StaticFile)
     })
   })

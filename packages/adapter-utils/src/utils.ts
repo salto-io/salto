@@ -23,7 +23,7 @@ import {
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData, ListType, CoreAnnotationTypes,
+  ChangeData, ListType, CoreAnnotationTypes, defaultStaticFileEncoding,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -308,7 +308,8 @@ export const resolveValues: ResolveValuesFunc = (element, getLookUpName) => {
       })
     }
     if (isStaticFile(value)) {
-      return value.content
+      return value.encoding === defaultStaticFileEncoding
+        ? value.content : value.content?.toString(value.encoding)
     }
     return value
   }
@@ -357,7 +358,9 @@ export const restoreValues: RestoreValuesFunc = (source, targetElement, getLookU
     }
     const file = allStaticFilesPaths.get(path.getFullName())
     if (!_.isUndefined(file)) {
-      return new StaticFile({ filepath: file.filepath, content: Buffer.from(value) })
+      const content = file.encoding === defaultStaticFileEncoding
+        ? value : Buffer.from(value, file.encoding)
+      return new StaticFile({ filepath: file.filepath, content, encoding: file.encoding })
     }
 
     return value

@@ -166,7 +166,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   }
 
   const deleteAllEmptyDirectories = async (): Promise<void> => {
-    await series((await listDirFiles(true))
+    const subdirs = await listDirFiles(true)
+    await series((!_.isEmpty(subdirs) ? subdirs : [currentBaseDir])
       .map(f => () => removeDirIfEmpty(getAbsFileName(f))))
   }
 
@@ -200,12 +201,11 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     },
 
     clear: async (): Promise<void> => {
-      const allFiles = await list()
+      const allFiles = await listDirFiles()
       await withLimitedConcurrency(allFiles.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
       updated = {}
       deleted = []
       await deleteAllEmptyDirectories()
-      await removeDirIfEmpty(currentBaseDir)
     },
 
     rename: async (name: string): Promise<void> => {

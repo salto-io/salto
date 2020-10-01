@@ -74,10 +74,11 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     },
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     clear: async () => {
-      const innerState = await stateData()
-      innerState.elements = {}
-      innerState.pathIndex = new PathIndex()
-      innerState.servicesUpdateDate = {}
+      innerStateData = Promise.resolve({
+        elements: {},
+        pathIndex: new PathIndex(),
+        servicesUpdateDate: {},
+      })
     },
     flush: () => Promise.resolve(),
     rename: () => Promise.resolve(),

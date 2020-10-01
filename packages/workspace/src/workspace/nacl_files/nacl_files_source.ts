@@ -54,7 +54,7 @@ export type NaclFile = {
   timestamp?: number
 }
 
-export type NaclFilesSource = ElementsSource & {
+export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
@@ -69,6 +69,11 @@ export type NaclFilesSource = ElementsSource & {
   getElements: (filename: string) => Promise<Element[]>
   clone: () => NaclFilesSource
   isEmpty: () => Promise<boolean>
+  clear(args?: {
+    nacl?: boolean
+    staticResources?: boolean
+    cache?: boolean
+  }): Promise<void>
 }
 
 export type ParsedNaclFile = {
@@ -386,11 +391,21 @@ const buildNaclFilesSource = (
       )
     },
 
-    clear: async () => {
+    clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
+      if (args.staticResources && !(args.cache && args.nacl)) {
+        throw new Error('Cannot clear static resources without clearing the cache and nacls')
+      }
+
       // The order is important
-      await staticFileSource.clear()
-      await naclFilesStore.clear()
-      await cache.clear()
+      if (args.staticResources) {
+        await staticFileSource.clear()
+      }
+      if (args.nacl) {
+        await naclFilesStore.clear()
+      }
+      if (args.cache) {
+        await cache.clear()
+      }
     },
 
     rename: async (name: string) => {

@@ -678,10 +678,18 @@ describe('file', () => {
         expect(file.isSubDirectory('../base/child', '../base')).toBe(true)
       })
     })
+
     describe('when given a non-subdirectory', () => {
       it('returns false', () => {
         expect(file.isSubDirectory('../base/child', '../test')).toBe(false)
         expect(file.isSubDirectory('/base/child', '/test')).toBe(false)
+      })
+    })
+
+    describe('when given the same directory', () => {
+      it('returns true', () => {
+        expect(file.isSubDirectory('/base', '/base')).toBe(true)
+        expect(file.isSubDirectory('../base', '../base')).toBe(true)
       })
     })
   })

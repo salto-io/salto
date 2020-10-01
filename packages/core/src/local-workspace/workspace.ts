@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import path from 'path'
 import uuidv4 from 'uuid/v4'
-import { exists } from '@salto-io/file'
+import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
-  configSource as cs, parseCache, staticFiles, dirStore } from '@salto-io/workspace'
+  configSource as cs, parseCache, staticFiles, dirStore, WorkspaceComponents } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState } from './state'
@@ -195,6 +195,13 @@ Promise<Workspace> => {
         return commonSource.rename(getLocalEnvName(currentEnv))
       }
       return ws.demoteAll()
+    },
+    clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
+      await ws.clear(args)
+      const envsDir = path.join(baseDir, ENVS_PREFIX)
+      if (await isEmptyDir.notFoundAsUndefined(envsDir)) {
+        await rm(envsDir)
+      }
     },
   }
 }

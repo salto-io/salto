@@ -84,6 +84,18 @@ describe('Static Files Cache', () => {
     expect(mockRm).toHaveBeenCalledWith(path.join('cacheDir', CACHE_FILENAME))
   })
 
+  it('creates an empty cache when flushing after clear', async () => {
+    await staticFilesCache.put(expectedResult)
+    await staticFilesCache.clear()
+    await staticFilesCache.flush()
+    expect(mockRm).toHaveBeenCalledTimes(1)
+    expect(mockRm).toHaveBeenCalledWith(path.join('cacheDir', CACHE_FILENAME))
+    expect(mockReplaceContents).toHaveBeenCalledTimes(1)
+    const [filepath, content] = mockReplaceContents.mock.calls[0]
+    expect(filepath).toMatch(new RegExp(`cacheDir\\/${CACHE_FILENAME}`))
+    expect(content).toEqual('{}')
+  })
+
   it('rename', async () => {
     mockFileExists.mockResolvedValueOnce(true)
     await staticFilesCache.rename('new')

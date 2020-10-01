@@ -265,4 +265,16 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly NEW_STATE_SALTO_VERSION = (
     stateSaltoVersion: string
   ): string => `The state of the services was last fetched using Salto's version ${stateSaltoVersion} which is newer than the current installed Salto version. It is highly recommended to upgrade the current Salto version - do you want to cancel?`
+
+  public static readonly CLEAN_WORKSPACE_SUMMARY = (
+    parts: string[]
+  ): string => `Going to clean the following workspace components and restore them to their initial state: ${
+    parts.join(', ')
+  }.\nThis action cannot be undone, please back up important data before proceeding (in source control or elsewhere).`
+
+  public static readonly CLEAN_STARTED = 'Starting to clean the workspace.'
+  public static readonly CLEAN_FINISHED = 'Finished cleaning the workspace.'
+  public static readonly CLEAN_FAILED = (
+    err: string
+  ): string => `Error encountered while cleaning the workspace: ${err}.`
 }

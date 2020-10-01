@@ -1032,6 +1032,85 @@ describe('workspace', () => {
     })
   })
 
+  describe('clear', () => {
+    let workspaceConf: WorkspaceConfigSource
+    let credSource: ConfigSource
+    let workspace: Workspace
+    let elementSources: Record<string, EnvironmentSource>
+
+    beforeAll(async () => {
+      workspaceConf = mockWorkspaceConfigSource()
+      credSource = mockCredentialsSource()
+      elementSources = {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+        },
+        default: {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([]),
+        },
+        inactive: {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([]),
+        },
+      }
+      workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
+        undefined, elementSources)
+    })
+    it('should clear specified workspace components, but not the environments', async () => {
+      const origEnvs = _.clone(workspace.envs())
+      const stateClears = {
+        default: jest.spyOn(elementSources.default.state as State, 'clear'),
+        inactive: jest.spyOn(elementSources.inactive.state as State, 'clear'),
+      }
+      await workspace.clear({
+        nacl: true,
+        state: true,
+        cache: true,
+        staticResources: true,
+        credentials: true,
+      })
+      expect(workspace.envs()).toEqual(origEnvs)
+      expect(elementSources[''].naclFiles.clear).toHaveBeenCalledWith({
+        nacl: true,
+        cache: true,
+        staticResources: true,
+        // ignored
+        credentials: true,
+        state: true,
+      })
+      expect(elementSources.default.naclFiles.clear).toHaveBeenCalledWith({
+        nacl: true,
+        cache: true,
+        staticResources: true,
+        // ignored
+        credentials: true,
+        state: true,
+      })
+      expect(elementSources.inactive.naclFiles.clear).toHaveBeenCalledWith({
+        nacl: true,
+        cache: true,
+        staticResources: true,
+        // ignored
+        credentials: true,
+        state: true,
+      })
+      expect(stateClears.default).toHaveBeenCalledTimes(1)
+      expect(stateClears.inactive).toHaveBeenCalledTimes(1)
+      expect(credSource.delete).toHaveBeenCalledTimes(2)
+    })
+
+    it('should fail if trying to clear static resources without all dependent components', async () => {
+      await expect(workspace.clear({
+        nacl: false,
+        state: true,
+        cache: true,
+        staticResources: true,
+        credentials: true,
+      })).rejects.toThrow('Cannot clear static resources without clearing the state, cache and nacls')
+    })
+  })
+
   describe('renameEnvironment', () => {
     describe('should rename environment', () => {
       let workspaceConf: WorkspaceConfigSource

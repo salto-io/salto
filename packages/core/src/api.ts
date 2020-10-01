@@ -46,6 +46,8 @@ import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 
+export { cleanWorkspace } from './core/clean'
+
 const log = logger(module)
 
 export const verifyCredentials = async (

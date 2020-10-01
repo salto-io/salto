@@ -16,7 +16,7 @@
 import * as path from 'path'
 import readdirp from 'readdirp'
 import {
-  stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
+  stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir,
   rename, existsSync, readFileSync, statSync, notFoundAsUndefined,
 } from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
@@ -36,7 +36,6 @@ jest.mock('@salto-io/file', () => ({
   rm: jest.fn(),
   rename: jest.fn(),
   isEmptyDir: jest.fn(),
-  isSubDirectory: jest.fn(),
 }))
 isEmptyDir.notFoundAsUndefined = notFoundAsUndefined(isEmptyDir)
 jest.mock('readdirp')
@@ -58,7 +57,6 @@ describe('localDirectoryStore', () => {
   const mockRm = rm as jest.Mock
   const mockRename = rename as jest.Mock
   const mockEmptyDir = isEmptyDir as unknown as jest.Mock
-  const mockIsSubFolder = isSubDirectory as jest.Mock
 
   describe('list', () => {
     it('returns empty list if dir not exists', async () => {
@@ -259,7 +257,6 @@ describe('localDirectoryStore', () => {
 
     it('delete the Nacl file and its empty directory', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-      mockIsSubFolder.mockResolvedValue(true)
       mockFileExists.mockResolvedValue(true)
       await naclFileStore.delete(naclFilePath)
       await naclFileStore.flush()
@@ -276,9 +273,15 @@ describe('localDirectoryStore', () => {
     const baseDir = '/base'
     const naclFileStore = localDirectoryStore({ baseDir, name: '', encoding })
 
+    beforeAll(() => {
+      mockReaddirp.mockResolvedValue([])
+    })
+    afterAll(() => {
+      mockReaddirp.mockClear()
+    })
+
     it('should delete the all the files', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-      mockIsSubFolder.mockResolvedValue(true)
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValueOnce([
         { fullPath: path.join(baseDir, 'test1') },
@@ -289,19 +292,38 @@ describe('localDirectoryStore', () => {
       expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'test1'))
       expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'test2'))
       expect(mockRm).toHaveBeenCalledWith(baseDir)
+      expect(mockRm).not.toHaveBeenCalledWith(path.dirname(baseDir))
     })
 
     it('should delete empty directories', async () => {
-      mockEmptyDir.mockResolvedValueOnce(true)
-      mockIsSubFolder.mockResolvedValueOnce(true)
-      mockFileExists.mockResolvedValue(true)
+      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
       mockReaddirp.mockResolvedValueOnce([])
         .mockResolvedValueOnce([
           { fullPath: path.join(baseDir, 'emptyDir') },
         ])
       await naclFileStore.clear()
-      expect(mockRm).toHaveBeenCalledTimes(1)
+      expect(mockRm).toHaveBeenCalledTimes(2)
       expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'emptyDir'))
+      expect(mockRm).toHaveBeenCalledWith(baseDir)
+    })
+
+    it('should not delete parent', async () => {
+      const store = localDirectoryStore({ baseDir, name: 'name', encoding })
+      const filePath = `${baseDir}/name`
+      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(
+        true
+      )
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValueOnce([
+        { fullPath: path.join(filePath, 'test1') },
+        { fullPath: path.join(filePath, 'test2') },
+      ])
+      await store.clear()
+      expect(mockRm).toHaveBeenCalledTimes(3)
+      expect(mockRm).toHaveBeenCalledWith(path.join(filePath, 'test1'))
+      expect(mockRm).toHaveBeenCalledWith(path.join(filePath, 'test2'))
+      expect(mockRm).toHaveBeenCalledWith(filePath)
+      expect(mockRm).not.toHaveBeenCalledWith(baseDir)
     })
   })
 
@@ -355,7 +377,6 @@ describe('localDirectoryStore', () => {
 
     it('should getTotalSize the file', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-      mockIsSubFolder.mockResolvedValue(true)
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValueOnce([
         { fullPath: path.join(baseDir, 'test1') },

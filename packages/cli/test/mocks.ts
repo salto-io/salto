@@ -261,6 +261,8 @@ export const mockLoadWorkspace = (
     copyTo: jest.fn().mockResolvedValue(undefined),
     flush: jest.fn().mockResolvedValue(undefined),
     updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
+    clear: jest.fn().mockResolvedValue(undefined),
+    updateServiceConfig: jest.fn().mockResolvedValue(undefined),
   } as unknown as Workspace)
 
 export const withoutEnvironmentParam = 'active'

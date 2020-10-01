@@ -19,7 +19,7 @@ import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -57,6 +57,15 @@ export type StateRecency = {
   date: Date | undefined
 }
 
+export type WorkspaceComponents = {
+  nacl: boolean
+  state: boolean
+  cache: boolean
+  staticResources: boolean
+  credentials: boolean
+  serviceConfig: boolean
+}
+
 export type Workspace = {
   uid: string
   name: string
@@ -90,6 +99,7 @@ export type Workspace = {
   getElements: (filename: string) => Promise<Element[]>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
+  clear: (args: Omit<WorkspaceComponents, 'serviceConfig'>) => Promise<void>
 
   addService: (service: string) => Promise<void>
   addEnvironment: (env: string) => Promise<void>
@@ -148,7 +158,6 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )
     await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
   }
-
 
   const getSourceFragment = async (
     sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
@@ -271,7 +280,20 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       return loadWorkspace(config, credentials,
         { commonSourceName: elementsSources.commonSourceName, sources })
     },
-
+    clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
+      if (args.cache || args.nacl || args.staticResources) {
+        if (args.staticResources && !(args.state && args.cache && args.nacl)) {
+          throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
+        }
+        await naclFilesSource.clear(args)
+      }
+      if (args.state) {
+        await promises.array.series(envs().map(e => (() => state(e).clear())))
+      }
+      if (args.credentials) {
+        await promises.array.series(envs().map(e => (() => credentials.delete(e))))
+      }
+    },
     addService: async (service: string): Promise<void> => {
       const currentServices = services() || []
       if (currentServices.includes(service)) {

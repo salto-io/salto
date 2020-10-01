@@ -15,7 +15,7 @@
 */
 import glob from 'glob'
 import { Plan, telemetrySender, preview, loadLocalWorkspace } from '@salto-io/core'
-import { parser, Workspace } from '@salto-io/workspace'
+import { parser, Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
 import {
@@ -33,6 +33,7 @@ import { DeployCommand } from '../../src/commands/deploy'
 import { command as servicesCommand } from '../../src/commands/service'
 import { command as initCommand } from '../../src/commands/init'
 import { command as envCommand } from '../../src/commands/env'
+import { command as cleanCommand } from '../../src/commands/clean'
 import { getCliTelemetry } from '../../src/telemetry'
 
 declare global {
@@ -236,6 +237,19 @@ export const runDeploy = async ({
 export const runPreview = async (fetchOutputDir: string): Promise<void> => (
   runDeploy({ fetchOutputDir, allowErrors: false, dryRun: true })
 )
+
+export const runClean = async (
+  workspaceName: string,
+  cleanArgs: WorkspaceComponents,
+): Promise<void> => {
+  await cleanCommand(
+    workspaceName,
+    mockCliTelementy,
+    mockCliOutput(),
+    true,
+    cleanArgs,
+  ).execute()
+}
 
 export const loadValidWorkspace = async (
   fetchOutputDir: string,

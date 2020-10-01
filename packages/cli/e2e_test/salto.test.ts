@@ -17,7 +17,7 @@ import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings } from '@salto-io/lowerdash'
-import { copyFile, rm, mkdirp, exists } from '@salto-io/file'
+import { copyFile, rm, mkdirp, exists, readFile } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, Credentials } from '@salto-io/salesforce-adapter'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
 import { Workspace, parser } from '@salto-io/workspace'
@@ -41,6 +41,7 @@ import {
   runCreateEnv,
   runDeleteEnv,
   runSetEnv,
+  runClean,
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
@@ -400,6 +401,61 @@ describe('cli e2e', () => {
       expect(await exists(`${fetchOutputDir}/salesforce`)).toBe(false)
       expect(await exists(`${fetchOutputDir}/envs/env2`)).toBe(false)
       expect(callbacksImpl.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalled()
+    })
+  })
+
+  describe('clean after initial fetch', () => {
+    // Note: this should be the last test to run, as it will clear out parts of the workspace
+    let salesforceConfPath: string
+    beforeAll(async () => {
+      salesforceConfPath = `${fetchOutputDir}/salto.config/adapters/salesforce.nacl`
+      await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
+    })
+
+    it('should clear out only the requested parts - nacl', async () => {
+      expect(`${fetchOutputDir}/envs/default/salesforce`).toExist()
+      expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
+      expect(`${fetchOutputDir}/salesforce`).not.toExist() // not checking common folder for now
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
+      await runClean(fetchOutputDir, {
+        nacl: true,
+        cache: false,
+        state: false,
+        staticResources: false,
+        serviceConfig: false,
+        credentials: false,
+      })
+      expect(`${fetchOutputDir}/envs/default/salesforce`).not.toExist()
+      expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
+    })
+
+    it('should clear out only the requested parts - state + static resources', async () => {
+      expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
+      await runClean(fetchOutputDir, {
+        nacl: true,
+        cache: true,
+        state: true,
+        staticResources: true,
+        serviceConfig: false,
+        credentials: false,
+      })
+      expect(`${fetchOutputDir}/envs`).not.toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).not.toExist()
+    })
+
+    it('should clear out only the requested parts - service config', async () => {
+      const salesforceConfBefore = await readFile(salesforceConfPath)
+      await runClean(fetchOutputDir, {
+        nacl: false,
+        cache: false,
+        state: false,
+        staticResources: false,
+        serviceConfig: true,
+        credentials: false,
+      })
+      expect(await readFile(salesforceConfPath)).not.toEqual(salesforceConfBefore)
     })
   })
 })

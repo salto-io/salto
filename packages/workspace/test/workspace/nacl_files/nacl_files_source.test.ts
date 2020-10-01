@@ -74,7 +74,7 @@ describe('Nacl Files Source', () => {
   })
 
   describe('clear', () => {
-    it('should delete everything', async () => {
+    it('should delete everything by default', async () => {
       mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
@@ -82,6 +82,30 @@ describe('Nacl Files Source', () => {
       expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
       expect(mockCache.clear).toHaveBeenCalledTimes(1)
       expect(mockedStaticFilesSource.clear).toHaveBeenCalledTimes(1)
+    })
+
+    it('should delete only specified parts', async () => {
+      mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).clear(
+        { nacl: true, staticResources: false, cache: true }
+      )
+      expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
+      expect(mockCache.clear).toHaveBeenCalledTimes(1)
+      expect(mockedStaticFilesSource.clear).not.toHaveBeenCalled()
+    })
+
+    it('should throw if trying to clear static resources without nacls or cache', async () => {
+      mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      await expect(naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).clear(
+        { nacl: false, staticResources: true, cache: true }
+      )).rejects.toThrow('Cannot clear static resources without clearing the cache and nacls')
+      expect(mockDirStore.clear as jest.Mock).not.toHaveBeenCalled()
+      expect(mockCache.clear).not.toHaveBeenCalled()
+      expect(mockedStaticFilesSource.clear).not.toHaveBeenCalled()
     })
   })
 

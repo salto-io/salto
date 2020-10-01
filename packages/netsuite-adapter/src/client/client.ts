@@ -403,7 +403,8 @@ export default class NetsuiteClient {
         await this.runImportObjectsCommand(ALL, executor)
         return true
       } catch (e) {
-        log.warn(`Attempt to fetch all custom objects has failed due to: "${e}"`)
+        log.warn('Attempt to fetch all custom objects has failed')
+        log.warn(e)
         return false
       }
     }
@@ -439,11 +440,12 @@ export default class NetsuiteClient {
     await withLimitedConcurrency( // limit the number of open promises
       orderTypesByFetchDuration().map(typeName => async () => {
         try {
-          log.debug(`Starting to fetch objects of type: ${typeName}`)
+          log.debug('Starting to fetch objects of type: %s', typeName)
           await this.runImportObjectsCommand(typeName, executor)
-          log.debug(`Fetched objects of type: ${typeName}`)
+          log.debug('Fetched objects of type: %s', typeName)
         } catch (e) {
-          log.warn(`Failed to fetch objects of type ${typeName} failed due to: "${e}"`)
+          log.warn('Failed to fetch objects of type %s failed', typeName)
+          log.warn(e)
           failedTypes.push(typeName)
         }
       }),

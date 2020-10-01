@@ -409,10 +409,13 @@ describe('SalesforceAdapter fetch', () => {
             .innerType as ObjectType).fields.name.type.elemID.name
         ).toBe('string')
         expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
+        // empty objects should be omitted
         expect(layout.value.processMetadataValues[1].value).toBeUndefined()
         expect(layout.value.processMetadataValues[2].name).toBe('leftHandSideReferenceTo2')
-        expect(layout.value.processMetadataValues[2].value).toBeUndefined()
+        // empty strings should be kept
+        expect(layout.value.processMetadataValues[2].value).toEqual({ stringValue: '' })
         expect(layout.value.processMetadataValues[3].name).toBe('leftHandSideReferenceTo3')
+        // nulls should be omitted
         expect(layout.value.processMetadataValues[3].value).toBeUndefined()
       })
     })

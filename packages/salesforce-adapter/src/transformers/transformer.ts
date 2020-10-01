@@ -937,10 +937,6 @@ const isNull = (value: Value): boolean =>
       || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))
 
 export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
-  // We sometimes get empty strings that we want to filter out
-  if (value === '') {
-    return undefined
-  }
   if (isNull(value)) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
@@ -962,7 +958,7 @@ export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
     case PrimitiveTypes.BOOLEAN:
       return value.toString().toLowerCase() === 'true'
     case PrimitiveTypes.STRING:
-      return value.toString().length === 0 ? undefined : value.toString()
+      return value.toString()
     default:
       return value
   }

@@ -32,6 +32,7 @@ import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE, CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD,
+  WORKFLOW_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -102,15 +103,26 @@ const workflowActionMapper: ContextValueMapperFunc = (val: string) => {
   return workflowActionTypeMapping[val]
 }
 
+const getParentElement = ({ instance, elemByElemID }: {
+  instance: InstanceElement
+  elemByElemID: ElemIDToElemLookup
+}): Element | undefined => {
+  const parent = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])[0]
+  return (isReferenceExpression(parent)
+    ? elemByElemID[parent.elemId.getFullName()]
+    : undefined)
+}
+
 const ContextStrategyLookup: Record<
   ReferenceContextStrategyName, ContextFunc
 > = {
   none: () => undefined,
   instanceParent: ({ instance, elemByElemID }) => {
-    const parent = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])[0]
-    return (isReferenceExpression(parent)
-      ? apiName(elemByElemID[parent.elemId.getFullName()])
-      : undefined)
+    let parent = getParentElement({ instance, elemByElemID })
+    if (isInstanceElement(parent) && metadataType(parent) === WORKFLOW_METADATA_TYPE) {
+      parent = getParentElement({ instance: parent, elemByElemID })
+    }
+    return parent ? apiName(parent) : undefined
   },
   neighborTypeWorkflow: neighborContextFunc('type', workflowActionMapper),
   neighborCPQLookup: neighborContextFunc(CPQ_LOOKUP_OBJECT_NAME),

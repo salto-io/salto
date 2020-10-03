@@ -468,8 +468,7 @@ const removeUnsupportedFields = (elements: Element[], unsupportedSystemFields: s
 }
 
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
-const workflowDependentMetadataTypes = new Set([WORKFLOW_METADATA_TYPE,
-  ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
+const workflowDependentMetadataTypes = new Set(Object.values(WORKFLOW_FIELD_TO_TYPE))
 const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
   QUICK_ACTION_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
@@ -485,7 +484,8 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
     if (customObject.path) {
       instance.path = [
         ...customObject.path.slice(0, -1),
-        ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
+        ...((workflowDependentMetadataTypes.has(instance.elemID.typeName)
+            || instance.elemID.typeName === WORKFLOW_METADATA_TYPE)
           ? [WORKFLOW_METADATA_TYPE, instance.elemID.typeName] : [instance.elemID.typeName]),
         ...(apiNameParts(instance).length > 1 ? [instance.elemID.name] : []),
       ]
@@ -512,7 +512,10 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
         return
       }
       setDependingInstancePath(instance, customObj)
-      addObjectParentReference(instance, customObj)
+      // workflow-dependent types already have the parent set
+      if (!workflowDependentMetadataTypes.has(metadataType(instance))) {
+        addObjectParentReference(instance, customObj)
+      }
     })
 }
 

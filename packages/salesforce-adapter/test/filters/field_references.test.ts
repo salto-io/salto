@@ -22,7 +22,7 @@ import mockClient from '../client'
 import {
   OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
   CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-  WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT,
+  WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, WORKFLOW_METADATA_TYPE,
 } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
@@ -44,6 +44,7 @@ const generateObjectAndInstance = ({
   fieldName,
   fieldValue,
   parentType,
+  parentElemId,
 }: {
   type: string
   objType?: string
@@ -51,6 +52,7 @@ const generateObjectAndInstance = ({
   fieldName: string
   fieldValue?: Value
   parentType?: string
+  parentElemId?: ElemID
 }): Element[] => {
   const addFields = (obj: ObjectType): void => {
     const createField = (name: string, fieldType = BuiltinTypes.STRING): Field => (
@@ -94,9 +96,9 @@ const generateObjectAndInstance = ({
       ignore: 125,
     },
     [SALESFORCE, OBJECTS_PATH, ...(parentType ? [parentType] : []), realInstanceName],
-    { ...(parentType
+    { ...((parentElemId || parentType)
       ? { [INSTANCE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(new ElemID(SALESFORCE, parentType)),
+        new ReferenceExpression(parentElemId ?? new ElemID(SALESFORCE, parentType)),
       ] }
       : {}) },
   )
@@ -120,6 +122,14 @@ describe('FieldReferences filter', () => {
       fieldName: 'name',
     }),
 
+    ...generateObjectAndInstance({
+      type: 'Workflow',
+      objType: 'Workflow',
+      instanceName: 'Account',
+      fieldName: 'any',
+      fieldValue: 'aaa',
+      parentType: 'Account',
+    }),
     // site1.authorizationRequiredPage should point to page1
     ...generateObjectAndInstance({
       type: 'ApexPage',
@@ -158,9 +168,9 @@ describe('FieldReferences filter', () => {
       instanceName: 'fieldUpdate54',
       fieldName: 'field',
       fieldValue: 'name',
-      parentType: 'Account',
+      parentElemId: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE, 'instance', 'Account'),
     }),
-    // customScript1[CPQ_QUOTE_LINE_FIELDS] should pont to SBQQ__QuoteLine__c.name (target parent)
+    // customScript1[CPQ_QUOTE_LINE_FIELDS] should point to SBQQ__QuoteLine__c.name (target parent)
     ...generateObjectAndInstance({
       type: CPQ_CUSTOM_SCRIPT,
       objType: CPQ_CUSTOM_SCRIPT,
@@ -212,7 +222,7 @@ describe('FieldReferences filter', () => {
       expect(inst.value.reportType?.elemId.getFullName()).toEqual(account.elemID.getFullName())
     })
 
-    it('should resolve field with relative value using instance parent', () => {
+    it('should resolve field with relative value using instance grandparent', () => {
       const inst = elements.filter(
         e => isInstanceElement(e) && metadataType(e) === 'WorkflowFieldUpdate'
       )[0] as InstanceElement
@@ -333,9 +343,9 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         [INSTANCE_FULL_NAME_FIELD]: `${parentName}${API_NAME_SEPARATOR}${workflowRuleInstanceName}`,
         actions,
       },
-      [SALESFORCE, OBJECTS_PATH, WORKFLOW_RULE_METADATA_TYPE, instanceName],
+      [SALESFORCE, OBJECTS_PATH, WORKFLOW_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, instanceName],
       { [INSTANCE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(new ElemID(SALESFORCE, parentName)),
+        new ReferenceExpression(new ElemID(SALESFORCE, 'Workflow', 'instance', parentName)),
       ] },
     )
   }
@@ -407,7 +417,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
           },
           [SALESFORCE, OBJECTS_PATH, actionTypeObj.elemID.typeName, instanceName],
           { [INSTANCE_ANNOTATIONS.PARENT]: [
-            new ReferenceExpression(new ElemID(SALESFORCE, parentName)),
+            new ReferenceExpression(new ElemID(SALESFORCE, 'Workflow', 'instance', parentName)),
           ] },
         )
       ))
@@ -428,6 +438,14 @@ describe('FieldReferences filter - neighbor context strategy', () => {
 
       elements = [
         customObjectType,
+        ...generateObjectAndInstance({
+          type: 'Workflow',
+          objType: 'Workflow',
+          instanceName: parentName,
+          fieldName: 'any',
+          fieldValue: 'aaa',
+          parentType: parentName,
+        }),
         ...generateObjectAndInstance({
           type: parentName,
           fieldName: 'name',

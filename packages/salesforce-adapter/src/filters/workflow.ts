@@ -15,7 +15,7 @@
 */
 import {
   Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, BuiltinTypes, ListType,
+  ObjectType, BuiltinTypes, ListType, INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -78,7 +78,12 @@ const filterCreator: FilterCreator = () => ({
           .map(innerValue => {
             innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(apiName(workflowInstance),
               innerValue[INSTANCE_FULL_NAME_FIELD])
-            return createInstanceElement(innerValue, objType)
+            return createInstanceElement(
+              innerValue,
+              objType,
+              undefined,
+              { [INSTANCE_ANNOTATIONS.PARENT]: [new ReferenceExpression(workflowInstance.elemID)] },
+            )
           })
         if (!_.isEmpty(innerInstances)) {
           workflowInstance.value[fieldName] = innerInstances

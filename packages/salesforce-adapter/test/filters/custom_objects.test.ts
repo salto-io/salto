@@ -30,6 +30,7 @@ import {
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
   CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
+  WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
@@ -1164,8 +1165,23 @@ describe('Custom Objects filter', () => {
       const workflowInstance = new InstanceElement('Lead',
         workflowType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
 
+      const workflowFieldUpdateType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE),
+        annotations: { [METADATA_TYPE]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE },
+      })
+      const workflowFieldUpdateInstance = new InstanceElement(
+        'something',
+        workflowFieldUpdateType,
+        { [INSTANCE_FULL_NAME_FIELD]: 'something' },
+        undefined,
+        { [INSTANCE_ANNOTATIONS.PARENT]: [new ReferenceExpression(workflowInstance.elemID)] },
+      )
+
       beforeEach(async () => {
-        await filter().onFetch([workflowInstance, workflowType, leadType])
+        await filter().onFetch([
+          workflowInstance, workflowType, leadType, workflowFieldUpdateType,
+          workflowFieldUpdateInstance,
+        ])
       })
 
       it('should set workflow instance path correctly', async () => {
@@ -1176,6 +1192,11 @@ describe('Custom Objects filter', () => {
       it('should add PARENT annotation to workflow instance', async () => {
         expect(workflowInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
           .toContainEqual(new ReferenceExpression(leadType.elemID))
+      })
+
+      it('should not modify PARENT annotation on workflow subtype instance', async () => {
+        expect(workflowFieldUpdateInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          .toEqual([new ReferenceExpression(workflowInstance.elemID)])
       })
     })
 

@@ -16,7 +16,7 @@
 import { collections } from '@salto-io/lowerdash'
 import {
   ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, Field,
-  BuiltinTypes, isListType, ListType,
+  BuiltinTypes, isListType, ListType, INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -125,6 +125,20 @@ describe('Workflow filter', () => {
             expect(val).toBeInstanceOf(ReferenceExpression)
           })
         })
+      })
+
+      it('should have workflow as parent for inner types', async () => {
+        const verifyParent = (e: Element): void => {
+          const parent = (e as InstanceElement).annotations[INSTANCE_ANNOTATIONS.PARENT][0]
+          expect(parent).toBeInstanceOf(ReferenceExpression)
+          expect(parent.elemId).toEqual(workflowWithInnerTypes.elemID)
+        }
+
+        verifyParent(elements[9])
+        verifyParent(elements[10])
+        verifyParent(elements[11])
+        verifyParent(elements[12])
+        verifyParent(elements[13])
       })
 
       it('should have list reference from workflow instance', () => {

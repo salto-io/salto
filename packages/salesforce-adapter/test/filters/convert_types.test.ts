@@ -97,6 +97,7 @@ describe('convert types filter', () => {
       numArray: ['12', '13', '14'],
       picklist: '0',
       refToStr: new ReferenceExpression(new ElemID(constants.SALESFORCE, 'dummy')),
+      withoutTypeDef: 'withoutTypeDef',
     },
   )
 
@@ -175,6 +176,10 @@ describe('convert types filter', () => {
 
       it('should not change references', () => {
         expect(inst.value.refToStr).toBe(mockInstance.value.refToStr)
+      })
+
+      it('should not change values that have no type definition', () => {
+        expect(inst.value.withoutTypeDef).toBe(mockInstance.value.withoutTypeDef)
       })
     })
   })

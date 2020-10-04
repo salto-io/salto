@@ -350,6 +350,12 @@ describe('localDirectoryStore', () => {
       expect(mockRename).toHaveBeenCalledTimes(1)
       expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
     })
+
+    it('should attempt to rename the file if it does not exist', async () => {
+      mockFileExists.mockResolvedValue(false)
+      await naclFileStore.renameFile('gazibo', 'new')
+      expect(mockRename).not.toHaveBeenCalled()
+    })
   })
 
   describe('contained', () => {

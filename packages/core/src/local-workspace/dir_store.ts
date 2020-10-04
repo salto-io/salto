@@ -225,8 +225,11 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       currentBaseDir = newBaseDir
     },
 
-    renameFile: async (name: string, newName: string): Promise<void> =>
-      fileUtils.rename(getAbsFileName(name), getAbsFileName(newName)),
+    renameFile: async (name: string, newName: string): Promise<void> => {
+      if (await fileUtils.exists(getAbsFileName(name))) {
+        await fileUtils.rename(getAbsFileName(name), getAbsFileName(newName))
+      }
+    },
 
     mtimestamp: async (filename: string): Promise<undefined | number> => {
       let relFilename: string

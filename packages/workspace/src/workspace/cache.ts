@@ -61,7 +61,7 @@ export const parseResultCache = (
         const file = await dirStore.get(cacheFileName)
         try {
           return file === undefined
-            ? Promise.resolve(undefined)
+            ? undefined
             : await parseResultSerializer.deserialize(
               file.buffer,
               val => staticFilesSource.getStaticFile(val.filepath, val.encoding)
@@ -70,7 +70,7 @@ export const parseResultCache = (
           log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)
         }
       }
-      return Promise.resolve(undefined)
+      return undefined
     },
     clear: dirStore.clear,
     rename: dirStore.rename,

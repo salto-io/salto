@@ -43,7 +43,7 @@ export type StaticFileParameters = {
   encoding?: BufferEncoding
 } & HashOrContent
 
-export const defaultStaticFileEncoding: BufferEncoding = 'binary'
+export const DEFAULT_STATIC_FILE_ENCODING: BufferEncoding = 'binary'
 
 export class StaticFile {
   public readonly filepath: string
@@ -52,9 +52,9 @@ export class StaticFile {
   protected internalContent?: Buffer
   constructor(params: StaticFileParameters) {
     this.filepath = params.filepath
-    this.encoding = params.encoding ?? defaultStaticFileEncoding
+    this.encoding = params.encoding ?? DEFAULT_STATIC_FILE_ENCODING
     if (!Buffer.isEncoding(this.encoding)) {
-      throw Error(`Can not create StaticFile at path - ${this.filepath} due to invalid encoding - ${this.encoding}`)
+      throw Error(`Cannot create StaticFile at path - ${this.filepath} due to invalid encoding - ${this.encoding}`)
     }
     if ('content' in params) {
       this.internalContent = params.content

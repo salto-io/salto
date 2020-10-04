@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile, Value, isStaticFile, defaultStaticFileEncoding } from '@salto-io/adapter-api'
+import { StaticFile, Value, isStaticFile, DEFAULT_STATIC_FILE_ENCODING } from '@salto-io/adapter-api'
 
 import { StaticFilesSource, InvalidStaticFile } from './common'
 import { Functions, FunctionExpression } from '../../parser/functions'
@@ -28,7 +28,7 @@ export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): F
       if (val.content !== undefined) {
         await staticFilesSource.persistStaticFile(val)
       }
-      const params = val.encoding === defaultStaticFileEncoding
+      const params = val.encoding === DEFAULT_STATIC_FILE_ENCODING
         ? [val.filepath] : [val.filepath, val.encoding]
       return new FunctionExpression(
         'file',

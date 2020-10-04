@@ -860,19 +860,13 @@ export const toCustomObject = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
 ): CustomProperties => {
   let newCustomObject: CustomProperties
-  // eslint-disable-next-line no-console
-  console.log('creating custom object')
   if (element.annotations.customSettingsType) {
-    // eslint-disable-next-line no-console
-    console.log('custom settings object')
     newCustomObject = new CustomProperties(
       apiName(element),
       element.annotations[LABEL],
       getFieldsIfIncluded(includeFields, element, skipFields)
     )
   } else {
-    // eslint-disable-next-line no-console
-    console.log('true object')
     newCustomObject = new CustomObject(
       apiName(element),
       element.annotations[LABEL],

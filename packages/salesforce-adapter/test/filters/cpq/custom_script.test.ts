@@ -81,6 +81,7 @@ describe('cpq custom script filter', () => {
     [CPQ_CODE_FIELD]: new StaticFile({
       content: Buffer.from('if (this === "code") return true'),
       filepath: `${mockCustomScripInstancePath.join('/')}.js`,
+      encoding: 'utf-8',
     }),
     randomField: 'stayLikeThis',
   }
@@ -239,16 +240,17 @@ describe('cpq custom script filter', () => {
       .fields[CPQ_CONSUMPTION_RATE_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
     mockAfterOnFetchCustomScriptObject
       .fields[CPQ_GROUP_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
-    const mockAfterRestoreCustomScriptInstance = mockAfterOnFetchCustomScriptInstance
+    const mockAfterResolveCustomScriptInstance = mockAfterOnFetchCustomScriptInstance
       .clone()
-    mockAfterRestoreCustomScriptInstance
-      .value[CPQ_CODE_FIELD] = mockAfterRestoreCustomScriptInstance.value[CPQ_CODE_FIELD].content
+    // Simulating resolve on the static-file
+    mockAfterResolveCustomScriptInstance
+      .value[CPQ_CODE_FIELD] = mockAfterResolveCustomScriptInstance.value[CPQ_CODE_FIELD].content.toString('utf-8')
     describe('Modification changes', () => {
       beforeAll(async () => {
         changes = [
           toChange({
-            before: mockAfterRestoreCustomScriptInstance.clone(),
-            after: mockAfterRestoreCustomScriptInstance.clone(),
+            before: mockAfterResolveCustomScriptInstance.clone(),
+            after: mockAfterResolveCustomScriptInstance.clone(),
           }),
           toChange({
             before: mockAfterOnFetchCustomScriptObject.clone(),
@@ -278,7 +280,7 @@ describe('cpq custom script filter', () => {
           .toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 
-      it('Should only change values of multi-line string in fieldsRefList and code back to string', () => {
+      it('Should only change values of multi-line string in fieldsRefList', () => {
         const customScriptInstanceModify = changes
           .find(change =>
             getChangeElement(change).elemID.isEqual(mockAfterOnFetchCustomScriptInstance.elemID)
@@ -308,7 +310,7 @@ describe('cpq custom script filter', () => {
     describe('Addition changes', () => {
       beforeAll(async () => {
         changes = [
-          toChange({ after: mockAfterRestoreCustomScriptInstance.clone() }),
+          toChange({ after: mockAfterResolveCustomScriptInstance.clone() }),
           toChange({ after: mockAfterOnFetchCustomScriptObject.clone() }),
         ]
         await filter.preDeploy(changes)
@@ -327,7 +329,7 @@ describe('cpq custom script filter', () => {
           .toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 
-      it('Should only change values of multi-line string in fieldsRefList and code back to string', () => {
+      it('Should only change values of multi-line string in fieldsRefList', () => {
         const customScriptInstanceAdd = changes
           .find(change =>
             getChangeElement(change).elemID.isEqual(mockAfterOnFetchCustomScriptInstance.elemID)

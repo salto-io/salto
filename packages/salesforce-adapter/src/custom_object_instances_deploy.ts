@@ -25,7 +25,7 @@ import { isInstanceOfCustomObject, instancesToCreateRecords, apiName, instancesT
 import SalesforceClient from './client/client'
 import { CUSTOM_OBJECT_ID_FIELD } from './constants'
 import { DataManagementConfig } from './types'
-import { getIdFields, buildSelectStr, transformCompoundNameValues } from './filters/custom_objects_instances'
+import { getIdFields, buildSelectStr, transformRecordToValues } from './filters/custom_objects_instances'
 import { SalesforceRecord } from './client/types'
 
 const { isDefined } = values
@@ -191,7 +191,7 @@ const deployAddInstances = async (
     return toMD5(JSON.stringify(idFieldsValues))
   }
   const computeRecordSaltoIdHash = (record: SalesforceRecord): string => {
-    const recordValues = transformCompoundNameValues(type, record)
+    const recordValues = transformRecordToValues(type, record)
     // Remove null values from the record result to compare it to instance values
     const recordValuesWithoutNulls = cloneWithoutNulls(recordValues)
     return computeSaltoIdHash(recordValuesWithoutNulls)

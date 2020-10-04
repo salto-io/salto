@@ -30,13 +30,13 @@ describe('Functions', () => {
   it('should have a file function', () =>
     expect(functions).toHaveProperty('file'))
   it('should identify static file values', () =>
-    expect(functions.file.isSerializedAsFunction(new StaticFile({ filepath: 'aa', hash: 'hash' }))).toBeTruthy())
+    expect(functions.file.isSerializedAsFunction(new StaticFile({ filepath: 'aa', hash: 'hash', encoding: 'binary' }))).toBeTruthy())
   it('should not identify for other values', () =>
     expect(functions.file.isSerializedAsFunction('a' as Value)).toBeFalsy())
   it('should convert valid function expression to valid static metadata', async () => {
-    await functions.file.parse(['aa'])
+    await functions.file.parse(['aa', 'utf-8'])
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledTimes(1)
-    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith('aa')
+    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith('aa', 'utf-8')
   })
   it('should not persist when dumping static file with no content', async () => {
     const dumped = await functions.file.dump(new StaticFile({

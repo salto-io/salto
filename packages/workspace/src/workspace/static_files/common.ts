@@ -16,7 +16,7 @@
 import { StaticFile, Value } from '@salto-io/adapter-api'
 
 export type StaticFilesSource = {
-  getStaticFile: (filepath: string) =>
+  getStaticFile: (filepath: string, encoding: BufferEncoding) =>
     Promise<StaticFile | InvalidStaticFile>
   getContent: (filepath: string) => Promise<Buffer>
   persistStaticFile: (staticFile: StaticFile) => Promise<void>
@@ -27,7 +27,6 @@ export type StaticFilesSource = {
   clone: () => StaticFilesSource
   delete: (staticFile: StaticFile) => Promise<void>
 }
-
 
 export abstract class InvalidStaticFile {
   constructor(

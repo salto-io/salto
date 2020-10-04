@@ -308,7 +308,8 @@ export const resolveValues: ResolveValuesFunc = (element, getLookUpName) => {
       })
     }
     if (isStaticFile(value)) {
-      return value.content
+      return value.encoding === 'binary'
+        ? value.content : value.content?.toString(value.encoding)
     }
     return value
   }
@@ -357,7 +358,9 @@ export const restoreValues: RestoreValuesFunc = (source, targetElement, getLookU
     }
     const file = allStaticFilesPaths.get(path.getFullName())
     if (!_.isUndefined(file)) {
-      return new StaticFile({ filepath: file.filepath, content: Buffer.from(value) })
+      const content = file.encoding === 'binary'
+        ? value : Buffer.from(value, file.encoding)
+      return new StaticFile({ filepath: file.filepath, content, encoding: file.encoding })
     }
 
     return value

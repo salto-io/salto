@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile, Value, isStaticFile } from '@salto-io/adapter-api'
+import { StaticFile, Value, isStaticFile, DEFAULT_STATIC_FILE_ENCODING } from '@salto-io/adapter-api'
 
 import { StaticFilesSource, InvalidStaticFile } from './common'
 import { Functions, FunctionExpression } from '../../parser/functions'
@@ -21,16 +21,18 @@ import { Functions, FunctionExpression } from '../../parser/functions'
 export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
   file: {
     parse: (parameters): Promise<StaticFile | InvalidStaticFile> => {
-      const [filepath] = parameters
-      return staticFilesSource.getStaticFile(filepath)
+      const [filepath, encoding] = parameters
+      return staticFilesSource.getStaticFile(filepath, encoding)
     },
     dump: async (val: Value): Promise<FunctionExpression> => {
       if (val.content !== undefined) {
         await staticFilesSource.persistStaticFile(val)
       }
+      const params = val.encoding === DEFAULT_STATIC_FILE_ENCODING
+        ? [val.filepath] : [val.filepath, val.encoding]
       return new FunctionExpression(
         'file',
-        [val.filepath],
+        params,
       )
     },
     isSerializedAsFunction: (val: Value) => isStaticFile(val),

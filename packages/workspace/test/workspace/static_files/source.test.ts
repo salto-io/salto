@@ -65,13 +65,13 @@ describe('Static Files Source', () => {
   describe('Get By Value', () => {
     describe('file finding logic', () => {
       it('not find when no matching', async () => {
-        const result = await staticFilesSource.getStaticFile('aa')
+        const result = await staticFilesSource.getStaticFile('aa', 'binary')
         expect(result).toBeInstanceOf(InvalidStaticFile)
         expect(result).toBeInstanceOf(MissingStaticFile)
       })
       it('blow up if invalid file', async () => {
         mockDirStore.mtimestamp = jest.fn().mockRejectedValue('whatevz')
-        const result = await staticFilesSource.getStaticFile('/aa')
+        const result = await staticFilesSource.getStaticFile('/aa', 'binary')
         expect(result).toBeInstanceOf(InvalidStaticFile)
         expect(result).toBeInstanceOf(AccessDeniedStaticFile)
       })
@@ -91,7 +91,7 @@ describe('Static Files Source', () => {
           modified: 100,
           hash: 'aaa',
         })
-        const result = await staticFilesSource.getStaticFile(filepathFromCache)
+        const result = await staticFilesSource.getStaticFile(filepathFromCache, 'binary')
 
         expect(mockDirStore.mtimestamp).toHaveBeenCalledWith(filepathFromCache)
         return expect(result).toHaveProperty('hash', hashedContent)
@@ -115,7 +115,7 @@ describe('Static Files Source', () => {
           modified: 1000,
           hash: 'aaa',
         })
-        const result = await staticFilesSource.getStaticFile('bb')
+        const result = await staticFilesSource.getStaticFile('bb', 'binary')
         expect(mockDirStore.get).toHaveBeenCalledTimes(0)
         expect(result).toHaveProperty('hash', 'aaa')
         expect(mockDirStore.getSync).not.toHaveBeenCalled()
@@ -139,7 +139,7 @@ describe('Static Files Source', () => {
           modified: 100,
           hash: 'aaa',
         })
-        const result = await staticFilesSource.getStaticFile('bb')
+        const result = await staticFilesSource.getStaticFile('bb', 'binary')
         expect(mockDirStore.get).toHaveBeenCalledTimes(1)
         return expect(result).toHaveProperty('hash', hashedContent)
       })
@@ -154,7 +154,7 @@ describe('Static Files Source', () => {
             )
         )
         mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
-        const result = await staticFilesSource.getStaticFile('bb')
+        const result = await staticFilesSource.getStaticFile('bb', 'binary')
         expect(mockDirStore.get).toHaveBeenCalledTimes(1)
         return expect(result).toHaveProperty('hash', hashedContent)
       })
@@ -164,7 +164,7 @@ describe('Static Files Source', () => {
           .mockResolvedValue(Promise.resolve(42))
         mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
 
-        const result = await staticFilesSource.getStaticFile('bb')
+        const result = await staticFilesSource.getStaticFile('bb', 'binary')
         return expect(result).toBeInstanceOf(InvalidStaticFile)
       })
     })

@@ -197,7 +197,9 @@ export const deserialize = async (
       new VariableExpression(reviveElemID(v.elemId))
     ),
     StaticFile: v => {
-      const staticFile = new StaticFile({ filepath: v.filepath, hash: v.hash })
+      const staticFile = new StaticFile(
+        { filepath: v.filepath, hash: v.hash, encoding: v.encoding }
+      )
       staticFiles[staticFile.filepath] = staticFile
       return staticFile
     },

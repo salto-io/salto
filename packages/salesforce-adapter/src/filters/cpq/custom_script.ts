@@ -76,6 +76,7 @@ const codeValueToFile = (
     cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = new StaticFile({
       filepath: `${(cpqCustomScriptInstance.path ?? []).join('/')}.js`,
       content: Buffer.from(cpqCustomScriptInstance.value[CPQ_CODE_FIELD]),
+      encoding: 'utf-8',
     })
   }
   return cpqCustomScriptInstance
@@ -90,11 +91,6 @@ const transformInstanceToSFValues = (
       cpqCustomScriptInstance.value[fieldName] = fieldValue.join('\n')
     }
   })
-  // TODO: Remove this when SALTO-881 is done
-  const codeValue = cpqCustomScriptInstance.value[CPQ_CODE_FIELD]
-  if (Buffer.isBuffer(codeValue)) {
-    cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = codeValue.toString('utf8')
-  }
   return cpqCustomScriptInstance
 }
 

@@ -18,7 +18,7 @@ import {
   Element, InstanceElement, ObjectType, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
 } from '@salto-io/adapter-api'
 import {
-  restoreValues, deployInstance,
+  restoreValues, deployInstance, resolveValues,
 } from '@salto-io/adapter-utils'
 import {
   HubspotMetadata,
@@ -26,7 +26,7 @@ import {
 import HubspotClient from './client/client'
 import {
   Types, createHubspotInstanceElement, createHubspotMetadataFromInstanceElement,
-  transformAfterUpdateOrAdd, getLookUpName, resolveValues,
+  transformAfterUpdateOrAdd, getLookUpName,
 } from './transformers/transformer'
 import { FilterCreator } from './filter'
 import formFieldFilter from './filters/form_field'

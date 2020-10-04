@@ -15,14 +15,8 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
-import {
-  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType,
-  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, isReferenceExpression,
-  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isStaticFile,
-} from '@salto-io/adapter-api'
-import {
-  TransformFunc, naclCase, transformValues, GetLookupNameFunc, transformElement, ResolveValuesFunc,
-} from '@salto-io/adapter-utils'
+import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile } from '@salto-io/adapter-api'
+import { TransformFunc, naclCase, transformValues, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
@@ -863,7 +857,8 @@ export const transformPrimitive: TransformFunc = ({ value, field, path }) => {
     }
     return new StaticFile({
       filepath: `${path?.getFullNameParts().filter((namePart: string): boolean => namePart !== 'instance').join('/')}.json`,
-      content: Buffer.from(JSON.stringify(value, null, 2), 'utf8'),
+      content: Buffer.from(JSON.stringify(value, null, 2)),
+      encoding: 'utf-8',
     })
   }
   return value
@@ -1058,20 +1053,3 @@ export const createHubspotInstanceElement = (
 export const getLookUpName: GetLookupNameFunc = ({ ref }) =>
   // TODO: find the correct field with Adam
   ref.value
-
-// Temporary implementation for resolveValues in hubspot since static files in this adapter
-// are always assumed to be text files.
-// TODO: the encoding should be specified on the static file itself instead of assumed here
-// so resolving static files would be generic and this adapter specific function can be removed
-export const resolveValues: ResolveValuesFunc = (element, getLookUpNameFunc) => {
-  const transformFunc: TransformFunc = ({ value }) => {
-    if (isReferenceExpression(value)) {
-      return getLookUpNameFunc({ ref: value })
-    }
-    if (isStaticFile(value)) {
-      return value.content?.toString('utf8') ?? ''
-    }
-    return value
-  }
-  return transformElement({ element, transformFunc, strict: false })
-}

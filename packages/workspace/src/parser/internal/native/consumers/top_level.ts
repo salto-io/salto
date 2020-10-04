@@ -1,0 +1,258 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { Keywords } from '../../../language'
+import { ParseContext, ConsumerReturnType } from '../types'
+import { parseElemID } from '../../nearly/converter/elements'
+import { invalidPrimitiveTypeDef, unknownPrimitiveTypeError, invalidFieldsInPrimitiveType, invalidBlocksInInstance, invalidVarDefinition, missingLabelsError, missingBlockOpen, ambigiousBlock } from '../errors'
+import { primitiveType, getPosition, registerRange } from '../helpers'
+import { consumeBlockBody, recoverInvalidItemDefinition, isAttrDef } from './blocks'
+import { TOKEN_TYPES } from '../lexer'
+import { consumeWords, consumeValue } from './values'
+
+const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
+
+const consumePrimitive = (
+  context: ParseContext,
+  labels: ConsumerReturnType<string[]>
+): ConsumerReturnType<PrimitiveType> => {
+  // Note - this method is called *only* if labels has 4 tokens (the first of which
+  // is 'type' which we can ignore
+  const [typeName, kw, baseType] = labels.value.slice(1)
+  const elemID = parseElemID(typeName)
+
+  // We create an error if some other token is used instead of the 'is' keyword.
+  // We don't need to recover. We'll just pretend the wrong word is 'is' (hihi)
+  // and parse as usual.
+  if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
+    context.errors.push(invalidPrimitiveTypeDef({
+      ...labels.range,
+      filename: context.filename,
+    }, kw))
+  }
+
+  let primitive = primitiveType(baseType)
+
+  // If the base type token can not be resolved to a specific primitive type, we will
+  // just treat the type as unknown and add an error. Again - no need to recover since
+  // structre is unharmed.
+  if (primitive === undefined) {
+    context.errors.push(unknownPrimitiveTypeError({
+      ...labels.range,
+      filename: context.filename,
+    }, baseType))
+    primitive = PrimitiveTypes.UNKNOWN
+  }
+
+  const consumedBlock = consumeBlockBody(context, elemID)
+
+  // You can't define fields on a primitive type. But no need to recover
+  // we just ignore the fields.
+  if (!_.isEmpty(consumedBlock.value.fields)) {
+    context.errors.push(invalidFieldsInPrimitiveType({
+      ...consumedBlock.range,
+      filename: context.filename,
+    }))
+  }
+  return {
+    value: new PrimitiveType({
+      elemID,
+      primitive,
+      annotationTypes: consumedBlock.value.annotationTypes,
+      annotations: consumedBlock.value.attrs,
+    }),
+    range: consumedBlock.range,
+  }
+}
+
+const consumeObjectType = (
+  context: ParseContext,
+  typeName: string,
+  isSettings: boolean
+): ConsumerReturnType<ObjectType> => {
+  const elemID = parseElemID(typeName)
+  const consumedBlock = consumeBlockBody(context, elemID)
+  return {
+    value: new ObjectType({
+      elemID,
+      fields: consumedBlock.value.fields,
+      annotationTypes: consumedBlock.value.annotationTypes,
+      annotations: consumedBlock.value.attrs,
+      isSettings,
+    }),
+    range: consumedBlock.range,
+  }
+}
+
+const consumeInstanceElement = (
+  context: ParseContext,
+  instanceType: string,
+  instanceName: string = ElemID.CONFIG_NAME
+): ConsumerReturnType<InstanceElement> => {
+  let typeID = parseElemID(instanceType)
+  if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
+    // In this case if there is just a single name we have to assume it is actually the adapter
+    typeID = new ElemID(typeID.name)
+  }
+  const instance = new InstanceElement(
+    instanceName,
+    new ObjectType({
+      elemID: typeID,
+      isSettings: instanceName === ElemID.CONFIG_NAME && !typeID.isConfig(),
+    })
+  )
+  const consumedBlockBody = consumeBlockBody(context, instance.elemID)
+
+  // You can't define a block inside an instance. Blocks will be ignore.
+  const { attrs, fields, annotationTypes } = consumedBlockBody.value
+  if (!_.isEmpty(annotationTypes) || !_.isEmpty(fields)) {
+    context.errors.push(
+      invalidBlocksInInstance({ ...consumedBlockBody.range, filename: context.filename })
+    )
+  }
+
+  // Using pick to get the instance annotations since they are defined as regular
+  // attributes (see spec)
+  const annotations = _.pick(attrs, INSTANCE_ANNOTATIONS_ATTRS)
+
+  // Using unset instead of the more standart _.omit since we need to make sure
+  // attrs is muteable in order for the valuePromiseReplacers to have an effect
+  // (They will change the original. Invoking omit which will tigger a copy will
+  // leave us with the promises.)
+  INSTANCE_ANNOTATIONS_ATTRS.forEach(annoAttr => _.unset(attrs, annoAttr))
+  instance.annotations = annotations
+  instance.value = attrs
+  return {
+    value: instance,
+    range: consumedBlockBody.range,
+  }
+}
+
+export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<Variable[]> => {
+  const variables: Variable[] = []
+  // We only get here if the first token is var - so we can just process the token
+  // and move forward...
+  context.lexer.next()
+
+  const nextToken = context.lexer.next()
+  if (nextToken.type !== TOKEN_TYPES.OCURLY) {
+    context.errors.push(missingBlockOpen({
+      start: getPosition(nextToken),
+      end: getPosition(nextToken, false),
+      filename: context.filename,
+    }))
+  }
+  const start = getPosition(nextToken)
+
+  while (context.lexer.peak() && context.lexer.peak()?.type !== TOKEN_TYPES.CCURLY) {
+    const defTokens = consumeWords(context)
+    if (isAttrDef(defTokens.value, context)) {
+      // We know that the next token is an equal mark, so we can consume it.
+      context.lexer.next()
+      const key = defTokens.value[0]
+      const varID = new ElemID(ElemID.VARIABLES_NAMESPACE, key)
+      const consumedValue = consumeValue(context)
+      variables.push(new Variable(varID, consumedValue.value))
+      registerRange(context, varID, { start: defTokens.range.start, end: consumedValue.range.end })
+    } else {
+      // If this is not an attribute token we need to recover out of it
+      recoverInvalidItemDefinition(context)
+      context.errors.push(invalidVarDefinition({ ...defTokens.range, filename: context.filename }))
+    }
+  }
+  const end = getPosition(context.lexer.next(), false)
+  return {
+    value: variables,
+    range: { start, end },
+  }
+}
+
+// We consider a block def with 2 labels to be a primitive type def with the 'is'
+// keyword missing, since in all other block types there is only 1 legal label.
+// the primitive type consumer handles the missing 'is'.
+const isPrimitiveTypeDef = (elementType: string, elementLabels: string[]): boolean => (
+  elementType === Keywords.TYPE_DEFINITION && elementLabels.length >= 2
+)
+
+const isObjectTypeDef = (
+  elementType: string,
+  elementLabels: string[],
+  isSettings: boolean
+): boolean => (
+  (elementType === Keywords.TYPE_DEFINITION || isSettings) && elementLabels.length === 1
+)
+
+// No labels is allowed to support config instances
+const isInstanceTypeDef = (elementType: string, elementLabels: string[]): boolean => (
+  elementType !== undefined && elementLabels.length <= 1
+)
+
+export const consumeElement = (context: ParseContext): ConsumerReturnType<Element | undefined> => {
+  const consumedLabels = consumeWords(context)
+  const nextToken = context.lexer.peak()
+  if (nextToken && consumedLabels.value.length === 0) {
+    context.errors.push(missingLabelsError({
+      start: getPosition(nextToken),
+      end: getPosition(nextToken, false),
+      filename: context.filename,
+    }, nextToken?.value ?? 'EOF'))
+  }
+
+  if (nextToken?.type !== TOKEN_TYPES.OCURLY) {
+    context.errors.push(missingBlockOpen({
+      start: nextToken ? getPosition(nextToken) : consumedLabels.range.end,
+      end: nextToken ? getPosition(nextToken, false) : consumedLabels.range.end,
+      filename: context.filename,
+    }))
+  }
+  const [elementType, ...elementLabels] = consumedLabels.value
+  let consumedElement: ConsumerReturnType<Element | undefined>
+  const isSettings = elementType === Keywords.SETTINGS_DEFINITION
+
+  // Primitive type def actually needs 3 labels, but we assume that 2 labels
+  // is a primitive type def with no inheritance operator
+  if (isPrimitiveTypeDef(elementType, elementLabels)) {
+    consumedElement = consumePrimitive(context, consumedLabels)
+  } else if (isObjectTypeDef(elementType, elementLabels, isSettings)) {
+    consumedElement = consumeObjectType(context, elementLabels[0], isSettings)
+  } else if (isInstanceTypeDef(elementType, elementLabels)) {
+    consumedElement = consumeInstanceElement(context, elementType, elementLabels[0])
+  } else {
+    // If we don't know which type of block is defined here, we need to ignore
+    // the block. So we consume it in order to continue on the next block. If
+    // this is not a block (we expect it to be a block since we only support blocks
+    // as top level element, the consumeBlockBody method will generate the propper errors)
+    const blockToIgnore = consumeBlockBody(context, new ElemID('salto'))
+    const range = {
+      start: consumedLabels.range.start,
+      end: blockToIgnore.range.end,
+    }
+    context.errors.push(ambigiousBlock({ ...range, filename: context.filename }))
+    consumedElement = {
+      range,
+      value: undefined,
+    }
+  }
+  const range = { start: consumedLabels.range.start, end: consumedElement.range.end }
+  if (consumedElement.value) {
+    registerRange(context, consumedElement.value.elemID, range)
+  }
+  return {
+    value: consumedElement.value,
+    range,
+  }
+}

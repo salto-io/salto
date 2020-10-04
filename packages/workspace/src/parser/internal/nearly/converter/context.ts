@@ -15,9 +15,9 @@
 */
 import isPromise from 'is-promise'
 import { Value } from '@salto-io/adapter-api'
-import { Functions } from '../../functions'
+import { Functions } from '../../../functions'
 import { ValuePromiseWatcher, isLexerToken, InternalParseRes, Token } from './types'
-import { SourceRange } from '../types'
+import { SourceRange } from '../../types'
 
 let currentFilename: string
 let currentFunctions: Functions

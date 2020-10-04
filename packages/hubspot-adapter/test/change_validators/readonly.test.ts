@@ -42,7 +42,7 @@ describe('readonly change validator', () => {
       })
 
       it('should have an error on static file with diff value', async () => {
-        after.value.name = new StaticFile({ filepath: 'path', content: Buffer.from('abc') })
+        after.value.name = new StaticFile({ filepath: 'path', content: Buffer.from('abc'), encoding: 'utf-8' })
         changeErrors = await readonlyValidator([
           toChange({ before: contactPropertyInstance, after }),
         ])
@@ -64,7 +64,7 @@ describe('readonly change validator', () => {
 
     describe('keep resolved value of name in ContactProperty', () => {
       it('should not have an error when replacing name with static file with same value', async () => {
-        after.value.name = new StaticFile({ filepath: 'path', content: Buffer.from(contactPropertyMock.name) })
+        after.value.name = new StaticFile({ filepath: 'path', content: Buffer.from(contactPropertyMock.name), encoding: 'utf-8' })
         changeErrors = await readonlyValidator([
           toChange({ before: contactPropertyInstance, after }),
         ])

@@ -34,7 +34,7 @@ import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,
   CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
-  SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_SETTINGS_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
   LAYOUT_TYPE_ID_METADATA_TYPE,
@@ -724,6 +724,32 @@ describe('transformer', () => {
         })
         it('should not contain fields', () => {
           expect(customObj.fields).toBeUndefined()
+        })
+      })
+
+      describe('create a custom settings object', () => {
+        let customObj: CustomProperties
+        beforeEach(() => {
+          const customSettingsObj = new ObjectType({
+            elemID,
+            annotationTypes: {
+              [API_NAME]: BuiltinTypes.SERVICE_ID,
+              [METADATA_TYPE]: BuiltinTypes.STRING,
+              [DESCRIPTION]: BuiltinTypes.STRING,
+              [CUSTOM_SETTINGS_TYPE]: BuiltinTypes.STRING,
+            },
+            annotations: {
+              [API_NAME]: 'Test__c',
+              [METADATA_TYPE]: CUSTOM_OBJECT,
+              [DESCRIPTION]: 'MyDescription',
+              [CUSTOM_SETTINGS_TYPE]: 'Hierarchical',
+            },
+          })
+          customObj = toCustomObject(customSettingsObj, false)
+        })
+        it('should not create fields that dont exist on custom settings objects', () => {
+          expect(customObj).not.toHaveProperty('pluralLabel')
+          expect(customObj).not.toHaveProperty('sharingModel')
         })
       })
     })

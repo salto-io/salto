@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,
-  TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_SETTINGS_TYPE } from '../constants'
+  TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 import { isCustomObject, apiName, metadataType } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
@@ -72,14 +72,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch' | 'onDep
     const customObjectChanges = changes
       .filter(isObjectTypeChange)
       .filter(isAdditionOrModificationChange)
-      .filter((change): boolean => {
-        const element = getChangeElement(change)
-        if (CUSTOM_SETTINGS_TYPE in element.annotationTypes) {
-          return false
-        }
-        return isCustomObject(element)
-      })
-
+      .filter((change): boolean => isCustomObject(getChangeElement(change)))
     const newObjects = customObjectChanges
       .filter(isAdditionChange)
       .map(getChangeElement)

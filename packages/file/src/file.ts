@@ -26,7 +26,7 @@ export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
 export const log = logger(module)
 
-export const { rename, copyFile, writeFile, readFile, readdir: readDir } = fs.promises
+export const { copyFile, writeFile, readFile, readdir: readDir } = fs.promises
 export const { statSync, existsSync, readFileSync } = fs
 
 export const notFoundAsUndefined = <
@@ -46,6 +46,12 @@ export const notFoundAsUndefined = <
       throw err
     }
   }
+
+export const rename = (
+  oldPath: string,
+  newPath: string
+): Promise<void> => fs.promises.rename(oldPath, newPath)
+rename.notFoundAsUndefined = notFoundAsUndefined(rename)
 
 export const stat = (filename: string): Promise<fs.Stats> => fs.promises.stat(filename)
 stat.notFoundAsUndefined = notFoundAsUndefined(stat)

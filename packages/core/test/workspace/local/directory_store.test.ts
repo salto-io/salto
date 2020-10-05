@@ -38,6 +38,7 @@ jest.mock('@salto-io/file', () => ({
   isEmptyDir: jest.fn(),
 }))
 isEmptyDir.notFoundAsUndefined = notFoundAsUndefined(isEmptyDir)
+rename.notFoundAsUndefined = notFoundAsUndefined(rename)
 jest.mock('readdirp')
 describe('localDirectoryStore', () => {
   const encoding = 'utf8'
@@ -55,7 +56,7 @@ describe('localDirectoryStore', () => {
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
   const mockRm = rm as jest.Mock
-  const mockRename = rename as jest.Mock
+  const mockRename = rename as unknown as jest.Mock
   const mockEmptyDir = isEmptyDir as unknown as jest.Mock
 
   describe('list', () => {
@@ -349,12 +350,6 @@ describe('localDirectoryStore', () => {
       await naclFileStore.renameFile('old', 'new')
       expect(mockRename).toHaveBeenCalledTimes(1)
       expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
-    })
-
-    it('should attempt to rename the file if it does not exist', async () => {
-      mockFileExists.mockResolvedValue(false)
-      await naclFileStore.renameFile('gazibo', 'new')
-      expect(mockRename).not.toHaveBeenCalled()
     })
   })
 

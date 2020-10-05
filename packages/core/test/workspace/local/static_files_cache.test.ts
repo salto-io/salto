@@ -32,7 +32,7 @@ describe('Static Files Cache', () => {
   const mockFileExists = file.exists as jest.Mock
   const mockReplaceContents = file.replaceContents as jest.Mock
   const mockRm = file.rm as jest.Mock
-  const mockRename = file.rename as jest.Mock
+  const mockRename = file.rename as unknown as jest.Mock
   const mockReadFile = file.readTextFile as unknown as jest.Mock
   let staticFilesCache: staticFiles.StaticFilesCache
 

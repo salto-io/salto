@@ -19,7 +19,10 @@ import {
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
+import { logger } from '@salto-io/logging'
 import { Plan, PlanItem, PlanItemId } from './plan'
+
+const log = logger(module)
 
 const deployAction = async (
   planItem: PlanItem,
@@ -89,6 +92,7 @@ export const deployActions = async (
         await postDeployAction(appliedChanges)
       } catch (error) {
         reportProgress(item, 'error', error.message ?? String(error))
+        log.error('Got error deploying item %s: %o', item.groupKey, error)
         throw error
       }
     })

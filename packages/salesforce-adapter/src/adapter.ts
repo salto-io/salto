@@ -29,7 +29,7 @@ import { decorators, collections, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
-  toCustomField, toCustomObject, apiName, Types, toMetadataInfo,
+  toCustomField, toCustomProperties, apiName, Types, toMetadataInfo,
   metadataType, defaultApiName, isMetadataObjectType,
   isMetadataInstanceElement,
 } from './transformers/transformer'
@@ -548,7 +548,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     addDefaults(post)
 
     await this.client.upsert(
-      constants.CUSTOM_OBJECT, toCustomObject(post, true, this.systemFields),
+      constants.CUSTOM_OBJECT, toCustomProperties(post, true, this.systemFields),
     )
 
     return post
@@ -671,11 +671,11 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async updateObjectAnnotations(before: ObjectType, clonedObject: ObjectType,
     changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<SaveResult[]> {
     if (changes.some(c => isObjectType(getChangeElement(c)))
-      && !_.isEqual(toCustomObject(before, false), toCustomObject(clonedObject, false))) {
+      && !_.isEqual(toCustomProperties(before, false), toCustomProperties(clonedObject, false))) {
       // Update object without its fields
       return this.client.update(
         metadataType(clonedObject),
-        toCustomObject(clonedObject, false)
+        toCustomProperties(clonedObject, false)
       )
     }
     return []

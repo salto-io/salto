@@ -42,7 +42,7 @@ import {
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive,
-  formulaTypeName, metadataType, isCustom,
+  formulaTypeName, metadataType, isCustom, isCustomSettings,
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
@@ -98,7 +98,7 @@ export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME = {
 type TypesFromInstance = {
   standardAnnotationTypes: TypeMap
   customAnnotationTypes: TypeMap
-  customSettingsAnnotationTypes: TypeMap
+  customSettingsOnlyAnnotationTypes: TypeMap
   nestedMetadataTypes: Record<string, ObjectType>
 }
 
@@ -109,7 +109,7 @@ const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = ['allowInChatterGroups', 'customHelp',
   'enableReports', 'enableSearch', 'enableSharing', 'enableStreamingApi', 'gender',
   'nameField', 'pluralLabel', 'sharingModel', 'startsWith', 'visibility']
 
-const CUSTOM_SETTINGS_ANNOTATION_TYPE_NAMES = ['customSettingsType', 'apiName',
+const CUSTOM_SETTINGS_ONLY_ANNOTATION_TYPE_NAMES = ['customSettingsType', 'apiName',
   'metadataType', 'enableFeeds', 'visibility']
 
 const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fields',
@@ -125,6 +125,17 @@ const getFieldName = (annotations: Values): string =>
 
 const getFieldType = (type: string): TypeElement =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
+
+const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
+  object: ObjectType, custom: boolean): Record<string, TypeElement> => {
+  let annotationTypes = typesFromInstance.standardAnnotationTypes
+  if (isCustomSettings(object)) {
+    annotationTypes = typesFromInstance.customSettingsOnlyAnnotationTypes
+  } else if (custom) {
+    annotationTypes = typesFromInstance.customAnnotationTypes
+  }
+  return annotationTypes
+}
 
 const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
   if (namespace) {
@@ -386,12 +397,7 @@ const createFromInstance = (instance: InstanceElement,
     name: objectName,
     label: instance.value[LABEL],
   })
-  let annotationTypes = typesFromInstance.standardAnnotationTypes
-  if (instance.value.customSettingsType) {
-    annotationTypes = typesFromInstance.customSettingsAnnotationTypes
-  } else if (isCustom(objectName)) {
-    annotationTypes = typesFromInstance.customAnnotationTypes
-  }
+  const annotationTypes = annotationTypesForObject(typesFromInstance, object, isCustom(objectName))
   transformObjectAnnotations(object, annotationTypes, instance)
   const instanceFields = makeArray(instance.value.fields)
   instanceFields
@@ -444,12 +450,7 @@ const createFromSObjectsAndInstances = (
     if (!instance) {
       return [object]
     }
-    let annotationTypes = typesFromInstance.standardAnnotationTypes
-    if (instance.value.customSettingsType) {
-      annotationTypes = typesFromInstance.customSettingsAnnotationTypes
-    } else if (custom) {
-      annotationTypes = typesFromInstance.customAnnotationTypes
-    }
+    const annotationTypes = annotationTypesForObject(typesFromInstance, object, custom)
     mergeCustomObjectWithInstance(
       object, instance, annotationTypes
     )
@@ -583,15 +584,15 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)) as Record<string, ObjectType>
       const customOnlyAnnotationTypes = _.pick(typesFromInstance,
         CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
-      const customSettingsAnnotationTypes = _.pick(typesFromInstance,
-        CUSTOM_SETTINGS_ANNOTATION_TYPE_NAMES)
+      const customSettingsOnlyAnnotationTypes = _.pick(typesFromInstance,
+        CUSTOM_SETTINGS_ONLY_ANNOTATION_TYPE_NAMES)
       const standardAnnotationTypes = _.omit(typesFromInstance,
         Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
       return {
         standardAnnotationTypes,
         customAnnotationTypes: { ...standardAnnotationTypes, ...customOnlyAnnotationTypes },
-        customSettingsAnnotationTypes: { ...standardAnnotationTypes,
-          ...customSettingsAnnotationTypes },
+        customSettingsOnlyAnnotationTypes: { ...standardAnnotationTypes,
+          ...customSettingsOnlyAnnotationTypes },
         nestedMetadataTypes,
       }
     }

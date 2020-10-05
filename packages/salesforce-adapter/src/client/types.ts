@@ -251,7 +251,6 @@ export class CustomField implements MetadataInfo {
 }
 
 export class CustomProperties implements MetadataInfo {
-  customSettingsType?: string
   readonly fields?: CustomField[] | CustomField
 
   constructor(

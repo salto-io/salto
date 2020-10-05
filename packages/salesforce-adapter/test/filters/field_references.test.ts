@@ -44,6 +44,8 @@ const generateObjectAndInstance = ({
   fieldName,
   fieldValue,
   parentType,
+  contextFieldName,
+  contextFieldValue,
 }: {
   type: string
   objType?: string
@@ -51,6 +53,8 @@ const generateObjectAndInstance = ({
   fieldName: string
   fieldValue?: Value
   parentType?: string
+  contextFieldName?: string
+  contextFieldValue?: string
 }): Element[] => {
   const addFields = (obj: ObjectType): void => {
     const createField = (name: string, fieldType = BuiltinTypes.STRING): Field => (
@@ -60,6 +64,7 @@ const generateObjectAndInstance = ({
       [fieldName]: createField(fieldName),
       other: createField('other'),
       ignore: createField('ignore', BuiltinTypes.NUMBER),
+      ...(contextFieldName ? { [contextFieldName]: createField(contextFieldName) } : {}),
     }
     if (objType === CUSTOM_OBJECT) {
       obj.fields[CUSTOM_OBJECT_ID_FIELD] = createField(CUSTOM_OBJECT_ID_FIELD)
@@ -92,6 +97,7 @@ const generateObjectAndInstance = ({
       [fieldName]: fieldValue,
       other: fieldValue,
       ignore: 125,
+      ...((contextFieldName && contextFieldValue) ? { [contextFieldName]: contextFieldValue } : {}),
     },
     [SALESFORCE, OBJECTS_PATH, ...(parentType ? [parentType] : []), realInstanceName],
     { ...(parentType
@@ -129,6 +135,13 @@ describe('FieldReferences filter', () => {
       fieldValue: 'aaa',
     }),
     ...generateObjectAndInstance({
+      type: 'ApexClass',
+      objType: 'ApexClass',
+      instanceName: 'class5',
+      fieldName: 'any',
+      fieldValue: 'aaa',
+    }),
+    ...generateObjectAndInstance({
       type: 'CustomSite',
       objType: 'CustomSite',
       instanceName: 'site1',
@@ -160,13 +173,23 @@ describe('FieldReferences filter', () => {
       fieldValue: 'name',
       parentType: 'Account',
     }),
-    // customScript1[CPQ_QUOTE_LINE_FIELDS] should pont to SBQQ__QuoteLine__c.name (target parent)
+    // customScript1[CPQ_QUOTE_LINE_FIELDS] should point to SBQQ__QuoteLine__c.name (target parent)
     ...generateObjectAndInstance({
       type: CPQ_CUSTOM_SCRIPT,
       objType: CPQ_CUSTOM_SCRIPT,
       instanceName: 'customScript1',
       fieldName: CPQ_QUOTE_LINE_FIELDS,
       fieldValue: ['name'],
+    }),
+    // fieldUpdate54.field should point to Account.name (instanceParent)
+    ...generateObjectAndInstance({
+      type: 'FlowActionCall',
+      objType: 'FlowActionCall',
+      instanceName: 'flowAction',
+      fieldName: 'actionName',
+      fieldValue: 'class5',
+      contextFieldName: 'actionType',
+      contextFieldValue: 'apex',
     }),
     // layoutItem436.field will remain the same (Account.fffff doesn't exist)
     ...generateObjectAndInstance({
@@ -228,6 +251,14 @@ describe('FieldReferences filter', () => {
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toHaveLength(1)
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]).toBeInstanceOf(ReferenceExpression)
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]?.elemId.getFullName()).toEqual('salesforce.SBQQ__QuoteLine__c.field.name')
+    })
+
+    it('should resolve field with neighbor context using flow action call mapping', () => {
+      const inst = elements.filter(
+        e => isInstanceElement(e) && metadataType(e) === 'FlowActionCall'
+      )[0] as InstanceElement
+      expect(inst.value.actionName).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.actionName?.elemId.getFullName()).toEqual('salesforce.ApexClass.instance.class5')
     })
 
     it('should not resolve if field has no rule', () => {

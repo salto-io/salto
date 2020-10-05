@@ -32,6 +32,7 @@ import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE, CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD,
+  QUICK_ACTION_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -92,14 +93,23 @@ const neighborContextFunc = (
 })
 
 const workflowActionMapper: ContextValueMapperFunc = (val: string) => {
-  const workflowActionTypeMapping: Record<string, string> = {
+  const typeMapping: Record<string, string> = {
     Alert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
     FieldUpdate: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
     FlowAction: WORKFLOW_FLOW_ACTION_METADATA_TYPE,
     OutboundMessage: WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
     Task: WORKFLOW_TASK_METADATA_TYPE,
   }
-  return workflowActionTypeMapping[val]
+  return typeMapping[val]
+}
+
+const flowActionCallMapper: ContextValueMapperFunc = (val: string) => {
+  const typeMapping: Record<string, string> = {
+    apex: 'ApexClass',
+    emailAlert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
+    quickAction: QUICK_ACTION_METADATA_TYPE,
+  }
+  return typeMapping[val]
 }
 
 const ContextStrategyLookup: Record<
@@ -113,6 +123,7 @@ const ContextStrategyLookup: Record<
       : undefined)
   },
   neighborTypeWorkflow: neighborContextFunc('type', workflowActionMapper),
+  neighborActionTypeLookup: neighborContextFunc('actionType', flowActionCallMapper),
   neighborCPQLookup: neighborContextFunc(CPQ_LOOKUP_OBJECT_NAME),
   neighborCPQRuleLookup: neighborContextFunc(CPQ_RULE_LOOKUP_OBJECT_FIELD),
   neighborLookupValueTypeLookup: neighborContextFunc('lookupValueType'),

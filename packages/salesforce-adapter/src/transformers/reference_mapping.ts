@@ -59,6 +59,7 @@ const ReferenceSerializationStrategyLookup: Record<
 export type ReferenceContextStrategyName = (
   'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
+  | 'neighborActionTypeLookup'
 )
 
 type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
@@ -162,10 +163,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Role' },
   },
   {
-    src: { field: 'actionName', parentTypes: ['FlowActionCall'] },
-    target: { type: 'WorkflowAlert' },
-  },
-  {
     src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
     target: { type: 'CustomApplication' },
   },
@@ -192,6 +189,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'tab', parentTypes: ['WorkspaceMapping'] },
     target: { type: 'CustomTab' },
+  },
+  {
+    src: { field: 'actionName', parentTypes: ['FlowActionCall'] },
+    target: { typeContext: 'neighborActionTypeLookup' },
   },
   {
     src: { field: 'objectType', parentTypes: ['FlowVariable'] },

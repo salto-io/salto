@@ -632,6 +632,7 @@ describe('Test utils.ts', () => {
         refValue: { type: BuiltinTypes.STRING },
         arrayValues: { type: new ListType(BuiltinTypes.STRING) },
         fileValue: { type: BuiltinTypes.STRING },
+        objValue: { type: new ObjectType({ elemID: new ElemID('salesforce', 'nested') }) },
       },
     })
     element.annotations.typeRef = new ReferenceExpression(
@@ -653,12 +654,15 @@ describe('Test utils.ts', () => {
     const firstRef = new InstanceElement(
       'first',
       refType,
-      { from: 'Milano', to: 'Minsk' }
+      { from: 'Milano', to: 'Minsk', obj: { a: 1 } }
     )
     const instance = new InstanceElement('instance', element, {
       name: instanceName,
       fileValue: valueFile,
       refValue: valueRef,
+      objValue: new ReferenceExpression(
+        firstRef.elemID.createNestedID('obj'), firstRef.value.obj, firstRef,
+      ),
       into: new TemplateExpression({
         parts: [
           'Well, you made a long journey from ',
@@ -764,12 +768,20 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
         expect(resolvedInstance.value.fileValue).toEqual(Buffer.from(fileContent))
+        expect(resolvedInstance.value.objValue).toEqual(firstRef.value.obj)
 
         expect(resolvedInstance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
       })
 
       it('should transform back to instance', () => {
-        expect(restoreValues(instance, resolvedInstance, getName)).toEqual(instance)
+        const restoredInstance = restoreValues(instance, resolvedInstance, getName)
+        expect(restoredInstance).toEqual(instance)
+        // toEqual does not check types so we have to check them explicitly
+        expect(restoredInstance.value.refValue).toBeInstanceOf(ReferenceExpression)
+        expect(restoredInstance.value.objValue).toBeInstanceOf(ReferenceExpression)
+        expect(restoredInstance.value.arrayValues[1]).toBeInstanceOf(ReferenceExpression)
+        expect(restoredInstance.value.fileValue).toBeInstanceOf(StaticFile)
+        expect(restoredInstance.value.into).toBeInstanceOf(TemplateExpression)
       })
     })
 

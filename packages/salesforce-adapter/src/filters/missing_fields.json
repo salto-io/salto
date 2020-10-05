@@ -839,7 +839,8 @@
               "Delegated",
               "MyTerritory",
               "MyTeamTerritory",
-              "Team"
+              "Team",
+              "SalesTeam"
             ]
           }
         }

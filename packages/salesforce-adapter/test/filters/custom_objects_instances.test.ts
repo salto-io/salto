@@ -406,6 +406,11 @@ describe('Custom Object Instances filter', () => {
           expect(value.Name).toEqual('Name')
           expect(value.TestField).toEqual('Test')
         })
+
+        it('should omit attributes from the value', () => {
+          const { value } = instances[0]
+          expect(value.attributes).toBeUndefined()
+        })
       })
 
       describe('object with compound Name', () => {
@@ -446,6 +451,11 @@ describe('Custom Object Instances filter', () => {
           })
           expect(value.TestField).toEqual('Test')
         })
+
+        it('should omit attributes from the value', () => {
+          const { value } = instances[0]
+          expect(value.attributes).toBeUndefined()
+        })
       })
 
       describe('object with compound Address', () => {
@@ -483,6 +493,11 @@ describe('Custom Object Instances filter', () => {
             city: 'city',
             counry: 'country',
           })
+        })
+
+        it('should omit attributes from the value', () => {
+          const { value } = instances[0]
+          expect(value.attributes).toBeUndefined()
         })
       })
     })

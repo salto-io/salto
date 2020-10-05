@@ -48,6 +48,7 @@ type CustomObjectFetchSetting = {
   invalidIdFields?: string[]
 }
 
+const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const detectsParentsIndicator = '##allMasterDetailFields##'
 
@@ -110,7 +111,7 @@ type recordToInstanceParams = {
   instanceSaltoName: string
 }
 
-export const transformCompoundNameValues = (
+const transformCompoundNameValues = (
   type: ObjectType,
   recordValue: SalesforceRecord
 ): SalesforceRecord => {
@@ -125,6 +126,20 @@ export const transformCompoundNameValues = (
       [nameFieldName]: subNameValues,
       [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
     }
+}
+
+const omitDefaultKeys = (recordValue: SalesforceRecord): SalesforceRecord =>
+  ({
+    ..._.omit(recordValue, defaultRecordKeysToOmit),
+    [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
+  })
+
+export const transformRecordToValues = (
+  type: ObjectType,
+  recordValue: SalesforceRecord
+): SalesforceRecord => {
+  const valuesWithTransformedName = transformCompoundNameValues(type, recordValue)
+  return omitDefaultKeys(valuesWithTransformedName)
 }
 
 const recordToInstance = (
@@ -146,7 +161,7 @@ const recordToInstance = (
   return new InstanceElement(
     name,
     type,
-    transformCompoundNameValues(type, record),
+    transformRecordToValues(type, record),
     getInstancePath(name),
   )
 }

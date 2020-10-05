@@ -1276,12 +1276,13 @@ type CreateMetadataTypeParams = {
   baseTypeNames: Set<string>
   childTypeNames: Set<string>
   client: SalesforceClient
+  isFolder?: boolean
   isSettings?: boolean
   annotations?: Partial<MetadataTypeAnnotations>
 }
 export const createMetadataTypeElements = async ({
   name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
-  isSettings = false, annotations = {},
+  isFolder = false, isSettings = false, annotations = {},
 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
@@ -1304,7 +1305,7 @@ export const createMetadataTypeElements = async ({
   ]
 
   const shouldCreateIdField = (): boolean => (
-    (baseTypeNames.has(name) || childTypeNames.has(name))
+    (baseTypeNames.has(name) || childTypeNames.has(name) || isFolder)
     && element.fields[INTERNAL_ID_FIELD] === undefined
   )
 

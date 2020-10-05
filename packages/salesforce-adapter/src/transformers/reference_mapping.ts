@@ -167,6 +167,22 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'CustomApplication' },
   },
   {
+    src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'permissionSets', parentTypes: ['PermissionSetGroup'] },
+    target: { type: 'PermissionSet' },
+  },
+  {
+    src: { field: 'permissionSets', parentTypes: ['DelegateGroup'] },
+    target: { type: 'PermissionSet' },
+  },
+  {
     src: { field: 'layout', parentTypes: ['ProfileLayoutAssignment'] },
     target: { type: 'Layout' },
   },

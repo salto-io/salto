@@ -2259,5 +2259,43 @@
         "type": "PermissionSetUserPermission"
       }
     ]
+  },
+  {
+    "id": "PermissionSetGroup",
+    "fields": [
+      {
+        "name": "permissionSets",
+        "type": "STRING"
+      },
+      {
+        "name": "mutingPermissionSets",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "id": "DelegateGroup",
+    "fields": [
+      {
+        "name": "customObjects",
+        "type": "STRING"
+      },
+      {
+        "name": "groups",
+        "type": "STRING"
+      },
+      {
+        "name": "permissionSets",
+        "type": "STRING"
+      },
+      {
+        "name": "profiles",
+        "type": "STRING"
+      },
+      {
+        "name": "roles",
+        "type": "STRING"
+      }
+    ]
   }
 ]

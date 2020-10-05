@@ -188,5 +188,11 @@
   "salesforce.PermissionSet.field.pageAccesses",
   "salesforce.PermissionSet.field.recordTypeVisibilities",
   "salesforce.PermissionSet.field.tabSettings",
-  "salesforce.PermissionSet.field.userPermissions"
+  "salesforce.PermissionSet.field.userPermissions",
+  "salesforce.PermissionSetGroup.field.permissionSets",
+  "salesforce.DelegateGroup.field.customObjects",
+  "salesforce.DelegateGroup.field.groups",
+  "salesforce.DelegateGroup.field.permissionSets",
+  "salesforce.DelegateGroup.field.profiles",
+  "salesforce.DelegateGroup.field.roles"
 ]

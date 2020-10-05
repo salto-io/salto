@@ -24,13 +24,14 @@ import {
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,
-  WORKFLOW_TASKS_FIELD, WORKFLOW_TYPE_ID, WORKFLOW_FIELD_TO_TYPE,
+  WORKFLOW_TASKS_FIELD, WORKFLOW_FIELD_TO_TYPE,
 } from '../../src/filters/workflow'
 import mockClient from '../client'
 import {
   API_NAME_SEPARATOR, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE,
   METADATA_TYPE,
 } from '../../src/constants'
+import { mockTypes } from '../mock_elements'
 
 const { makeArray } = collections.array
 
@@ -40,10 +41,9 @@ describe('Workflow filter', () => {
 
   const workflowInstanceName = 'Account'
   const generateWorkFlowInstance = (beforeFetch = false): InstanceElement => {
-    const workflowObjectType = new ObjectType({ elemID: WORKFLOW_TYPE_ID })
     const fullNamePrefix = beforeFetch ? '' : `${workflowInstanceName}${API_NAME_SEPARATOR}`
     return new InstanceElement('Account',
-      workflowObjectType,
+      mockTypes.Workflow,
       {
         [INSTANCE_FULL_NAME_FIELD]: workflowInstanceName,
         [WORKFLOW_ALERTS_FIELD]: [

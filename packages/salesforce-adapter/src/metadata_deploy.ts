@@ -59,10 +59,15 @@ const addNestedInstanceRemovalsToPackage = (
     // We generally expect these to be lists, handling non list types just in case of a bug
     const fieldType = isListType(rawFieldType) ? rawFieldType.innerType : rawFieldType
     if (!isMetadataObjectType(fieldType)) {
-      log.error(
-        'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',
-        changeElem.elemID.getFullName(), fieldName, fieldType.elemID.getFullName(),
-      )
+      if (fieldType !== undefined) {
+        // The field might be undefined in a legitimate way, specifically this can happen
+        // because the workflow filter can create a partial type for workflow where only the
+        // relevant fields are defined.
+        log.error(
+          'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',
+          changeElem.elemID.getFullName(), fieldName, fieldType.elemID.getFullName(),
+        )
+      }
       return
     }
     const nestedAfter = new Set(

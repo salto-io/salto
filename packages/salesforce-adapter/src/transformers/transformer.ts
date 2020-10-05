@@ -1198,7 +1198,7 @@ export type MetadataTypeAnnotations = {
   dirName?: string
 }
 
-const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeElement> = {
+export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeElement> = {
   [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
   hasMetaFile: BuiltinTypes.BOOLEAN,
   folderType: BuiltinTypes.STRING,

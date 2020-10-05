@@ -14,41 +14,81 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, BuiltinTypes,
+  ObjectType, ElemID, BuiltinTypes, Element, InstanceElement,
 } from '@salto-io/adapter-api'
-import { makeFilter } from '../../src/filters/remove_fields'
+import { makeFilter } from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
 describe('remove fields filter', () => {
-  const mockObjId = new ElemID(constants.SALESFORCE, 'test')
+  const mockObjId = new ElemID(constants.SALESFORCE, 'typeRemoval')
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
       existing: { type: BuiltinTypes.STRING },
-      test: { type: BuiltinTypes.STRING },
+      remove: { type: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'typeRemoval',
     },
   })
-  const anotherMockObjId = new ElemID(constants.SALESFORCE, 'anotherType')
-  const anotherMockType = new ObjectType({
-    elemID: anotherMockObjId,
+  const mockNestedType = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'nested'),
     fields: {
-      test: { type: BuiltinTypes.STRING },
+      existing: { type: BuiltinTypes.STRING },
+      remove: { type: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'nested',
     },
   })
+
+  const mockObjIdWithInstance = new ElemID(constants.SALESFORCE, 'typeWithInstance')
+  const mockTypeWithInstance = new ObjectType({
+    elemID: mockObjIdWithInstance,
+    fields: {
+      existing: { type: BuiltinTypes.STRING },
+      removeAlsoFromInstance: { type: BuiltinTypes.STRING },
+      removeAlsoFromInstance2: { type: BuiltinTypes.STRING },
+      withNested: { type: mockNestedType },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'typeWithInstance',
+    },
+  })
+  const mockInstance = new InstanceElement(
+    'instanceWithValueToRemove',
+    mockTypeWithInstance,
+    {
+      existing: 'existing',
+      doesntExistInType: 'doesntExistInType',
+      removeAlsoFromInstance: 'removeAlsoFromInstance',
+      removeAlsoFromInstance2: 'removeAlsoFromInstance2',
+      withNested: {
+        existing: 'existing',
+        remove: 'remove',
+      },
+    }
+  )
 
   const { client } = mockClient()
-  const filter = makeFilter({
-    [mockObjId.getFullName()]: ['test'],
-  })({ client, config: {} }) as FilterWith<'onFetch'>
+  const filter = makeFilter(
+    new Map([
+      ['typeRemoval', ['remove']],
+      ['typeWithInstance', ['removeAlsoFromInstance', 'removeAlsoFromInstance2']],
+      ['nested', ['remove']],
+    ]),
+  )({ client, config: {} }) as FilterWith<'onFetch'>
 
-  let testElements: ObjectType[]
+  let testElements: Element[]
 
   beforeEach(() => {
     testElements = [
       mockType.clone(),
-      anotherMockType.clone(),
+      mockTypeWithInstance.clone(),
+      mockNestedType.clone(),
+      mockInstance.clone(),
     ]
   })
 
@@ -56,16 +96,48 @@ describe('remove fields filter', () => {
     beforeEach(() => filter.onFetch(testElements))
 
     it('should remove field', () => {
-      const [testType] = testElements
+      const testType = testElements[0] as ObjectType
       expect(testType.fields.existing).toBeDefined()
-      expect(testType.fields.existing.isEqual(mockType.fields.existing)).toBeTruthy()
-      expect(testType.fields.test).toBeUndefined()
+      expect(testType.fields.existing.isEqual(mockType.fields.existing)).toBe(true)
+      expect(testType.fields.remove).toBeUndefined()
     })
 
     it('should not remove field when the ID is not of the right object', () => {
-      const testType = testElements[1]
-      expect(testType.fields.test).toBeDefined()
-      expect(testType.fields.test.isEqual(anotherMockType.fields.test)).toBeTruthy()
+      const testType = testElements[1] as ObjectType
+      expect(testType.fields.existing).toBeDefined()
+      expect(testType.fields.existing.isEqual(mockTypeWithInstance.fields.existing)).toBe(true)
+    })
+
+    it('should remove multiple fields from type and corresponding instance', () => {
+      const testType = testElements[1] as ObjectType
+      expect(testType.fields.removeAlsoFromInstance).toBeUndefined()
+      expect(testType.fields.removeAlsoFromInstance2).toBeUndefined()
+
+      const testInstance = testElements[3] as InstanceElement
+      expect(testInstance.value.existing).toEqual(mockInstance.value.existing)
+      expect(testInstance.value.removeAlsoFromInstance).toBeUndefined()
+      expect(testInstance.value.removeAlsoFromInstance2).toBeUndefined()
+      expect(testInstance.value.withNested).toBeDefined()
+      expect(testInstance.value.withNested.existing).toEqual(mockInstance.value.withNested.existing)
+      expect(testInstance.value.withNested.remove).toBeUndefined()
+    })
+
+    it('should remove from nested type and corresponding instance', () => {
+      const testNestedType = testElements[2] as ObjectType
+      expect(testNestedType.fields.existing).toBeDefined()
+      expect(testNestedType.fields.existing.isEqual(mockNestedType.fields.existing)).toBe(true)
+      expect(testNestedType.fields.remove).toBeUndefined()
+
+      const testInstance = testElements[3] as InstanceElement
+      expect(testInstance.value.withNested).toBeDefined()
+      expect(testInstance.value.withNested.existing).toEqual(mockInstance.value.withNested.existing)
+      expect(testInstance.value.withNested.remove).toBeUndefined()
+    })
+
+    it('should not remove values that does not exist on type', () => {
+      const testInstance = testElements[3] as InstanceElement
+      expect(testInstance.value.doesntExistInType).toBeDefined()
+      expect(testInstance.value.doesntExistInType).toEqual(mockInstance.value.doesntExistInType)
     })
   })
 })

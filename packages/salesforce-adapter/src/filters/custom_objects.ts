@@ -127,9 +127,9 @@ const getFieldType = (type: string): TypeElement =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
 
 const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
-  object: ObjectType, custom: boolean): Record<string, TypeElement> => {
+  instance: InstanceElement, custom: boolean): Record<string, TypeElement> => {
   let annotationTypes = typesFromInstance.standardAnnotationTypes
-  if (isCustomSettings(object)) {
+  if (isCustomSettings(instance)) {
     annotationTypes = typesFromInstance.customSettingsOnlyAnnotationTypes
   } else if (custom) {
     annotationTypes = typesFromInstance.customAnnotationTypes
@@ -397,7 +397,8 @@ const createFromInstance = (instance: InstanceElement,
     name: objectName,
     label: instance.value[LABEL],
   })
-  const annotationTypes = annotationTypesForObject(typesFromInstance, object, isCustom(objectName))
+  const annotationTypes = annotationTypesForObject(typesFromInstance, instance,
+    isCustom(objectName))
   transformObjectAnnotations(object, annotationTypes, instance)
   const instanceFields = makeArray(instance.value.fields)
   instanceFields
@@ -450,7 +451,7 @@ const createFromSObjectsAndInstances = (
     if (!instance) {
       return [object]
     }
-    const annotationTypes = annotationTypesForObject(typesFromInstance, object, custom)
+    const annotationTypes = annotationTypesForObject(typesFromInstance, instance, custom)
     mergeCustomObjectWithInstance(
       object, instance, annotationTypes
     )

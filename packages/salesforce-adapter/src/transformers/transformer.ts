@@ -71,8 +71,8 @@ export const isInstanceOfCustomObject = (element: Element): element is InstanceE
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
 
-export const isCustomSettings = (object: ObjectType): boolean =>
-  object.annotations[CUSTOM_SETTINGS_TYPE]
+export const isCustomSettings = (instance: InstanceElement): boolean =>
+  instance.value[CUSTOM_SETTINGS_TYPE]
 
 export const defaultApiName = (element: Element): string => {
   const { name } = element.elemID

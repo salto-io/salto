@@ -15,7 +15,7 @@
 */
 import {
   Field, Element, isInstanceElement, Value, Values, isObjectType, isReferenceExpression,
-  ReferenceExpression, InstanceElement, INSTANCE_ANNOTATIONS, ElemID,
+  ReferenceExpression, InstanceElement, INSTANCE_ANNOTATIONS, ElemID, getField,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolvePath } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -54,14 +54,25 @@ const noop = (val: string): string => val
  * Use the value of a neighbor field as the context for finding the referenced element.
  *
  * @param contextFieldName    The name of the neighboring field (same level)
+ * @param levelsUp            How many levels to go up in the instance's type definition before
+ *                            looking for the neighbor.
  * @param contextValueMapper  An additional function to use to convert the value before the lookup
  */
-const neighborContextFunc = (
-  contextFieldName: string,
-  contextValueMapper: ContextValueMapperFunc = noop,
-): ContextFunc => (({ instance, elemByElemID, fieldPath, field }) => {
-  const resolveReference = (context: ReferenceExpression, path?: ElemID): string => {
-    const contextField = field.parent.fields[contextFieldName]
+const neighborContextFunc = ({
+  contextFieldName,
+  levelsUp = 0,
+  contextValueMapper = noop,
+}: {
+  contextFieldName: string
+  levelsUp?: number
+  contextValueMapper?: ContextValueMapperFunc
+}): ContextFunc => (({ instance, elemByElemID, fieldPath }) => {
+  if (fieldPath === undefined || contextFieldName === undefined) {
+    return undefined
+  }
+
+  const resolveReference = (context: ReferenceExpression, path?: ElemID): string | undefined => {
+    const contextField = getField(instance.type, fieldPath.createTopLevelParentID().path)
     const refWithValue = new ReferenceExpression(
       context.elemId,
       context.value ?? elemByElemID[context.elemId.getFullName()],
@@ -69,22 +80,25 @@ const neighborContextFunc = (
     return getLookUpName({ ref: refWithValue, field: contextField, path })
   }
 
-  const getParentPath = (currentFieldPath: ElemID): ElemID => {
-    const isNum = (str: string | undefined): boolean => (
-      !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
-    )
-    let path = currentFieldPath
-    // ignore array indices
-    while (isNum(path.getFullNameParts().pop())) {
-      path = path.createParentID()
+  const getParent = (currentFieldPath: ElemID, numLevels = 0): ElemID => {
+    const getParentPath = (p: ElemID): ElemID => {
+      const isNum = (str: string | undefined): boolean => (
+        !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
+      )
+      let path = p
+      // ignore array indices
+      while (isNum(path.getFullNameParts().pop())) {
+        path = path.createParentID()
+      }
+      return path.createParentID()
     }
-    return path.createParentID()
+    if (numLevels === 0) {
+      return getParentPath(currentFieldPath)
+    }
+    return getParent(getParentPath(currentFieldPath), numLevels - 1)
   }
 
-  if (fieldPath === undefined || contextFieldName === undefined) {
-    return undefined
-  }
-  const contextPath = getParentPath(fieldPath).createNestedID(contextFieldName)
+  const contextPath = getParent(fieldPath, levelsUp).createNestedID(contextFieldName)
   const context = resolvePath(instance, contextPath)
   const contextStr = isReferenceExpression(context)
     ? resolveReference(context, contextPath)
@@ -122,13 +136,16 @@ const ContextStrategyLookup: Record<
       ? apiName(elemByElemID[parent.elemId.getFullName()])
       : undefined)
   },
-  neighborTypeWorkflow: neighborContextFunc('type', workflowActionMapper),
-  neighborActionTypeLookup: neighborContextFunc('actionType', flowActionCallMapper),
-  neighborCPQLookup: neighborContextFunc(CPQ_LOOKUP_OBJECT_NAME),
-  neighborCPQRuleLookup: neighborContextFunc(CPQ_RULE_LOOKUP_OBJECT_FIELD),
-  neighborLookupValueTypeLookup: neighborContextFunc('lookupValueType'),
-  neighborObjectLookup: neighborContextFunc('object'),
-  neighborPicklistObjectLookup: neighborContextFunc('picklistObject'),
+  neighborTypeLookup: neighborContextFunc({ contextFieldName: 'type' }),
+  neighborTypeWorkflow: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: workflowActionMapper }),
+  neighborActionTypeFlowLookup: neighborContextFunc({ contextFieldName: 'actionType', contextValueMapper: flowActionCallMapper }),
+  neighborActionTypeLookup: neighborContextFunc({ contextFieldName: 'actionType' }),
+  neighborCPQLookup: neighborContextFunc({ contextFieldName: CPQ_LOOKUP_OBJECT_NAME }),
+  neighborCPQRuleLookup: neighborContextFunc({ contextFieldName: CPQ_RULE_LOOKUP_OBJECT_FIELD }),
+  neighborLookupValueTypeLookup: neighborContextFunc({ contextFieldName: 'lookupValueType' }),
+  neighborObjectLookup: neighborContextFunc({ contextFieldName: 'object' }),
+  parentObjectLookup: neighborContextFunc({ contextFieldName: 'object', levelsUp: 1 }),
+  neighborPicklistObjectLookup: neighborContextFunc({ contextFieldName: 'picklistObject' }),
 }
 
 const replaceReferenceValues = (
@@ -146,16 +163,13 @@ const replaceReferenceValues = (
     )
 
     const parentContextFunc = ContextStrategyLookup[target.parentContext ?? 'none']
-    if (parentContextFunc === undefined) {
+    const typeContextFunc = ContextStrategyLookup[target.typeContext ?? 'none']
+    if (parentContextFunc === undefined || typeContextFunc === undefined) {
       return undefined
     }
     const elemParent = target.parent ?? parentContextFunc(
       { instance, elemByElemID, field, fieldPath: path }
     )
-    const typeContextFunc = ContextStrategyLookup[target.typeContext ?? 'none']
-    if (typeContextFunc === undefined) {
-      return undefined
-    }
     const elemType = target.type ?? typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })

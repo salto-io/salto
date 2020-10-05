@@ -60,7 +60,6 @@ export const fetchMetadataType = async (
       knownTypes,
       baseTypeNames,
       childTypeNames,
-      isFolder: true,
       client,
       annotations: {
         hasMetaFile: true,

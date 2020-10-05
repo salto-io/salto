@@ -66,7 +66,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
-  getElements: (filename: string) => Promise<Element[]>
+  getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   clone: () => NaclFilesSource
   isEmpty: () => Promise<boolean>
   clear(args?: {
@@ -335,6 +335,8 @@ const buildNaclFilesSource = (
       )
     }
   }
+  const getNaclFile = (filename: string): Promise<NaclFile | undefined> =>
+    naclFilesStore.get(filename)
 
   return {
     list: async (): Promise<ElemID[]> =>
@@ -369,10 +371,17 @@ const buildNaclFilesSource = (
     getTotalSize: async (): Promise<number> =>
       _.sum(await Promise.all([naclFilesStore.getTotalSize(), staticFileSource.getTotalSize()])),
 
-    getNaclFile: filename => naclFilesStore.get(filename),
+    getNaclFile,
 
-    getElements: async filename =>
-      Object.values((await getState()).parsedNaclFiles[filename]?.elements) || [],
+    getParsedNaclFile: async filename => {
+      // We don't want to parse all nacl files here when we want only parsedResult of one file.
+      if (state !== undefined) {
+        return (await getState()).parsedNaclFiles[filename]
+      }
+      const naclFile = await getNaclFile(filename)
+      if (naclFile === undefined) return undefined
+      return (await parseNaclFiles([naclFile], cache, functions))[0]
+    },
 
     getSourceRanges: async elemID => {
       const naclFiles = await getElementNaclFiles(elemID)

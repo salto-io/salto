@@ -71,6 +71,7 @@ describe('Nacl Files Source', () => {
       clone: () => mockDirStore,
     }
     mockedStaticFilesSource = mockStaticFilesSource()
+    mockParse.mockResolvedValue({ elements: [], errors: [] })
   })
 
   describe('clear', () => {
@@ -194,7 +195,45 @@ describe('Nacl Files Source', () => {
       const naclSource = naclFilesSource(
         mockDirStore, mockCache, mockedStaticFilesSource, parsedFiles
       )
-      expect(await naclSource.getElements(filename)).toEqual([elem])
+      expect((await naclSource.getParsedNaclFile(filename))?.elements).toEqual([elem])
+    })
+  })
+
+  describe('getParsedNaclFile', () => {
+    let naclSource: NaclFilesSource
+    const mockFileData = { buffer: 'someData {}', filename: 'somefile.nacl' }
+
+    beforeEach(() => {
+      naclSource = naclFilesSource(
+        mockDirStore, mockCache, mockedStaticFilesSource
+      )
+    })
+
+    it('should return undefined if file doenst exist', async () => {
+      expect(await naclSource.getParsedNaclFile('nonExistentFile')).toBeUndefined()
+    })
+    it('should return parseResult when parse cache is not updated', async () => {
+      const elemID = new ElemID('dummy', 'elem')
+      const elem = new ObjectType({ elemID, path: ['test', 'new'] })
+      const elements = [elem];
+      (mockCache.get as jest.Mock).mockResolvedValueOnce(undefined);
+      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
+      mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
+      expect(
+        await naclSource.getParsedNaclFile(mockFileData.filename)
+      ).toMatchObject({ elements, errors: [], filename: mockFileData.filename })
+    })
+    it('should return cached result if updated', async () => {
+      mockParse.mockClear()
+      const elemID = new ElemID('dummy', 'elem')
+      const elem = new ObjectType({ elemID, path: ['test', 'new'] })
+      const elements = [elem];
+      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData);
+      (mockCache.get as jest.Mock).mockResolvedValue({ elements, errors: [] })
+      expect(await naclSource.getParsedNaclFile(mockFileData.filename)).toMatchObject(
+        { elements, errors: [], filename: mockFileData.filename }
+      )
+      expect(mockParse).not.toHaveBeenCalled()
     })
   })
 })

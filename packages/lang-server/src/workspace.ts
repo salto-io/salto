@@ -134,7 +134,9 @@ export class EditorWorkspace {
   }
 
   async getElements(filename: string): Promise<Element[]> {
-    return this.workspace.getElements(this.workspaceFilename(filename))
+    return (
+      await this.workspace.getParsedNaclFile(this.workspaceFilename(filename))
+      )?.elements || []
   }
 
   async getSourceMap(filename: string): Promise<parser.SourceMap> {

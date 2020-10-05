@@ -24,7 +24,7 @@ import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
 import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { Errors, ServiceDuplicationError, EnvDuplicationError,
   UnknownEnvError, DeleteCurrentEnvError } from './errors'
@@ -96,7 +96,7 @@ export type Workspace = {
   removeNaclFiles: (...names: string[]) => Promise<void>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
-  getElements: (filename: string) => Promise<Element[]>
+  getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
   clear: (args: Omit<WorkspaceComponents, 'serviceConfig'>) => Promise<void>
@@ -262,7 +262,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     listNaclFiles: () => naclFilesSource.listNaclFiles(),
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),
-    getElements: (filename: string) => naclFilesSource.getElements(filename),
+    getParsedNaclFile: (filename: string) => naclFilesSource.getParsedNaclFile(filename),
     promote: (ids: ElemID[]) => naclFilesSource.promote(ids),
     demote: (ids: ElemID[]) => naclFilesSource.demote(ids),
     demoteAll: () => naclFilesSource.demoteAll(),

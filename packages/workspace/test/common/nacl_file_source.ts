@@ -56,8 +56,14 @@ export const createMockNaclFileSource = (
       end: {},
     }))),
   getErrors: jest.fn().mockImplementation(() => Promise.resolve(errors)),
-  getElements: jest.fn().mockImplementation(
-    filename => Promise.resolve(naclFiles[filename] || [])
+  getParsedNaclFile: jest.fn().mockImplementation(
+    filename => Promise.resolve({
+      filename,
+      errors: [],
+      timestamp: Date.now(),
+      elements: naclFiles[filename] || [],
+      buffer: '',
+    })
   ),
   getElementNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.nacl')])),
   clone: jest.fn().mockImplementation(() => Promise.resolve()),

@@ -55,7 +55,7 @@ const separateChangeByFiles = async (
   (await source.getSourceRanges(change.id))
     .map(range => range.filename)
     .map(async filename => {
-      const fileElements = await source.getElements(filename)
+      const fileElements = (await source.getParsedNaclFile(filename))?.elements || []
       const filteredChange = applyFunctionToChangeData(
         change,
         changeData => filterByFile(change.id, changeData, fileElements),

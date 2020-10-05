@@ -98,7 +98,12 @@ const buildMockWorkspace = async (
     setNaclFiles: mockFunction<Workspace['setNaclFiles']>().mockResolvedValue(),
     removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>().mockResolvedValue(),
     listNaclFiles: mockFunction<Workspace['listNaclFiles']>().mockResolvedValue([filename]),
-    getElements: mockFunction<Workspace['getElements']>().mockResolvedValue(merged.merged),
+    getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>().mockResolvedValue({
+      elements: merged.merged,
+      filename: '',
+      timestamp: Date.now(),
+      errors: [],
+    }),
     clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(naclFile, buffer))),
   } as unknown as Workspace
 }

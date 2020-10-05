@@ -124,6 +124,7 @@ const removeHiddenFromValues = (
     type,
     transformFunc: removeHiddenValue,
     pathID,
+    strict: false,
   })
 )
 

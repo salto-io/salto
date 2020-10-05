@@ -37,6 +37,7 @@ import {
   CustomField, CustomObject, FieldPermissions, FilterItem, ObjectPermissions, ProfileInfo,
   TopicsForObjectsInfo,
 } from '../src/client/types'
+import { UsernamePasswordCredentials } from '../src/types'
 import {
   Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataObjectType,
   createInstanceElement,
@@ -46,7 +47,7 @@ import {
   findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject,
   findFullCustomObject,
 } from '../test/utils'
-import SalesforceClient, { API_VERSION, Credentials } from '../src/client/client'
+import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, createDeployPackage } from '../src/transformers/xml_transformer'
 import { mockTypes, lwcJsResourceContent, lwcHtmlResourceContent, mockDefaultValues } from '../test/mock_elements'
@@ -77,10 +78,11 @@ const extractReferenceTo = (annotations: Values): (string | undefined)[] => (
 describe('Salesforce adapter E2E with real account', () => {
   let client: SalesforceClient
   let adapter: SalesforceAdapter
-  let credLease: CredsLease<Credentials>
+  let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
-    const adapterAttr = realAdapter({ credentials: credLease.value })
+    const adapterAttr = realAdapter({ credentials:
+      new UsernamePasswordCredentials(credLease.value) })
     adapter = adapterAttr.adapter
     client = adapterAttr.client
   })

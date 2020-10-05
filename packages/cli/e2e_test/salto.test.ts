@@ -18,7 +18,7 @@ import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists, readFile } from '@salto-io/file'
-import { testHelpers as salesforceTestHelpers, SalesforceClient, Credentials } from '@salto-io/salesforce-adapter'
+import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
 import { Workspace, parser } from '@salto-io/workspace'
 // eslint-disable-next-line no-restricted-imports
@@ -47,7 +47,7 @@ import { instanceExists, objectExists, getSalesforceCredsInstance } from './help
 
 
 let lastPlan: Plan
-let credsLease: CredsLease<Credentials>
+let credsLease: CredsLease<UsernamePasswordCredentials>
 
 const apiNameAnno = (
   obj: string,
@@ -128,7 +128,9 @@ describe('cli e2e', () => {
 
     process.env[SALTO_HOME_VAR] = homePath
     credsLease = await salesforceTestHelpers().credentials()
-    client = new SalesforceClient({ credentials: credsLease.value })
+    client = new SalesforceClient({
+      credentials: new UsernamePasswordCredentials(credsLease.value),
+    })
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(`${fetchOutputDir}/salto.config/adapters`)
     await mkdirp(localStorageDir)

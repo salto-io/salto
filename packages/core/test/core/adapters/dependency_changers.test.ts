@@ -13,13 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange, DependencyChange, ChangeEntry, AdapterOperations, toChange } from '@salto-io/adapter-api'
+import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange,
+  DependencyChange, ChangeEntry, AdapterOperations, toChange } from '@salto-io/adapter-api'
 import { getAdapterDependencyChangers } from '../../../src/core/adapters'
 import { mockFunction } from '../../common/helpers'
 
 describe('getAdapterDependencyChangers', () => {
   const mockAdapter = (dependencyChanger?: DependencyChanger): Adapter => ({
-    credentialsType: new ObjectType({ elemID: new ElemID('test') }),
+    authenticationMethods: { basic: {
+      credentialsType: new ObjectType({ elemID: new ElemID('test') }),
+    } },
     configType: new ObjectType({ elemID: new ElemID('test') }),
     operations: mockFunction<Adapter['operations']>().mockReturnValue({
       fetch: mockFunction<AdapterOperations['fetch']>(),

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SalesforceClient, testHelpers as salesforceTestHelpers, Credentials } from '@salto-io/salesforce-adapter'
+import { SalesforceClient, testHelpers as salesforceTestHelpers, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 import path from 'path'
 import { Plan } from '@salto-io/core'
 import { parser } from '@salto-io/workspace'
@@ -173,10 +173,10 @@ describe('multi env tests', () => {
   const env2Elements = [commonObj, env2Obj, diffObjEnv2, commonInst, env2Inst, diffInstEnv2]
   let env1ElementAfterDeploy: typeof env1Elements
   let env2ElementAfterDeploy: typeof env2Elements
-  let env1CredsLease: CredsLease<Credentials>
-  let env2CredsLease: CredsLease<Credentials>
-  let env1Creds: Credentials
-  let env2Creds: Credentials
+  let env1CredsLease: CredsLease<UsernamePasswordCredentials>
+  let env2CredsLease: CredsLease<UsernamePasswordCredentials>
+  let env1Creds: UsernamePasswordCredentials
+  let env2Creds: UsernamePasswordCredentials
   let env1Client: SalesforceClient
   let env2Client: SalesforceClient
 
@@ -186,8 +186,8 @@ describe('multi env tests', () => {
     env2CredsLease = await salesforceTestHelpers().credentials('ENV_2')
     env1Creds = env1CredsLease.value
     env2Creds = env2CredsLease.value
-    env1Client = new SalesforceClient({ credentials: env1Creds })
-    env2Client = new SalesforceClient({ credentials: env2Creds })
+    env1Client = new SalesforceClient({ credentials: new UsernamePasswordCredentials(env1Creds) })
+    env2Client = new SalesforceClient({ credentials: new UsernamePasswordCredentials(env2Creds) })
 
     baseDir = (await tmp.dir()).path
     saltoHomeDir = (await tmp.dir()).path

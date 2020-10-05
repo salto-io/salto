@@ -21,7 +21,8 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { SalesforceRecord } from '../src/client/types'
 import SalesforceAdapter, { testHelpers } from '../index'
 import realAdapter from './adapter'
-import SalesforceClient, { Credentials } from '../src/client/client'
+import SalesforceClient from '../src/client/client'
+import { UsernamePasswordCredentials } from '../src/types'
 import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
 import { isCustomObject, apiName } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
@@ -37,7 +38,7 @@ describe('custom object instances e2e', () => {
   let client: SalesforceClient
   let adapter: SalesforceAdapter
   let elements: Element[]
-  let credLease: CredsLease<Credentials>
+  let credLease: CredsLease<UsernamePasswordCredentials>
 
   const filtersContext = {
     dataManagement: {
@@ -49,7 +50,8 @@ describe('custom object instances e2e', () => {
   }
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
-    const adapterParams = realAdapter({ credentials: credLease.value }, filtersContext)
+    const adapterParams = realAdapter({ credentials:
+      new UsernamePasswordCredentials(credLease.value) }, filtersContext)
     adapter = adapterParams.adapter
     client = adapterParams.client
 

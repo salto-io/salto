@@ -18,8 +18,10 @@ import nock from 'nock'
 import { RetryStrategies } from 'requestretry'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import SalesforceClient, { ApiLimitsTooLowError, getConnectionDetails, validateCredentials } from '../src/client/client'
+import SalesforceClient, { ApiLimitsTooLowError,
+  getConnectionDetails, validateCredentials } from '../src/client/client'
 import mockClient from './client'
+import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -33,18 +35,18 @@ describe('salesforce client', () => {
       .post(/.*/)
       .reply(200, '<serverUrl>http://dodo22</serverUrl>/')
   })
-  const credentials = {
+  const credentials = new UsernamePasswordCredentials({
     username: 'myUser',
     password: 'myPass',
-    apiToken: 'myToken',
     isSandbox: false,
-  }
+    apiToken: 'myToken',
+  })
   const { connection } = mockClient()
-  const client = new SalesforceClient({ credentials: {
-    isSandbox: true,
+  const client = new SalesforceClient({ credentials: new UsernamePasswordCredentials({
     username: '',
     password: '',
-  },
+    isSandbox: true,
+  }),
   retryOptions: {
     maxAttempts: 4, // try 5 times
     retryDelay: 100, // wait for 100ms before trying again
@@ -67,7 +69,6 @@ describe('salesforce client', () => {
             message: 'no bla named foo found',
           }],
         } } } } })
-
       await expect(client.delete('bla', 'foo')).resolves.not.toThrow()
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -414,6 +415,19 @@ describe('salesforce client', () => {
 
     afterEach(() => {
       dodoScope.done()
+    })
+  })
+  describe('get connection details for oauth credentials', () => {
+    const oauthCredentials = new OauthAccessTokenCredentials({
+      isSandbox: false,
+      instanceUrl: 'testInstanceUrl',
+      accessToken: 'testAccessToken',
+    })
+    it('should return empty orgId for oauth credentials', async () => {
+      const { orgId, remainingDailyRequests } = await getConnectionDetails(oauthCredentials,
+        connection)
+      expect(orgId).toEqual('')
+      expect(remainingDailyRequests).toEqual(10000)
     })
   })
 })

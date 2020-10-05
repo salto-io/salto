@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import yargs from 'yargs'
 import { loadLocalWorkspace } from '@salto-io/core'
+import { AdapterAuthMethod } from '@salto-io/adapter-api'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 import { EnvironmentArgs } from '../commands/env'
@@ -24,6 +25,7 @@ export interface ServiceCmdArgs {
   command: string
   name?: string
   nologin?: boolean
+  authType?: AdapterAuthMethod
 }
 
 export type ServiceCmdParsedCliInput = ParsedCliInput<ServiceCmdArgs>
@@ -46,10 +48,19 @@ export const serviceCmdFilter: ServiceCmdFilter = {
         {
           type: 'string',
           desc: 'The name of the service [required for add & login]',
+        })
+      .option('auth-type',
+        {
+          alias: 'a',
+          type: 'string',
+          choices: ['basic', 'oauth'],
+          desc: 'The type of authorization you would like to use for the service',
+          default: 'basic',
         }).check((args: yargs.Arguments<{
           command?: string
           name?: string
           nologin?: boolean
+          authType?: AdapterAuthMethod
         }>): true => {
         if (args.command && nameRequiredCommands.includes(args.command)) {
           if (_.isEmpty(args.name)) {

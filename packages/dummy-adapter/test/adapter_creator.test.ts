@@ -24,16 +24,18 @@ describe('adapter creator', () => {
     expect(Object.keys(config?.fields)).toEqual(Object.keys(defaultParams))
   })
   it('should return an empty creds type', () => {
-    expect(Object.keys(adapter.credentialsType.fields)).toHaveLength(0)
+    expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toHaveLength(0)
   })
   it('should have a credential validator that does nothing and return an empty id', async () => {
     expect(
-      await adapter.validateCredentials(new InstanceElement(DUMMY_ADAPTER, adapter.credentialsType))
+      await adapter.validateCredentials(new InstanceElement(DUMMY_ADAPTER,
+        adapter.authenticationMethods.basic.credentialsType))
     ).toBe('')
   })
   it('should return the dummy adapter', () => {
     expect(adapter.operations({
-      credentials: new InstanceElement(DUMMY_ADAPTER, adapter.credentialsType),
+      credentials: new InstanceElement(DUMMY_ADAPTER,
+        adapter.authenticationMethods.basic.credentialsType),
       config: new InstanceElement(
         DUMMY_ADAPTER,
                 adapter.configType as ObjectType,

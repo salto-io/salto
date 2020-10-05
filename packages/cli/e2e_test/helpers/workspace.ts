@@ -101,7 +101,22 @@ export const runAddSalesforceService = async (
     'add',
     mockCliOutput(),
     () => Promise.resolve(credentials),
-    'salesforce'
+    'basic',
+    'salesforce',
+  ).execute()
+}
+
+export const runSalesforceOauthLogin = async (
+  workspaceDir: string,
+  sfCredsInstance: InstanceElement
+): Promise<void> => {
+  await servicesCommand(
+    workspaceDir,
+    'login',
+    mockCliOutput(),
+    () => Promise.resolve(sfCredsInstance),
+    'oauth',
+    'salesforce',
   ).execute()
 }
 
@@ -114,7 +129,8 @@ export const runSalesforceLogin = async (
     'login',
     mockCliOutput(),
     () => Promise.resolve(sfCredsInstance),
-    'salesforce'
+    'basic',
+    'salesforce',
   ).execute()
 }
 

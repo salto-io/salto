@@ -13,53 +13,65 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType } from '@salto-io/adapter-api'
+import { AdapterAuthentication } from '@salto-io/adapter-api'
 import {
   LoginStatus, updateCredentials, loadLocalWorkspace, addAdapter, installAdapter,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { command } from '../../src/commands/service'
+import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 
+jest.mock('../../src/cli_oauth_authenticator', () => ({
+  processOauthCredentials: jest.fn().mockResolvedValue({
+    instanceUrl: 'someInstanceUrl',
+    accessToken: 'accessToken',
+  }),
+}))
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   getAdaptersCredentialsTypes: jest.fn().mockImplementation((serviceNames: string[]):
-    Record<string, ObjectType> => {
+   Record<string, AdapterAuthentication> => {
     if (serviceNames[0] === 'noAdapter') {
       throw new Error('no adapter')
     }
     return {
       newAdapter: mocks.mockCredentialsType('newAdapter'),
       hubspot: mocks.mockCredentialsType('hubspot'),
-      salesforce: mocks.mockCredentialsType('salesforce'),
       '': mocks.mockCredentialsType(''),
+      oauthAdapter: mocks.mockOauthCredentialsType('oauthAdapter', { url: '', accessTokenField: '' }),
     }
   }),
   addAdapter: jest.fn().mockImplementation((
     _workspace: Workspace,
     adapterName: string
-  ): Promise<ObjectType> => {
+  ): Promise<AdapterAuthentication> => {
     if (adapterName === 'noAdapter') {
       throw new Error('no adapter')
     }
-    return Promise.resolve(mocks.mockConfigType(adapterName))
+    return Promise.resolve(mocks.mockAdapterAuthentication(mocks.mockConfigType(adapterName)))
   }),
   updateCredentials: jest.fn().mockResolvedValue(true),
   getLoginStatuses: jest.fn().mockImplementation((
     _workspace: Workspace,
-    serviceNames: string[]
+    serviceNames: string[],
   ) => {
     const loginStatuses: Record<string, LoginStatus> = {}
     serviceNames.forEach(serviceName => {
       if (serviceName === 'salesforce') {
         loginStatuses[serviceName] = {
           isLoggedIn: true,
-          configType: mocks.mockConfigType(serviceName),
+          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(serviceName)),
+        }
+      } else if (serviceName === 'oauthAdapter') {
+        loginStatuses[serviceName] = {
+          isLoggedIn: true,
+          configTypeOptions: mocks.mockOauthCredentialsType(serviceName, { url: '', accessTokenField: '' }),
         }
       } else {
         loginStatuses[serviceName] = {
           isLoggedIn: false,
-          configType: mocks.mockConfigType(serviceName),
+          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(serviceName)),
         }
       }
     })
@@ -77,10 +89,14 @@ describe('service command', () => {
     token: 'test',
     sandbox: false,
   })
+  const mockGetOAuthCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
+    port: 8888,
+    consumerKey: 'test',
+  })
   const currentEnv = 'env'
   const mockLoadWorkspace = loadLocalWorkspace as jest.Mock
   mockLoadWorkspace.mockImplementation(() => {
-    let services = ['salesforce']
+    let services = ['salesforce', 'oauthAdapter']
     let env = currentEnv
     return {
       services: () => services,
@@ -100,7 +116,7 @@ describe('service command', () => {
   describe('Invalid service command', () => {
     it('invalid command', async () => {
       try {
-        await command('', 'errorCommand', cliOutput, mockGetCredentialsFromUser, 'service')
+        await command('', 'errorCommand', cliOutput, mockGetCredentialsFromUser, 'basic', 'service')
           .execute()
       } catch (error) {
         expect(error.message).toMatch('Unknown service management command')
@@ -111,7 +127,7 @@ describe('service command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with no service name', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetCredentialsFromUser, undefined).execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'basic').execute()
         })
 
         it('should load the workspace', () => {
@@ -126,7 +142,7 @@ describe('service command', () => {
 
       describe('when called with service that is configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'basic', 'salesforce').execute()
         })
 
         it('should load the workspace', async () => {
@@ -140,7 +156,7 @@ describe('service command', () => {
 
       describe('when called with a service that is not configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'notConfigured').execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'basic', 'notConfigured').execute()
         })
 
         it('should print configured services', async () => {
@@ -152,7 +168,7 @@ describe('service command', () => {
           mockLoadWorkspace.mockClear()
         })
         it('should use current env when env is not provided', async () => {
-          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'basic', 'salesforce').execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
           expect(cliOutput.stdout.content).toContain('salesforce')
         })
@@ -163,6 +179,7 @@ describe('service command', () => {
             'list',
             cliOutput,
             mockGetCredentialsFromUser,
+            'basic',
             undefined,
             injectedEnv,
           ).execute()
@@ -176,7 +193,7 @@ describe('service command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already configured service', () => {
         beforeEach(async () => {
-          await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'salesforce').execute()
         })
 
         it('should print already added', async () => {
@@ -187,7 +204,7 @@ describe('service command', () => {
       describe('when called with a new service', () => {
         const installAdapterMock = installAdapter as jest.Mock
         beforeEach(async () => {
-          await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
+          await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'newAdapter').execute()
         })
 
         it('should print please enter credentials', async () => {
@@ -203,13 +220,13 @@ describe('service command', () => {
             throw new Error('Failed to install Adapter!')
           })
           await expect(
-            command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
+            command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'newAdapter').execute()
           ).rejects.toThrow()
         })
 
         describe('when called with valid credentials', () => {
           beforeEach(async () => {
-            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'newAdapter').execute()
           })
           it('should print login information updated', async () => {
             expect(cliOutput.stdout.content).toContain('Login information successfully updated!')
@@ -220,6 +237,16 @@ describe('service command', () => {
           })
         })
 
+        describe('when add called with unsupported auth type', () => {
+          beforeEach(async () => {
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'oauth', 'newAdapter').execute()
+          })
+
+          it('fails with no such auth type error', () => {
+            expect(cliOutput.stderr.content).toContain('Error: Could not login to newAdapter: Adapter does not support authentication of type oauth')
+          })
+        })
+
         describe('when called with invalid credentials', () => {
           beforeEach(async () => {
             cliOutput = {
@@ -227,7 +254,7 @@ describe('service command', () => {
               stderr: new mocks.MockWriteStream(),
             };
             (updateCredentials as jest.Mock).mockRejectedValue('Rejected!')
-            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'newAdapter').execute()
           })
           afterEach(() => {
             (updateCredentials as jest.Mock).mockResolvedValue(true)
@@ -261,6 +288,7 @@ describe('service command', () => {
               'add',
               cliOutput,
               mockGetCredentialsFromUser,
+              'basic',
               'newAdapter',
               undefined,
               true
@@ -284,7 +312,7 @@ describe('service command', () => {
             mockAddAdapter.mockClear()
           })
           it('should use current env when env is not provided', async () => {
-            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'hubspot').execute()
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'hubspot').execute()
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
             expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual(currentEnv)
           })
@@ -294,6 +322,7 @@ describe('service command', () => {
               'add',
               cliOutput,
               mockGetCredentialsFromUser,
+              'basic',
               undefined,
               'injected'
             ).execute()
@@ -306,12 +335,12 @@ describe('service command', () => {
       describe('when called with a new adapter that does not exist', () => {
         describe('with login', () => {
           it('should throw an error', async () => {
-            await expect(command('', 'add', cliOutput, mockGetCredentialsFromUser, 'noAdapter').execute()).rejects.toThrow()
+            await expect(command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'noAdapter').execute()).rejects.toThrow()
           })
         })
         describe('without login', () => {
           it('should throw an error', async () => {
-            await expect(command('', 'add', cliOutput, mockGetCredentialsFromUser, 'noAdapter', undefined, true).execute()).rejects.toThrow()
+            await expect(command('', 'add', cliOutput, mockGetCredentialsFromUser, 'basic', 'noAdapter', undefined, true).execute()).rejects.toThrow()
           })
         })
       })
@@ -322,9 +351,8 @@ describe('service command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'basic', 'salesforce').execute()
         })
-
         it('should print login override', () => {
           expect(cliOutput.stdout.content).toContain('override')
         })
@@ -344,7 +372,7 @@ describe('service command', () => {
 
       describe('when called with not configured service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'notConfigured').execute()
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'basic', 'notConfigured').execute()
         })
 
         it('should print not configured', () => {
@@ -352,9 +380,38 @@ describe('service command', () => {
         })
       })
 
+      describe('when login called with unsupported auth type', () => {
+        beforeEach(async () => {
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'oauth', 'salesforce').execute()
+        })
+
+        it('fails with no such auth type error', () => {
+          expect(cliOutput.stderr.content).toContain('Error: Could not login to salesforce: Adapter does not support authentication of type oauth')
+        })
+      })
+
+      describe('when called with oauth credentials', () => {
+        beforeEach(async () => {
+          await command('', 'login', cliOutput, mockGetOAuthCredentialsFromUser, 'oauth', 'oauthAdapter').execute()
+        })
+        it('should process oauth credentials', () => {
+          expect(processOauthCredentials).toHaveBeenCalled()
+        })
+        it('should get config from user', () => {
+          expect(mockGetOAuthCredentialsFromUser).toHaveBeenCalled()
+        })
+
+        it('should call update config', async () => {
+          expect(updateCredentials).toHaveBeenCalled()
+        })
+
+        it('should print it logged in', async () => {
+          expect(cliOutput.stdout.content).toContain('Login information successfully updated')
+        })
+      })
       describe('when called with configured but not logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'basic', 'salesforce').execute()
         })
         it('should get config from user', () => {
           expect(mockGetCredentialsFromUser).toHaveBeenCalled()
@@ -375,7 +432,7 @@ describe('service command', () => {
           mockupdateCredentials.mockClear()
         })
         it('should use current env when env is not provided', async () => {
-          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'basic', 'salesforce').execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
           expect((mockupdateCredentials.mock.calls[0][0] as Workspace).currentEnv())
             .toEqual(currentEnv)
@@ -386,6 +443,7 @@ describe('service command', () => {
             'login',
             cliOutput,
             mockGetCredentialsFromUser,
+            'basic',
             'netsuite',
             'injected'
           ).execute()

@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
-import SalesforceClient, { Credentials } from '../src/client/client'
+import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
-import { SalesforceConfig } from '../src/types'
+import { SalesforceConfig, Credentials } from '../src/types'
 
 export type Reals = {
   client: SalesforceClient

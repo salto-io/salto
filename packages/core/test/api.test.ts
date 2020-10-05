@@ -148,17 +148,19 @@ describe('api.ts', () => {
   }
   const mockAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-    credentialsType: mockConfigType,
+    authenticationMethods: { basic: { credentialsType: mockConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
   }
 
   const mockEmptyAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-    credentialsType: mockEmptyConfigType,
+    authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
   }
   const mockAdapterWithInstall = {
-    credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
+    authenticationMethods: { basic: {
+      credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
+    } },
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
     install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
@@ -192,6 +194,7 @@ describe('api.ts', () => {
       new InstanceElement('instance_2', objType, {}),
       new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden', regField: 'regValue' }),
     ]
+
     beforeAll(() => {
       mockFetchChanges.mockResolvedValue({
         changes: [],
@@ -202,6 +205,7 @@ describe('api.ts', () => {
         adapterNameToConfigMessage: {},
       })
     })
+
     describe('Full fetch', () => {
       let ws: workspace.Workspace
       let stateOverride: jest.SpyInstance
@@ -413,7 +417,9 @@ describe('api.ts', () => {
       it('should set adapter config', async () => {
         const serviceName = 'test'
         adapterCreators[serviceName] = {
-          credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }),
+          authenticationMethods: {
+            basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
+          },
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
         }

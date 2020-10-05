@@ -96,7 +96,6 @@ const creds = <TCreds extends {}>(
       runningTasksPrinter.unschedule(CREDS_INTERVAL_ID)
     }
   }
-
   const fromEnv = async (): Promise<CredsLease<TCreds>> => {
     const lease = {
       id: 'from environment variables',
@@ -107,7 +106,6 @@ const creds = <TCreds extends {}>(
   }
 
   const envUtils = createEnvUtils(env)
-
   return envUtils.bool('USE_CRED_POOL') || !spec.envHasCreds(env)
     ? fromPool()
     : Promise.resolve(fromEnv())

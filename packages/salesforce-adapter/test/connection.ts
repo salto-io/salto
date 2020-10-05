@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
+import { IdentityInfo } from 'jsforce'
 import { MetadataObject, DescribeMetadataResult, ValueTypeField, DescribeValueTypeResult, FileProperties, RetrieveResult, RetrieveResultLocator, DeployResultLocator, DeployResult, QueryResult } from 'jsforce-types'
 import Connection, { Metadata, Soap, Bulk, Tooling } from '../src/client/jsforce'
 import { createEncodedZipContent, MockInterface, mockFunction, ZipFile } from './utils'
@@ -136,10 +137,92 @@ const mockQueryResult = (
   ...props,
 })
 
+const mockIdentity = (organizationId: string): IdentityInfo => ({
+  id: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  asserted_user: false,
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  user_id: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  organization_id: organizationId,
+  username: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  nick_name: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  display_name: '',
+  email: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  email_verified: false,
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  first_name: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  last_name: '',
+  timezone: '',
+  photos: {
+    picture: '',
+    thumbnail: '',
+  },
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  addr_street: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  addr_city: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  addr_state: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  addr_country: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  addr_zip: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  mobile_phone: '',
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  mobile_phone_verified: false,
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  is_lightning_login_user: false,
+  status: {
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    created_date: null,
+    body: '',
+  },
+  urls: {
+    enterprise: '',
+    metadata: '',
+    partner: '',
+    rest: '',
+    sobjects: '',
+    search: '',
+    query: '',
+    recent: '',
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    tooling_soap: '',
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    tooling_rest: '',
+    profile: '',
+    feeds: '',
+    groups: '',
+    users: '',
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    feed_items: '',
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    feed_elements: '',
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    custom_domain: '',
+  },
+  active: false,
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  user_type: '',
+  language: '',
+  locale: '',
+  utcOffset: 0,
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  last_modified_date: new Date(),
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  is_app_installed: false,
+})
+
 export const mockJsforce: () => MockInterface<Connection> = () => ({
-  login: mockFunction<Connection['login']>().mockResolvedValue(
+  login: mockFunction<Connection['login']>().mockImplementation(async () => (
     { id: '', organizationId: '', url: '' }
-  ),
+  )),
   metadata: {
     describe: mockFunction<Metadata['describe']>().mockResolvedValue({ metadataObjects: [] }),
     describeValueType: mockFunction<Metadata['describeValueType']>().mockResolvedValue(
@@ -170,4 +253,5 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     query: mockFunction<Tooling['query']>().mockResolvedValue(mockQueryResult({})),
     queryMore: mockFunction<Tooling['queryMore']>().mockResolvedValue(mockQueryResult({})),
   },
+  identity: mockFunction<Connection['identity']>().mockImplementation(async () => mockIdentity('')),
 })

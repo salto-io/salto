@@ -144,6 +144,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`
+  public static readonly GO_TO_BROWSER = (url: string): string => `Please follow the steps for authenticating in your browser. If a new tab has not opened automatically, please go to ${url}`
   public static readonly SERVICE_HOW_ADD = (serviceName: string): string => `Use \`salto service add ${serviceName}\` to add the service to the environment`
   public static readonly SERVICE_ADDED = (serviceName: string): string => `${serviceName} was added to the environment`
   public static readonly SERVICES_LOGIN_UPDATED = 'Login information successfully updated!'

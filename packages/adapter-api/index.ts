@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+export * from './src/authentication_types'
 export * from './src/elements'
 export * from './src/element_id'
 export * from './src/values'

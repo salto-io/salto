@@ -15,9 +15,9 @@
 */
 import wu from 'wu'
 import {
-  Element, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField, Change,
-  ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
-  AdapterSuccessInstallResult, Adapter,
+  Adapter, Element, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
+  Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
+  AdapterSuccessInstallResult, AdapterAuthentication,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -50,10 +50,13 @@ export { cleanWorkspace } from './core/clean'
 
 const log = logger(module)
 
+const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
+  adapterCreators[loginConfig.elemID.adapter]
+
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>
 ): Promise<AccountId> => {
-  const adapterCreator = adapterCreators[loginConfig.elemID.adapter]
+  const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
     return adapterCreator.validateCredentials(loginConfig)
   }
@@ -75,6 +78,7 @@ const shouldElementBeIncluded = (services: ReadonlyArray<string>) =>
     // Variables belong to all of the services
     || element.elemID.adapter === ElemID.VARIABLES_NAMESPACE
   )
+
 
 const filterElementsByServices = (
   elements: Element[] | readonly Element[],
@@ -322,7 +326,7 @@ export const installAdapter = async (adapterName: string):
 export const addAdapter = async (
   workspace: Workspace,
   adapterName: string,
-): Promise<ObjectType> => {
+): Promise<AdapterAuthentication> => {
   const adapter = getAdapterCreator(adapterName)
   await workspace.addService(adapterName)
 
@@ -332,19 +336,19 @@ export const addAdapter = async (
       await workspace.updateServiceConfig(adapterName, defaultConfig)
     }
   }
-  return adapter.credentialsType
+  return adapter.authenticationMethods
 }
 
-export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
+export type LoginStatus = { configTypeOptions: AdapterAuthentication; isLoggedIn: boolean }
 export const getLoginStatuses = async (
   workspace: Workspace,
   adapterNames = workspace.services(),
 ): Promise<Record<string, LoginStatus>> => {
   const creds = await workspace.servicesCredentials(adapterNames)
   const logins = _.mapValues(getAdaptersCredentialsTypes(adapterNames),
-    async (config, adapter) =>
+    async (configTypeOptions, adapter) =>
       ({
-        configType: config,
+        configTypeOptions,
         isLoggedIn: !!creds[adapter],
       }))
 

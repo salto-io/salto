@@ -368,7 +368,7 @@ Manage your environment services
 
 * `--env, -e` : The name of the environment to use
 * `--nologin, -n` : Do not login to service when adding it. Example usage: `service add <service-name> --nologin`) [boolean] [default: false]
-
+* `--auth-type, -a` : The type of authorization you would like to use for the service. Options are 'basic' for username/password login, and 'oauth'.
 
 ### **salto env \<command> [\<name>] [\<new-name>]**
 

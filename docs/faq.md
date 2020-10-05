@@ -24,6 +24,7 @@ Support for other services is in the works.
 
 Currently, service credentials are stored under your $SALTO_HOME directory (e.g. $HOME/.salto on MacOS), in the directory corresponding to the relevant workspace. We choose to store the credentials there by default in order to reduce the chances you'll check-in by mistake credentials in plaintext to your source control system.
 
+Credential types supported vary by service. Currently all services require username and password, except for Salesforce, in which we support OAuth credentials as well.
 In the future we're planning support for storing credentials in a secured shared location.
 
 ## What is Salto's License?

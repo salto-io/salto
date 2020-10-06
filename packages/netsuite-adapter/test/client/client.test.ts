@@ -322,13 +322,12 @@ describe('netsuite client', () => {
       const { elements, failedPaths } = await client
         .importFileCabinetContent([new RegExp(fileCabinetTopLevelFolders[0])])
 
-      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(5)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)
     })
@@ -362,14 +361,13 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent([])
-      expect(mockExecuteAction).toHaveBeenCalledTimes(7)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)
     })
@@ -518,35 +516,6 @@ describe('netsuite client', () => {
             data: filesPathResult,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_FILES) {
-          if (_.isEqual(context.arguments.paths, filesPathResult)) {
-            return Promise.resolve({
-              isSuccess: () => true,
-              data: {
-                results: [
-                  {
-                    path: MOCK_FILE_PATH,
-                    loaded: true,
-                  },
-                  {
-                    path: MOCK_FILE_ATTRS_PATH,
-                    loaded: true,
-                  },
-                  {
-                    path: MOCK_FOLDER_ATTRS_PATH,
-                    loaded: true,
-                  },
-                ],
-              },
-            })
-          }
-          return Promise.resolve({
-            isSuccess: () => true,
-            data: {
-              results: [],
-            },
-          })
-        }
         return Promise.resolve({ isSuccess: () => true })
       })
       const { elements, failedPaths } = await client.importFileCabinetContent(
@@ -555,14 +524,13 @@ describe('netsuite client', () => {
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)
-      expect(mockExecuteAction).toHaveBeenCalledTimes(7)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
     })
 
     it('should return only loaded files', async () => {

@@ -486,6 +486,12 @@ export default class NetsuiteClient {
 
   private async importFiles(filePaths: string[], executor: CommandActionExecutorType):
     Promise<{ importedPaths: string[]; failedPaths: string[] }> {
+    if (filePaths.length === 0) {
+      return {
+        importedPaths: [],
+        failedPaths: [],
+      }
+    }
     try {
       const actionResult = await this.executeProjectAction(
         COMMANDS.IMPORT_FILES,

@@ -678,7 +678,7 @@ export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID)
 }
 
 const createDefaultValuesFromType = (type: TypeElement): Values => {
-  const mergeWithObjectDefaults = (object: ObjectType): Values =>
+  const createDefaultValuesFromObjectType = (object: ObjectType): Values =>
     _(object.fields).mapValues((field, _name) => {
       if (field.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined) {
         return field.annotations[CORE_ANNOTATIONS.DEFAULT]
@@ -691,7 +691,7 @@ const createDefaultValuesFromType = (type: TypeElement): Values => {
     }).pickBy(v => v !== undefined).value()
 
   return (type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && isObjectType(type)
-    ? mergeWithObjectDefaults(type)
+    ? createDefaultValuesFromObjectType(type)
     : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 

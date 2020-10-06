@@ -53,6 +53,9 @@ const removeValuesFromInstances = (
 
   elements
     .filter(isInstanceElement)
+    // The below filter is temporary optimization to save calling transformValues for all instances
+    // since TYPE_NAME_TO_FIELD_REMOVALS contains currently only top level types
+    .filter(inst => typeNameToFieldRemovals.get(metadataType(inst)) !== undefined)
     .forEach(inst => {
       inst.value = transformValues({
         values: inst.value,

@@ -75,7 +75,7 @@ export const isCustomSettings = (instance: InstanceElement): boolean =>
   instance.value[CUSTOM_SETTINGS_TYPE]
 
 export const isCustomSettingsObject = (obj: ObjectType): boolean =>
-  obj.annnotations[CUSTOM_SETTINGS_TYPE]
+  obj.annotations[CUSTOM_SETTINGS_TYPE]
 
 export const defaultApiName = (element: Element): string => {
   const { name } = element.elemID

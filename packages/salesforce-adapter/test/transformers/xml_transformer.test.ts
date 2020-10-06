@@ -62,7 +62,7 @@ describe('XML Transformer', () => {
     })
 
     describe('with simple types', () => {
-      const profileValues = { fullName: 'TestProfile', num: 12, str: 'str', b: true }
+      const profileValues = { fullName: 'TestProfile', num: 12, str: 'str <> bla', b: true }
       beforeEach(async () => {
         pkg.add(createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout))
         pkg.add(createInstanceElement({ fullName: 'TestLayout2' }, mockTypes.Layout))
@@ -94,9 +94,18 @@ describe('XML Transformer', () => {
         expect(zipFiles).toHaveProperty([`${packageName}/layouts/TestLayout2.layout`])
         expect(zipFiles).toHaveProperty([`${packageName}/profiles/TestProfile.profile`])
       })
-      it('should write serialized values to instance xml file', () => {
-        const values = xmlParser.parse(zipFiles[`${packageName}/profiles/TestProfile.profile`])
-        expect(values).toEqual({ Profile: _.omit(profileValues, 'fullName') })
+      describe('serialized xml file', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let values: any
+        beforeAll(() => {
+          values = xmlParser.parse(zipFiles[`${packageName}/profiles/TestProfile.profile`])
+        })
+        it('should write serialized values to instance xml file', () => {
+          expect(values).toMatchObject({ Profile: _.omit(profileValues, ['fullName', 'str']) })
+        })
+        it('should encode special XML characters', () => {
+          expect(values.Profile.str).toEqual('str &lt;&gt; bla')
+        })
       })
     })
 
@@ -350,7 +359,7 @@ describe('XML Transformer', () => {
               + '    <encodingKey>ISO-8859-1</encodingKey>\n'
               + '    <name>My Email Template</name>\n'
               + '    <style>none</style>\n'
-              + '    <subject>MySubject</subject>\n'
+              + '    <subject>MySubject &amp; title</subject>\n'
               + '    <type>text</type>\n'
               + '    <uiType>Aloha</uiType>\n'
               + '</EmailTemplate>\n' }, { path: 'unpackaged/email/MyFolder/MyEmailTemplate.email',
@@ -367,14 +376,14 @@ describe('XML Transformer', () => {
         emailTemplate = values.find(value => value.file.type === 'EmailTemplate')?.values
       })
 
-      it('should transform EmailFolder zip to MetadataInfo', async () => {
+      it('should transform EmailFolder zip to MetadataInfo', () => {
         expect(emailFolder).toBeDefined()
         expect(emailFolder?.fullName).toEqual('MyFolder')
         expect(emailFolder?.name).toEqual('My folder')
         expect(emailFolder?.accessType).toEqual('Public')
       })
 
-      it('should transform EmailTemplate zip to MetadataInfo', async () => {
+      it('should transform EmailTemplate zip to MetadataInfo', () => {
         expect(emailTemplate).toBeDefined()
         expect(emailTemplate?.fullName).toEqual('MyFolder/MyEmailTemplate')
         expect(emailTemplate?.name).toEqual('My Email Template')
@@ -382,6 +391,10 @@ describe('XML Transformer', () => {
         const contentStaticFile = emailTemplate?.content as StaticFile
         expect(contentStaticFile.content).toEqual(Buffer.from('Email Body'))
         expect(contentStaticFile.filepath).toEqual('salesforce/Records/EmailTemplate/MyFolder/MyEmailTemplate.email')
+      })
+
+      it('should decode XML encoded values', () => {
+        expect(emailTemplate?.subject).toEqual('MySubject & title')
       })
     })
 

@@ -39,6 +39,7 @@
     "@salto-io/lowerdash": "0.1.33",
     "@types/requestretry": "^1.12.5",
     "fast-xml-parser": "^3.15.0",
+    "he": "^1.2.0",
     "jsforce": "https://github.com/salto-io/jsforce.git",
     "jszip": "^3.2.2",
     "lodash": "^4.17.19",

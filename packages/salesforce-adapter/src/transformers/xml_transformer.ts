@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import he from 'he'
 import parser from 'fast-xml-parser'
 import { RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
 import JSZip from 'jszip'
@@ -209,7 +210,11 @@ const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
 
 const xmlToValues = (xmlAsString: string, type: string): Values => parser.parse(
   xmlAsString,
-  { ignoreAttributes: false, attributeNamePrefix: XML_ATTRIBUTE_PREFIX }
+  {
+    ignoreAttributes: false,
+    attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+    tagValueProcessor: val => he.decode(val),
+  }
 )[type]
 
 const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
@@ -290,6 +295,7 @@ const toMetadataXml = (name: string, values: Values): string =>
   new parser.j2xParser({
     attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
     ignoreAttributes: false,
+    tagValueProcessor: val => he.encode(String(val), { useNamedReferences: true }),
   }).parse({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
 const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => {

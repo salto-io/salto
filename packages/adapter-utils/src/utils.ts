@@ -677,36 +677,36 @@ export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID)
   return obj
 }
 
-const mergeWithDefaults = (type: TypeElement, values: Values): Values => {
-  const mergeWithObjectDefaults = (object: ObjectType, innerValues: Values): Values =>
-    _(object.fields).mapValues((field, name) => {
-      if (field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && !isListType(field.type)) {
-        return field.type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined
-          ? innerValues[name]
-          : mergeWithDefaults(field.type, innerValues[name])
+const createDefaultValuesFromType = (type: TypeElement): Values => {
+  const createDefaultValuesFromObjectType = (object: ObjectType): Values =>
+    _(object.fields).mapValues((field, _name) => {
+      if (field.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined) {
+        return field.annotations[CORE_ANNOTATIONS.DEFAULT]
       }
-      return innerValues[name] ?? field.annotations[CORE_ANNOTATIONS.DEFAULT]
+      if (field.type.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
+        && !isListType(field.type)) {
+        return createDefaultValuesFromType(field.type)
+      }
+      return undefined
     }).pickBy(v => v !== undefined).value()
 
   return (type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && isObjectType(type)
-    ? mergeWithObjectDefaults(type, values)
-    : (values ?? type.annotations[CORE_ANNOTATIONS.DEFAULT]))
+    ? createDefaultValuesFromObjectType(type)
+    : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 
 export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
   instances
     .forEach(inst => {
-      const valueWithDefaults = mergeWithDefaults(inst.type, inst.value)
-      if (!_.isEmpty(valueWithDefaults)) {
-        inst.value = valueWithDefaults
-      }
+      const defaultValues = createDefaultValuesFromType(inst.type)
+      inst.value = _.merge({}, defaultValues, inst.value)
     })
 }
 
 export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
   InstanceElement => {
   const instance = new InstanceElement(name, objectType)
-  applyInstancesDefaults([instance])
+  instance.value = createDefaultValuesFromType(instance.type)
   return instance
 }
 

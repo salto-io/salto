@@ -155,6 +155,32 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
+
+    it('should fetch folder metadata type', async () => {
+      mockMetadataType(
+        { xmlName: 'EmailTemplate', inFolder: true, metaFile: true },
+        {
+          parentField: {
+            name: '',
+            soapType: 'string',
+            foreignKeyDomain: 'EmailFolder',
+          },
+          valueTypeFields: [
+            { name: 'fullName', soapType: 'string', valueRequired: true },
+            { name: 'name', soapType: 'string', valueRequired: false },
+          ],
+        }
+      )
+      const { elements: result } = await adapter.fetch()
+
+      const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
+      expect(describeMock).toHaveBeenCalled()
+      expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}EmailTemplate')
+      expect(describeMock.mock.calls[1][0]).toBe('{http://soap.sforce.com/2006/04/metadata}EmailFolder')
+      const emailFolder = findElements(result, 'EmailFolder').pop() as ObjectType
+      expect(emailFolder.fields[constants.INTERNAL_ID_FIELD]).toBeDefined()
+    })
+
     it('should fetch nested metadata types', async () => {
       mockMetadataType(
         { xmlName: 'NestingType' },

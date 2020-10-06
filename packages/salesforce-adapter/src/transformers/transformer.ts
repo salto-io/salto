@@ -1304,7 +1304,7 @@ export const createMetadataTypeElements = async ({
   ]
 
   const shouldCreateIdField = (): boolean => (
-    (baseTypeNames.has(name) || childTypeNames.has(name))
+    (isTopLevelType || childTypeNames.has(name))
     && element.fields[INTERNAL_ID_FIELD] === undefined
   )
 

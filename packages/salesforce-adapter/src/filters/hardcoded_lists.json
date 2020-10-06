@@ -171,5 +171,22 @@
   "salesforce.WorkflowRule.field.actions",
   "salesforce.WorkflowRule.field.criteriaItems",
   "salesforce.WorkflowRule.field.workflowTimeTriggers",
-  "salesforce.WorkflowTimeTrigger.field.actions"
+  "salesforce.WorkflowTimeTrigger.field.actions",
+  "salesforce.ApprovalProcess.field.approvalStep",
+  "salesforce.ApprovalPageField.field.field",
+  "salesforce.ApprovalAction.field.action",
+  "salesforce.ContentAsset.field.relationships",
+  "salesforce.ContentAssetVersions.field.version",
+  "salesforce.PermissionSet.field.applicationVisibilities",
+  "salesforce.PermissionSet.field.classAccesses",
+  "salesforce.PermissionSet.field.customMetadataTypeAccesses",
+  "salesforce.PermissionSet.fieldcustomPermissions",
+  "salesforce.PermissionSet.fieldcustomSettingAccesses",
+  "salesforce.PermissionSet.fieldexternalDataSourceAccesses",
+  "salesforce.PermissionSet.fieldfieldPermissions",
+  "salesforce.PermissionSet.fieldobjectPermissions",
+  "salesforce.PermissionSet.fiepageAccesses",
+  "salesforce.PermissionSet.fierecordTypeVisibilities",
+  "salesforce.PermissionSet.fietabSettings",
+  "salesforce.PermissionSet.fieuserPermissions"
 ]

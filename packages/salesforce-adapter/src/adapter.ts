@@ -319,6 +319,18 @@ export default class SalesforceAdapter implements AdapterOperations {
       'KnowledgeWorkOrderField',
       'KnowledgeWorkOrderLineItemFieldsSettings',
       'KnowledgeWorkOrderLineItemField',
+      'PermissionSetApplicationVisibility',
+      'PermissionSetApexClassAccess',
+      'PermissionSetCustomMetadataTypeAccess',
+      'PermissionSetCustomPermissions',
+      'PermissionSetCustomSettingAccesses',
+      'PermissionSetExternalDataSourceAccess',
+      'PermissionSetFieldPermissions',
+      'PermissionSetObjectPermissions',
+      'PermissionSetApexPageAccess',
+      'PermissionSetRecordTypeVisibility',
+      'PermissionSetTabSetting',
+      'PermissionSetUserPermission',
     ],
     metadataTypesToSkipMutation = [
       'Workflow', // handled in workflow filter

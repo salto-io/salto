@@ -2206,5 +2206,58 @@
         "type": "KnowledgeWorkOrderLineItemField"
       }
     ]
+  },
+  {
+    "id": "PermissionSet",
+    "fields": [
+      {
+        "name": "applicationVisibilities",
+        "type": "PermissionSetApplicationVisibility"
+      },
+      {
+        "name": "classAccesses",
+        "type": "PermissionSetApexClassAccess"
+      },
+      {
+        "name": "customMetadataTypeAccesses",
+        "type": "PermissionSetCustomMetadataTypeAccess"
+      },
+      {
+        "name": "customPermissions",
+        "type": "PermissionSetCustomPermissions"
+      },
+      {
+        "name": "customSettingAccesses",
+        "type": "PermissionSetCustomSettingAccesses"
+      },
+      {
+        "name": "externalDataSourceAccesses",
+        "type": "PermissionSetExternal DataSourceAccess"
+      },
+      {
+        "name": "fieldPermissions",
+        "type": "PermissionSetFieldPermissions"
+      },
+      {
+        "name": "objectPermissions",
+        "type": "PermissionSetObjectPermissions"
+      },
+      {
+        "name": "pageAccesses",
+        "type": "PermissionSetApexPageAccess"
+      },
+      {
+        "name": "recordTypeVisibilities",
+        "type": "PermissionSetRecordTypeVisibility"
+      },
+      {
+        "name": "tabSettings",
+        "type": "PermissionSetTabSetting"
+      },
+      {
+        "name": "userPermissions",
+        "type": "PermissionSetUserPermission"
+      }
+    ]
   }
 ]

@@ -92,7 +92,7 @@ const neighborContextFunc = ({
       }
       return path.createParentID()
     }
-    if (numLevels === 0) {
+    if (numLevels <= 0) {
       return getParentPath(currentFieldPath)
     }
     return getParent(getParentPath(currentFieldPath), numLevels - 1)
@@ -145,6 +145,8 @@ const ContextStrategyLookup: Record<
   neighborLookupValueTypeLookup: neighborContextFunc({ contextFieldName: 'lookupValueType' }),
   neighborObjectLookup: neighborContextFunc({ contextFieldName: 'object' }),
   parentObjectLookup: neighborContextFunc({ contextFieldName: 'object', levelsUp: 1 }),
+  parentInputObjectLookup: neighborContextFunc({ contextFieldName: 'inputObject', levelsUp: 1 }),
+  parentOutputObjectLookup: neighborContextFunc({ contextFieldName: 'outputObject', levelsUp: 1 }),
   neighborPicklistObjectLookup: neighborContextFunc({ contextFieldName: 'picklistObject' }),
 }
 

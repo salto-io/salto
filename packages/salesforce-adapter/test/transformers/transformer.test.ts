@@ -24,7 +24,7 @@ import {
   restoreValues, resolveValues,
 } from '@salto-io/adapter-utils'
 import {
-  getSObjectFieldElement, Types, toCustomField, toCustomObject, instancesToUpdateRecords,
+  getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,
   getValueTypeFieldElement, createMetadataTypeElements,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
@@ -34,14 +34,15 @@ import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,
   CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
-  SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_SETTINGS_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   CPQ_PRODUCT_RULE,
   CPQ_LOOKUP_PRODUCT_FIELD,
 } from '../../src/constants'
-import { CustomField, FilterItem, CustomObject, CustomPicklistValue, SalesforceRecord } from '../../src/client/types'
+import { CustomField, FilterItem, CustomObject, CustomProperties, CustomPicklistValue,
+  SalesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
@@ -633,7 +634,7 @@ describe('transformer', () => {
     })
   })
 
-  describe('toCustomObject', () => {
+  describe('toCustomProperties', () => {
     const elemID = new ElemID('salesforce', 'test')
 
     describe('annotations transformation', () => {
@@ -653,9 +654,9 @@ describe('transformer', () => {
         },
       })
 
-      let customObj: CustomObject
+      let customObj: CustomProperties
       beforeEach(() => {
-        customObj = toCustomObject(objType, false)
+        customObj = toCustomProperties(objType, false)
       })
 
       it('should transform annotations', () => {
@@ -694,9 +695,9 @@ describe('transformer', () => {
       })
 
       describe('with fields', () => {
-        let customObj: CustomObject
+        let customObj: CustomProperties
         beforeEach(() => {
-          customObj = toCustomObject(
+          customObj = toCustomProperties(
             objType, true, [objType.fields[ignoredField].annotations[API_NAME]],
           )
         })
@@ -717,12 +718,38 @@ describe('transformer', () => {
       })
 
       describe('without fields', () => {
-        let customObj: CustomObject
+        let customObj: CustomProperties
         beforeEach(() => {
-          customObj = toCustomObject(objType, false)
+          customObj = toCustomProperties(objType, false)
         })
         it('should not contain fields', () => {
           expect(customObj.fields).toBeUndefined()
+        })
+      })
+
+      describe('create a custom settings object', () => {
+        let customObj: CustomProperties
+        beforeEach(() => {
+          const customSettingsObj = new ObjectType({
+            elemID,
+            annotationTypes: {
+              [API_NAME]: BuiltinTypes.SERVICE_ID,
+              [METADATA_TYPE]: BuiltinTypes.STRING,
+              [DESCRIPTION]: BuiltinTypes.STRING,
+              [CUSTOM_SETTINGS_TYPE]: BuiltinTypes.STRING,
+            },
+            annotations: {
+              [API_NAME]: 'Test__c',
+              [METADATA_TYPE]: CUSTOM_OBJECT,
+              [DESCRIPTION]: 'MyDescription',
+              [CUSTOM_SETTINGS_TYPE]: 'Hierarchical',
+            },
+          })
+          customObj = toCustomProperties(customSettingsObj, false)
+        })
+        it('should not create fields that dont exist on custom settings objects', () => {
+          expect(customObj).not.toHaveProperty('pluralLabel')
+          expect(customObj).not.toHaveProperty('sharingModel')
         })
       })
     })
@@ -785,18 +812,21 @@ describe('transformer', () => {
 
       it('should have ControlledByParent sharing model when having masterdetail field', async () => {
         objectType.fields[fieldName].type = Types.primitiveDataTypes.MasterDetail
-        const customObjectWithMasterDetailField = toCustomObject(objectType, true)
-        expect(customObjectWithMasterDetailField.sharingModel).toEqual('ControlledByParent')
+        const customObjectWithMasterDetailField = toCustomProperties(objectType, true)
+        expect(customObjectWithMasterDetailField).toHaveProperty('sharingModel')
+        expect((customObjectWithMasterDetailField as CustomObject).sharingModel).toEqual('ControlledByParent')
       })
 
       it('should have ReadWrite sharing model when not having masterdetail field', async () => {
-        const customObjectWithMasterDetailField = toCustomObject(objectType, true)
-        expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
+        const customObjectWithMasterDetailField = toCustomProperties(objectType, true)
+        expect(customObjectWithMasterDetailField).toHaveProperty('sharingModel')
+        expect((customObjectWithMasterDetailField as CustomObject).sharingModel).toEqual('ReadWrite')
       })
 
       it('should have ReadWrite sharing model when not including fields', async () => {
-        const customObjectWithMasterDetailField = toCustomObject(objectType, false)
-        expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
+        const customObjectWithMasterDetailField = toCustomProperties(objectType, false)
+        expect(customObjectWithMasterDetailField).toHaveProperty('sharingModel')
+        expect((customObjectWithMasterDetailField as CustomObject).sharingModel).toEqual('ReadWrite')
       })
     })
 

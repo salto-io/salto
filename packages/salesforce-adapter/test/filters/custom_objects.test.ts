@@ -24,7 +24,7 @@ import Connection from '../../src/client/jsforce'
 import {
   FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
-  API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
+  API_NAME, FORMULA, LOOKUP_FILTER_FIELDS, CUSTOM_SETTINGS_TYPE,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
   CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
@@ -103,6 +103,7 @@ describe('Custom Objects filter', () => {
         [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
         pluralLabel: { type: BuiltinTypes.STRING },
         enableFeeds: { type: BuiltinTypes.BOOLEAN },
+        [CUSTOM_SETTINGS_TYPE]: { type: BuiltinTypes.STRING },
       },
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -1028,6 +1029,19 @@ describe('Custom Objects filter', () => {
           expect(lead.annotations.pluralLabel).toBeUndefined()
         })
 
+        it('should merge regular instance element annotations into the custom settings-custom object type', async () => {
+          const customSettingsInstance = customObjectInstance.clone()
+          customSettingsInstance.value[CUSTOM_SETTINGS_TYPE] = 'Hierarchical'
+          result.push(customSettingsInstance)
+          await filter().onFetch(result)
+          const lead = findElements(result, 'Lead').pop() as ObjectType
+          expect(lead.annotationTypes.enableFeeds).toBeDefined()
+          expect(lead.annotations.enableFeeds).toBeTruthy()
+          expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+          expect(lead.annotations.customSettingsType).toBeDefined()
+          expect(lead.annotations.customSettingsType).toEqual('Hierarchical')
+        })
+
         it('should merge regular instance element annotations into the custom-custom object type', async () => {
           mockSingleSObject('Lead', [], false, true, true, 'Instance Label')
           result.push(customObjectInstance)
@@ -1106,11 +1120,27 @@ describe('Custom Objects filter', () => {
 
         describe('when instance exist but no object returned from soap API', () => {
           it('should merge regular instance element annotations into the object type', async () => {
-            result.push(customObjectInstance)
+            const customSettingsObjectInstance = customObjectInstance.clone()
+            customSettingsObjectInstance.value.customSettingsType = 'Hierarchical'
+            result.push(customSettingsObjectInstance)
             await filter().onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
             expect(lead.annotationTypes.enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
+            expect(lead.annotationTypes.apiName).toBeDefined()
+            expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+            expect(lead.annotations.pluralLabel).toBeUndefined()
+          })
+
+          it('Should create proper custom settings object', async () => {
+            const customSettingsObjectInstance = customObjectInstance.clone()
+            customSettingsObjectInstance.value.customSettingsType = 'Hierarchical'
+            result.push(customSettingsObjectInstance)
+            await filter().onFetch(result)
+            const lead = findElements(result, 'Lead').pop() as ObjectType
+            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.annotations.enableFeeds).toBeTruthy()
+            expect(lead.annotationTypes.apiName).toBeDefined()
             expect(lead.annotationTypes.pluralLabel).toBeUndefined()
             expect(lead.annotations.pluralLabel).toBeUndefined()
           })

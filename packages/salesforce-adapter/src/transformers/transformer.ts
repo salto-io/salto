@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { naclCase, TransformFunc, transformElement } from '@salto-io/adapter-utils'
-import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
+import { CustomObject, CustomField, SalesforceRecord, CustomProperties } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
@@ -40,7 +40,7 @@ import {
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
-  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES,
+  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -70,6 +70,12 @@ export const isInstanceOfCustomObject = (element: Element): element is InstanceE
 
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+
+export const isCustomSettings = (instance: InstanceElement): boolean =>
+  instance.value[CUSTOM_SETTINGS_TYPE]
+
+export const isCustomSettingsObject = (obj: ObjectType): boolean =>
+  obj.annotations[CUSTOM_SETTINGS_TYPE]
 
 export const defaultApiName = (element: Element): string => {
   const { name } = element.elemID
@@ -837,7 +843,6 @@ export const toCustomField = (
     Object.keys(field.type.annotationTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
-
   // Convert the annotations' names to the required API name
   _.assign(
     newField,
@@ -850,19 +855,32 @@ const isLocalOnly = (field?: Field): boolean => (
   field !== undefined && field.annotations[FIELD_ANNOTATIONS.LOCAL_ONLY] === true
 )
 
-export const toCustomObject = (
+const getFieldsIfIncluded = (
+  includeFields: boolean, element: ObjectType, skipFields: string[]
+): CustomField[] | undefined =>
+  (includeFields ? Object.values(element.fields)
+    .filter(field => !isLocalOnly(field))
+    .map(field => toCustomField(field))
+    .filter(field => !skipFields.includes(field.fullName))
+    : undefined)
+
+export const toCustomProperties = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
-): CustomObject => {
-  const newCustomObject = new CustomObject(
-    apiName(element),
-    element.annotations[LABEL],
-    includeFields
-      ? Object.values(element.fields)
-        .filter(field => !isLocalOnly(field))
-        .map(field => toCustomField(field))
-        .filter(field => !skipFields.includes(field.fullName))
-      : undefined
-  )
+): CustomProperties => {
+  let newCustomObject: CustomProperties
+  if (isCustomSettingsObject(element)) {
+    newCustomObject = new CustomProperties(
+      apiName(element),
+      element.annotations[LABEL],
+      getFieldsIfIncluded(includeFields, element, skipFields)
+    )
+  } else {
+    newCustomObject = new CustomObject(
+      apiName(element),
+      element.annotations[LABEL],
+      getFieldsIfIncluded(includeFields, element, skipFields)
+    )
+  }
   // Skip the assignment of the following annotations that are defined as annotationType
   const annotationsToSkip: string[] = [
     API_NAME, // we use it as fullName
@@ -874,7 +892,6 @@ export const toCustomObject = (
     Object.keys(element.annotationTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
-
   _.assign(
     newCustomObject,
     _.pickBy(element.annotations, (_val, annotationName) => isAllowed(annotationName)),

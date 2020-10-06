@@ -96,6 +96,10 @@ export const transformValues = (
       return undefined
     }
 
+    if (isReferenceExpression(newVal)) {
+      return newVal
+    }
+
     const fieldType = field.type
 
     if (isListType(fieldType)) {

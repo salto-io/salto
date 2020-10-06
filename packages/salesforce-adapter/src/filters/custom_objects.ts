@@ -98,7 +98,7 @@ export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME = {
 type TypesFromInstance = {
   standardAnnotationTypes: TypeMap
   customAnnotationTypes: TypeMap
-  customSettingsOnlyAnnotationTypes: TypeMap
+  customSettingsAnnotationTypes: TypeMap
   nestedMetadataTypes: Record<string, ObjectType>
 }
 
@@ -130,7 +130,7 @@ const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
   instance: InstanceElement, custom: boolean): Record<string, TypeElement> => {
   let annotationTypes = typesFromInstance.standardAnnotationTypes
   if (isCustomSettings(instance)) {
-    annotationTypes = typesFromInstance.customSettingsOnlyAnnotationTypes
+    annotationTypes = typesFromInstance.customSettingsAnnotationTypes
   } else if (custom) {
     annotationTypes = typesFromInstance.customAnnotationTypes
   }
@@ -592,7 +592,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return {
         standardAnnotationTypes,
         customAnnotationTypes: { ...standardAnnotationTypes, ...customOnlyAnnotationTypes },
-        customSettingsOnlyAnnotationTypes: { ...standardAnnotationTypes,
+        customSettingsAnnotationTypes: { ...standardAnnotationTypes,
           ...customSettingsOnlyAnnotationTypes },
         nestedMetadataTypes,
       }

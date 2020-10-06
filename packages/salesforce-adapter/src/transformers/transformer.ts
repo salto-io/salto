@@ -74,6 +74,9 @@ export const isCustom = (fullName: string): boolean =>
 export const isCustomSettings = (instance: InstanceElement): boolean =>
   instance.value[CUSTOM_SETTINGS_TYPE]
 
+export const isCustomSettingsObject = (obj: ObjectType): boolean =>
+  obj.annnotations[CUSTOM_SETTINGS_TYPE]
+
 export const defaultApiName = (element: Element): string => {
   const { name } = element.elemID
   return isCustom(name) || isInstanceElement(element)
@@ -865,7 +868,7 @@ export const toCustomProperties = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
 ): CustomProperties => {
   let newCustomObject: CustomProperties
-  if (element.annotations[CUSTOM_SETTINGS_TYPE]) {
+  if (isCustomSettingsObject(element)) {
     newCustomObject = new CustomProperties(
       apiName(element),
       element.annotations[LABEL],

@@ -131,7 +131,7 @@ describe('local state', () => {
       expect(netsuiteState).toBeDefined()
     })
 
-    const mockRename = rename as jest.Mock
+    const mockRename = rename as unknown as jest.Mock
     it('should rename files in new and old format', async () => {
       await state.rename('new')
       expect(mockRename).toHaveBeenCalledTimes(3)

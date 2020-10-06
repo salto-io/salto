@@ -38,6 +38,7 @@ jest.mock('@salto-io/file', () => ({
   isEmptyDir: jest.fn(),
 }))
 isEmptyDir.notFoundAsUndefined = notFoundAsUndefined(isEmptyDir)
+rename.notFoundAsUndefined = notFoundAsUndefined(rename)
 jest.mock('readdirp')
 describe('localDirectoryStore', () => {
   const encoding = 'utf8'
@@ -55,7 +56,7 @@ describe('localDirectoryStore', () => {
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
   const mockRm = rm as jest.Mock
-  const mockRename = rename as jest.Mock
+  const mockRename = rename as unknown as jest.Mock
   const mockEmptyDir = isEmptyDir as unknown as jest.Mock
 
   describe('list', () => {

@@ -373,8 +373,23 @@ describe('FieldReferences filter - neighbor context strategy', () => {
 
   const generateFlowRecordLookupInstance = (
     flowRecordLookupInstanceName: string,
-    value: { object: string; queriedFields: string[] },
+    value: { object: string; queriedFields: string[]; filters: { field: string }[] },
   ): InstanceElement => {
+    const flowRecordFilterObjType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'FlowRecordFilter'),
+      annotations: {
+        [METADATA_TYPE]: 'FlowRecordFilter',
+      },
+    })
+    flowRecordFilterObjType.fields = {
+      field: new Field(
+        flowRecordFilterObjType,
+        'field',
+        BuiltinTypes.STRING,
+        { [API_NAME]: ['FlowRecordFilter', 'field'].join(API_NAME_SEPARATOR) }
+      ),
+    }
+
     const flowRecordLookupObjectType = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'FlowRecordLookup'),
       annotations: {
@@ -392,7 +407,13 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         flowRecordLookupObjectType,
         'queriedFields',
         new ListType(BuiltinTypes.STRING),
-        { [API_NAME]: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, 'queriedFields'].join(API_NAME_SEPARATOR) }
+        { [API_NAME]: ['FlowRecordLookupObjectType', 'queriedFields'].join(API_NAME_SEPARATOR) }
+      ),
+      filters: new Field(
+        flowRecordLookupObjectType,
+        'filters',
+        new ListType(flowRecordFilterObjType),
+        { [API_NAME]: ['FlowRecordLookupObjectType', 'filters'].join(API_NAME_SEPARATOR) }
       ),
     }
     const instanceName = `${parentName}_${flowRecordLookupInstanceName}`
@@ -455,7 +476,11 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       instanceInvalidActionType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'InvalidType' })
       const workflowRuleType = instanceSingleAction.type
 
-      instanceFlowRecordLookup = generateFlowRecordLookupInstance('single', { object: 'User', queriedFields: ['name'] })
+      instanceFlowRecordLookup = generateFlowRecordLookupInstance('single', {
+        object: 'User',
+        queriedFields: ['name'],
+        filters: [{ field: 'name' }, { field: 'unknown' }, { field: 'name' }],
+      })
 
       elements = [
         customObjectType,
@@ -499,10 +524,20 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       expect(getFullName(instanceFlowRecordLookup.value.queriedFields[0])).toEqual('salesforce.User.field.name')
     })
 
+    it('should have reference for parent\'s neighbor in an array', () => {
+      const getFullName = (val: string | ReferenceExpression): string => {
+        expect(val).toBeInstanceOf(ReferenceExpression)
+        return (val as ReferenceExpression).elemId.getFullName()
+      }
+      expect(getFullName(instanceFlowRecordLookup.value.filters[0].field)).toEqual('salesforce.User.field.name')
+      expect(getFullName(instanceFlowRecordLookup.value.filters[2].field)).toEqual('salesforce.User.field.name')
+    })
+
     it('should not have references when lookup fails', () => {
       expect(instanceUnknownActionName.value.actions.name).toEqual('unknown')
       expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
       expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
+      expect(instanceFlowRecordLookup.value.filters[1].field).toEqual('unknown')
     })
   })
 })

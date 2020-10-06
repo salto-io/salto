@@ -59,7 +59,7 @@ const ReferenceSerializationStrategyLookup: Record<
 export type ReferenceContextStrategyName = (
   'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
-  | 'neighborActionTypeLookup'
+  | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
 )
 
 type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
@@ -192,7 +192,20 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
   {
     src: { field: 'actionName', parentTypes: ['FlowActionCall'] },
+    target: { typeContext: 'neighborActionTypeFlowLookup' },
+  },
+  {
+    src: { field: 'actionName', parentTypes: ['PlatformActionListItem'] },
+    // will only resolve for actionType = QuickAction
     target: { typeContext: 'neighborActionTypeLookup' },
+  },
+  {
+    src: { field: 'quickActionName', parentTypes: ['QuickActionListItem'] },
+    target: { type: 'QuickAction' },
+  },
+  {
+    src: { field: 'name', parentTypes: ['AppMenuItem'] },
+    target: { typeContext: 'neighborTypeLookup' },
   },
   {
     src: { field: 'objectType', parentTypes: ['FlowVariable'] },
@@ -270,6 +283,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
       target: { parentContext: 'neighborObjectLookup', type: CUSTOM_FIELD },
     })
   )),
+  {
+    src: { field: 'field', parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
+  },
   {
     src: { field: 'picklistField', parentTypes: ['FlowDynamicChoiceSet'] },
     serializationStrategy: 'relativeApiName',

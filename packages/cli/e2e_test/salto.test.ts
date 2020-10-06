@@ -337,8 +337,8 @@ describe('cli e2e', () => {
 
     afterAll(async () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
-
       await rm(`${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
+      await runEmptyPreview(lastPlan, fetchOutputDir)
     })
   })
 

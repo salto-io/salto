@@ -1514,6 +1514,34 @@ describe('Test utils.ts', () => {
       })
     })
 
+    it('should not remove values that have no corresponding field', () => {
+      const instanceWithAdditionalValues = ins1.clone()
+      instanceWithAdditionalValues.value.hasNoCorrespondingField = 'hasNoCorrespondingField'
+      const elements = [instanceWithAdditionalValues]
+      applyInstancesDefaults(elements)
+      expect(elements[0].value).toEqual({
+        field1: 'ins1',
+        field2: 'ins1',
+        base: {
+          field1: 'base1',
+          field2: 'base2',
+        },
+        hasNoCorrespondingField: 'hasNoCorrespondingField',
+      })
+    })
+
+    it('should use the existing value in case it does not match the field type', () => {
+      const instanceWithAdditionalValues = ins1.clone()
+      instanceWithAdditionalValues.value.base = 'differentType'
+      const elements = [instanceWithAdditionalValues]
+      applyInstancesDefaults(elements)
+      expect(elements[0].value).toEqual({
+        field1: 'ins1',
+        field2: 'ins1',
+        base: 'differentType',
+      })
+    })
+
     it('should not use defaults for inner fields when its value is undefined', () => {
       const typeWithNestedDefaultsElemID = new ElemID('salto', 'typeWithNestedDefaults')
       const typeWithNestedDefaults = new ObjectType({

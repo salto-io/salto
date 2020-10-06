@@ -26,7 +26,7 @@ import { ParseError, SourceRange, SourceMap } from '../../../parser'
 
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
-import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
 import { Errors } from '../../errors'
 
 const { series } = promises.array
@@ -305,9 +305,9 @@ const buildMultiEnvSource = (
         validation: [] as ValidationError[],
       }))
     },
-    getElements: async (filename: string): Promise<Element[]> => {
+    getParsedNaclFile: async (filename: string): Promise<ParsedNaclFile | undefined> => {
       const { source, relPath } = getSourceForNaclFile(filename)
-      return source.getElements(relPath) ?? []
+      return source.getParsedNaclFile(relPath)
     },
     getElementNaclFiles: async (id: ElemID): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())

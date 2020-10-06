@@ -351,15 +351,15 @@ describe('multi env source', () => {
       ])
     })
   })
-  describe('getElements', () => {
+  describe('getParsedNaclFile', () => {
     it('should forward the getElements command to the active source', async () => {
       await source.getSourceMap(path.join(ENVS_PREFIX, activePrefix, 'env.nacl'))
       expect(envSource.getSourceMap).toHaveBeenCalled()
     })
 
     it('should forward the getElements command to the common source', async () => {
-      await source.getElements(path.join(commonPrefix, 'common.nacl'))
-      expect(commonSource.getElements).toHaveBeenCalled()
+      await source.getParsedNaclFile(path.join(commonPrefix, 'common.nacl'))
+      expect(commonSource.getParsedNaclFile).toHaveBeenCalled()
     })
   })
   describe('applyInstancesDefaults', () => {

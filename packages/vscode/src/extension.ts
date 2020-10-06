@@ -16,7 +16,7 @@
 import * as vscode from 'vscode'
 import { loadLocalWorkspace } from '@salto-io/core'
 import { diagnostics, workspace as ws } from '@salto-io/lang-server'
-import { onTextChangeEvent, onFileChange, onFileDelete, onFileOpen, createReportErrorsEventListener } from './events'
+import { onTextChangeEvent, onFileChange, onFileOpen, createReportErrorsEventListener } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -87,7 +87,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.nacl')
     fileWatcher.onDidCreate((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidChange((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
-    fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.fsPath))
+    fileWatcher.onDidDelete((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     const newDiag = toVSDiagnostics(
       workspace.baseDir,
       await diagnostics.getDiagnostics(workspace)

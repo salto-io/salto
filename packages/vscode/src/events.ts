@@ -16,7 +16,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { nacl } from '@salto-io/workspace'
-import { readTextFile } from '@salto-io/file'
 import _ from 'lodash'
 import { diagnostics, workspace as ws } from '@salto-io/lang-server'
 import { toVSDiagnostics } from './adapters'
@@ -24,6 +23,7 @@ import { toVSDiagnostics } from './adapters'
 const { FILE_EXTENSION } = nacl
 
 const DIAG_IDLE_PERIOD = 500
+const FS_FILE_CHANGE_TIMEOUT = 500
 export const createReportErrorsEventListener = (
   workspace: ws.EditorWorkspace,
   diagCollection: vscode.DiagnosticCollection
@@ -57,19 +57,23 @@ export const onFileOpen = (): void => {
   vscode.commands.executeCommand('editor.foldAllMarkerRegions')
 }
 
-export const onFileDelete = (
-  workspace: ws.EditorWorkspace,
-  filename: string
-): Promise<void> => {
-  workspace.removeNaclFiles(filename)
-  return workspace.awaitAllUpdates()
-}
+const showReloadWSPrompt = _.debounce(async (): Promise<void> => {
+  const msg = 'Some workspace files have changed. Reload vs-code for the change to take effect.'
+  const action = 'Reload'
+  const choice = await vscode.window.showInformationMessage(
+    msg,
+    action
+  )
+  if (action === choice) {
+    vscode.commands.executeCommand('workbench.action.reloadWindow')
+  }
+}, FS_FILE_CHANGE_TIMEOUT)
 
 export const onFileChange = async (
   workspace: ws.EditorWorkspace,
   filename: string
 ): Promise<void> => {
-  const buffer = await readTextFile(filename)
-  workspace.setNaclFiles({ filename, buffer })
-  return workspace.awaitAllUpdates()
+  if (!(await workspace.listNaclFiles()).includes(filename)) {
+    showReloadWSPrompt()
+  }
 }

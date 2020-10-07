@@ -86,8 +86,7 @@ export const command = (
 const diffBuilder = createCommandBuilder({
   options: {
     command: 'clean',
-    // marking description as false will make this a hidden command (only accessible directly)
-    description: false as unknown as string,
+    description: 'Maintenance command for cleaning workspace data. This operation cannot be undone, it\'s highly recommended to backup the workspace data before executing it.',
     keyed: {
       force: {
         alias: ['f'],

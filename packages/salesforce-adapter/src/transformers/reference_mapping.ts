@@ -116,7 +116,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
-    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem'] },
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem', 'PermissionSetFieldPermissions'] },
     target: { type: CUSTOM_FIELD },
   },
   {
@@ -167,19 +167,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'CustomApplication' },
   },
   {
-    src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
-    target: { type: CUSTOM_OBJECT },
-  },
-  {
-    src: { field: 'permissionSets', parentTypes: ['PermissionSetGroup'] },
-    target: { type: 'PermissionSet' },
-  },
-  {
-    src: { field: 'permissionSets', parentTypes: ['DelegateGroup'] },
+    src: { field: 'permissionSets', parentTypes: ['PermissionSetGroup', 'DelegateGroup'] },
     target: { type: 'PermissionSet' },
   },
   {
@@ -228,7 +216,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'object', parentTypes: ['ProfileObjectPermissions', 'FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart'] },
+    src: { field: 'object', parentTypes: ['ProfileObjectPermissions', 'FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart', 'PermissionSetObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
   {

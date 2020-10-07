@@ -2,10 +2,11 @@
 
 Salesforce adapter for salto.io
 
-## Configure salesforce OAuth credentials
-- Go to your salesforce app and go to setup
+## Configuring your Salesforce account for Salto OAuth Authentication
+Salto supports authenticating with Salesforce using either a combination of user-name, password and token, or using OAuth authentication. In order to use OAuth authentication, please follow the steps below as you will need to create a new "Connected App" in your Salesforce account.
+- Go to your salesforce account's setup screen
 - Go to "App Manager", and click "New Connected App"
-- Fill necessary fields, then check "Enable Oauth Settings"
+- Fill mandatory fields (Connected App Name, Api Name, Contact Email), then check "Enable Oauth Settings"
 	- Under "callback URL", write http://localhost:PORT, where PORT is a port you can allow salto to open momentarily on your computer (it will not be open to external connections). Except for PORT, do not change any character in the URL. 
 	- Under "Selected OAuth Scopes", pick Full Access
 	- Save the app, and wait as the connected app creation instructs you

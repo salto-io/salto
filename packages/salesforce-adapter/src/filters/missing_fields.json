@@ -2206,5 +2206,96 @@
         "type": "KnowledgeWorkOrderLineItemField"
       }
     ]
+  },
+  {
+    "id": "PermissionSet",
+    "fields": [
+      {
+        "name": "applicationVisibilities",
+        "type": "PermissionSetApplicationVisibility"
+      },
+      {
+        "name": "classAccesses",
+        "type": "PermissionSetApexClassAccess"
+      },
+      {
+        "name": "customMetadataTypeAccesses",
+        "type": "PermissionSetCustomMetadataTypeAccess"
+      },
+      {
+        "name": "customPermissions",
+        "type": "PermissionSetCustomPermissions"
+      },
+      {
+        "name": "customSettingAccesses",
+        "type": "PermissionSetCustomSettingAccesses"
+      },
+      {
+        "name": "externalDataSourceAccesses",
+        "type": "PermissionSetExternal DataSourceAccess"
+      },
+      {
+        "name": "fieldPermissions",
+        "type": "PermissionSetFieldPermissions"
+      },
+      {
+        "name": "objectPermissions",
+        "type": "PermissionSetObjectPermissions"
+      },
+      {
+        "name": "pageAccesses",
+        "type": "PermissionSetApexPageAccess"
+      },
+      {
+        "name": "recordTypeVisibilities",
+        "type": "PermissionSetRecordTypeVisibility"
+      },
+      {
+        "name": "tabSettings",
+        "type": "PermissionSetTabSetting"
+      },
+      {
+        "name": "userPermissions",
+        "type": "PermissionSetUserPermission"
+      }
+    ]
+  },
+  {
+    "id": "PermissionSetGroup",
+    "fields": [
+      {
+        "name": "permissionSets",
+        "type": "STRING"
+      },
+      {
+        "name": "mutingPermissionSets",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "id": "DelegateGroup",
+    "fields": [
+      {
+        "name": "customObjects",
+        "type": "STRING"
+      },
+      {
+        "name": "groups",
+        "type": "STRING"
+      },
+      {
+        "name": "permissionSets",
+        "type": "STRING"
+      },
+      {
+        "name": "profiles",
+        "type": "STRING"
+      },
+      {
+        "name": "roles",
+        "type": "STRING"
+      }
+    ]
   }
 ]

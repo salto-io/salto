@@ -23,7 +23,7 @@ import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
 import { wrapAdditions, DetailedAddition, wrapNestedValues } from '../addition_wrapper'
-import { NaclFilesSource, FILE_EXTENSION, RoutingMode } from '../nacl_files_source'
+import { NaclFilesSource, RoutingMode } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
 
 export interface RoutedChanges {
@@ -308,7 +308,7 @@ const getChangePathHint = async (
     .map(sourceRange => sourceRange.filename)[0]
 
   return refFilename
-    ? _.trimEnd(refFilename, FILE_EXTENSION).split(path.sep)
+    ? toPathHint(refFilename)
     : undefined
 }
 

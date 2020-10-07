@@ -18,7 +18,7 @@ import { SourceRange } from '../types'
 import Lexer from './lexer'
 import { ParseError } from './errors'
 import { Functions } from '../../functions'
-import { SourceMap } from '../..'
+import { SourceMap } from '../../source_map'
 
 export type ValuePromiseWatcher = {
   parent: Value

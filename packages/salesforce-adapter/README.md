@@ -2,6 +2,16 @@
 
 Salesforce adapter for salto.io
 
+## Configuring your Salesforce account for Salto OAuth Authentication
+Salto supports authenticating with Salesforce using either a combination of user-name, password and token, or using OAuth authentication. In order to use OAuth authentication, please follow the steps below as you will need to create a new "Connected App" in your Salesforce account.
+- Go to your salesforce account's setup screen
+- Go to "App Manager", and click "New Connected App"
+- Fill mandatory fields (Connected App Name, Api Name, Contact Email), then check "Enable Oauth Settings"
+	- Under "callback URL", write http://localhost:PORT, where PORT is a port you can allow salto to open momentarily on your computer (it will not be open to external connections). Except for PORT, do not change any character in the URL. 
+	- Under "Selected OAuth Scopes", pick Full Access
+	- Save the app, and wait as the connected app creation instructs you
+- You can now connect to salesforce with OAuth credentials, by adding the flag '-a oauth' or '--auth-type oauth' to the commands 'salto service add salesforce' or 'salto service login salesforce'
+- You will be asked to provide the consumerKey created in the connected app and the port you provided in the callback URL 
 ## E2E tests
 
 E2E tests need real SFDC credentials to run - a free developer account is good enough.

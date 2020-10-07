@@ -16,6 +16,7 @@
 import { validateLogLevel } from './level'
 import { Config, validateFormat } from './config'
 import { toTags } from './log-tags'
+import { validateLogFile } from './log-file'
 
 export type Env = { [key: string]: string | undefined }
 
@@ -36,7 +37,7 @@ export const config = (env: Env): Partial<Config> => {
 
   return {
     minLevel: envKey('LEVEL', validateLogLevel),
-    filename: envKey('FILE', s => s),
+    filename: envKey('FILE', validateLogFile),
     namespaceFilter: envKey('NS', s => s),
     format: envKey('FORMAT', validateFormat),
     colorize: envKey('COLOR', toBoolean),

@@ -59,3 +59,8 @@ Great question! Please see [Contributing](contributing.md) for more information.
 NaCl stands for "Not Another Configuration Language", and is also the chemical formula of Sodium Chloride, which is more commonly known as table **salt**.
 
 In our context, it is an [hcl](https://github.com/hashicorp/hcl/tree/hcl2) based declarative configuration language, with semantics purpose built to describe the configuration of business applications.
+
+## Why did we choose Knuckles as our mascot?
+
+Like his fellow beavers, **Knuckles** is both an architect and a builder. A skilled artisan, his creations add value to the community he lives in and to the ecosystem as a whole. Like Knuckles, we like to dream and give birth to new ideas. We are proud to be a part of a community of builders and do our part so it can keep developing and thriving. His name has a similar ring to NaCl and, well, it just seemed an appropriate name for a beaver.
+![Knuckles](https://github.com/salto-io/salto/blob/master/bnw-face.png)

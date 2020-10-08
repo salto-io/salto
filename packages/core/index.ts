@@ -20,7 +20,7 @@ export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes, getDefaultAdapterConfig } from './src/core/adapters/adapters'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
-  CACHE_DIR_NAME, envFolderExists,
+  CACHE_DIR_NAME, envFolderExists, COMMON_ENV_PREFIX,
 } from './src/local-workspace/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,

@@ -60,6 +60,7 @@ export type ReferenceContextStrategyName = (
   'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
+  | 'parentInputObjectLookup' | 'parentOutputObjectLookup'
 )
 
 type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
@@ -106,7 +107,7 @@ export type FieldReferenceDefinition = {
  */
 export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient'] },
+    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
@@ -155,7 +156,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'ApexPage' },
   },
   {
-    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable'] },
+    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'ProfileApexClassAccess', 'TransactionSecurityPolicy', 'ProfileApexClassAccess'] },
     target: { type: 'ApexClass' },
   },
   {
@@ -228,6 +229,18 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
+    src: { field: 'inputObject', parentTypes: ['ObjectMapping'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'outputObject', parentTypes: ['ObjectMapping'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'matchRuleSObjectType', parentTypes: ['DuplicateRuleMatchRule'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
     src: { field: 'typeValue', parentTypes: ['FlowDataTypeMapping'] },
     target: { type: CUSTOM_OBJECT },
   },
@@ -291,6 +304,16 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'field', parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'inputField', parentTypes: ['ObjectMappingField'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'parentInputObjectLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'outputField', parentTypes: ['ObjectMappingField'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'parentOutputObjectLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: 'picklistField', parentTypes: ['FlowDynamicChoiceSet'] },

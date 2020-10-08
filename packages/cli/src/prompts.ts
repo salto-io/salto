@@ -271,7 +271,7 @@ ${Prompts.SERVICE_ADD_HELP}`
     parts: string[]
   ): string => `Going to clean the following workspace components and restore them to their initial state: ${
     parts.join(', ')
-  }.\nThis action cannot be undone, please back up important data before proceeding (in source control or elsewhere).`
+  }.\nThis operation cannot be undone, please make sure your data is backed up before proceeding.`
 
   public static readonly CLEAN_STARTED = 'Starting to clean the workspace.'
   public static readonly CLEAN_FINISHED = 'Finished cleaning the workspace.'

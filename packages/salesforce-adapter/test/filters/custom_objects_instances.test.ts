@@ -55,7 +55,6 @@ describe('Custom Object Instances filter', () => {
       OtherAddress: {
         city: 'city',
         counry: 'country',
-
       },
       Name: 'Name',
       FirstName: 'First',

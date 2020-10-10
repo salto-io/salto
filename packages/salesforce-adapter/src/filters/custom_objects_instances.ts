@@ -41,7 +41,7 @@ type RecordID = string
 type RecordById = Record<RecordID, SalesforceRecord>
 type RecordsByTypeAndId = Record<TypeName, RecordById>
 
-type CustomObjectFetchSetting = {
+export type CustomObjectFetchSetting = {
   objectType: ObjectType
   isBase: boolean
   idFields: Field[]
@@ -315,7 +315,7 @@ const getReferencedRecords = async (
   return allReferenceRecords
 }
 
-const getAllInstances = async (
+export const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
 ): Promise<{ instances: InstanceElement[]; configChangeSuggestions: ConfigChangeSuggestion[] }> => {
@@ -327,7 +327,6 @@ const getAllInstances = async (
     baseTypesSettings,
     setting => getRecords(client, setting.objectType)
   )
-
   // Get reference to records
   const referencedRecordsByTypeAndId = await getReferencedRecords(
     client,

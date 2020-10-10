@@ -27,6 +27,7 @@ import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstanc
 import { isCustomObject, apiName } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
+import { createCustomSettingsObject } from '../test/filters/custom_settings_filter.test'
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('custom object instances e2e', () => {
@@ -69,6 +70,48 @@ describe('custom object instances e2e', () => {
       .filter(isInstanceElement)
       .filter(e => isCustomObject(e.type))
     expect(customObjectInstances.length).toBeGreaterThanOrEqual(1)
+  })
+
+  describe('custom settings manipulations', () => {
+
+    const TestCustomSettingsRecords = [
+      {
+        attributes: {
+          type: 'Test',
+        },
+        Id: '1',
+        Name: 'TestName1',
+      },
+      {
+        attributes: {
+          type: 'Test',
+        },
+        Id: '2',
+        Name: 'TestName2',
+      },
+    ]
+    it('should create new instances', async () => {
+      const settingsType = createCustomSettingsObject('customsetting', 'List')
+      const instance = await createInstance({
+        value: {
+          attributes: {
+            type: 'Test',
+          },
+          Id: '1',
+          Name: 'TestName1',
+          fullName: 'customsetting TestName2',
+        },
+        type: settingsType,
+      })
+      const createdInstance = await createElement(
+        adapter,
+        instance,
+      )
+      const result = await getRecordOfInstance(client, createdInstance)
+      expect(result).toBeDefined()
+      expect((result as SalesforceRecord).Id).toEqual(createdInstance.value.Id)
+      expect((result as SalesforceRecord).Name).toEqual(createdInstance.value.Name)
+    })
   })
 
   describe('custom object instances manipulations', () => {
@@ -120,6 +163,7 @@ describe('custom object instances e2e', () => {
       expect(result).toBeDefined()
       expect((result as SalesforceRecord).Id).toEqual(createdInstance.value.Id)
     })
+
 
     it('should update values of a custom object instance', async () => {
       const updatedInstance = createdInstance.clone()

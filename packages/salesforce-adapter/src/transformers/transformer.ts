@@ -75,7 +75,7 @@ export const isCustom = (fullName: string): boolean =>
 export const isCustomSettings = (instance: InstanceElement): boolean =>
   instance.value[CUSTOM_SETTINGS_TYPE]
 
-export const isCustomSettingsObject = (obj: ObjectType): boolean =>
+export const isCustomSettingsObject = (obj: Element): boolean =>
   obj.annotations[CUSTOM_SETTINGS_TYPE]
 
 export const defaultApiName = (element: Element): string => {

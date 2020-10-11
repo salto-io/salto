@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import fs from 'fs'
+import fs, { PathLike } from 'fs'
 import path from 'path'
 import { validateLogFile } from '../../src/internal/log-file'
 
@@ -25,22 +25,36 @@ describe('validateLogFile', () => {
   const READ_ONLY_FILE = 'read_only.txt'
   const MISSING_FILE = path.join('missing.txt')
 
-  jest.spyOn(fs, 'accessSync').mockImplementation(filename => {
+  const mockAccess = (filename: PathLike, _mode?: number): boolean => {
     const filenameStr = filename.toString()
     if (filenameStr.toString() === READ_ONLY_DIR
             || path.basename(filenameStr) === READ_ONLY_FILE) {
       throw Error('OY VEY!')
     }
     return true
-  })
+  }
 
-  jest.spyOn(fs, 'existsSync').mockImplementation(filename => {
+  const accessSpy = jest.spyOn(fs, 'accessSync')
+
+  const mockExists = (filename: PathLike, _mode?: number): boolean => {
     const filenameStr = filename.toString()
     if (path.basename(filenameStr.toString()) === MISSING_FILE
         || filenameStr === MISSING_DIR) {
       return false
     }
     return true
+  }
+
+  const existsSpy = jest.spyOn(fs, 'existsSync')
+
+  beforeEach(() => {
+    accessSpy.mockImplementation(mockAccess)
+    existsSpy.mockImplementation(mockExists)
+  })
+
+  afterEach(() => {
+    accessSpy.mockRestore()
+    existsSpy.mockRestore()
   })
 
   it('should return the filename if the file exists in writeable and dir is writeable', () => {

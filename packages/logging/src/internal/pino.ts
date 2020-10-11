@@ -181,6 +181,7 @@ export const loggerRepo = (
   config: Config,
 ): BaseLoggerRepo => {
   const { stream, end: endStream } = toStream(consoleStream, config)
+  global.globalLogTags = mergeLogTags(global.globalLogTags || {}, config.globalTags)
 
   const colorize = config.colorize ?? (stream && streams.hasColors(stream as streams.MaybeTty))
 
@@ -204,7 +205,7 @@ export const loggerRepo = (
   }, stream)
 
   const tagsByNamespace = new collections.map.DefaultMap<string, LogTags>(
-    () => config.globalTags
+    () => global.globalLogTags
   )
   const childrenByNamespace = new collections.map.DefaultMap<string, pino.Logger>(
     (namespace: string) => rootPinoLogger.child({ name: namespace })
@@ -220,7 +221,7 @@ export const loggerRepo = (
          for example - Functions.
          */
         const pinoLogger = pinoLoggerWithoutTags.child(
-          normalizeLogTags({ ...namespaceTags, ...config.globalTags })
+          normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
         )
         const [formatted, unconsumedArgs] = typeof message === 'string'
           ? formatMessage(message, ...args)
@@ -238,8 +239,8 @@ export const loggerRepo = (
         pinoLogger[level](...logArgs)
       },
       assignGlobalTags(logTags?: LogTags): void {
-        if (!logTags) config.globalTags = {}
-        else config.globalTags = mergeLogTags(config.globalTags, logTags)
+        if (!logTags) global.globalLogTags = {}
+        else global.globalLogTags = mergeLogTags(global.globalLogTags, logTags)
       },
       assignTags(logTags?: LogTags): void {
         if (!logTags) tagsByNamespace.set(namespace, {})

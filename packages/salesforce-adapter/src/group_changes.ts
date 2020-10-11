@@ -15,10 +15,8 @@
 */
 import wu from 'wu'
 import { values } from '@salto-io/lowerdash'
-import {
-  Change, ChangeGroupIdFunction, getChangeElement, InstanceElement, ChangeGroupId, ChangeId,
-} from '@salto-io/adapter-api'
-import { apiName, isInstanceOfCustomObject, isMetadataInstanceElement } from './transformers/transformer'
+import { Change, ChangeGroupIdFunction, getChangeElement, InstanceElement, ChangeGroupId, ChangeId, isInstanceElement } from '@salto-io/adapter-api'
+import { apiName, isInstanceOfCustomObject, isMetadataObjectType } from './transformers/transformer'
 
 type ChangeIdFunction = (change: Change) => string | undefined
 
@@ -34,11 +32,16 @@ const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = change => (
     : undefined
 )
 
+const isMetadataInstanceChange = (change: Change): boolean => {
+  const changeElem = getChangeElement(change)
+  // Note that we are checking only the type of the instance and not checking if the instance has
+  // a fullName because the code can add a default fullName
+  return isInstanceElement(changeElem) && isMetadataObjectType(changeElem.type)
+}
+
 const deployableMetadataChangeGroupId: ChangeIdFunction = change => (
   // Initial support only for metadata instances
-  isMetadataInstanceElement(getChangeElement(change))
-    ? 'salesforce_metadata'
-    : undefined
+  isMetadataInstanceChange(change) ? 'salesforce_metadata' : undefined
 )
 
 const changeIdProviders: ChangeIdFunction[] = [

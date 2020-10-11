@@ -183,8 +183,12 @@ export const deployMetadata = async (
 
   const isSuccessfulChange = (change: Change): boolean => {
     const changeElem = getChangeElement(change)
-    return successfulFullNames.includes(apiName(changeElem))
-      || successfulFullNames.includes(parentApiName(changeElem))
+    const elemApiName = apiName(changeElem)
+    return elemApiName !== undefined
+      && (
+        successfulFullNames.includes(elemApiName)
+        || successfulFullNames.includes(parentApiName(changeElem))
+      )
   }
 
   return {

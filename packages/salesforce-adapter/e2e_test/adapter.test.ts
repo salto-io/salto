@@ -643,52 +643,52 @@ describe('Salesforce adapter E2E with real account', () => {
           fieldPermissions: [
             {
               field: 'Lead.Fax',
-              readable: 'true',
-              editable: 'true',
+              readable: true,
+              editable: true,
             },
             {
-              editable: 'false',
+              editable: false,
               field: 'Account.AccountNumber',
-              readable: 'false',
+              readable: false,
             },
             {
-              editable: 'false',
+              editable: false,
               field: 'Account.AnnualRevenue',
-              readable: 'false',
+              readable: false,
             },
           ],
           objectPermissions: [
             {
-              allowCreate: 'true',
-              allowDelete: 'true',
-              allowEdit: 'true',
-              allowRead: 'true',
-              modifyAllRecords: 'true',
-              viewAllRecords: 'true',
+              allowCreate: true,
+              allowDelete: true,
+              allowEdit: true,
+              allowRead: true,
+              modifyAllRecords: true,
+              viewAllRecords: true,
               object: 'Account',
             },
           ],
           userPermissions: [
             {
               name: 'ApiEnabled',
-              enabled: 'true',
+              enabled: true,
             },
           ],
           pageAccesses: [
             {
               apexPage: 'ApexPageForProfile',
-              enabled: 'true',
+              enabled: true,
             },
           ],
           classAccesses: [
             {
               apexClass: 'ApexClassForProfile',
-              enabled: 'true',
+              enabled: true,
             },
           ],
           loginHours: {
-            sundayStart: '300',
-            sundayEnd: '420',
+            sundayStart: 300,
+            sundayEnd: 420,
           },
         },
         mockTypes.Profile,
@@ -707,50 +707,38 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(getChangeElement(updateResult.appliedChanges[0])).toStrictEqual(newInstance)
 
       // Checking that the saved instance identical to newInstance
-      const savedInstance = await getMetadata(client, PROFILE_METADATA_TYPE,
-        apiName(newInstance)) as Profile
-
       type Profile = ProfileInfo & {
-        tabVisibilities: Record<string, Value>
-        applicationVisibilities: Record<string, Value>
-        objectPermissions: Record<string, Value>
-        userPermissions: Record<string, Value>
-        pageAccesses: Record<string, Value>
-        classAccesses: Record<string, Value>
+        tabVisibilities: Values[]
+        applicationVisibilities: Values[]
+        userPermissions: Values[]
+        pageAccesses: Values[]
+        classAccesses: Values[]
         loginHours: Values
       }
+      const valuesFromService = await getMetadata(
+        client, PROFILE_METADATA_TYPE, apiName(newInstance),
+      ) as Profile
 
-      const valuesMap = new Map<string, Value>()
-      const newValues = newInstance.value
-      savedInstance.fieldPermissions.forEach(f => valuesMap.set(f.field, f))
-      savedInstance.tabVisibilities.forEach((f: Value) => valuesMap.set(f.tab, f))
-      savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
-      savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
-      savedInstance.userPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
-      makeArray(savedInstance.pageAccesses).forEach((f: Value) => valuesMap.set(f.apexPage, f))
-      makeArray(savedInstance.classAccesses).forEach((f: Value) => valuesMap.set(f.apexClass, f))
+      const valuesFromInstance = newInstance.value as Profile
 
-      expect((newValues.fieldPermissions as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
+      const compareProfileField = (fieldName: keyof Profile): void => {
+        // The value we fetch from the service is not converted to JS types so we have to convert
+        // the expected values to strings before comparing
+        const expectedStrings = makeArray(valuesFromInstance[fieldName] as Values[])
+          .map(val => _.mapValues(val, String))
+        expect(makeArray(valuesFromService[fieldName])).toEqual(
+          expect.arrayContaining(expectedStrings)
+        )
+      }
 
-      expect((newValues.tabVisibilities as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.tab)))).toBeTruthy()
-
-      expect((newValues.applicationVisibilities as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.application)))).toBeTruthy()
-
-      expect((newValues.objectPermissions as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.object)))).toBeTruthy()
-
-      expect((newValues.userPermissions as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.name)))).toBeTruthy()
-
-      expect((newValues.pageAccesses as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.apexPage)))).toBeTruthy()
-
-      expect((newValues.classAccesses as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.apexClass)))).toBeTruthy()
-      expect(newValues.loginHours).toEqual(savedInstance.loginHours)
+      compareProfileField('fieldPermissions')
+      compareProfileField('tabVisibilities')
+      compareProfileField('applicationVisibilities')
+      compareProfileField('objectPermissions')
+      compareProfileField('userPermissions')
+      compareProfileField('pageAccesses')
+      compareProfileField('classAccesses')
+      compareProfileField('loginHours')
 
       await removeElementAndVerify(adapter, client, post)
     })

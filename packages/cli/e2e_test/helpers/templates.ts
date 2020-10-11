@@ -28,9 +28,13 @@ const sfRole = new ObjectType({
   elemID: new ElemID('salesforce', 'Role'),
   annotationTypes: {
     metadataType: BuiltinTypes.SERVICE_ID,
+    suffix: BuiltinTypes.STRING,
+    dirName: BuiltinTypes.STRING,
   },
   annotations: {
     metadataType: 'Role',
+    suffix: 'role',
+    dirName: 'roles',
   },
   fields: {
     description: { type: BuiltinTypes.STRING },

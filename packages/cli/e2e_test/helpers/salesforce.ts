@@ -22,7 +22,7 @@ import SalesforceAdapter, {
   OauthAccessTokenCredentials,
 } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
-import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeElement, Change, ChangeGroupIdFunction } from '@salto-io/adapter-api'
 
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
@@ -90,20 +90,37 @@ export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): Ins
   )
 }
 
+const groupChanges = async (changes: Change[]): Promise<ChangeGroup[]> => {
+  const changeMap = new Map(changes.map((change, idx) => [idx.toString(), change]))
+
+  const getGroupIds = salesforceAdapter.deployModifiers?.getChangeGroupIds as ChangeGroupIdFunction
+  const idMapping = await getGroupIds(changeMap)
+
+  const changeWithGroupIds = [...changeMap.entries()]
+    .map(([changeId, change]) => ({ id: idMapping.get(changeId) ?? changeId, change }))
+
+  const groupedChanges = _.groupBy(changeWithGroupIds, ({ id }) => id)
+  return Object.values(_.mapValues(
+    groupedChanges,
+    (changeGroup, groupID) => ({ groupID, changes: changeGroup.map(({ change }) => change) }),
+  ))
+}
+
 export const addElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
   elements: T[]
 ): Promise<T[]> => {
   const adapter = new SalesforceAdapter({ client, config: {} })
-  const changeGroup: ChangeGroup = {
-    groupID: elements[0].elemID.getFullName(),
-    changes: elements.map(e => ({ action: 'add', data: { after: e } })),
+  const changeGroups = await groupChanges(
+    elements.map(e => ({ action: 'add', data: { after: e } }))
+  )
+  const deployResults = await Promise.all(changeGroups.map(group => adapter.deploy(group)))
+  const errors = deployResults.flatMap(res => res.errors)
+  const appliedChanges = deployResults.flatMap(res => res.appliedChanges)
+  if (errors.length > 0) {
+    throw new Error(`Failed to add elements with: ${errors.join('\n')}`)
   }
-  const deployResult = await adapter.deploy(changeGroup)
-  if (deployResult.errors.length > 0) {
-    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
-  }
-  const updatedElements = deployResult.appliedChanges.map(getChangeElement)
+  const updatedElements = appliedChanges.map(getChangeElement)
   return updatedElements as T[]
 }
 
@@ -112,12 +129,12 @@ export const removeElements = async <T extends InstanceElement | ObjectType>(
   elements: T[]
 ): Promise<void> => {
   const adapter = new SalesforceAdapter({ client, config: {} })
-  const changeGroup: ChangeGroup = {
-    groupID: elements[0].elemID.getFullName(),
-    changes: elements.map(e => ({ action: 'remove', data: { before: e } })),
-  }
-  const deployResult = await adapter.deploy(changeGroup)
-  if (deployResult.errors.length > 0) {
-    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
+  const changeGroups = await groupChanges(
+    elements.map(e => ({ action: 'remove', data: { before: e } }))
+  )
+  const deployResults = await Promise.all(changeGroups.map(group => adapter.deploy(group)))
+  const errors = deployResults.flatMap(res => res.errors)
+  if (errors.length > 0) {
+    throw new Error(`Failed to remove elements with: ${errors.join('\n')}`)
   }
 }

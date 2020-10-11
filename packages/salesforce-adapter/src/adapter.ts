@@ -331,6 +331,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       'PermissionSetRecordTypeVisibility',
       'PermissionSetTabSetting',
       'PermissionSetUserPermission',
+      'KnowledgeSitesSettings',
     ],
     metadataTypesToSkipMutation = [
       'Workflow', // handled in workflow filter

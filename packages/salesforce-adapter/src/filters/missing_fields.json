@@ -2208,6 +2208,32 @@
     ]
   },
   {
+    "id": "KnowledgeCaseSettings",
+    "fields": [
+      {
+        "name": "articlePublicSharingCommunities",
+        "type": "Unknown"
+      },
+      {
+        "name": "articlePublicSharingSites",
+        "type": "KnowledgeSitesSettings"
+      },
+      {
+        "name": "articlePublicSharingSitesChatterAnswers",
+        "type": "KnowledgeSitesSettings"
+      }
+    ]
+  },
+  {
+    "id": "KnowledgeSitesSettings",
+    "fields": [
+      {
+        "name": "site",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
     "id": "PermissionSet",
     "fields": [
       {

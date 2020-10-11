@@ -431,6 +431,31 @@ describe('pino based logger', () => {
             expect(line).toContain('hello { world: true }')
           })
         })
+        describe('globalTags transfer between 2 repos', () => {
+          let logger2: Logger
+          let logger3: Logger
+          let line1: string
+          let line2: string
+
+          beforeEach(async () => {
+            logger = createLogger()
+            logger.assignGlobalTags({ someTags: 'tag here' })
+            logger2 = createLogger()
+            logger2.error('something happened')
+            logger2.assignGlobalTags({ someTags: undefined })
+            logger3 = createLogger()
+            logger3.error('something happened');
+            [line1, line2] = consoleStream.contents().split(EOL)
+          })
+
+          it('line1 should contain global logTags assigned from other repo', () => {
+            expect(line1).toMatch(/someTags="tag here"/)
+          })
+
+          it('line2 should not contain global logTags assigned from other repo', () => {
+            expect(line2).not.toMatch(/someTags="tag here"/)
+          })
+        })
       })
     })
   })
@@ -547,6 +572,19 @@ describe('pino based logger', () => {
         it('should return the same instance', () => {
           expect(logger).toBe(logger2)
         })
+      })
+    })
+
+    describe('when created with existing logTags in globals', () => {
+      beforeEach(async () => {
+        global.globalLogTags = { someTags: 'tag here' }
+        logger = repo(NAMESPACE)
+        await logLine()
+        global.globalLogTags = {}
+      })
+
+      it('should include logTag from globals', () => {
+        expect(line).toMatch(/someTags="tag here"/)
       })
     })
   })

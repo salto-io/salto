@@ -47,12 +47,12 @@ describe('validateLogFile', () => {
 
   const existsSpy = jest.spyOn(fs, 'existsSync')
 
-  beforeEach(() => {
+  beforeAll(() => {
     accessSpy.mockImplementation(mockAccess)
     existsSpy.mockImplementation(mockExists)
   })
 
-  afterEach(() => {
+  afterAll(() => {
     accessSpy.mockRestore()
     existsSpy.mockRestore()
   })

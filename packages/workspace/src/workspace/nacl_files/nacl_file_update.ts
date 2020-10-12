@@ -166,6 +166,12 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
   return [...otherChanges, ...transformedAnnotationTypeChanges]
 }
 
+const removeBracketLines = (dumpedObject: string): string => (
+  // We remove the first line that has the opening bracket and the two last lines, the second
+  // to last has the closing bracket, and the last line is always an empty line
+  dumpedObject.split('\n').slice(1, -2).join('\n').concat('\n')
+)
+
 export const updateNaclFileData = async (
   currentData: string,
   changes: DetailedChangeWithSource[],
@@ -208,9 +214,7 @@ export const updateNaclFileData = async (
         const dumpedObj = await dumpValues({ [changeKey]: elem }, functions, indentationLevel - 1)
         // once we have the "new scope", we want to take just the serialized values because the
         // brackets already exist in the original scope.
-        // We remove the first line that has the opening bracket and the two last lines, the second
-        // to last has the closing bracket, and the last line is always an empty line
-        newData = dumpedObj.split('\n').slice(1, -2).join('\n').concat('\n')
+        newData = removeBracketLines(dumpedObj)
       }
       newData = fixEdgeIndentation(
         newData,

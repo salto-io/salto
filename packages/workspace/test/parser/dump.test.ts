@@ -332,9 +332,9 @@ describe('Salto Dump', () => {
 
   describe('dump function', () => {
     it('should dump custom function a single parameter', async () => {
-      const body = await dumpValues({ attrush: new TestFuncImpl(funcName, [false]) }, functions)
+      const body = await dumpValues(new TestFuncImpl(funcName, [false]), functions)
 
-      expect(body).toMatch(/attrush = ZOMG\(false\)/)
+      expect(body).toMatch(/ZOMG\(false\)/)
     })
     it('should dump custom function that is nested', async () => {
       const body = await dumpValues({ nestalicous: { nestFunc: new TestFuncImpl(funcName, ['yes']) } }, functions)
@@ -357,16 +357,18 @@ describe('Salto Dump', () => {
         },
       }, functions)
 
-      expect(body).toEqual(`nestalicous = {
-  ss = 321
-  nestFunc = ZOMG("yes")
-  cc = 321
-}
-bb = 123
-nestFunc2 = ZOMG("maybe")
-deep = {
-  very = {
-    nestFunc3 = ZOMG("definitely")
+      expect(body).toEqual(`{
+  nestalicous = {
+    ss = 321
+    nestFunc = ZOMG("yes")
+    cc = 321
+  }
+  bb = 123
+  nestFunc2 = ZOMG("maybe")
+  deep = {
+    very = {
+      nestFunc3 = ZOMG("definitely")
+    }
   }
 }
 `)
@@ -379,8 +381,8 @@ deep = {
       body = await dumpValues({ attr: 'value' }, functions)
     })
 
-    it('should contain only attribute', () => {
-      expect(body).toMatch(/^attr\s+=\s+"value"$/m)
+    it('should contain attribute', () => {
+      expect(body).toMatch(/\{\s+attr\s+=\s+"value"\s+\}/m)
     })
   })
   describe('dump annotations', () => {
@@ -409,13 +411,13 @@ deep = {
   })
   describe('dump primitive', () => {
     it('should serialize numbers', async () => {
-      expect(await dumpValues(123, functions)).toEqual('123')
+      expect(await dumpValues(123, functions)).toEqual('123\n')
     })
     it('should serialize strings', async () => {
-      expect(await dumpValues('aaa', functions)).toEqual('"aaa"')
+      expect(await dumpValues('aaa', functions)).toEqual('"aaa"\n')
     })
     it('should serialize booleans', async () => {
-      expect(await dumpValues(false, functions)).toEqual('false')
+      expect(await dumpValues(false, functions)).toEqual('false\n')
     })
     it('should dump list', async () => {
       expect(await dumpValues(

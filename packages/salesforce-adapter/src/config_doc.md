@@ -66,5 +66,5 @@ salesforce {
 
 | Name         | Default when undefined                      | Description
 | -------------| --------------------------------------------| -----------
-| objectsRegex | N/A (required when overrides is configured) | Regular Expression that define which CustomObjects to override their default ID field
+| objectsRegex | N/A (required when overrides is configured) | Regular Expression that defines which CustomObjects to override their default ID field
 | idFields     | []                                          | Fields that are used to define the Salto ID for objects that matches the objectsRegex

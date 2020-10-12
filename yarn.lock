@@ -1294,13 +1294,36 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/suitecloud-cli@1.1.0-salto-3":
-  version "1.1.0-salto-3"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.0-salto-3.tgz#1814ccbd597553db9d544fd9a6da09cce547379e"
-  integrity sha512-I2opCytge/BjWyKMDjqbbnJfNVYmQAwuWX7VtyfyTyCbs4nu7zzVteVMVMv19GEtC1XtnVAwQqVk//YJTeQaBA==
+"@salto-io/logging@^0.1.35-master.b11f0d71":
+  version "0.1.35-master.d683cdfb"
+  resolved "https://registry.yarnpkg.com/@salto-io/logging/-/logging-0.1.35-master.d683cdfb.tgz#43596b8669f8b8671e7c54bfc53f998ef60c50e7"
+  integrity sha512-Du0Y6YF2n7jtc2pmsk+vOdKsvoyhkKEEh74fERv+PqBHGfTc6aRj0Q6pUoy9wQK7rfNji6r50SdPub1u+3dweA==
+  dependencies:
+    "@salto-io/lowerdash" "0.1.35-master.d683cdfb"
+    chalk "^2.4.2"
+    fast-safe-stringify "^2.0.7"
+    lodash "^4.17.19"
+    logform "^2.1.2"
+    minimatch "^3.0.4"
+    pino "^6.3.2"
+    wu "^2.1.0"
+
+"@salto-io/lowerdash@0.1.35-master.d683cdfb":
+  version "0.1.35-master.d683cdfb"
+  resolved "https://registry.yarnpkg.com/@salto-io/lowerdash/-/lowerdash-0.1.35-master.d683cdfb.tgz#23d81a26662037e8cb68c9baf4375b17ef3fb31d"
+  integrity sha512-V8YtpCirQN7HWrePfzYWLCHAvHf7Hz5FgTBGUejBBY0JqqibGuBZZCrytVlf5yE98e95SBeAPCIwy5YraaqLIA==
+  dependencies:
+    lodash "^4.17.19"
+    stacktrace-parser "^0.1.9"
+    wu "^2.1.0"
+
+"@salto-io/suitecloud-cli@1.1.0-salto-4":
+  version "1.1.0-salto-4"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.0-salto-4.tgz#1cc3d8db54b8342dec1e4b757c275f6a33512d59"
+  integrity sha512-xIdf5chm8FmePMKsBBLTAqwLSVXpwkzN8tWDp2sz45lN0kyOErJzqV/SiPoxDOsYalORcbykfCXbQHcQqEkw+g==
   dependencies:
     "@oracle/suitecloud-cli-localserver-command" "^1.1.0"
-    "@salto-io/logging" "^0.1.33"
+    "@salto-io/logging" "^0.1.35-master.b11f0d71"
     chalk "^4.0.0"
     cli-spinner "^0.2.10"
     commander "^5.1.0"

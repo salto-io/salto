@@ -48,7 +48,9 @@ We would love to get your feedback! Please see [Contributing](contributing.md) f
 
 ## What are the system requirements for running Salto on my local machine?
 
-Salto generates many small files as part of its regular operation, that represent your configuration in a way that is easy to manage and review. Most modern machines handle this without issues - but some background processes, such as file backup and disk monitoring tools, may need some adjustments in order to allow these operations to run efficiently.
+Salto should run fine on any modern computer with a modern operating system (Windows, macOS or Linux), with at least 8GB RAM, and preferably a solid-state drive (SSD).
+In addition, as Salto performs quite a few API calls to your business applications, a stable internet connection is required.
+In order to represent your configuration in a way that is easy to manage and review, Salto generates many small files as part of its regular operation. Most modern machines handle this without issues - but some background processes, such as file backup, anti-virus and disk monitoring tools, may need some adjustments in order to allow these operations to run efficiently.
 
 If you’re using git or developing on a large codebase, this is likely already addressed.
 

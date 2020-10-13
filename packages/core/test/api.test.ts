@@ -30,6 +30,8 @@ import {
   isAdditionChange,
   ChangeDataType,
   AdditionChange,
+  isInstanceElement,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import * as api from '../src/api'
@@ -358,6 +360,51 @@ describe('api.ts', () => {
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)
         expect(stateElement).toEqual(changedElement)
+      })
+    })
+    describe('with partial success from the adapter', () => {
+      let newEmployee: InstanceElement
+      let existingEmployee: InstanceElement
+      let stateSet: jest.SpyInstance
+      beforeAll(async () => {
+        const wsElements = mockElements.getAllElements()
+        existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
+        newEmployee = new InstanceElement(
+          'new',
+          existingEmployee.type,
+          existingEmployee.value,
+        )
+        wsElements.push(newEmployee)
+        existingEmployee.value.name = 'updated name'
+        const stateElements = mockElements.getAllElements()
+        ws = mockWorkspace({ elements: wsElements, stateElements })
+        stateSet = jest.spyOn(ws.state(), 'set')
+
+        // Create plan where both changes are in the same group
+        const actionPlan = await plan.getPlan({
+          before: stateElements,
+          after: wsElements,
+          customGroupIdFunctions: {
+            salto: async changes => new Map([...changes.keys()].map(key => [key, 'group'])),
+          },
+        })
+
+        mockAdapterOps.deploy.mockClear()
+        mockAdapterOps.deploy.mockImplementationOnce(async changeGroup => ({
+          appliedChanges: changeGroup.changes.filter(isModificationChange),
+          errors: [new Error('cannot add new employee')],
+        }))
+        result = await api.deploy(ws, actionPlan, jest.fn(), SERVICES)
+      })
+
+      it('should return error for the failed part', () => {
+        expect(result.errors).toHaveLength(1)
+      })
+      it('should return success false for the overall deploy', () => {
+        expect(result.success).toBeFalsy()
+      })
+      it('should update state with applied change', () => {
+        expect(stateSet).toHaveBeenCalledWith(existingEmployee)
       })
     })
   })

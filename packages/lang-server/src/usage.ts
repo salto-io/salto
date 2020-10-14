@@ -61,7 +61,7 @@ const getUsages = async (
   )
 }
 
-const getSearchElementFullName = (context: PositionContext, token: string): string => {
+export const getSearchElementFullName = (context: PositionContext, token: string): string => {
   if (context.ref !== undefined) {
     return !_.isEmpty(context.ref.path) && context.type === 'type'
       ? context.ref?.element.elemID.createNestedID('attr', token).getFullName()

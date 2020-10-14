@@ -73,44 +73,27 @@ describe('custom object instances e2e', () => {
   })
 
   describe('custom settings manipulations', () => {
-
-    const TestCustomSettingsRecords = [
-      {
-        attributes: {
-          type: 'Test',
-        },
-        Id: '1',
-        Name: 'TestName1',
-      },
-      {
-        attributes: {
-          type: 'Test',
-        },
-        Id: '2',
-        Name: 'TestName2',
-      },
-    ]
+    let createdInstance: InstanceElement
+    let createdElement: ObjectType
     it('should create new instances', async () => {
-      const settingsType = createCustomSettingsObject('customsetting', 'List')
-      const instance = await createInstance({
+      const settingsType = createCustomSettingsObject('customsetting__c', 'List')
+      createdElement = await createElement(adapter, settingsType)
+      createdInstance = await createElement(adapter, await createInstance({
         value: {
-          attributes: {
-            type: 'Test',
-          },
-          Id: '1',
           Name: 'TestName1',
-          fullName: 'customsetting TestName2',
+          fullName: 'customsetting TestName1',
+          TestField__c: 'somevalue',
         },
-        type: settingsType,
-      })
-      const createdInstance = await createElement(
-        adapter,
-        instance,
-      )
-      const result = await getRecordOfInstance(client, createdInstance)
+        type: createdElement,
+      }))
+      const result = await getRecordOfInstance(client, createdInstance, ['TestField__c'], 'Name')
       expect(result).toBeDefined()
-      expect((result as SalesforceRecord).Id).toEqual(createdInstance.value.Id)
+      expect((result as SalesforceRecord).TestField).toEqual(createdInstance.value.TestField)
       expect((result as SalesforceRecord).Name).toEqual(createdInstance.value.Name)
+    })
+    it('should delete custom object setting', async () => {
+      await removeElementAndVerify(adapter, client, createdInstance)
+      await removeElementAndVerify(adapter, client, createdElement)
     })
   })
 

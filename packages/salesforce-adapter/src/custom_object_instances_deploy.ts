@@ -117,14 +117,13 @@ const getRecordsBySaltoIds = async (
   return (await toArrayAsync(recordsIterable)).flat()
 }
 
-const getDataManagementConfigIfCustomSettings = (instances: InstanceElement[]):
-  DataManagementConfig | undefined => ((isCustomSettingsObject(instances[0].type)
-    && instances[0].type.annotations[CUSTOM_SETTINGS_TYPE] === 'List') ? ({
-    includeObjects: [`^${apiName(instances[0].type)}`],
-    saltoIDSettings: {
-      defaultIdFields: ['Name'],
-    },
-  }) : undefined)
+const getDataManagementConfigForCustomSettings = (instances: InstanceElement[]):
+  DataManagementConfig => ({
+  includeObjects: [`^${apiName(instances[0].type)}`],
+  saltoIDSettings: {
+    defaultIdFields: ['Name'],
+  },
+})
 
 const insertInstances = async (
   typeName: string,
@@ -304,8 +303,9 @@ export const deployCustomObjectInstancesGroup = async (
     if (instanceTypes.length > 1) {
       throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
     }
-    const actualDataManagement = getDataManagementConfigIfCustomSettings(instances)
-      || dataManagementConfig
+    const actualDataManagement = (isCustomSettingsObject(instances[0].type)
+    && instances[0].type.annotations[CUSTOM_SETTINGS_TYPE] === 'List') ? getDataManagementConfigForCustomSettings(instances)
+      : dataManagementConfig
     if (actualDataManagement === undefined) {
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }

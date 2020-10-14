@@ -19,11 +19,12 @@ import { FilterCreator } from '../filter'
 import { isCustomSettingsObject, apiName } from '../transformers/transformer'
 import { ConfigChangeSuggestion } from '../types'
 import { getAllInstances } from './custom_objects_instances'
+import { CUSTOM_SETTINGS_TYPE } from '../constants'
 
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     const customSettingsFetchSettings = elements.filter(obj => (isCustomSettingsObject(obj)
-      && obj.annotations.customSettingsType === 'List'))
+      && obj.annotations[CUSTOM_SETTINGS_TYPE] === 'List'))
       .filter(isObjectType)
       .map(objectType => ({
         isBase: true,

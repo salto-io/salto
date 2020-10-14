@@ -537,7 +537,7 @@ describe('transformer', () => {
       })
 
       describe('Non nameField', () => {
-        it('Should fetch as AutoNumber field with hidden annotation', () => {
+        it('Should fetch as AutoNumber field with hidden annotation true and required false', () => {
           const fieldElement = getSObjectFieldElement(
             dummyElem,
             salesforceAutoNumberField,
@@ -546,11 +546,12 @@ describe('transformer', () => {
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+          expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         })
       })
 
       describe('For nameField', () => {
-        it('Should fetch as AutoNumber field with hidden annotation', () => {
+        it('Should fetch as AutoNumber field with hidden annotation true and required false', () => {
           salesforceAutoNumberField.nameField = true
           const fieldElement = getSObjectFieldElement(
             dummyElem,
@@ -560,6 +561,7 @@ describe('transformer', () => {
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+          expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         })
       })
     })

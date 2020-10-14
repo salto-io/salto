@@ -1145,8 +1145,10 @@ export const getSObjectFieldElement = (
   }
 
   // An autoNumber field should be hidden because it will differ between enviorments
+  // and not required to be able to add without it (ie. when moving envs)
   if (field.autoNumber) {
     annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    annotations[CORE_ANNOTATIONS.REQUIRED] = false
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name

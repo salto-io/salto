@@ -130,7 +130,7 @@ const parseNaclFiles = async (
       : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, cache, functions))
   }), PARSE_CONCURRENCY)
 
-const getFunctions = (staticFileSource: StaticFilesSource): Functions => ({
+export const getFunctions = (staticFileSource: StaticFilesSource): Functions => ({
   ...getStaticFilesFunctions(staticFileSource), // add future functions here
 })
 

@@ -15,16 +15,19 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeElement, Change, isAdditionOrModificationChange,
+  AdapterOperations, getChangeElement, Change, isAdditionOrModificationChange, DeployResult,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
+import { logger } from '@salto-io/logging'
 import { Plan, PlanItem, PlanItemId } from './plan'
 
-const deployAction = async (
+const log = logger(module)
+
+const deployAction = (
   planItem: PlanItem,
   adapters: Record<string, AdapterOperations>
-): Promise<ReadonlyArray<Change>> => {
+): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
   const adapterName = getChangeElement(changes[0]).elemID.adapter
   const adapter = adapters[adapterName]
@@ -32,13 +35,7 @@ const deployAction = async (
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  const result = await adapter.deploy({ groupID: planItem.groupKey, changes })
-  if (result.errors.length > 0) {
-    throw new Error(
-      `Failed to deploy ${planItem.groupKey} with errors:\n${result.errors.join('\n')}`
-    )
-  }
-  return result.appliedChanges
+  return adapter.deploy({ groupID: planItem.groupKey, changes })
 }
 
 export class DeployError extends Error {
@@ -81,14 +78,20 @@ export const deployActions = async (
       const item = deployPlan.getItem(itemId) as PlanItem
       reportProgress(item, 'started')
       try {
-        const appliedChanges = await deployAction(item, adapters)
-        reportProgress(item, 'finished')
+        const result = await deployAction(item, adapters)
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
-        updatePlanElement(item, appliedChanges)
-        await postDeployAction(appliedChanges)
+        updatePlanElement(item, result.appliedChanges)
+        await postDeployAction(result.appliedChanges)
+        if (result.errors.length > 0) {
+          throw new Error(
+            `Failed to deploy ${item.groupKey} with errors:\n${result.errors.join('\n')}`
+          )
+        }
+        reportProgress(item, 'finished')
       } catch (error) {
         reportProgress(item, 'error', error.message ?? String(error))
+        log.error('Got error deploying item %s: %o', item.groupKey, error)
         throw error
       }
     })

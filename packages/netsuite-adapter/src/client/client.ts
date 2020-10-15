@@ -79,7 +79,7 @@ export const fileCabinetTopLevelFolders = [
   `${SDF_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
   `${SDF_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
 ]
-const MINUTE = 1000 * 60
+const MINUTE_IN_MILLISECONDS = 1000 * 60
 
 const baseExecutionPath = os.tmpdir()
 
@@ -284,7 +284,7 @@ export default class NetsuiteClient {
         arguments: commandArguments,
       })
       return timeoutInMinutes !== undefined
-        ? withTimeout(actionResultPromise, timeoutInMinutes * MINUTE)
+        ? withTimeout(actionResultPromise, timeoutInMinutes * MINUTE_IN_MILLISECONDS)
         : actionResultPromise
     })
     NetsuiteClient.verifySuccessfulAction(actionResult, commandName)

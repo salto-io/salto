@@ -25,7 +25,7 @@ import { getFullName, getInternalId, setInternalId } from './utils'
 
 const log = logger(module)
 
-const getIdsForType = async (
+export const getIdsForType = async (
   client: SalesforceClient, type: string,
 ): Promise<Record<string, string>> => {
   const { result, errors } = await client.listMetadataObjects({ type })

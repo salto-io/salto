@@ -154,7 +154,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
+      await expect(client.getCustomObjects(typeNames, true, 1)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -167,7 +167,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
+      await expect(client.getCustomObjects(typeNames, true, 1)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -181,7 +181,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, true)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, true, 1)
       const numberOfCallsToImport = typeNames.length + 1 // 1 stands for import 'ALL'
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
@@ -205,7 +205,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, false)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, false, 1)
       const numberOfCallsToImport = typeNames.length
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
@@ -235,7 +235,7 @@ describe('netsuite client', () => {
       const typesToFetch = [
         CUSTOM_RECORD_TYPE, ENTRY_FORM, ROLE, SAVED_SEARCH, TRANSACTION_FORM, WORKFLOW,
       ]
-      await client.getCustomObjects(typesToFetch, false)
+      await client.getCustomObjects(typesToFetch, false, 1)
       const numberOfCallsToImport = typesToFetch.length
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
@@ -255,10 +255,44 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(9, deleteAuthIdCommandMatcher)
     })
 
+    it('should fail to import type when it exceeds the configured timeout', async () => {
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
+      const typesToFetch = ['Short', 'Long']
+      mockExecuteAction.mockImplementation(async context => {
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'Long') {
+          await new Promise(resolve => setTimeout(resolve, 100))
+          return Promise.resolve({ isSuccess: () => true })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      const getCustomObjectsResult = await client.getCustomObjects(typesToFetch, false, 0.001)
+      expect(getCustomObjectsResult.failedTypes).toEqual(['Long'])
+      expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
+    })
+
+    it('should fail to import all types at once due to timeout and succeed type by type', async () => {
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
+      const typesToFetch = ['typeA']
+      mockExecuteAction.mockImplementation(async context => {
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'ALL') {
+          await new Promise(resolve => setTimeout(resolve, 100))
+          return Promise.resolve({ isSuccess: () => true })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          await new Promise(resolve => setTimeout(resolve, 1))
+          return Promise.resolve({ isSuccess: () => true })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      const getCustomObjectsResult = await client.getCustomObjects(typesToFetch, true, 0.0001)
+      expect(getCustomObjectsResult.failedTypes).toEqual([])
+      expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
+    })
+
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const { elements: customizationInfos, failedToFetchAllAtOnce, failedTypes } = await client
-        .getCustomObjects(typeNames, true)
+        .getCustomObjects(typeNames, true, 1)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toHaveLength(0)
       expect(readDirMock).toHaveBeenCalledTimes(1)

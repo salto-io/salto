@@ -29,6 +29,7 @@ import {
 } from './types'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
@@ -36,6 +37,7 @@ import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+  DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 
@@ -51,6 +53,9 @@ export interface NetsuiteAdapterParams {
   filePathRegexSkipList?: string[]
   // Determines whether to attempt fetching all custom objects in a single call or type by type
   fetchAllTypesAtOnce?: boolean
+  // Limits the maximum time a single fetchType thread can run.
+  // The value for fetching all types in a single API call is deduced from it
+  fetchTypeTimeoutInMinutes?: number
   // Determines whether to attempt deploying all the elements that are referenced by the changed
   // elements. It's needed as a workaround in cases deploy fails due to SDF inconsistent behavior
   deployReferencedElements?: boolean
@@ -66,6 +71,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: RegExp[]
   private readonly fetchAllTypesAtOnce: boolean
+  private readonly fetchTypeTimeoutInMinutes: number
   private readonly deployReferencedElements: boolean
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
@@ -79,6 +85,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     typesToSkip = [],
     filePathRegexSkipList = [],
     fetchAllTypesAtOnce = DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
+    fetchTypeTimeoutInMinutes = DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
     deployReferencedElements = DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
     getElemIdFunc,
     config,
@@ -90,6 +97,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
       .map(e => new RegExp(e))
     this.fetchAllTypesAtOnce = config[FETCH_ALL_TYPES_AT_ONCE] ?? fetchAllTypesAtOnce
+    this.fetchTypeTimeoutInMinutes = config[FETCH_TYPE_TIMEOUT_IN_MINUTES]
+      ?? fetchTypeTimeoutInMinutes
     this.deployReferencedElements = config[DEPLOY_REFERENCED_ELEMENTS] ?? deployReferencedElements
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
@@ -102,7 +111,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public async fetch(): Promise<FetchResult> {
     const customTypesToFetch = _.pull(Object.keys(customTypes), ...this.typesToSkip)
     const getCustomObjectsResult = this.client.getCustomObjects(customTypesToFetch,
-      this.fetchAllTypesAtOnce)
+      this.fetchAllTypesAtOnce, this.fetchTypeTimeoutInMinutes)
     const importFileCabinetResult = this.client.importFileCabinetContent(this.filePathRegexSkipList)
     const {
       elements: customObjects,

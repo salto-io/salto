@@ -59,8 +59,11 @@ const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
 
 const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
   maxAttempts: 5, // try 5 times
-  retryDelay: 5000, // wait for 5s before trying again
   retryStrategy: RetryStrategies.NetworkError, // retry on network errors
+  delayStrategy: (err, _response, _body) => {
+    log.error('failed to run SFDC call for reason: %s. Retrying.', err.message)
+    return 5000
+  },
 }
 
 const isAlreadyDeletedError = (error: SfError): boolean => (

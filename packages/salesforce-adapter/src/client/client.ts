@@ -208,8 +208,13 @@ const sendChunked = async <TIn, TOut>({
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
-        log.error('chunked %s failed on chunk, trying each element separately. %o',
-          operationInfo, error)
+        if (isSuppressedError(error)) {
+          log.error('chunked %s failed on chunk with recoverable error: %s. Ignoring and trying each element separately.',
+            operationInfo, error.message)
+        } else {
+          log.error('chunked %s failed on chunk, trying each element separately. %o',
+            operationInfo, error)
+        }
         const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
         return {
           result: _.flatten(sendChunkResult.map(e => e.result).map(flatValues)),

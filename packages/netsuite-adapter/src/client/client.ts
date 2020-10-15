@@ -13,19 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import type {
-  CommandsMetadataService as CommandsMetadataServiceType,
-  CommandActionExecutor as CommandActionExecutorType,
-  CLIConfigurationService as CLIConfigurationServiceType,
-  NodeConsoleLogger as NodeConsoleLoggerType,
-  ActionResultUtils as ActionResultUtilsType,
-  ActionResult,
-} from '@salto-io/suitecloud-cli'
-
 import { collections, decorators, promises, values } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
+import {
+  CommandsMetadataService, CommandActionExecutor, CLIConfigurationService, NodeConsoleLogger,
+  ActionResult, ActionResultUtils,
+} from '@salto-io/suitecloud-cli'
 import xmlParser from 'fast-xml-parser'
 import he from 'he'
 import Bottleneck from 'bottleneck'
@@ -42,27 +37,6 @@ import {
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
-
-let CommandsMetadataService: typeof CommandsMetadataServiceType
-let CommandActionExecutor: typeof CommandActionExecutorType
-let CLIConfigurationService: typeof CLIConfigurationServiceType
-let NodeConsoleLogger: typeof NodeConsoleLoggerType
-let ActionResultUtils: typeof ActionResultUtilsType
-
-try {
-  // eslint-disable-next-line max-len
-  // eslint-disable-next-line import/no-extraneous-dependencies,@typescript-eslint/no-var-requires,global-require
-  const module = require('@salto-io/suitecloud-cli')
-  CommandsMetadataService = module.CommandsMetadataService
-  CommandActionExecutor = module.CommandActionExecutor
-  CLIConfigurationService = module.CLIConfigurationService
-  NodeConsoleLogger = module.NodeConsoleLogger
-  ActionResultUtils = module.ActionResultUtils
-} catch (e) {
-  // TODO: this is a temp solution as we can't distribute salto with suitecloud-cli
-  log.debug('Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing')
-  log.debug('If you want to use Netsuite adapter follow the instructions in the README file')
-}
 
 export type Credentials = {
   accountId: string
@@ -209,7 +183,7 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
 
 type Project = {
   projectName: string
-  executor: CommandActionExecutorType
+  executor: CommandActionExecutor
   authId: string
 }
 
@@ -229,7 +203,7 @@ export default class NetsuiteClient {
   private readonly sdfConcurrencyLimit: number
   private readonly sdfCallsLimiter: Bottleneck
   private readonly setupAccountLock: AsyncLock
-  private readonly baseCommandExecutor: CommandActionExecutorType
+  private readonly baseCommandExecutor: CommandActionExecutor
 
   constructor({ credentials, sdfConcurrencyLimit }: NetsuiteClientOpts) {
     this.credentials = {
@@ -251,7 +225,7 @@ export default class NetsuiteClient {
     return Promise.resolve(netsuiteClient.credentials.accountId)
   }
 
-  private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
+  private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
     return new CommandActionExecutor({
       executionPath,
       cliConfigurationService: new CLIConfigurationService(),
@@ -296,7 +270,7 @@ export default class NetsuiteClient {
   }
 
   private async executeProjectAction(commandName: string, commandArguments: Values,
-    projectCommandActionExecutor: CommandActionExecutorType): Promise<ActionResult> {
+    projectCommandActionExecutor: CommandActionExecutor): Promise<ActionResult> {
     const actionResult = await this.sdfCallsLimiter.schedule(() =>
       projectCommandActionExecutor.executeAction({
         commandName,
@@ -314,7 +288,7 @@ export default class NetsuiteClient {
   }
 
   protected async setupAccount(
-    projectCommandActionExecutor: CommandActionExecutorType,
+    projectCommandActionExecutor: CommandActionExecutor,
     authId: string
   ): Promise<void> {
     await this.withAuthIdsLock(async () => {
@@ -395,7 +369,7 @@ export default class NetsuiteClient {
   }
 
   private async importObjects(typeNames: string[], fetchAllAtOnce: boolean,
-    executor: CommandActionExecutorType):
+    executor: CommandActionExecutor):
     Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
     const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
@@ -419,7 +393,7 @@ export default class NetsuiteClient {
   }
 
   private async importObjectsByTypes(typeNames: string[],
-    executor: CommandActionExecutorType): Promise<string[]> {
+    executor: CommandActionExecutor): Promise<string[]> {
     const orderTypesByFetchDuration = (): string[] => {
       // Fetching the below types takes statistically much more time than the others, and sometimes
       // they even fail on SDF internal timeout. We can save some fetch time if fetching them first.
@@ -454,7 +428,7 @@ export default class NetsuiteClient {
     return failedTypes
   }
 
-  private async runImportObjectsCommand(type: string, executor: CommandActionExecutorType):
+  private async runImportObjectsCommand(type: string, executor: CommandActionExecutor):
     Promise<ActionResult> {
     return this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
@@ -464,7 +438,7 @@ export default class NetsuiteClient {
     }, executor)
   }
 
-  private async listFilePaths(executor: CommandActionExecutorType, filePathRegexSkipList: RegExp[]):
+  private async listFilePaths(executor: CommandActionExecutor, filePathRegexSkipList: RegExp[]):
     Promise<{ listedPaths: string[]; failedPaths: string[] }> {
     const failedPaths: string[] = []
     const actionResults = (await Promise.all(
@@ -484,7 +458,7 @@ export default class NetsuiteClient {
     }
   }
 
-  private async importFiles(filePaths: string[], executor: CommandActionExecutorType):
+  private async importFiles(filePaths: string[], executor: CommandActionExecutor):
     Promise<{ importedPaths: string[]; failedPaths: string[] }> {
     if (filePaths.length === 0) {
       return {

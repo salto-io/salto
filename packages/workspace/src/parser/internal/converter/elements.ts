@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, INSTANCE_ANNOTATIONS, Variable, ElemID, PrimitiveTypes, TypeMap, Values, TypeElement, ListType, ObjectType, Field, PrimitiveType, InstanceElement, Value, isObjectType } from '@salto-io/adapter-api'
+import { Element, INSTANCE_ANNOTATIONS, Variable, ElemID, PrimitiveTypes, TypeMap, Values, TypeElement, ListType, ObjectType, Field, PrimitiveType, InstanceElement, Value, isObjectType, MapType } from '@salto-io/adapter-api'
 import wu from 'wu'
 import { SourceMap } from '../../source_map'
 import { Keywords } from '../../language'
@@ -23,7 +23,12 @@ import { createSourceRange } from './context'
 import { convertAttributes } from './values'
 
 const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
-type ElementInternalParseRes = {element: Element; sourceMap: SourceMap; listTypes: ListType[]}
+type ElementInternalParseRes = {
+  element: Element
+  sourceMap: SourceMap
+  listTypes: ListType[]
+  mapTypes: MapType[]
+}
 
 export const parseElemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
@@ -80,6 +85,7 @@ const parseType = (
     sourceMap.mount(elemID.createNestedID('attr').getFullName(), annotations.sourceMap)
   }
   const listElements: Map<string, ListType> = new Map<string, ListType>()
+  const mapElements: Map<string, MapType> = new Map<string, MapType>()
   const createFieldType = (blockType: string): TypeElement => {
     if (blockType.startsWith(Keywords.LIST_PREFIX)
         && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
@@ -91,6 +97,17 @@ const parseType = (
       ))
       listElements.set(listType.elemID.getFullName(), listType)
       return listType
+    }
+    if (blockType.startsWith(Keywords.MAP_PREFIX)
+        && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
+      const mapType = new MapType(createFieldType(
+        blockType.substring(
+          Keywords.MAP_PREFIX.length,
+          blockType.length - Keywords.GENERICS_SUFFIX.length
+        )
+      ))
+      mapElements.set(mapType.elemID.getFullName(), mapType)
+      return mapType
     }
     return new ObjectType({ elemID: parseElemID(blockType) })
   }
@@ -106,7 +123,12 @@ const parseType = (
     sourceMap.push(field.elemID.getFullName(), fieldData.source)
   })
 
-  return { element: typeObj, sourceMap, listTypes: wu(listElements.values()).toArray() }
+  return {
+    element: typeObj,
+    sourceMap,
+    listTypes: wu(listElements.values()).toArray(),
+    mapTypes: wu(mapElements.values()).toArray(),
+  }
 }
 
 const parsePrimitiveType = (
@@ -136,6 +158,7 @@ const parsePrimitiveType = (
     }),
     sourceMap,
     listTypes: [],
+    mapTypes: [],
   }
 }
 
@@ -173,7 +196,7 @@ const parseInstance = (
       : inst.elemID.getFullName()
     sourceMap.mount(mountKey, attrs.sourceMap)
   }
-  return { element: inst, sourceMap, listTypes: [] }
+  return { element: inst, sourceMap, listTypes: [], mapTypes: [] }
 }
 
 const parseElementBlock = (
@@ -191,12 +214,12 @@ const parseElementBlock = (
     return parseType(elementLabels[0].value, fields, annotationsTypes, attributes, isSettings)
   }
   if (elementLabels.length === 0 || elementLabels.length === 1) {
-    const { element, sourceMap, listTypes } = parseInstance(
+    const { element, sourceMap, listTypes, mapTypes } = parseInstance(
       elementType.value,
       elementLabels.map(l => l.value),
       attributes
     )
-    return { element, sourceMap, listTypes }
+    return { element, sourceMap, listTypes, mapTypes }
   }
   // Without this exception the linter won't allow us to end the function
   // without a return value
@@ -241,7 +264,7 @@ export const converTopLevelBlock = (
     return parseVariablesBlock(attributes)
   }
   const annotations = convertAttributes(attributes)
-  const { element, sourceMap, listTypes } = parseElementBlock(
+  const { element, sourceMap, listTypes, mapTypes } = parseElementBlock(
     elementType,
     elementLabels,
     annotationTypes?.value ?? {},
@@ -253,7 +276,7 @@ export const converTopLevelBlock = (
     sourceMap.mount(elemKey, annotationTypes.sourceMap)
   }
   sourceMap.push(elemKey, createSourceRange(labels[0], cb))
-  return { elements: [element, ...listTypes], sourceMap }
+  return { elements: [element, ...listTypes, ...mapTypes], sourceMap }
 }
 
 const convertAnnotationTypes = (

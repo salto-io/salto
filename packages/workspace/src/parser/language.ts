@@ -31,5 +31,6 @@ export enum Keywords {
 
   // Generics Types
   LIST_PREFIX = 'List<',
+  MAP_PREFIX = 'Map<',
   GENERICS_SUFFIX = '>'
 }

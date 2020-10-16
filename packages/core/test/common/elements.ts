@@ -15,11 +15,11 @@
 */
 import {
   CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement,
-  PrimitiveType, ListType,
+  PrimitiveType, ListType, MapType,
 } from '@salto-io/adapter-api'
 
 type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType,
-    ObjectType, InstanceElement, ListType]
+    ObjectType, InstanceElement, ListType, MapType]
 export const getAllElements = (): AllElementsTypes => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
@@ -44,6 +44,7 @@ export const getAllElements = (): AllElementsTypes => {
         },
       },
       rooms: { type: new ListType(BuiltinTypes.STRING) },
+      seats: { type: new MapType(BuiltinTypes.STRING) },
     },
     annotationTypes: {
       label: BuiltinTypes.STRING,
@@ -56,6 +57,7 @@ export const getAllElements = (): AllElementsTypes => {
 
   const employeeElemID = new ElemID('salto', 'employee')
   const stringListType = new ListType(BuiltinTypes.STRING)
+  const stringMapType = new MapType(BuiltinTypes.STRING)
   const saltoEmployee = new ObjectType({
     elemID: employeeElemID,
     fields: {
@@ -98,5 +100,5 @@ export const getAllElements = (): AllElementsTypes => {
   )
 
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice,
-    saltoEmployee, saltoEmployeeInstance, stringListType]
+    saltoEmployee, saltoEmployeeInstance, stringListType, stringMapType]
 }

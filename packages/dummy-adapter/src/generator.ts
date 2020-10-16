@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType, FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement, Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values, CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression, INSTANCE_ANNOTATIONS, getDeepInnerType } from '@salto-io/adapter-api'
+import { PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType, FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement, Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values, CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression, INSTANCE_ANNOTATIONS, getDeepInnerType, isContainerType, MapType, isMapType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
@@ -28,9 +28,11 @@ export type GeneratorParams = {
     numOfTypes: number
     numOfObjs: number
     numOfRecords: number
+    numOfMapChunks: number
     primitiveFieldFreq: number
     builtinFieldFreq: number
     listFieldFreq: number
+    mapFieldFreq: number
     numOfProfiles: number
     maxRank: number
     multilineFreq: number
@@ -51,6 +53,7 @@ export type GeneratorParams = {
     staticFileLinesStd: number
     listLengthMean: number
     listLengthStd: number
+    useOldProfiles: boolean
 }
 
 export const defaultParams: GeneratorParams = {
@@ -58,12 +61,14 @@ export const defaultParams: GeneratorParams = {
   numOfRecords: 522,
   numOfPrimitiveTypes: 44,
   numOfObjs: 103,
+  numOfMapChunks: 3,
   numOfProfiles: 0,
   numOfTypes: 496,
   maxRank: 9,
   primitiveFieldFreq: 0.349,
   builtinFieldFreq: 0.56,
   listFieldFreq: 0.0272,
+  mapFieldFreq: 0.005,
   fieldsNumMean: 8.8,
   fieldsNumStd: 10.9,
   objectAnnoMean: 20.3,
@@ -82,12 +87,13 @@ export const defaultParams: GeneratorParams = {
   staticFileLinesStd: 4.85,
   listLengthMean: 8.7,
   listLengthStd: 3.6,
+  useOldProfiles: false,
 }
 
 export const DUMMY_ADAPTER = 'dummy'
 
 const defaultObj = new ObjectType({
-  elemID: new ElemID(DUMMY_ADAPTER, 'DEFULT'),
+  elemID: new ElemID(DUMMY_ADAPTER, 'DEFAULT'),
   fields: {
     legit: { type: BuiltinTypes.STRING },
   },
@@ -105,11 +111,29 @@ const permissionsType = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Permissions'],
 })
 
-const profileType = new ObjectType({
+const layoutAssignmentsType = new ObjectType({
+  elemID: new ElemID(DUMMY_ADAPTER, 'LayoutAssignments'),
+  fields: {
+    layout: { type: BuiltinTypes.STRING },
+    recordType: { type: BuiltinTypes.STRING },
+  },
+})
+
+const oldProfileType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'Profile'),
   fields: {
     ObjectLevelPermissions: { type: new ListType(permissionsType) },
     FieldLevelPermissions: { type: new ListType(permissionsType) },
+  },
+  path: [DUMMY_ADAPTER, 'Default', 'Profile'],
+})
+
+const profileType = new ObjectType({
+  elemID: new ElemID(DUMMY_ADAPTER, 'Profile'),
+  fields: {
+    ObjectLevelPermissions: { type: new MapType(permissionsType) },
+    FieldLevelPermissions: { type: new MapType(new MapType(permissionsType)) },
+    LayoutAssignments: { type: new MapType(new ListType(layoutAssignmentsType)) },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
@@ -154,7 +178,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     return items[items.length - 1]
   }
 
-  const getFieldType = (allowLists = false): TypeElement => {
+  const getFieldType = (allowContainers = false): TypeElement => {
     const fieldTypeOptions = [
       Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN),
       weightedRandomSelect(primitiveByRank.slice(0, -1)) || [],
@@ -170,7 +194,15 @@ export const generateElements = (params: GeneratorParams): Element[] => {
         .map(opt => weightedRandomSelect(opt as TypeElement[])),
       fieldTypeWeights.filter((_l, i) => fieldTypeOptions[i].length > 0)
     )
-    if (allowLists && Math.random() < defaultParams.listFieldFreq) {
+    if (
+      allowContainers
+      && Math.random() < defaultParams.listFieldFreq + defaultParams.mapFieldFreq
+    ) {
+      if (Math.random() < (
+        defaultParams.mapFieldFreq / (defaultParams.listFieldFreq + defaultParams.listFieldFreq)
+      )) {
+        return new MapType(fieldType)
+      }
       return new ListType(fieldType)
     }
     return fieldType
@@ -187,7 +219,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
 
   const getMaxRank = (elements: Element[]): number => (elements.length > 0
     ? Math.max(...elements
-      .map(e => (isListType(e) ? getDeepInnerType(e) : e))
+      .map(e => (isContainerType(e) ? getDeepInnerType(e) : e))
       .map(e => elementRanks[e.elemID.getFullName()] || 0)) : 0)
 
   const updateElementRank = (element: TypeElement): void => {
@@ -253,6 +285,11 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     }
     if (isListType(ref)) {
       return arrayOf(getListLength(), () => generateValue(ref.innerType))
+    }
+    if (isMapType(ref)) {
+      return Object.fromEntries(arrayOf(getListLength(), () => generateValue(ref.innerType)).map(
+        (val, index) => [`k${index}`, val]
+      ))
     }
     // Linter token
     return undefined
@@ -373,32 +410,57 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     return record
   })
 
-  const generateProfileLike = (): InstanceElement[] => {
+  const generateProfileLike = (useOldProfile = false): InstanceElement[] => {
     const objects = objByRank.flat()
     const allObjectsIDs = objects.map(obj => obj.elemID.getFullName())
     const allFieldsIDs = objects.flatMap(
       obj => Object.values(obj.fields).map(field => field.elemID.getFullName())
     )
+
+    const generatePermissions = (ids: string[]): Values[] => (
+      ids.map(id => ({
+        name: id,
+        read: generateBoolean(),
+        write: generateBoolean(),
+        edit: generateBoolean(),
+      }))
+    )
+
+    const generateLayoutAssignments = (ids: string[]): Values[] => (
+      ids.map((id, index) => ({
+        layout: `layout_${id}`,
+        ...(index % 2 === 0 ? {} : { recordType: `rec_${id}` }),
+      }))
+    )
+
+    function toFlatMap(arr: Values[], key: string): Record<string, Values> {
+      return Object.fromEntries(arr.map(p => [p?.[key].split('.').pop(), p]))
+    }
+    function toNestedMap(arr: Values[], key: string): Record<string, Record<string, Values>> {
+      return Object.fromEntries(
+        _.chunk(arr, arr.length / params.numOfMapChunks).map(c => toFlatMap(c, key)).map((m, i) => [`chunk${i}`, m])
+      )
+    }
+    function toListMap(arr: Values[], key: string): Record<string, Values[]> {
+      return Object.fromEntries(
+        _.chunk(arr, arr.length / params.numOfMapChunks).map(c => [c[0]?.[key].split('.').pop(), c])
+      )
+    }
+
     return arrayOf(
       params.numOfProfiles,
       () => {
         const name = getName()
+        const objectPermissions = generatePermissions(allObjectsIDs)
+        const fieldPermissions = generatePermissions(allFieldsIDs)
+        const layoutAssignments = generateLayoutAssignments(allObjectsIDs)
         return new InstanceElement(
           name,
-          profileType,
+          useOldProfile ? oldProfileType : profileType,
           {
-            ObjectLevelPermissions: allObjectsIDs.map(id => ({
-              name: id,
-              read: generateBoolean(),
-              write: generateBoolean(),
-              edit: generateBoolean(),
-            })),
-            FieldLevelPermissions: allFieldsIDs.map(id => ({
-              name: id,
-              read: generateBoolean(),
-              write: generateBoolean(),
-              edit: generateBoolean(),
-            })),
+            ObjectLevelPermissions: useOldProfile ? objectPermissions : toFlatMap(objectPermissions, 'name'),
+            FieldLevelPermissions: useOldProfile ? fieldPermissions : toNestedMap(fieldPermissions, 'name'),
+            ...(useOldProfile ? {} : { LayoutAssignments: toListMap(layoutAssignments, 'layout') }),
           },
           [DUMMY_ADAPTER, 'Records', 'Profile', name]
         )
@@ -411,7 +473,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   const types = generateTypes()
   const objects = generateObjects()
   const records = generateRecords()
-  const profiles = generateProfileLike()
+  const profiles = generateProfileLike(params.useOldProfiles)
   return [
     ...defaultTypes,
     ...primtiveTypes,

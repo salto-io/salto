@@ -23,7 +23,7 @@ import {
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData, ListType, CoreAnnotationTypes,
+  ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -58,6 +58,21 @@ export const applyFunctionToChangeData = <T extends Change<unknown>>(
   return change
 }
 
+type FieldMapperFunc = (key: string) => Field | undefined
+
+const fieldMapperGenerator = (type: ObjectType | TypeMap | MapType): FieldMapperFunc => {
+  if (isMapType(type)) {
+    return name => new Field(new ObjectType({ elemID: type.elemID }), name, type.innerType)
+  }
+  const fieldMap = isObjectType(type)
+    ? type.fields
+    : _.mapValues(
+      type,
+      (fieldType, name) => new Field(new ObjectType({ elemID: new ElemID('') }), name, fieldType),
+    )
+  return key => fieldMap[key]
+}
+
 export type TransformFuncArgs = {
   value: Value
   path?: ElemID
@@ -75,7 +90,7 @@ export const transformValues = (
     isTopLevel = true,
   }: {
     values: Value
-    type: ObjectType | TypeMap
+    type: ObjectType | TypeMap | MapType
     transformFunc: TransformFunc
     strict?: boolean
     pathID?: ElemID
@@ -136,7 +151,7 @@ export const transformValues = (
       return transformed.length === 0 ? undefined : transformed
     }
 
-    if (isObjectType(fieldType)) {
+    if (isObjectType(fieldType) || isMapType(fieldType)) {
       const transformed = _.omitBy(
         transformValues({
           values: newVal,
@@ -153,16 +168,11 @@ export const transformValues = (
     return newVal
   }
 
-  const fieldMap = isObjectType(type)
-    ? type.fields
-    : _.mapValues(
-      type,
-      (fieldType, name) => new Field(new ObjectType({ elemID: new ElemID('') }), name, fieldType),
-    )
+  const fieldMapper = fieldMapperGenerator(type)
 
   const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
   const result = _(newVal)
-    .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMap[key]))
+    .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key)))
     .omitBy(_.isUndefined)
     .value()
   return _.isEmpty(result) ? undefined : result
@@ -282,6 +292,13 @@ export const transformElement = <T extends Element>(
 
   if (isListType(element)) {
     newElement = new ListType(
+      transformElement({ element: element.innerType, transformFunc, strict })
+    )
+    return newElement as T
+  }
+
+  if (isMapType(element)) {
+    newElement = new MapType(
       transformElement({ element: element.innerType, transformFunc, strict })
     )
     return newElement as T
@@ -639,18 +656,39 @@ export const filterByID = <T extends Element | Values>(
   return value
 }
 
+/**
+ * Generate synthetic object types for validating / transforming map type values.
+ *
+ * @param type    The map type for determining the field types
+ * @param value   The map instance for determining the field names
+ */
+export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectType => (
+  isObjectType(type)
+    ? type
+    : new ObjectType({
+      elemID: type.elemID,
+      fields: Object.fromEntries(Object.keys(value).map(key => [key, { type: type.innerType }])),
+      annotationTypes: type.annotationTypes,
+      annotations: type.annotations,
+      path: type.path,
+    })
+)
+
 // This method iterate on types and corresponding values and run innerChange
 // on every "node".
 // This method DOESN'T SUPPORT list of lists!
-export const applyRecursive = (type: ObjectType, value: Values,
+export const applyRecursive = (type: ObjectType | MapType, value: Values,
   innerChange: (field: Field, value: Value) => Value): void => {
   if (!value) return
-  Object.keys(type.fields).forEach(key => {
+
+  const objType = toObjectType(type, value)
+
+  Object.keys(objType.fields).forEach(key => {
     if (value[key] === undefined) return
-    value[key] = innerChange(type.fields[key], value[key])
-    const fieldType = type.fields[key].type
-    if (!isListType(fieldType) && !isObjectType(fieldType)) return
-    const actualFieldType = isListType(fieldType) ? fieldType.innerType : fieldType
+    value[key] = innerChange(objType.fields[key], value[key])
+    const fieldType = objType.fields[key].type
+    if (!isContainerType(fieldType) && !isObjectType(fieldType)) return
+    const actualFieldType = isContainerType(fieldType) ? fieldType.innerType : fieldType
     if (isObjectType(actualFieldType)) {
       if (_.isArray(value[key])) {
         value[key].forEach((val: Values) => applyRecursive(actualFieldType, val, innerChange))
@@ -688,7 +726,7 @@ const createDefaultValuesFromType = (type: TypeElement): Values => {
         return field.annotations[CORE_ANNOTATIONS.DEFAULT]
       }
       if (field.type.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
-        && !isListType(field.type)) {
+        && !isContainerType(field.type)) {
         return createDefaultValuesFromType(field.type)
       }
       return undefined

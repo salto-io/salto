@@ -110,7 +110,8 @@ export enum PrimitiveTypes {
   UNKNOWN
 }
 
-export type TypeElement = PrimitiveType | ObjectType | ListType
+export type ContainerType = ListType | MapType
+export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
 
 export class ListType extends Element {
@@ -141,6 +142,41 @@ export class ListType extends Element {
       this.annotationTypes = innerType.annotationTypes
     } else {
       throw new Error('Inner type id does not match ListType id')
+    }
+  }
+}
+
+/**
+ * Represents a map with string keys and innerType values.
+ */
+export class MapType extends Element {
+  public constructor(
+   public innerType: TypeElement
+  ) {
+    super({
+      elemID: new ElemID('', `map<${innerType.elemID.getFullName()}>`),
+    })
+    this.setInnerType(innerType)
+  }
+
+  isEqual(other: MapType): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+  }
+
+  clone(): MapType {
+    return new MapType(
+      this.innerType
+    )
+  }
+
+  setInnerType(innerType: TypeElement): void {
+    if (innerType.elemID.isEqual(this.innerType.elemID)) {
+      this.innerType = innerType
+      this.annotations = innerType.annotations
+      this.annotationTypes = innerType.annotationTypes
+    } else {
+      throw new Error('Inner type id does not match MapType id')
     }
   }
 }
@@ -378,13 +414,23 @@ export function isListType(element: any): element is ListType {
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isMapType(element: any): element is MapType {
+  return element instanceof MapType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isContainerType(element: any): element is ContainerType {
+  return isListType(element) || isMapType(element)
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isVariable(element: any): element is Variable {
   return element instanceof Variable
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isType(element: any): element is TypeElement {
-  return isPrimitiveType(element) || isObjectType(element) || isListType(element)
+  return isPrimitiveType(element) || isObjectType(element) || isContainerType(element)
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -398,6 +444,8 @@ const isEqualTypes = (first: TypeElement, second: TypeElement): boolean => {
   } if (isObjectType(first) && isObjectType(second)) {
     return first.isEqual(second)
   } if (isListType(first) && isListType(second)) {
+    return first.isEqual(second)
+  } if (isMapType(first) && isMapType(second)) {
     return first.isEqual(second)
   }
   return false

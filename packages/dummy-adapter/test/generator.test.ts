@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType } from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isContainerType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { generateElements } from '../src/generator'
 import testParams from './test_params'
@@ -52,6 +52,36 @@ describe('elements generator', () => {
       ).toHaveLength(testParams.numOfObjs + 3) // 3 default types
       expect(profiles).toHaveLength(testParams.numOfProfiles)
       expect(records).toHaveLength(testParams.numOfRecords)
+    })
+    it('should create list and map types', () => {
+      const run1 = generateElements({
+        ...testParams,
+        listFieldFreq: 1,
+        mapFieldFreq: 0,
+      })
+      const run2 = generateElements({
+        ...testParams,
+        listFieldFreq: 0,
+        mapFieldFreq: 1,
+      })
+      const [maps, lists] = _.partition(
+        [...run1, ...run2].filter(isObjectType).flatMap(e => _.values(e.fields)).filter(
+          f => isContainerType(f.type)
+        ),
+        f => isMapType(f.type),
+      )
+      expect(lists.length).toBeGreaterThan(0)
+      expect(maps.length).toBeGreaterThan(0)
+    })
+    it('should support old profiles', () => {
+      const elements = generateElements({
+        ...testParams,
+        useOldProfiles: true,
+      })
+      const profiles = elements.filter(isInstanceElement).filter(
+        e => e.path !== undefined && e.path[2] === 'Profile'
+      )
+      expect(profiles).toHaveLength(testParams.numOfProfiles)
     })
   })
 })

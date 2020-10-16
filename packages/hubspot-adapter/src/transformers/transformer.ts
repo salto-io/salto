@@ -15,8 +15,8 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
-import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile } from '@salto-io/adapter-api'
-import { TransformFunc, naclCase, transformValues, GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isContainerType, isMapType } from '@salto-io/adapter-api'
+import { TransformFunc, naclCase, transformValues, GetLookupNameFunc, toObjectType } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
@@ -955,7 +955,7 @@ const doesObjectIncludeUserIdentifier = (
     if (isObjectType(type)) {
       return doesObjectIncludeUserIdentifier(type, checkedTypes)
     }
-    if (isListType(type)) {
+    if (isContainerType(type)) {
       return doesTypeIncludeUserIdentifier(type.innerType)
     }
     return isUserIdentifierType(type)
@@ -1015,16 +1015,16 @@ export const createHubspotMetadataFromInstanceElement = async (
               ? val.map(strVal => ownersMap.get(strVal) || strVal).join(',')
               : undefined))
         }
-        if (isObjectType(fieldDeepInnerType)) {
+        if (isObjectType(fieldDeepInnerType) || isMapType(fieldDeepInnerType)) {
           return _.cloneDeepWith(val, v =>
             (!_.every(v, _.isArray)
               ? v.map((objVal: Values) =>
-                createMetadataValueFromObject(fieldDeepInnerType, objVal))
+                createMetadataValueFromObject(toObjectType(fieldDeepInnerType, objVal), objVal))
               : undefined))
         }
       }
-      if (isObjectType(fieldType)) {
-        return createMetadataValueFromObject(fieldType, val)
+      if (isObjectType(fieldType) || isMapType(fieldType)) {
+        return createMetadataValueFromObject(toObjectType(fieldType, val), val)
       }
       return val
     }))

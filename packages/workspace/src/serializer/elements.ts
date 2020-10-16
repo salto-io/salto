@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import {
-  PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
-  ObjectType, InstanceElement, isType, isElement,
+  PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType, MapType,
+  ObjectType, InstanceElement, isType, isElement, isContainerType,
   ReferenceExpression, TemplateExpression, VariableExpression,
-  isInstanceElement, isReferenceExpression, Variable, isListType, StaticFile, isStaticFile,
+  isInstanceElement, isReferenceExpression, Variable, StaticFile, isStaticFile,
 } from '@salto-io/adapter-api'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
@@ -49,6 +49,7 @@ const NameToType = {
   Variable: Variable,
   PrimitiveType: PrimitiveType,
   ListType: ListType,
+  MapType: MapType,
   Field: Field,
   TemplateExpression: TemplateExpression,
   ReferenceExpression: ReferenceExpression,
@@ -133,7 +134,7 @@ export const serialize = (elements: Element[],
 
   const weakElements = elements.map(element => _.cloneDeepWith(
     element,
-    (v, k) => ((k !== undefined && isType(v) && !isListType(v))
+    (v, k) => ((k !== undefined && isType(v) && !isContainerType(v))
       ? new ObjectType({ elemID: v.elemID }) : undefined)
   ))
   const sortedElements = _.sortBy(weakElements, e => e.elemID.getFullName())
@@ -179,6 +180,9 @@ export const deserialize = async (
       annotations: v.annotations,
     }),
     ListType: v => new ListType(
+      v.innerType
+    ),
+    MapType: v => new MapType(
       v.innerType
     ),
     Field: v => new Field(

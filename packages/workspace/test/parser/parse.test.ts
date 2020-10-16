@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable,
+  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable, isMapType, isContainerType,
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable, isType, isPrimitiveType,
 } from '@salto-io/adapter-api'
 import {
@@ -61,6 +61,9 @@ describe('Salto parser', () => {
         }
 
         "List<salesforce.string>" nicknames {
+        }
+
+        "Map<salesforce.number>" numChildren {
         }
 
         salesforce.phone fax {
@@ -171,7 +174,7 @@ describe('Salto parser', () => {
 
       type salesforce.unknown is unknown {
       }
-       `
+    `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
       elements = parsed.elements
@@ -180,7 +183,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(19)
+        expect(elements.length).toBe(20)
       })
     })
 
@@ -221,6 +224,13 @@ describe('Salto parser', () => {
       })
     })
 
+    describe('map type', () => {
+      it('should have the correct inner type', () => {
+        const mapType = elements.find(isMapType)
+        expect(mapType?.innerType.elemID).toEqual(new ElemID('salesforce', 'number'))
+      })
+    })
+
     describe('object type', () => {
       let objectType: ObjectType
       beforeAll(() => {
@@ -258,6 +268,14 @@ describe('Salto parser', () => {
         })
         it('should have the correct type', () => {
           expect(model.fields.nicknames.type.elemID).toEqual(new ElemID('', 'list<salesforce.string>'))
+        })
+      })
+      describe('map field', () => {
+        it('should exist', () => {
+          expect(model.fields).toHaveProperty('numChildren')
+        })
+        it('should have the correct type', () => {
+          expect(model.fields.numChildren.type.elemID).toEqual(new ElemID('', 'map<salesforce.number>'))
         })
       })
       describe('field annotations', () => {
@@ -310,7 +328,7 @@ describe('Salto parser', () => {
       let inst: InstanceElement
       beforeAll(() => {
         instType = elements[4] as ObjectType
-        inst = elements[6] as InstanceElement
+        inst = elements[7] as InstanceElement
       })
       it('should have the right id', () => {
         expect(inst.elemID).toEqual(instType.elemID.createNestedID('instance', 'inst'))
@@ -337,7 +355,7 @@ describe('Salto parser', () => {
       const configTypeId = new ElemID('salesforce')
       let config: InstanceElement
       beforeAll(() => {
-        config = elements[7] as InstanceElement
+        config = elements[8] as InstanceElement
       })
       it('should have the right id', () => {
         expect(config.elemID).toEqual(
@@ -358,8 +376,8 @@ describe('Salto parser', () => {
 
     describe('updates', () => {
       it('parse update fields', async () => {
-        const orig = elements[8] as ObjectType
-        const update = elements[9] as ObjectType
+        const orig = elements[9] as ObjectType
+        const update = elements[10] as ObjectType
         expect(orig.elemID).toEqual(update.elemID)
         expect(update.fields.num.type.elemID.name).toBe('update')
       })
@@ -368,7 +386,7 @@ describe('Salto parser', () => {
     describe('field type', () => {
       let numberType: PrimitiveType
       beforeAll(() => {
-        numberType = elements[10] as PrimitiveType
+        numberType = elements[11] as PrimitiveType
       })
       it('should have the correct type', () => {
         expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
@@ -385,7 +403,7 @@ describe('Salto parser', () => {
       let settingsType: ObjectType
 
       beforeAll(() => {
-        settingsType = elements[11] as ObjectType
+        settingsType = elements[12] as ObjectType
       })
 
       it('should have the correct id', () => {
@@ -401,8 +419,8 @@ describe('Salto parser', () => {
       let settingsInstance: InstanceElement
 
       beforeAll(() => {
-        settingsType = elements[11] as ObjectType
-        settingsInstance = elements[12] as InstanceElement
+        settingsType = elements[12] as ObjectType
+        settingsInstance = elements[13] as InstanceElement
       })
 
       it('should have the correct id', () => {
@@ -422,8 +440,8 @@ describe('Salto parser', () => {
         model = elements[4] as ObjectType
       })
 
-      it('should contain all top level elements except list types', () => {
-        elements.filter(elem => !(isType(elem) && isListType(elem))).forEach(
+      it('should contain all top level elements except list and map types', () => {
+        elements.filter(elem => !(isType(elem) && isContainerType(elem))).forEach(
           elem => expect(sourceMap.get(elem.elemID.getFullName())).not.toHaveLength(0)
         )
       })
@@ -432,7 +450,7 @@ describe('Salto parser', () => {
         expect(modelSource).toBeDefined()
         expect(modelSource).toHaveLength(1)
         expect(modelSource[0].start.line).toBe(16)
-        expect(modelSource[0].end.line).toBe(50)
+        expect(modelSource[0].end.line).toBe(53)
       })
       it('should contain fields', () => {
         Object.values(model.fields).forEach(
@@ -440,7 +458,7 @@ describe('Salto parser', () => {
         )
       })
       it('should have all definitions of a field', () => {
-        const updatedType = elements[8] as ObjectType
+        const updatedType = elements[9] as ObjectType
         const updatedField = Object.values(updatedType.fields)[0]
         const fieldSource = sourceMap.get(updatedField.elemID.getFullName())
         expect(fieldSource).toHaveLength(2)
@@ -473,7 +491,7 @@ describe('Salto parser', () => {
       let instanceWithFunctions: InstanceElement
 
       beforeAll(() => {
-        instanceWithFunctions = elements[13] as InstanceElement
+        instanceWithFunctions = elements[14] as InstanceElement
       })
 
       describe('parameters', () => {
@@ -558,10 +576,10 @@ describe('Salto parser', () => {
       let variable2: Variable
 
       beforeAll(() => {
-        expect(isVariable(elements[14])).toBeTruthy()
-        variable1 = elements[14] as Variable
         expect(isVariable(elements[15])).toBeTruthy()
-        variable2 = elements[15] as Variable
+        variable1 = elements[15] as Variable
+        expect(isVariable(elements[16])).toBeTruthy()
+        variable2 = elements[16] as Variable
       })
 
       it('should have the correct value', () => {
@@ -573,7 +591,7 @@ describe('Salto parser', () => {
     describe('multiline strings', () => {
       let multilineObject: ObjectType
       beforeAll(() => {
-        multilineObject = elements[16] as ObjectType
+        multilineObject = elements[17] as ObjectType
       })
       it('should have a multiline string field', () => {
         expect(multilineObject.annotations).toHaveProperty('data')
@@ -584,7 +602,7 @@ describe('Salto parser', () => {
     describe('string attr keys', () => {
       let stringAttrObject: ObjectType
       beforeAll(() => {
-        stringAttrObject = elements[17] as ObjectType
+        stringAttrObject = elements[18] as ObjectType
       })
       it('should parse string attributes', () => {
         expect(stringAttrObject.annotations).toHaveProperty('#strAttr')
@@ -594,7 +612,7 @@ describe('Salto parser', () => {
 
     describe('unknown primitive type', () => {
       it('should parse unknown primitive types', () => {
-        const element = elements[18]
+        const element = elements[19]
         expect(isPrimitiveType(element)).toBeTruthy()
         const unknownType = element as PrimitiveType
         expect(unknownType.primitive).toBe(PrimitiveTypes.UNKNOWN)

@@ -19,8 +19,9 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
-  isReferenceExpression, StaticFile,
+  isReferenceExpression, StaticFile, isContainerType, isMapType,
 } from '@salto-io/adapter-api'
+import { toObjectType } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -261,7 +262,8 @@ const validateAnnotationsValue = (
 
   // Checking restrictions
   if ((isPrimitiveType(type)
-    || (isListType(type) && isPrimitiveType(type.innerType))) && shouldEnforceValue()) {
+    || (isContainerType(type) && isPrimitiveType(type.innerType))
+  ) && shouldEnforceValue()) {
     // TODO: This currently only checks one level of nesting for primitive types inside lists.
     // We should add support for List of list of primitives
     return validateRestrictionsValue(value)
@@ -371,13 +373,14 @@ const validateValue = (elemID: ElemID, value: Value, type: TypeElement): Validat
     })]
   }
 
-  if (isObjectType(type)) {
+  if (isObjectType(type) || isMapType(type)) {
     if (!_.isObjectLike(value)) {
       return [new InvalidValueTypeValidationError({ elemID, value, type })]
     }
-    return Object.keys(value).filter(k => type.fields[k]).flatMap(
+    const objType = toObjectType(type, value)
+    return Object.keys(value).filter(k => objType.fields[k]).flatMap(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateFieldValue(elemID.createNestedID(k), value[k], type.fields[k])
+      k => validateFieldValue(elemID.createNestedID(k), value[k], objType.fields[k])
     )
   }
 

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression, StaticFile,
+  VariableExpression, StaticFile, MapType,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
@@ -45,6 +45,7 @@ describe('State/cache serialization', () => {
   })
 
   const strListType = new ListType(strType)
+  const strMapType = new MapType(strType)
 
   const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
   const variable = new Variable(varElemId, 'I am a var')
@@ -56,6 +57,7 @@ describe('State/cache serialization', () => {
       file: { type: strType, annotations: { label: 'File' } },
       num: { type: numType },
       list: { type: strListType },
+      map: { type: strMapType },
     },
   })
 
@@ -154,7 +156,7 @@ describe('State/cache serialization', () => {
     isSettings: true,
   })
 
-  const elements = [strType, numType, boolType, model, strListType, variable, instance,
+  const elements = [strType, numType, boolType, model, strListType, strMapType, variable, instance,
     subInstance, refInstance, refInstance2, refInstance3, templateRefInstance, functionRefInstance,
     settings, config]
 

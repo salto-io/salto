@@ -36,6 +36,7 @@ import {
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
+const { withTimeout } = promises.timeout
 const log = logger(module)
 
 export type Credentials = {
@@ -78,6 +79,7 @@ export const fileCabinetTopLevelFolders = [
   `${SDF_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
   `${SDF_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
 ]
+const MINUTE_IN_MILLISECONDS = 1000 * 60
 
 const baseExecutionPath = os.tmpdir()
 
@@ -269,14 +271,22 @@ export default class NetsuiteClient {
     }
   }
 
-  private async executeProjectAction(commandName: string, commandArguments: Values,
-    projectCommandActionExecutor: CommandActionExecutor): Promise<ActionResult> {
-    const actionResult = await this.sdfCallsLimiter.schedule(() =>
-      projectCommandActionExecutor.executeAction({
+  private async executeProjectAction(
+    commandName: string,
+    commandArguments: Values,
+    projectCommandActionExecutor: CommandActionExecutor,
+    timeoutInMinutes?: number
+  ): Promise<ActionResult> {
+    const actionResult = await this.sdfCallsLimiter.schedule(() => {
+      const actionResultPromise = projectCommandActionExecutor.executeAction({
         commandName,
         runInInteractiveMode: false,
         arguments: commandArguments,
-      }))
+      })
+      return timeoutInMinutes !== undefined
+        ? withTimeout(actionResultPromise, timeoutInMinutes * MINUTE_IN_MILLISECONDS)
+        : actionResultPromise
+    })
     NetsuiteClient.verifySuccessfulAction(actionResult, commandName)
     return actionResult
   }
@@ -343,11 +353,14 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getCustomObjects(typeNames: string[], fetchAllAtOnce: boolean):
-    Promise<GetCustomObjectsResult> {
+  async getCustomObjects(
+    typeNames: string[],
+    fetchAllAtOnce: boolean,
+    fetchTypeTimeoutInMinutes: number
+  ): Promise<GetCustomObjectsResult> {
     const { executor, projectName, authId } = await this.initProject()
-    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(typeNames,
-      fetchAllAtOnce, executor)
+    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(executor, typeNames,
+      fetchAllAtOnce, fetchTypeTimeoutInMinutes)
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
@@ -368,13 +381,18 @@ export default class NetsuiteClient {
     return { elements, failedTypes, failedToFetchAllAtOnce }
   }
 
-  private async importObjects(typeNames: string[], fetchAllAtOnce: boolean,
-    executor: CommandActionExecutor):
-    Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
+  private async importObjects(
+    executor: CommandActionExecutor,
+    typeNames: string[],
+    fetchAllAtOnce: boolean,
+    fetchTypeTimeoutInMinutes: number
+  ): Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
     const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
       try {
-        await this.runImportObjectsCommand(ALL, executor)
+        // When fetchAllAtOnce we use the below heuristic in order to define a proper timeout,
+        // instead of adding another configuration value
+        await this.runImportObjectsCommand(executor, ALL, fetchTypeTimeoutInMinutes * 4)
         return true
       } catch (e) {
         log.warn('Attempt to fetch all custom objects has failed')
@@ -388,12 +406,15 @@ export default class NetsuiteClient {
     }
     return {
       failedToFetchAllAtOnce: fetchAllAtOnce,
-      failedTypes: await this.importObjectsByTypes(typeNames, executor),
+      failedTypes: await this.importObjectsByTypes(executor, typeNames, fetchTypeTimeoutInMinutes),
     }
   }
 
-  private async importObjectsByTypes(typeNames: string[],
-    executor: CommandActionExecutor): Promise<string[]> {
+  private async importObjectsByTypes(
+    executor: CommandActionExecutor,
+    typeNames: string[],
+    fetchTypeTimeoutInMinutes: number
+  ): Promise<string[]> {
     const orderTypesByFetchDuration = (): string[] => {
       // Fetching the below types takes statistically much more time than the others, and sometimes
       // they even fail on SDF internal timeout. We can save some fetch time if fetching them first.
@@ -415,7 +436,7 @@ export default class NetsuiteClient {
       orderTypesByFetchDuration().map(typeName => async () => {
         try {
           log.debug('Starting to fetch objects of type: %s', typeName)
-          await this.runImportObjectsCommand(typeName, executor)
+          await this.runImportObjectsCommand(executor, typeName, fetchTypeTimeoutInMinutes)
           log.debug('Fetched objects of type: %s', typeName)
         } catch (e) {
           log.warn('Failed to fetch objects of type %s failed', typeName)
@@ -428,14 +449,22 @@ export default class NetsuiteClient {
     return failedTypes
   }
 
-  private async runImportObjectsCommand(type: string, executor: CommandActionExecutor):
-    Promise<ActionResult> {
-    return this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
-      destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
-      type,
-      scriptid: ALL,
-      excludefiles: true,
-    }, executor)
+  private async runImportObjectsCommand(
+    executor: CommandActionExecutor,
+    type: string,
+    timeoutInMinutes: number,
+  ): Promise<ActionResult> {
+    return this.executeProjectAction(
+      COMMANDS.IMPORT_OBJECTS,
+      {
+        destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
+        type,
+        scriptid: ALL,
+        excludefiles: true,
+      },
+      executor,
+      timeoutInMinutes
+    )
   }
 
   private async listFilePaths(executor: CommandActionExecutor, filePathRegexSkipList: RegExp[]):

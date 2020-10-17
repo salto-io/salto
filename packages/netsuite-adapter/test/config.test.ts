@@ -17,7 +17,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import {
   FETCH_ALL_TYPES_AT_ONCE, FILE_PATHS_REGEX_SKIP_LIST, TYPES_TO_SKIP, SDF_CONCURRENCY_LIMIT,
-  DEPLOY_REFERENCED_ELEMENTS,
+  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
 } from '../src/constants'
 
 describe('config', () => {
@@ -25,6 +25,7 @@ describe('config', () => {
     [TYPES_TO_SKIP]: ['test1'],
     [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*'],
     [SDF_CONCURRENCY_LIMIT]: 2,
+    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
     [DEPLOY_REFERENCED_ELEMENTS]: false,
   }
   const newFailedType = 'test2'
@@ -69,6 +70,7 @@ describe('config', () => {
           [TYPES_TO_SKIP]: ['test1', newFailedType],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*', expectedNewFailedFileRegex],
           [FETCH_ALL_TYPES_AT_ONCE]: false,
+          [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
           [DEPLOY_REFERENCED_ELEMENTS]: false,
           [SDF_CONCURRENCY_LIMIT]: 2,
         }

@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
-  SDF_CONCURRENCY_LIMIT, SAVED_SEARCH, DEPLOY_REFERENCED_ELEMENTS,
+  SDF_CONCURRENCY_LIMIT, SAVED_SEARCH, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -29,6 +29,7 @@ const { makeArray } = collections.array
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_SDF_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
+export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 12
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 
 const configID = new ElemID(NETSUITE)
@@ -57,6 +58,15 @@ export const configType = new ObjectType({
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
       },
     },
+    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+        }),
+      },
+    },
     [DEPLOY_REFERENCED_ELEMENTS]: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -80,6 +90,7 @@ export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [FETCH_ALL_TYPES_AT_ONCE]?: boolean
+  [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
   [SDF_CONCURRENCY_LIMIT]?: number
 }
@@ -119,6 +130,7 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
         ?? currentConfig[FETCH_ALL_TYPES_AT_ONCE],
       [DEPLOY_REFERENCED_ELEMENTS]: currentConfig[DEPLOY_REFERENCED_ELEMENTS],
       [SDF_CONCURRENCY_LIMIT]: currentConfig[SDF_CONCURRENCY_LIMIT],
+      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: currentConfig[FETCH_TYPE_TIMEOUT_IN_MINUTES],
     }, values.isDefined)
   )
 }

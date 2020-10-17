@@ -16,9 +16,11 @@
 import * as object from './object'
 import * as state from './state'
 import * as array from './array'
+import * as timeout from './timeout'
 
 export {
   object,
   state,
   array,
+  timeout,
 }

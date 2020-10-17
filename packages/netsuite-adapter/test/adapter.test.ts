@@ -24,6 +24,7 @@ import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
@@ -65,6 +66,7 @@ describe('Adapter', () => {
     [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
     [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
     [FETCH_ALL_TYPES_AT_ONCE]: true,
+    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 1,
     [DEPLOY_REFERENCED_ELEMENTS]: false,
   }
   const netsuiteAdapter = new NetsuiteAdapter({
@@ -122,6 +124,7 @@ describe('Adapter', () => {
       expect(client.getCustomObjects).toHaveBeenCalledWith(
         _.pull(Object.keys(customTypes), SAVED_SEARCH, TRANSACTION_FORM),
         true,
+        1
       )
       expect(client.importFileCabinetContent).toHaveBeenCalledWith([new RegExp(filePathRegexStr)])
       expect(elements).toHaveLength(getAllTypes().length + 3)
@@ -189,9 +192,9 @@ describe('Adapter', () => {
     it('should call getCustomObjects only with types that are not in typesToSkip', async () => {
       await netsuiteAdapter.fetch()
       expect(client.getCustomObjects)
-        .toHaveBeenCalledWith(expect.arrayContaining([ENTITY_CUSTOM_FIELD]), true)
+        .toHaveBeenCalledWith(expect.arrayContaining([ENTITY_CUSTOM_FIELD]), true, 1)
       expect(client.getCustomObjects)
-        .not.toHaveBeenCalledWith(expect.arrayContaining([SAVED_SEARCH]), true)
+        .not.toHaveBeenCalledWith(expect.arrayContaining([SAVED_SEARCH]), true, 1)
     })
 
     it('should return only the elements when having no config changes', async () => {

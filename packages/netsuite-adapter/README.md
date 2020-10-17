@@ -29,7 +29,7 @@ Deleting record of CustomTypes & FileCabinet is not supported.
 
 E2E tests need real NetSuite credentials to run.
 
-### Using a sepecific set of credentials
+### Using a specific set of credentials
 
 Add the following environment variables to bash_profile:
 ```bash

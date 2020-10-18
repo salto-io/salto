@@ -449,11 +449,17 @@ const removeFromSource = async (
   ids: ElemID[],
   targetSource: NaclFilesSource
 ): Promise<DetailedChange[]> => {
-  const targetTopLevelElement = await targetSource.get(ids[0].createTopLevelParentID().parent)
-  if (targetTopLevelElement === undefined) {
-    return []
-  }
-  return ids.map(id => createRemoveChange(resolvePath(targetTopLevelElement, id), id))
+  const groupedByTopLevel = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
+  return (await Promise.all(
+    Object.entries(groupedByTopLevel)
+      .flatMap(async ([key, groupedIds]) => {
+        const targetTopElement = await targetSource.get(ElemID.fromFullName(key))
+        if (targetTopElement === undefined) {
+          return []
+        }
+        return groupedIds.map(id => createRemoveChange(resolvePath(targetTopElement, id), id))
+      })
+  )).flat()
 }
 
 export const routePromote = async (

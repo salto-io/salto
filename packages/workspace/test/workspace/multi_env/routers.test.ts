@@ -1029,7 +1029,7 @@ describe('track', () => {
     ])
   })
 
-  it('should delete the elements in all secondrary envs as well', async () => {
+  it('should delete the elements in all secondrary envs as when promoted apps exist there', async () => {
     const changes = await routePromote(
       [inSecObject.elemID],
       primarySrc,
@@ -1038,6 +1038,17 @@ describe('track', () => {
     )
     expect(changes.primarySource).toHaveLength(1)
     expect(changes.commonSource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(1)
+  })
+  it('should delete the elements that exist in the secondary envs when when not all promoted elems exist there', async () => {
+    const changes = await routePromote(
+      [multiFileInstace.elemID, inSecObject.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )
+    expect(changes.primarySource).toHaveLength(2)
+    expect(changes.commonSource).toHaveLength(3)
     expect(changes.secondarySources?.sec).toHaveLength(1)
   })
 })

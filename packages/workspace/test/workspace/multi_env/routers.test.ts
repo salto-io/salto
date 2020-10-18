@@ -1040,7 +1040,7 @@ describe('track', () => {
     expect(changes.commonSource).toHaveLength(1)
     expect(changes.secondarySources?.sec).toHaveLength(1)
   })
-  it('should delete the elements that exist in the secondary envs when when not all promoted elems exist there', async () => {
+  it('should delete the elements that exist in the secondary envs when not all promoted elems exist there', async () => {
     const changes = await routePromote(
       [multiFileInstace.elemID, inSecObject.elemID],
       primarySrc,

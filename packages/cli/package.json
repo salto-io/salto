@@ -72,7 +72,6 @@
     "@types/inquirer": "0.0.35",
     "@types/jest": "^24.0.0",
     "@types/mkdirp": "^0.5.2",
-    "@types/mock-req-res": "^1.1.2",
     "@types/rimraf": "^2.0.3",
     "@types/semver": "^7.3.3",
     "@types/source-map-support": "^0.5.0",

@@ -57,12 +57,14 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
 
-const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
+const RETRY_DELAY = 5000
+
+export const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
   maxAttempts: 5, // try 5 times
   retryStrategy: RetryStrategies.NetworkError, // retry on network errors
   delayStrategy: (err, _response, _body) => {
-    log.error('failed to run SFDC call for reason: %s. Retrying.', err.message)
-    return 5000
+    log.error('failed to run SFDC call for reason: %s. Retrying in %ss.', err.message, (RETRY_DELAY / 1000))
+    return RETRY_DELAY
   },
 }
 

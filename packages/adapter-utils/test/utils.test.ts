@@ -341,16 +341,16 @@ describe('Test utils.ts', () => {
           expect(isMapType(numMapFieldType)).toBeTruthy()
           const numMapValues = (mockInstance.value.numMap as Map<string, number>)
           Object.entries(numMapValues).forEach(
-            ([key, value]) => expect(transformFunc).toHaveBeenCalledWith({
-              value,
-              path: undefined,
-              field: new Field(
-                toObjectType(mockType.fields.numMap.type as MapType, {}),
-                key,
-                (mockType.fields.numMap.type as MapType).innerType,
-                mockType.fields.numMap.annotations,
-              ),
-            })
+            ([key, value]) => {
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === key
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].value).toEqual(value)
+              expect(calls[0].path).toBeUndefined()
+              expect(calls[0].field.type).toEqual(BuiltinTypes.NUMBER)
+              expect(calls[0].field.parent.elemID).toEqual(mockType.fields.numMap.type.elemID)
+            }
           )
         })
 
@@ -368,7 +368,7 @@ describe('Test utils.ts', () => {
               )
             }
             const field = isMapType(type)
-              ? new Field(new ObjectType({ elemID: type.elemID }), String(path[0]), type.innerType)
+              ? new Field(toObjectType(type, value), String(path[0]), type.innerType)
               : type.fields[path[0]]
             return path.length === 1 ? field
               : getField(field.type as ObjectType | ContainerType, path.slice(1), value[path[0]])
@@ -384,11 +384,17 @@ describe('Test utils.ts', () => {
             ['obj', 1, 'mapOfStringList', 'something'],
           ]
           nestedPrimitivePaths.forEach(
-            path => expect(transformFunc).toHaveBeenCalledWith({
-              value: _.get(mockInstance.value, path),
-              path: undefined,
-              field: getField(mockType, path, mockInstance.value),
-            })
+            path => {
+              const field = getField(mockType, path, mockInstance.value)
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === field.name
+                && c.value === _.get(mockInstance.value, path)
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].path).toBeUndefined()
+              expect(calls[0].field.type).toEqual(field.type)
+              expect(calls[0].field.parent.elemID).toEqual(field.parent.elemID)
+            }
           )
         })
 
@@ -485,15 +491,21 @@ describe('Test utils.ts', () => {
             })
           )
           Object.entries(origValue.numMap).forEach(
-            ([key, value]) => expect(transformFunc).toHaveBeenCalledWith({
-              value,
-              path: undefined,
-              field: new Field(
-                toObjectType(new MapType(BuiltinTypes.NUMBER), {}),
+            ([key, value]) => {
+              const field = new Field(
+                toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
                 key,
                 BuiltinTypes.NUMBER,
-              ),
-            })
+              )
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === field.name
+                && c.value === value
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].path).toBeUndefined()
+              expect(calls[0].field.type).toEqual(field.type)
+              expect(calls[0].field.parent.elemID).toEqual(field.parent.elemID)
+            }
           )
         })
         it('should omit undefined fields values', () => {

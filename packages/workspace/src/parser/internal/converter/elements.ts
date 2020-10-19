@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, INSTANCE_ANNOTATIONS, Variable, ElemID, PrimitiveTypes, TypeMap, Values, TypeElement, ListType, ObjectType, Field, PrimitiveType, InstanceElement, Value, isObjectType, MapType } from '@salto-io/adapter-api'
+import { Element, INSTANCE_ANNOTATIONS, Variable, ElemID, PrimitiveTypes, TypeMap, Values, TypeElement, ListType, ObjectType, Field, PrimitiveType, InstanceElement, Value, isObjectType, MapType, ContainerType } from '@salto-io/adapter-api'
 import wu from 'wu'
 import { SourceMap } from '../../source_map'
 import { Keywords } from '../../language'
@@ -26,8 +26,7 @@ const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 type ElementInternalParseRes = {
   element: Element
   sourceMap: SourceMap
-  listTypes: ListType[]
-  mapTypes: MapType[]
+  containerTypes: ContainerType[]
 }
 
 export const parseElemID = (fullname: string): ElemID => {
@@ -126,8 +125,7 @@ const parseType = (
   return {
     element: typeObj,
     sourceMap,
-    listTypes: wu(listElements.values()).toArray(),
-    mapTypes: wu(mapElements.values()).toArray(),
+    containerTypes: wu(listElements.values()).toArray().concat(wu(mapElements.values()).toArray()),
   }
 }
 
@@ -157,8 +155,7 @@ const parsePrimitiveType = (
       annotations: annotations.value,
     }),
     sourceMap,
-    listTypes: [],
-    mapTypes: [],
+    containerTypes: [],
   }
 }
 
@@ -196,7 +193,7 @@ const parseInstance = (
       : inst.elemID.getFullName()
     sourceMap.mount(mountKey, attrs.sourceMap)
   }
-  return { element: inst, sourceMap, listTypes: [], mapTypes: [] }
+  return { element: inst, sourceMap, containerTypes: [] }
 }
 
 const parseElementBlock = (
@@ -214,12 +211,12 @@ const parseElementBlock = (
     return parseType(elementLabels[0].value, fields, annotationsTypes, attributes, isSettings)
   }
   if (elementLabels.length === 0 || elementLabels.length === 1) {
-    const { element, sourceMap, listTypes, mapTypes } = parseInstance(
+    const { element, sourceMap, containerTypes } = parseInstance(
       elementType.value,
       elementLabels.map(l => l.value),
       attributes
     )
-    return { element, sourceMap, listTypes, mapTypes }
+    return { element, sourceMap, containerTypes }
   }
   // Without this exception the linter won't allow us to end the function
   // without a return value
@@ -264,7 +261,7 @@ export const converTopLevelBlock = (
     return parseVariablesBlock(attributes)
   }
   const annotations = convertAttributes(attributes)
-  const { element, sourceMap, listTypes, mapTypes } = parseElementBlock(
+  const { element, sourceMap, containerTypes } = parseElementBlock(
     elementType,
     elementLabels,
     annotationTypes?.value ?? {},
@@ -276,7 +273,7 @@ export const converTopLevelBlock = (
     sourceMap.mount(elemKey, annotationTypes.sourceMap)
   }
   sourceMap.push(elemKey, createSourceRange(labels[0], cb))
-  return { elements: [element, ...listTypes, ...mapTypes], sourceMap }
+  return { elements: [element, ...containerTypes], sourceMap }
 }
 
 const convertAnnotationTypes = (

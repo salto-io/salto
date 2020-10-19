@@ -131,7 +131,7 @@ export class ListType extends Element {
 
   clone(): ListType {
     return new ListType(
-      this.innerType
+      this.innerType.clone()
     )
   }
 
@@ -166,7 +166,7 @@ export class MapType extends Element {
 
   clone(): MapType {
     return new MapType(
-      this.innerType
+      this.innerType.clone()
     )
   }
 

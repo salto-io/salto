@@ -58,19 +58,36 @@ export const applyFunctionToChangeData = <T extends Change<unknown>>(
   return change
 }
 
+/**
+ * Generate synthetic object types for validating / transforming map type values.
+ *
+ * @param type    The map type for determining the field types
+ * @param value   The map instance for determining the field names
+ */
+export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectType => (
+  isObjectType(type)
+    ? type
+    : new ObjectType({
+      elemID: type.elemID,
+      fields: Object.fromEntries(Object.keys(value).map(key => [key, { type: type.innerType }])),
+      annotationTypes: type.annotationTypes,
+      annotations: type.annotations,
+      path: type.path,
+    })
+)
+
 type FieldMapperFunc = (key: string) => Field | undefined
 
-const fieldMapperGenerator = (type: ObjectType | TypeMap | MapType): FieldMapperFunc => {
-  if (isMapType(type)) {
-    return name => new Field(new ObjectType({ elemID: type.elemID }), name, type.innerType)
+const fieldMapperGenerator = (
+  type: ObjectType | TypeMap | MapType,
+  value: Values,
+): FieldMapperFunc => {
+  if (isObjectType(type) || isMapType(type)) {
+    const objType = toObjectType(type, value)
+    return name => objType.fields[name]
   }
-  const fieldMap = isObjectType(type)
-    ? type.fields
-    : _.mapValues(
-      type,
-      (fieldType, name) => new Field(new ObjectType({ elemID: new ElemID('') }), name, fieldType),
-    )
-  return key => fieldMap[key]
+  const objType = new ObjectType({ elemID: new ElemID('') })
+  return name => (type[name] !== undefined ? new Field(objType, name, type[name]) : undefined)
 }
 
 export type TransformFuncArgs = {
@@ -168,7 +185,7 @@ export const transformValues = (
     return newVal
   }
 
-  const fieldMapper = fieldMapperGenerator(type)
+  const fieldMapper = fieldMapperGenerator(type, values)
 
   const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
   const result = _(newVal)
@@ -655,24 +672,6 @@ export const filterByID = <T extends Element | Values>(
 
   return value
 }
-
-/**
- * Generate synthetic object types for validating / transforming map type values.
- *
- * @param type    The map type for determining the field types
- * @param value   The map instance for determining the field names
- */
-export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectType => (
-  isObjectType(type)
-    ? type
-    : new ObjectType({
-      elemID: type.elemID,
-      fields: Object.fromEntries(Object.keys(value).map(key => [key, { type: type.innerType }])),
-      annotationTypes: type.annotationTypes,
-      annotations: type.annotations,
-      path: type.path,
-    })
-)
 
 // This method iterate on types and corresponding values and run innerChange
 // on every "node".

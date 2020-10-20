@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression,
+  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression, MapType,
 } from '@salto-io/adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser'
@@ -75,6 +75,7 @@ describe('Salto Dump', () => {
       name: { type: strType, annotations: { label: 'Name' } },
       num: { type: numType },
       list: { type: new ListType(strType) },
+      map: { type: new MapType(strType) },
       field: {
         type: fieldType,
         annotations: {
@@ -244,6 +245,9 @@ describe('Salto Dump', () => {
         expect(body).toMatch(
           /"List<salesforce.string>" list {/m
         )
+        expect(body).toMatch(
+          /"Map<salesforce.string>" map {/m
+        )
       })
     })
 
@@ -303,19 +307,20 @@ describe('Salto Dump', () => {
       const result = await parse(Buffer.from(body), 'none', functions)
       const { elements, errors } = result
       expect(errors).toHaveLength(0)
-      expect(elements).toHaveLength(12)
+      expect(elements).toHaveLength(13)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
       TestHelpers.expectTypesToMatch(elements[3] as TypeElement, fieldType)
       TestHelpers.expectTypesToMatch(elements[4] as TypeElement, model)
       TestHelpers.expectTypesToMatch(elements[5] as ListType, model.fields.list.type)
-      TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, instance)
-      TestHelpers.expectInstancesToMatch(elements[7] as InstanceElement, config)
-      TestHelpers.expectInstancesToMatch(elements[8] as InstanceElement, instanceStartsWithNumber)
-      TestHelpers.expectInstancesToMatch(elements[9] as InstanceElement, instanceWithFunctions)
-      TestHelpers.expectInstancesToMatch(elements[10] as InstanceElement, instanceWithArray)
-      expect(elements[11]).toEqual(unknownType)
+      TestHelpers.expectTypesToMatch(elements[6] as MapType, model.fields.map.type)
+      TestHelpers.expectInstancesToMatch(elements[7] as InstanceElement, instance)
+      TestHelpers.expectInstancesToMatch(elements[8] as InstanceElement, config)
+      TestHelpers.expectInstancesToMatch(elements[9] as InstanceElement, instanceStartsWithNumber)
+      TestHelpers.expectInstancesToMatch(elements[10] as InstanceElement, instanceWithFunctions)
+      TestHelpers.expectInstancesToMatch(elements[11] as InstanceElement, instanceWithArray)
+      expect(elements[12]).toEqual(unknownType)
     })
   })
   describe('dump field', () => {
@@ -425,6 +430,21 @@ describe('Salto Dump', () => {
         functions
       )).toMatch(
         /\[\s+1,\s+"asd",\s+true,\s+\{\s+complex = "value"\s+\},\s+salto.ref,\s+ZOMG\("yes"\),\s+]/s
+      )
+    })
+    it('should dump map', async () => {
+      expect(await dumpValues(
+        {
+          num: 1,
+          str: 'asd',
+          bool: true,
+          obj: { complex: 'value' },
+          ref: new ReferenceExpression(new ElemID('salto', 'ref')),
+          func: new TestFuncImpl(funcName, ['yes']),
+        },
+        functions
+      )).toMatch(
+        /\{\s+num = 1\s+str = "asd"\s+bool = true\s+obj = \{\s+complex = "value"\s+\}\s+ref = salto.ref\s+func = ZOMG\("yes"\)\s+\}/s
       )
     })
   })

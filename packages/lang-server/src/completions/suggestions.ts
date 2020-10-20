@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, ElemID, Element,
-  isListType, getRestriction } from '@salto-io/adapter-api'
+  isListType, getRestriction, isMapType } from '@salto-io/adapter-api'
 import { parser } from '@salto-io/workspace'
 import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { ContextReference } from '../context'
@@ -179,6 +179,9 @@ export const valueSuggestions = (
   if (isListType(valueType) && attrName) {
     return [{ label: '[]', insertText: '[$0]' }]
   }
+  if (isMapType(valueType) && attrName) {
+    return [{ label: '{}', insertText: '{$0}' }]
+  }
   // Now that we know we are in the actual value - lets use it!
   const restrictionValues = getRestrictionValues(annotatingElem, valueType)
   if (restrictionValues) {
@@ -188,7 +191,7 @@ export const valueSuggestions = (
   if (isListType(realValueType)) {
     return [{ label: '[]', insertText: '[$0]' }]
   }
-  if (isObjectType(realValueType)) {
+  if (isObjectType(realValueType) || isMapType(realValueType)) {
     return [{ label: '{}', insertText: '{$0}' }]
   }
   if (isPrimitiveType(realValueType) && realValueType.primitive === PrimitiveTypes.STRING) {

@@ -16,7 +16,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
-  ReferenceExpression, PrimitiveType, PrimitiveTypes,
+  ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -124,6 +124,11 @@ describe('Elements validation', () => {
       listOfList: { type: new ListType(new ListType(BuiltinTypes.STRING)) },
       listOfListOfList: { type: new ListType(new ListType(new ListType(BuiltinTypes.STRING))) },
       listOfObject: { type: new ListType(simpleType) },
+      map: { type: new MapType(BuiltinTypes.STRING) },
+      mapOfObject: { type: new MapType(simpleType) },
+      mapOfMaps: { type: new MapType(new MapType(BuiltinTypes.STRING)) },
+      mapOfLists: { type: new MapType(new ListType(BuiltinTypes.STRING)) },
+      listOfMaps: { type: new ListType(new MapType(BuiltinTypes.STRING)) },
       reqStr: { type: BuiltinTypes.STRING },
       restrictStr: {
         type: BuiltinTypes.STRING,
@@ -333,6 +338,11 @@ describe('Elements validation', () => {
           num: 2,
           bool: true,
         }],
+        map: { item: 'item', item2: 'item2' },
+        mapOfObject: { obj: { str: 'str', num: 2, bool: true } },
+        mapOfMaps: { nestedMap: { a: 'AAA' } },
+        mapOfLists: { nestedList: ['aaa', 'BBB'] },
+        listOfMaps: [{ key: 'value' }, { another: 'one' }],
         restrictStr: 'restriction1',
       }
     )
@@ -831,6 +841,25 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list'))
+      })
+
+      it('should return error on inconsistent primitive map values', () => {
+        extInst.value.map = { valid: 'string', invalid: 55 }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('map', 'invalid'))
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
+      })
+
+      it('should return error on inconsistent object map values', () => {
+        extInst.value.mapOfObject.invalid1 = 'aaa'
+        extInst.value.mapOfObject.invalid2 = { str: 2 }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(2)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid1'))
+        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid2', 'str'))
+        expect(errors[0].message).toMatch(new RegExp('Invalid value type for salto.simple$'))
+        expect(errors[1].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should not return error for list/object mismatch with empty array', () => {

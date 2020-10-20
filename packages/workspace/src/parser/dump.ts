@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   TypeElement, Field, isObjectType, PrimitiveTypes, TypeMap, isListType, isPrimitiveType, Element,
-  isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField,
+  isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, isMapType,
 } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 
@@ -57,6 +57,9 @@ export const dumpElemID = (type: TypeElement): string => {
   }
   if (isListType(type)) {
     return `${Keywords.LIST_PREFIX}${dumpElemID(type.innerType)}${Keywords.GENERICS_SUFFIX}`
+  }
+  if (isMapType(type)) {
+    return `${Keywords.MAP_PREFIX}${dumpElemID(type.innerType)}${Keywords.GENERICS_SUFFIX}`
   }
   return [type.elemID.adapter, type.elemID.name]
     .filter(part => !_.isEmpty(part))

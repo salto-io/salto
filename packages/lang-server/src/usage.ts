@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, isListType, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value, isContainerType } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { getLocations, SaltoElemLocation } from './location'
@@ -34,7 +34,7 @@ const getUsages = async (
       .values()
       .filter(f => {
         const fieldType = f.type
-        const nonGenericType = isListType(fieldType) ? getDeepInnerType(fieldType) : f.type
+        const nonGenericType = isContainerType(fieldType) ? getDeepInnerType(fieldType) : f.type
         return fullName === nonGenericType.elemID.getFullName()
       }).forEach(f => pathesToAdd.add(f.elemID))
   }
@@ -53,7 +53,7 @@ const getUsages = async (
     }
     return value
   }
-  if (!isListType(element)) {
+  if (!isContainerType(element)) {
     transformElement({ element, transformFunc })
   }
   return _.flatten(

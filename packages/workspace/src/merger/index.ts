@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, isType, isObjectType, isInstanceElement, Element,
-  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isListType, isVariable,
+  ObjectType, isType, isObjectType, isInstanceElement, Element, ContainerType,
+  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isListType, isVariable, isContainerType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mergeObjectTypes } from './internal/object_types'
@@ -70,8 +70,8 @@ export const updateMergedTypes = (
   return elem
 })
 
-const getListTypes = (listTypes: ListType[]): Record<string, ListType> =>
-  _.keyBy(listTypes, type => type.elemID.getFullName())
+const getContainerTypes = (containerTypes: ContainerType[]): Record<string, ListType> =>
+  _.keyBy(containerTypes, type => type.elemID.getFullName())
 
 /**
  * Merge a list of elements by applying all updates, and replacing the pointers
@@ -82,7 +82,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
   const instances = mergeInstances(elements.filter(isInstanceElement))
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]
   const primitives = mergePrimitives(primitiveElements)
-  const listTypes = getListTypes(elements.filter(isListType))
+  const listTypes = getContainerTypes(elements.filter(isContainerType))
   const variables = mergeVariables(elements.filter(isVariable))
 
   const mergedElements = [

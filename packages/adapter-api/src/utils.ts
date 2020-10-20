@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  TypeElement, Field, ObjectType, Element, PrimitiveType, ListType,
-  isListType, isObjectType, isField,
+  TypeElement, Field, ObjectType, Element, PrimitiveType, isListType, isMapType,
+  isObjectType, isField, ContainerType, isContainerType,
 } from './elements'
 import { Values } from './values'
 
@@ -32,9 +32,9 @@ type SubElementSearchResult = {
 
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
 
-export const getDeepInnerType = (listType: ListType): ObjectType | PrimitiveType => {
-  const { innerType } = listType
-  if (!isListType(innerType)) {
+export const getDeepInnerType = (containerType: ContainerType): ObjectType | PrimitiveType => {
+  const { innerType } = containerType
+  if (!isContainerType(innerType)) {
     return innerType
   }
   return getDeepInnerType(innerType)
@@ -45,7 +45,7 @@ export const getSubElement = (
   pathParts: ReadonlyArray<string>
 ): SubElementSearchResult | undefined => {
   const getChildElement = (source: TypeElement, key: string): Field | TypeElement| undefined => {
-    if (isIndexPathPart(key) && isListType(source)) {
+    if ((isIndexPathPart(key) && isListType(source)) || isMapType(source)) {
       return source.innerType
     }
     if (source.annotationTypes[key]) return source.annotationTypes[key]
@@ -108,7 +108,7 @@ export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>)
     if (_.isEmpty(curPart)) {
       return fieldType
     }
-    if (isIndexPathPart(curPart) && isListType(fieldType)) {
+    if ((isIndexPathPart(curPart) && isListType(fieldType)) || isMapType(fieldType)) {
       return getFieldInternalType(fieldType.innerType, restOfParts)
     }
     return undefined

@@ -19,7 +19,8 @@ import {
   ReferenceExpression, Values, TemplateExpression, Value, ElemID, InstanceAnnotationTypes,
   isListType, ListType, BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
-  RemovalChange, ModificationChange, isInstanceElement, isObjectType,
+  RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
+  ContainerType,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import {
@@ -29,6 +30,7 @@ import {
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
   transformElement,
+  toObjectType,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
 
@@ -57,6 +59,8 @@ describe('Test utils.ts', () => {
       num: { type: BuiltinTypes.NUMBER },
       numArray: { type: new ListType(BuiltinTypes.NUMBER) },
       strArray: { type: new ListType(BuiltinTypes.STRING) },
+      numMap: { type: new MapType(BuiltinTypes.NUMBER) },
+      strMap: { type: new MapType(BuiltinTypes.STRING) },
       obj: {
         type: new ListType(new ObjectType({
           elemID: mockElem,
@@ -66,6 +70,7 @@ describe('Test utils.ts', () => {
               type: BuiltinTypes.STRING,
             },
             value: { type: BuiltinTypes.STRING },
+            mapOfStringList: { type: new MapType(new ListType(BuiltinTypes.STRING)) },
             innerObj: {
 
               type: new ObjectType({
@@ -108,6 +113,8 @@ describe('Test utils.ts', () => {
       num: '99',
       numArray: ['12', '13', '14'],
       strArray: 'should be list',
+      numMap: { key12: 12, num13: 13 },
+      strMap: { a: 'a', bla: 'BLA' },
       notExist: 'notExist',
       notExistArray: ['', ''],
       file: valueFile,
@@ -118,6 +125,10 @@ describe('Test utils.ts', () => {
           value: {
             val: 'someString',
             anotherVal: { objTest: '123' },
+          },
+          mapOfStringList: {
+            l1: ['aaa', 'bbb'],
+            l2: ['ccc', 'ddd'],
           },
           innerObj: {
             name: 'oren',
@@ -132,6 +143,7 @@ describe('Test utils.ts', () => {
           field: 'true',
           undeployable: valueRef,
           value: ['123', '456'],
+          mapOfStringList: { something: [] },
           innerObj: {
             name: 'name1',
             listOfNames: ['', '', ''],
@@ -178,6 +190,45 @@ describe('Test utils.ts', () => {
     },
   })
   const mockList = new ListType(mockPrim)
+  const mockMap = new MapType(mockPrim)
+
+  describe('toObjectType func', () => {
+    it('should not modify object types', () => {
+      expect(
+        toObjectType(mockType, {})
+      ).toEqual(mockType)
+    })
+    it('should translate map types based on the instance values', () => {
+      const mapType = new MapType(BuiltinTypes.STRING)
+      const instance = {
+        aaa: 'aaa',
+        bbb: 'BBB',
+      }
+      expect(toObjectType(mapType, {})).toEqual(new ObjectType({ elemID: mapType.elemID }))
+      expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
+        elemID: mapType.elemID,
+        fields: { aaa: { type: BuiltinTypes.STRING }, bbb: { type: BuiltinTypes.STRING } },
+      }))
+      mapType.annotations = { randomAnnotation: {} }
+      expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
+        elemID: mapType.elemID,
+        fields: { aaa: { type: BuiltinTypes.STRING }, bbb: { type: BuiltinTypes.STRING } },
+        annotations: mapType.annotations,
+      }))
+    })
+
+    it('should support complex types', () => {
+      const mapType = new MapType(mockType.fields.obj.type)
+      const instance = {
+        a: 'this is ignored',
+        b: 'so is this',
+      }
+      expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
+        elemID: mapType.elemID,
+        fields: { a: { type: mockType.fields.obj.type }, b: { type: mockType.fields.obj.type } },
+      }))
+    })
+  })
 
   describe('transformValues func', () => {
     let resp: Values
@@ -253,6 +304,20 @@ describe('Test utils.ts', () => {
           })
         })
 
+        it('should call transform on map types', () => {
+          expect(isMapType(mockType.fields.strMap.type)).toBeTruthy()
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: mockInstance.value.strMap,
+            path: undefined,
+            field: new Field(
+              mockType.fields.strMap.parent,
+              mockType.fields.strMap.name,
+              mockType.fields.strMap.type,
+              mockType.fields.strMap.annotations,
+            ),
+          })
+        })
+
         it('should call transform on array elements', () => {
           const numArrayFieldType = mockType.fields.numArray.type
           expect(isListType(numArrayFieldType)).toBeTruthy()
@@ -271,14 +336,42 @@ describe('Test utils.ts', () => {
           )
         })
 
-        it('should call transform on primitive types in nested objects', () => {
-          const getField = (type: ObjectType | ListType, path: (string | number)[]): Field => {
-            if (typeof path[0] === 'number' && isListType(type)) {
-              return getField((type.innerType as ObjectType | ListType), path.slice(1))
+        it('should call transform on map value elements', () => {
+          const numMapFieldType = mockType.fields.numMap.type
+          expect(isMapType(numMapFieldType)).toBeTruthy()
+          const numMapValues = (mockInstance.value.numMap as Map<string, number>)
+          Object.entries(numMapValues).forEach(
+            ([key, value]) => {
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === key
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].value).toEqual(value)
+              expect(calls[0].path).toBeUndefined()
+              expect(calls[0].field.type).toEqual(BuiltinTypes.NUMBER)
+              expect(calls[0].field.parent.elemID).toEqual(mockType.fields.numMap.type.elemID)
             }
-            const field = (type as ObjectType).fields[path[0]]
+          )
+        })
+
+        it('should call transform on primitive types in nested objects', () => {
+          const getField = (
+            type: ObjectType | ContainerType,
+            path: (string | number)[],
+            value: Values,
+          ): Field => {
+            if (typeof path[0] === 'number' && isListType(type)) {
+              return getField(
+                (type.innerType as ObjectType | ContainerType),
+                path.slice(1),
+                value[path[0]],
+              )
+            }
+            const field = isMapType(type)
+              ? new Field(toObjectType(type, value), String(path[0]), type.innerType)
+              : type.fields[path[0]]
             return path.length === 1 ? field
-              : getField(field.type as ObjectType | ListType, path.slice(1))
+              : getField(field.type as ObjectType | ContainerType, path.slice(1), value[path[0]])
           }
           const nestedPrimitivePaths = [
             ['obj', 0, 'field'],
@@ -286,13 +379,22 @@ describe('Test utils.ts', () => {
             ['obj', 2, 'field'],
             ['obj', 0, 'innerObj', 'name'],
             ['obj', 0, 'innerObj', 'magical', 'deepName'],
+            ['obj', 0, 'mapOfStringList'],
+            ['obj', 0, 'mapOfStringList', 'l1'],
+            ['obj', 1, 'mapOfStringList', 'something'],
           ]
           nestedPrimitivePaths.forEach(
-            path => expect(transformFunc).toHaveBeenCalledWith({
-              value: _.get(mockInstance.value, path),
-              path: undefined,
-              field: getField(mockType, path),
-            })
+            path => {
+              const field = getField(mockType, path, mockInstance.value)
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === field.name
+                && c.value === _.get(mockInstance.value, path)
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].path).toBeUndefined()
+              expect(calls[0].field.type).toEqual(field.type)
+              expect(calls[0].field.parent.elemID).toEqual(field.parent.elemID)
+            }
           )
         })
 
@@ -348,12 +450,20 @@ describe('Test utils.ts', () => {
         let origValue: Values
         let typeMap: TypeMap
         beforeEach(() => {
-          origValue = { str: 'asd', num: '10', bool: 'true', nums: ['1', '2'], notExist: 'a' }
+          origValue = {
+            str: 'asd',
+            num: '10',
+            bool: 'true',
+            nums: ['1', '2'],
+            numMap: { one: 1, two: 2 },
+            notExist: 'a',
+          }
           typeMap = {
             str: BuiltinTypes.STRING,
             num: BuiltinTypes.NUMBER,
             bool: BuiltinTypes.BOOLEAN,
             nums: new ListType(BuiltinTypes.NUMBER),
+            numMap: new MapType(BuiltinTypes.NUMBER),
           }
           const result = transformValues({
             values: origValue,
@@ -379,6 +489,23 @@ describe('Test utils.ts', () => {
               path: undefined,
               field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
             })
+          )
+          Object.entries(origValue.numMap).forEach(
+            ([key, value]) => {
+              const field = new Field(
+                toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
+                key,
+                BuiltinTypes.NUMBER,
+              )
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === field.name
+                && c.value === value
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].path).toBeUndefined()
+              expect(calls[0].field.type).toEqual(field.type)
+              expect(calls[0].field.parent.elemID).toEqual(field.parent.elemID)
+            }
           )
         })
         it('should omit undefined fields values', () => {
@@ -495,12 +622,22 @@ describe('Test utils.ts', () => {
         expect(paths)
           .toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
       })
+
+      it('should traverse map items with correct path ID', () => {
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList').getFullName())
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName())
+      })
     })
   })
 
   describe('transformElement', () => {
     let primType: PrimitiveType
     let listType: ListType
+    let mapType: MapType
     let objType: ObjectType
     let inst: InstanceElement
     let transformFunc: MockFunction<TransformFunc>
@@ -512,6 +649,7 @@ describe('Test utils.ts', () => {
         annotations: { a1: 'asd' },
       })
       listType = new ListType(primType)
+      mapType = new MapType(primType)
       objType = new ObjectType({
         elemID: new ElemID('test', 'test'),
         fields: {
@@ -520,6 +658,13 @@ describe('Test utils.ts', () => {
             type: listType,
             annotations: {
               a1: 'foo',
+              [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
+            },
+          },
+          f3: {
+            type: mapType,
+            annotations: {
+              a2: 'foo',
               [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
             },
           },
@@ -557,6 +702,20 @@ describe('Test utils.ts', () => {
       })
       it('should return new list type', () => {
         expect(isListType(result)).toBeTruthy()
+      })
+      it('should transform inner type annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+        })
+      })
+    })
+    describe('with MapType', () => {
+      let result: MapType
+      beforeEach(() => {
+        result = transformElement({ element: mapType, transformFunc, strict: false })
+      })
+      it('should return new map type', () => {
+        expect(isMapType(result)).toBeTruthy()
       })
       it('should transform inner type annotations', () => {
         expect(transformFunc).toHaveBeenCalledWith({
@@ -631,6 +790,7 @@ describe('Test utils.ts', () => {
       fields: {
         refValue: { type: BuiltinTypes.STRING },
         arrayValues: { type: new ListType(BuiltinTypes.STRING) },
+        mapValues: { type: new MapType(BuiltinTypes.STRING) },
         fileValue: { type: BuiltinTypes.STRING },
         objValue: { type: new ObjectType({ elemID: new ElemID('salesforce', 'nested') }) },
       },
@@ -676,6 +836,10 @@ describe('Test utils.ts', () => {
         regValue,
         valueRef,
       ],
+      mapValues: {
+        regValue,
+        valueRef,
+      },
     },
     [],
     {
@@ -767,6 +931,9 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.arrayValues).toHaveLength(2)
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
+        expect(Object.values(resolvedInstance.value.mapValues)).toHaveLength(2)
+        expect(resolvedInstance.value.mapValues.regValue).toEqual(regValue)
+        expect(resolvedInstance.value.mapValues.valueRef).toEqual(regValue)
         expect(resolvedInstance.value.fileValue).toEqual(Buffer.from(fileContent))
         expect(resolvedInstance.value.objValue).toEqual(firstRef.value.obj)
 
@@ -780,6 +947,7 @@ describe('Test utils.ts', () => {
         expect(restoredInstance.value.refValue).toBeInstanceOf(ReferenceExpression)
         expect(restoredInstance.value.objValue).toBeInstanceOf(ReferenceExpression)
         expect(restoredInstance.value.arrayValues[1]).toBeInstanceOf(ReferenceExpression)
+        expect(restoredInstance.value.mapValues.valueRef).toBeInstanceOf(ReferenceExpression)
         expect(restoredInstance.value.fileValue).toBeInstanceOf(StaticFile)
         expect(restoredInstance.value.into).toBeInstanceOf(TemplateExpression)
       })
@@ -1201,6 +1369,11 @@ describe('Test utils.ts', () => {
       const flatList = flattenElementStr(mockList)
       expect(flatList).toEqual(mockList)
     })
+
+    it('should not modify a map type', () => {
+      const flatMap = flattenElementStr(mockMap)
+      expect(flatMap).toEqual(mockMap)
+    })
   })
   describe('valuesDeepSome', () => {
     const predicate = (v: Value): boolean => v === 42
@@ -1256,6 +1429,7 @@ describe('Test utils.ts', () => {
       annotationTypes: {
         obj: annoType,
         list: new ListType(BuiltinTypes.STRING),
+        map: new MapType(BuiltinTypes.STRING),
       },
       annotations: {
         obj: {
@@ -1263,15 +1437,21 @@ describe('Test utils.ts', () => {
           num: 42,
         },
         list: ['I', 'do', 'not', 'write', 'jokes', 'in', 'base 13'],
+        map: {
+          oh: 'no',
+          need: 'a joke',
+        },
       },
       fields: {
         obj: { type: annoType, annotations: { label: 'LABEL' } },
         list: { type: new ListType(BuiltinTypes.STRING) },
+        map: { type: new MapType(BuiltinTypes.STRING) },
       },
     })
     const inst = new InstanceElement('inst', obj, {
       obj: { str: 'Well I do', num: 42 },
       list: ['Do', 'you', 'get', 'it', '?'],
+      map: { Do: 'you?' },
     }, [], {
       [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ObjectType({ elemID: new ElemID('salto', 'dep') })],
     })
@@ -1335,6 +1515,7 @@ describe('Test utils.ts', () => {
       expectEqualFields(withoutAnnoObjStr?.fields, obj.fields)
       expect(withoutAnnoObjStr?.annotations.obj).toEqual({ num: 42 })
       expect(withoutAnnoObjStr?.annotations.list).toEqual(obj.annotations.list)
+      expect(withoutAnnoObjStr?.annotations.map).toEqual(obj.annotations.map)
       expect(withoutAnnoObjStr?.annotationTypes).toEqual(obj.annotationTypes)
 
       const withoutFieldAnnotations = await filterByID(
@@ -1379,7 +1560,7 @@ describe('Test utils.ts', () => {
         inst,
         id => !id.getFullNameParts().includes('list')
       )
-      expect(filteredInstance?.value).toEqual({ obj: inst.value.obj })
+      expect(filteredInstance?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
       expect(filteredInstance?.annotations).toEqual(inst.annotations)
     })
 
@@ -1392,20 +1573,27 @@ describe('Test utils.ts', () => {
       expect(filteredInstance).toBeUndefined()
     })
 
-    it('should not set array and obj values that are empty after filtering', async () => {
+    it('should not set array, map and obj values that are empty after filtering', async () => {
       const withoutList = await filterByID(
         inst.elemID,
         inst,
         id => Number.isNaN(Number(_.last(id.getFullNameParts())))
       )
-      expect(withoutList?.value).toEqual({ obj: inst.value.obj })
+      expect(withoutList?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
 
       const withoutObj = await filterByID(
         inst.elemID,
         inst,
         id => !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
       )
-      expect(withoutObj?.value).toEqual({ list: inst.value.list })
+      expect(withoutObj?.value).toEqual({ list: inst.value.list, map: inst.value.map })
+
+      const withoutMap = await filterByID(
+        inst.elemID,
+        inst,
+        id => !id.getFullNameParts().includes('Do'),
+      )
+      expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })
   })
   describe('Flat Values', () => {
@@ -1419,24 +1607,26 @@ describe('Test utils.ts', () => {
     it('should map all keys recursively', () => {
       const result = mapKeysRecursive(mockInstance.value, ({ key }) => key.toUpperCase())
       expect(Object.keys(result))
-        .toEqual(expect.arrayContaining(['BOOL', 'STR', 'OBJ', 'OBJWITHINNEROBJ']))
+        .toEqual(expect.arrayContaining(['BOOL', 'STR', 'OBJ', 'OBJWITHINNEROBJ', 'NUMMAP']))
       expect(Object.keys(result.OBJWITHINNEROBJ)).toContain('INNEROBJ')
       expect(Object.keys(result.OBJWITHINNEROBJ.INNEROBJ))
         .toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
+      expect(Object.keys(result.NUMMAP)).toEqual(expect.arrayContaining(['KEY12', 'NUM13']))
     })
 
     it('should map keys recursively when passing the pathID', () => {
       const result = mapKeysRecursive(mockInstance.value, ({ key, pathID }) => {
-        if (pathID?.getFullName().includes('Key')) {
+        if (pathID?.getFullName().toLowerCase().includes('key')) {
           return key.toUpperCase()
         }
         return key
       }, mockInstance.elemID)
       expect(Object.keys(result))
-        .toEqual(expect.arrayContaining(['bool', 'str', 'obj', 'objWithInnerObj']))
+        .toEqual(expect.arrayContaining(['bool', 'str', 'obj', 'objWithInnerObj', 'numMap']))
       expect(Object.keys(result.objWithInnerObj)).toContain('innerObj')
       expect(Object.keys(result.objWithInnerObj.innerObj))
         .toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
+      expect(Object.keys(result.numMap)).toEqual(expect.arrayContaining(['KEY12', 'num13']))
     })
   })
 

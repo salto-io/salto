@@ -18,7 +18,7 @@ import { BuiltinTypes } from '../src/builtins'
 import {
   Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
-  isVariable,
+  isVariable, isMapType, MapType, isContainerType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 
@@ -56,6 +56,7 @@ describe('Test elements.ts', () => {
   })
 
   const lt = new ListType(primStr)
+  const mt = new MapType(primStr)
 
   it('should create a basic primitive type with all params passed to the constructor', () => {
     expect(primStr.elemID).toEqual(primID)
@@ -164,6 +165,7 @@ describe('Test elements.ts', () => {
 
     const strField = new Field(objT, 'str_field', primStr)
     const lstField = new Field(objT, 'list_field', new ListType(primStr))
+    const mapField = new Field(objT, 'map_field', new MapType(primStr))
     const inst = new InstanceElement('inst', objT, { str: 'test' })
     const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 3)
 
@@ -207,6 +209,33 @@ describe('Test elements.ts', () => {
       )).toBeFalsy()
     })
 
+    it('should identify equal map fields', () => {
+      expect(isEqualElements(mapField, _.cloneDeep(mapField))).toBeTruthy()
+    })
+
+    it('should identify equal map types', () => {
+      expect(isEqualElements(mapField.type, _.cloneDeep(mapField.type))).toBeTruthy()
+    })
+
+    it('should identify not equal for diff map types', () => {
+      expect(isEqualElements(new MapType(BuiltinTypes.STRING), new MapType(BuiltinTypes.BOOLEAN)))
+        .toBeFalsy()
+    })
+
+    it('should identify not equal for diff map types when inner is map', () => {
+      expect(isEqualElements(
+        new MapType(BuiltinTypes.STRING),
+        new MapType(new MapType(BuiltinTypes.STRING))
+      )).toBeFalsy()
+    })
+
+    it('should identify not equal for map and list', () => {
+      expect(isEqualElements(
+        new MapType(BuiltinTypes.STRING),
+        new ListType(BuiltinTypes.STRING)
+      )).toBeFalsy()
+    })
+
     it('should identify equal instance elements', () => {
       expect(isEqualElements(inst, _.cloneDeep(inst))).toBeTruthy()
     })
@@ -247,7 +276,20 @@ describe('Test elements.ts', () => {
 
     it('should identify list types', () => {
       expect(isListType(inst)).toBeFalsy()
+      expect(isListType(mt)).toBeFalsy()
       expect(isListType(lt)).toBeTruthy()
+    })
+
+    it('should identify map types', () => {
+      expect(isMapType(inst)).toBeFalsy()
+      expect(isMapType(lt)).toBeFalsy()
+      expect(isMapType(mt)).toBeTruthy()
+    })
+
+    it('should identify container types', () => {
+      expect(isContainerType(inst)).toBeFalsy()
+      expect(isContainerType(mt)).toBeTruthy()
+      expect(isContainerType(lt)).toBeTruthy()
     })
 
     it('should identify instance elements', () => {
@@ -693,6 +735,24 @@ describe('Test elements.ts', () => {
       })
       it('should throw error if new innerType has wrong elemID', () => {
         expect(() => { lstType.setInnerType(ot) }).toThrow()
+      })
+    })
+  })
+
+  describe('MapType', () => {
+    let mapType: MapType
+    beforeEach(() => {
+      mapType = mt.clone()
+    })
+    describe('test setInnerType', () => {
+      it('should set new innerType with correct elemID', () => {
+        const newInnerType = primStr.clone()
+        newInnerType.annotate({ testAnnotation: 'value' })
+        mapType.setInnerType(newInnerType)
+        expect(mapType.annotations).toEqual({ testAnnotation: 'value' })
+      })
+      it('should throw error if new innerType has wrong elemID', () => {
+        expect(() => { mapType.setInnerType(ot) }).toThrow()
       })
     })
   })

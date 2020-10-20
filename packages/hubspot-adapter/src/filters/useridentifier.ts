@@ -16,8 +16,9 @@
 import _ from 'lodash'
 import {
   Element, isInstanceElement, isObjectType, Values, ObjectType,
-  isListType, getDeepInnerType, Value, ListType,
+  isListType, getDeepInnerType, Value, ListType, isMapType,
 } from '@salto-io/adapter-api'
+import { toObjectType } from '@salto-io/adapter-utils'
 import { Owner } from '../client/types'
 import { isUserIdentifierType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
@@ -40,9 +41,9 @@ const convertUserIdentifiers = (
         convertListTypeOfObjectType(currentLevelInnerType, val)
       })
     }
-    if (isObjectType(currentLevelInnerType)) {
+    if (isObjectType(currentLevelInnerType) || isMapType(currentLevelInnerType)) {
       getValueAsArray(listValue).forEach((val: Values): void => {
-        convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
+        convertUserIdentifiers(toObjectType(currentLevelInnerType, val), val, ownersMap)
       })
     }
   }
@@ -59,8 +60,8 @@ const convertUserIdentifiers = (
           values[field.name] = ownersMap.get(numVal) || numVal.toString()
         }
       }
-      if (isObjectType(fieldType)) {
-        convertUserIdentifiers(fieldType, currentValue, ownersMap)
+      if (isObjectType(fieldType) || isMapType(fieldType)) {
+        convertUserIdentifiers(toObjectType(fieldType, currentValue), currentValue, ownersMap)
       }
       if (isListType(fieldType)) {
         const deepInnerType = getDeepInnerType(fieldType)
@@ -72,17 +73,7 @@ const convertUserIdentifiers = (
               .map(v => ownersMap.get(Number(v)) || v) : undefined))
         }
         if (isObjectType(deepInnerType)) {
-          const currentLevelInnerType = fieldType.innerType
-          if (isObjectType(currentLevelInnerType)) {
-            getValueAsArray(currentValue).forEach((val: Values): void => {
-              convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
-            })
-          }
-          if (isListType(currentLevelInnerType)) {
-            getValueAsArray(currentValue).forEach((val: Values): void => {
-              convertListTypeOfObjectType(currentLevelInnerType, val)
-            })
-          }
+          convertListTypeOfObjectType(fieldType, currentValue)
         }
       }
     })

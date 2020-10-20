@@ -309,7 +309,7 @@ describe('Salto Dump', () => {
       const { elements, errors } = result
       const [listTypes, nonListElements] = _.partition(elements, e => isListType(e))
       expect(errors).toHaveLength(0)
-      expect(elements).toHaveLength(12)
+      expect(elements).toHaveLength(13)
       expect(nonListElements[0]).toEqual(strType)
       expect(nonListElements[1]).toEqual(numType)
       expect(nonListElements[2]).toEqual(boolType)
@@ -317,15 +317,15 @@ describe('Salto Dump', () => {
       TestHelpers.expectTypesToMatch(nonListElements[4] as TypeElement, model)
       TestHelpers.expectTypesToMatch(listTypes[0] as ListType, model.fields.list.type)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[5] as InstanceElement, instance)
+        .expectInstancesToMatch(nonListElements[6] as InstanceElement, instance)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[6] as InstanceElement, config)
+        .expectInstancesToMatch(nonListElements[7] as InstanceElement, config)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[7] as InstanceElement, instanceStartsWithNumber)
+        .expectInstancesToMatch(nonListElements[8] as InstanceElement, instanceStartsWithNumber)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[8] as InstanceElement, instanceWithFunctions)
-      TestHelpers.expectInstancesToMatch(nonListElements[9] as InstanceElement, instanceWithArray)
-      expect(nonListElements[10]).toEqual(unknownType)
+        .expectInstancesToMatch(nonListElements[9] as InstanceElement, instanceWithFunctions)
+      TestHelpers.expectInstancesToMatch(nonListElements[10] as InstanceElement, instanceWithArray)
+      expect(nonListElements[11]).toEqual(unknownType)
     })
   })
   describe('dump field', () => {

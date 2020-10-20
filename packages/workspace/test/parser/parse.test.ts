@@ -43,7 +43,7 @@ let functions: Functions
   })
   describe('primitive, model and extensions', () => {
     let elements: Element[]
-    let listTypes: Element[]
+    let genericTypes: Element[]
     let sourceMap: SourceMap
 
     const body = `
@@ -191,14 +191,14 @@ let functions: Functions
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
       elements = parsed.elements.filter(element => !isListType(element))
-      listTypes = parsed.elements.filter(element => isListType(element))
+      genericTypes = parsed.elements.filter(element => isListType(element))
       sourceMap = parsed.sourceMap
     })
 
     describe('parse result', () => {
       it('should have all types', () => {
         expect(elements.length).toBe(19)
-        expect(listTypes.length).toBe(1)
+        expect(genericTypes.length).toBe(2)
       })
     })
 
@@ -234,8 +234,8 @@ let functions: Functions
 
     describe('list type', () => {
       it('should have the correct inner type', () => {
-        expect(listTypes[0]).toBeDefined()
-        const listType = listTypes[0] as ListType
+        expect(genericTypes[0]).toBeDefined()
+        const listType = genericTypes[0] as ListType
         expect(listType?.innerType.elemID).toEqual(new ElemID('salesforce', 'string'))
       })
     })
@@ -243,6 +243,7 @@ let functions: Functions
     describe('map type', () => {
       it('should have the correct inner type', () => {
         const mapType = elements.find(isMapType)
+        console.log(mapType)
         expect(mapType?.innerType.elemID).toEqual(new ElemID('salesforce', 'number'))
       })
     })

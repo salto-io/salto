@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, ElemID, Value, TypeElement, ListType, ObjectType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { ReferenceExpression, ElemID, Value, TypeElement, ListType, ObjectType, PrimitiveTypes, MapType } from '@salto-io/adapter-api'
 import isPromise from 'is-promise'
 import { LexerToken } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
@@ -91,6 +91,17 @@ export const createFieldType = (context: ParseContext, blockType: string): TypeE
     ))
     context.listTypes.add(listType)
     return listType
+  }
+  if (blockType.startsWith(Keywords.MAP_PREFIX) && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
+    const mapType = new MapType(createFieldType(
+        context,
+        blockType.substring(
+          Keywords.MAP_PREFIX.length,
+          blockType.length - Keywords.GENERICS_SUFFIX.length
+        )
+      ))
+      context.mapTypes.add(mapType)
+      return mapType
   }
   return new ObjectType({ elemID: parseElemID(blockType) })
 }

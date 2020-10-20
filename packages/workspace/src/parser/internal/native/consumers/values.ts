@@ -23,7 +23,8 @@ import { Value, TemplateExpression, ElemID, Values } from '@salto-io/adapter-api
 import _, { trimEnd } from 'lodash'
 import { Token } from 'moo'
 import { Consumer, ParseContext, ConsumerReturnType } from '../types'
-import { createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher, registerRange, positionAtStart, positionAtEnd } from '../helpers'
+import { createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher,
+  registerRange, positionAtStart, positionAtEnd } from '../helpers'
 import { TOKEN_TYPES, LexerToken, TRUE } from '../lexer'
 import { missingComma, unknownFunction, unterminatedString, invalidStringTemplate, missingValue, invalidAttrKey, missingEqualMark, duplicatedAttribute, missingNewline } from '../errors'
 
@@ -60,7 +61,10 @@ const trimToken = (token: Required<Token>): Required<Token> => ({
   value: trimEnd(token.value),
 })
 
-const createStringValue = (tokens: Required<Token>[], trim? : boolean): string|TemplateExpression => {
+const createStringValue = (
+  tokens: Required<Token>[],
+  trim? : boolean
+): string|TemplateExpression => {
   const trimmedTokens = trim && tokens.length > 0
     ? [...tokens.slice(0, -1), trimToken(tokens[tokens.length - 1])]
     : tokens

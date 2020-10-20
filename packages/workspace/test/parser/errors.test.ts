@@ -1041,7 +1041,6 @@ describe('parsing errors', () => {
     })
 
     it('should throw an error', () => {
-      console.log(res.elements)
       expect(res.errors).toHaveLength(1)
       expect(res.errors[0].message).toEqual('Unexpected end of file')
       expect(res.errors[0].summary).toEqual('Unexpected end of file')

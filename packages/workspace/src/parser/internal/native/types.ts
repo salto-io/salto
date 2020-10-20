@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Value, ListType } from '@salto-io/adapter-api'
+import { Element, Value, ListType, MapType } from '@salto-io/adapter-api'
 import { SourceRange } from '../types'
 import Lexer from './lexer'
 import { ParseError } from './errors'
@@ -35,6 +35,7 @@ export type ParseContext = {
   lexer: Lexer
   errors: ParseError[]
   listTypes: Set<ListType>
+  mapTypes: Set<MapType>
   functions: Functions
   sourceMap: SourceMap
   calcSourceMap: boolean

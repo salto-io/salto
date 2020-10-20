@@ -43,6 +43,7 @@ export const parseBuffer = async (
     lexer: new Lexer(content),
     errors: [],
     listTypes: new Set(),
+    mapTypes: new Set(),
     sourceMap: new SourceMap(),
     valuePromiseWatchers: [],
   }
@@ -73,7 +74,7 @@ export const parseBuffer = async (
   }
 
   // Adding the list types so they will be accesible during merge.
-  elements.push(...context.listTypes.values())
+  elements.push(...context.listTypes.values(), ...context.mapTypes.values())
   await replaceValuePromises(context)
   return {
     // Elements string are flatten to solve a memory leak

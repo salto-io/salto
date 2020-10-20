@@ -25,7 +25,7 @@ import {
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
-  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH,
+  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
 } from './constants'
 import {
   ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo, TemplateCustomTypeInfo,
@@ -38,8 +38,6 @@ import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from '
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
-
-const FILE_CABINET_PATH_SEPARATOR = '/'
 
 // FileCabinet instance path might start with '.' and we can't have NaCLs with that prefix as we
 // don't load hidden files to the workspace in the core.

@@ -48,6 +48,7 @@ export const IS_ATTRIBUTE = 'isAttribute'
 export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'
 
 // SDF FileCabinet top level folders
+export const FILE_CABINET_PATH_SEPARATOR = '/'
 export const SUITE_SCRIPTS_FOLDER_NAME = 'SuiteScripts'
 export const TEMPLATES_FOLDER_NAME = 'Templates'
 export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'

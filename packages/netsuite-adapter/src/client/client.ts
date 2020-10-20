@@ -31,7 +31,7 @@ import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
-  FOLDER, ENTRY_FORM, TRANSACTION_FORM, ROLE, WORKFLOW,
+  FILE_CABINET_PATH_SEPARATOR, FOLDER, ENTRY_FORM, TRANSACTION_FORM, ROLE, WORKFLOW,
 } from '../constants'
 
 const { makeArray } = collections.array
@@ -73,11 +73,10 @@ const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
-export const SDF_PATH_SEPARATOR = '/'
 export const fileCabinetTopLevelFolders = [
-  `${SDF_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
-  `${SDF_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
-  `${SDF_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
+  `${FILE_CABINET_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
+  `${FILE_CABINET_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
+  `${FILE_CABINET_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
 ]
 const MINUTE_IN_MILLISECONDS = 1000 * 60
 
@@ -457,7 +456,7 @@ export default class NetsuiteClient {
     return this.executeProjectAction(
       COMMANDS.IMPORT_OBJECTS,
       {
-        destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
+        destinationfolder: `${FILE_CABINET_PATH_SEPARATOR}${OBJECTS_DIR}`,
         type,
         scriptid: ALL,
         excludefiles: true,
@@ -532,7 +531,7 @@ export default class NetsuiteClient {
       fileCabinetDirPath: string): Promise<FileCustomizationInfo[]> => {
       const filePathToAttrsPath = _.fromPairs(
         fileAttrsPaths.map(fileAttrsPath => {
-          const fileName = fileAttrsPath.split(SDF_PATH_SEPARATOR).slice(-1)[0]
+          const fileName = fileAttrsPath.split(FILE_CABINET_PATH_SEPARATOR).slice(-1)[0]
             .slice(0, -ATTRIBUTES_FILE_SUFFIX.length)
           const folderName = fileAttrsPath.split(ATTRIBUTES_FOLDER_NAME)[0]
           return [`${folderName}${fileName}`, fileAttrsPath]
@@ -541,8 +540,8 @@ export default class NetsuiteClient {
       return Promise.all(filePaths.map(async filePath => {
         const attrsPath = filePathToAttrsPath[filePath]
         const xmlContent = readFile(osPath.resolve(fileCabinetDirPath,
-          ...attrsPath.split(SDF_PATH_SEPARATOR)))
-        const filePathParts = filePath.split(SDF_PATH_SEPARATOR)
+          ...attrsPath.split(FILE_CABINET_PATH_SEPARATOR)))
+        const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
         const fileContent = readFile(osPath.resolve(fileCabinetDirPath, ...filePathParts))
         return convertToFileCustomizationInfo((await xmlContent).toString(),
           filePathParts.slice(1), await fileContent)
@@ -552,7 +551,7 @@ export default class NetsuiteClient {
     const transformFolders = (folderAttrsPaths: string[], fileCabinetDirPath: string):
       Promise<FolderCustomizationInfo[]> =>
       Promise.all(folderAttrsPaths.map(async attrsPath => {
-        const folderPathParts = attrsPath.split(SDF_PATH_SEPARATOR)
+        const folderPathParts = attrsPath.split(FILE_CABINET_PATH_SEPARATOR)
         const xmlContent = readFile(osPath.resolve(fileCabinetDirPath, ...folderPathParts))
         return convertToFolderCustomizationInfo((await xmlContent).toString(),
           folderPathParts.slice(1, -2))

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
-  isListType, ListType, isElement,
+  isListType, ListType, isElement, isContainerType,
 } from '@salto-io/adapter-api'
 import { applyRecursive, resolvePath } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -123,7 +123,8 @@ const markHardcodedLists = (
   knownListIds: Set<string>,
 ): void => _.values(type.fields).filter(f => knownListIds.has(f.elemID.getFullName())).forEach(
   f => {
-    if (!isListType(f.type)) {
+    // profile fields are converted to maps instead of lists (in the profile_maps filter)
+    if (!isContainerType(f.type)) {
       f.type = new ListType(f.type)
     }
   }

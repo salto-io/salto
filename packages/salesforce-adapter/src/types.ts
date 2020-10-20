@@ -26,6 +26,7 @@ export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const ENABLE_HIDE_TYPES_IN_NACLS = 'enableHideTypesInNacls'
 export const SYSTEM_FIELDS = 'systemFields'
+export const USE_OLD_PROFILES = 'useOldProfiles'
 
 export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
@@ -34,6 +35,7 @@ export type FilterContext = {
   [DATA_MANAGEMENT]?: DataManagementConfig
   [SYSTEM_FIELDS]?: string[]
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
+  [USE_OLD_PROFILES]?: boolean
 }
 
 type ObjectIdSettings = {
@@ -59,6 +61,7 @@ export type SalesforceConfig = {
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
+  [USE_OLD_PROFILES]?: boolean
   [DATA_MANAGEMENT]?: DataManagementConfig
 }
 
@@ -238,6 +241,12 @@ export const configType = new ObjectType({
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
+      },
+    },
+    [USE_OLD_PROFILES]: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_USE_OLD_PROFILES,
       },
     },
     [DATA_MANAGEMENT]: {

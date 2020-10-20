@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value,
-  isListType, isObjectType, ListType,
+  isListType, isObjectType, ListType, MapType, isMapType,
 } from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
@@ -48,6 +48,7 @@ describe('convert lists filter', () => {
     key: { type: BuiltinTypes.STRING },
     value: { type: BuiltinTypes.STRING },
     list: { type: BuiltinTypes.STRING },
+    strMap: { type: new MapType(BuiltinTypes.STRING) },
   }
 
   const mockFieldType = new ObjectType({
@@ -101,6 +102,7 @@ describe('convert lists filter', () => {
     elemID: mockObjId,
     fields: {
       lst: { type: BuiltinTypes.STRING },
+      mockFieldMap: { type: new MapType(mockFieldType) },
       single: { type: BuiltinTypes.STRING },
       ordered: { type: mockFieldType },
       unordered: { type: mockFieldType },
@@ -137,9 +139,13 @@ describe('convert lists filter', () => {
     mockType,
     {
       lst: ['val1', 'val2'],
+      mockFieldMap: {
+        something: { key: 'b', value: '1', list: ['val1', 'val2'], strMap: { a: 'b', c: 'd' } },
+        else: { key: 'a', value: '2', list: ['val1', 'val2'] },
+      },
       single: 'val',
       ordered: [
-        { key: 'b', value: '1', list: ['val1', 'val2'], listOfObj: [{ key: 'b', list: ['val1', 'val2'] }, { key: 'a', list: ['val1', 'val2'] }] },
+        { key: 'b', value: '1', list: ['val1', 'val2'], listOfObj: [{ key: 'b', list: ['val1', 'val2'] }, { key: 'a', list: ['val1', 'val2'] }], strMap: { a: 'b', c: 'd' } },
         { key: 'a', value: '2', list: ['val1', 'val2'], listOfObj: [{ key: 'b', list: ['val1', 'val2'] }, { key: 'a', list: ['val1', 'val2'] }] },
       ],
       unordered: [
@@ -173,6 +179,7 @@ describe('convert lists filter', () => {
     mockType.fields.singleObjHardcoded.elemID.getFullName(),
     mockType.fields.emptyHardcoded.elemID.getFullName(),
     mockTypeNoInstances.fields.single.elemID.getFullName(),
+    mockType.fields.mockFieldMap.elemID.getFullName(),
   ]
 
   const unorderedListAnnotations: ReadonlyArray<UnorderedList> = [
@@ -233,6 +240,11 @@ describe('convert lists filter', () => {
       expect(isListType(type.fields.single.type)).toBeFalsy()
     })
 
+    it('should not mark map fields as list types', () => {
+      expect(isListType(type.fields.mockFieldMap.type)).toBeFalsy()
+      expect(isMapType(type.fields.mockFieldMap.type)).toBeTruthy()
+    })
+
     it('should convert lists in instances', () => {
       expect(lstInst.value.lst).toEqual(['val1', 'val2'])
       expect(nonLstInst.value.lst).toEqual(['val1'])
@@ -241,6 +253,7 @@ describe('convert lists filter', () => {
     it('should leave non lists unchanged', () => {
       expect(lstInst.value.single).toEqual('val')
       expect(nonLstInst.value.single).toEqual('val')
+      expect(Array.isArray(lstInst.value.mockFieldMap)).toBeFalsy()
     })
 
     it('should sort unordered lists', () => {

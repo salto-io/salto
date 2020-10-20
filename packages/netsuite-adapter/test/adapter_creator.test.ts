@@ -23,7 +23,7 @@ import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
-  DEPLOY_REFERENCED_ELEMENTS,
+  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import { DEFAULT_SDF_CONCURRENCY } from '../src/config'
@@ -47,6 +47,7 @@ describe('NetsuiteAdapter creator', () => {
   )
 
   const sdfConcurrencyLimit = 2
+  const fetchTypeTimeoutInMinutes = 1
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
@@ -56,6 +57,7 @@ describe('NetsuiteAdapter creator', () => {
       [FETCH_ALL_TYPES_AT_ONCE]: false,
       [DEPLOY_REFERENCED_ELEMENTS]: false,
       [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
+      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: fetchTypeTimeoutInMinutes,
       notExist: ['not exist'],
     }
   )
@@ -103,6 +105,7 @@ describe('NetsuiteAdapter creator', () => {
           [FETCH_ALL_TYPES_AT_ONCE]: false,
           [DEPLOY_REFERENCED_ELEMENTS]: false,
           [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
+          [FETCH_TYPE_TIMEOUT_IN_MINUTES]: fetchTypeTimeoutInMinutes,
         },
         getElemIdFunc: mockGetElemIdFunc,
       })

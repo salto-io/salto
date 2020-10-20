@@ -38,7 +38,7 @@ import {
   CUSTOM_VALUE, API_NAME_SEPARATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, GEOLOCATION_SOAP_TYPE_NAME,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
 } from '../constants'
@@ -104,9 +104,15 @@ export const apiName = (elem: Element, relative = false): string => {
 export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string =>
   `${FORMULA_TYPE_NAME}${baseTypeName}`
 
-const fieldTypeName = (typeName: string): string => (
-  typeName.startsWith(FORMULA_TYPE_NAME) ? typeName.slice(FORMULA_TYPE_NAME.length) : typeName
-)
+export const fieldTypeName = (typeName: string): string => {
+  if (typeName.startsWith(FORMULA_TYPE_NAME)) {
+    return typeName.slice(FORMULA_TYPE_NAME.length)
+  }
+  if (typeName === COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION) {
+    return GEOLOCATION_SOAP_TYPE_NAME
+  }
+  return typeName
+}
 
 const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Values =>
   picklistValues.map(val => ({
@@ -134,7 +140,7 @@ const addPicklistAnnotations = (
 
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
-const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
+const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION)
 
 const restrictedNumberTypeDefinitions = {
   TextLength: createRestriction({ min: 1, max: 255, enforce_value: false }),
@@ -636,7 +642,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
       },
     }),
-    Location: new ObjectType({
+    Geolocation: new ObjectType({
       elemID: geoLocationElemID,
       fields: {
         [GEOLOCATION_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
@@ -751,8 +757,8 @@ const transformCompoundValues = (
       // Other compound fields are added a prefix according to the field name
       // ie. LocalAddrress -> LocalCity, LocalState etc.
       const typeName = compoundField.type.elemID.isEqual(Types.compoundDataTypes.Address.elemID)
-        ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.LOCATION
-      const fieldPrefix = compoundFieldKey.slice(0, -typeName.length)
+        ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION
+      const fieldPrefix = compoundFieldKey.slice(0, -fieldTypeName(typeName).length)
       return _.mapKeys(record[compoundFieldKey], (_vv, key) => fieldPrefix.concat(key))
     }
   )

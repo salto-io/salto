@@ -327,6 +327,11 @@ describe('Custom Objects filter', () => {
             {
               [INSTANCE_FULL_NAME_FIELD]: 'WhoKnows',
             },
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'Pepper',
+              [INSTANCE_TYPE_FIELD]: 'Location',
+              [INSTANCE_REQUIRED_FIELD]: 'false',
+            },
           ],
         },
       )
@@ -336,6 +341,7 @@ describe('Custom Objects filter', () => {
       const lead = findElements(result, 'Lead').pop() as ObjectType
       expect(lead.fields.NumberField.type.elemID.name).toBe('Number')
       expect(lead.fields.ExtraSalt.type.elemID.name).toBe('Checkbox')
+      expect(lead.fields.Pepper.type.elemID.name).toBe('Geolocation')
       expect(lead.fields.WhoKnows.type.elemID.name).toBe('Unknown')
     })
 

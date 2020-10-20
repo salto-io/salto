@@ -37,7 +37,8 @@ import {
   WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES,
+  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, COMPOUND_FIELD_TYPE_NAMES,
+  GEOLOCATION_SOAP_TYPE_NAME,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -118,10 +119,18 @@ const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fi
 const nestedMetadatatypeToReplaceDirName: Record<string, string> = { // <type, new-dir-name>
   [WEBLINK_METADATA_TYPE]: 'ButtonsLinksAndActions',
 }
-const getFieldName = (annotations: Values): string =>
+
+const toInternalTypeName = (typeName: string): string => (
+  typeName === GEOLOCATION_SOAP_TYPE_NAME
+    ? COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION
+    : typeName
+)
+
+const getFieldName = (annotations: Values): string => (
   (annotations[FORMULA]
     ? formulaTypeName(annotations[INSTANCE_TYPE_FIELD] as FIELD_TYPE_NAMES)
-    : annotations[INSTANCE_TYPE_FIELD])
+    : toInternalTypeName(annotations[INSTANCE_TYPE_FIELD]))
+)
 
 const getFieldType = (type: string): TypeElement =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))

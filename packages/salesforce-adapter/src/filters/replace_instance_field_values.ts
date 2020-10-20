@@ -14,83 +14,97 @@
 * limitations under the License.
 */
 import {
-  Element, isInstanceElement, InstanceElement, Values, getChangeElement, Change,
+  Element, isInstanceElement, InstanceElement, getChangeElement, Change, isObjectType,
+  Field,
 } from '@salto-io/adapter-api'
+import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
+import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
 import SalesforceClient from '../client/client'
 import { getIdsForType } from './add_missing_ids'
+import { getInternalId } from './utils'
 
 const log = logger(module)
 
-const metadataTypesToChange: string[] = ['ForecastingSettings']
-
-const pathsToValues: Record<string, string[][]> = {
-  Forecasting: [
-    ['forecastingTypeSettings', 'opportunityListFieldsSelectedSettings', 'field'],
-    ['forecastingTypeSettings', 'opportunityListFieldsUnselectedSettings', 'field'],
-    ['forecastingTypeSettings', 'opportunityListFieldsLabelMappings', 'field'],
-  ],
+/*
+The keys represent metadataTypes of the instances to change.
+The values represent api names of other instances, that the first instances' fields refer to.
+*/
+const metadataTypeToInstanceName: Record<string, string> = {
+  ForecastingSettings: 'Opportunity',
 }
+
+const fieldSelectMapping = [
+  { src: { field: 'field', parentTypes: ['OpportunityListFieldsSelectedSettings', 'OpportunityListFieldsUnselectedSettings', 'OpportunityListFieldsLabelMapping'] } },
+]
+
+/*
+ * converts an 18-char internalId to a 15-char internalId.
+ */
+const toShortId = (longId: string): string => (longId.slice(0, -3))
 
 const getApiNameToIdLookup = async (client: SalesforceClient): Promise<Record<string, string>> => {
   const apiNameToId = await getIdsForType(client, 'CustomField')
   Object.keys(apiNameToId).forEach(k => {
-    // remove last 3 chars to get a 15-char id from an 18-char id
-    apiNameToId[k] = apiNameToId[k].slice(0, -3)
+    apiNameToId[k] = toShortId(apiNameToId[k])
   })
   return apiNameToId
 }
 
-const swapKeyValue = (obj: Record<string, string>): Record<string, string> => {
-  const res: Record<string, string> = {}
-  Object.keys(obj).forEach(k => {
-    res[obj[k]] = k
-  })
-  return res
-}
-
-const replaceValuesInPath = (i: number, val: Values, nameLookUp: Record<string, string>,
-  path: string[]): void => {
-  if (path[i] === undefined || val === undefined) {
-    return
-  }
-  const key = path[i]
-  if (_.isString(val[key])) {
-    val[key] = nameLookUp[val[key]] ?? val[key]
-  } else if (_.isArray(val[key])) {
-    const [stringElements, objectElements] = _.partition(val[key], _.isString)
-
-    val[key] = objectElements
-    stringElements.map((s: string) => nameLookUp[s] ?? s).forEach(s => val[key].push(s))
-
-    objectElements.forEach((element: Values) => {
-      replaceValuesInPath(i + 1, element, nameLookUp, path)
-    })
-  } else {
-    replaceValuesInPath(i + 1, val[key], nameLookUp, path)
-  }
+const shouldReplace = (field: Field): boolean => {
+  const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
+  return !_.isEmpty(resolverFinder(field))
 }
 
 const replaceInstanceValues = (instance: InstanceElement,
-  nameLookUp: Record<string, string>): void => {
-  const name = apiName(instance)
-  const allPathsForInstance = pathsToValues[name]
-  allPathsForInstance.forEach(path => {
-    replaceValuesInPath(0, instance.value, nameLookUp, path)
-  })
+  nameLookup: Record<string, string>): void => {
+  const transformFunc: TransformFunc = ({ value, field }) => {
+    if (_.isUndefined(field) || !shouldReplace(field)) {
+      return value
+    }
+    return _.isArray(value)
+      ? value.map(s => nameLookup[s] ?? s)
+      : (nameLookup[value] ?? value)
+  }
+
+  const values = instance.value
+  instance.value = transformValues(
+    {
+      values,
+      type: instance.type,
+      transformFunc,
+      strict: false,
+    }
+  ) ?? values
 }
 
-const replaceElementsValues = (elements: Element[], nameLookUp: Record<string, string>): void => {
+const replaceInstancesValues = (elements: Element[], nameLookUp: Record<string, string>): void => {
   elements
     .filter(isInstanceElement)
-    .filter(e => metadataTypesToChange.includes(metadataType(e)))
+    .filter(e => Object.keys(metadataTypeToInstanceName).includes(metadataType(e)))
     .forEach(e => {
       replaceInstanceValues(e, nameLookUp)
       log.debug(`replaced values of instance ${apiName(e)}`)
     })
+}
+
+const getIdToNameLookupFromAllElements = (elements: Element[]): Record<string, string> => {
+  const lookup: Record<string, string> = {}
+  const fields = elements
+    .filter(isObjectType)
+    .filter(e => Object.values(metadataTypeToInstanceName).includes(apiName(e)))
+    .flatMap(e => Object.values(e.fields))
+
+  Object.assign(lookup, ...fields.map(field => {
+    const id = getInternalId(field)
+    return ({
+      [id === undefined ? id : toShortId(id)]: apiName(field),
+    })
+  }))
+  return lookup
 }
 
 /**
@@ -98,19 +112,19 @@ const replaceElementsValues = (elements: Element[], nameLookUp: Record<string, s
  */
 const filter: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]) => {
-    const idToApiNameLookUp = swapKeyValue(await getApiNameToIdLookup(client))
-    replaceElementsValues(elements, idToApiNameLookUp)
+    const idToApiNameLookUp = getIdToNameLookupFromAllElements(elements)
+    replaceInstancesValues(elements, idToApiNameLookUp)
   },
   preDeploy: async (changes: ReadonlyArray<Change>): Promise<void> => {
     const apiNameToIdLookup = await getApiNameToIdLookup(client)
-    replaceElementsValues(
+    replaceInstancesValues(
       changes.map(getChangeElement),
       apiNameToIdLookup
     )
   },
   onDeploy: async changes => {
-    const idToApiNameLookUp = swapKeyValue(await getApiNameToIdLookup(client))
-    replaceElementsValues(
+    const idToApiNameLookUp = _.invert(await getApiNameToIdLookup(client))
+    replaceInstancesValues(
       changes.map(getChangeElement),
       idToApiNameLookUp
     )

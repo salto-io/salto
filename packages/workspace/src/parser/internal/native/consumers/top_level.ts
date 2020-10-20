@@ -19,7 +19,7 @@ import { Keywords } from '../../../language'
 import { ParseContext, ConsumerReturnType } from '../types'
 import { parseElemID } from '../../nearly/converter/elements'
 import { invalidPrimitiveTypeDef, unknownPrimitiveTypeError, invalidFieldsInPrimitiveType, invalidBlocksInInstance, invalidVarDefinition, missingLabelsError, missingBlockOpen, ambigiousBlock } from '../errors'
-import { primitiveType, getPosition, registerRange } from '../helpers'
+import { primitiveType, registerRange, positionAtStart, positionAtEnd } from '../helpers'
 import { consumeBlockBody, recoverInvalidItemDefinition, isAttrDef } from './blocks'
 import { TOKEN_TYPES } from '../lexer'
 import { consumeWords, consumeValue } from './values'
@@ -117,7 +117,7 @@ const consumeInstanceElement = (
   )
   const consumedBlockBody = consumeBlockBody(context, instance.elemID)
 
-  // You can't define a block inside an instance. Blocks will be ignore.
+  // You can't define a block inside an instance. Blocks will be ignored.
   const { attrs, fields, annotationTypes } = consumedBlockBody.value
   if (!_.isEmpty(annotationTypes) || !_.isEmpty(fields)) {
     context.errors.push(
@@ -151,14 +151,14 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
   const nextToken = context.lexer.next()
   if (nextToken.type !== TOKEN_TYPES.OCURLY) {
     context.errors.push(missingBlockOpen({
-      start: getPosition(nextToken),
-      end: getPosition(nextToken, false),
+      start: positionAtStart(nextToken),
+      end: positionAtEnd(nextToken),
       filename: context.filename,
     }))
   }
-  const start = getPosition(nextToken)
+  const start = positionAtStart(nextToken)
 
-  while (context.lexer.peak() && context.lexer.peak()?.type !== TOKEN_TYPES.CCURLY) {
+  while (context.lexer.peek() && context.lexer.peek()?.type !== TOKEN_TYPES.CCURLY) {
     const defTokens = consumeWords(context)
     if (isAttrDef(defTokens.value, context)) {
       // We know that the next token is an equal mark, so we can consume it.
@@ -174,7 +174,7 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
       context.errors.push(invalidVarDefinition({ ...defTokens.range, filename: context.filename }))
     }
   }
-  const end = getPosition(context.lexer.next(), false)
+  const end = positionAtEnd(context.lexer.next())
   return {
     value: variables,
     range: { start, end },
@@ -185,7 +185,7 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
 // keyword missing, since in all other block types there is only 1 legal label.
 // the primitive type consumer handles the missing 'is'.
 const isPrimitiveTypeDef = (elementType: string, elementLabels: string[]): boolean => (
-  elementType === Keywords.TYPE_DEFINITION && elementLabels.length >= 2
+  elementType === Keywords.TYPE_DEFINITION && elementLabels.length >= 2 && elementLabels.length < 4
 )
 
 const isObjectTypeDef = (
@@ -203,19 +203,19 @@ const isInstanceTypeDef = (elementType: string, elementLabels: string[]): boolea
 
 export const consumeElement = (context: ParseContext): ConsumerReturnType<Element | undefined> => {
   const consumedLabels = consumeWords(context)
-  const nextToken = context.lexer.peak()
+  const nextToken = context.lexer.peek()
   if (nextToken && consumedLabels.value.length === 0) {
     context.errors.push(missingLabelsError({
-      start: getPosition(nextToken),
-      end: getPosition(nextToken, false),
+      start: positionAtStart(nextToken),
+      end: positionAtEnd(nextToken),
       filename: context.filename,
     }, nextToken?.value ?? 'EOF'))
   }
 
   if (nextToken?.type !== TOKEN_TYPES.OCURLY) {
     context.errors.push(missingBlockOpen({
-      start: nextToken ? getPosition(nextToken) : consumedLabels.range.end,
-      end: nextToken ? getPosition(nextToken, false) : consumedLabels.range.end,
+      start: nextToken ? positionAtStart(nextToken) : consumedLabels.range.end,
+      end: nextToken ? positionAtEnd(nextToken) : consumedLabels.range.end,
       filename: context.filename,
     }))
   }
@@ -235,8 +235,8 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
     // If we don't know which type of block is defined here, we need to ignore
     // the block. So we consume it in order to continue on the next block. If
     // this is not a block (we expect it to be a block since we only support blocks
-    // as top level element, the consumeBlockBody method will generate the propper errors)
-    const blockToIgnore = consumeBlockBody(context, new ElemID('salto'))
+    // as top level element), the consumeBlockBody method will generate the proper errors
+    const blockToIgnore = consumeBlockBody(context, new ElemID('ignore'))
     const range = {
       start: consumedLabels.range.start,
       end: blockToIgnore.range.end,

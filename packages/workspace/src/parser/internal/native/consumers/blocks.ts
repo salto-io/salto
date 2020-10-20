@@ -17,13 +17,13 @@ import { ElemID, Values, FieldDefinition, TypeMap } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TOKEN_TYPES } from '../lexer'
 import { ParseContext, ConsumerReturnType } from '../types'
-import { getPosition, registerRange, createFieldType, addValuePromiseWatcher } from '../helpers'
+import { positionAtEnd, registerRange, createFieldType, addValuePromiseWatcher, positionAtStart } from '../helpers'
 import { consumeWords, consumeValue } from './values'
 import { duplicatedAttribute, invalidAttrDefinitionInAnnotationBlock, multipleAnnotationBlocks, invalidNestedBlock, invalidFieldAnnotationBlock, multiplFieldDefinitions, invalidBlockItem } from '../errors'
 
 
 export const isAttrDef = (defWords: string[], context: ParseContext): boolean => (
-  context.lexer.peak()?.type === TOKEN_TYPES.EQUAL && defWords.length === 1
+  context.lexer.peek()?.type === TOKEN_TYPES.EQUAL && defWords.length === 1
 )
 
 const isAnnotationBlockDef = (
@@ -31,13 +31,13 @@ const isAnnotationBlockDef = (
   defWords: string[],
   context: ParseContext,
 ): boolean => (
-  context.lexer.peak()?.type === TOKEN_TYPES.OCURLY
+  context.lexer.peek()?.type === TOKEN_TYPES.OCURLY
     && _.isEqual(defWords, ['annotations'])
     && idPrefix.idType !== 'annotation'
 )
 
 const isFieldBlock = (defWords: string[], context: ParseContext): boolean => (
-  context.lexer.peak()?.type === TOKEN_TYPES.OCURLY && defWords.length === 2
+  context.lexer.peek()?.type === TOKEN_TYPES.OCURLY && defWords.length === 2
 )
 
 export const recoverInvalidItemDefinition = (context: ParseContext): void => {
@@ -48,11 +48,11 @@ export const recoverInvalidItemDefinition = (context: ParseContext): void => {
     TOKEN_TYPES.NEWLINE,
   ])
   // If we recover to the equal value, we need to consume it and the value it holds...
-  if (context.lexer.peak()?.type === TOKEN_TYPES.EQUAL) {
+  if (context.lexer.peek()?.type === TOKEN_TYPES.EQUAL) {
     // Pop the EQ token
     context.lexer.next()
     consumeValue(context)
-  } else if (context.lexer.peak()?.type === TOKEN_TYPES.OCURLY) {
+  } else if (context.lexer.peek()?.type === TOKEN_TYPES.OCURLY) {
     consumeValue(context)
   }
 }
@@ -68,8 +68,8 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
   const attrIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('attr') : idPrefix
   const fieldIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('field') : idPrefix
   // The position of the OCurly
-  const start = getPosition(context.lexer.next())
-  while (context.lexer.peak() && context.lexer.peak()?.type !== TOKEN_TYPES.CCURLY) {
+  const start = positionAtStart(context.lexer.next())
+  while (context.lexer.peek() && context.lexer.peek()?.type !== TOKEN_TYPES.CCURLY) {
     const defTokens = consumeWords(context)
     if (isAttrDef(defTokens.value, context)) {
       // Consume Attr!
@@ -145,8 +145,8 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
       recoverInvalidItemDefinition(context)
     }
   }
-  // The position for the CCurly
-  const end = getPosition(context.lexer.next(), false)
+
+  const end = positionAtEnd(context.lexer.next())
   return {
     value: {
       attrs,

@@ -20,7 +20,7 @@ import { MISSING_VALUE } from '../../src/parser/internal/native/consumers/values
 
 describe('parsing errors', () => {
   beforeAll(() => {
-    process.env.USE_NEW_PARSER = '1'
+    process.env.USE_NATIVE_PARSER = '1'
   })
   describe('general element block structure', () => {
     describe('no labels', () => {
@@ -849,7 +849,7 @@ describe('parsing errors', () => {
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 34, byte: 58 },
-            end: { line: 3, col: 34, byte: 58 },
+            end: { line: 3, col: 35, byte: 59 },
             filename: 'file.nacl',
           })
           expect(res.errors[0].summary).toBe('Expected a comma')
@@ -997,7 +997,7 @@ describe('parsing errors', () => {
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 30, byte: 52 },
-          end: { line: 3, col: 30, byte: 52 },
+          end: { line: 3, col: 31, byte: 53 },
           filename: 'file.nacl',
         })
         expect(res.errors[0].summary).toBe('Expected a comma')
@@ -1041,6 +1041,7 @@ describe('parsing errors', () => {
     })
 
     it('should throw an error', () => {
+      console.log(res.elements)
       expect(res.errors).toHaveLength(1)
       expect(res.errors[0].message).toEqual('Unexpected end of file')
       expect(res.errors[0].summary).toEqual('Unexpected end of file')

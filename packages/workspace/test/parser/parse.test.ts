@@ -18,7 +18,7 @@ import {
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
   isType, isPrimitiveType, ListType,
 } from '@salto-io/adapter-api'
-import each from 'jest-each'
+// import each from 'jest-each'
 import {
   registerTestFunction,
 } from './functions.test'
@@ -31,12 +31,13 @@ import { HclParseError } from '../../src/parser/internal/types'
 const funcName = 'funcush'
 
 let functions: Functions
-each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
+/* each([true, false]). */describe('Salto parser', (/* useLegacyParser: boolean */) => {
+  const useLegacyParser = false
   beforeAll(() => {
     if (!useLegacyParser) {
-      process.env.USE_NEW_PARSER = '1'
+      process.env.USE_NATIVE_PARSER = '1'
     } else {
-      delete process.env.USE_NEW_PARSER
+      delete process.env.USE_NATIVE_PARSER
     }
     functions = registerTestFunction(funcName)
   })
@@ -182,7 +183,11 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
 
       type salesforce.unknown is unknown {
       }
-    `
+
+      type salesforce.emptyString {
+        str = ""
+      }
+       `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
       elements = parsed.elements.filter(element => !isListType(element))
@@ -192,7 +197,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(18)
+        expect(elements.length).toBe(19)
         expect(listTypes.length).toBe(1)
       })
     })
@@ -627,6 +632,15 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         expect(isPrimitiveType(element)).toBeTruthy()
         const unknownType = element as PrimitiveType
         expect(unknownType.primitive).toBe(PrimitiveTypes.UNKNOWN)
+      })
+    })
+
+    describe('empty string', () => {
+      it('should parse an empty string value', () => {
+        const element = elements[18]
+        expect(isObjectType(element)).toBeTruthy()
+        const obj = element as ObjectType
+        expect(obj.annotations.str).toEqual('')
       })
     })
   })

@@ -21,13 +21,13 @@ import Lexer, { TOKEN_TYPES, NoSuchElementError } from './lexer'
 import { SourceMap } from '../../source_map'
 import { unexpectedEndOfFile } from './errors'
 import { ParseContext, ParseResult } from './types'
-import { getPosition, replaceValuePromises } from './helpers'
+import { replaceValuePromises, positionAtStart } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
 
 
 const isVariableDef = (context: ParseContext): boolean => (
-  context.lexer.peak()?.type === TOKEN_TYPES.WORD
-  && context.lexer.peak()?.value === Keywords.VARIABLES_DEFINITION
+  context.lexer.peek()?.type === TOKEN_TYPES.WORD
+  && context.lexer.peek()?.value === Keywords.VARIABLES_DEFINITION
 )
 
 export const parseBuffer = async (
@@ -48,7 +48,7 @@ export const parseBuffer = async (
   }
   const elements: Element[] = []
 
-  while (context.lexer.peak()) {
+  while (context.lexer.peek()) {
     try {
       if (isVariableDef(context)) {
         const consumedVariables = consumeVariableBlock(context)
@@ -66,7 +66,7 @@ export const parseBuffer = async (
       // is called after all of the token were processed. This error is thrown
       // since it shoul interupt the flow of the code.
       if (e instanceof NoSuchElementError && e.lastValidToken) {
-        const pos = getPosition(e.lastValidToken)
+        const pos = positionAtStart(e.lastValidToken)
         context.errors.push(unexpectedEndOfFile({ start: pos, end: pos, filename }))
       }
     }

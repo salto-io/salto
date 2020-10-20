@@ -55,7 +55,7 @@ export const parse = async (
   functions: Functions = {},
 ): Promise<Required<ParseResult>> => {
   const srcString = naclFile.toString()
-  return process.env.USE_NEW_PARSER
+  return process.env.USE_NATIVE_PARSER
     ? parseBuffer(srcString, filename, functions)
     : parseBufferAndFixErrors(srcString, filename, functions)
 }

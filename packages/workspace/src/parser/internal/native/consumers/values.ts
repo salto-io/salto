@@ -19,14 +19,16 @@
 // have a circular recursion (value -> object/array -> value) and we don't
 // want all of the functions to be defined inside consume value since its icky.
 
-import { Value, TemplateExpression, ReferenceExpression, ElemID, Values } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { Value, TemplateExpression, ElemID, Values } from '@salto-io/adapter-api'
+import _, { trimEnd } from 'lodash'
+import { Token } from 'moo'
 import { Consumer, ParseContext, ConsumerReturnType } from '../types'
-import { getPosition, createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher, registerRange } from '../helpers'
-import { TOKEN_TYPES, LexerToken } from '../lexer'
+import { createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher, registerRange, positionAtStart, positionAtEnd } from '../helpers'
+import { TOKEN_TYPES, LexerToken, TRUE } from '../lexer'
 import { missingComma, unknownFunction, unterminatedString, invalidStringTemplate, missingValue, invalidAttrKey, missingEqualMark, duplicatedAttribute, missingNewline } from '../errors'
 
 import { IllegalReference } from '../../types'
+import lexer from '../../nearly/lexer'
 
 export const MISSING_VALUE = '****dynamic****'
 
@@ -34,23 +36,53 @@ const consumeWord: Consumer<string> = context => {
   const wordToken = context.lexer.next()
   return {
     value: wordToken.value,
-    range: { start: getPosition(wordToken), end: getPosition(wordToken, false) },
+    range: { start: positionAtStart(wordToken), end: positionAtEnd(wordToken) },
   }
 }
 
-const consumeString = (
+const createSimpleStringValue = (tokens: Required<Token>[]): string => (
+  tokens.map(token => unescapeTemplateMarker(token.text)).join('')
+)
+
+const createTemplateExpressions = (tokens: Required<Token>[]): TemplateExpression => (
+  new TemplateExpression({ parts: tokens.map(token => {
+    if (token.type === TOKEN_TYPES.REFERENCE) {
+      const ref = createReferenceExpresion(token.value)
+      return ref instanceof IllegalReference ? token.text : ref
+    }
+    return unescapeTemplateMarker(token.value)
+  }) })
+)
+
+const trimToken = (token: Required<Token>): Required<Token> => ({
+  ...token,
+  text: trimEnd(token.text),
+  value: trimEnd(token.value),
+})
+
+const createStringValue = (tokens: Required<Token>[], trim? : boolean): string|TemplateExpression => {
+  const trimmedTokens = trim && tokens.length > 0
+    ? [...tokens.slice(0, -1), trimToken(tokens[tokens.length - 1])]
+    : tokens
+
+  const simpleString = _.every(trimmedTokens, token => token.type === TOKEN_TYPES.CONTENT)
+  return simpleString
+    ? createSimpleStringValue(trimmedTokens)
+    : createTemplateExpressions(trimmedTokens)
+}
+
+const consumeStringData = (
   context: ParseContext,
-  allowExpressions = true
-): ConsumerReturnType<string | TemplateExpression> => {
+): ConsumerReturnType<Required<Token>[]> => {
   // Getting the position for the opening double quote
-  const start = getPosition(context.lexer.next())
+  const start = positionAtStart(context.lexer.next())
   const tokens = []
 
   // We start by collecting all of the tokens until the line ends
   // (its a single line string!) or the " char is met
   while (
-        context.lexer.peak(false)?.type !== TOKEN_TYPES.DOUBLE_QUOTES
-        && context.lexer.peak(false)?.type !== TOKEN_TYPES.NEWLINE
+        context.lexer.peek(false)?.type !== TOKEN_TYPES.DOUBLE_QUOTES
+        && context.lexer.peek(false)?.type !== TOKEN_TYPES.NEWLINE
   ) {
     tokens.push(context.lexer.next(false))
   }
@@ -59,10 +91,10 @@ const consumeString = (
   // We don't collect it here since a value consumer should not process
   // the newline char at the end of it, since this is handled and *verified*
   // by the consumeValue method, so we check and consume only if its the valid " char.
-  const closingQuate = context.lexer.peak(false)
-  const lastTokenEndPos = getPosition(tokens[tokens.length - 1], false)
-  const end = closingQuate ? getPosition(closingQuate, false) : lastTokenEndPos
-  if (closingQuate?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
+  const closingQuote = context.lexer.peek(false)
+  const lastTokenEndPos = tokens.length > 0 ? positionAtEnd(tokens[tokens.length - 1]) : start
+  const end = closingQuote ? positionAtEnd(closingQuote) : lastTokenEndPos
+  if (closingQuote?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
     context.lexer.next()
   } else {
     context.errors.push(unterminatedString({
@@ -71,43 +103,55 @@ const consumeString = (
       filename: context.filename,
     }))
   }
+  return {
+    range: { start, end },
+    value: tokens,
+  }
+}
 
-  // Now we transform the tokens to a single string if there are no references. If there
-  // are references, we will create a template expression (If its allowed in this string.
-  // template expressions are only allowed in values.)
-  const simpleString = _.every(tokens, token => token.type === TOKEN_TYPES.CONTENT)
-  if (!simpleString && !allowExpressions) {
+const isSimpleString = (tokens: Required<Token>[]): boolean => _.every(
+  tokens,
+  token => token.type === TOKEN_TYPES.CONTENT
+)
+
+const consumeSimpleString = (
+  context: ParseContext
+): ConsumerReturnType<string> => {
+  const stringData = consumeStringData(context)
+  if (!isSimpleString(stringData.value)) {
     context.errors.push(
-      ...tokens.filter(token => token.type === TOKEN_TYPES.REFERENCE)
+      ...stringData.value.filter(token => token.type === TOKEN_TYPES.REFERENCE)
         .map(token => invalidStringTemplate({
-          start: getPosition(token),
-          end: getPosition(token, false),
+          start: positionAtStart(token),
+          end: positionAtEnd(token),
           filename: context.filename,
         }))
     )
   }
+  const value = createSimpleStringValue(stringData.value)
+  return {
+    range: stringData.range,
+    value,
+  }
+}
 
-  // If we are trying to create a simple string and we found references we will
-  // treat them as strings. we need the text and not value of the token since the
-  // value attr does not contain the ${ and } chars.
-  const value = simpleString || !allowExpressions
-    ? tokens.map(token => unescapeTemplateMarker(token.text)).join('')
-    : new TemplateExpression({ parts: tokens.map(token => (token.type === TOKEN_TYPES.REFERENCE
-      // TODO HANDLE invalid elemID
-      ? new ReferenceExpression(ElemID.fromFullName(token.value))
-      : unescapeTemplateMarker(token.value))) })
+const consumeString = (
+  context: ParseContext
+): ConsumerReturnType<string | TemplateExpression> => {
+  const stringData = consumeStringData(context)
+  const value = createStringValue(stringData.value)
   return {
     value,
-    range: { start, end },
+    range: stringData.range,
   }
 }
 
 export const consumeWords: Consumer<string[]> = context => {
   const labels: ConsumerReturnType<string>[] = []
-  while (context.lexer.peak()?.type === TOKEN_TYPES.WORD
-    || context.lexer.peak()?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
-    if (context.lexer.peak()?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
-      labels.push(consumeString(context, false) as ConsumerReturnType<string>)
+  while (context.lexer.peek()?.type === TOKEN_TYPES.WORD
+    || context.lexer.peek()?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
+    if (context.lexer.peek()?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
+      labels.push(consumeSimpleString(context) as ConsumerReturnType<string>)
     } else {
       labels.push(consumeWord(context))
     }
@@ -123,8 +167,8 @@ export const consumeWords: Consumer<string[]> = context => {
   return {
     value: [],
     range: {
-      start: getPosition(context.lexer.peak() as LexerToken),
-      end: getPosition(context.lexer.peak() as LexerToken),
+      start: positionAtStart(context.lexer.peek() as LexerToken),
+      end: positionAtStart(context.lexer.peek() as LexerToken),
     },
   }
 }
@@ -135,22 +179,22 @@ const consumeArrayItems = (
   idPrefix?: ElemID
 ): Value[] => {
   const items = []
-  while (context.lexer.peak()?.type !== closingTokenType) {
+  while (context.lexer.peek()?.type !== closingTokenType) {
     const itemIndex = items.length
     const itemId = idPrefix?.createNestedID(itemIndex.toString())
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const consumedValue = consumeValue(context, itemId, TOKEN_TYPES.COMMA)
-    if (context.lexer.peak()?.type === TOKEN_TYPES.COMMA) {
+    if (context.lexer.peek()?.type === TOKEN_TYPES.COMMA) {
       context.lexer.next()
-    } else if (context.lexer.peak()?.type !== closingTokenType) {
+    } else if (context.lexer.peek()?.type !== closingTokenType) {
       const token = context.lexer.next()
       context.errors.push(missingComma({
-        start: getPosition(token),
-        end: getPosition(token),
+        start: positionAtStart(token),
+        end: positionAtEnd(token),
         filename: context.filename,
       }))
       context.lexer.recover([TOKEN_TYPES.COMMA, closingTokenType])
-      if (context.lexer.peak()?.type === TOKEN_TYPES.COMMA) {
+      if (context.lexer.peek()?.type === TOKEN_TYPES.COMMA) {
         context.lexer.next()
       }
     }
@@ -163,10 +207,64 @@ const consumeArrayItems = (
   return items
 }
 
+const consumeMultilineString: Consumer<string | TemplateExpression> = context => {
+  // Getting the position of the start marker
+  const start = positionAtStart(context.lexer.next())
+  const tokens = []
+  while (context.lexer.peek()?.type !== TOKEN_TYPES.MULTILINE_END) {
+    tokens.push(context.lexer.next())
+  }
+  if (tokens.length > 0) {
+    tokens[tokens.length - 1].value = tokens[tokens.length - 1].value.slice(0, -1)
+  }
+  // We get rid of the trailing newline
+  // Getting the position of the end marker
+  const end = positionAtEnd(context.lexer.next())
+  const value = createStringValue(tokens, true)
+
+  return {
+    value,
+    range: { start, end },
+  }
+}
+
+const consumeBoolean: Consumer<boolean> = context => {
+  const token = context.lexer.next()
+  const start = positionAtStart(token)
+  const end = positionAtEnd(token)
+  return {
+    value: token.value === TRUE,
+    range: { start, end },
+  }
+}
+
+const consumeNumber: Consumer<number> = context => {
+  const token = context.lexer.next()
+  const start = positionAtStart(token)
+  const end = positionAtEnd(token)
+  return {
+    value: parseFloat(token.value),
+    range: { start, end },
+  }
+}
+
+const consumeMissingValue: Consumer<Value> = context => {
+  const token = context.lexer.peek(false) as LexerToken
+  const range = {
+    start: positionAtStart(token),
+    end: positionAtStart(token),
+  }
+  context.errors.push(missingValue({ ...range, filename: context.filename }))
+  return {
+    value: MISSING_VALUE,
+    range,
+  }
+}
+
 const consumeParams: Consumer<Value[]> = context => {
-  const start = getPosition(context.lexer.next())
+  const start = positionAtStart(context.lexer.next())
   const params = consumeArrayItems(context, TOKEN_TYPES.RIGHT_PAREN)
-  const end = getPosition(context.lexer.next(), false)
+  const end = positionAtEnd(context.lexer.next())
   return {
     value: params,
     range: { start, end },
@@ -175,15 +273,15 @@ const consumeParams: Consumer<Value[]> = context => {
 
 const consumeFunctionOrReference: Consumer<Value> = context => {
   const firstToken = context.lexer.next()
-  const start = getPosition(firstToken)
-  if (context.lexer.peak()?.type === TOKEN_TYPES.LEFT_PAREN) {
+  const start = positionAtStart(firstToken)
+  if (context.lexer.peek()?.type === TOKEN_TYPES.LEFT_PAREN) {
     const params = consumeParams(context)
     const funcName = firstToken.value
     const func = context.functions[funcName]
     if (func === undefined) {
       context.errors.push(unknownFunction({
-        start: getPosition(firstToken),
-        end: getPosition(firstToken, false),
+        start: positionAtStart(firstToken),
+        end: positionAtEnd(firstToken),
         filename: context.filename,
       }, funcName))
     }
@@ -194,74 +292,14 @@ const consumeFunctionOrReference: Consumer<Value> = context => {
   }
   return {
     value: createReferenceExpresion(firstToken.value),
-    range: { start, end: getPosition(firstToken, false) },
-  }
-}
-
-const consumeMultilineString: Consumer<string | TemplateExpression> = context => {
-  // Getting the position of the start marker
-  const start = getPosition(context.lexer.next())
-  const tokens = []
-  while (context.lexer.peak()?.type !== TOKEN_TYPES.MULTILINE_END) {
-    tokens.push(context.lexer.next())
-  }
-  tokens[tokens.length - 1].value = tokens[tokens.length - 1].value.slice(0, -1)
-  // We get rid of the traiilng newline
-  // Getting the position of the end marker
-  const end = getPosition(context.lexer.next(), false)
-  const simpleString = _.every(tokens, token => token.type === TOKEN_TYPES.CONTENT)
-  const value = simpleString
-    ? tokens.map(token => unescapeTemplateMarker(token.value)).join('')
-    : new TemplateExpression({ parts: tokens.map(token => {
-      if (token.type === TOKEN_TYPES.REFERENCE) {
-        const ref = createReferenceExpresion(token.value)
-        return ref instanceof IllegalReference ? token.text : ref
-      }
-      return unescapeTemplateMarker(token.value)
-    }) })
-  return {
-    value,
-    range: { start, end },
-  }
-}
-
-const consumeBoolean: Consumer<boolean> = context => {
-  const token = context.lexer.next()
-  const start = getPosition(token)
-  const end = getPosition(token, false)
-  return {
-    value: token.value === 'true',
-    range: { start, end },
-  }
-}
-
-const consumeNumber: Consumer<number> = context => {
-  const token = context.lexer.next()
-  const start = getPosition(token)
-  const end = getPosition(token, false)
-  return {
-    value: parseFloat(token.value),
-    range: { start, end },
-  }
-}
-
-const consumeMissingValue: Consumer<Value> = context => {
-  const token = context.lexer.peak(false) as LexerToken
-  const range = {
-    start: getPosition(token),
-    end: getPosition(token),
-  }
-  context.errors.push(missingValue({ ...range, filename: context.filename }))
-  return {
-    value: MISSING_VALUE,
-    range,
+    range: { start, end: positionAtEnd(firstToken) },
   }
 }
 
 const consumeArray = (context: ParseContext, idPrefix?: ElemID): ConsumerReturnType<Value[]> => {
-  const start = getPosition(context.lexer.next())
+  const start = positionAtStart(context.lexer.next())
   const arr = consumeArrayItems(context, TOKEN_TYPES.ARR_CLOSE, idPrefix)
-  const end = getPosition(context.lexer.next(), false)
+  const end = positionAtEnd(context.lexer.next())
   return {
     value: arr,
     range: { start, end },
@@ -270,7 +308,7 @@ const consumeArray = (context: ParseContext, idPrefix?: ElemID): ConsumerReturnT
 
 const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturnType<Values> => {
   const obj: Values = {}
-  const start = getPosition(context.lexer.next())
+  const start = positionAtStart(context.lexer.next())
 
   const consumeObjectItem = (): void => {
     const tokens = consumeWords(context)
@@ -281,7 +319,7 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
     }
     const key = tokens.value[0]
     const attrId = idPrefix?.createNestedID(key)
-    const eq = context.lexer.peak()
+    const eq = context.lexer.peek()
     if (eq?.type !== TOKEN_TYPES.EQUAL) {
       context.errors.push(missingEqualMark({
         start: tokens.range.end,
@@ -304,23 +342,27 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
     if (attrId) {
       registerRange(context, attrId, { start: tokens.range.start, end: consumedValue.range.end })
     }
-    if (context.lexer.peak(false)?.type !== TOKEN_TYPES.NEWLINE
-        && context.lexer.peak(false)?.type !== TOKEN_TYPES.CCURLY) {
-      const nonNewlineToken = context.lexer.peak(false) as LexerToken
+    if (context.lexer.peek(false)?.type !== TOKEN_TYPES.NEWLINE
+        && context.lexer.peek(false)?.type !== TOKEN_TYPES.CCURLY) {
+      const nonNewlineToken = context.lexer.peek(false) as LexerToken
+      if (!nonNewlineToken) {
+        // If we don't have another token we will use next to trigger the EOF logic
+        lexer.next()
+      }
       context.errors.push(missingNewline({
-        start: getPosition(nonNewlineToken),
-        end: getPosition(nonNewlineToken),
+        start: positionAtStart(nonNewlineToken),
+        end: positionAtStart(nonNewlineToken),
         filename: context.filename,
       }))
       context.lexer.recover([TOKEN_TYPES.NEWLINE, TOKEN_TYPES.CCURLY])
     }
   }
 
-  while (context.lexer.peak() && context.lexer.peak()?.type !== TOKEN_TYPES.CCURLY) {
+  while (context.lexer.peek() && context.lexer.peek()?.type !== TOKEN_TYPES.CCURLY) {
     consumeObjectItem()
   }
 
-  const end = getPosition(context.lexer.next(), false)
+  const end = positionAtEnd(context.lexer.next())
   return {
     value: obj,
     range: { start, end },
@@ -334,7 +376,7 @@ export const consumeValue = (
 ): ConsumerReturnType<Value> => {
   // We force the value to be in the same line if the seperator is a newline by
   // ignoring newlines if the seperator is not a new line...
-  switch (context.lexer.peak(valueSeperator !== TOKEN_TYPES.NEWLINE)?.type) {
+  switch (context.lexer.peek(valueSeperator !== TOKEN_TYPES.NEWLINE)?.type) {
     case TOKEN_TYPES.OCURLY:
       return consumeObject(context, idPrefix)
     case TOKEN_TYPES.ARR_OPEN:

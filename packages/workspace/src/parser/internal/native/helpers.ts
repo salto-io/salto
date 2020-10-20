@@ -20,20 +20,19 @@ import { SourcePos, IllegalReference, SourceRange } from '../types'
 import { ParseContext } from './types'
 import { Keywords } from '../../language'
 
-export const getPosition = (token: LexerToken, startOfToken = true): SourcePos => {
-  const startPos = {
-    col: token.col,
-    line: token.line,
-    byte: token.offset,
-  }
-  return startOfToken ? startPos : {
-    byte: token.offset + token.text.length,
-    line: token.line + token.lineBreaks,
-    col: token.lineBreaks > 0
-      ? token.text.slice(token.text.lastIndexOf('\n')).length
-      : token.col + token.text.length,
-  }
-}
+export const positionAtStart = (token: LexerToken): SourcePos => ({
+  col: token.col,
+  line: token.line,
+  byte: token.offset,
+})
+
+export const positionAtEnd = (token: LexerToken): SourcePos => ({
+  byte: token.offset + token.text.length,
+  line: token.line + token.lineBreaks,
+  col: token.lineBreaks > 0
+    ? token.text.slice(token.text.lastIndexOf('\n')).length
+    : token.col + token.text.length,
+})
 
 export const parseElemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
@@ -103,7 +102,7 @@ export const primitiveType = (typeName: string): PrimitiveTypes | undefined => {
   if (typeName === Keywords.TYPE_NUMBER) {
     return PrimitiveTypes.NUMBER
   }
-  if (typeName === Keywords.TYPE_UNKOWN) {
+  if (typeName === Keywords.TYPE_UNKNOWN) {
     return PrimitiveTypes.UNKNOWN
   }
   if (typeName === Keywords.TYPE_BOOL) {

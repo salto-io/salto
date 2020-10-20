@@ -17,11 +17,13 @@ import * as moo from 'moo'
 
 export const WILDCARD = '****dynamic****'
 
+export const TRUE = 'true'
+export const FALSE = 'false'
 export const TOKEN_TYPES = {
   WORD: 'word',
   OCURLY: 'oCurly',
   CCURLY: 'cCurly',
-  DOUBLE_QUOTES: '"',
+  DOUBLE_QUOTES: 'dq',
   WHITESPACE: 'whitespace',
   EQUAL: 'equal',
   NUMBER: 'number',
@@ -37,7 +39,7 @@ export const TOKEN_TYPES = {
   MULTILINE_START: 'mlstart',
   MULTILINE_END: 'mlend',
   COMMENT: 'comment',
-  INVALID: 'invalid syntax',
+  INVALID: 'invalid',
 }
 
 export const rules: Record<string, moo.Rules> = {
@@ -45,7 +47,7 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.MULTILINE_START]: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', push: 'string' },
     [TOKEN_TYPES.NUMBER]: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
-    [TOKEN_TYPES.BOOLEAN]: /true|false/,
+    [TOKEN_TYPES.BOOLEAN]: new RegExp(`${TRUE}|${FALSE}`),
     [TOKEN_TYPES.LEFT_PAREN]: '(',
     [TOKEN_TYPES.RIGHT_PAREN]: ')',
     [TOKEN_TYPES.ARR_OPEN]: '[',
@@ -81,7 +83,7 @@ export class NoSuchElementError extends Error {
 
 class InvalidLexerTokenError extends Error {
   constructor() {
-    super('All lexer token must have a type.')
+    super('All lexer tokens must have a type.')
   }
 }
 
@@ -97,10 +99,10 @@ const validateToken = (token?: moo.Token): token is LexerToken => {
   return true
 }
 
-class PeakableLexer {
+class PeekableLexer {
     private lexer: moo.Lexer
-    private peaked?: LexerToken
-    private peakedNoNewline?: LexerToken
+    private peeked?: LexerToken
+    private peekedNoNewline?: LexerToken
     constructor(src: string) {
       this.lexer = moo.states(rules)
       this.lexer.reset(src)
@@ -121,50 +123,50 @@ class PeakableLexer {
       return validateToken(token) ? token : undefined
     }
 
-    public peak(ignoreNewlines = true): LexerToken | undefined {
-      if (this.peaked === undefined) {
-        this.peaked = this.advance()
+    public peek(ignoreNewlines = true): LexerToken | undefined {
+      if (this.peeked === undefined) {
+        this.peeked = this.advance()
       }
       if (!ignoreNewlines) {
-        return this.peaked
+        return this.peeked
       }
-      if (this.peakedNoNewline === undefined) {
-        let token = this.peaked
+      if (this.peekedNoNewline === undefined) {
+        let token = this.peeked
         while (token && token.type === TOKEN_TYPES.NEWLINE) {
           token = this.advance()
         }
-        this.peakedNoNewline = token
+        this.peekedNoNewline = token
       }
 
-      return this.peakedNoNewline
+      return this.peekedNoNewline
     }
 
     public next(ignoreNewlines = true): LexerToken {
       if (!ignoreNewlines
-        && this.peaked?.type === TOKEN_TYPES.NEWLINE
-        && this.peakedNoNewline !== undefined) {
-        const t = this.peaked
-        this.peaked = this.peakedNoNewline
+        && this.peeked?.type === TOKEN_TYPES.NEWLINE
+        && this.peekedNoNewline !== undefined) {
+        const t = this.peeked
+        this.peeked = this.peekedNoNewline
         return t
       }
-      const token = this.peak(ignoreNewlines)
+      const token = this.peek(ignoreNewlines)
 
       if (!token) {
-        throw new NoSuchElementError(this.peaked)
+        throw new NoSuchElementError(this.peeked)
       }
-      this.peaked = undefined
-      this.peakedNoNewline = undefined
+      this.peeked = undefined
+      this.peekedNoNewline = undefined
       return token
     }
 
     public recover(stopTokens: string[]): void {
-      // This is handling a speciel case in which the recover char
+      // This is handling a special case in which the recover char
       // is not a new line. In such case, there is a chance that the
-      // char is already loaded to the peakNoNewLine attr, which means
+      // char is already loaded to the peekNoNewLine attr, which means
       // that the lexer has already advanced
-      while (!stopTokens.includes(this.peak(false)?.type || '')) {
+      while (!stopTokens.includes(this.peek(false)?.type || '')) {
         this.next(false)
       }
     }
 }
-export default PeakableLexer
+export default PeekableLexer

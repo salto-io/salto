@@ -129,9 +129,9 @@ const consumeInstanceElement = (
   // attributes (see spec)
   const annotations = _.pick(attrs, INSTANCE_ANNOTATIONS_ATTRS)
 
-  // Using unset instead of the more standart _.omit since we need to make sure
-  // attrs is muteable in order for the valuePromiseReplacers to have an effect
-  // (They will change the original. Invoking omit which will tigger a copy will
+  // Using unset instead of the more standard _.omit since we need to make sure
+  // attrs is mutable in order for the valuePromiseReplacers to have an effect
+  // (They will change the original. Invoking omit which will trigger a copy will
   // leave us with the promises.)
   INSTANCE_ANNOTATIONS_ATTRS.forEach(annoAttr => _.unset(attrs, annoAttr))
   instance.annotations = annotations

@@ -243,7 +243,6 @@ let functions: Functions
     describe('map type', () => {
       it('should have the correct inner type', () => {
         const mapType = elements.find(isMapType)
-        console.log(mapType)
         expect(mapType?.innerType.elemID).toEqual(new ElemID('salesforce', 'number'))
       })
     })

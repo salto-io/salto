@@ -65,7 +65,7 @@ export const parseBuffer = async (
     } catch (e) {
       // Catch the EOF error that is thrown by the lexer if the next function
       // is called after all of the token were processed. This error is thrown
-      // since it shoul interupt the flow of the code.
+      // since it should interrupt the flow of the code.
       if (e instanceof NoSuchElementError && e.lastValidToken) {
         const pos = positionAtStart(e.lastValidToken)
         context.errors.push(unexpectedEndOfFile({ start: pos, end: pos, filename }))

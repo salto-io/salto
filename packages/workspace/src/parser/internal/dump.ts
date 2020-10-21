@@ -21,7 +21,7 @@ import {
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { DumpedHclBlock, DumpedHclBody } from './types'
 import { isFunctionExpression } from './functions'
-import { rules } from './lexer'
+import { rules } from './nearly/lexer'
 
 const O_BLOCK = '{'
 const C_BLOCK = '}'

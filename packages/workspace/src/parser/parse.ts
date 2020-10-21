@@ -14,21 +14,21 @@
 * limitations under the License.
 */
 import {
-  Element, SaltoError, SaltoErrorSeverity,
+  Element, SaltoError,
 } from '@salto-io/adapter-api'
-import { flattenElementStr } from '@salto-io/adapter-utils'
 import {
   SourceRange as InternalSourceRange,
   HclParseError,
 } from './internal/types'
-import { parseBuffer, filterErrors, generateErrorContext, restoreErrorOrigRanges } from './internal/parse'
+import { parseBufferAndFixErrors } from './internal/nearly/parse'
 import {
   Functions,
 } from './functions'
 import { SourceMap } from './source_map'
+import { parseBuffer } from './internal/native/parse'
 
-export { parseElemID } from './internal/converter/elements'
-export { IllegalReference } from './internal/converter/values'
+export { parseElemID } from './internal/nearly/converter/elements'
+export { IllegalReference } from './internal/types'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -55,18 +55,7 @@ export const parse = async (
   functions: Functions = {},
 ): Promise<Required<ParseResult>> => {
   const srcString = naclFile.toString()
-  const [patchedSrc, elements, sourceMap, errors] = await parseBuffer(
-    srcString,
-    filename,
-    functions
-  )
-  const fixedErrors = filterErrors(errors, patchedSrc)
-    .map(error => generateErrorContext(srcString, error))
-    .map(error => restoreErrorOrigRanges(patchedSrc, error))
-    .map(error => ({ severity: 'Error' as SaltoErrorSeverity, ...error }))
-  return {
-    elements: elements.map(flattenElementStr),
-    sourceMap,
-    errors: fixedErrors,
-  }
+  return process.env.USE_NATIVE_PARSER
+    ? parseBuffer(srcString, filename, functions)
+    : parseBufferAndFixErrors(srcString, filename, functions)
 }

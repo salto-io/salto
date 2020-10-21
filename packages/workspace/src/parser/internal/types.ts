@@ -79,3 +79,7 @@ export interface SourceRange {
 export function isSourceRange(v: any): v is SourceRange {
   return v && typeof v.filename === 'string' && v.start && v.end
 }
+
+export class IllegalReference {
+  constructor(public ref: string, public message: string) {}
+}

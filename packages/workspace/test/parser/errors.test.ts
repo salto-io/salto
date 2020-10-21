@@ -1,0 +1,1053 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { parse, ParseResult } from '../../src/parser'
+import { IllegalReference } from '../../src/parser/internal/types'
+import { MISSING_VALUE } from '../../src/parser/internal/native/consumers/values'
+
+describe('parsing errors', () => {
+  beforeAll(() => {
+    process.env.USE_NATIVE_PARSER = '1'
+  })
+  describe('general element block structure', () => {
+    describe('no labels', () => {
+      const nacl = `
+      {
+        hes = "a real"
+      }
+
+      type nowhere.man {
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+
+      it('should raise an error', () => {
+        expect(res.errors).toHaveLength(2)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 7, col: 7, line: 2 },
+          end: { byte: 8, col: 8, line: 2 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].summary)
+          .toBe('Expected block labels')
+        expect(res.errors[0].message).toBe('Expected block labels, found { instead.')
+        expect(res.errors[1].summary)
+          .toBe('Ambigious block definition')
+      })
+
+      it('should continue parsing other blocks and ignore the labeless block', () => {
+        expect(res.elements).toHaveLength(1)
+        expect(res.elements[0]).toEqual(new ObjectType({ elemID: new ElemID('nowhere', 'man') }))
+      })
+    })
+  })
+  describe('primitive type definition errors', () => {
+    describe('invalid primitive type error', () => {
+      describe('with unknown primitive type', () => {
+        const nacl = `
+            type helter.skater is amazing {
+            }
+            `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should throw an error', () => {
+          expect(res.errors[0].subject).toEqual({
+            start: { byte: 13, col: 13, line: 2 },
+            end: { byte: 42, col: 42, line: 2 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message)
+            .toBe('Unknown primitive type amazing.')
+          expect(res.errors[0].summary).toBe('unknown primitive type')
+        })
+        it('should use unknown type as the primitive type primitive', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as PrimitiveType
+          expect(element.primitive).toBe(PrimitiveTypes.UNKNOWN)
+        })
+      })
+      describe('with a missing primitive type', () => {
+        const nacl = `
+          type helter.skater is {
+          }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should create an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].message)
+            .toBe('Expected a primitive type definition.')
+          expect(res.errors[0].summary).toBe('unknown primitive type')
+          expect(res.elements).toHaveLength(1)
+        })
+        it('should use unknown as the primitvie type primitive', () => {
+          const element = res.elements[0] as PrimitiveType
+          expect(element.primitive).toBe(PrimitiveTypes.UNKNOWN)
+        })
+      })
+    })
+    describe('invalid inheritance operator', () => {
+      describe('with missing inheritance operator', () => {
+        const nacl = `
+        type helter.skater tanananana {
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should create errors', () => {
+          expect(res.errors).toHaveLength(2)
+          expect(res.errors[0].subject).toEqual({
+            start: { byte: 9, col: 9, line: 2 },
+            end: { byte: 38, col: 38, line: 2 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message)
+            .toBe('Expected inheritance operator \'is\' found tanananana instead')
+          expect(res.errors[0].summary).toBe('invalid type definition')
+          expect(res.errors[1].subject).toEqual({
+            start: { byte: 9, col: 9, line: 2 },
+            end: { byte: 38, col: 38, line: 2 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[1].message)
+            .toBe('Expected a primitive type definition.')
+          expect(res.errors[1].summary).toBe('unknown primitive type')
+          expect(res.elements).toHaveLength(1)
+        })
+        it('should use unknown as the primitive type', () => {
+          const element = res.elements[0] as PrimitiveType
+          expect(element.primitive).toBe(PrimitiveTypes.UNKNOWN)
+        })
+      })
+      describe('with invalid inheritance operator', () => {
+        const nacl = `
+          type helter.skater tanananana string {
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should create an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { byte: 11, col: 11, line: 2 },
+            end: { byte: 47, col: 47, line: 2 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message)
+            .toBe('Expected inheritance operator \'is\' found tanananana instead')
+          expect(res.errors[0].summary).toBe('invalid type definition')
+        })
+        it('should still create the element', () => {
+          const element = res.elements[0] as PrimitiveType
+          expect(element.primitive).toBe(PrimitiveTypes.STRING)
+        })
+      })
+    })
+    describe('invalid primitive type block structure', () => {
+      describe('when fields are defined in the primitive type', () => {
+        const nacl = `
+          type helter.skater is string {
+              string tanananananana {
+
+              }
+          }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should create an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { byte: 40, col: 40, line: 2 },
+            end: { byte: 108, col: 12, line: 6 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message)
+            .toBe('Unexpected field definition(s) in a primitive type. Expected no fields.')
+          expect(res.errors[0].summary).toBe('invalid fields in primitive type')
+        })
+        it('should create the element without the fields', () => {
+          const element = res.elements[0] as PrimitiveType
+          expect(element.primitive).toBe(PrimitiveTypes.STRING)
+          expect(element.elemID.getFullName()).toEqual('helter.skater')
+        })
+      })
+    })
+  })
+  describe('instance element definition errors', () => {
+    describe('invalid instance element block structure', () => {
+      const nacl = `
+        rocky.racoon checked {
+          into.his room {
+
+          }
+          only = "to find"
+        }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should raise an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 30, col: 30, line: 2 },
+          end: { byte: 107, col: 10, line: 7 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message)
+          .toBe('Unexpected field or annotation type definition(s) in a primitive type. Expected only values.')
+        expect(res.errors[0].summary).toBe('invalid blocks in an instance')
+      })
+      it('should parse the rest of the instance correctly', () => {
+        expect(res.elements).toHaveLength(1)
+        const inst = res.elements[0] as InstanceElement
+        expect(inst.value).toEqual({ only: 'to find' })
+      })
+    })
+  })
+  describe('variable block definition errors', () => {
+    describe('when there is no equal token', () => {
+      describe('when there is only var name defined', () => {
+        const nacl = `
+          vars {
+            lucy = "in the"
+            sky
+          }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 4, col: 13, byte: 58 },
+            end: { line: 4, col: 16, byte: 61 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message).toBe('Invalid variable definition')
+          expect(res.errors[0].summary).toBe('Invalid variable definition')
+        })
+        it('should recover and parse other vars', () => {
+          expect(res.elements).toHaveLength(1)
+          expect(res.elements[0].elemID).toEqual(new ElemID('var', 'lucy'))
+        })
+      })
+      describe('when there are multiple tokens in the var def', () => {
+        const nacl = `
+          vars {
+            lucy in = "the"
+            sky = "with diamonds"
+          }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 13, byte: 30 },
+            end: { line: 3, col: 20, byte: 37 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message).toBe('Invalid variable definition')
+          expect(res.errors[0].summary).toBe('Invalid variable definition')
+        })
+        it('should recover and parse other vars', () => {
+          expect(res.elements).toHaveLength(1)
+          expect(res.elements[0].elemID).toEqual(new ElemID('var', 'sky'))
+        })
+      })
+    })
+    describe('when there is no var name', () => {
+      const nacl = `
+      vars {
+        = "the"
+        sky = "with diamonds"
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should show an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 9, byte: 22 },
+          end: { line: 3, col: 9, byte: 22 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Invalid variable definition')
+        expect(res.errors[0].summary).toBe('Invalid variable definition')
+      })
+      it('should recover and parse other vars', () => {
+        expect(res.elements).toHaveLength(1)
+        expect(res.elements[0].elemID).toEqual(new ElemID('var', 'sky'))
+      })
+    })
+    describe('when a block is defined instead of an attribute', () => {
+      const nacl = `
+      vars {
+        lucy.in the {
+
+        }
+        sky = "with diamonds"
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should show an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 9, byte: 22 },
+          end: { line: 3, col: 20, byte: 33 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Invalid variable definition')
+        expect(res.errors[0].summary).toBe('Invalid variable definition')
+      })
+      it('should recover and parse other vars', () => {
+        expect(res.elements).toHaveLength(1)
+        expect(res.elements[0].elemID).toEqual(new ElemID('var', 'sky'))
+      })
+    })
+    describe('when there are consecutive invalid defs', () => {
+      const nacl = `
+      vars {
+        lucy.in the {
+
+        }
+        sky with = "diamonds"
+        ahhhhh = "ahhhhh"
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should show an error', () => {
+        expect(res.errors).toHaveLength(2)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 9, byte: 22 },
+          end: { line: 3, col: 20, byte: 33 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].summary).toBe('Invalid variable definition')
+        expect(res.errors[1].message).toBe('Invalid variable definition')
+      })
+      it('should recover and parse other items', () => {
+        expect(res.elements).toHaveLength(1)
+        expect(res.elements[0].elemID).toEqual(new ElemID('var', 'ahhhhh'))
+      })
+    })
+  })
+  describe('block body definition errors', () => {
+    describe('when there are nested fields', () => {
+      const nacl = `
+      type baby.you {
+        can.drive my {
+          car.yes imGonna {
+
+          }
+        }
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should create an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 44, col: 22, line: 3 },
+          end: { byte: 96, col: 10, line: 7 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Invalid nested block definition')
+        expect(res.errors[0].summary).toBe('Invalid nested block definition')
+      })
+      it('should still create the element properly', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.elemID.getFullName()).toEqual('baby.you')
+        expect(element.fields.my).toBeDefined()
+      })
+    })
+    describe('when there are attributes in the annotation types block', () => {
+      const nacl = `
+      type baby.you {
+          annotations {
+            can.drive my {
+            }
+            car = "Yes"
+          }
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should create an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 45, col: 23, line: 3 },
+          end: { byte: 123, col: 12, line: 7 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')
+        expect(res.errors[0].summary).toBe('Invalid annotations block')
+      })
+      it('should still create the element properly', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.elemID.getFullName()).toEqual('baby.you')
+        expect(Object.keys(element.annotationTypes)).toEqual(['my'])
+      })
+    })
+    describe('when there are duplicated annotation type blocks', () => {
+      const nacl = `
+      type baby.you {
+          annotations {
+            can.drive my {
+            }
+          }
+          annotations {
+            car.yes Im {
+            }
+          }
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should create an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 122, col: 23, line: 7 },
+          end: { byte: 174, col: 12, line: 10 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message)
+          .toBe('Invalid annotations block, only one annotation block can be defined in a fragment.')
+        expect(res.errors[0].summary).toBe('Invalid annotations block')
+      })
+      it('should use annotation for the all defined annotation types block', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.elemID.getFullName()).toEqual('baby.you')
+        expect(Object.keys(element.annotationTypes)).toEqual(['my'])
+      })
+    })
+    describe('when there are multiple definition of a field', () => {
+      const nacl = `
+      type baby.you {
+        can.drive mycar {
+
+        }
+        yes.im mycar {
+
+        }
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should create an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 81, col: 22, line: 6 },
+          end: { byte: 93, col: 10, line: 8 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message)
+          .toBe('Duplicated field name mycar, a field can only be defined once in a source fragment.')
+        expect(res.errors[0].summary).toBe('Duplicated field name')
+      })
+      it('should use the first definition of the field', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.elemID.getFullName()).toEqual('baby.you')
+        expect(element.fields.mycar.type.elemID.getFullName()).toEqual('can.drive')
+      })
+    })
+    describe('has a duplicated attribute', () => {
+      const nacl = `
+      type baby.you {
+        candrive = "my car"
+        candrive = "an automobile owned ny myself"
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should create an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 59, col: 9, line: 4 },
+          end: { byte: 101, col: 51, line: 4 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Duplicated attribute candrive')
+        expect(res.errors[0].summary).toBe('Duplicated attribute')
+      })
+      it('should use the first definition of the field', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.elemID.getFullName()).toEqual('baby.you')
+        expect(element.annotations.candrive).toEqual('my car')
+      })
+    })
+    describe('invalid item definition', () => {
+      describe('when a single label is used, and its not "annotations"', () => {
+        const nacl = `
+        type let.me {
+          take {
+
+          }
+          take = "you"
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 11, byte: 33 },
+            end: { line: 3, col: 15, byte: 37 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].summary).toBe('Invalid block item')
+          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+        })
+        it('should recover and parse other items', () => {
+          expect(res.elements).toHaveLength(1)
+          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
+          expect(res.elements[0].annotations.take).toEqual('you')
+        })
+      })
+      describe('when more than two labels are used to define a block', () => {
+        const nacl = `
+        type let.me {
+          take you down {
+
+          }
+          take = "you"
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 11, byte: 33 },
+            end: { line: 3, col: 24, byte: 46 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].summary).toBe('Invalid block item')
+          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+        })
+        it('should recover and parse other items', () => {
+          expect(res.elements).toHaveLength(1)
+          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
+          expect(res.elements[0].annotations.take).toEqual('you')
+        })
+      })
+      describe('when an attribute is defined without a key', () => {
+        const nacl = `
+        type let.me {
+          = {
+            let = "me"
+          }
+          take = "you"
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 11, byte: 33 },
+            end: { line: 3, col: 11, byte: 33 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].summary).toBe('Invalid block item')
+          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+        })
+        it('should recover and parse other items', () => {
+          expect(res.elements).toHaveLength(1)
+          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
+          expect(res.elements[0].annotations.take).toEqual('you')
+        })
+      })
+      describe('only 1 label (can be both attr or field def) are used', () => {
+        const nacl = `
+        type let.me {
+          take
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 11, byte: 33 },
+            end: { line: 3, col: 15, byte: 37 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].summary).toBe('Invalid block item')
+          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+        })
+        it('should recover and parse the block', () => {
+          expect(res.elements).toHaveLength(1)
+          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
+        })
+      })
+      describe('more then 1 label is used', () => {
+        const nacl = `
+        type let.me {
+          take you
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 11, byte: 33 },
+            end: { line: 3, col: 19, byte: 41 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].summary).toBe('Invalid block item')
+          expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
+        })
+        it('should recover and parse the block', () => {
+          expect(res.elements).toHaveLength(1)
+          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
+        })
+      })
+    })
+  })
+  describe('value definition errors', () => {
+    describe('object definition errors', () => {
+      describe('only key', () => {
+        const nacl = `
+        type penny.lane {
+          is = {
+            in = "my ears"
+            and
+          }
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 5, col: 16, byte: 86 },
+            end: { line: 5, col: 16, byte: 86 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message).toBe('Invalid attribute definition, expected an equal sign')
+          expect(res.errors[0].summary).toBe('Invalid attribute definition')
+        })
+        it('should still parse the element, and create the object value without that key', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
+          expect(element.annotations.is).toEqual({ in: 'my ears' })
+        })
+      })
+      describe('key with more then one label', () => {
+        const nacl = `
+        type penny.lane {
+          is = {
+            in = "my ears"
+            and in my
+          }
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 5, col: 13, byte: 83 },
+            end: { line: 5, col: 22, byte: 92 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message).toBe('Invalid attribute key')
+          expect(res.errors[0].summary).toBe('Invalid attribute key')
+        })
+        it('should still parse the element, and create the object value without that key', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
+          expect(element.annotations.is).toEqual({ in: 'my ears' })
+        })
+      })
+      describe('duplicated attribute key', () => {
+        const nacl = `
+        type penny.lane {
+          is = {
+            in = "my ears"
+            in = "my eyes"
+            there = "beneath the blue suburban sky"
+          }
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 5, col: 13, byte: 83 },
+            end: { line: 5, col: 15, byte: 85 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].message).toBe('Duplicated attribute in')
+          expect(res.errors[0].summary).toBe('Duplicated attribute')
+        })
+        it('should still parse the element and use the first time the key was defined', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
+          expect(element.annotations.is).toEqual({ there: 'beneath the blue suburban sky', in: 'my ears' })
+        })
+      })
+      describe('missing value', () => {
+        const nacl = `
+        type penny.lane {
+          is = {
+            in = "my ears"
+            and =
+            there = "beneath the blue suburban sky"
+          }
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 5, col: 18, byte: 88 },
+            end: { line: 5, col: 18, byte: 88 },
+            filename: 'file.nacl',
+          })
+
+          expect(res.errors[0].message).toBe('Expected a value')
+          expect(res.errors[0].summary).toBe('Expected a value')
+        })
+        it('parse the missing value as dynanmic value', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
+          expect(element.annotations.is).toEqual({
+            there: 'beneath the blue suburban sky',
+            in: 'my ears',
+            and: MISSING_VALUE,
+          })
+        })
+      })
+      describe('missing new line between values', () => {
+        const nacl = `
+        type penny.lane {
+          is = {
+            in = "my ears" and = "in my eyes"
+            there = "beneath the blue suburban sky"
+          }
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 4, col: 28, byte: 71 },
+            end: { line: 4, col: 28, byte: 71 },
+            filename: 'file.nacl',
+          })
+
+          expect(res.errors[0].message).toBe('Expected a new line')
+          expect(res.errors[0].summary).toBe('Expected a new line')
+        })
+        it('parse the rest of the attributes', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
+          expect(element.annotations.is).toEqual({
+            there: 'beneath the blue suburban sky',
+            in: 'my ears',
+          })
+        })
+      })
+    })
+    describe('array definition errors', () => {
+      describe('when there is a missing comman', () => {
+        const nacl = `
+        type hey.jude {
+          dont = ["dont", "make" "it", "bad"]
+          take = "a sad song"
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 34, byte: 58 },
+            end: { line: 3, col: 35, byte: 59 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].summary).toBe('Expected a comma')
+          expect(res.errors[0].message).toBe('Expected a comma or an array termination')
+        })
+        it('should recover and parse other items', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.annotations.take).toEqual('a sad song')
+        })
+        it('should parse the rest of the array item and replace the faulty item with missing value', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.annotations.dont).toEqual(['dont', 'make', 'bad'])
+        })
+      })
+      describe('when there is a missing value between commas', () => {
+        const nacl = `
+        type hey.jude {
+          dont = ["dont", "make", , "it", "bad"]
+          take = "a sad song"
+        }
+        `
+        let res: ParseResult
+        beforeAll(async () => {
+          res = await parse(Buffer.from(nacl), 'file.nacl', {})
+        })
+        it('should show an error', () => {
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors[0].subject).toEqual({
+            start: { line: 3, col: 35, byte: 59 },
+            end: { line: 3, col: 35, byte: 59 },
+            filename: 'file.nacl',
+          })
+          expect(res.errors[0].summary).toBe('Expected a value')
+          expect(res.errors[0].message).toBe('Expected a value')
+        })
+        it('should recover and parse other items', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.annotations.take).toEqual('a sad song')
+        })
+        it('should parse all array items and add a missing value', () => {
+          expect(res.elements).toHaveLength(1)
+          const element = res.elements[0] as ObjectType
+          expect(element.annotations.dont).toEqual(['dont', 'make', MISSING_VALUE, 'it', 'bad'])
+        })
+      })
+    })
+  })
+  describe('string definition errors', () => {
+    describe('when the string is not terminated', () => {
+      const nacl = `
+      type nowhere.man {
+        sitting = "in his nowhere land
+        making = "all his nowhere plans"
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should throw an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 19, byte: 44 },
+          end: { line: 3, col: 39, byte: 64 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Unterminated string literal')
+        expect(res.errors[0].summary).toBe('Unterminated string literal')
+      })
+      it('should parse items after the unterminated array', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.annotations.making).toEqual('all his nowhere plans')
+      })
+    })
+    describe('when string templates are used in a non value string', () => {
+      const nacl = `
+      type "nowhere.\${man}" {
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should throw an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 2, col: 21, byte: 21 },
+          end: { line: 2, col: 27, byte: 27 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Invalid string template expression')
+        expect(res.errors[0].summary).toBe('Invalid string template expression')
+      })
+      it('should treat the template as a regular part of the string', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        // eslint-disable-next-line no-template-curly-in-string
+        expect(element.elemID.getFullName()).toEqual('nowhere.${man}')
+      })
+    })
+  })
+  describe('function definition errors', () => {
+    describe('unknown function name', () => {
+      const nacl = `
+      type hello.do {
+        you = wantToKnow("a", "secret")
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should throw an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 15, byte: 37 },
+          end: { line: 3, col: 25, byte: 47 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Unknown function wantToKnow')
+        expect(res.errors[0].summary).toBe('Unknown function')
+      })
+    })
+    describe('missing comma between params', () => {
+      const nacl = `
+      type hello.do {
+        you = wantToKnow("a" "secret")
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {
+          wantToKnow: {
+            dump: jest.fn(),
+            parse: jest.fn(),
+            isSerializedAsFunction: () => true,
+          },
+        })
+      })
+      it('should throw an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 30, byte: 52 },
+          end: { line: 3, col: 31, byte: 53 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].summary).toBe('Expected a comma')
+        expect(res.errors[0].message).toBe('Expected a comma or an array termination')
+      })
+    })
+  })
+  describe('illegal references', () => {
+    describe('illegal reference in a value', () => {
+      const nacl = `
+      type here.come {
+        the = sun.it.is.all.right
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should not create errors', () => {
+        expect(res.errors).toHaveLength(0)
+      })
+      it('should parse the reference as an invalid reference', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.annotations.the).toBeInstanceOf(IllegalReference)
+      })
+    })
+  })
+  describe('unexpected end of file', () => {
+    const nacl = `
+    type I.am {
+      the = "eggman"
+    }
+    type kuku {
+      catchu = {
+    }
+    `
+    let res: ParseResult
+    beforeAll(async () => {
+      res = await parse(Buffer.from(nacl), 'warlus.nacl', {})
+    })
+
+    it('should throw an error', () => {
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors[0].message).toEqual('Unexpected end of file')
+      expect(res.errors[0].summary).toEqual('Unexpected end of file')
+    })
+    it('should return a result of all of the parsed elements before the unfinished element', () => {
+      expect(res.elements).toHaveLength(1)
+      expect(res.elements[0].elemID.getFullName()).toEqual('I.am')
+    })
+  })
+})

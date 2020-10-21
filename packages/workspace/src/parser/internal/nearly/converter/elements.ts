@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { Element, INSTANCE_ANNOTATIONS, Variable, ElemID, PrimitiveTypes, TypeMap, Values, TypeElement, ListType, ObjectType, Field, PrimitiveType, InstanceElement, Value, isObjectType, MapType, ContainerType } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { SourceMap } from '../../source_map'
-import { Keywords } from '../../language'
+import { SourceMap } from '../../../source_map'
+import { Keywords } from '../../../language'
 import { InternalParseRes, AttrData, TopLevelElementData, FieldData, ElementItem, LexerToken, NearleyError } from './types'
 import { createSourceRange } from './context'
 import { convertAttributes } from './values'
@@ -59,7 +59,7 @@ const primitiveType = (typeName: string): PrimitiveTypes => {
   if (typeName === Keywords.TYPE_NUMBER) {
     return PrimitiveTypes.NUMBER
   }
-  if (typeName === Keywords.TYPE_UNKOWN) {
+  if (typeName === Keywords.TYPE_UNKNOWN) {
     return PrimitiveTypes.UNKNOWN
   }
   return PrimitiveTypes.BOOLEAN

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { Element, Value, Values, TypeMap } from '@salto-io/adapter-api'
-import { SourceMap } from '../../source_map'
-import { SourceRange } from '../types'
+import { SourceMap } from '../../../source_map'
+import { SourceRange } from '../../types'
 
 export type Token = LexerToken | InternalParseRes<Value>
 

@@ -17,16 +17,17 @@ import * as nearley from 'nearley'
 import _ from 'lodash'
 
 import { logger } from '@salto-io/logging'
-import { Element, SaltoError } from '@salto-io/adapter-api'
+import { Element, SaltoError, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { HclParseError, SourcePos, SourceRange } from './types'
+import { flattenElementStr } from '@salto-io/adapter-utils'
+import { HclParseError, SourcePos, SourceRange } from '../types'
 import { WILDCARD } from './lexer'
-import { SourceMap } from '../source_map'
-import { Functions } from '../functions'
+import { SourceMap } from '../../source_map'
+import { Functions } from '../../functions'
 import { TopLevelElementData, NearleyError } from './converter/types'
 import { startParse, setErrorRecoveryMode, replaceValuePromises } from './converter/context'
 // @ts-ignore
-import grammar from '../../generated/hcl'
+import grammar from '../../../generated/hcl'
 
 const log = logger(module)
 const SURROUNDING_LINE_CONTEXT = 2
@@ -183,7 +184,7 @@ const convertMain = (
   return { elements, sourceMap: mergedSourceMap }
 }
 
-export const parseBuffer = async (
+const parseBuffer = async (
   src: string,
   filename: string,
   functions: Functions,
@@ -296,4 +297,25 @@ export const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError)
     error.subject.end, amountWildcardsBefore
   )
   return error
+}
+
+export const parseBufferAndFixErrors = async (
+  src: string,
+  filename: string,
+  functions: Functions,
+): Promise<Required<ParseResult>> => {
+  const [patchedSrc, elements, sourceMap, errors] = await parseBuffer(
+    src,
+    filename,
+    functions
+  )
+  const fixedErrors = filterErrors(errors, patchedSrc)
+    .map(error => generateErrorContext(src, error))
+    .map(error => restoreErrorOrigRanges(patchedSrc, error))
+    .map(error => ({ severity: 'Error' as SaltoErrorSeverity, ...error }))
+  return {
+    elements: elements.map(flattenElementStr),
+    sourceMap,
+    errors: fixedErrors,
+  }
 }

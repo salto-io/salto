@@ -197,7 +197,7 @@ let functions: Functions
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(19)
+        expect(elements.length).toBe(20)
         expect(genericTypes.length).toBe(2)
       })
     })

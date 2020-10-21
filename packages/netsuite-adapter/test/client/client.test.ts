@@ -20,10 +20,11 @@ import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, {
   ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomTypeInfo,
   fileCabinetTopLevelFolders, FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX,
-  FolderCustomizationInfo, SDF_PATH_SEPARATOR, TemplateCustomTypeInfo,
+  FolderCustomizationInfo, TemplateCustomTypeInfo,
 } from '../../src/client/client'
 import {
-  CUSTOM_RECORD_TYPE, ENTRY_FORM, ROLE, SAVED_SEARCH, TRANSACTION_FORM, WORKFLOW,
+  CUSTOM_RECORD_TYPE, ENTRY_FORM, FILE_CABINET_PATH_SEPARATOR, ROLE, SAVED_SEARCH, TRANSACTION_FORM,
+  WORKFLOW,
 } from '../../src/constants'
 
 
@@ -414,7 +415,7 @@ describe('netsuite client', () => {
       ]
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
@@ -477,7 +478,7 @@ describe('netsuite client', () => {
           MOCK_FILE_PATH,
         ]
         if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
@@ -544,7 +545,7 @@ describe('netsuite client', () => {
           MOCK_FILE_PATH,
         ]
         if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
@@ -573,7 +574,7 @@ describe('netsuite client', () => {
           MOCK_FILE_PATH,
         ]
         if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,

@@ -502,7 +502,7 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[5].unique).toBe(true)
         // Location
         expect(object.fields[6].fullName).toBe('location__c')
-        expect(object.fields[6].type).toBe('Location')
+        expect(object.fields[6].type).toBe('Geolocation')
         expect(object.fields[6].label).toBe('Location description label')
         expect(object.fields[6].displayLocationInDecimal).toBe(true)
         expect(object.fields[6].scale).toBe(2)

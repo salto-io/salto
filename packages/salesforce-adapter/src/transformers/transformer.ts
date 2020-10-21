@@ -134,7 +134,8 @@ const addPicklistAnnotations = (
 
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
-const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
+// We cannot use "Location" as the Salto ID here because there is a standard object called Location
+const geoLocationElemID = new ElemID(SALESFORCE, 'Geolocation')
 
 const restrictedNumberTypeDefinitions = {
   TextLength: createRestriction({ min: 1, max: 255, enforce_value: false }),
@@ -680,7 +681,7 @@ export class Types {
     return type
   }
 
-  private static createObjectType(name: string, customObject = true, isSettings = false,
+  static createObjectType(name: string, customObject = true, isSettings = false,
     serviceIds?: ServiceIds): ObjectType {
     const elemId = this.getElemId(name, customObject, serviceIds)
     return new ObjectType({
@@ -903,7 +904,7 @@ export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeFie
   knownTypes: Map<string, TypeElement>, additionalAnnotations?: Values): Field => {
   const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
-    : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
+    : knownTypes.get(field.soapType) ?? Types.getKnownType(field.soapType, false)
   // mark required as false until SALTO-45 will be resolved
   const annotations: Values = {
     [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1307,7 +1308,7 @@ export const createMetadataTypeElements = async ({
     return []
   }
 
-  const element = Types.get(name, false, isSettings) as MetadataObjectType
+  const element = Types.createObjectType(name, false, isSettings) as MetadataObjectType
   knownTypes.set(name, element)
   const isTopLevelType = baseTypeNames.has(name) || annotations.folderContentType !== undefined
   element.annotationTypes = _.clone(metadataAnnotationTypes)
@@ -1341,7 +1342,7 @@ export const createMetadataTypeElements = async ({
   const shouldEnrichFieldValue = (field: ValueTypeField): boolean => {
     const isKnownType = (): boolean =>
       knownTypes.has(field.soapType) || baseTypeNames.has(field.soapType)
-      || isPrimitiveType(Types.get(field.soapType, false))
+      || isPrimitiveType(Types.getKnownType(field.soapType, false))
 
     const startsWithUppercase = (): boolean =>
       // covers types like base64Binary, anyType etc.
@@ -1382,7 +1383,7 @@ export const createMetadataTypeElements = async ({
   // Sometimes, we get known types without fields for some reason, in this case it is not an enum
   enrichedFields
     .filter(field => _.isEmpty(field.fields))
-    .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
+    .filter(field => !isPrimitiveType(Types.getKnownType(field.soapType, false)))
     .filter(field => !knownTypes.has(field.soapType))
     .filter(field => field.soapType !== name)
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))

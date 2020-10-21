@@ -124,7 +124,7 @@ const getFieldName = (annotations: Values): string =>
     : annotations[INSTANCE_TYPE_FIELD])
 
 const getFieldType = (type: string): TypeElement =>
-  (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
+  (_.isUndefined(type) ? BuiltinTypes.STRING : Types.getKnownType(type))
 
 const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
   instance: InstanceElement, custom: boolean): Record<string, TypeElement> => {
@@ -369,7 +369,7 @@ const createObjectType = ({
     [API_NAME]: name,
     [METADATA_TYPE]: CUSTOM_OBJECT,
   }
-  const object = Types.get(name, true, false, serviceIds) as ObjectType
+  const object = Types.createObjectType(name, true, false, serviceIds)
   addApiName(object, name)
   addMetadataType(object)
   addLabel(object, label)

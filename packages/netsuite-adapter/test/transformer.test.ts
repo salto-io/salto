@@ -109,7 +109,7 @@ describe('Transformer', () => {
       + '  <unknownfield>unknownVal</unknownfield>\n'
       + '</entitycustomfield>\n',
     WITH_HTML_CHARS: '<entitycustomfield scriptid="custentity_my_script_id">\n'
-    + '  <label>Golf &amp; Co</label>\n'
+    + '  <label>Golf &#x26; Co&#x2019;Co element&#x200B;Name</label>\n'
     + '</entitycustomfield>\n',
   }
 
@@ -231,7 +231,8 @@ describe('Transformer', () => {
 
     it('should decode html chars', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_HTML_CHARS)
-      expect(result.value.label).toEqual('Golf & Co')
+      // There is ZeroWidthSpace char between element and Name
+      expect(result.value.label).toEqual('Golf & Co’Co element​Name')
     })
 
     it('should add content value with fileContent as static file', () => {
@@ -508,18 +509,12 @@ describe('Transformer', () => {
     })
 
     it('should encode to html chars', () => {
-      instance.value.label = 'Golf & Co'
+      instance.value.label = 'Golf & Co’Co element​Name' // There is ZeroWidthSpace char between element and Name
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_HTML_CHARS))
-    })
-
-    it('should omit ZeroWidthSpace chars', () => {
-      instance.value.label = 'element​Name' // There is ZeroWidthSpace char between element and Name
-      expect(instance.value.label).toHaveLength('elementName'.length + 1)
-      const customizationInfo = toCustomizationInfo(instance)
-      const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_STRING_FIELD))
+      // We use here === instead of expect.toEqual() since jest treats html encoding as equal to
+      // the decoded value
+      expect(xmlContent === removeLineBreaks(XML_TEMPLATES.WITH_HTML_CHARS)).toBeTruthy()
     })
 
     it('should transform ordered values for forms', () => {

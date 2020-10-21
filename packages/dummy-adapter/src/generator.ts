@@ -144,8 +144,9 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   const primitiveByRank: PrimitiveType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
   const objByRank: ObjectType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
   objByRank[0][0] = defaultObj
+  const datFilePath = process.env.SALTO_DUMMY_ADAPTER_DAT_FILE_PATH || `${__dirname}/data/strings.dat`
   const stringLinesOpts = JSON.parse(
-    Buffer.from(fs.readFileSync(`${__dirname}/data/strings.dat`, 'utf8'), 'base64').toString()
+    Buffer.from(fs.readFileSync(datFilePath, 'utf8'), 'base64').toString()
   )
   const staticFileIds: Set<string> = new Set()
   const referenceFields: Set<string> = new Set()

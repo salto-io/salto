@@ -191,7 +191,7 @@ let functions: Functions
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
       elements = parsed.elements.filter(element => !isListType(element))
-      genericTypes = parsed.elements.filter(element => isListType(element))
+      genericTypes = parsed.elements.filter(element => isListType(element) || isMapType(element))
       sourceMap = parsed.sourceMap
     })
 

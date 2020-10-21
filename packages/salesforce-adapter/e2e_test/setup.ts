@@ -18,7 +18,7 @@ import { ObjectType } from '@salto-io/adapter-api'
 import * as constants from '../src/constants'
 import { CustomField, ProfileInfo } from '../src/client/types'
 import { createDeployPackage } from '../src/transformers/xml_transformer'
-import { MetadataValues, createInstanceElement } from '../src/transformers/transformer'
+import { MetadataValues, createInstanceElement, fieldTypeName } from '../src/transformers/transformer'
 import SalesforceClient from '../src/client/client'
 import { objectExists } from './utils'
 import { mockTypes, mockDefaultValues } from '../test/mock_elements'
@@ -193,7 +193,7 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
           label: 'Location label',
           required: false,
           scale: 2,
-          type: constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
+          type: fieldTypeName(constants.COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION),
         },
         {
           fullName: CUSTOM_FIELD_NAMES.PERCENT,

@@ -634,6 +634,11 @@ describe('transformer', () => {
       const customField = toCustomField(field)
       expect(customField.label).toEqual('Labelo')
     })
+    it('should convert geolocation type to location', () => {
+      field.type = Types.compoundDataTypes.Geolocation
+      const customField = toCustomField(field)
+      expect(customField.type).toEqual('Location')
+    })
   })
 
   describe('toCustomProperties', () => {
@@ -1019,6 +1024,10 @@ describe('transformer', () => {
         City: 'Manchester',
         State: 'UK',
       },
+      LocalLocation: {
+        Latitude: 345,
+        Longitude: 222.2,
+      },
       Creatable: 'Create',
       NotCreatable: 'DontSendMeOnCreate',
       Updateable: 'Update',
@@ -1046,6 +1055,13 @@ describe('transformer', () => {
           },
           LocalAddress: {
             type: Types.compoundDataTypes.Address,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+          LocalLocation: {
+            type: Types.compoundDataTypes.Geolocation,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
@@ -1102,6 +1118,7 @@ describe('transformer', () => {
         expect(recordResult[0].Id).toEqual(values.Id)
         expect(recordResult[0].Name).toBeUndefined()
         expect(recordResult[0].LocalAddress).toBeUndefined()
+        expect(recordResult[0].LocalLocation).toBeUndefined()
         expect(recordResult[0].Creatable).toBeUndefined()
         expect(recordResult[0].NotCreatable).toBeUndefined()
         expect(recordResult[0].Updateable).toBeUndefined()
@@ -1143,6 +1160,10 @@ describe('transformer', () => {
         expect(recordResult[0].LocalCity).toEqual(values.LocalAddress.City)
         expect(recordResult[0].LocalState).toBeDefined()
         expect(recordResult[0].LocalState).toEqual(values.LocalAddress.State)
+        expect(recordResult[0].LocalLongitude).toBeDefined()
+        expect(recordResult[0].LocalLongitude).toEqual(values.LocalLocation.Longitude)
+        expect(recordResult[0].LocalLatitude).toBeDefined()
+        expect(recordResult[0].LocalLatitude).toEqual(values.LocalLocation.Latitude)
       })
     })
 
@@ -1179,6 +1200,10 @@ describe('transformer', () => {
         expect(recordResult[0].LocalCity).toEqual(values.LocalAddress.City)
         expect(recordResult[0].LocalState).toBeDefined()
         expect(recordResult[0].LocalState).toEqual(values.LocalAddress.State)
+        expect(recordResult[0].LocalLongitude).toBeDefined()
+        expect(recordResult[0].LocalLongitude).toEqual(values.LocalLocation.Longitude)
+        expect(recordResult[0].LocalLatitude).toBeDefined()
+        expect(recordResult[0].LocalLatitude).toEqual(values.LocalLocation.Latitude)
       })
     })
   })

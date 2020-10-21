@@ -178,9 +178,9 @@ describe('multi env source', () => {
         {
           action: 'remove',
           data: {
-            before: commonObject,
+            before: commonObject.fields.field,
           },
-          id: commonElemID,
+          id: commonObject.fields.field.elemID,
         },
         {
           action: 'remove',

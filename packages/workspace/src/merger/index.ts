@@ -17,7 +17,6 @@ import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, ContainerType,
   isPrimitiveType, BuiltinTypes, TypeMap, ListType, isVariable, isContainerType,
-  isGenericType, GenericType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mergeObjectTypes } from './internal/object_types'
@@ -50,13 +49,13 @@ export const updateMergedTypes = (
       field => {
         field.type = mergedTypes[field.type.elemID.getFullName()] || field.type
         const fieldType = field.type
-        if (isGenericType(fieldType)) {
-          const resolveGenericType = (genericType: GenericType): void => {
-            if (isGenericType(genericType.innerType)) {
-              resolveGenericType(genericType.innerType)
+        if (isContainerType(fieldType)) {
+          const resolveGenericType = (containerType: ContainerType): void => {
+            if (isContainerType(containerType.innerType)) {
+              resolveGenericType(containerType.innerType)
             } else {
-              genericType.setInnerType(mergedTypes[genericType.innerType.elemID.getFullName()]
-              || genericType.innerType)
+              containerType.setInnerType(mergedTypes[containerType.innerType.elemID.getFullName()]
+              || containerType.innerType)
             }
           }
           resolveGenericType(fieldType)

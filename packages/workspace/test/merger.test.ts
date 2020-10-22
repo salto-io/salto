@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, Variable,
+  PrimitiveTypes, TypeElement, Variable, MapType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { mergeElements, DuplicateAnnotationError } from '../src/merger'
@@ -234,6 +234,32 @@ describe('merger', () => {
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)
       expect(merged).toHaveLength(4)
+    })
+
+    it('update placehoder for map types', () => {
+      const primElemID = new ElemID('salto', 'string')
+      const prim = new PrimitiveType({
+        elemID: primElemID,
+        primitive: PrimitiveTypes.STRING,
+      })
+      const objType = new ObjectType({
+        elemID: new ElemID('salto', 'obj'),
+        fields: {
+          prim: {
+            type: new MapType(new ObjectType({
+              elemID: primElemID,
+            })),
+          },
+        },
+      })
+
+      const { merged, errors } = mergeElements([prim, objType])
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(2)
+      const mergedPrim = merged[0] as PrimitiveType
+      const mergedObj = merged[1] as ObjectType
+      const mapType = mergedObj.fields.prim.type as MapType
+      expect(mapType.innerType).toEqual(mergedPrim)
     })
   })
 

@@ -296,13 +296,23 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     return undefined
   }
 
+  const generateAnnotations = (annoTypes: TypeMap, hidden = false): Values => {
+    const anno = _.mapValues(annoTypes, type => generateValue(type))
+    if (hidden) {
+      anno[CORE_ANNOTATIONS.HIDDEN] = true
+    }
+    return anno
+  }
+
   const generateFields = (): Record<string, FieldDefinition> => Object.fromEntries(
     arrayOf(
       normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd),
       () => {
         const name = getName()
         const fieldType = getFieldType(true)
-        return [name, { type: fieldType, annotations: generateAnnotations(fieldType.annotationTypes) }]
+        return [name, { type: fieldType,
+          annotations:
+          generateAnnotations(fieldType.annotationTypes) }]
       }
     )
   )
@@ -311,14 +321,6 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   const generateAnnotationTypes = (annoNum: number): TypeMap => Object.fromEntries(
     arrayOf(annoNum, () => [getName(), getFieldType()])
   )
-
-  const generateAnnotations = (annoTypes: TypeMap, hidden = false): Values => {
-    const anno = _.mapValues(annoTypes, type => generateValue(type))
-    if (hidden) {
-      anno[CORE_ANNOTATIONS.HIDDEN] = true
-    }
-    return anno
-  }
 
   // Note that this has side effects tracking the static fields and reference fields
   const generatePrimitiveTypes = (): PrimitiveType[] => arrayOf(params.numOfPrimitiveTypes, () => {

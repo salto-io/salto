@@ -13,18 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isObjectType } from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { isCustomSettingsObject, apiName } from '../transformers/transformer'
 import { ConfigChangeSuggestion } from '../types'
 import { getAllInstances } from './custom_objects_instances'
-import { CUSTOM_SETTINGS_TYPE } from '../constants'
+import { CUSTOM_SETTINGS_TYPE, LIST_CUSTOM_SETTINGS_TYPE } from '../constants'
+
+export const isListCustomSettingsObject = (obj: ObjectType):
+  boolean => (isCustomSettingsObject(obj)
+    && obj.annotations[CUSTOM_SETTINGS_TYPE] === LIST_CUSTOM_SETTINGS_TYPE)
 
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
-    const customSettingsFetchSettings = elements.filter(obj => (isCustomSettingsObject(obj)
-      && obj.annotations[CUSTOM_SETTINGS_TYPE] === 'List'))
+    const customSettingsFetchSettings = elements.filter(obj => isObjectType(obj)
+    && isListCustomSettingsObject(obj))
       .filter(isObjectType)
       .map(objectType => ({
         isBase: true,

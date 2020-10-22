@@ -275,7 +275,7 @@ describe('Custom Object Instances CRUD', () => {
         elemID: new ElemID('salesforce'),
         annotations: {
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-          [constants.CUSTOM_SETTINGS_TYPE]: 'List',
+          [constants.CUSTOM_SETTINGS_TYPE]: constants.LIST_CUSTOM_SETTINGS_TYPE,
           [constants.API_NAME]: 'Type',
         },
         fields: basicFields,

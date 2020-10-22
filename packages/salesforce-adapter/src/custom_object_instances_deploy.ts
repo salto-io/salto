@@ -21,12 +21,13 @@ import {
   ChangeGroupId, ModificationChange, isModificationGroup, Field, ObjectType, isObjectType, Values,
 } from '@salto-io/adapter-api'
 import { BatchResultInfo } from 'jsforce-types'
-import { isInstanceOfCustomObject, instancesToCreateRecords, apiName, isCustomSettingsObject,
+import { isInstanceOfCustomObject, instancesToCreateRecords, apiName,
   instancesToDeleteRecords, instancesToUpdateRecords, Types } from './transformers/transformer'
 import SalesforceClient from './client/client'
-import { CUSTOM_OBJECT_ID_FIELD, CUSTOM_SETTINGS_TYPE } from './constants'
+import { CUSTOM_OBJECT_ID_FIELD } from './constants'
 import { DataManagementConfig } from './types'
 import { getIdFields, buildSelectStr, transformRecordToValues } from './filters/custom_objects_instances'
+import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 
 const { isDefined } = values
@@ -303,9 +304,8 @@ export const deployCustomObjectInstancesGroup = async (
     if (instanceTypes.length > 1) {
       throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
     }
-    const actualDataManagement = (isCustomSettingsObject(instances[0].type)
-    && instances[0].type.annotations[CUSTOM_SETTINGS_TYPE] === 'List') ? getDataManagementConfigForCustomSettings(instances)
-      : dataManagementConfig
+    const actualDataManagement = isListCustomSettingsObject(instances[0].type)
+      ? getDataManagementConfigForCustomSettings(instances) : dataManagementConfig
     if (actualDataManagement === undefined) {
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }

@@ -23,7 +23,7 @@ import filterCreator from '../../src/filters/custom_settings_filter'
 import mockAdapter from '../adapter'
 import {
   LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
-  OBJECTS_PATH, CUSTOM_SETTINGS_TYPE, FIELD_ANNOTATIONS,
+  OBJECTS_PATH, CUSTOM_SETTINGS_TYPE, FIELD_ANNOTATIONS, LIST_CUSTOM_SETTINGS_TYPE,
 } from '../../src/constants'
 
 const stringType = new PrimitiveType({
@@ -141,7 +141,7 @@ describe('Custom settings filter', () => {
   })
 
   describe('Custom settings filter ', () => {
-    const customSettingsObject = createCustomSettingsObject('configurationobj', 'List')
+    const customSettingsObject = createCustomSettingsObject('configurationobj', LIST_CUSTOM_SETTINGS_TYPE)
     let elements: Element[]
     beforeEach(() => {
       filter = filterCreator(

@@ -28,6 +28,7 @@ import { isCustomObject, apiName } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/filters/custom_settings_filter.test'
+import { LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('custom object instances e2e', () => {
@@ -76,7 +77,7 @@ describe('custom object instances e2e', () => {
     let createdInstance: InstanceElement
     let createdElement: ObjectType
     it('should create new instances', async () => {
-      const settingsType = createCustomSettingsObject('customsetting__c', 'List')
+      const settingsType = createCustomSettingsObject('customsetting__c', LIST_CUSTOM_SETTINGS_TYPE)
       createdElement = await createElement(adapter, settingsType)
       createdInstance = await createElement(adapter, await createInstance({
         value: {

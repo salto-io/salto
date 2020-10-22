@@ -45,7 +45,7 @@ const filterByFile = (
 const toPathHint = (filename: string): string[] => {
   const dirName = path.dirname(filename)
   const dirPathSplitted = (dirName === '.') ? [] : dirName.split(path.sep)
-  return [...dirPathSplitted, path.basename(filename)]
+  return [...dirPathSplitted, path.basename(filename, path.extname(filename))]
 }
 
 const separateChangeByFiles = async (

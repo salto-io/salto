@@ -209,8 +209,8 @@ const sendChunked = async <TIn, TOut>({
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
         if (isSuppressedError(error)) {
-          log.error('chunked %s failed on chunk with recoverable error: %s. Ignoring and trying each element separately.',
-            operationInfo, error.message)
+          log.error('chunked %s failed on chunk with recoverable error: %s. Message: %s. Trying each element separately.',
+            operationInfo, error.name, error.message)
         } else {
           log.error('chunked %s failed on chunk, trying each element separately. %o',
             operationInfo, error)

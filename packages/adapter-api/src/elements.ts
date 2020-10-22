@@ -386,6 +386,8 @@ export class Variable extends Element {
   }
 }
 
+export type GenericType = ListType | MapType
+
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isElement(value: any): value is Element {
   return value && value.elemID && value.elemID instanceof ElemID
@@ -416,6 +418,10 @@ export function isListType(element: any): element is ListType {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isMapType(element: any): element is MapType {
   return element instanceof MapType
+}
+
+export function isGenericType(element: any): element is GenericType {
+  return isMapType(element) || isListType(element)
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

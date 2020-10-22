@@ -15,7 +15,7 @@
 */
 import { restore, LocalChange, Tags } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
-import { Workspace, nacl } from '@salto-io/workspace'
+import { Workspace, nacl, createElementSelectors } from '@salto-io/workspace'
 import { EOL } from 'os'
 import _ from 'lodash'
 import { ServicesArgs, servicesFilter } from '../filters/service'
@@ -29,7 +29,6 @@ import { getApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
 import { formatChangesSummary, formatDetailedChanges, formatRestoreFinish, formatInvalidFilters, formatStepStart, formatStepCompleted, formatStepFailed, header } from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
-import { createRegexFilters } from '../convertors'
 import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
 
 const log = logger(module)
@@ -82,7 +81,7 @@ export const command = (
   shouldCalcTotalSize: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
-  inputFilters: string[] = []
+  elementSelectors: string[] = []
 ): CliCommand => {
   const applyLocalChangesToWorkspace = async (
     changes: LocalChange[],
@@ -128,9 +127,9 @@ export const command = (
         interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
         listPlannedChanges}, mode=${mode}], environment=${inputEnvironment}, services=${inputServices}`)
 
-      const { filters, invalidFilters } = createRegexFilters(inputFilters)
-      if (!_.isEmpty(invalidFilters)) {
-        errorOutputLine(formatInvalidFilters(invalidFilters), output)
+      const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
+      if (!_.isEmpty(invalidSelectors)) {
+        errorOutputLine(formatInvalidFilters(invalidSelectors), output)
         return CliExitCode.UserInputError
       }
 
@@ -150,13 +149,12 @@ export const command = (
       }
 
       const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-
       cliTelemetry.start(workspaceTags)
 
       outputLine(EOL, output)
       outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
 
-      const changes = await restore(workspace, inputServices, filters)
+      const changes = await restore(workspace, inputServices, validSelectors)
       if (listPlannedChanges || dryRun) {
         printRestorePlan(changes, detailedPlan, output)
       }

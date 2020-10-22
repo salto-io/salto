@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace } from '@salto-io/workspace'
+import { Workspace, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
-import { ElemID } from '@salto-io/adapter-api'
 import { getCliTelemetry } from '../telemetry'
 import { EnvironmentArgs } from './env'
-import { convertToIDSelectors } from '../convertors'
 import { outputLine, errorOutputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, CliTelemetry, SpinnerCreator } from '../types'
@@ -27,7 +25,7 @@ import { createCommandBuilder } from '../command_builder'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import {
-  formatTargetEnvRequired, formatInvalidID, formatUnknownTargetEnv, formatCloneToEnvFailed,
+  formatTargetEnvRequired, formatInvalidFilters, formatUnknownTargetEnv, formatCloneToEnvFailed,
   formatMissingCloneArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
   formatInvalidMoveArg, formatInvalidElementCommand,
 } from '../formatter'
@@ -62,7 +60,7 @@ const cloneElement = async (
   output: CliOutput,
   cliTelemetry: CliTelemetry,
   toEnvs: string[],
-  selectors: ElemID[],
+  selectors: ElementSelector[],
 ): Promise<CliExitCode> => {
   if (!validateEnvs(output, workspace, toEnvs)) {
     cliTelemetry.failure()
@@ -89,7 +87,7 @@ const moveElement = async (
   output: CliOutput,
   cliTelemetry: CliTelemetry,
   to: string,
-  elmSelectors: ElemID[],
+  elmSelectors: ElementSelector[],
 ): Promise<CliExitCode> => {
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
@@ -145,9 +143,9 @@ export const command = (
     const sessionEnv = env ?? inputFromEnv ?? undefined
     const toEnvs = inputToEnvs ?? []
 
-    const { ids: elmSelectors, invalidSelectors } = convertToIDSelectors(inputElmSelectors)
+    const { validSelectors, invalidSelectors } = createElementSelectors(inputElmSelectors)
     if (!_.isEmpty(invalidSelectors)) {
-      errorOutputLine(formatInvalidID(invalidSelectors), output)
+      errorOutputLine(formatInvalidFilters(invalidSelectors), output)
       return CliExitCode.UserInputError
     }
     const { workspace, errored } = await loadWorkspace(
@@ -171,12 +169,12 @@ export const command = (
           output,
           cliTelemetry,
           toEnvs,
-          elmSelectors,
+          validSelectors,
         )
       case 'move-to-common':
-        return moveElement(workspace, output, cliTelemetry, COMMON, elmSelectors)
+        return moveElement(workspace, output, cliTelemetry, COMMON, validSelectors)
       case 'move-to-envs':
-        return moveElement(workspace, output, cliTelemetry, ENVS, elmSelectors)
+        return moveElement(workspace, output, cliTelemetry, ENVS, validSelectors)
       default:
         errorOutputLine(formatInvalidElementCommand(commandName), output)
         return CliExitCode.UserInputError

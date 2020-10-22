@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
+import { ElementSelector } from './element_selector'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -112,10 +113,10 @@ export type Workspace = {
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
   getStateRecency(services: string): Promise<StateRecency>
-  promote(ids: ElemID[]): Promise<void>
-  demote(ids: ElemID[]): Promise<void>
+  promote(selectors: ElementSelector[]): Promise<void>
+  demote(selectors: ElementSelector[]): Promise<void>
   demoteAll(): Promise<void>
-  copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
+  copyTo(selectors: ElementSelector[], targetEnvs?: string[]): Promise<void>
 }
 
 // common source has no state
@@ -267,10 +268,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),
     getParsedNaclFile: (filename: string) => naclFilesSource.getParsedNaclFile(filename),
-    promote: (ids: ElemID[]) => naclFilesSource.promote(ids),
-    demote: (ids: ElemID[]) => naclFilesSource.demote(ids),
+    promote: (selectors: ElementSelector[]) => naclFilesSource.promote(selectors),
+    demote: (selectors: ElementSelector[]) => naclFilesSource.demote(selectors),
     demoteAll: () => naclFilesSource.demoteAll(),
-    copyTo: (ids: ElemID[], targetEnvs: string[]) => naclFilesSource.copyTo(ids, targetEnvs),
+    copyTo: (selectors: ElementSelector[],
+      targetEnvs: string[]) => naclFilesSource.copyTo(selectors, targetEnvs),
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

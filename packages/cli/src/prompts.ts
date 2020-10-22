@@ -219,10 +219,6 @@ ${Prompts.SERVICE_ADD_HELP}`
 
   public static readonly DIFF_CALC_DIFF_FAIL = 'Calculating diff failed!'
 
-  public static readonly INVALID_IDS = (
-    invalidIds: string
-  ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Element IDs provided.`
-
   public static readonly ELEMENT_CLONE_USAGE = 'Usage: salto element clone [elm-selector, ...] --from-env <env> --to-envs [env1, ...]'
   public static readonly ELEMENT_MOVE_USAGE = 'Usage: salto element move [elm-selector, ...] --to [common|envs]'
   public static readonly MISSING_CLONE_ARG = 'Missing required environment argument'

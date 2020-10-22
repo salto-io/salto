@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Element, ElemID, DetailedChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { pathIndex } from '@salto-io/workspace'
+import { pathIndex, ElementSelector } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 
 type PathIndex = pathIndex.PathIndex
@@ -49,9 +49,9 @@ export const createRestoreChanges = async (
   workspaceElements: readonly Element[],
   stateElements: Element[],
   index: PathIndex,
-  idFilters: RegExp[] = [],
+  elementSelectors: ElementSelector[] = [],
 ): Promise<DetailedChange[]> => {
-  const changes = await createDiffChanges(workspaceElements, stateElements, idFilters)
+  const changes = await createDiffChanges(workspaceElements, stateElements, elementSelectors)
   const detailedChanges = _.flatten(await Promise.all(
     changes.map(change => splitChangeByPath(change, index))
   ))

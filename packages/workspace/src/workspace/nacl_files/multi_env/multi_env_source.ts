@@ -21,6 +21,7 @@ import { Element, ElemID, getChangeElement, isInstanceElement, Value,
   DetailedChange } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
+import { ElementSelector, getElementIdsFromSelectorsRecursively, ElementIDToValue } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 
@@ -55,10 +56,10 @@ type MultiEnvState = {
 
 type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   getAll: (env?: string) => Promise<Element[]>
-  promote: (ids: ElemID[]) => Promise<void>
-  demote: (ids: ElemID[]) => Promise<void>
+  promote: (selectors: ElementSelector[]) => Promise<void>
+  demote: (selectors: ElementSelector[]) => Promise<void>
   demoteAll: () => Promise<void>
-  copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
+  copyTo: (selectors: ElementSelector[], targetEnvs?: string[]) => Promise<void>
 }
 
 const buildMultiEnvSource = (
@@ -165,7 +166,12 @@ const buildMultiEnvSource = (
     return applyRoutedChanges(routedChanges)
   }
 
-  const promote = async (ids: ElemID[]): Promise<void> => {
+  const getElementsFromSource = async (source: NaclFilesSource): Promise<ElementIDToValue[]> =>
+    (await source.getAll()).map(elem => ({ elemID: elem.elemID, element: elem }))
+
+  const promote = async (selectors: ElementSelector[]): Promise<void> => {
+    const ids = (await getElementIdsFromSelectorsRecursively(selectors,
+      await getElementsFromSource(primarySource()))).map(elem => elem.elemID)
     const routedChanges = await routePromote(
       ids,
       primarySource(),
@@ -175,7 +181,9 @@ const buildMultiEnvSource = (
     return applyRoutedChanges(routedChanges)
   }
 
-  const demote = async (ids: ElemID[]): Promise<void> => {
+  const demote = async (selectors: ElementSelector[]): Promise<void> => {
+    const ids = (await getElementIdsFromSelectorsRecursively(selectors,
+      await getElementsFromSource(commonSource()))).map(elem => elem.elemID)
     const routedChanges = await routeDemote(
       ids,
       primarySource(),
@@ -184,10 +192,13 @@ const buildMultiEnvSource = (
     )
     return applyRoutedChanges(routedChanges)
   }
-  const copyTo = async (ids: ElemID[], targetEnvs: string[] = []): Promise<void> => {
+
+  const copyTo = async (selectors: ElementSelector[], targetEnvs: string[] = []): Promise<void> => {
     const targetSources = _.isEmpty(targetEnvs)
       ? secondarySources()
       : _.pick(secondarySources(), targetEnvs)
+    const ids = (await getElementIdsFromSelectorsRecursively(selectors,
+      await getElementsFromSource(primarySource()))).map(elem => elem.elemID)
     const routedChanges = await routeCopyTo(
       ids,
       primarySource(),

@@ -18,6 +18,7 @@ import _ from 'lodash'
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
 export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
+export const ElemIDTopLevelTypes = ['instance']
 
 export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: '_depends_on',
@@ -27,9 +28,12 @@ export const INSTANCE_ANNOTATIONS = {
 
 export class ElemID {
   static readonly NAMESPACE_SEPARATOR = '.'
+  static readonly NUM_ELEM_ID_NON_NAME_PARTS = 3
   static readonly CONFIG_NAME = '_config'
   static readonly VARIABLES_NAMESPACE = 'var'
   private static readonly TOP_LEVEL_ID_TYPES = ['type', 'var']
+
+  static getDefaultIdType = (adapter: string): ElemIDType => (adapter === ElemID.VARIABLES_NAMESPACE ? 'var' : 'type')
 
   static fromFullName(fullName: string): ElemID {
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
@@ -62,7 +66,7 @@ export class ElemID {
   ) {
     this.adapter = adapter
     this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : typeName as string
-    this.idType = idType || (adapter === ElemID.VARIABLES_NAMESPACE ? 'var' : 'type')
+    this.idType = idType || ElemID.getDefaultIdType(adapter)
     this.nameParts = name
     this.validateVariable()
   }
@@ -187,7 +191,7 @@ export class ElemID {
       // This is already the top level ID
       return { parent: this, path: [] }
     }
-    if (this.idType === 'instance') {
+    if (ElemIDTopLevelTypes.includes(this.idType)) {
       // Instance is a top level ID, the name of the instance is always the first name part
       return {
         parent: new ElemID(this.adapter, this.typeName, this.idType, this.nameParts[0]),

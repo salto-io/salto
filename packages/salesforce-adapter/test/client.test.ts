@@ -14,18 +14,35 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
+import { mockRequest } from 'mock-req-res'
 import nock from 'nock'
 import { RetryStrategies } from 'requestretry'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import SalesforceClient, { ApiLimitsTooLowError,
-  getConnectionDetails, validateCredentials } from '../src/client/client'
+  getConnectionDetails, validateCredentials, DEFAULT_RETRY_OPTS } from '../src/client/client'
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
 const { mapAsync, toArrayAsync } = asynciterable
+
+describe('Delay strategy sanity test', () => {
+  let log: jest.SpyInstance
+  beforeEach(async () => {
+    const logging = logger('salesforce-adapter/client/client')
+    log = jest.spyOn(logging, 'error')
+    if (DEFAULT_RETRY_OPTS.delayStrategy) {
+      DEFAULT_RETRY_OPTS.delayStrategy(new Error('error message'), mockRequest(), undefined)
+    }
+  })
+
+  it('writes the right things to log', () => {
+    expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'error message', 5)
+  })
+})
 
 describe('salesforce client', () => {
   beforeEach(() => {

@@ -94,7 +94,10 @@ describe('Netsuite adapter E2E with real account', () => {
 
   const entityCustomFieldToCreate = createInstanceElement(
     ENTITY_CUSTOM_FIELD,
-    { label: randomString }
+    {
+      label: randomString,
+      description: 'Some string with special chars !"&​’',
+    }
   )
 
   const customRecordTypeToCreate = createInstanceElement(
@@ -209,12 +212,14 @@ describe('Netsuite adapter E2E with real account', () => {
       validateConfigSuggestions(fetchResult.updatedConfig?.config)
     })
 
-    it('should fetch the created entityCustomField', async () => {
+    it('should fetch the created entityCustomField and its special chars', async () => {
       const fetchedEntityCustomField = findElement(
         fetchedInstances,
         entityCustomFieldToCreate.elemID
       ) as InstanceElement
       expect(fetchedEntityCustomField.value.label).toEqual(randomString)
+      expect(fetchedEntityCustomField.value.description)
+        .toEqual(entityCustomFieldToCreate.value.description)
     })
 
     it('should fetch the created customRecordType', async () => {

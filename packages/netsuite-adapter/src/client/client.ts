@@ -158,11 +158,6 @@ export const isFolderCustomizationInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is FolderCustomizationInfo =>
   customizationInfo.typeName === FOLDER
 
-// Without removing the ZeroWidthSpace, the deploy fails on:
-// 'The entity "ZeroWidthSpace" was referenced, but not declared.'
-// https://stackoverflow.com/questions/11305797/remove-zero-width-space-characters-from-a-javascript-string
-const removeZeroWidthSpace = (val: string): string => val.replace(/[\u200B-\u200D\uFEFF]/g, '')
-
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
   // eslint-disable-next-line new-cap
   new xmlParser.j2xParser({
@@ -171,8 +166,7 @@ export const convertToXmlContent = (customizationInfo: CustomizationInfo): strin
     format: false,
     ignoreAttributes: false,
     cdataTagName: CDATA_TAG_NAME,
-    tagValueProcessor: val =>
-      he.encode(removeZeroWidthSpace(val), { useNamedReferences: true }),
+    tagValueProcessor: val => he.encode(val),
   }).parse({ [customizationInfo.typeName]: customizationInfo.values })
 
 const writeFileInFolder = async (folderPath: string, filename: string, content: string | Buffer):

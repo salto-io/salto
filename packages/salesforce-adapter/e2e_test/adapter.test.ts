@@ -41,7 +41,6 @@ import { UsernamePasswordCredentials } from '../src/types'
 import {
   Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataObjectType,
   createInstanceElement,
-  fieldTypeName,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import {
@@ -1403,7 +1402,7 @@ describe('Salesforce adapter E2E with real account', () => {
             verifyFieldFetch(
               fields[CUSTOM_FIELD_NAMES.LOCATION],
               testLocation,
-              Types.compoundDataTypes.Geolocation,
+              Types.compoundDataTypes.Location,
             )
           })
 
@@ -1641,7 +1640,7 @@ describe('Salesforce adapter E2E with real account', () => {
             void => {
             expect(field).toBeDefined()
             verificationFunc(field)
-            expect(field[INSTANCE_TYPE_FIELD]).toEqual(fieldTypeName(expectedType))
+            expect(field[INSTANCE_TYPE_FIELD]).toEqual(expectedType)
           }
 
           it('currency', async () => {
@@ -1696,7 +1695,7 @@ describe('Salesforce adapter E2E with real account', () => {
             verifyFieldAddition(
               fields[CUSTOM_FIELD_NAMES.LOCATION],
               testLocation,
-              constants.COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION,
+              constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
             )
           })
 
@@ -2017,7 +2016,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.SCALE]: 10,
             [constants.BUSINESS_STATUS]: 'Active',
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [INSTANCE_TYPE_FIELD]: fieldTypeName(constants.COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION),
+            [INSTANCE_TYPE_FIELD]: constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
           },
           [CUSTOM_FIELD_NAMES.PERCENT]: {
             [constants.LABEL]: 'Percent label Updated',
@@ -2203,7 +2202,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ):
             void => {
             const field = fields[name]
-            expect(field[INSTANCE_TYPE_FIELD]).toEqual(fieldTypeName(expectedType))
+            expect(field[INSTANCE_TYPE_FIELD]).toEqual(expectedType)
             expect(field).toEqual(expectedAnnotations ?? fieldNamesToAnnotations[name])
           }
 
@@ -2277,7 +2276,7 @@ describe('Salesforce adapter E2E with real account', () => {
           it('location', async () => {
             verifyFieldUpdate(
               CUSTOM_FIELD_NAMES.LOCATION,
-              constants.COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION,
+              constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
             )
           })
 

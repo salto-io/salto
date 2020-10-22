@@ -1328,10 +1328,10 @@
     stacktrace-parser "^0.1.9"
     wu "^2.1.0"
 
-"@salto-io/suitecloud-cli@1.1.0-salto-8":
-  version "1.1.0-salto-8"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.0-salto-8.tgz#a65d5698b5e1dd06c50de00c7ff2d037e869cb55"
-  integrity sha512-bDo0yaX0Na2SbglatzK4WfPJG0crsQm45NhBGInOPrO0AiU3tC/a36Dp9GnFS6YeHsF7J21grOA4k1/ZlRjATw==
+"@salto-io/suitecloud-cli@1.1.0-salto-9":
+  version "1.1.0-salto-9"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.0-salto-9.tgz#3759fa314fd6ec14456d8803c50d4a72c3c7d3a7"
+  integrity sha512-E19wnJ4aZ3endUuN6WLlm5ggfixxTTXAQX14l/R6837TMzLpVVdAjUTpPMxNUF3/vBBZjqrO28U3nJeyeYHiGQ==
   dependencies:
     "@oracle/suitecloud-cli-localserver-command" "^1.1.0"
     "@salto-io/logging" "0.1.35-master.b11f0d71"

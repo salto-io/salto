@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, Variable,
+  PrimitiveTypes, TypeElement, Variable, MapType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { mergeElements, DuplicateAnnotationError } from '../src/merger'
@@ -246,9 +246,9 @@ describe('merger', () => {
         elemID: new ElemID('salto', 'obj'),
         fields: {
           prim: {
-            type: new ObjectType({
+            type: new MapType(new ObjectType({
               elemID: primElemID,
-            }),
+            })),
           },
         },
       })
@@ -258,7 +258,8 @@ describe('merger', () => {
       expect(merged).toHaveLength(2)
       const mergedPrim = merged[0] as PrimitiveType
       const mergedObj = merged[1] as ObjectType
-      expect(mergedObj.fields.prim.type).toEqual(mergedPrim)
+      const mapType = mergedObj.fields.prim.type as MapType
+      expect(mapType.innerType).toEqual(mergedPrim)
     })
   })
 

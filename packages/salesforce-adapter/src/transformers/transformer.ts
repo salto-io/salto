@@ -38,9 +38,10 @@ import {
   CUSTOM_VALUE, API_NAME_SEPARATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, GEOLOCATION_SOAP_TYPE_NAME,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
+  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -108,8 +109,8 @@ export const fieldTypeName = (typeName: string): string => {
   if (typeName.startsWith(FORMULA_TYPE_NAME)) {
     return typeName.slice(FORMULA_TYPE_NAME.length)
   }
-  if (typeName === COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION) {
-    return GEOLOCATION_SOAP_TYPE_NAME
+  if (typeName === LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME) {
+    return COMPOUND_FIELD_TYPE_NAMES.LOCATION
   }
   return typeName
 }
@@ -140,7 +141,8 @@ const addPicklistAnnotations = (
 
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
-const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION)
+// We cannot use "Location" as the Salto ID here because there is a standard object called Location
+const geoLocationElemID = new ElemID(SALESFORCE, LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME)
 
 const restrictedNumberTypeDefinitions = {
   TextLength: createRestriction({ min: 1, max: 255, enforce_value: false }),
@@ -642,7 +644,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
       },
     }),
-    Geolocation: new ObjectType({
+    Location: new ObjectType({
       elemID: geoLocationElemID,
       fields: {
         [GEOLOCATION_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
@@ -686,7 +688,7 @@ export class Types {
     return type
   }
 
-  private static createObjectType(name: string, customObject = true, isSettings = false,
+  static createObjectType(name: string, customObject = true, isSettings = false,
     serviceIds?: ServiceIds): ObjectType {
     const elemId = this.getElemId(name, customObject, serviceIds)
     return new ObjectType({
@@ -757,8 +759,8 @@ const transformCompoundValues = (
       // Other compound fields are added a prefix according to the field name
       // ie. LocalAddrress -> LocalCity, LocalState etc.
       const typeName = compoundField.type.elemID.isEqual(Types.compoundDataTypes.Address.elemID)
-        ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION
-      const fieldPrefix = compoundFieldKey.slice(0, -fieldTypeName(typeName).length)
+        ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.LOCATION
+      const fieldPrefix = compoundFieldKey.slice(0, -typeName.length)
       return _.mapKeys(record[compoundFieldKey], (_vv, key) => fieldPrefix.concat(key))
     }
   )

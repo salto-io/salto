@@ -62,21 +62,22 @@ export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES
 export enum COMPOUND_FIELD_TYPE_NAMES {
   ADDRESS = 'Address',
   FIELD_NAME = 'Name',
-  GEOLOCATION = 'Geolocation',
+  LOCATION = 'Location',
 }
-export const GEOLOCATION_SOAP_TYPE_NAME = 'Location'
+// We use Geolocation internally to avoid conflicts with the Location standard object
+export const LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME = 'Geolocation'
 
 export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
   Record<string, COMPOUND_FIELD_TYPE_NAMES> = {
     address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
-    location: COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION,
+    location: COMPOUND_FIELD_TYPE_NAMES.LOCATION,
     // name is handled differently with nameField
   }
 
 // target types for creating / updating custom fields:
 export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES = [
   ...Object.values(FIELD_TYPE_NAMES),
-  GEOLOCATION_SOAP_TYPE_NAME, // salesforce-facing value for COMPOUND_FIELD_TYPE_NAMES.GEOLOCATION
+  COMPOUND_FIELD_TYPE_NAMES.LOCATION,
   // The following types are valid according to the documentation
   // TODO - support these field types
   'MetadataRelationship',

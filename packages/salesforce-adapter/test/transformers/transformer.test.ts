@@ -635,7 +635,7 @@ describe('transformer', () => {
       expect(customField.label).toEqual('Labelo')
     })
     it('should convert geolocation type to location', () => {
-      field.type = Types.compoundDataTypes.Geolocation
+      field.type = Types.compoundDataTypes.Location
       const customField = toCustomField(field)
       expect(customField.type).toEqual('Location')
     })
@@ -1061,7 +1061,7 @@ describe('transformer', () => {
             },
           },
           LocalLocation: {
-            type: Types.compoundDataTypes.Geolocation,
+            type: Types.compoundDataTypes.Location,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,

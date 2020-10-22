@@ -342,7 +342,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           location: {
-            type: Types.compoundDataTypes.Geolocation,
+            type: Types.compoundDataTypes.Location,
             annotations: {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,

@@ -235,6 +235,31 @@ describe('merger', () => {
       expect(errors).toHaveLength(0)
       expect(merged).toHaveLength(4)
     })
+
+    it('update placehoder for map types', () => {
+      const primElemID = new ElemID('salto', 'string')
+      const prim = new PrimitiveType({
+        elemID: primElemID,
+        primitive: PrimitiveTypes.STRING,
+      })
+      const objType = new ObjectType({
+        elemID: new ElemID('salto', 'obj'),
+        fields: {
+          prim: {
+            type: new ObjectType({
+              elemID: primElemID,
+            }),
+          },
+        },
+      })
+
+      const { merged, errors } = mergeElements([prim, objType])
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(2)
+      const mergedPrim = merged[0] as PrimitiveType
+      const mergedObj = merged[1] as ObjectType
+      expect(mergedObj.fields.prim.type).toEqual(mergedPrim)
+    })
   })
 
   describe('merging instances', () => {

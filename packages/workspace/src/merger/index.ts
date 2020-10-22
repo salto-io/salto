@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, ContainerType,
-  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isVariable, isContainerType, isGenericType, GenericType,
+  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isVariable, isContainerType,
+  isGenericType, GenericType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mergeObjectTypes } from './internal/object_types'

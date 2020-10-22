@@ -420,6 +420,7 @@ export function isMapType(element: any): element is MapType {
   return element instanceof MapType
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isGenericType(element: any): element is GenericType {
   return isMapType(element) || isListType(element)
 }

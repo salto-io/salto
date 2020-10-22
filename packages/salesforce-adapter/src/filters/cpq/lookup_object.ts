@@ -13,22 +13,39 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, ReferenceExpression, Value } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { Element, ObjectType, ReferenceExpression, Value, Change, ChangeDataType, isAdditionOrModificationChange, getChangeElement, isObjectTypeChange } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { apiName } from '../../transformers/transformer'
-import { FIELD_ANNOTATIONS, CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME } from '../../constants'
+import { apiName, isCustomObject } from '../../transformers/transformer'
+import { FIELD_ANNOTATIONS, CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, CONF_ATTR_NAME_TO_API_NAME, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, LOOKUP_QUERY_NAME_TO_API_NAME } from '../../constants'
 import { getCustomObjects } from '../utils'
 
-const OBJECTS_WITH_LOOKUP_OBJECT = [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE]
+const OBJECTS_TO_LOOKUP_FIELDS = {
+  [CPQ_PRODUCT_RULE]: {
+    field: CPQ_LOOKUP_OBJECT_NAME,
+  },
+  [CPQ_PRICE_RULE]: {
+    field: CPQ_LOOKUP_OBJECT_NAME,
+  },
+  [CPQ_CONFIGURATION_ATTRIBUTE]: {
+    field: CPQ_DEFAULT_OBJECT_FIELD,
+    valuesMapping: CONF_ATTR_NAME_TO_API_NAME,
+  },
+  [CPQ_LOOKUP_QUERY]: {
+    field: CPQ_TESTED_OBJECT,
+    valuesMapping: LOOKUP_QUERY_NAME_TO_API_NAME,
+  },
+} as Record<string, { field: string; valuesMapping?: Record<string, string> }>
 
 const replaceLookupObjectValueSetValuesWithReferences = (customObjects: ObjectType[]): void => {
   const apiNameToElemID = Object.fromEntries(
     customObjects.map(object => [apiName(object), object.elemID])
   )
   const relevantObjects = customObjects
-    .filter(object => OBJECTS_WITH_LOOKUP_OBJECT.includes(apiName(object)))
+    .filter(object => Object.keys(OBJECTS_TO_LOOKUP_FIELDS).includes(apiName(object)))
   relevantObjects.forEach(object => {
-    const lookupObjectField = object.fields[CPQ_LOOKUP_OBJECT_NAME]
+    const lookupObjectField = object.fields[OBJECTS_TO_LOOKUP_FIELDS[apiName(object)].field]
     if (lookupObjectField === undefined) {
       return
     }
@@ -36,19 +53,96 @@ const replaceLookupObjectValueSetValuesWithReferences = (customObjects: ObjectTy
     if (lookupValueSet === undefined) {
       return
     }
+    const valuesMapping = OBJECTS_TO_LOOKUP_FIELDS[apiName(object)].valuesMapping
+      ?? {}
     lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet
       .map((value: Value) => {
-        const fullNameVal = value.fullName
+        const fullNameVal = valuesMapping[value.fullName] ?? value.fullName
         if (fullNameVal === undefined) {
           return value
         }
         return {
           ...value,
           fullName: (apiNameToElemID[fullNameVal] !== undefined
-            ? new ReferenceExpression(apiNameToElemID[fullNameVal]) : fullNameVal),
+            ? new ReferenceExpression(apiNameToElemID[fullNameVal]) : value.fullName),
         }
       })
   })
+}
+
+const transformLabelToApiName = (object: ObjectType): ObjectType => {
+  const objectApiName = apiName(object)
+  const lookupObjectField = object.fields[OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.field]
+  if (lookupObjectField === undefined) {
+    return object
+  }
+  const lookupValueSet = lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  if (lookupValueSet === undefined) {
+    return object
+  }
+  const nameToApiMapping = OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.valuesMapping ?? {}
+  lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet
+    .map((value: Value) => {
+      const mappedValue = nameToApiMapping[value.fullName]
+      if (mappedValue === undefined) {
+        return value
+      }
+      return {
+        ...value,
+        fullName: mappedValue,
+      }
+    })
+  return object
+}
+
+const transformValuesBackToLabel = (object: ObjectType): ObjectType => {
+  const objectApiName = apiName(object)
+  const lookupObjectField = object.fields[OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.field]
+  if (lookupObjectField === undefined) {
+    return object
+  }
+  const lookupValueSet = lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  if (lookupValueSet === undefined) {
+    return object
+  }
+  const apiNameToNameMapping = _.invert(
+    OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.valuesMapping ?? {}
+  )
+  lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet
+    .map((value: Value) => {
+      const mappedValue = apiNameToNameMapping[value.fullName]
+      if (mappedValue === undefined) {
+        return value
+      }
+      return {
+        ...value,
+        fullName: mappedValue,
+      }
+    })
+  return object
+}
+
+const getCustomObjectWithMappingLookupChanges = (
+  changes: ReadonlyArray<Change<ChangeDataType>>
+): ReadonlyArray<Change<ObjectType>> =>
+  (changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isObjectTypeChange)
+    .filter(change =>
+      (isCustomObject(getChangeElement(change)))
+        && OBJECTS_TO_LOOKUP_FIELDS[apiName(getChangeElement(change))]?.valuesMapping))
+
+const applyFuncOnCustomObjectWithMappingLookupChange = (
+  changes: ReadonlyArray<Change<ChangeDataType>>,
+  fn: (customScriptObject: ObjectType) => ObjectType
+): void => {
+  const customObjectWithMappingLookupChanges = getCustomObjectWithMappingLookupChanges(changes)
+  customObjectWithMappingLookupChanges.forEach(change => (
+    applyFunctionToChangeData(
+      change,
+      fn,
+    )
+  ))
 }
 
 const filter: FilterCreator = () => ({
@@ -56,6 +150,13 @@ const filter: FilterCreator = () => ({
     replaceLookupObjectValueSetValuesWithReferences(
       getCustomObjects(elements)
     )
+  },
+  preDeploy: async changes => {
+    applyFuncOnCustomObjectWithMappingLookupChange(changes, transformValuesBackToLabel)
+  },
+  onDeploy: async changes => {
+    applyFuncOnCustomObjectWithMappingLookupChange(changes, transformLabelToApiName)
+    return []
   },
 })
 

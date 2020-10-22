@@ -175,10 +175,11 @@ const replaceReferenceValues = (
     const elemType = target.type ?? typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })
-    return findElem(
+    const elementFound = findElem(
       target.lookup(val, elemParent),
       elemType,
     )
+    return elementFound
   }
 
   const replacePrimitive = (val: string, field: Field, path?: ElemID): Value => {

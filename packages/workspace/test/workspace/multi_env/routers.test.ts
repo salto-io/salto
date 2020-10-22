@@ -258,13 +258,13 @@ describe('default fetch routing', () => {
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
-  it('should split shared remove changes to common and env', async () => {
+  it('should split shared remove changes to all environments', async () => {
     const change: DetailedChange = {
       action: 'remove',
       data: { before: sharedObject },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'default')
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
     const commonChangeElement = routedChanges.commonSource
@@ -273,7 +273,8 @@ describe('default fetch routing', () => {
         && (routedChanges.primarySource[0] as RemovalDiff<ObjectType>).data.before
     expect(commonChangeElement).toEqual(commonObj)
     expect(envChangeElement).toEqual(envObj)
-    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+    expect(routedChanges.secondarySources).toBeDefined()
+    expect(routedChanges.secondarySources?.sec).toHaveLength(1)
   })
   it('should route add changes of values of env specific elements to the '
     + 'env when there are multiple envs configured', async () => {
@@ -543,7 +544,7 @@ describe('override fetch routing', () => {
       data: { before: sharedObject },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'override')
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'override')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
     const commonChangeElement = routedChanges.commonSource
@@ -552,7 +553,8 @@ describe('override fetch routing', () => {
         && (routedChanges.primarySource[0] as RemovalDiff<ObjectType>).data.before
     expect(commonChangeElement).toEqual(commonObj)
     expect(envChangeElement).toEqual(envObj)
-    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+    expect(routedChanges.secondarySources).toBeDefined()
+    expect(routedChanges.secondarySources?.sec).toHaveLength(1)
   })
   it('should route add changes of values of env specific elements to the env', async () => {
     const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)

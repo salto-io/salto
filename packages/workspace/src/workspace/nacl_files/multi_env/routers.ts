@@ -135,6 +135,31 @@ const createMergeableChange = async (
   }
 }
 
+const routeDefaultRemoveOrModify = async (
+  change: DetailedChange,
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
+  secondarySources: Record<string, NaclFilesSource>
+): Promise<RoutedChanges> => {
+  // We add to the current defining source.
+  const currentChanges = await projectChange(change, primarySource)
+  const commonChanges = await projectChange(change, commonSource)
+
+  // When removing a top level element from common, we need to remove it from all environments
+  // otherwise we are left with a partial element in the other environments
+  const isTopLevelRemoveFromCommon = (
+    change.action === 'remove' && change.id.isTopLevel() && commonChanges.length > 0
+  )
+  const secondaryChanges = isTopLevelRemoveFromCommon
+    ? promises.object.mapValuesAsync(secondarySources, source => projectChange(change, source))
+    : undefined
+  return {
+    primarySource: currentChanges,
+    commonSource: commonChanges,
+    secondarySources: await secondaryChanges,
+  }
+}
+
 export const routeOverride = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
@@ -158,13 +183,7 @@ export const routeOverride = async (
     const commonTopLevelElement = await commonSource.get(change.id.createTopLevelParentID().parent)
     return commonTopLevelElement ? { commonSource: [change] } : { primarySource: [change] }
   }
-  // We add to the current defining source.
-  const currentChanges = await projectChange(change, primarySource)
-  const commonChanges = await projectChange(change, commonSource)
-  return {
-    primarySource: currentChanges,
-    commonSource: commonChanges,
-  }
+  return routeDefaultRemoveOrModify(change, primarySource, commonSource, secondarySources)
 }
 
 export const routeAlign = async (
@@ -202,20 +221,14 @@ export const routeDefault = async (
     if (_.isEmpty(secondarySources) && !hasEnvSpecificDefinition) {
       return { commonSource: [change] }
     }
-    // If the element parent is completly defined in common we will add new nested
+    // If the element parent is completely defined in common we will add new nested
     // additions to common
     if (hasCommonTopLevel && !hasEnvSpecificDefinition) {
       return { commonSource: [change] }
     }
     return { primarySource: [change] }
   }
-  // We add to the current defining source.
-  const currentChanges = await projectChange(change, primarySource)
-  const commonChanges = await projectChange(change, commonSource)
-  return {
-    primarySource: currentChanges,
-    commonSource: commonChanges,
-  }
+  return routeDefaultRemoveOrModify(change, primarySource, commonSource, secondarySources)
 }
 
 const overrideIdInSource = (

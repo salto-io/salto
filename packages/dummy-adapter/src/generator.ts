@@ -215,7 +215,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       style: 'capital',
       separator: '',
     })
-    return name
+    return name.replace(/\W/g, '')
   }
 
   const getMaxRank = (elements: Element[]): number => (elements.length > 0
@@ -302,7 +302,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       () => {
         const name = getName()
         const fieldType = getFieldType(true)
-        return [name, { type: fieldType, annotations: generateValue(fieldType) }]
+        return [name, { type: fieldType, annotations: generateAnnotations(fieldType.annotationTypes) }]
       }
     )
   )

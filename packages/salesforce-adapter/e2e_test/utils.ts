@@ -45,9 +45,10 @@ export const getRecordOfInstance = async (
   client: SalesforceClient,
   instance: InstanceElement,
   additionalFields = [] as string[],
+  uniqueField = 'Id',
 ): Promise<SalesforceRecord | undefined> => {
-  const selectFieldsString = _.uniq(['Id'].concat(additionalFields)).join(',')
-  const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.type)} WHERE Id = '${instance.value.Id}'`
+  const selectFieldsString = _.uniq([uniqueField].concat(additionalFields)).join(',')
+  const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.type)} WHERE ${uniqueField} = '${instance.value[uniqueField]}'`
   const queryResult = await client.queryAll(queryString)
   const records = (await toArrayAsync(queryResult)).flat()
   return records[0]

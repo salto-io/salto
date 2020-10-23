@@ -129,6 +129,7 @@ export const METADATA_TYPE = 'metadataType'
 export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topicsForObjects'
 export const FOREIGN_KEY_DOMAIN = 'foreignKeyDomain'
 export const CUSTOM_SETTINGS_TYPE = 'customSettingsType'
+export const LIST_CUSTOM_SETTINGS_TYPE = 'List'
 export const IS_ATTRIBUTE = 'isAttribute'
 // must have the same name as INTERNAL_ID_FIELD
 // TODO should be state-only once that's supported for annotations (SALTO-910)

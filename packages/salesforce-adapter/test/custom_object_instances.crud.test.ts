@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression, isRemovalChange, getChangeElement, isInstanceElement, ChangeGroup, isModificationChange, isAdditionChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
+  isRemovalChange, getChangeElement, isInstanceElement, ChangeGroup, isModificationChange,
+  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
 import { EventEmitter } from 'events'
 import { Types } from '../src/transformers/transformer'
@@ -219,6 +221,160 @@ describe('Custom Object Instances CRUD', () => {
       mockBulkLoad = getBulkLoadMock('success')
       partialBulkLoad = getBulkLoadMock('partial')
       connection.bulk.load = mockBulkLoad
+    })
+
+    describe('Properly handle creation of list custom settings', () => {
+      let mockQuery: jest.Mock
+      const stringType = new PrimitiveType({
+        elemID: new ElemID(constants.SALESFORCE, 'Text'),
+        primitive: PrimitiveTypes.STRING,
+        annotationTypes: {
+          [constants.LABEL]: BuiltinTypes.STRING,
+        },
+      })
+      const idType = new PrimitiveType({
+        elemID: new ElemID('id'),
+        primitive: PrimitiveTypes.STRING,
+      })
+      const basicFields = {
+        Id: {
+          type: idType,
+          label: 'id',
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [constants.LABEL]: 'Record ID',
+            [constants.API_NAME]: 'Id',
+          },
+        },
+        Name: {
+          type: stringType,
+          label: 'Name',
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [constants.LABEL]: 'Name',
+            [constants.API_NAME]: 'Name',
+            [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+          },
+        },
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        TestField__c: {
+          label: 'TestField',
+          type: stringType,
+          annotations: {
+            [constants.LABEL]: 'TestField',
+            [constants.API_NAME]: 'Type.TestField__c',
+            [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+          },
+          annotationTypes: {
+            [constants.LABEL]: BuiltinTypes.STRING,
+            [constants.API_NAME]: BuiltinTypes.STRING,
+          },
+        },
+      }
+      const customSettingsObject = new ObjectType({
+        elemID: new ElemID('salesforce'),
+        annotations: {
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.CUSTOM_SETTINGS_TYPE]: constants.LIST_CUSTOM_SETTINGS_TYPE,
+          [constants.API_NAME]: 'Type',
+        },
+        fields: basicFields,
+      })
+      const existingSettingRecord = {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        TestField__c: 'somevalue',
+        Id: 'a014W00000zMPT6QAO',
+        Name: 'TestName1',
+      }
+      const nonExistingSettingRecord = {
+        Name: 'TestName2',
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        TestField__c: 'somevalue2',
+        Id: 'a014W00000zNPT6QAO',
+      }
+      const existingSettingInstance = new InstanceElement(
+        instanceName,
+        customSettingsObject,
+        existingSettingRecord,
+      )
+      const nonExistingSettingInstance = new InstanceElement(
+        anotherInstanceName,
+        customSettingsObject,
+        nonExistingSettingRecord,
+      )
+
+      beforeEach(async () => {
+        mockQuery = jest.fn().mockImplementation(async () => (
+          {
+            totalSize: 1,
+            done: true,
+            records: [existingSettingRecord],
+          }))
+        connection.query = mockQuery
+        result = await adapter.deploy({
+          groupID: 'add_Test_instances',
+          changes: [
+            { action: 'add', data: { after: existingSettingInstance } },
+            { action: 'add', data: { after: nonExistingSettingInstance } },
+          ],
+        })
+      })
+      it('Should query according to instance values', () => {
+        expect(mockQuery.mock.calls).toHaveLength(1)
+        expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,Name FROM Type WHERE Name IN (\'TestName1\',\'TestName2\')')
+      })
+
+      it('Should call load operation twice - once with insert once with update', () => {
+        expect(mockBulkLoad.mock.calls).toHaveLength(2)
+        const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
+        expect(insertCall).toBeDefined()
+        const updateCall = mockBulkLoad.mock.calls.find(call => call[1] === 'update')
+        expect(updateCall).toBeDefined()
+      })
+      it('Should call load operation with update for the "existing" record', () => {
+        const updateCall = mockBulkLoad.mock.calls.find(call => call[1] === 'update')
+        expect(updateCall).toHaveLength(4)
+        expect(updateCall[0]).toBe('Type')
+
+        // Record
+        expect(updateCall[3]).toHaveLength(1)
+        expect(updateCall[3][0].Id).toBeDefined()
+        expect(updateCall[3][0].Id).toEqual(existingSettingInstance.value.Id)
+      })
+
+      it('Should call load operation with insert for the "new" record', () => {
+        const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
+        expect(insertCall.length).toBe(4)
+        expect(insertCall[0]).toBe('Type')
+
+        // Record
+        expect(insertCall[3]).toHaveLength(1)
+        expect(insertCall[3][0].Name).toBeDefined()
+        expect(insertCall[3][0].Name).toEqual('TestName2')
+      })
+
+      it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
+
+        // existingInstance appliedChange
+        const existingInstanceChangeElement = result.appliedChanges
+          .map(getChangeElement)
+          .find(element => element.elemID
+            .isEqual(existingSettingInstance.elemID)) as InstanceElement
+        expect(existingInstanceChangeElement).toBeDefined()
+        expect(existingInstanceChangeElement.value.Name).toBeDefined()
+        expect(existingInstanceChangeElement.value.Name).toBe('TestName1')
+
+        // newInstnace appliedChange
+        const newInstanceChangeElement = result.appliedChanges
+          .map(getChangeElement)
+          .find(element => element.elemID
+            .isEqual(nonExistingSettingInstance.elemID)) as InstanceElement
+        expect(newInstanceChangeElement.elemID).toEqual(nonExistingSettingInstance.elemID)
+        expect(newInstanceChangeElement.value.Name).toBeDefined()
+        expect(newInstanceChangeElement.value.Name).toBe('TestName2')
+      })
     })
 
     describe('When valid add group', () => {

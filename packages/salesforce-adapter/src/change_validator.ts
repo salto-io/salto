@@ -21,6 +21,7 @@ import customObjectInstancesValidator from './change_validators/custom_object_in
 import unknownFieldValidator from './change_validators/unknown_field'
 import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
+import profileMapKeysValidator from './change_validators/profile_map_keys'
 
 const changeValidators: ChangeValidator[] = [
   packageValidator,
@@ -29,6 +30,7 @@ const changeValidators: ChangeValidator[] = [
   unknownFieldValidator,
   customFieldTypeValidator,
   standardFieldLabelValidator,
+  profileMapKeysValidator,
 ]
 
 export default createChangeValidator(changeValidators)

@@ -18,12 +18,12 @@ import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/profile_maps'
 import mockClient from '../client'
 import {
-  SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE,
+  SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
 } from '../../src/constants'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
-const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
+export const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
@@ -66,6 +66,7 @@ const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => 
   return new ObjectType({
     elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
     fields: {
+      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
       applicationVisibilities: { type: useMaps
         ? new MapType(ProfileApplicationVisibility)
         : ProfileApplicationVisibility },

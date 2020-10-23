@@ -96,7 +96,7 @@ export const getAllElements = (): AllElementsTypes => {
   const saltoEmployeeInstance = new InstanceElement(
     'instance',
     saltoEmployee,
-    { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo' } }
+    { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } } }
   )
 
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice,

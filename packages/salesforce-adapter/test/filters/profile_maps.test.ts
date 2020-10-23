@@ -23,7 +23,7 @@ import {
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
-const generateProfileType = (useMaps = false): ObjectType => {
+const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
@@ -57,6 +57,12 @@ const generateProfileType = (useMaps = false): ObjectType => {
     },
   })
 
+  // we only define types as lists if they use non-unique maps - so for onDeploy, fieldPermissions
+  // will not appear as a list unless conflicts were found during the previous fetch
+  const fieldPermissionsNonMapType = preDeploy
+    ? ProfileFieldLevelSecurity
+    : new ListType(ProfileFieldLevelSecurity)
+
   return new ObjectType({
     elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
     fields: {
@@ -68,7 +74,7 @@ const generateProfileType = (useMaps = false): ObjectType => {
         : new ListType(ProfileLayoutAssignment) },
       fieldPermissions: { type: useMaps
         ? new MapType(new MapType(ProfileFieldLevelSecurity))
-        : new ListType(ProfileFieldLevelSecurity) },
+        : fieldPermissionsNonMapType },
     },
     annotations: {
       [METADATA_TYPE]: PROFILE_METADATA_TYPE,
@@ -191,7 +197,7 @@ describe('ProfileMaps filter', () => {
           (inst, idx) => ({ action: 'modify', data: { before: inst, after: afterInstances[idx] } })
         )
         await filter.preDeploy(changes)
-        expect(afterProfileObj).toEqual(generateProfileType(true))
+        expect(afterProfileObj).toEqual(generateProfileType(false, true))
         expect(profileObj).toEqual(generateProfileType(true))
         expect(afterInstances).toEqual(generateInstances(afterProfileObj))
         expect(instances).toEqual(generateInstances(profileObj))
@@ -354,9 +360,8 @@ describe('ProfileMaps filter', () => {
       }))
       await filter.preDeploy(changes)
     })
-    it('should not modify the object type on preDeploy', () => {
-      expect(beforeProfileObj).toEqual(generateProfileType(true))
-      expect(afterProfileObj).toEqual(generateProfileType(true))
+    it('should convert the object back to list on preDeploy', () => {
+      expect(afterProfileObj).toEqual(generateProfileType(false, true))
     })
 
     it('should convert the instances back to lists on preDeploy', () => {

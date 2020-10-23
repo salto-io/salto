@@ -449,20 +449,24 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       }),
       {
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: true,
-            editable: false,
+        fieldPermissions: {
+          Lead: {
+            Fax: {
+              field: 'Lead.Fax',
+              readable: true,
+              editable: false,
+            },
           },
-          {
-            editable: false,
-            field: 'Account.AccountNumber',
-            readable: false,
+          Account: {
+            AccountNumber: {
+              editable: false,
+              field: 'Account.AccountNumber',
+              readable: false,
+            },
           },
-        ],
-        objectPermissions: [
-          {
+        },
+        objectPermissions: {
+          Account: {
             allowCreate: true,
             allowDelete: true,
             allowEdit: true,
@@ -471,26 +475,27 @@ describe('Salesforce adapter E2E with real account', () => {
             viewAllRecords: false,
             object: 'Account',
           },
-        ],
+        },
         tabVisibilities: [
           {
             tab: 'standard-Account',
             visibility: 'DefaultOff',
           },
         ],
-        userPermissions: [
-          {
+        userPermissions: {
+          ConvertLeads: {
             enabled: false,
             name: 'ConvertLeads',
           },
-        ],
-        applicationVisibilities: [
-          {
+        },
+        applicationVisibilities: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          standard__ServiceConsole: {
             application: 'standard__ServiceConsole',
             default: false,
             visible: true,
           },
-        ],
+        },
         description: 'new e2e profile',
         [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
       })
@@ -690,20 +695,24 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       }),
       {
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: 'true',
-            editable: 'false',
+        fieldPermissions: {
+          Lead: {
+            Fax: {
+              field: 'Lead.Fax',
+              readable: 'true',
+              editable: 'false',
+            },
           },
-          {
-            editable: 'false',
-            field: 'Account.AccountNumber',
-            readable: 'false',
+          Account: {
+            AccountNumber: {
+              editable: 'false',
+              field: 'Account.AccountNumber',
+              readable: 'false',
+            },
           },
-        ],
-        objectPermissions: [
-          {
+        },
+        objectPermissions: {
+          Account: {
             allowCreate: 'true',
             allowDelete: 'true',
             allowEdit: 'true',
@@ -712,38 +721,39 @@ describe('Salesforce adapter E2E with real account', () => {
             viewAllRecords: 'false',
             object: 'Account',
           },
-        ],
+        },
         tabVisibilities: [
           {
             tab: 'standard-Account',
             visibility: 'DefaultOff',
           },
         ],
-        applicationVisibilities: [
-          {
+        applicationVisibilities: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          standard__ServiceConsole: {
             application: 'standard__ServiceConsole',
             default: 'false',
             visible: 'true',
           },
-        ],
-        userPermissions: [
-          {
+        },
+        userPermissions: {
+          ApiEnabled: {
             name: 'ApiEnabled',
             enabled: 'false',
           },
-        ],
-        pageAccesses: [
-          {
+        },
+        pageAccesses: {
+          ApexPageForProfile: {
             apexPage: 'ApexPageForProfile',
             enabled: 'false',
           },
-        ],
-        classAccesses: [
-          {
+        },
+        classAccesses: {
+          ApexClassForProfile: {
             apexClass: 'ApexClassForProfile',
             enabled: 'false',
           },
-        ],
+        },
         loginHours: {
           sundayStart: '480',
           sundayEnd: '1380',
@@ -762,25 +772,29 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       }),
       {
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: 'true',
-            editable: 'true',
+        fieldPermissions: {
+          Lead: {
+            Fax: {
+              field: 'Lead.Fax',
+              readable: 'true',
+              editable: 'true',
+            },
           },
-          {
-            editable: 'false',
-            field: 'Account.AccountNumber',
-            readable: 'false',
+          Account: {
+            AccountNumber: {
+              editable: 'false',
+              field: 'Account.AccountNumber',
+              readable: 'false',
+            },
+            AnnualRevenue: {
+              editable: 'false',
+              field: 'Account.AnnualRevenue',
+              readable: 'false',
+            },
           },
-          {
-            editable: 'false',
-            field: 'Account.AnnualRevenue',
-            readable: 'false',
-          },
-        ],
-        objectPermissions: [
-          {
+        },
+        objectPermissions: {
+          Account: {
             allowCreate: 'true',
             allowDelete: 'true',
             allowEdit: 'true',
@@ -789,38 +803,40 @@ describe('Salesforce adapter E2E with real account', () => {
             viewAllRecords: 'true',
             object: 'Account',
           },
-        ],
+        },
+        // not converted to maps because it's hidden in the regular code
         tabVisibilities: [
           {
             tab: 'standard-Account',
             visibility: 'DefaultOff',
           },
         ],
-        applicationVisibilities: [
-          {
+        applicationVisibilities: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          standard__ServiceConsole: {
             application: 'standard__ServiceConsole',
             default: 'false',
             visible: 'true',
           },
-        ],
-        userPermissions: [
-          {
+        },
+        userPermissions: {
+          ApiEnabled: {
             name: 'ApiEnabled',
             enabled: 'true',
           },
-        ],
-        pageAccesses: [
-          {
+        },
+        pageAccesses: {
+          ApexPageForProfile: {
             apexPage: 'ApexPageForProfile',
             enabled: 'true',
           },
-        ],
-        classAccesses: [
-          {
+        },
+        classAccesses: {
+          ApexClassForProfile: {
             apexClass: 'ApexClassForProfile',
             enabled: 'true',
           },
-        ],
+        },
         loginHours: {
           sundayStart: '300',
           sundayEnd: '420',
@@ -867,26 +883,14 @@ describe('Salesforce adapter E2E with real account', () => {
       makeArray(savedInstance.pageAccesses).forEach((f: Value) => valuesMap.set(f.apexPage, f))
       makeArray(savedInstance.classAccesses).forEach((f: Value) => valuesMap.set(f.apexClass, f))
 
-      expect((newValues.fieldPermissions as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
-
+      expect(newValues.fieldPermissions.Lead.Fax).toEqual(valuesMap.get('Lead.Fax'))
+      expect(newValues.applicationVisibilities.standard__ServiceConsole).toEqual(valuesMap.get('standard__ServiceConsole'))
+      expect(newValues.objectPermissions.Account).toEqual(valuesMap.get('Account'))
+      expect(newValues.userPermissions.ApiEnabled).toEqual(valuesMap.get('ApiEnabled'))
+      expect(newValues.pageAccesses.ApexPageForProfile).toEqual(valuesMap.get('ApexPageForProfile'))
+      expect(newValues.classAccesses.ApexClassForProfile).toEqual(valuesMap.get('ApexClassForProfile'))
       expect((newValues.tabVisibilities as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.tab)))).toBeTruthy()
-
-      expect((newValues.applicationVisibilities as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.application)))).toBeTruthy()
-
-      expect((newValues.objectPermissions as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.object)))).toBeTruthy()
-
-      expect((newValues.userPermissions as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.name)))).toBeTruthy()
-
-      expect((newValues.pageAccesses as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.apexPage)))).toBeTruthy()
-
-      expect((newValues.classAccesses as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.apexClass)))).toBeTruthy()
       expect(newValues.loginHours).toEqual(savedInstance.loginHours)
 
       await removeElementAndVerify(adapter, client, post)

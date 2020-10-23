@@ -16,7 +16,7 @@
 import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange } from '../src/change'
+import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeElements } from '../src/change'
 
 describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
@@ -50,6 +50,34 @@ describe('change.ts', () => {
     })
     expect(elem).toBe(field)
   })
+
+  it('should getAllChangeElements for removal change', () => {
+    const elems = getAllChangeElements({
+      action: 'remove',
+      data: { before: obj },
+    })
+    expect(elems).toEqual([obj])
+  })
+
+  it('should getAllChangeElements for add change', () => {
+    const elems = getAllChangeElements({
+      action: 'add',
+      data: { after: inst },
+    })
+    expect(elems).toEqual([inst])
+  })
+
+  it('should getAllChangeElements for modification change', () => {
+    const { field } = obj.fields
+    const otherField = field.clone()
+    otherField.name = 'other'
+    const elems = getAllChangeElements({
+      action: 'modify',
+      data: { before: field, after: otherField },
+    })
+    expect(elems).toEqual([field, otherField])
+  })
+
 
   describe('isChange Functions', () => {
     let instChange: Change<InstanceElement>

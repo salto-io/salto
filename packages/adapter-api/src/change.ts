@@ -16,11 +16,14 @@
 import {
   AdditionDiff, ModificationDiff, RemovalDiff, ActionName,
 } from '@salto-io/dag'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TypeElement,
 } from './elements'
 import { ElemID } from './element_id'
 import { Values, Value } from './values'
+
+const { isDefined } = lowerDashValues
 
 export { ActionName }
 
@@ -60,6 +63,13 @@ export const isRemovalOrModificationChange = <T extends Change<unknown>>(
 
 export const getChangeElement = <T>(change: Change<T>): T =>
   (change.action === 'remove' ? change.data.before : change.data.after)
+
+export const getAllChangeElements = <T>(change: Change<T>): T[] => (
+  [
+    isRemovalOrModificationChange(change) ? change.data.before : undefined,
+    isAdditionOrModificationChange(change) ? change.data.after : undefined,
+  ].filter(isDefined)
+)
 
 export const isInstanceChange = <T extends Change<unknown>>(change: T):
   change is T & Change<InstanceElement> => (

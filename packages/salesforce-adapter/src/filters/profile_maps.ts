@@ -14,46 +14,41 @@
 * limitations under the License.
 */
 
+import wu from 'wu'
 import _ from 'lodash'
 import {
-  ElemID, Element, isObjectType, ObjectType, isContainerType, MapType, ListType, InstanceElement,
-  Values,
-  isAdditionOrModificationChange,
-  isInstanceChange,
-  getChangeElement,
-  Change,
-  isMapType,
-  isListType,
+  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement, isInstanceElement,
+  Values, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, isMapType,
+  getAllChangeElements,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { findInstances, naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, SALESFORCE } from '../constants'
+import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 const log = logger(module)
 
-export const PROFILE_TYPE_ID = new ElemID(SALESFORCE, PROFILE_METADATA_TYPE)
-
-type NameFunc = (fieldValue: string) => string[]
 type MapKeyFunc = (value: Values) => string
+type MapDef = {
+  // the name of the field whose value should be used to generate the map key
+  key: string
+  // when true, the map will have two levels instead of one
+  nested?: boolean
+  // use lists as map values, in order to allow multiple values under the same map key
+  mapToList?: boolean
+}
 
 /**
  * Convert a string value into the map index keys.
  * Note: Reference expressions are not supported yet (the resolved value is not populated in fetch)
  * so this filter has to run before any filter adding references on the profile objects.
  */
-const defaultMapper: NameFunc = (val: string) => val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
+const defaultMapper = (val: string): string[] => val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
 
-type MapDef = {
-  key: string
-  nested?: boolean
-  alwaysAllowRepetitions?: boolean
-}
-
-const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
+export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
   applicationVisibilities: { key: 'application' },
   classAccesses: { key: 'apexClass' },
@@ -68,8 +63,8 @@ const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   userPermissions: { key: 'name' },
 
   // Non-unique maps (multiple values can have the same key)
-  categoryGroupVisibilities: { key: 'dataCategoryGroup', alwaysAllowRepetitions: true },
-  layoutAssignments: { key: 'layout', alwaysAllowRepetitions: true },
+  categoryGroupVisibilities: { key: 'dataCategoryGroup', mapToList: true },
+  layoutAssignments: { key: 'layout', mapToList: true },
 
   // Two-level maps
   fieldPermissions: { key: 'field', nested: true },
@@ -91,18 +86,9 @@ const convertArraysToMaps = (
   profile: InstanceElement,
   profileMapFielDef: Record<string, MapDef>,
 ): string[] => {
+  // fields that were intended to be unique, but have multiple values under to the same map key
   const nonUniqueMapFields: string[] = []
 
-  const toUniqueMap = (values: Values[], keyFunc: MapKeyFunc): Values => {
-    const res = _.keyBy(values, item => keyFunc(item))
-    if (Object.keys(res).length !== values.length) {
-      throw new Error('Non-unique profile field map')
-    }
-    return res
-  }
-  const toListMap = (values: Values[], keyFunc: MapKeyFunc): Values => (
-    _.groupBy(values, item => keyFunc(item))
-  )
   const convertField = (
     values: Values[],
     keyFunc: MapKeyFunc,
@@ -110,44 +96,37 @@ const convertArraysToMaps = (
     fieldName: string,
   ): Values => {
     if (!useList) {
-      try {
-        return toUniqueMap(
-          values,
-          item => keyFunc(item),
-        )
-      } catch (e) {
-        nonUniqueMapFields.push(fieldName)
+      const res = _.keyBy(values, item => keyFunc(item))
+      if (Object.keys(res).length === values.length) {
+        return res
       }
+      nonUniqueMapFields.push(fieldName)
     }
-    return toListMap(
-      values,
-      item => keyFunc(item),
-    )
+    return _.groupBy(values, item => keyFunc(item))
   }
 
-  Object.keys(profileMapFielDef).filter(
-    fieldName => profile.value[fieldName] !== undefined
-  ).forEach(fieldName => {
-    const mapDef = profileMapFielDef[fieldName]
+  Object.entries(profileMapFielDef).filter(
+    ([fieldName]) => profile.value[fieldName] !== undefined
+  ).forEach(([fieldName, mapDef]) => {
     if (mapDef.nested) {
-      const newVal = toListMap(
+      const firstLevelGroups = _.groupBy(
         makeArray(profile.value[fieldName]),
-        item => defaultMapper(item[mapDef.key])[0],
+        item => defaultMapper(item[mapDef.key])[0]
       )
-      Object.keys(newVal).forEach(innerFieldName => {
-        newVal[innerFieldName] = convertField(
-          newVal[innerFieldName],
+      profile.value[fieldName] = _.mapValues(
+        firstLevelGroups,
+        firstLevelValues => convertField(
+          firstLevelValues,
           item => defaultMapper(item[mapDef.key])[1],
-          !!mapDef.alwaysAllowRepetitions,
-          innerFieldName,
+          !!mapDef.mapToList,
+          fieldName,
         )
-      })
-      profile.value[fieldName] = newVal
+      )
     } else {
       profile.value[fieldName] = convertField(
         makeArray(profile.value[fieldName]),
         item => defaultMapper(item[mapDef.key])[0],
-        !!mapDef.alwaysAllowRepetitions,
+        !!mapDef.mapToList,
         fieldName,
       )
     }
@@ -199,7 +178,7 @@ const updateFieldTypes = (
   ).forEach(f => {
     const mapDef = profileMapFielDef[f.name]
     let innerTYpe = isContainerType(f.type) ? f.type.innerType : f.type
-    if (mapDef.alwaysAllowRepetitions || nonUniqueMapFields?.includes(f.name)) {
+    if (mapDef.mapToList || nonUniqueMapFields?.includes(f.name)) {
       innerTYpe = new ListType(innerTYpe)
     }
     if (mapDef.nested) {
@@ -241,14 +220,14 @@ const convertFieldsBackToLists = (
       fieldName => profile.value[fieldName] !== undefined
     ).forEach(fieldName => {
       if (Array.isArray(profile.value[fieldName])) {
-        // already updated (modification change)
+        // should not happen
         return
       }
-      const toVals = (values: Values): Values[] => _.flatMap(Object.values(values))
+      const toVals = (values: Values): Values[] => Object.values(values).flat()
       if (profileMapFielDef[fieldName].nested) {
         profile.value[fieldName] = _.mapValues(profile.value[fieldName], toVals)
       }
-      profile.value[fieldName] = toVals(profile.value[fieldName]).sort()
+      profile.value[fieldName] = toVals(profile.value[fieldName])
     })
     return profile
   }
@@ -260,41 +239,21 @@ const convertFieldsBackToLists = (
     ))
 }
 
-/**
- * Convert fields from maps back to lists pre-deploy.
- *
- * @param profileObj          The profile to update
- * @param profileMapFielDef   The field mapping definition
- */
-const convertFieldTypesBackToLists = (
-  profileObj: ObjectType,
-  profileMapFielDef: Record<string, MapDef>,
-): void => {
-  Object.values(profileObj.fields).filter(
-    f => profileMapFielDef[f.name] !== undefined && isMapType(f.type)
-  ).forEach(f => {
-    if (isMapType(f.type)) {
-      f.type = f.type.innerType
-    }
-    // for nested fields (not using while to avoid edge cases)
-    if (isMapType(f.type)) {
-      f.type = f.type.innerType
-    }
-  })
-}
-
 const getInstanceChanges = (
   changes: ReadonlyArray<Change>
 ): ReadonlyArray<Change<InstanceElement>> => (
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter(change => getChangeElement(change).type.elemID.isEqual(PROFILE_TYPE_ID))
+    .filter(change => metadataType(getChangeElement(change).type) === PROFILE_METADATA_TYPE)
 )
 
-const hasMapFields = (obj: ObjectType): boolean => (
-  Object.values(obj.fields).some(f => isMapType(f.type))
-)
+const findProfileInstances = (
+  elements: Iterable<Element>,
+): InstanceElement[] => {
+  const instances = wu(elements).filter(isInstanceElement) as wu.WuIterable<InstanceElement>
+  return [...instances.filter(e => metadataType(e.type) === PROFILE_METADATA_TYPE)]
+}
 
 /**
  * Convert profile fields that are known to be lists into maps, so that they are easier to view
@@ -303,56 +262,40 @@ const hasMapFields = (obj: ObjectType): boolean => (
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     if (config.useOldProfiles) {
-      log.info('Not converting profiles to maps on fetch')
       return
     }
-    const profileInstances = [...findInstances(elements, PROFILE_TYPE_ID)]
-    const profileObj = elements.filter(isObjectType).find(
-      e => metadataType(e) === PROFILE_METADATA_TYPE
-    )
+    const profileInstances = findProfileInstances(elements)
+    if (profileInstances.length === 0) {
+      return
+    }
     const nonUniqueMapFields = convertInstanceFieldsToMaps(profileInstances, PROFILE_MAP_FIELD_DEF)
-    if (profileObj === undefined) {
-      log.warn('Profile object type not found')
-      return
-    }
-    updateFieldTypes(profileObj, nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
+    updateFieldTypes(profileInstances[0].type, nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
   },
 
   preDeploy: async changes => {
+    if (config.useOldProfiles) {
+      return
+    }
     const profileInstanceChanges = getInstanceChanges(changes)
     if (profileInstanceChanges.length === 0) {
       return
     }
-    const profileObj = getChangeElement(profileInstanceChanges[0]).type
-    if (!hasMapFields(profileObj)) {
-      log.info('Profiles are not using map format - skipping preDeploy')
-      return
-    }
     convertFieldsBackToLists(profileInstanceChanges, PROFILE_MAP_FIELD_DEF)
-    convertFieldTypesBackToLists(
-      profileObj,
-      PROFILE_MAP_FIELD_DEF,
-    )
+    // not modifying the type - not needed for deploying instances
   },
 
   onDeploy: async changes => {
     if (config.useOldProfiles) {
-      log.info('Not converting profiles back to maps on deploy')
       return []
     }
     const profileInstanceChanges = getInstanceChanges(changes)
     if (profileInstanceChanges.length === 0) {
       return []
     }
-    const profileObj = getChangeElement(profileInstanceChanges[0]).type
-    // after preDeploy, the fields with lists are exactly the ones that should be converted
-    // back to lists
-    const nonUniqueMapFields = Object.keys(profileObj.fields).filter(
-      fieldName => isListType((profileObj.fields[fieldName].type))
+    convertInstanceFieldsToMaps(
+      profileInstanceChanges.flatMap(getAllChangeElements),
+      PROFILE_MAP_FIELD_DEF,
     )
-    const modifiedProfileInstances = profileInstanceChanges.map(getChangeElement)
-    convertInstanceFieldsToMaps(modifiedProfileInstances, PROFILE_MAP_FIELD_DEF)
-    updateFieldTypes(profileObj, nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
     return []
   },
 })

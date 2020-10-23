@@ -292,7 +292,6 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataTypesToUseUpsertUponUpdate: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, string[]>
-  private useOldProfiles: boolean
   private filtersRunner: Required<Filter>
   private client: SalesforceClient
   private systemFields: string[]
@@ -385,7 +384,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       'LastReferencedDate',
       'LastViewedDate',
     ],
-    useOldProfiles = constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
+    useOldProfiles = constants.DEFAULT_USE_OLD_PROFILES,
     config,
   }: SalesforceAdapterParams) {
     this.enableHideTypesInNacls = config.enableHideTypesInNacls ?? enableHideTypesInNacls
@@ -405,7 +404,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
-    this.useOldProfiles = config.useOldProfiles ?? useOldProfiles
     this.client = client
     this.systemFields = systemFields
     this.filtersRunner = filtersRunner(
@@ -417,7 +415,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         dataManagement: config.dataManagement,
         systemFields,
         enableHideTypesInNacls: this.enableHideTypesInNacls,
-        useOldProfiles: this.useOldProfiles,
+        useOldProfiles: config.useOldProfiles ?? useOldProfiles,
       },
       filterCreators
     )

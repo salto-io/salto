@@ -82,7 +82,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
   const instances = mergeInstances(elements.filter(isInstanceElement))
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]
   const primitives = mergePrimitives(primitiveElements)
-  const listTypes = getContainerTypes(elements.filter(isContainerType))
+  const containerTypes = getContainerTypes(elements.filter(isContainerType))
   const variables = mergeVariables(elements.filter(isVariable))
 
   const mergedElements = [
@@ -94,7 +94,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
 
   const updated = updateMergedTypes(
     mergedElements,
-    _.merge({}, objects.merged, primitives.merged, listTypes)
+    _.merge({}, objects.merged, primitives.merged, containerTypes)
   )
 
   const errors = [

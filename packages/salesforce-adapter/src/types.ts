@@ -245,9 +245,6 @@ export const configType = new ObjectType({
     },
     [USE_OLD_PROFILES]: {
       type: BuiltinTypes.BOOLEAN,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_USE_OLD_PROFILES,
-      },
     },
     [DATA_MANAGEMENT]: {
       type: dataManagementType,

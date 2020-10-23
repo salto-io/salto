@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, ListType, MapType, isListType, isMapType, Change } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
-import filterCreator, { PROFILE_TYPE_ID } from '../../src/filters/profile_maps'
+import filterCreator from '../../src/filters/profile_maps'
 import mockClient from '../client'
 import {
   SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE,
@@ -23,7 +23,7 @@ import {
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
-const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
+const generateProfileType = (useMaps = false): ObjectType => {
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
@@ -57,14 +57,8 @@ const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => 
     },
   })
 
-  // we only define types as lists if they use non-unique maps - so for onDeploy, fieldPermissions
-  // will not appear as a list unless conflicts were found during the previous fetch
-  const fieldPermissionsNonMapType = preDeploy
-    ? ProfileFieldLevelSecurity
-    : new ListType(ProfileFieldLevelSecurity)
-
   return new ObjectType({
-    elemID: PROFILE_TYPE_ID,
+    elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
     fields: {
       applicationVisibilities: { type: useMaps
         ? new MapType(ProfileApplicationVisibility)
@@ -74,7 +68,7 @@ const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => 
         : new ListType(ProfileLayoutAssignment) },
       fieldPermissions: { type: useMaps
         ? new MapType(new MapType(ProfileFieldLevelSecurity))
-        : fieldPermissionsNonMapType },
+        : new ListType(ProfileFieldLevelSecurity) },
     },
     annotations: {
       [METADATA_TYPE]: PROFILE_METADATA_TYPE,
@@ -190,11 +184,16 @@ describe('ProfileMaps filter', () => {
         })
       })
       it('should contain the original elements after fetch + preDeploy', async () => {
+        const afterProfileObj = generateProfileType()
+        const afterInstances = generateInstances(afterProfileObj)
+        await filter.onFetch([afterProfileObj, ...afterInstances])
         const changes: ReadonlyArray<Change> = instances.map(
-          inst => ({ action: 'modify', data: { before: inst, after: inst } })
+          (inst, idx) => ({ action: 'modify', data: { before: inst, after: afterInstances[idx] } })
         )
         await filter.preDeploy(changes)
-        expect(profileObj).toEqual(generateProfileType(false, true))
+        expect(afterProfileObj).toEqual(generateProfileType(true))
+        expect(profileObj).toEqual(generateProfileType(true))
+        expect(afterInstances).toEqual(generateInstances(afterProfileObj))
         expect(instances).toEqual(generateInstances(profileObj))
       })
     })
@@ -241,6 +240,12 @@ describe('ProfileMaps filter', () => {
         expect(Array.isArray(
           (instances[0] as InstanceElement).value.applicationVisibilities.app1
         )).toBeTruthy()
+        expect(Array.isArray(
+          (instances[1] as InstanceElement).value.fieldPermissions.Account.AccountNumber
+        )).toBeTruthy()
+        expect(Array.isArray(
+          (instances[0] as InstanceElement).value.fieldPermissions.Contact.HasOptedOutOfEmail
+        )).toBeTruthy()
       })
 
       it('should not fail even if there are unexpected API_NAME_SEPARATORs in the indexed value', () => {
@@ -259,8 +264,10 @@ describe('ProfileMaps filter', () => {
 
   describe('deploy (pre + on)', () => {
     const filter = filterCreator({ client, config: {} }) as FilterWith<'preDeploy' | 'onDeploy'>
-    let profileObj: ObjectType
-    let instances: InstanceElement[]
+    let beforeProfileObj: ObjectType
+    let afterProfileObj: ObjectType
+    let beforeInstances: InstanceElement[]
+    let afterInstances: InstanceElement[]
     let changes: ReadonlyArray<Change>
 
     const generateInstances = (objType: ObjectType): InstanceElement[] => ([
@@ -337,25 +344,36 @@ describe('ProfileMaps filter', () => {
     ])
 
     beforeAll(async () => {
-      profileObj = generateProfileType(true)
-      instances = generateInstances(profileObj)
-      changes = instances.map(inst => ({ action: 'modify', data: { before: inst, after: inst } }))
+      beforeProfileObj = generateProfileType(true)
+      beforeInstances = generateInstances(beforeProfileObj)
+      afterProfileObj = generateProfileType(true)
+      afterInstances = generateInstances(afterProfileObj)
+      changes = beforeInstances.map((inst, idx) => ({
+        action: 'modify',
+        data: { before: inst, after: afterInstances[idx] },
+      }))
       await filter.preDeploy(changes)
     })
-    it('should convert the object back to list on preDeploy', () => {
-      expect(profileObj).toEqual(generateProfileType(false, true))
+    it('should not modify the object type on preDeploy', () => {
+      expect(beforeProfileObj).toEqual(generateProfileType(true))
+      expect(afterProfileObj).toEqual(generateProfileType(true))
     })
 
     it('should convert the instances back to lists on preDeploy', () => {
-      expect(Array.isArray(instances[0].value.applicationVisibilities)).toBeTruthy()
-      expect(Array.isArray(instances[0].value.fieldPermissions)).toBeTruthy()
-      expect(Array.isArray(instances[0].value.layoutAssignments)).toBeTruthy()
+      expect(Array.isArray(afterInstances[0].value.applicationVisibilities)).toBeTruthy()
+      expect(Array.isArray(afterInstances[0].value.fieldPermissions)).toBeTruthy()
+      expect(Array.isArray(afterInstances[0].value.layoutAssignments)).toBeTruthy()
+      expect(Array.isArray(beforeInstances[0].value.applicationVisibilities)).toBeTruthy()
+      expect(Array.isArray(beforeInstances[0].value.fieldPermissions)).toBeTruthy()
+      expect(Array.isArray(beforeInstances[0].value.layoutAssignments)).toBeTruthy()
     })
 
     it('should return object and instances to their original form', async () => {
       await filter.onDeploy(changes)
-      expect(profileObj).toEqual(generateProfileType(true))
-      expect(instances).toEqual(generateInstances(profileObj))
+      expect(beforeProfileObj).toEqual(generateProfileType(true))
+      expect(afterProfileObj).toEqual(generateProfileType(true))
+      expect(beforeInstances).toEqual(generateInstances(beforeProfileObj))
+      expect(afterInstances).toEqual(generateInstances(afterProfileObj))
     })
   })
 
@@ -379,7 +397,7 @@ describe('ProfileMaps filter', () => {
       expect(profileObj).toEqual(generateProfileType())
     })
 
-    it('should run preDeploy if object contains maps', async () => {
+    it('should do nothing preDeploy', async () => {
       const profileObj = generateProfileType(true)
       const inst = new InstanceElement(
         'profileWithMaps',
@@ -391,26 +409,11 @@ describe('ProfileMaps filter', () => {
         },
       )
 
-      await filter.preDeploy([{ action: 'modify', data: { before: inst, after: inst } }])
-      expect(profileObj).toEqual(generateProfileType(false, true))
-      expect(inst.value.fieldPermissions).toEqual([{ field: 'Account.AccountNumber' }])
-    })
-    it('should not run preDeploy if object does not contain maps', async () => {
-      const profileObj = generateProfileType()
-      const inst = new InstanceElement(
-        'profileWithMaps',
-        profileObj,
-        {
-          applicationVisibilities: { app1: { application: 'app1' } },
-          fieldPermissions: { Account: { AccountNumber: { field: 'Account.AccountNumber' } } },
-          layoutAssignments: {},
-        },
-      )
-
-      await filter.preDeploy([{ action: 'modify', data: { before: inst, after: inst } }])
-      expect(profileObj).toEqual(generateProfileType())
+      await filter.preDeploy([{ action: 'add', data: { after: inst } }])
+      expect(profileObj).toEqual(generateProfileType(true))
       expect(inst.value.fieldPermissions).toEqual({ Account: { AccountNumber: { field: 'Account.AccountNumber' } } })
     })
+
     it('should do nothing onDeploy', async () => {
       const profileObj = generateProfileType()
       const inst = generateProfileInstance({
@@ -421,7 +424,7 @@ describe('ProfileMaps filter', () => {
         layoutAssignments: [],
       })
 
-      await filter.onDeploy([{ action: 'modify', data: { before: inst, after: inst } }])
+      await filter.onDeploy([{ action: 'add', data: { after: inst } }])
       expect(inst.type).toEqual(generateProfileType())
       expect(profileObj).toEqual(generateProfileType())
       expect(Array.isArray(inst.value.fieldPermissions)).toBeTruthy()

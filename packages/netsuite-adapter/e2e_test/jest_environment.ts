@@ -17,7 +17,7 @@ import {
   createEnvUtils, CredsSpec, SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import NetsuiteClient, { Credentials } from '../src/client/client'
+import { Credentials } from '../src/client/client'
 
 
 const log = logger(module)
@@ -39,8 +39,11 @@ export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
         tokenSecret: envUtils.required(tokenSecretEnvVarName),
       }
     },
-    validate: async (credentials: Credentials): Promise<void> => {
-      await NetsuiteClient.validateCredentials(credentials)
+    validate: async (_credentials: Credentials): Promise<void> => {
+      // When validating netsuite credentials it requires the test runner to have java and
+      // access to the SDF jar. In SaaS, which uses this class we can't use the tested env's SDF jar
+      // when running against staging and prod from the test runner, opposed to regular backend e2e
+      // tests. Thus we skip the credentials validation in e2e tests.
     },
     typeName: 'netsuite',
     globalProp: envName ? `netsuite_${envName}` : 'netsuite',

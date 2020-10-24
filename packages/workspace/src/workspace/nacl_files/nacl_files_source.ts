@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, Value, DetailedChange, isElement, getChangeElement,
+  Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
+  isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType,
 } from '@salto-io/adapter-api'
-import { resolvePath } from '@salto-io/adapter-utils'
+import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
@@ -60,6 +61,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
+  getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
   setNaclFiles: (...naclFiles: NaclFile[]) => Promise<void>
   removeNaclFiles: (...names: string[]) => Promise<void>
@@ -82,6 +84,7 @@ export type ParsedNaclFile = {
   errors: ParseError[]
   timestamp: number
   buffer?: string
+  referenced: ElemID[]
 }
 
 type ParsedNaclFileMap = {
@@ -93,12 +96,39 @@ type NaclFilesState = {
   readonly elementsIndex: Record<string, string[]>
   readonly mergedElements: Record<string, Element>
   readonly mergeErrors: MergeError[]
+  readonly referencedIndex: Record<string, string[]>
 }
 
 const cacheResultKey = (filename: string, timestamp?: number): ParseResultKey => ({
   filename,
   lastModified: timestamp ?? Date.now(),
 })
+
+const getElementReferenced = (element: Element): ElemID[] => {
+  const referenced: ElemID[] = []
+  const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
+    if (field && path && !isIndexPathPart(path.name)) {
+      referenced.push(field.type.elemID)
+    }
+    if (isReferenceExpression(value) && path) {
+      const { parent } = value.elemId.createTopLevelParentID()
+      referenced.push(parent)
+    }
+    return value
+  }
+
+  if (isObjectType(element)) {
+    referenced.push(...Object.values(element.fields).map(field => field.type.elemID))
+  }
+  if (isInstanceElement(element)) {
+    referenced.push(element.type.elemID)
+  }
+  referenced.push(...Object.values(element.annotationTypes).map(anno => anno.elemID))
+  if (!isContainerType(element)) {
+    transformElement({ element, transformFunc })
+  }
+  return _.uniq(referenced)
+}
 
 const toParsedNaclFile = (
   naclFile: NaclFile,
@@ -108,6 +138,7 @@ const toParsedNaclFile = (
   filename: naclFile.filename,
   elements: parseResult.elements,
   errors: parseResult.errors,
+  referenced: parseResult.elements.flatMap(getElementReferenced),
 })
 
 const parseNaclFile = async (
@@ -153,14 +184,23 @@ Promise<NaclFilesState> => {
     parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
 
   const elementsIndex: Record<string, string[]> = {}
-  Object.values(allParsed).forEach(naclFile =>
+  const referencedIndex: Record<string, string[]> = {}
+  Object.values(allParsed).forEach(naclFile => {
     naclFile.elements.forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndex[elementFullName] = elementsIndex[elementFullName] || []
       elementsIndex[elementFullName] = _.uniq(
         [...elementsIndex[elementFullName], naclFile.filename]
       )
-    }))
+    })
+    naclFile.referenced.forEach(elemID => {
+      const elementFullName = elemID.getFullName()
+      referencedIndex[elementFullName] = referencedIndex[elementFullName] || []
+      referencedIndex[elementFullName] = _.uniq(
+        [...referencedIndex[elementFullName], naclFile.filename]
+      )
+    })
+  })
 
   const mergeResult = mergeElements(
     Object.values(allParsed).flatMap(parsed => parsed.elements)
@@ -173,6 +213,7 @@ Promise<NaclFilesState> => {
     mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
     mergeErrors: mergeResult.errors,
     elementsIndex,
+    referencedIndex,
   }
 }
 
@@ -214,6 +255,7 @@ const buildNaclFilesSource = (
       filename,
       elements,
       errors: [],
+      referenced: elements.flatMap(getElementReferenced),
     }
     const key = cacheResultKey(parsed.filename, parsed.timestamp)
     await cache.put(key, { elements, errors: [] })
@@ -233,6 +275,10 @@ const buildNaclFilesSource = (
     const topLevelID = elemID.createTopLevelParentID()
     return (await getState()).elementsIndex[topLevelID.parent.getFullName()] || []
   }
+
+  const getElementReferencedFiles = async (
+    elemID: ElemID
+  ): Promise<string[]> => (await getState()).referencedIndex[elemID.getFullName()] || []
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
@@ -439,6 +485,7 @@ const buildNaclFilesSource = (
     },
     getSourceMap,
     getElementNaclFiles,
+    getElementReferencedFiles,
     isEmpty: () => naclFilesStore.isEmpty(),
   }
 }

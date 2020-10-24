@@ -76,10 +76,20 @@ export const provideWorkspaceReferences = async (
   context: PositionContext
 ): Promise<SaltoElemLocation[]> => {
   const fullName = getSearchElementFullName(context, token)
-  return [
-    ..._.flatten(await Promise.all(
-      (await workspace.elements).map(e => getUsages(workspace, e, fullName))
-    )),
-    ...await getLocations(workspace, fullName),
-  ]
+  try {
+    const id = ElemID.fromFullName(fullName)
+    const referencedByFiles = await workspace.getElementReferencedFiles(id)
+    const referencedByElements = _.flatten(await Promise.all(
+      referencedByFiles.map(filename => workspace.getElements(filename))
+    ))
+    const usages = _.flatten(await Promise.all(
+      referencedByElements.map(e => getUsages(workspace, e, fullName))
+    ))
+    return [
+      ...usages,
+      ...await getLocations(workspace, fullName),
+    ]
+  } catch (e) {
+    return getLocations(workspace, fullName)
+  }
 }

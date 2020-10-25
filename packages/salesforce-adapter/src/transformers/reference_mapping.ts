@@ -27,8 +27,8 @@ import {
   VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, CPQ_CUSTOM_SCRIPT, CPQ_QUOTE_FIELDS,
   CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
-  CPQ_QUOTE_LINE_FIELDS, CONF_ATTR_API_NAME_TO_NAME, CONF_ATTR_NAME_TO_API_NAME,
-  LOOKUP_QUERY_NAME_TO_API_NAME, LOOKUP_QUERY_API_NAME_TO_NAME, CPQ_TESTED_OBJECT,
+  CPQ_QUOTE_LINE_FIELDS, CONF_ATTR_NAME_TO_API_NAME,
+  LOOKUP_QUERY_NAME_TO_API_NAME, CPQ_TESTED_OBJECT,
   CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD,
 } from '../constants'
 
@@ -57,11 +57,13 @@ const ReferenceSerializationStrategyLookup: Record<
     ),
   },
   configurationAttributeMapping: {
-    serialize: ({ ref }) => (CONF_ATTR_API_NAME_TO_NAME[apiName(ref.value)]),
+    serialize: ({ ref }) => (_.invert(CONF_ATTR_NAME_TO_API_NAME)[apiName(ref.value)]
+      ?? apiName(ref.value)),
     lookup: val => (_.isString(val) ? CONF_ATTR_NAME_TO_API_NAME[val] ?? val : val),
   },
   lookupQueryMapping: {
-    serialize: ({ ref }) => (LOOKUP_QUERY_API_NAME_TO_NAME[apiName(ref.value)]),
+    serialize: ({ ref }) => (_.invert(LOOKUP_QUERY_NAME_TO_API_NAME)[apiName(ref.value)]
+      ?? apiName(ref.value)),
     lookup: val => (_.isString(val) ? LOOKUP_QUERY_NAME_TO_API_NAME[val] ?? val : val),
   },
 }

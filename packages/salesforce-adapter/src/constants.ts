@@ -343,10 +343,6 @@ export const CONF_ATTR_NAME_TO_API_NAME = {
   [CPQ_QUOTE_LINE_GROUP_NO_PRE]: CPQ_QUOTE_LINE_GROUP,
 } as Record<string, string>
 
-export const CONF_ATTR_API_NAME_TO_NAME = Object.fromEntries(
-  Object.entries(CONF_ATTR_NAME_TO_API_NAME).map(([key, val]) => ([val, key]))
-)
-
 export const CPQ_QUOTE_NAME = 'Quote'
 export const CPQ_QUOTE_LINE_NAME = 'Quote Line'
 export const CPQ_PRODUCT_OPTION_NAME = 'Product Option'
@@ -355,7 +351,3 @@ export const LOOKUP_QUERY_NAME_TO_API_NAME = {
   [CPQ_QUOTE_LINE_NAME]: CPQ_QUOTE_LINE,
   [CPQ_PRODUCT_OPTION_NAME]: CPQ_PRODUCT_OPTION,
 } as Record<string, string>
-
-export const LOOKUP_QUERY_API_NAME_TO_NAME = Object.fromEntries(
-  Object.entries(LOOKUP_QUERY_NAME_TO_API_NAME).map(([key, val]) => ([val, key]))
-)

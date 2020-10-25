@@ -24,7 +24,7 @@ import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
-  FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
@@ -122,7 +122,7 @@ describe('Adapter', () => {
       })
       const { elements } = await netsuiteAdapter.fetch()
       expect(client.getCustomObjects).toHaveBeenCalledWith(
-        _.pull(Object.keys(customTypes), SAVED_SEARCH, TRANSACTION_FORM),
+        _.pull(Object.keys(customTypes), SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION),
         true,
         1
       )

@@ -29,7 +29,7 @@ import {
 } from './types'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
-  FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
@@ -82,7 +82,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       convertLists,
       replaceInstanceReferencesFilter,
     ],
-    typesToSkip = [],
+    typesToSkip = [
+      INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
+      // integrations and contains only SCRIPT_ID attribute for custom ones.
+      // There is no value in fetching them as they contain no data and are not deployable.
+      // If we decide to fetch them we should set the SCRIPT_ID by the xml's filename upon fetch.
+    ],
     filePathRegexSkipList = [],
     fetchAllTypesAtOnce = DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
     fetchTypeTimeoutInMinutes = DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,

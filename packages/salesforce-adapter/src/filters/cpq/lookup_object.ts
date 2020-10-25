@@ -38,89 +38,74 @@ const OBJECTS_TO_LOOKUP_FIELDS = {
   },
 } as Record<string, { field: string; valuesMapping?: Record<string, string> }>
 
+const transformLookupObjectValueSetFullNames = (
+  object: ObjectType,
+  transformFullNameFn: (
+    objectApiName: string,
+    fullName: string
+  ) => (ReferenceExpression | string | undefined)
+): ObjectType => {
+  const lookupObjectField = object.fields[OBJECTS_TO_LOOKUP_FIELDS[apiName(object)].field]
+  if (lookupObjectField === undefined) {
+    return object
+  }
+  const lookupValueSet = lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  if (lookupValueSet === undefined) {
+    return object
+  }
+  lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet.map(
+    (value: Value) => (
+      {
+        ...value,
+        fullName: transformFullNameFn(apiName(object), value.fullName),
+      }
+    )
+  )
+  return object
+}
+
 const replaceLookupObjectValueSetValuesWithReferences = (customObjects: ObjectType[]): void => {
   const apiNameToElemID = Object.fromEntries(
     customObjects.map(object => [apiName(object), object.elemID])
   )
   const relevantObjects = customObjects
     .filter(object => Object.keys(OBJECTS_TO_LOOKUP_FIELDS).includes(apiName(object)))
-  relevantObjects.forEach(object => {
-    const lookupObjectField = object.fields[OBJECTS_TO_LOOKUP_FIELDS[apiName(object)].field]
-    if (lookupObjectField === undefined) {
-      return
-    }
-    const lookupValueSet = lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-    if (lookupValueSet === undefined) {
-      return
-    }
-    const valuesMapping = OBJECTS_TO_LOOKUP_FIELDS[apiName(object)].valuesMapping
-      ?? {}
-    lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet
-      .map((value: Value) => {
-        const fullNameVal = valuesMapping[value.fullName] ?? value.fullName
-        if (fullNameVal === undefined) {
-          return value
-        }
-        return {
-          ...value,
-          fullName: (apiNameToElemID[fullNameVal] !== undefined
-            ? new ReferenceExpression(apiNameToElemID[fullNameVal]) : value.fullName),
-        }
-      })
-  })
-}
 
-const transformLabelToApiName = (object: ObjectType): ObjectType => {
-  const objectApiName = apiName(object)
-  const lookupObjectField = object.fields[OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.field]
-  if (lookupObjectField === undefined) {
-    return object
+  const transformFullNameToRef = (
+    objectApiName: string,
+    fullName: string
+  ): ReferenceExpression | string | undefined => {
+    const nameToApiMapping = OBJECTS_TO_LOOKUP_FIELDS[objectApiName].valuesMapping ?? {}
+    const mappedFullName = nameToApiMapping[fullName] ?? fullName
+    return (apiNameToElemID[mappedFullName] !== undefined
+      ? new ReferenceExpression(apiNameToElemID[mappedFullName]) : fullName)
   }
-  const lookupValueSet = lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-  if (lookupValueSet === undefined) {
-    return object
-  }
-  const nameToApiMapping = OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.valuesMapping ?? {}
-  lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet
-    .map((value: Value) => {
-      const mappedValue = nameToApiMapping[value.fullName]
-      if (mappedValue === undefined) {
-        return value
-      }
-      return {
-        ...value,
-        fullName: mappedValue,
-      }
-    })
-  return object
-}
-
-const transformValuesBackToLabel = (object: ObjectType): ObjectType => {
-  const objectApiName = apiName(object)
-  const lookupObjectField = object.fields[OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.field]
-  if (lookupObjectField === undefined) {
-    return object
-  }
-  const lookupValueSet = lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-  if (lookupValueSet === undefined) {
-    return object
-  }
-  const apiNameToNameMapping = _.invert(
-    OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.valuesMapping ?? {}
+  relevantObjects.forEach(
+    object => (transformLookupObjectValueSetFullNames(object, transformFullNameToRef))
   )
-  lookupObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet
-    .map((value: Value) => {
-      const mappedValue = apiNameToNameMapping[value.fullName]
-      if (mappedValue === undefined) {
-        return value
-      }
-      return {
-        ...value,
-        fullName: mappedValue,
-      }
-    })
-  return object
 }
+
+const transformFullNameToApiName = (
+  objectApiName: string,
+  fullName: string,
+): ReferenceExpression | string | undefined => {
+  const nameToApiMapping = OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.valuesMapping ?? {}
+  return nameToApiMapping[fullName] ?? fullName
+}
+
+const transformFullNameToLabel = (
+  objectApiName: string,
+  fullName: string,
+): ReferenceExpression | string | undefined => {
+  const nameToApiMapping = _.invert(OBJECTS_TO_LOOKUP_FIELDS[objectApiName]?.valuesMapping ?? {})
+  return nameToApiMapping[fullName] ?? fullName
+}
+
+const transformLabelToApiName = (object: ObjectType): ObjectType =>
+  (transformLookupObjectValueSetFullNames(object, transformFullNameToApiName))
+
+const transformValuesBackToLabel = (object: ObjectType): ObjectType =>
+  (transformLookupObjectValueSetFullNames(object, transformFullNameToLabel))
 
 const getCustomObjectWithMappingLookupChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>

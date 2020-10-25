@@ -150,6 +150,13 @@ export const sspapplication = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
+    runtimeversion: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
+      },
+    }, /* Original description: This field value can be up to 40 characters long.   The default value is '1.0'. */
     description: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -166,6 +173,16 @@ export const sspapplication = new ObjectType({
       annotations: {
       },
     }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
+    systemdomain: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the runtimeversion value is equal to 2.x.   The default value is F. */
+    defaultsspfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
+      },
+    }, /* Original description: This field must reference a file with any of the following extensions: .js, .ss, .ssp */
     entrypoints: {
       type: sspapplication_entrypoints,
       annotations: {

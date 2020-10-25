@@ -90,12 +90,12 @@ export const translationcollection = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 60 characters long.   The default value is ‘custcollection’. */
     name: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 100,
       },
-    }, /* Original description: This field value can be up to 100 characters long. */
+    }, /* Original description: This field value can be up to 100 characters long.   This field accepts references to the string custom type. */
     defaultlanguage: {
       type: enums.translationcollection_defaultlanguage,
       annotations: {
@@ -103,11 +103,11 @@ export const translationcollection = new ObjectType({
       },
     }, /* Original description: For information about possible values, see translationcollection_defaultlanguage. */
     description: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
-    }, /* Original description: This field value can be up to 1000 characters long. */
+    }, /* Original description: This field value can be up to 1000 characters long.   This field accepts references to the string custom type. */
     strings: {
       type: translationcollection_strings,
       annotations: {

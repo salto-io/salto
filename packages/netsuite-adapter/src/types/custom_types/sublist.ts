@@ -39,11 +39,11 @@ export const sublist = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custsublist’. */
     label: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     savedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -70,182 +70,182 @@ export const sublist = new ObjectType({
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     sale: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     opportunity: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     journal: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     expensereport: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     inventoryadjustment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     assemblybuild: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     fulfillmentrequest: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     storepickup: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     itemreceipt: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     itemfulfillment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     payment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     vendorpayment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     deposit: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
     depositapplication: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
+    }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   The default value is F. */
+    customer: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ENTITY.   The default value is F. */
+    job: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ENTITY.   The default value is F. */
+    vendor: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ENTITY.   The default value is F. */
+    employee: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ENTITY.   The default value is F. */
+    partner: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ENTITY.   The default value is F. */
+    contact: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ENTITY.   The default value is F. */
+    inventoryitem: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ITEM.   The default value is F. */
+    noninventoryitem: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ITEM.   The default value is F. */
+    service: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ITEM.   The default value is F. */
+    othercharge: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ITEM.   The default value is F. */
+    itemgroup: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ITEM.   The default value is F. */
+    kit: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ITEM.   The default value is F. */
+    billofmaterials: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to ITEM.   The default value is F. */
+    case: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to CRM.   The default value is F. */
+    task: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to CRM.   The default value is F. */
+    call: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to CRM.   The default value is F. */
+    event: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to CRM.   The default value is F. */
+    solution: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to CRM.   The default value is F. */
+    campaign: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to CRM.   The default value is F. */
+    issue: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the sublisttype value is equal to CRM.   The default value is F. */
     customtransactions: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the sublisttype value is equal to TRANSACTION.   You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the customtransactiontype custom type.   If this field appears in the project, you must reference the CUSTOMTRANSACTIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CUSTOMTRANSACTIONS must be enabled for this field to appear in your account. */
-    customer: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    job: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    vendor: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    employee: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    partner: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    contact: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    inventoryitem: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    noninventoryitem: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    service: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    othercharge: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    itemgroup: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    kit: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    billofmaterials: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    case: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    task: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    call: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    event: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    solution: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    campaign: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    issue: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, sublistElemID.name],
 })

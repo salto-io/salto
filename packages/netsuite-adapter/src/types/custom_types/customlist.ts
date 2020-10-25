@@ -38,11 +38,11 @@ const customlist_customvalues_customvalue = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     value: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     abbreviation: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -92,12 +92,12 @@ export const customlist = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘customlist’. */
     name: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
-    }, /* Original description: This field value can be up to 30 characters long. */
+    }, /* Original description: This field value can be up to 30 characters long.   This field accepts references to the string custom type. */
     description: {
       type: BuiltinTypes.STRING,
       annotations: {

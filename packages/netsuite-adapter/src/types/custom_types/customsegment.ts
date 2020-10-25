@@ -580,6 +580,11 @@ export const customsegment = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    displaytype: {
+      type: enums.customsegment_displaytype,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see customsegment_displaytype.   The default value is 'NORMAL'. */
     defaultselection: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {

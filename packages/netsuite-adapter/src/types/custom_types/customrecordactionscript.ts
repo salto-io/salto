@@ -21,13 +21,50 @@ import {
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
-export const massupdatescriptInnerTypes: ObjectType[] = []
+export const customrecordactionscriptInnerTypes: ObjectType[] = []
 
-const massupdatescriptElemID = new ElemID(constants.NETSUITE, 'massupdatescript')
-const massupdatescript_libraries_libraryElemID = new ElemID(constants.NETSUITE, 'massupdatescript_libraries_library')
+const customrecordactionscriptElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript')
+const customrecordactionscript_customplugintypes_plugintypeElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_customplugintypes_plugintype')
 
-const massupdatescript_libraries_library = new ObjectType({
-  elemID: massupdatescript_libraries_libraryElemID,
+const customrecordactionscript_customplugintypes_plugintype = new ObjectType({
+  elemID: customrecordactionscript_customplugintypes_plugintypeElemID,
+  annotations: {
+  },
+  fields: {
+    plugintype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the plugintype custom type. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
+})
+
+customrecordactionscriptInnerTypes.push(customrecordactionscript_customplugintypes_plugintype)
+
+const customrecordactionscript_customplugintypesElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_customplugintypes')
+
+const customrecordactionscript_customplugintypes = new ObjectType({
+  elemID: customrecordactionscript_customplugintypesElemID,
+  annotations: {
+  },
+  fields: {
+    plugintype: {
+      type: new ListType(customrecordactionscript_customplugintypes_plugintype),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
+})
+
+customrecordactionscriptInnerTypes.push(customrecordactionscript_customplugintypes)
+
+const customrecordactionscript_libraries_libraryElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_libraries_library')
+
+const customrecordactionscript_libraries_library = new ObjectType({
+  elemID: customrecordactionscript_libraries_libraryElemID,
   annotations: {
   },
   fields: {
@@ -38,33 +75,33 @@ const massupdatescript_libraries_library = new ObjectType({
       },
     }, /* Original description: This field must reference a .js file. */
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_libraries_library)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_libraries_library)
 
-const massupdatescript_librariesElemID = new ElemID(constants.NETSUITE, 'massupdatescript_libraries')
+const customrecordactionscript_librariesElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_libraries')
 
-const massupdatescript_libraries = new ObjectType({
-  elemID: massupdatescript_librariesElemID,
+const customrecordactionscript_libraries = new ObjectType({
+  elemID: customrecordactionscript_librariesElemID,
   annotations: {
   },
   fields: {
     library: {
-      type: new ListType(massupdatescript_libraries_library),
+      type: new ListType(customrecordactionscript_libraries_library),
       annotations: {
       },
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_libraries)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_libraries)
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter')
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter')
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter = new ObjectType({
-  elemID: massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter = new ObjectType({
+  elemID: customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
   fields: {
@@ -110,33 +147,33 @@ const massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_c
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter)
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters')
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters')
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters = new ObjectType({
-  elemID: massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID,
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters = new ObjectType({
+  elemID: customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID,
   annotations: {
   },
   fields: {
     customfieldfilter: {
-      type: new ListType(massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
+      type: new ListType(customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters)
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess')
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess')
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess = new ObjectType({
-  elemID: massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess = new ObjectType({
+  elemID: customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
   fields: {
@@ -159,33 +196,33 @@ const massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleacc
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess)
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_roleaccessesElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses')
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses')
 
-const massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses = new ObjectType({
-  elemID: massupdatescript_scriptcustomfields_scriptcustomfield_roleaccessesElemID,
+const customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses = new ObjectType({
+  elemID: customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID,
   annotations: {
   },
   fields: {
     roleaccess: {
-      type: new ListType(massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
+      type: new ListType(customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses)
 
-const massupdatescript_scriptcustomfields_scriptcustomfieldElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptcustomfields_scriptcustomfield')
+const customrecordactionscript_scriptcustomfields_scriptcustomfieldElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptcustomfields_scriptcustomfield')
 
-const massupdatescript_scriptcustomfields_scriptcustomfield = new ObjectType({
-  elemID: massupdatescript_scriptcustomfields_scriptcustomfieldElemID,
+const customrecordactionscript_scriptcustomfields_scriptcustomfield = new ObjectType({
+  elemID: customrecordactionscript_scriptcustomfields_scriptcustomfieldElemID,
   annotations: {
   },
   fields: {
@@ -335,43 +372,43 @@ const massupdatescript_scriptcustomfields_scriptcustomfield = new ObjectType({
       },
     }, /* Original description: For information about possible values, see script_setting. */
     customfieldfilters: {
-      type: massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters,
+      type: customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters,
       annotations: {
       },
     },
     roleaccesses: {
-      type: massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses,
+      type: customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses,
       annotations: {
       },
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptcustomfields_scriptcustomfield)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptcustomfields_scriptcustomfield)
 
-const massupdatescript_scriptcustomfieldsElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptcustomfields')
+const customrecordactionscript_scriptcustomfieldsElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptcustomfields')
 
-const massupdatescript_scriptcustomfields = new ObjectType({
-  elemID: massupdatescript_scriptcustomfieldsElemID,
+const customrecordactionscript_scriptcustomfields = new ObjectType({
+  elemID: customrecordactionscript_scriptcustomfieldsElemID,
   annotations: {
   },
   fields: {
     scriptcustomfield: {
-      type: new ListType(massupdatescript_scriptcustomfields_scriptcustomfield),
+      type: new ListType(customrecordactionscript_scriptcustomfields_scriptcustomfield),
       annotations: {
       },
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptcustomfields)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptcustomfields)
 
-const massupdatescript_scriptdeployments_scriptdeploymentElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptdeployments_scriptdeployment')
+const customrecordactionscript_scriptdeployments_scriptdeploymentElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptdeployments_scriptdeployment')
 
-const massupdatescript_scriptdeployments_scriptdeployment = new ObjectType({
-  elemID: massupdatescript_scriptdeployments_scriptdeploymentElemID,
+const customrecordactionscript_scriptdeployments_scriptdeployment = new ObjectType({
+  elemID: customrecordactionscript_scriptdeployments_scriptdeploymentElemID,
   annotations: {
   },
   fields: {
@@ -393,7 +430,7 @@ const massupdatescript_scriptdeployments_scriptdeployment = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see scriptdeployment_recordtype. */
+    }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see the following lists:   scriptdeployment_recordtype   allrecord_script_deployment_recordtype */
     allemployees: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -455,32 +492,32 @@ const massupdatescript_scriptdeployments_scriptdeployment = new ObjectType({
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptdeployments_scriptdeployment)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptdeployments_scriptdeployment)
 
-const massupdatescript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptdeployments')
+const customrecordactionscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptdeployments')
 
-const massupdatescript_scriptdeployments = new ObjectType({
-  elemID: massupdatescript_scriptdeploymentsElemID,
+const customrecordactionscript_scriptdeployments = new ObjectType({
+  elemID: customrecordactionscript_scriptdeploymentsElemID,
   annotations: {
   },
   fields: {
     scriptdeployment: {
-      type: new ListType(massupdatescript_scriptdeployments_scriptdeployment),
+      type: new ListType(customrecordactionscript_scriptdeployments_scriptdeployment),
       annotations: {
       },
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
 
-massupdatescriptInnerTypes.push(massupdatescript_scriptdeployments)
+customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptdeployments)
 
 
-export const massupdatescript = new ObjectType({
-  elemID: massupdatescriptElemID,
+export const customrecordactionscript = new ObjectType({
+  elemID: customrecordactionscriptElemID,
   annotations: {
   },
   fields: {
@@ -505,11 +542,6 @@ export const massupdatescript = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
-    defaultfunction: {
-      type: BuiltinTypes.STRING,
-      annotations: {
-      },
-    },
     description: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -547,21 +579,26 @@ export const massupdatescript = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    customplugintypes: {
+      type: customrecordactionscript_customplugintypes,
+      annotations: {
+      },
+    },
     libraries: {
-      type: massupdatescript_libraries,
+      type: customrecordactionscript_libraries,
       annotations: {
       },
     },
     scriptcustomfields: {
-      type: massupdatescript_scriptcustomfields,
+      type: customrecordactionscript_scriptcustomfields,
       annotations: {
       },
     },
     scriptdeployments: {
-      type: massupdatescript_scriptdeployments,
+      type: customrecordactionscript_scriptdeployments,
       annotations: {
       },
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, massupdatescriptElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })

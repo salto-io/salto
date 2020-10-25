@@ -352,18 +352,18 @@ def generate_type_name_to_script_id_prefix():
 
 
 def login(username, password, secret_key_2fa):
+    logging.info('Trying to login to NetSuite documentation')
     # submit username & password
     time.sleep(1)
-    webpage.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[1]/td[2]/input').send_keys(username)
-    webpage.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/input').send_keys(password)
-    webpage.find_element_by_xpath('//*[@id="rememberme"]').click()
-    webpage.find_element_by_xpath('//*[@id="Submit"]').click()
+    webpage.find_element_by_xpath('/html/body/div/div/div[2]/form/div[2]/input').send_keys(username)
+    webpage.find_element_by_xpath('/html/body/div/div/div[2]/form/div[3]/input').send_keys(password)
+    webpage.find_element_by_xpath('//*[@id="login-submit"]').click()
     time.sleep(2)
 
     # generate 2FA token and submit
     token2fa = pyotp.TOTP(secret_key_2fa).now()
-    webpage.find_element_by_xpath('//*[@id="n-id-component-19"]').send_keys(token2fa)
-    webpage.find_element_by_xpath('//*[@id="n-id-component-44"]').click()
+    webpage.find_element_by_xpath('//*[@id="n-id-component-17"]').send_keys(token2fa)
+    webpage.find_element_by_xpath('//*[@id="n-id-component-43"]').click()
     time.sleep(1)
 
 

@@ -375,6 +375,16 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'relativeApiName',
     target: { parent: 'SBQQ__QuoteLine__c', type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'SBQQ__FieldName__c', parentTypes: ['SBQQ__LineColumn__c'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parent: 'SBQQ__QuoteLine__c', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'SBQQ__FieldName__c', parentTypes: [CPQ_FIELD_METADATA] },
+    serializationStrategy: 'relativeApiName',
+    target: { parent: CPQ_OBJECT_NAME, type: CUSTOM_FIELD },
+  },
 ]
 
 const matchName = (fieldName: string, matcher: string | RegExp): boolean => (

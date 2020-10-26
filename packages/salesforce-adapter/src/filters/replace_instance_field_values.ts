@@ -47,17 +47,13 @@ const fieldSelectMapping = [
  */
 const toShortId = (longId: string): string => (longId.slice(0, -3))
 
-const getApiNameToIdLookup = async (client: SalesforceClient): Promise<Record<string, string>> => {
-  let apiNameToId = await getIdsForType(client, CUSTOM_FIELD)
-  apiNameToId = Object.fromEntries(
-    Object.entries(apiNameToId).map(([name, id]) => [name, toShortId(id)])
-  )
-  return apiNameToId
-}
+const getApiNameToIdLookup = async (client: SalesforceClient): Promise<Record<string, string>> => (
+  _.mapValues(await getIdsForType(client, CUSTOM_FIELD), toShortId)
+)
 
 const shouldReplace = (field: Field): boolean => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
-  return !_.isEmpty(resolverFinder(field))
+  return resolverFinder(field).length > 0
 }
 
 const replaceInstanceValues = (instance: InstanceElement,
@@ -104,9 +100,9 @@ const getIdToNameLookupFromAllElements = (elements: Element[]): Record<string, s
 
   Object.assign(lookup, ...fields.map(field => {
     const id = getInternalId(field)
-    return ({
-      [id === undefined ? id : toShortId(id)]: apiName(field),
-    })
+    return id === undefined ? {} : {
+      [toShortId(id)]: apiName(field),
+    }
   }))
   return lookup
 }

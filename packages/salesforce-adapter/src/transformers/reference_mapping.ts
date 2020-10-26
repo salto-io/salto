@@ -27,7 +27,9 @@ import {
   VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, CPQ_CUSTOM_SCRIPT, CPQ_QUOTE_FIELDS,
   CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
-  CPQ_QUOTE_LINE_FIELDS,
+  CPQ_QUOTE_LINE_FIELDS, CONF_ATTR_NAME_TO_API_NAME,
+  LOOKUP_QUERY_NAME_TO_API_NAME, CPQ_TESTED_OBJECT,
+  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD,
 } from '../constants'
 
 const log = logger(module)
@@ -39,7 +41,7 @@ export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
 }
 
-type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName'
+type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -53,6 +55,16 @@ const ReferenceSerializationStrategyLookup: Record<
       ? [context, val].join(API_NAME_SEPARATOR)
       : val
     ),
+  },
+  configurationAttributeMapping: {
+    serialize: ({ ref }) => (_.invert(CONF_ATTR_NAME_TO_API_NAME)[apiName(ref.value)]
+      ?? apiName(ref.value)),
+    lookup: val => (_.isString(val) ? (CONF_ATTR_NAME_TO_API_NAME[val] ?? val) : val),
+  },
+  lookupQueryMapping: {
+    serialize: ({ ref }) => (_.invert(LOOKUP_QUERY_NAME_TO_API_NAME)[apiName(ref.value)]
+      ?? apiName(ref.value)),
+    lookup: val => (_.isString(val) ? (LOOKUP_QUERY_NAME_TO_API_NAME[val] ?? val) : val),
   },
 }
 
@@ -270,6 +282,16 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
   {
     src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentTypes: [CPQ_LOOKUP_QUERY, CPQ_PRICE_ACTION] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: CPQ_DEFAULT_OBJECT_FIELD, parentTypes: [CPQ_CONFIGURATION_ATTRIBUTE] },
+    serializationStrategy: 'configurationAttributeMapping',
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: CPQ_TESTED_OBJECT, parentTypes: [CPQ_LOOKUP_QUERY] },
+    serializationStrategy: 'lookupQueryMapping',
     target: { type: CUSTOM_OBJECT },
   },
   {

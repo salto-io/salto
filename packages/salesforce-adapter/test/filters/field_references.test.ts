@@ -19,11 +19,7 @@ import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
 import mockClient from '../client'
-import {
-  OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
-  CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-  WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT,
-} from '../../src/constants'
+import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
 
@@ -125,6 +121,10 @@ describe('FieldReferences filter', () => {
       type: 'SBQQ__QuoteLine__c',
       fieldName: 'name',
     }),
+    ...generateObjectAndInstance({
+      type: 'SBQQ__Quote__c',
+      fieldName: 'name',
+    }),
 
     // site1.authorizationRequiredPage should point to page1
     ...generateObjectAndInstance({
@@ -180,6 +180,20 @@ describe('FieldReferences filter', () => {
       instanceName: 'customScript1',
       fieldName: CPQ_QUOTE_LINE_FIELDS,
       fieldValue: ['name'],
+    }),
+    ...generateObjectAndInstance({
+      type: CPQ_CONFIGURATION_ATTRIBUTE,
+      objType: CPQ_CONFIGURATION_ATTRIBUTE,
+      instanceName: 'configAttr1',
+      fieldName: CPQ_DEFAULT_OBJECT_FIELD,
+      fieldValue: 'Quote__c',
+    }),
+    ...generateObjectAndInstance({
+      type: CPQ_LOOKUP_QUERY,
+      objType: CPQ_LOOKUP_QUERY,
+      instanceName: 'lookupQuery1',
+      fieldName: CPQ_TESTED_OBJECT,
+      fieldValue: 'Quote',
     }),
     // fieldUpdate54.field should point to Account.name (instanceParent)
     ...generateObjectAndInstance({
@@ -251,6 +265,24 @@ describe('FieldReferences filter', () => {
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toHaveLength(1)
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]).toBeInstanceOf(ReferenceExpression)
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]?.elemId.getFullName()).toEqual('salesforce.SBQQ__QuoteLine__c.field.name')
+    })
+
+    it('should resolve object with configurationAttributeMapping strategy', () => {
+      const inst = elements.find(
+        e => isInstanceElement(e) && apiName(e.type) === CPQ_CONFIGURATION_ATTRIBUTE
+      ) as InstanceElement
+      expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]).toBeDefined()
+      expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]?.elemId.getFullName()).toEqual('salesforce.SBQQ__Quote__c')
+    })
+
+    it('should resolve object with lookupQueryMapping strategy', () => {
+      const inst = elements.find(
+        e => isInstanceElement(e) && apiName(e.type) === CPQ_LOOKUP_QUERY
+      ) as InstanceElement
+      expect(inst.value[CPQ_TESTED_OBJECT]).toBeDefined()
+      expect(inst.value[CPQ_TESTED_OBJECT]).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value[CPQ_TESTED_OBJECT]?.elemId.getFullName()).toEqual('salesforce.SBQQ__Quote__c')
     })
 
     it('should resolve field with neighbor context using flow action call mapping', () => {

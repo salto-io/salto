@@ -26,6 +26,7 @@ import { generateReferenceResolverFinder } from '../transformers/reference_mappi
 import SalesforceClient from '../client/client'
 import { getIdsForType } from './add_missing_ids'
 import { getInternalId } from './utils'
+import { CUSTOM_FIELD } from '../constants'
 
 const log = logger(module)
 
@@ -47,10 +48,10 @@ const fieldSelectMapping = [
 const toShortId = (longId: string): string => (longId.slice(0, -3))
 
 const getApiNameToIdLookup = async (client: SalesforceClient): Promise<Record<string, string>> => {
-  const apiNameToId = await getIdsForType(client, 'CustomField')
-  Object.keys(apiNameToId).forEach(k => {
-    apiNameToId[k] = toShortId(apiNameToId[k])
-  })
+  let apiNameToId = await getIdsForType(client, CUSTOM_FIELD)
+  apiNameToId = Object.fromEntries(
+    Object.entries(apiNameToId).map(([name, id]) => [name, toShortId(id)])
+  )
   return apiNameToId
 }
 
@@ -65,6 +66,9 @@ const replaceInstanceValues = (instance: InstanceElement,
     if (_.isUndefined(field) || !shouldReplace(field)) {
       return value
     }
+
+    // if we can't find an item in the lookup it's because
+    // it's a standard field that doesn't need translation
     return _.isArray(value)
       ? value.map(s => nameLookup[s] ?? s)
       : (nameLookup[value] ?? value)
@@ -123,7 +127,10 @@ const filter: FilterCreator = ({ client }) => ({
     )
   },
   onDeploy: async changes => {
-    const idToApiNameLookUp = _.invert(await getApiNameToIdLookup(client))
+    const apiNameToIdLookup = await getApiNameToIdLookup(client)
+    const idToApiNameLookUp = Object.fromEntries( // invert the lookup
+      Object.entries(apiNameToIdLookup).map(([key, value]) => ([value, key]))
+    )
     replaceInstancesValues(
       changes.map(getChangeElement),
       idToApiNameLookUp

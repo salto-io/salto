@@ -59,12 +59,12 @@ const ReferenceSerializationStrategyLookup: Record<
   configurationAttributeMapping: {
     serialize: ({ ref }) => (_.invert(CONF_ATTR_NAME_TO_API_NAME)[apiName(ref.value)]
       ?? apiName(ref.value)),
-    lookup: val => (_.isString(val) ? CONF_ATTR_NAME_TO_API_NAME[val] ?? val : val),
+    lookup: val => (_.isString(val) ? (CONF_ATTR_NAME_TO_API_NAME[val] ?? val) : val),
   },
   lookupQueryMapping: {
     serialize: ({ ref }) => (_.invert(LOOKUP_QUERY_NAME_TO_API_NAME)[apiName(ref.value)]
       ?? apiName(ref.value)),
-    lookup: val => (_.isString(val) ? LOOKUP_QUERY_NAME_TO_API_NAME[val] ?? val : val),
+    lookup: val => (_.isString(val) ? (LOOKUP_QUERY_NAME_TO_API_NAME[val] ?? val) : val),
   },
 }
 

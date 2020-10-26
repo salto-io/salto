@@ -62,12 +62,16 @@ const getUsages = async (
 }
 
 export const getSearchElementFullName = (context: PositionContext, token: string): string => {
-  if (context.ref !== undefined) {
-    return !_.isEmpty(context.ref.path) && context.type === 'type'
-      ? context.ref?.element.elemID.createNestedID('attr', token).getFullName()
-      : context.ref?.element.elemID.getFullName()
+  try {
+    return ElemID.fromFullName(token).getFullName()
+  } catch (e) {
+    if (context.ref !== undefined) {
+      return !_.isEmpty(context.ref.path) && context.type === 'type'
+        ? context.ref?.element.elemID.createNestedID('attr', token).getFullName()
+        : context.ref?.element.elemID.getFullName()
+    }
+    return token
   }
-  return token
 }
 
 export const provideWorkspaceReferences = async (

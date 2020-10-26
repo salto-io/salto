@@ -279,7 +279,6 @@ const buildNaclFilesSource = (
   const getElementReferencedFiles = async (
     elemID: ElemID
   ): Promise<string[]> => (await getState()).referencedIndex[elemID.getFullName()] || []
-
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
     const key = cacheResultKey(parsedNaclFile.filename, parsedNaclFile.timestamp)

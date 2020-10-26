@@ -173,8 +173,9 @@ export class EditorWorkspace {
     return this.workspace.hasErrors()
   }
 
-  getElementReferencedFiles(id: ElemID): Promise<string[]> {
-    return this.workspace.getElementReferencedFiles(id)
+  async getElementReferencedFiles(id: ElemID): Promise<string[]> {
+    return (await this.workspace.getElementReferencedFiles(id))
+      .map(filename => this.editorFilename(filename))
   }
 
   async awaitAllUpdates(): Promise<void> {

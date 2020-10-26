@@ -314,10 +314,10 @@ const buildMultiEnvSource = (
         .map(async ([prefix, source]) => (
           await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))))
     ),
-    getElementReferencedFiles: async (id: ElemID): Promise<string[]> => (
-      _.flatten(await Promise.all(_.entries(getActiveSources())
+    getElementReferencedFiles: async (id: ElemID): Promise<string[]> => _.flatten(
+      await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (
-          await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))))
+          await source.getElementReferencedFiles(id)).map(p => buidFullPath(prefix, p))))
     ),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
       // We use series here since we don't want to perform too much delete operation concurrently

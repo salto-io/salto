@@ -67,6 +67,7 @@ import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filt
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
+import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -114,6 +115,7 @@ export const DEFAULT_FILTERS = [
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,
+  replaceFieldValuesFilter,
   fieldReferences,
   // should run after custom_object_instances for now
   referenceAnnotations,

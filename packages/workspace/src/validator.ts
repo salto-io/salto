@@ -19,7 +19,8 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
-  isReferenceExpression, StaticFile, isContainerType, isMapType,
+  isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
+  InstanceAnnotationTypes, GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { toObjectType } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
@@ -432,13 +433,20 @@ const validateType = (element: TypeElement): ValidationError[] => {
   return errors
 }
 
-const instanceElementValidators = [
-  validateValue,
-  validateAnnotations,
-]
+const instanceAnnotationsType = new ObjectType({
+  elemID: new ElemID(GLOBAL_ADAPTER, 'instanceAnnotations'), // dummy elemID, it's not really used
+  fields: Object.fromEntries(
+    Object.entries(InstanceAnnotationTypes)
+      .map(([name, type]) => [name, { type }])
+  ),
+})
 
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
-  instanceElementValidators.flatMap(v => v(element.elemID, element.value, element.type))
+  [
+    ...validateValue(element.elemID, element.value, element.type),
+    ...validateAnnotations(element.elemID, element.value, element.type),
+    ...validateValue(element.elemID, element.annotations, instanceAnnotationsType),
+  ]
 
 const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] => {
   if (isReferenceExpression(value)) {

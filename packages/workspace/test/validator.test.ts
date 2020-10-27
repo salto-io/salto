@@ -18,6 +18,7 @@ import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
+  INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
@@ -1173,7 +1174,30 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(0)
       })
     })
+
+    describe('validate instance annotations', () => {
+      const unresolvedRefInAnnoInst = new InstanceElement(
+        'unresolved',
+        emptyType,
+        {},
+        undefined,
+        {
+          [INSTANCE_ANNOTATIONS.PARENT]: [
+            'valid value',
+            new ReferenceExpression(nestedInstance.elemID.createNestedID('unresolvedParent')),
+          ],
+        }
+      )
+
+      it('should return error when encountering an unresolved reference', () => {
+        const errors = validateElements([unresolvedRefInAnnoInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID)
+          .toEqual(unresolvedRefInAnnoInst.elemID.createNestedID(INSTANCE_ANNOTATIONS.PARENT, '1'))
+      })
+    })
   })
+
   describe('InvalidStaticFileError', () => {
     const elemID = new ElemID('adapter', 'bla')
     it('should have correct message for missing', () =>

@@ -28,15 +28,19 @@ import { cmscontenttype, cmscontenttypeInnerTypes } from './types/custom_types/c
 import { crmcustomfield, crmcustomfieldInnerTypes } from './types/custom_types/crmcustomfield'
 import { customglplugin, customglpluginInnerTypes } from './types/custom_types/customglplugin'
 import { customlist, customlistInnerTypes } from './types/custom_types/customlist'
+import { customrecordactionscript, customrecordactionscriptInnerTypes } from './types/custom_types/customrecordactionscript'
 import { customrecordtype, customrecordtypeInnerTypes } from './types/custom_types/customrecordtype'
 import { customsegment, customsegmentInnerTypes } from './types/custom_types/customsegment'
 import { customtransactiontype, customtransactiontypeInnerTypes } from './types/custom_types/customtransactiontype'
 import { dataset, datasetInnerTypes } from './types/custom_types/dataset'
+import { datasetbuilderplugin, datasetbuilderpluginInnerTypes } from './types/custom_types/datasetbuilderplugin'
 import { emailcaptureplugin, emailcapturepluginInnerTypes } from './types/custom_types/emailcaptureplugin'
 import { emailtemplate, emailtemplateInnerTypes } from './types/custom_types/emailtemplate'
 import { entitycustomfield, entitycustomfieldInnerTypes } from './types/custom_types/entitycustomfield'
 import { entryForm, entryFormInnerTypes } from './types/custom_types/entryForm'
 import { ficonnectivityplugin, ficonnectivitypluginInnerTypes } from './types/custom_types/ficonnectivityplugin'
+import { fiparserplugin, fiparserpluginInnerTypes } from './types/custom_types/fiparserplugin'
+import { integration, integrationInnerTypes } from './types/custom_types/integration'
 import { itemcustomfield, itemcustomfieldInnerTypes } from './types/custom_types/itemcustomfield'
 import { itemnumbercustomfield, itemnumbercustomfieldInnerTypes } from './types/custom_types/itemnumbercustomfield'
 import { itemoptioncustomfield, itemoptioncustomfieldInnerTypes } from './types/custom_types/itemoptioncustomfield'
@@ -65,6 +69,7 @@ import { transactioncolumncustomfield, transactioncolumncustomfieldInnerTypes } 
 import { translationcollection, translationcollectionInnerTypes } from './types/custom_types/translationcollection'
 import { usereventscript, usereventscriptInnerTypes } from './types/custom_types/usereventscript'
 import { workbook, workbookInnerTypes } from './types/custom_types/workbook'
+import { workbookbuilderplugin, workbookbuilderpluginInnerTypes } from './types/custom_types/workbookbuilderplugin'
 import { workflow, workflowInnerTypes } from './types/custom_types/workflow'
 import { workflowactionscript, workflowactionscriptInnerTypes } from './types/custom_types/workflowactionscript'
 import { fieldTypes } from './types/field_types'
@@ -87,15 +92,19 @@ export const customTypes: Readonly<Record<string, ObjectType>> = {
   crmcustomfield,
   customglplugin,
   customlist,
+  customrecordactionscript,
   customrecordtype,
   customsegment,
   customtransactiontype,
   dataset,
+  datasetbuilderplugin,
   emailcaptureplugin,
   emailtemplate,
   entitycustomfield,
   entryForm,
   ficonnectivityplugin,
+  fiparserplugin,
+  integration,
   itemcustomfield,
   itemnumbercustomfield,
   itemoptioncustomfield,
@@ -124,6 +133,7 @@ export const customTypes: Readonly<Record<string, ObjectType>> = {
   translationcollection,
   usereventscript,
   workbook,
+  workbookbuilderplugin,
   workflow,
   workflowactionscript,
 }
@@ -141,15 +151,19 @@ const innerCustomTypes: ObjectType[] = [
   ...crmcustomfieldInnerTypes,
   ...customglpluginInnerTypes,
   ...customlistInnerTypes,
+  ...customrecordactionscriptInnerTypes,
   ...customrecordtypeInnerTypes,
   ...customsegmentInnerTypes,
   ...customtransactiontypeInnerTypes,
   ...datasetInnerTypes,
+  ...datasetbuilderpluginInnerTypes,
   ...emailcapturepluginInnerTypes,
   ...emailtemplateInnerTypes,
   ...entitycustomfieldInnerTypes,
   ...entryFormInnerTypes,
   ...ficonnectivitypluginInnerTypes,
+  ...fiparserpluginInnerTypes,
+  ...integrationInnerTypes,
   ...itemcustomfieldInnerTypes,
   ...itemnumbercustomfieldInnerTypes,
   ...itemoptioncustomfieldInnerTypes,
@@ -178,6 +192,7 @@ const innerCustomTypes: ObjectType[] = [
   ...translationcollectionInnerTypes,
   ...usereventscriptInnerTypes,
   ...workbookInnerTypes,
+  ...workbookbuilderpluginInnerTypes,
   ...workflowInnerTypes,
   ...workflowactionscriptInnerTypes,
 ]

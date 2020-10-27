@@ -329,6 +329,47 @@ const transactionForm_customCode = new ObjectType({
 
 transactionFormInnerTypes.push(transactionForm_customCode)
 
+const transactionForm_linkedForms_linkedFormElemID = new ElemID(constants.NETSUITE, 'transactionForm_linkedForms_linkedForm')
+
+const transactionForm_linkedForms_linkedForm = new ObjectType({
+  elemID: transactionForm_linkedForms_linkedFormElemID,
+  annotations: {
+  },
+  fields: {
+    type: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see transactionform_trantype. */
+    form: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the custom type.   For information about other possible values, see transactionform_standard. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_linkedForms_linkedForm)
+
+const transactionForm_linkedFormsElemID = new ElemID(constants.NETSUITE, 'transactionForm_linkedForms')
+
+const transactionForm_linkedForms = new ObjectType({
+  elemID: transactionForm_linkedFormsElemID,
+  annotations: {
+  },
+  fields: {
+    linkedForm: {
+      type: new ListType(transactionForm_linkedForms_linkedForm),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_linkedForms)
+
 const transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID = new ElemID(constants.NETSUITE, 'transactionForm_mainFields_defaultFieldGroup_fields_field')
 
 const transactionForm_mainFields_defaultFieldGroup_fields_field = new ObjectType({
@@ -594,6 +635,47 @@ const transactionForm_mainFields = new ObjectType({
 
 transactionFormInnerTypes.push(transactionForm_mainFields)
 
+const transactionForm_preferences_preferenceElemID = new ElemID(constants.NETSUITE, 'transactionForm_preferences_preference')
+
+const transactionForm_preferences_preference = new ObjectType({
+  elemID: transactionForm_preferences_preferenceElemID,
+  annotations: {
+  },
+  fields: {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    },
+    value: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_preferences_preference)
+
+const transactionForm_preferencesElemID = new ElemID(constants.NETSUITE, 'transactionForm_preferences')
+
+const transactionForm_preferences = new ObjectType({
+  elemID: transactionForm_preferencesElemID,
+  annotations: {
+  },
+  fields: {
+    preference: {
+      type: new ListType(transactionForm_preferences_preference),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_preferences)
+
 const transactionForm_printingType_advancedElemID = new ElemID(constants.NETSUITE, 'transactionForm_printingType_advanced')
 
 const transactionForm_printingType_advanced = new ObjectType({
@@ -699,6 +781,47 @@ const transactionForm_quickViewFields = new ObjectType({
 })
 
 transactionFormInnerTypes.push(transactionForm_quickViewFields)
+
+const transactionForm_roles_roleElemID = new ElemID(constants.NETSUITE, 'transactionForm_roles_role')
+
+const transactionForm_roles_role = new ObjectType({
+  elemID: transactionForm_roles_roleElemID,
+  annotations: {
+  },
+  fields: {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see transactionform_roleid. */
+    preferred: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_roles_role)
+
+const transactionForm_rolesElemID = new ElemID(constants.NETSUITE, 'transactionForm_roles')
+
+const transactionForm_roles = new ObjectType({
+  elemID: transactionForm_rolesElemID,
+  annotations: {
+  },
+  fields: {
+    role: {
+      type: new ListType(transactionForm_roles_role),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_roles)
 
 const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID = new ElemID(constants.NETSUITE, 'transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field')
 
@@ -1035,6 +1158,11 @@ const transactionForm_tabs_tab_subItems_subList = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
+    neverEmpty: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
     columns: {
       type: transactionForm_tabs_tab_subItems_subList_columns,
       annotations: {
@@ -1070,6 +1198,11 @@ const transactionForm_tabs_tab_subItems_subLists_subList = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
+    neverEmpty: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1383,6 +1516,11 @@ const transactionForm_tabs_tab_subItems_subTab = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
+    neverEmpty: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
     fieldGroups: {
       type: transactionForm_tabs_tab_subItems_subTab_fieldGroups,
       annotations: {
@@ -1480,6 +1618,52 @@ const transactionForm_tabs = new ObjectType({
 
 transactionFormInnerTypes.push(transactionForm_tabs)
 
+const transactionForm_totalBox_totalBoxFieldElemID = new ElemID(constants.NETSUITE, 'transactionForm_totalBox_totalBoxField')
+
+const transactionForm_totalBox_totalBoxField = new ObjectType({
+  elemID: transactionForm_totalBox_totalBoxFieldElemID,
+  annotations: {
+  },
+  fields: {
+    id: {
+      type: enums.transactionform_totalboxid,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see transactionform_totalboxid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is T. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_totalBox_totalBoxField)
+
+const transactionForm_totalBoxElemID = new ElemID(constants.NETSUITE, 'transactionForm_totalBox')
+
+const transactionForm_totalBox = new ObjectType({
+  elemID: transactionForm_totalBoxElemID,
+  annotations: {
+  },
+  fields: {
+    totalBoxField: {
+      type: new ListType(transactionForm_totalBox_totalBoxField),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+})
+
+transactionFormInnerTypes.push(transactionForm_totalBox)
+
 
 export const transactionForm = new ObjectType({
   elemID: transactionFormElemID,
@@ -1566,8 +1750,38 @@ export const transactionForm = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    emailMessageTemplate: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the emailtemplate custom type. */
     printingType: {
       type: transactionForm_printingType,
+      annotations: {
+      },
+    },
+    totalBox: {
+      type: transactionForm_totalBox,
+      annotations: {
+      },
+    },
+    linkedForms: {
+      type: transactionForm_linkedForms,
+      annotations: {
+      },
+    },
+    roles: {
+      type: transactionForm_roles,
+      annotations: {
+      },
+    },
+    preferences: {
+      type: transactionForm_preferences,
+      annotations: {
+      },
+    },
+    buttons: {
+      type: transactionForm_buttons,
       annotations: {
       },
     },

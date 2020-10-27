@@ -352,18 +352,18 @@ def generate_type_name_to_script_id_prefix():
 
 
 def login(username, password, secret_key_2fa):
+    logging.info('Trying to login to NetSuite documentation')
     # submit username & password
     time.sleep(1)
-    webpage.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[1]/td[2]/input').send_keys(username)
-    webpage.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/input').send_keys(password)
-    webpage.find_element_by_xpath('//*[@id="rememberme"]').click()
-    webpage.find_element_by_xpath('//*[@id="Submit"]').click()
+    webpage.find_element_by_xpath('/html/body/div/div/div[2]/form/div[2]/input').send_keys(username)
+    webpage.find_element_by_xpath('/html/body/div/div/div[2]/form/div[3]/input').send_keys(password)
+    webpage.find_element_by_xpath('//*[@id="login-submit"]').click()
     time.sleep(2)
 
     # generate 2FA token and submit
     token2fa = pyotp.TOTP(secret_key_2fa).now()
-    webpage.find_element_by_xpath('//*[@id="n-id-component-19"]').send_keys(token2fa)
-    webpage.find_element_by_xpath('//*[@id="n-id-component-44"]').click()
+    webpage.find_element_by_xpath('//*[@id="n-id-component-17"]').send_keys(token2fa)
+    webpage.find_element_by_xpath('//*[@id="n-id-component-43"]').click()
     time.sleep(1)
 
 
@@ -452,16 +452,17 @@ def order_types_fields(type_name_to_types_defs):
         'addressForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
             'storedWithRecord', 'mainFields', 'tabs', 'customCode', 'quickViewFields', 'actionbar','useForPopup',
-             'editingInList'], # buttons field is intentionally omitted as it seems that it does not exist and if it is sent to SDF it causes errors no matter in which order
+             'editingInList', 'buttons'], # Not sure where buttons field should be located. In case it exists it might fail to deploy but it's preferred that it'll fail than it will delete the existing value without letting the user to know.
         'entryForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
         'entryForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
         'transactionForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
             'storedWithRecord', 'mainFields', 'tabs', 'customCode', 'quickViewFields', 'actionbar', 'disclaimer',
-            'address', 'allowAddMultiple', 'printingType'], # buttons field is intentionally omitted as it seems that it does not exist and if it is sent to SDF it causes errors no matter in which order
+            'address', 'allowAddMultiple', 'emailMessageTemplate', 'printingType', 'totalBox', 'linkedForms', 'roles', 'preferences', 'buttons'], # Not sure where buttons field should be located. In case it exists it might fail to deploy but it's preferred that it'll fail than it will delete the existing value without letting the user to know.
         'transactionForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
         'transactionForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
-        'transactionForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup']
+        'transactionForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
+        'transactionForm_linkedForms_linkedForm': ['type', 'form']
     }
 
     for type_name, fields_order in type_name_to_fields_order.items():
@@ -474,7 +475,10 @@ def order_types_fields(type_name_to_types_defs):
         field_name_to_def = dict((field[NAME], field) for field in type_def_fields)
         ordered_fields = []
         for field_name in fields_order:
-            ordered_fields.append(field_name_to_def[field_name])
+            if (field_name in field_name_to_def):
+                ordered_fields.append(field_name_to_def[field_name])
+            else:
+                logging.warning('Field {0} is not defined in type {1} definition'.format(field_name, type_name))
         type_def[FIELDS] = ordered_fields
 
 

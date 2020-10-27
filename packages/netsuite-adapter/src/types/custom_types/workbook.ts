@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { fieldTypes } from '../field_types'
@@ -24,6 +24,44 @@ import { fieldTypes } from '../field_types'
 export const workbookInnerTypes: ObjectType[] = []
 
 const workbookElemID = new ElemID(constants.NETSUITE, 'workbook')
+const workbook_charts_chartElemID = new ElemID(constants.NETSUITE, 'workbook_charts_chart')
+
+const workbook_charts_chart = new ObjectType({
+  elemID: workbook_charts_chartElemID,
+  annotations: {
+  },
+  fields: {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [constants.IS_ATTRIBUTE]: true,
+      },
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custchart’. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
+})
+
+workbookInnerTypes.push(workbook_charts_chart)
+
+const workbook_chartsElemID = new ElemID(constants.NETSUITE, 'workbook_charts')
+
+const workbook_charts = new ObjectType({
+  elemID: workbook_chartsElemID,
+  annotations: {
+  },
+  fields: {
+    chart: {
+      type: new ListType(workbook_charts_chart),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
+})
+
+workbookInnerTypes.push(workbook_charts)
+
 const workbook_dependenciesElemID = new ElemID(constants.NETSUITE, 'workbook_dependencies')
 
 const workbook_dependencies = new ObjectType({
@@ -42,6 +80,82 @@ const workbook_dependencies = new ObjectType({
 })
 
 workbookInnerTypes.push(workbook_dependencies)
+
+const workbook_pivots_pivotElemID = new ElemID(constants.NETSUITE, 'workbook_pivots_pivot')
+
+const workbook_pivots_pivot = new ObjectType({
+  elemID: workbook_pivots_pivotElemID,
+  annotations: {
+  },
+  fields: {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [constants.IS_ATTRIBUTE]: true,
+      },
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpivot’. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
+})
+
+workbookInnerTypes.push(workbook_pivots_pivot)
+
+const workbook_pivotsElemID = new ElemID(constants.NETSUITE, 'workbook_pivots')
+
+const workbook_pivots = new ObjectType({
+  elemID: workbook_pivotsElemID,
+  annotations: {
+  },
+  fields: {
+    pivot: {
+      type: new ListType(workbook_pivots_pivot),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
+})
+
+workbookInnerTypes.push(workbook_pivots)
+
+const workbook_tables_tableElemID = new ElemID(constants.NETSUITE, 'workbook_tables_table')
+
+const workbook_tables_table = new ObjectType({
+  elemID: workbook_tables_tableElemID,
+  annotations: {
+  },
+  fields: {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [constants.IS_ATTRIBUTE]: true,
+      },
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custview’. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
+})
+
+workbookInnerTypes.push(workbook_tables_table)
+
+const workbook_tablesElemID = new ElemID(constants.NETSUITE, 'workbook_tables')
+
+const workbook_tables = new ObjectType({
+  elemID: workbook_tablesElemID,
+  annotations: {
+  },
+  fields: {
+    table: {
+      type: new ListType(workbook_tables_table),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
+})
+
+workbookInnerTypes.push(workbook_tables)
 
 
 export const workbook = new ObjectType({
@@ -70,8 +184,23 @@ export const workbook = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
+    charts: {
+      type: workbook_charts,
+      annotations: {
+      },
+    },
     dependencies: {
       type: workbook_dependencies,
+      annotations: {
+      },
+    },
+    pivots: {
+      type: workbook_pivots,
+      annotations: {
+      },
+    },
+    tables: {
+      type: workbook_tables,
       annotations: {
       },
     },

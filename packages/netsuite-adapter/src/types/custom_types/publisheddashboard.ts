@@ -24,6 +24,52 @@ import { enums } from '../enums'
 export const publisheddashboardInnerTypes: ObjectType[] = []
 
 const publisheddashboardElemID = new ElemID(constants.NETSUITE, 'publisheddashboard')
+const publisheddashboard_dashboards_dashboard_centercolumn_analyticsElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_analytics')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_analytics = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_analyticsElemID,
+  annotations: {
+  },
+  fields: {
+    portlettype: {
+      type: enums.portlet_analytics_portlettype,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: For information about possible values, see portlet_analytics_portlettype. */
+    visualization: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the following custom types:   table   pivot   chart */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
+      },
+    }, /* Original description: This field value can be up to 50 characters long. */
+    height: {
+      type: enums.portlet_analytics_height,
+      annotations: {
+      },
+    }, /* Original description: This field is available when the portlettype value is equal to CHART.   For information about possible values, see portlet_analytics_height. */
+    visiblerows: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+      },
+    }, /* Original description: This field value must be less than or equal to 200.   This field is available when the portlettype value is equal to any of the following lists or values: PIVOT, TABLE. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_analytics)
+
 const publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_calendar')
 
 const publisheddashboard_dashboards_dashboard_centercolumn_calendar = new ObjectType({
@@ -316,6 +362,49 @@ const publisheddashboard_dashboards_dashboard_centercolumn_kpimeter = new Object
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_kpimeter)
 
+const publisheddashboard_dashboards_dashboard_centercolumn_kpireportElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_kpireport')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_kpireport = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_kpireportElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    reportid: {
+      type: enums.portlet_kpireport_reportid,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_kpireport_reportid. */
+    restrict: {
+      type: enums.portlet_kpireport_restrict,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_kpireport_restrict. */
+    orientation: {
+      type: enums.portlet_kpireport_orientation,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_kpireport_orientation. */
+    trend: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    showdates: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_kpireport)
+
 const publisheddashboard_dashboards_dashboard_centercolumn_listElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_list')
 
 const publisheddashboard_dashboards_dashboard_centercolumn_list = new ObjectType({
@@ -324,16 +413,16 @@ const publisheddashboard_dashboards_dashboard_centercolumn_list = new ObjectType
   },
   fields: {
     type: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      type: enums.portlet_list_type,
       annotations: {
       },
-    }, /* Original description: This field accepts references to the customrecordtype custom type.   For information about other possible values, see portlet_list_type. */
+    }, /* Original description: For information about possible values, see portlet_list_type. */
     size: {
       type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    }, /* Original description: This field value must range from 1 through 50. (inclusive)   The default value is '10'. */
+    }, /* Original description: This field value must range from 1 through 50. (inclusive)   The default value is '5'. */
     isminimized: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -383,6 +472,42 @@ const publisheddashboard_dashboards_dashboard_centercolumn_quicksearch = new Obj
 })
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_quicksearch)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_recentrecordsElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_recentrecords')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_recentrecords = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_recentrecordsElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_recentrecords)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_recentreportsElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_recentreports')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_recentreports = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_recentreportsElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_recentreports)
 
 const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_ruleElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_rule')
 
@@ -595,6 +720,24 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders = new Objec
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_reminders)
 
+const publisheddashboard_dashboards_dashboard_centercolumn_schedulerElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_scheduler')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_scheduler = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_schedulerElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_scheduler)
+
 const publisheddashboard_dashboards_dashboard_centercolumn_searchformElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_searchform')
 
 const publisheddashboard_dashboards_dashboard_centercolumn_searchform = new ObjectType({
@@ -618,6 +761,60 @@ const publisheddashboard_dashboards_dashboard_centercolumn_searchform = new Obje
 })
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_searchform)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_settingsElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_settings')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_settings = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_settingsElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_settings)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_shortcutsElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_shortcuts')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_shortcuts = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_shortcutsElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_shortcuts)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_tasklinksElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_tasklinks')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_tasklinks = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_tasklinksElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_tasklinks)
 
 const publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_trendgraph')
 
@@ -702,6 +899,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
   annotations: {
   },
   fields: {
+    analytics: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_analytics),
+      annotations: {
+      },
+    },
     calendar: {
       type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_calendar),
       annotations: {
@@ -727,6 +929,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
       annotations: {
       },
     },
+    kpireport: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpireport),
+      annotations: {
+      },
+    },
     list: {
       type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list),
       annotations: {
@@ -737,13 +944,43 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
       annotations: {
       },
     },
+    recentrecords: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentrecords),
+      annotations: {
+      },
+    },
+    recentreports: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentreports),
+      annotations: {
+      },
+    },
     reminders: {
       type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders),
       annotations: {
       },
     },
+    scheduler: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_scheduler),
+      annotations: {
+      },
+    },
     searchform: {
       type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_searchform),
+      annotations: {
+      },
+    },
+    settings: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_settings),
+      annotations: {
+      },
+    },
+    shortcuts: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_shortcuts),
+      annotations: {
+      },
+    },
+    tasklinks: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_tasklinks),
       annotations: {
       },
     },

@@ -52,6 +52,53 @@ const customtransactiontype_accounting = new ObjectType({
 
 customtransactiontypeInnerTypes.push(customtransactiontype_accounting)
 
+const customtransactiontype_links_linkElemID = new ElemID(constants.NETSUITE, 'customtransactiontype_links_link')
+
+const customtransactiontype_links_link = new ObjectType({
+  elemID: customtransactiontype_links_linkElemID,
+  annotations: {
+  },
+  fields: {
+    linkcategory: {
+      type: enums.generic_centercategory,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: For information about possible values, see generic_centercategory. */
+    linktasktype: {
+      type: enums.customtransactiontype_tasktype,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see customtransactiontype_tasktype. */
+    linklabel: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the string custom type. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
+})
+
+customtransactiontypeInnerTypes.push(customtransactiontype_links_link)
+
+const customtransactiontype_linksElemID = new ElemID(constants.NETSUITE, 'customtransactiontype_links')
+
+const customtransactiontype_links = new ObjectType({
+  elemID: customtransactiontype_linksElemID,
+  annotations: {
+  },
+  fields: {
+    link: {
+      type: new ListType(customtransactiontype_links_link),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
+})
+
+customtransactiontypeInnerTypes.push(customtransactiontype_links)
+
 const customtransactiontype_permissions_permissionElemID = new ElemID(constants.NETSUITE, 'customtransactiontype_permissions_permission')
 
 const customtransactiontype_permissions_permission = new ObjectType({
@@ -153,12 +200,12 @@ const customtransactiontype_statuses_status = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     description: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 480,
       },
-    }, /* Original description: This field value can be up to 480 characters long. */
+    }, /* Original description: This field value can be up to 480 characters long.   This field accepts references to the string custom type. */
     id: {
       type: enums.customtransactiontype_statuses_id,
       annotations: {
@@ -209,12 +256,12 @@ export const customtransactiontype = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     name: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 96,
       },
-    }, /* Original description: This field value can be up to 96 characters long. */
+    }, /* Original description: This field value can be up to 96 characters long.   This field accepts references to the string custom type. */
     subliststyle: {
       type: enums.customtransactiontype_subliststyle,
       annotations: {
@@ -247,6 +294,11 @@ export const customtransactiontype = new ObjectType({
     }, /* Original description: The default value is F. */
     accounting: {
       type: customtransactiontype_accounting,
+      annotations: {
+      },
+    },
+    links: {
+      type: customtransactiontype_links,
       annotations: {
       },
     },

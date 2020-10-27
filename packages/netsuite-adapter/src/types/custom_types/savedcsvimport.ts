@@ -259,12 +259,12 @@ export const savedcsvimport = new ObjectType({
       },
     }, /* Original description: For information about possible values, see csvimport_recordtypes. */
     importname: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
+        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 64,
       },
-    }, /* Original description: This field value can be up to 50 characters long. */
+    }, /* Original description: This field value can be up to 64 characters long.   This field accepts references to the string custom type. */
     datahandling: {
       type: enums.csvimport_datahandling,
       annotations: {
@@ -355,11 +355,11 @@ export const savedcsvimport = new ObjectType({
       },
     }, /* Original description: This field value can be up to 1 characters long.   The default value is '|'. */
     description: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 499,
       },
-    }, /* Original description: This field value can be up to 499 characters long. */
+    }, /* Original description: This field value can be up to 499 characters long.   This field accepts references to the string custom type. */
     audience: {
       type: savedcsvimport_audience,
       annotations: {

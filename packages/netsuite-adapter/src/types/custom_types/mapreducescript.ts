@@ -203,12 +203,12 @@ const mapreducescript_scriptcustomfields_scriptcustomfield = new ObjectType({
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    }, /* Original description: This field value can be up to 200 characters long. */
+    }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -250,10 +250,10 @@ const mapreducescript_scriptcustomfields_scriptcustomfield = new ObjectType({
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -388,11 +388,11 @@ const mapreducescript_scriptdeployments_scriptdeployment_recurrence_daily = new 
       },
     },
     everyxdays: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -464,11 +464,11 @@ const mapreducescript_scriptdeployments_scriptdeployment_recurrence_monthly = ne
       },
     },
     everyxmonths: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -517,11 +517,11 @@ const mapreducescript_scriptdeployments_scriptdeployment_recurrence_monthlydayof
       },
     }, /* Original description: For information about possible values, see generic_day_of_week. */
     everyxmonths: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -588,11 +588,11 @@ const mapreducescript_scriptdeployments_scriptdeployment_recurrence_weekly = new
       },
     },
     everyxweeks: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     sunday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {

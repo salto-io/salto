@@ -122,11 +122,11 @@ const workflow_recurrence_daily = new ObjectType({
       },
     },
     everyxdays: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -218,11 +218,11 @@ const workflow_recurrence_monthly = new ObjectType({
       },
     }, /* Original description: For information about possible values, see generic_day_of_month. */
     everyxmonths: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -266,11 +266,11 @@ const workflow_recurrence_monthlydayofweek = new ObjectType({
       },
     }, /* Original description: For information about possible values, see generic_day_of_week. */
     everyxmonths: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -327,11 +327,11 @@ const workflow_recurrence_weekly = new ObjectType({
       },
     },
     everyxweeks: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     sunday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -675,12 +675,12 @@ const workflow_workflowcustomfields_workflowcustomfield = new ObjectType({
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    }, /* Original description: This field value can be up to 200 characters long. */
+    }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -722,10 +722,10 @@ const workflow_workflowcustomfields_workflowcustomfield = new ObjectType({
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -3290,10 +3290,10 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
       },
     }, /* Original description: The default value is F. */
     displaylabel: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition,
       annotations: {
@@ -4289,11 +4289,11 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      type: enums.generic_standard_recordtype,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    }, /* Original description: For information about possible values, see generic_standard_recordtype. */
+    }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
@@ -4344,6 +4344,11 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    isredirectwithoutsaving: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
     fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings,
       annotations: {
@@ -5398,10 +5403,10 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
       },
     }, /* Original description: The default value is F. */
     displaylabel: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
@@ -5694,11 +5699,11 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      type: enums.generic_standard_recordtype,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    }, /* Original description: For information about possible values, see generic_standard_recordtype. */
+    }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -5709,6 +5714,11 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    isredirectwithoutsaving: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
     fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings,
       annotations: {
@@ -7030,12 +7040,12 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    }, /* Original description: This field value can be up to 200 characters long. */
+    }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -7077,10 +7087,10 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -7451,6 +7461,11 @@ export const workflow = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    initlocalizationcontext: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
+      },
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see countries. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {

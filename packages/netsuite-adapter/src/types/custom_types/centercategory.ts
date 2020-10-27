@@ -107,11 +107,12 @@ export const centercategory = new ObjectType({
       },
     }, /* Original description: This field accepts references to the centertab custom type.   For information about other possible values, see generic_centertab. */
     label: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
+        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    },
+    }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
     links: {
       type: centercategory_links,
       annotations: {

@@ -20,12 +20,12 @@ import {
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
-export const centerInnerTypes: ObjectType[] = []
+export const integrationInnerTypes: ObjectType[] = []
 
-const centerElemID = new ElemID(constants.NETSUITE, 'center')
+const integrationElemID = new ElemID(constants.NETSUITE, 'integration')
 
-export const center = new ObjectType({
-  elemID: centerElemID,
+export const integration = new ObjectType({
+  elemID: integrationElemID,
   annotations: {
   },
   fields: {
@@ -34,15 +34,9 @@ export const center = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custcenter[0-9a-z_]+' }),
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custinteg[0-9a-z_]+' }),
       },
-    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcenter’. */
-    label: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: This field accepts references to the string custom type. */
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custinteg’. */
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, centerElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, integrationElemID.name],
 })

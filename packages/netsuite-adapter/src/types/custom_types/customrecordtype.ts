@@ -166,12 +166,12 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield = new Ob
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    }, /* Original description: This field value can be up to 200 characters long. */
+    }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -213,10 +213,10 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield = new Ob
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -459,10 +459,10 @@ const customrecordtype_links_link = new ObjectType({
       },
     }, /* Original description: For information about possible values, see customrecordtype_tasktype. */
     linklabel: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
@@ -556,11 +556,11 @@ const customrecordtype_recordsublists_recordsublist = new ObjectType({
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     recorddescr: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     recordtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -610,11 +610,11 @@ const customrecordtype_subtabs_subtab = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     tabtitle: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     tabparent: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -659,11 +659,11 @@ export const customrecordtype = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customrecord’. */
     recordname: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    }, /* Original description: This field value can be up to 40 characters long.   This field is available when the customsegment value is equal to   This field is mandatory when the customsegment value is equal to */
+    }, /* Original description: This field value can be up to 40 characters long.   This field is available when the customsegment value is equal to   This field is mandatory when the customsegment value is equal to   This field accepts references to the string custom type. */
     customsegment: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {

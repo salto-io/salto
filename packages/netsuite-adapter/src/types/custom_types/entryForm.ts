@@ -900,6 +900,11 @@ const entryForm_tabs_tab_subItems_subList = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
+    neverEmpty: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
@@ -930,6 +935,11 @@ const entryForm_tabs_tab_subItems_subLists_subList = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
+    neverEmpty: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
@@ -1233,6 +1243,11 @@ const entryForm_tabs_tab_subItems_subTab = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
+    neverEmpty: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
     fieldGroups: {
       type: entryForm_tabs_tab_subItems_subTab_fieldGroups,
       annotations: {
@@ -1411,6 +1426,11 @@ export const entryForm = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
+    buttons: {
+      type: entryForm_buttons,
+      annotations: {
+      },
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })

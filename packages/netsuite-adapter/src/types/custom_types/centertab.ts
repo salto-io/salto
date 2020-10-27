@@ -92,11 +92,11 @@ export const centertab = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentertab’. */
     label: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     center: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {

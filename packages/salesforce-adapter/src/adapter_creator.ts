@@ -91,6 +91,7 @@ SalesforceConfig => {
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
     enableHideTypesInNacls: config?.value?.enableHideTypesInNacls,
     dataManagement: config?.value?.dataManagement,
+    useOldProfiles: config?.value?.useOldProfiles,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

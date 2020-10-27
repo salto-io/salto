@@ -68,6 +68,7 @@ import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
+import profileMaps from './filters/profile_maps'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -99,6 +100,8 @@ export const DEFAULT_FILTERS = [
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   profilePermissionsFilter,
+  // profileMaps should run before profile values are converted to references (fieldReferences)
+  profileMaps,
   standardValueSetFilter,
   flowFilter,
   lookupFiltersFilter,
@@ -196,6 +199,9 @@ export interface SalesforceAdapterParams {
 
   // Determine whether hide type folder
   enableHideTypesInNacls?: boolean
+
+  // Work with list-based profiles instead of map-based ones
+  useOldProfiles?: boolean
 
   // Metadata types that we have to fetch using the retrieve API
   metadataToRetrieve?: string[]
@@ -378,6 +384,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       'LastReferencedDate',
       'LastViewedDate',
     ],
+    useOldProfiles = constants.DEFAULT_USE_OLD_PROFILES,
     config,
   }: SalesforceAdapterParams) {
     this.enableHideTypesInNacls = config.enableHideTypesInNacls ?? enableHideTypesInNacls
@@ -408,6 +415,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         dataManagement: config.dataManagement,
         systemFields,
         enableHideTypesInNacls: this.enableHideTypesInNacls,
+        useOldProfiles: config.useOldProfiles ?? useOldProfiles,
       },
       filterCreators
     )

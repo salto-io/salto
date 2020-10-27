@@ -16,12 +16,14 @@
 import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
-  isListType, ListType, isElement,
+  isListType, ListType, isElement, isContainerType,
 } from '@salto-io/adapter-api'
 import { applyRecursive, resolvePath } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { SALESFORCE } from '../constants'
+import { SALESFORCE, PROFILE_METADATA_TYPE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
+import { metadataType } from '../transformers/transformer'
+import { PROFILE_MAP_FIELD_DEF } from './profile_maps'
 
 type OrderFunc = (value: Value) => number
 export type UnorderedList = {
@@ -123,7 +125,8 @@ const markHardcodedLists = (
   knownListIds: Set<string>,
 ): void => _.values(type.fields).filter(f => knownListIds.has(f.elemID.getFullName())).forEach(
   f => {
-    if (!isListType(f.type)) {
+    // maps are created synthetically and should not be converted here
+    if (!isContainerType(f.type)) {
       f.type = new ListType(f.type)
     }
   }
@@ -147,6 +150,16 @@ export const convertList = (type: ObjectType, values: Values): void => {
   castListRecursively(type, values)
 }
 
+const getMapFieldIds = (types: ObjectType[], useOldProfiles?: boolean): Set<string> => {
+  const profileObj = types.find(obj => metadataType(obj) === PROFILE_METADATA_TYPE)
+  if (!profileObj || useOldProfiles) {
+    return new Set()
+  }
+  return new Set(Object.values(profileObj.fields)
+    .filter(f => PROFILE_MAP_FIELD_DEF[f.name] !== undefined)
+    .map(f => f.elemID.getFullName()))
+}
+
 /**
  * Mark list fields as lists if there is any instance that has a list value in the field,
  * or if the list field is explicitly hardcoded as list.
@@ -159,7 +172,7 @@ export const makeFilter = (
   unorderedListFields: ReadonlyArray<UnorderedList>,
   unorderedListAnnotations: ReadonlyArray<UnorderedList>,
   hardcodedLists: ReadonlyArray<string>
-): FilterCreator => () => ({
+): FilterCreator => ({ config }) => ({
   /**
    * Upon fetch, mark all list fields as list fields in all fetched types
    *
@@ -171,9 +184,11 @@ export const makeFilter = (
       .filter(inst => isObjectType(inst.type))
     const objectTypes = elements.filter(isObjectType)
 
-    const knownListIds = new Set(
-      [...hardcodedLists, ...unorderedListFields.map(sortDef => sortDef.elemId.getFullName())]
-    )
+    const mapFieldIds = getMapFieldIds(objectTypes, config.useOldProfiles)
+    const knownListIds = new Set([
+      ...hardcodedLists,
+      ...unorderedListFields.map(sortDef => sortDef.elemId.getFullName()),
+    ].filter(id => !mapFieldIds.has(id)))
 
     objectTypes.forEach(t => markHardcodedLists(t, knownListIds))
     instances.forEach(inst => markListRecursively(inst.type, inst.value))

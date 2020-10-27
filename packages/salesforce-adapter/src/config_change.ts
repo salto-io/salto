@@ -130,6 +130,7 @@ export const getConfigFromConfigChanges = (
       maxConcurrentRetrieveRequests: currentConfig.maxConcurrentRetrieveRequests,
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
       enableHideTypesInNacls: currentConfig.enableHideTypesInNacls,
+      useOldProfiles: currentConfig.useOldProfiles,
       dataManagement: currentDataManagement === undefined ? undefined : {
         ...currentDataManagement,
         ...dataManagementOverrides,

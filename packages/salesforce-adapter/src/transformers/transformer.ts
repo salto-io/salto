@@ -711,7 +711,7 @@ export class Types {
       Object.values(Types.formulaDataTypes),
     ).map(type => {
       const fieldType = type.clone()
-      fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
+      fieldType.path = [SALESFORCE, TYPES_PATH, 'fieldTypes']
       return fieldType
     })
   }
@@ -732,7 +732,7 @@ export class Types {
         const fieldType = type.clone()
         fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
           ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
-          : [SALESFORCE, TYPES_PATH, 'annotation_types']
+          : [SALESFORCE, TYPES_PATH, 'annotationTypes']
         return fieldType
       })
   }

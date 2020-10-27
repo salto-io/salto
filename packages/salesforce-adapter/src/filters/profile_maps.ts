@@ -60,7 +60,6 @@ export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   flowAccesses: { key: 'flow' },
   objectPermissions: { key: 'object' },
   pageAccesses: { key: 'apexPage' },
-  recordTypeVisibilities: { key: 'recordType' },
   userPermissions: { key: 'name' },
 
   // Non-unique maps (multiple values can have the same key)
@@ -70,6 +69,7 @@ export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   // Two-level maps
   fieldPermissions: { key: 'field', nested: true },
   fieldLevelSecurities: { key: 'field', nested: true }, // only available in API version 22.0 and earlier
+  recordTypeVisibilities: { key: 'recordType', nested: true },
 }
 
 /**

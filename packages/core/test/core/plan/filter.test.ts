@@ -227,6 +227,42 @@ describe('filterInvalidChanges', () => {
     expect(planResult.size).toBe(0)
   })
 
+  it('should have onUpdate change errors when modifying values inside an instance', async () => {
+    const afterElements = mock.getAllElements()
+    const saltoEmployeeInstance = afterElements[4] as InstanceElement
+    saltoEmployeeInstance.value.office.seats.invalid = 'anotherSeat'
+    const seatsId = saltoEmployeeInstance.elemID.createNestedID('office', 'seats')
+    const mockMapValueChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
+      async changes => changes
+        .map(getChangeElement)
+        .filter(elem => elem.elemID.isEqual(saltoEmployeeInstance.elemID))
+        .map(({ elemID }) => ({
+          elemID: elemID.createNestedID('office', 'seats'),
+          severity: 'Error',
+          message: 'msg',
+          detailedMessage: '',
+        }))
+    )
+
+    const planResult = await getPlan({
+      before: allElements,
+      after: afterElements,
+      changeValidators: { salto: mockMapValueChangeValidator },
+    })
+    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors[0].severity).toEqual('Error')
+    expect(planResult.changeErrors[0].elemID.isEqual(seatsId))
+      .toBeTruthy()
+    expect(planResult.size).toBe(1)
+    const planItem = getFirstPlanItem(planResult)
+    expect(planItem.items.size).toBe(1)
+    const [change] = planItem.changes()
+    expect(change.action).toEqual('modify')
+    const changeInstance = getChangeElement(change)
+    expect(changeInstance).toBeInstanceOf(InstanceElement)
+    expect(changeInstance.elemID).toEqual(saltoEmployeeInstance.elemID)
+  })
+
   it('should have onRemove change errors', async () => {
     const beforeInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'before_invalid_obj'),

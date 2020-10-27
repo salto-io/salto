@@ -20,6 +20,7 @@ import { DataNodeMap, DiffGraph, DiffNode, WalkError } from '@salto-io/dag'
 import {
   ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
   ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -53,9 +54,16 @@ export const filterInvalidChanges = async (
       // modification of a top level element that should be reverted as a whole
       return beforeTopLevelElem.clone()
     }
+    if (
+      (beforeTopLevelElem && !isObjectType(beforeTopLevelElem))
+      || (afterTopLevelElem && !isObjectType(afterTopLevelElem))
+    ) {
+      // use the real top-level element (for example, the top-level instance for field changes)
+      return afterTopLevelElem.clone()
+    }
     // ObjectType's fields changes
-    const beforeObj = beforeTopLevelElem as ObjectType
-    const afterObj = afterTopLevelElem as ObjectType
+    const beforeObj = beforeTopLevelElem
+    const afterObj = afterTopLevelElem
     const afterFieldNames = afterObj ? Object.keys(afterObj.fields) : []
     const beforeFieldNames = beforeObj ? Object.keys(beforeObj.fields) : []
     const allFieldNames = [...new Set([...beforeFieldNames, ...afterFieldNames])]

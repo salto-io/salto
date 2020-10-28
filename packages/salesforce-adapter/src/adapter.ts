@@ -60,7 +60,7 @@ import fieldReferences from './filters/field_references'
 import customObjectInstanceReferencesFilter from './filters/custom_object_instances_references'
 import foreignKeyReferences from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
-import cpqLookupObjectsFilter from './filters/cpq/lookup_object'
+import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
 import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
@@ -108,7 +108,7 @@ export const DEFAULT_FILTERS = [
   lookupFiltersFilter,
   customObjectInstanceReferencesFilter,
   cpqCustomScriptFilter,
-  cpqLookupObjectsFilter,
+  cpqLookupFieldsFilter,
   animationRulesFilter,
   samlInitMethodFilter,
   topicsForObjectsFilter,

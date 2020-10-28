@@ -208,8 +208,8 @@ const sendChunked = async <TIn, TOut>({
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
-        log.error('chunked %s failed on chunk, trying each element separately. %o',
-          operationInfo, error)
+        log.error('chunked %s failed on chunk with error: %s. Message: %s. Trying each element separately.',
+          operationInfo, error.name, error.message)
         const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
         return {
           result: _.flatten(sendChunkResult.map(e => e.result).map(flatValues)),

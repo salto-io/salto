@@ -486,6 +486,11 @@ The following types are supported in the language:
 | `json`      | json value {}            | "{ \"a\": 12 }"| A string value that expects the value to be in JSON format
 | `serviceid` | serviceid myid {}        | "ID"           | A string value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields)
 | `list`      | "list\<string\>" listField {}| ["a", "b", "c"]| A list of values. contains values of a specific type
+| `map`      | "map\<string\>" mapField {}| {             | A map/dictionary with string keys, and values of the specified type
+|             |                          | &nbsp;&nbsp;&nbsp;&nbsp;a = "A" |
+|             |                          | &nbsp;&nbsp;&nbsp;&nbsp;b = "B" |
+|             |                          | &nbsp;&nbsp;&nbsp;&nbsp;c = "C" |
+|             |                          | }              |
 | `set`       | Coming soon!             |                | Coming soon!
 | `unknown`   | unknown anyType          | anything       | a field value which is not validated, and can hold any type of data.
 

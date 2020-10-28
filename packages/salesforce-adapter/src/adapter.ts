@@ -67,6 +67,7 @@ import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filt
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
+import elementsPathFilter from './filters/elements_path'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import profileMaps from './filters/profile_maps'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
@@ -115,6 +116,7 @@ export const DEFAULT_FILTERS = [
   globalValueSetFilter,
   staticResourceFileExtFilter,
   xmlAttributesFilter,
+  elementsPathFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,

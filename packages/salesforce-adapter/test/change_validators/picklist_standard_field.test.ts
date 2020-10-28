@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import picklistStandardFieldValidator from '../../src/change_validators/picklist_standard_field'
-import { FIELD_ANNOTATIONS, SALESFORCE, VALUE_SET_FIELDS } from '../../src/constants'
+import { SALESFORCE, VALUE_SET_FIELDS } from '../../src/constants'
 import { createField } from '../utils'
 
 
@@ -76,7 +76,9 @@ describe('picklist standard field change validator', () => {
     it('should have no error for StandardValueSet picklist standard field', async () => {
       const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Standard')
       const dummyElemID = new ElemID(SALESFORCE, 'referenced')
-      beforeField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = new ReferenceExpression(dummyElemID)
+      beforeField.annotations[
+        VALUE_SET_FIELDS.VALUE_SET_NAME
+      ] = new ReferenceExpression(dummyElemID)
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)

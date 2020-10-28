@@ -24,10 +24,9 @@ import { PositionContext } from './context'
 // TODO - Note that this will have no great performances until we will get the
 // reverse SM from @salto-io/core's core. This is acceptable as this is not called so often
 const getUsages = async (
-  workspace: EditorWorkspace,
   element: Element,
   fullName: string
-): Promise<SaltoElemLocation[]> => {
+): Promise<ElemID[]> => {
   const pathesToAdd = new Set<ElemID>()
   if (isObjectType(element)) {
     _(element.fields)
@@ -57,22 +56,50 @@ const getUsages = async (
     transformElement({ element, transformFunc })
   }
   return _.flatten(
-    await Promise.all(wu(pathesToAdd.values()).map(p => getLocations(workspace, p.getFullName())))
+    await Promise.all(wu(pathesToAdd.values()))
   )
 }
 
-export const getSearchElementFullName = (context: PositionContext, token: string): string => {
+const isTokenElemID = (token: string): boolean => {
   try {
-    return ElemID.fromFullName(token).getFullName()
+    const refID = ElemID.fromFullName(token)
+    return !refID.isConfig() || !refID.isTopLevel()
   } catch (e) {
-    if (context.ref !== undefined) {
-      return !_.isEmpty(context.ref.path) && context.type === 'type'
-        ? context.ref?.element.elemID.createNestedID('attr', token).getFullName()
-        : context.ref?.element.elemID.getFullName()
-    }
-    return token
+    return false
   }
 }
+
+export const getSearchElementFullName = (context: PositionContext, token: string): string => {
+  if (isTokenElemID(token)) {
+    return token
+  }
+  if (context.ref !== undefined) {
+    return !_.isEmpty(context.ref.path) && context.type === 'type'
+      ? context.ref?.element.elemID.createNestedID('attr', token).getFullName()
+      : context.ref?.element.elemID.getFullName()
+  }
+  return token
+}
+
+export const getReferencingFiles = async (
+  workspace: EditorWorkspace,
+  fullName: string
+): Promise<string[]> => {
+  try {
+    const id = ElemID.fromFullName(fullName)
+    return workspace.getElementReferencedFiles(id)
+  } catch (e) {
+    return []
+  }
+}
+
+export const getUsageInFile = async (
+  workspace: EditorWorkspace,
+  filename: string,
+  fullName: string
+): Promise<ElemID[]> => _.flatten((await Promise.all(
+  (await workspace.getElements(filename)).map(e => getUsages(e, fullName))
+)))
 
 export const provideWorkspaceReferences = async (
   workspace: EditorWorkspace,
@@ -80,20 +107,12 @@ export const provideWorkspaceReferences = async (
   context: PositionContext
 ): Promise<SaltoElemLocation[]> => {
   const fullName = getSearchElementFullName(context, token)
-  try {
-    const id = ElemID.fromFullName(fullName)
-    const referencedByFiles = await workspace.getElementReferencedFiles(id)
-    const referencedByElements = _.flatten(await Promise.all(
-      referencedByFiles.map(filename => workspace.getElements(filename))
-    ))
-    const usages = _.flatten(await Promise.all(
-      referencedByElements.map(e => getUsages(workspace, e, fullName))
-    ))
-    return [
-      ...usages,
-      ...await getLocations(workspace, fullName),
-    ]
-  } catch (e) {
-    return getLocations(workspace, fullName)
-  }
+  const referencedByFiles = await getReferencingFiles(workspace, fullName)
+  const usages = _.flatten(await Promise.all(
+    referencedByFiles.map(filename => getUsageInFile(workspace, filename, fullName))
+  ))
+  return [
+    ..._.flatten(await Promise.all(usages.map(p => getLocations(workspace, p.getFullName())))),
+    ...await getLocations(workspace, fullName),
+  ]
 }

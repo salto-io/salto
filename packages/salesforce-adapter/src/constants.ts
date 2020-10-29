@@ -317,6 +317,8 @@ export const CPQ_QUOTE = 'SBQQ__Quote__c'
 export const CPQ_QUOTE_LINE_GROUP = 'SBQQ__QuoteLineGroup__c'
 export const CPQ_QUOTE_LINE = 'SBQQ__QuoteLine__c'
 export const CPQ_PRODUCT_OPTION = 'SBQQ__ProductOption__c'
+export const CPQ_PRICE_SCHEDULE = 'SBQQ__PriceSchedule__c'
+export const CPQ_DISCOUNT_SCHEDULE = 'SBQQ__DiscountSchedule__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'
@@ -336,10 +338,13 @@ export const CPQ_QUOTE_LINE_FIELDS = 'SBQQ__QuoteLineFields__c'
 export const CPQ_CODE_FIELD = 'SBQQ__Code__c'
 export const CPQ_DEFAULT_OBJECT_FIELD = 'SBQQ__DefaultObject__c'
 export const CPQ_TESTED_OBJECT = 'SBQQ__TestedObject__c'
+export const CPQ_CONSTRAINT_FIELD = 'SBQQ__ConstraintField__c'
+export const CPQ_ACCOUNT = 'SBQQ__Account__c'
 
 export const CPQ_QUOTE_NO_PRE = 'Quote__c'
 export const CPQ_QUOTE_LINE_GROUP_NO_PRE = 'QuoteLineGroup__c'
-export const CONF_ATTR_NAME_TO_API_NAME = {
+export const CPQ_ACCOUNT_NO_PRE = 'Account__c'
+export const DEFAULT_OBJECT_TO_API_MAPPING = {
   [CPQ_QUOTE_NO_PRE]: CPQ_QUOTE,
   [CPQ_QUOTE_LINE_GROUP_NO_PRE]: CPQ_QUOTE_LINE_GROUP,
 } as Record<string, string>
@@ -347,8 +352,12 @@ export const CONF_ATTR_NAME_TO_API_NAME = {
 export const CPQ_QUOTE_NAME = 'Quote'
 export const CPQ_QUOTE_LINE_NAME = 'Quote Line'
 export const CPQ_PRODUCT_OPTION_NAME = 'Product Option'
-export const LOOKUP_QUERY_NAME_TO_API_NAME = {
+export const TEST_OBJECT_TO_API_MAPPING = {
   [CPQ_QUOTE_NAME]: CPQ_QUOTE,
   [CPQ_QUOTE_LINE_NAME]: CPQ_QUOTE_LINE,
   [CPQ_PRODUCT_OPTION_NAME]: CPQ_PRODUCT_OPTION,
+} as Record<string, string>
+
+export const SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING = {
+  [CPQ_ACCOUNT_NO_PRE]: CPQ_ACCOUNT,
 } as Record<string, string>

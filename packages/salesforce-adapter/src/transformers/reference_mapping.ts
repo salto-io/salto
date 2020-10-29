@@ -27,9 +27,9 @@ import {
   VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, CPQ_CUSTOM_SCRIPT, CPQ_QUOTE_FIELDS,
   CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
-  CPQ_QUOTE_LINE_FIELDS, CONF_ATTR_NAME_TO_API_NAME,
-  LOOKUP_QUERY_NAME_TO_API_NAME, CPQ_TESTED_OBJECT,
-  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD,
+  CPQ_QUOTE_LINE_FIELDS, DEFAULT_OBJECT_TO_API_MAPPING, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING,
+  TEST_OBJECT_TO_API_MAPPING, CPQ_TESTED_OBJECT, CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE,
+  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD,
 } from '../constants'
 
 const log = logger(module)
@@ -41,7 +41,7 @@ export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
 }
 
-type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping'
+type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -57,14 +57,30 @@ const ReferenceSerializationStrategyLookup: Record<
     ),
   },
   configurationAttributeMapping: {
-    serialize: ({ ref }) => (_.invert(CONF_ATTR_NAME_TO_API_NAME)[apiName(ref.value)]
+    serialize: ({ ref }) => (_.invert(DEFAULT_OBJECT_TO_API_MAPPING)[apiName(ref.value)]
       ?? apiName(ref.value)),
-    lookup: val => (_.isString(val) ? (CONF_ATTR_NAME_TO_API_NAME[val] ?? val) : val),
+    lookup: val => (_.isString(val) ? (DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val) : val),
   },
   lookupQueryMapping: {
-    serialize: ({ ref }) => (_.invert(LOOKUP_QUERY_NAME_TO_API_NAME)[apiName(ref.value)]
+    serialize: ({ ref }) => (_.invert(TEST_OBJECT_TO_API_MAPPING)[apiName(ref.value)]
       ?? apiName(ref.value)),
-    lookup: val => (_.isString(val) ? (LOOKUP_QUERY_NAME_TO_API_NAME[val] ?? val) : val),
+    lookup: val => (_.isString(val) ? (TEST_OBJECT_TO_API_MAPPING[val] ?? val) : val),
+  },
+  scheduleConstraintFieldMapping: {
+    serialize: ({ ref }) => {
+      const relativeApiName = apiName(ref.value, true)
+      return (
+        _.invert(SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING)[relativeApiName]
+          ?? relativeApiName
+      )
+    },
+    lookup: (val, context) => {
+      const mappedValue = SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING[val]
+      return (context !== undefined
+        ? [context, mappedValue].join(API_NAME_SEPARATOR)
+        : mappedValue
+      )
+    },
   },
 }
 
@@ -406,6 +422,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'SBQQ__FieldName__c', parentTypes: [CPQ_FIELD_METADATA] },
     serializationStrategy: 'relativeApiName',
     target: { parent: CPQ_OBJECT_NAME, type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: CPQ_CONSTRAINT_FIELD, parentTypes: [CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE] },
+    serializationStrategy: 'scheduleConstraintFieldMapping',
+    target: { parent: CPQ_QUOTE, type: CUSTOM_FIELD },
   },
 ]
 

@@ -21,14 +21,23 @@ import { apiName, isCustomObject, relativeApiName } from '../../transformers/tra
 import { FIELD_ANNOTATIONS, CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, DEFAULT_OBJECT_TO_API_MAPPING, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, TEST_OBJECT_TO_API_MAPPING, CUSTOM_OBJECT, CUSTOM_FIELD, CPQ_PRICE_SCHEDULE, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD, CPQ_DISCOUNT_SCHEDULE, API_NAME_SEPARATOR } from '../../constants'
 import { getCustomObjects } from '../utils'
 
-type LookupFieldDef = {
+
+type CustomObjectLookupDef = {
   type: 'CustomObject'
   valuesMapping?: Record<string, string>
-} | {
+}
+
+type CustomFieldLookupDef = {
   type: 'CustomField'
   valuesMapping?: Record<string, string>
   objectContext: string
 }
+
+type LookupFieldDef = CustomObjectLookupDef | CustomFieldLookupDef
+
+const isCustomFieldLookupDef = (lookupDef: LookupFieldDef): lookupDef is CustomFieldLookupDef => (
+  lookupDef.type === CUSTOM_FIELD
+)
 
 const LOOKUP_FIELDS = {
   [CPQ_PRODUCT_RULE]: {
@@ -116,9 +125,9 @@ const replaceLookupObjectValueSetValuesWithReferences = (customObjects: ObjectTy
     }
     const nameToApiMapping = lookupDef.valuesMapping ?? {}
     const mappedFullName = nameToApiMapping[fullName] ?? fullName
-    const elementToRef = lookupDef.type === CUSTOM_OBJECT
-      ? apiNameToCustomObject[mappedFullName]
-      : apiNameToCustomObject[lookupDef.objectContext ?? '']?.fields[mappedFullName]
+    const elementToRef = isCustomFieldLookupDef(lookupDef)
+      ? apiNameToCustomObject[lookupDef.objectContext]?.fields[mappedFullName]
+      : apiNameToCustomObject[mappedFullName]
     return (elementToRef !== undefined
       ? new ReferenceExpression(elementToRef.elemID) : fullName)
   }
@@ -140,9 +149,9 @@ const transformFullNameToApiName = (
   const lookupApiName = nameToApiMapping[fullName] ?? fullName
   // Known issue: CUSTOM_FIELD fields that were not references will have full api name now
   // Will be solved when annotation will be handled in reference_mapping
-  return lookupDef.type === CUSTOM_OBJECT
-    ? lookupApiName
-    : [lookupDef.objectContext, lookupApiName].join(API_NAME_SEPARATOR)
+  return isCustomFieldLookupDef(lookupDef)
+    ? [lookupDef.objectContext, lookupApiName].join(API_NAME_SEPARATOR)
+    : lookupApiName
 }
 
 const transformFullNameToLabel = (
@@ -155,9 +164,9 @@ const transformFullNameToLabel = (
     return undefined
   }
   const nameToApiMapping = _.invert(lookupDef.valuesMapping ?? {})
-  const lookupApiName = lookupDef.type === CUSTOM_OBJECT
-    ? fullName
-    : relativeApiName(fullName)
+  const lookupApiName = isCustomFieldLookupDef(lookupDef)
+    ? relativeApiName(fullName)
+    : fullName
   return nameToApiMapping[lookupApiName] ?? lookupApiName
 }
 
@@ -169,7 +178,7 @@ const transformValuesBackToLabel = (object: ObjectType): ObjectType =>
 
 const doesObjectHaveValuesMappingLookup = (objectApiName: string): boolean =>
   (Object.values(LOOKUP_FIELDS[objectApiName] ?? {})
-    .find(lookupDef => lookupDef.valuesMapping) !== undefined)
+    .some(lookupDef => lookupDef.valuesMapping))
 
 const getCustomObjectWithMappingLookupChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>

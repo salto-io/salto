@@ -110,10 +110,10 @@ export type Workspace = {
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
   getStateRecency(services: string): Promise<StateRecency>
-  promote(ids: ElemID[]): Promise<void>
+  promote(ids: ElemID[], sourceEnv?: string): Promise<void>
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
-  copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
+  copyTo(ids: ElemID[], targetEnvs?: string[], sourceEnv?: string): Promise<void>
 }
 
 // common source has no state
@@ -263,10 +263,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),
     getParsedNaclFile: (filename: string) => naclFilesSource.getParsedNaclFile(filename),
-    promote: (ids: ElemID[]) => naclFilesSource.promote(ids),
+    promote: (ids: ElemID[], sourceEnv?: string) => naclFilesSource.promote(ids, sourceEnv),
     demote: (ids: ElemID[]) => naclFilesSource.demote(ids),
     demoteAll: () => naclFilesSource.demoteAll(),
-    copyTo: (ids: ElemID[], targetEnvs: string[]) => naclFilesSource.copyTo(ids, targetEnvs),
+    copyTo: (ids: ElemID[], targetEnvs: string[], sourceEnv?: string) =>
+      naclFilesSource.copyTo(ids, targetEnvs, sourceEnv),
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

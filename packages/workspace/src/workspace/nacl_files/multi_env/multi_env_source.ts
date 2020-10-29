@@ -55,10 +55,10 @@ type MultiEnvState = {
 
 type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   getAll: (env?: string) => Promise<Element[]>
-  promote: (ids: ElemID[]) => Promise<void>
+  promote: (ids: ElemID[], sourceEnv?: string) => Promise<void>
   demote: (ids: ElemID[]) => Promise<void>
   demoteAll: () => Promise<void>
-  copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
+  copyTo: (ids: ElemID[], targetEnvs?: string[], sourceEnv?: string) => Promise<void>
 }
 
 const buildMultiEnvSource = (
@@ -67,14 +67,17 @@ const buildMultiEnvSource = (
   commonSourceName: string,
   initState?: Promise<MultiEnvState>
 ): MultiEnvSource => {
-  const primarySource = (): NaclFilesSource => sources[primarySourceName]
+  let currentPrimarySourceName = primarySourceName
+  const primarySource = (): NaclFilesSource => sources[currentPrimarySourceName]
   const commonSource = (): NaclFilesSource => sources[commonSourceName]
   const secondarySources = (): Record<string, NaclFilesSource> => (
-    _.omit(sources, [primarySourceName, commonSourceName])
+    _.omit(sources, [currentPrimarySourceName, commonSourceName])
   )
 
   const getActiveSources = (env?: string): Record<string, NaclFilesSource> => ({
-    [primarySourceName]: env === undefined ? sources[primarySourceName] : sources[env],
+    [currentPrimarySourceName]: env === undefined
+      ? sources[currentPrimarySourceName]
+      : sources[env],
     [commonSourceName]: sources[commonSourceName],
   })
 
@@ -165,14 +168,17 @@ const buildMultiEnvSource = (
     return applyRoutedChanges(routedChanges)
   }
 
-  const promote = async (ids: ElemID[]): Promise<void> => {
+  const promote = async (ids: ElemID[], sourceEnv: string = primarySourceName): Promise<void> => {
+    const currentEnv = currentPrimarySourceName
+    currentPrimarySourceName = sourceEnv
     const routedChanges = await routePromote(
       ids,
       primarySource(),
       commonSource(),
       secondarySources(),
     )
-    return applyRoutedChanges(routedChanges)
+    await applyRoutedChanges(routedChanges)
+    currentPrimarySourceName = currentEnv
   }
 
   const demote = async (ids: ElemID[]): Promise<void> => {
@@ -184,7 +190,11 @@ const buildMultiEnvSource = (
     )
     return applyRoutedChanges(routedChanges)
   }
-  const copyTo = async (ids: ElemID[], targetEnvs: string[] = []): Promise<void> => {
+  const copyTo = async (
+    ids: ElemID[], targetEnvs: string[] = [], sourceEnv: string = primarySourceName
+  ): Promise<void> => {
+    const currentEnv = currentPrimarySourceName
+    currentPrimarySourceName = sourceEnv
     const targetSources = _.isEmpty(targetEnvs)
       ? secondarySources()
       : _.pick(secondarySources(), targetEnvs)
@@ -193,7 +203,8 @@ const buildMultiEnvSource = (
       primarySource(),
       targetSources,
     )
-    return applyRoutedChanges(routedChanges)
+    await applyRoutedChanges(routedChanges)
+    currentPrimarySourceName = currentEnv
   }
 
   const demoteAll = async (): Promise<void> => {

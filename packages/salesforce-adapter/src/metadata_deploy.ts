@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { DeployResult, Change, getChangeElement, isRemovalChange, InstanceElement, isModificationChange, isInstanceChange, ModificationChange, isListType, isRemovalOrModificationChange, RemovalChange } from '@salto-io/adapter-api'
+import { DeployResult, Change, getChangeElement, isRemovalChange, InstanceElement, isModificationChange, isInstanceChange, ModificationChange, isRemovalOrModificationChange, RemovalChange, isContainerType } from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
@@ -43,7 +43,7 @@ const addNestedInstanceRemovalsToPackage = (
   nestedTypeInfo.nestedInstanceFields.forEach(fieldName => {
     const rawFieldType = changeElem.type.fields[fieldName]?.type
     // We generally expect these to be lists, handling non list types just in case of a bug
-    const fieldType = isListType(rawFieldType) ? rawFieldType.innerType : rawFieldType
+    const fieldType = isContainerType(rawFieldType) ? rawFieldType.innerType : rawFieldType
     if (!isMetadataObjectType(fieldType)) {
       log.error(
         'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',

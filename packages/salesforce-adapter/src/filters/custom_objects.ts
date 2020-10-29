@@ -539,16 +539,6 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
     })
 }
 
-const isCustomObjectChildInstance = (instance: InstanceElement): boolean =>
-  Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME).includes(metadataType(instance))
-
-const isCustomObjectRelatedChange = (change: Change): boolean => {
-  const elem = getChangeElement(change)
-  return isCustomObject(elem)
-  || (isField(elem) && isFieldOfCustomObject(elem))
-  || (isInstanceElement(elem) && isCustomObjectChildInstance(elem))
-}
-
 const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
   (fieldChange: Change): fieldChange is Change<Field> => {
     if (!isFieldChange(fieldChange)) {
@@ -623,12 +613,28 @@ const getCustomObjectFromChange = (change: Change): ObjectType => {
   if (isField(elem)) {
     return elem.parent
   }
+  // If we reach here this is a child instance.
+  // If it passed the isCustomObjectRelatedChange filter then it must have a custom object parent
   return getParents(elem).filter(isCustomObject)[0]
 }
 
 const getCustomObjectApiName = (change: Change): string => (
   apiName(getCustomObjectFromChange(change))
 )
+
+const isCustomObjectChildInstance = (instance: InstanceElement): boolean =>
+  Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME).includes(metadataType(instance))
+
+const isCustomObjectRelatedChange = (change: Change): boolean => {
+  const elem = getChangeElement(change)
+  return isCustomObject(elem)
+  || (isField(elem) && isFieldOfCustomObject(elem))
+  || (
+    isInstanceElement(elem)
+    && isCustomObjectChildInstance(elem)
+    && getCustomObjectFromChange(change) !== undefined
+  )
+}
 
 const createCustomObjectChange = (
   fieldsToSkip: string[] = [],
@@ -672,8 +678,8 @@ const createCustomObjectChange = (
     return { action: 'add', data: { after } }
   }
 
-  // If there was no change to the object type itself, is should be safe to use the object
-  // from one of the changes even if we get a "after" object type since we only take annotations
+  // If there was no change to the object type itself, it should be safe to use the object
+  // from one of the changes even if we get an "after" object type since we only take annotations
   // and those have not changed
   const beforeParent = objectChange?.data.before ?? getCustomObjectFromChange(changes[0])
   const before = createCustomObjectInstance({
@@ -801,7 +807,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       const deployableCustomObjectChanges = Object.entries(originalChangeMapping)
         .map(entry => createCustomObjectChange(config.systemFields, ...entry))
 
-      // Handle known side effects - if we remove a custom objects we don't need to also remove
+      // Handle known side effects - if we remove a custom object we don't need to also remove
       // its dependent instances (like layouts, custom object translations and so on)
       const removedCustomObjectNames = Object.keys(originalChangeMapping)
         .filter(

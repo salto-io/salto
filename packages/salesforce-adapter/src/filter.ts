@@ -19,8 +19,16 @@ import { types, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import { ConfigChangeSuggestion, FilterContext } from './types'
 
-// Filter interface, filters will be activated upon adapter fetch, add, update and remove
-// operations. The filter will be responsible for specific business logic.
+// Filters run in a specific order and get a mutable list as input which they may modify
+// to affect the overall result as well as the input for subsequent filters.
+// on preDeploy the filters are run in reverse order and are expected to "undo" any relevant change
+// they made in onFetch. because of this, each filter can expect to get in preDeploy a similar
+// value to what it created in onFetch.
+// onDeploy is called in the same order as onFetch and is expected to do basically the same thing
+// that onFetch does but with a different context (on changes instead of on elements)
+// Each filter will be created once and so it may store context between preDeploy and onDeploy.
+// Note that it cannot store context between onFetch and the other callbacks since these run in
+// separate commands
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<ConfigChangeSuggestion[] | void>
   preDeploy(changes: Change[]): Promise<void>

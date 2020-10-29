@@ -27,6 +27,7 @@ import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
+import { XML_ATTRIBUTE_PREFIX } from '../../src/constants'
 
 
 describe('XML Transformer', () => {
@@ -248,7 +249,7 @@ describe('XML Transformer', () => {
             {
               path: 'unpackaged/classes/MyApexClass.cls-meta.xml',
               content: '<?xml version="1.0" encoding="UTF-8"?>\n'
-                + '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+                + '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n'
                 + '    <apiVersion>47.0</apiVersion>\n'
                 + '    <status>Active</status>\n'
                 + '</ApexClass>\n',
@@ -282,6 +283,8 @@ describe('XML Transformer', () => {
           .toEqual(Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'))
         expect(contentStaticFile.filepath)
           .toEqual('salesforce/Records/ApexClass/MyApexClass.cls')
+        expect(Object.keys(metadataInfo).every(key => !key.startsWith(XML_ATTRIBUTE_PREFIX)))
+          .toBeTruthy()
       })
     })
 

@@ -17,7 +17,8 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
-  isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType,
+  isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, TypeElement,
+  getDeepInnerType,
 } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
@@ -105,10 +106,14 @@ const cacheResultKey = (filename: string, timestamp?: number): ParseResultKey =>
 })
 
 const getElementReferenced = (element: Element): ElemID[] => {
+  const getTypeOrContainerTypeID = (typeElem: TypeElement): ElemID => (isContainerType(typeElem)
+    ? getDeepInnerType(typeElem).elemID
+    : typeElem.elemID)
+
   const referenced: ElemID[] = []
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {
-      referenced.push(field.type.elemID)
+      referenced.push(getTypeOrContainerTypeID(field.type))
     }
     if (isReferenceExpression(value) && path) {
       const { parent } = value.elemId.createTopLevelParentID()
@@ -118,12 +123,14 @@ const getElementReferenced = (element: Element): ElemID[] => {
   }
 
   if (isObjectType(element)) {
-    referenced.push(...Object.values(element.fields).map(field => field.type.elemID))
+    referenced.push(...Object.values(element.fields)
+      .map(field => getTypeOrContainerTypeID(field.type)))
   }
   if (isInstanceElement(element)) {
     referenced.push(element.type.elemID)
   }
-  referenced.push(...Object.values(element.annotationTypes).map(anno => anno.elemID))
+  referenced.push(...Object.values(element.annotationTypes)
+    .map(anno => getTypeOrContainerTypeID(anno)))
   if (!isContainerType(element)) {
     transformElement({ element, transformFunc })
   }
@@ -279,6 +286,7 @@ const buildNaclFilesSource = (
   const getElementReferencedFiles = async (
     elemID: ElemID
   ): Promise<string[]> => (await getState()).referencedIndex[elemID.getFullName()] || []
+
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
     const key = cacheResultKey(parsedNaclFile.filename, parsedNaclFile.timestamp)

@@ -207,7 +207,6 @@ export const configType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           'Report', 'ReportType', 'ReportFolder', 'Dashboard', 'DashboardFolder', 'Profile',
-          'ForecastingSettings',
         ],
       },
     },

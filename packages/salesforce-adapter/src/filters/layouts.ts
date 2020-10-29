@@ -19,7 +19,7 @@ import {
   Element, InstanceElement, ObjectType, ElemID,
 } from '@salto-io/adapter-api'
 import {
-  findInstances, naclCase,
+  findInstances, saltoCase, pathSaltoCase,
 } from '@salto-io/adapter-utils'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
@@ -45,7 +45,7 @@ const layoutObjAndName = (layout: InstanceElement): [string, string] => {
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
 
-const defaultLayoutName = (layout: InstanceElement): string => naclCase(apiName(layout))
+const defaultLayoutName = (layout: InstanceElement): string => saltoCase(apiName(layout))
 
 const fixNames = (layouts: InstanceElement[]): void => {
   let names = layouts.map(id)
@@ -54,7 +54,7 @@ const fixNames = (layouts: InstanceElement[]): void => {
     if (newName.length < MIN_NAME_LENGTH) {
       return
     }
-    const newId = layout.type.elemID.createNestedID('instance', naclCase(newName))
+    const newId = layout.type.elemID.createNestedID('instance', saltoCase(newName))
     if (!names.includes(newId.getFullName())) {
       names = _.without(names, id(layout))
       names.push(newId.getFullName())
@@ -74,7 +74,11 @@ const fixLayoutPath = (
   if (objectPath === undefined) {
     return
   }
-  layout.path = [...objectPath.slice(0, -1), layout.elemID.typeName, layout.elemID.name]
+  layout.path = [
+    ...objectPath.slice(0, -1),
+    layout.elemID.typeName,
+    pathSaltoCase(layout.elemID.name),
+  ]
 }
 
 /**

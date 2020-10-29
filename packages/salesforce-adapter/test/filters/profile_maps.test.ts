@@ -178,11 +178,11 @@ describe('ProfileMaps filter', () => {
           },
           layoutAssignments: {
             // eslint-disable-next-line @typescript-eslint/camelcase
-            Account_Account_Layout: [
+            Account_Account_Layout$bs: [
               { layout: 'Account-Account Layout' },
             ],
             // eslint-disable-next-line @typescript-eslint/camelcase
-            Account_random_characters_aaa___bbb: [
+            Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb$bssiiiiiiaibs: [
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
@@ -259,7 +259,7 @@ describe('ProfileMaps filter', () => {
         const inst = instances[1] as InstanceElement
         expect(inst.value.layoutAssignments).toEqual({
           // eslint-disable-next-line @typescript-eslint/camelcase
-          Account_Account_Layout: [{ layout: 'Account-Account Layout' }],
+          Account_Account_Layout$bs: [{ layout: 'Account-Account Layout' }],
           too: [
             { layout: 'too.many.separators', recordType: 'something' },
             { layout: 'too.many.wrongIndexing', recordType: 'something' },
@@ -304,11 +304,11 @@ describe('ProfileMaps filter', () => {
           },
           layoutAssignments: {
             // eslint-disable-next-line @typescript-eslint/camelcase
-            Account_Account_Layout: [
+            Account_Account_Layout$bs: [
               { layout: 'Account-Account Layout' },
             ],
             // eslint-disable-next-line @typescript-eslint/camelcase
-            Account_random_characters_aaa___bbb: [
+            Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb$bssiiiiiiaibs: [
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
@@ -342,7 +342,7 @@ describe('ProfileMaps filter', () => {
           },
           layoutAssignments: {
             // eslint-disable-next-line @typescript-eslint/camelcase
-            Account_Account_Layout: [
+            Account_Account_Layout$bs: [
               { layout: 'Account-Account Layout' },
             ],
           },

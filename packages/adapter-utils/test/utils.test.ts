@@ -25,11 +25,11 @@ import {
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
-  findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify, naclCase,
+  findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents,
+  transformElement, toObjectType, getParents, pathSaltoCase, saltoCase,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
 
@@ -1098,20 +1098,80 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('naclCase func', () => {
-    describe('names without special characters', () => {
-      const normalNames = [
-        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
-        'CRMFusionDBR101__Scenario__C',
+  const generateRandomChar = (): string =>
+    (String.fromCharCode((Math.random() * 65535)))
+
+  describe('saltoCase func', () => {
+    describe('No special chars', () => {
+      const noSpecialChars = [
+        'name', 'nameWithNumber4',
       ]
-      it('should remain the same', () => {
-        normalNames.forEach(name => expect(naclCase(name)).toEqual(name))
+      it('Should remain the same', () => {
+        noSpecialChars.forEach(name => expect(saltoCase(name)).toEqual(name))
       })
     })
 
-    describe('names with spaces', () => {
-      it('should be replaced with _', () => {
-        expect(naclCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
+    describe('When all special chars are _', () => {
+      const specialCharOnlyUnderscore = [
+        'a_b_c_d', 'Lala__Lead__c',
+      ]
+      it('Should remain the same', () => {
+        specialCharOnlyUnderscore.forEach(name => expect(saltoCase(name)).toEqual(name))
+      })
+    })
+
+    describe('When all special chars are same and "mapped"', () => {
+      it('Should replace special with _, add seperator and mapped val once', () => {
+        expect(saltoCase('Name Special Char')).toEqual('Name_Special_Char$s')
+        expect(saltoCase('Name@Special@Char')).toEqual('Name_Special_Char$m')
+        expect(saltoCase('Name$Special$Char')).toEqual('Name_Special_Char$zc')
+        expect(saltoCase('Name-Special-Char')).toEqual('Name_Special_Char$b')
+      })
+    })
+
+    describe('When there are different special chars', () => {
+      it('Should replace special with _, add seperator and add mapping', () => {
+        expect(saltoCase('Name Special@Char')).toEqual('Name_Special_Char$sm')
+        expect(saltoCase('Name@Special_Char')).toEqual('Name_Special_Char$ma')
+        expect(saltoCase('NameאSpecial Char')).toEqual('Name_Special_Char$_01488s')
+      })
+    })
+
+    describe('When two strings have special chars', () => {
+      const numberOfRandomChecks = 100
+      it('Should have different values after saltoCase if diff chars and same if same', () => {
+        expect(saltoCase('Name Special Char')).not.toEqual(saltoCase('Name Special_Char'))
+        expect(saltoCase('Name_Special__Char')).not.toEqual(saltoCase('Name_Special_Char'))
+        _.times(numberOfRandomChecks, () => {
+          const charA = generateRandomChar()
+          const charB = generateRandomChar()
+          const nameWithCharA = `Name${charA}Special${charA}Char`
+          const nameWithCharB = `Name${charB}Special${charB}Char`
+          if (charA === charB) {
+            expect(saltoCase(nameWithCharA)).toEqual(nameWithCharB)
+          } else {
+            expect(saltoCase(nameWithCharA)).not.toEqual(nameWithCharB)
+          }
+        })
+      })
+    })
+  })
+
+  describe('pathSaltoCase func', () => {
+    describe('Without saltoCase seperator', () => {
+      const noSeperatorNames = [
+        'lalala', 'Lead', 'LALA__Lead__c', 'NameWithNumber2',
+      ]
+      it('Should remain the same', () => {
+        noSeperatorNames.forEach(name => expect(pathSaltoCase(name)).toEqual(name))
+      })
+    })
+
+    describe('With saltoCase seperator', () => {
+      it('Should return up to the seperator', () => {
+        expect(pathSaltoCase('Lead$1234')).toEqual('Lead')
+        expect(pathSaltoCase('LALA__Lead__c$12_34')).toEqual('LALA__Lead__c')
+        expect(pathSaltoCase('NameWithNumber2$12_34')).toEqual('NameWithNumber2')
       })
     })
   })

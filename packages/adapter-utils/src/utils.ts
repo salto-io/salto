@@ -31,12 +31,72 @@ const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
-export const naclCase = (name?: string): string => (
-  // unescape changes HTML escaped parts (&gt; for example), then the regex
-  // replaces url escaped chars as well as any special character to keep names Nacl files friendly
-  // Match multiple consecutive chars to compact names and avoid repeated _
-  name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
-)
+const SALTO_CASE_SEPERATOR = '$'
+
+export const pathSaltoCase = (name?: string): string =>
+  (name ? name.split(SALTO_CASE_SEPERATOR)[0] : '')
+
+/* eslint-disable quote-props */
+const defaultSaltoCaseMapping = {
+  '_': 'a',
+  '-': 'b',
+  '\\': 'c',
+  '/': 'd',
+  '&': 'e',
+  ':': 'f',
+  '|': 'g',
+  '^': 'h',
+  '%': 'i',
+  '<': 'j',
+  '>': 'k',
+  '!': 'l',
+  '@': 'm',
+  '?': 'n',
+  '*': 'o',
+  '(': 'p',
+  ')': 'q',
+  '"': 'r',
+  ' ': 's',
+  '\'': 't',
+  '#': 'u',
+  '.': 'v',
+  '[': 'w',
+  ']': 'x',
+  ';': 'y',
+  '`': 'za',
+  '~': 'zb',
+  '$': 'zc',
+} as Record<string, string>
+
+const suffixFromList = (specialCharsMappingList: string[]): string => {
+  if (specialCharsMappingList.length === 0
+      // If all the special chars are _ then the suffix is empty
+      || specialCharsMappingList
+        .every(mappedSpecialChar => mappedSpecialChar === defaultSaltoCaseMapping._)) {
+    return ''
+  }
+  if (specialCharsMappingList
+    .every(mappedSpecialChar => mappedSpecialChar === specialCharsMappingList[0])) {
+    return `${SALTO_CASE_SEPERATOR}${specialCharsMappingList[0]}`
+  }
+  return `${SALTO_CASE_SEPERATOR}${specialCharsMappingList.join('')}`
+}
+
+export const saltoCase = (name?: string): string => {
+  // unescape changes HTML escaped parts (&gt; for example),
+  // then have a special chars mapping with after the seperator for uniqness
+  if (name === undefined) {
+    return ''
+  }
+  const unescapedName = _.unescape(name)
+  const specialCharsMappingList: string[] = []
+  const replaceChar = (char: string): string => {
+    specialCharsMappingList.push(defaultSaltoCaseMapping[char] ?? `_${char.charCodeAt(0).toString().padStart(5, '0')}`)
+    return '_'
+  }
+  const cleanName = unescapedName.replace(/[^a-zA-Z0-9]/g, replaceChar)
+  return `${cleanName}${suffixFromList(specialCharsMappingList)}`
+}
 
 export const applyFunctionToChangeData = <T extends Change<unknown>>(
   change: T, func: (arg: ChangeData<T>) => ChangeData<T>,

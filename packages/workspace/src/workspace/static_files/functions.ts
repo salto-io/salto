@@ -25,7 +25,7 @@ export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): F
       return staticFilesSource.getStaticFile(filepath, encoding)
     },
     dump: async (val: Value): Promise<FunctionExpression> => {
-      if (val.content !== undefined) {
+      if (await val.getContent() !== undefined) {
         await staticFilesSource.persistStaticFile(val)
       }
       const params = val.encoding === DEFAULT_STATIC_FILE_ENCODING

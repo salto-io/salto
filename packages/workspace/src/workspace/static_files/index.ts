@@ -14,5 +14,5 @@
 * limitations under the License.
 */
 export { StaticFilesCache, StaticFilesCacheResult } from './cache'
-export { buildStaticFilesSource } from './source'
+export { buildStaticFilesSource, LazyStaticFile } from './source'
 export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'

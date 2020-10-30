@@ -128,6 +128,30 @@ export type Expression = ReferenceExpression | TemplateExpression
 
 export type TemplatePart = string | Expression
 
+const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean => {
+  let i1 = 0
+  let i2 = 0
+  while (true) {
+    while (i1 < s1.length && s1[i1] === '\r') {
+      i1 += 1
+    }
+    while (i2 < s2.length && s2[i2] === '\r') {
+      i2 += 1
+    }
+    if (i1 === s1.length && i2 === s2.length) {
+      return true
+    }
+    if (i1 === s1.length || i2 === s2.length) {
+      return false
+    }
+    if (s1[i1] !== s2[i2]) {
+      return false
+    }
+    i1 += 1
+    i2 += 1
+  }
+}
+
 export const isEqualValues = (first: Value, second: Value): boolean => _.isEqualWith(
   first,
   second,
@@ -141,6 +165,9 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
       return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
         ? f.elemId.isEqual(s.elemId)
         : isEqualValues(fValue, sValue)
+    }
+    if (typeof f === 'string' && typeof s === 'string') {
+      return compareStringsIgnoreNewlineDifferences(f, s)
     }
     return undefined
   }

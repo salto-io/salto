@@ -73,6 +73,11 @@ describe('Values', () => {
         const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG1') })
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
+      it('ignores newline differences', () => {
+        const s1 = '\rab\r\n'
+        const s2 = 'a\r\r\r\r\r\rb\n'
+        expect(isEqualValues(s1, s2)).toBeTruthy()
+      })
     })
     it('calculate hash', () => {
       const zOMGBuffer = Buffer.from('ZOMG')

@@ -65,4 +65,26 @@ describe('strings', () => {
       })
     })
   })
+
+  describe('capitalizeFirstLetter', () => {
+    it('should capitalize first letter when lowercase', () => {
+      expect(strings.capitalizeFirstLetter('abcdef')).toEqual('Abcdef')
+      expect(strings.capitalizeFirstLetter('abcDef')).toEqual('AbcDef')
+      expect(strings.capitalizeFirstLetter('aBcDef')).toEqual('ABcDef')
+      expect(strings.capitalizeFirstLetter('abc def')).toEqual('Abc def')
+    })
+    it('should not modify string when already capitalized', () => {
+      expect(strings.capitalizeFirstLetter('Abcdef')).toEqual('Abcdef')
+      expect(strings.capitalizeFirstLetter('ABC')).toEqual('ABC')
+    })
+    it('should not modify characters that are not letters', () => {
+      expect(strings.capitalizeFirstLetter('123abc')).toEqual('123abc')
+      expect(strings.capitalizeFirstLetter('!?')).toEqual('!?')
+    })
+    it('should handle short and empty strings', () => {
+      expect(strings.capitalizeFirstLetter('a')).toEqual('A')
+      expect(strings.capitalizeFirstLetter('A')).toEqual('A')
+      expect(strings.capitalizeFirstLetter('')).toEqual('')
+    })
+  })
 })

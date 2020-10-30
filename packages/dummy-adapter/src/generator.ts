@@ -457,18 +457,54 @@ export const generateElements = (params: GeneratorParams): Element[] => {
         const objectPermissions = generatePermissions(allObjectsIDs)
         const fieldPermissions = generatePermissions(allFieldsIDs)
         const layoutAssignments = generateLayoutAssignments(allObjectsIDs)
-        return new InstanceElement(
-          name,
-          useOldProfile ? oldProfileType : profileType,
-          {
-            ObjectLevelPermissions: useOldProfile ? objectPermissions : toFlatMap(objectPermissions, 'name'),
-            FieldLevelPermissions: useOldProfile ? fieldPermissions : toNestedMap(fieldPermissions, 'name'),
-            ...(useOldProfile ? {} : { LayoutAssignments: toListMap(layoutAssignments, 'layout') }),
-          },
-          [DUMMY_ADAPTER, 'Records', 'Profile', name]
-        )
+        if (useOldProfile) {
+          return [new InstanceElement(
+            name,
+            oldProfileType,
+            {
+              fullName: name,
+              ObjectLevelPermissions: objectPermissions,
+              FieldLevelPermissions: fieldPermissions,
+            },
+            [DUMMY_ADAPTER, 'Records', 'Profile', name],
+          )]
+        }
+        return [
+          new InstanceElement(
+            name,
+            profileType,
+            {
+              fullName: name,
+            },
+            [DUMMY_ADAPTER, 'Records', 'Profile', name, 'Attributes'],
+          ),
+          new InstanceElement(
+            name,
+            profileType,
+            {
+              ObjectLevelPermissions: toFlatMap(objectPermissions, 'name'),
+            },
+            [DUMMY_ADAPTER, 'Records', 'Profile', name, 'ObjectLevelPermissions'],
+          ),
+          new InstanceElement(
+            name,
+            profileType,
+            {
+              FieldLevelPermissions: toNestedMap(fieldPermissions, 'name'),
+            },
+            [DUMMY_ADAPTER, 'Records', 'Profile', name, 'FieldLevelPermissions'],
+          ),
+          new InstanceElement(
+            name,
+            profileType,
+            {
+              LayoutAssignments: toListMap(layoutAssignments, 'layout'),
+            },
+            [DUMMY_ADAPTER, 'Records', 'Profile', name, 'LayoutAssignments'],
+          ),
+        ]
       }
-    )
+    ).flat()
   }
 
   const defaultTypes = [defaultObj, permissionsType, profileType]

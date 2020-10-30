@@ -50,7 +50,10 @@ describe('elements generator', () => {
       expect(
         _.uniq(objects.map(obj => obj.elemID.getFullName()))
       ).toHaveLength(testParams.numOfObjs + 3) // 3 default types
-      expect(profiles).toHaveLength(testParams.numOfProfiles)
+      expect(profiles).toHaveLength(testParams.numOfProfiles * 4)
+      expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(
+        testParams.numOfProfiles
+      )
       expect(records).toHaveLength(testParams.numOfRecords)
     })
     it('should create list and map types', () => {

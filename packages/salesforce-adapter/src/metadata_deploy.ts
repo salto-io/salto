@@ -88,23 +88,48 @@ const addChangeToPackage = (
   }
 }
 
-const isUnFoundDelete = (failure: DeployMessage): boolean => (
-  failure.fullName === 'destructiveChanges.xml'
-  && failure.problemType === 'Warning'
-  && failure.problem.match(/No.*named.*found/) !== null
+type MetadataId = {
+  type: string
+  fullName: string
+}
+
+const getUnFoundDeleteName = (message: DeployMessage): MetadataId | undefined => {
+  const match = (
+    message.fullName === 'destructiveChanges.xml' && message.problemType === 'Warning'
+  )
+    ? message.problem.match(/No.*named: (?<fullName>.*) found/)
+    : undefined
+  const fullName = match?.groups?.fullName
+  return fullName === undefined ? undefined : { type: message.componentType, fullName }
+}
+
+const isUnFoundDelete = (message: DeployMessage): boolean => (
+  getUnFoundDeleteName(message) !== undefined
 )
 
 const processDeployResponse = (
   result: SFDeployResult
-): { successfulFullNames: ReadonlyArray<string>; errors: ReadonlyArray<Error> } => {
+): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<Error> } => {
+  const allSuccessMessages = collections.array.makeArray(result.details)
+    .flatMap(detail => collections.array.makeArray(detail.componentSuccesses))
+
+  const allFailureMessages = collections.array.makeArray(result.details)
+    .flatMap(detail => collections.array.makeArray(detail.componentFailures))
+
+  // We want to treat deletes for things we haven't found as success
+  // Note that if we deploy with ignoreWarnings, these might show up in the success list
+  // so we have to look for these messages in both lists
+  const unFoundDeleteNames = [...allSuccessMessages, ...allFailureMessages]
+    .map(getUnFoundDeleteName)
+    .filter(values.isDefined)
+
   const successfulFullNames = result.success
-    ? collections.array.makeArray(result.details)
-      .flatMap(detail => collections.array.makeArray(detail.componentSuccesses))
-      .map(success => success.fullName)
+    ? allSuccessMessages
+      .map(success => ({ type: success.componentType, fullName: success.fullName }))
+      .concat(unFoundDeleteNames)
     : []
 
-  const errors = collections.array.makeArray(result.details)
-    .flatMap(detail => collections.array.makeArray(detail.componentFailures))
+  const errors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure))
     .map(failure => new Error(
       `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
@@ -188,7 +213,9 @@ export const deployMetadata = async (
     const changeElem = getChangeElement(change)
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)
-    return successfulFullNames.includes(apiName(changeElem))
+    return successfulFullNames.some(({ type, fullName }) => (
+      type === metadataType(changeElem) && fullName === apiName(changeElem)
+    ))
   }
 
   return {

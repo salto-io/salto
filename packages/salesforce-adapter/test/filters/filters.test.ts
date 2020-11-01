@@ -19,7 +19,7 @@ import { FilterWith, FilterCreator } from '../../src/filter'
 import mockAdapter from '../adapter'
 import { mockFunction, MockInterface, MockFunction } from '../utils'
 import { mockDeployResult, mockDeployMessage } from '../connection'
-import { apiName, createInstanceElement } from '../../src/transformers/transformer'
+import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 
 describe('SalesforceAdapter filters', () => {
@@ -57,7 +57,9 @@ describe('SalesforceAdapter filters', () => {
           { fullName: 'TestLayout' }, mockTypes.Layout,
         )
         connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
-          componentSuccess: [mockDeployMessage({ fullName: apiName(instance) })],
+          componentSuccess: [mockDeployMessage(
+            { fullName: apiName(instance), componentType: metadataType(instance) }
+          )],
         }))
 
         originalChange = toChange({ after: instance })

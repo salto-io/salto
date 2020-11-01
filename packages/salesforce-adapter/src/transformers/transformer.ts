@@ -71,6 +71,11 @@ export const isCustomObject = (element: Element): element is ObjectType => (
 export const isFieldOfCustomObject = (field: Field): boolean =>
   isCustomObject(field.parent)
 
+// This function checks whether an element is an instance of any custom object type.
+// Note that this does not apply to custom object definitions themselves, e.g, this will be true
+// for instances of Lead, but it will not be true for Lead itself when it is still an instance
+// (before the custom objects filter turns it into a type).
+// To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
 export const isInstanceOfCustomObject = (element: Element): element is InstanceElement =>
   isInstanceElement(element) && isCustomObject(element.type)
 
@@ -1233,7 +1238,7 @@ export type MetadataObjectType = ObjectType & {
   annotationTypes: ObjectType['annotationTypes'] & typeof metadataAnnotationTypes
 }
 
-export const isMetadataObjectType = (elem: Element): elem is MetadataObjectType => (
+export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType => (
   isObjectType(elem) && elem.annotations[METADATA_TYPE] !== undefined
 )
 
@@ -1245,7 +1250,7 @@ export type MetadataInstanceElement = InstanceElement & {
 }
 
 export const isMetadataInstanceElement = (
-  elem: Element
+  elem?: Element
 ): elem is MetadataInstanceElement => (
   isInstanceElement(elem)
   && isMetadataObjectType(elem.type)

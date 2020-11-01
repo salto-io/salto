@@ -707,7 +707,7 @@ const isSideEffectRemoval = (removedObjectNames: string[]) => (change: Change): 
  * Fetches the custom objects via the soap api and adds them to the elements
  */
 const filterCreator: FilterCreator = ({ client, config }) => {
-  let originalChanges: Record<string, Change[]> | undefined
+  let originalChanges: Record<string, Change[]> = {}
   return {
     onFetch: async (elements: Element[]): Promise<void> => {
       const sObjects = await fetchSObjects(client).catch(e => {
@@ -840,7 +840,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         .map(change => apiName(getChangeElement(change)))
 
       const appliedOriginalChanges = appliedCustomObjectApiNames.flatMap(
-        objectApiName => originalChanges?.[objectApiName] ?? []
+        objectApiName => originalChanges[objectApiName] ?? []
       )
 
       // Remove the changes we generated in preDeploy and replace them with the original changes

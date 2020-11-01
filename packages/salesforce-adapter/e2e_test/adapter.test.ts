@@ -3360,13 +3360,13 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
       })
 
-      // Unfortunately deleting a flow through the deploy API is not possible
-      // it('should delete flow', async () => {
-      //   await removeElementAndVerify(adapter, client, flow)
-      // })
-
       afterAll(() => {
-        // Removing the flow through CRUD does work, so we can clean up
+        // Deleting a flow through the deploy API requires specifying the version (so here the
+        // delete would have to be on MyFlow-1 because we want to delete version 1).
+        // unfortunately we don't have an easy way to get the flow version (it is technically
+        // possible with SOQL on FlowVersionView but not clear if it is enough)
+        // Removing the flow through CRUD does delete the latest version, so we can clean up
+        // even if we don't support deleting flows through deploy
         removeElementIfAlreadyExists(client, flow)
       })
     })

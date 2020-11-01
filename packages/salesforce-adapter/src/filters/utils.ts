@@ -218,6 +218,9 @@ export const getDataFromChanges = <T extends Change<unknown>>(
       .map(change => _.get(change.data, dataField))
   )
 
+// This function checks whether an element is an instance of a certain metadata type
+// note that for instances of custom objects this will check the specific type (i.e Lead)
+// if you want instances of all custom objects use isInstanceOfCustomObject
 export const isInstanceOfType = (type: string) => (
   (elem: Element): elem is InstanceElement => (
     isInstanceElement(elem) && apiName(elem.type) === type

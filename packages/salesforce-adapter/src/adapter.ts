@@ -15,7 +15,7 @@
 */
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement,
-  isElement, ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult, Change,
+  isElement, ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
 } from '@salto-io/adapter-api'
 import {
   resolveChangeElement, restoreChangeElement,
@@ -448,8 +448,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
       : await deployMetadata(resolvedChanges, this.client, this.nestedMetadataTypes)
 
-    // onDeploy can change the change list in place, so we need to cast this to not be readonly
-    const appliedChangesBeforeRestore = result.appliedChanges as Change[]
+    // onDeploy can change the change list in place, so we need to give it a list it can modify
+    const appliedChangesBeforeRestore = [...result.appliedChanges]
     await this.filtersRunner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceElements = _.keyBy(

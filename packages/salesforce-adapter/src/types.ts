@@ -15,12 +15,14 @@
 */
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
+  FieldDefinition,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
 export const DATA_MANAGEMENT = 'dataManagement'
+export const CLIENT_CONFIG = 'client'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -55,6 +57,24 @@ export type DataManagementConfig = {
   saltoIDSettings: SaltoIDSettings
 }
 
+type ClientPollingConfig = Partial<{
+  interval: number
+  timeout: number
+}>
+
+type ClientDeployConfig = Partial<{
+  rollbackOnError: boolean
+  ignoreWarnings: boolean
+  purgeOnDelete: boolean
+  testLevel: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg'
+  runTests: string[]
+}>
+
+export type SalesforceClientConfig = Partial<{
+  polling: ClientPollingConfig
+  deploy: ClientDeployConfig
+}>
+
 export type SalesforceConfig = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
@@ -63,6 +83,7 @@ export type SalesforceConfig = {
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
   [USE_OLD_PROFILES]?: boolean
   [DATA_MANAGEMENT]?: DataManagementConfig
+  [CLIENT_CONFIG]?: SalesforceClientConfig
 }
 
 export type ConfigChangeSuggestion = {
@@ -168,7 +189,7 @@ const objectIdSettings = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-  },
+  } as Record<keyof ObjectIdSettings, FieldDefinition>,
 })
 
 const saltoIDSettingsType = new ObjectType({
@@ -181,7 +202,7 @@ const saltoIDSettingsType = new ObjectType({
       },
     },
     overrides: { type: new ListType(objectIdSettings) },
-  },
+  } as Record<keyof SaltoIDSettings, FieldDefinition>,
 })
 
 const dataManagementType = new ObjectType({
@@ -196,7 +217,42 @@ const dataManagementType = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-  },
+  } as Record<keyof DataManagementConfig, FieldDefinition>,
+})
+
+
+const clientPollingConfigType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'clientPollingConfig'),
+  fields: {
+    interval: { type: BuiltinTypes.NUMBER },
+    timeout: { type: BuiltinTypes.NUMBER },
+  } as Record<keyof ClientPollingConfig, FieldDefinition>,
+})
+
+const clientDeployConfigType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'clientDeployConfig'),
+  fields: {
+    rollbackOnError: { type: BuiltinTypes.BOOLEAN },
+    ignoreWarnings: { type: BuiltinTypes.BOOLEAN },
+    purgeOnDelete: { type: BuiltinTypes.BOOLEAN },
+    testLevel: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: ['NoTestRun', 'RunSpecifiedTests', 'RunLocalTests', 'RunAllTestsInOrg'],
+        }),
+      },
+    },
+    runTests: { type: new ListType(BuiltinTypes.STRING) },
+  } as Record<keyof ClientDeployConfig, FieldDefinition>,
+})
+
+const clientConfigType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'clientConfig'),
+  fields: {
+    polling: { type: clientPollingConfigType },
+    deploy: { type: clientDeployConfigType },
+  } as Record<keyof SalesforceClientConfig, FieldDefinition>,
 })
 
 export const configType = new ObjectType({
@@ -247,6 +303,9 @@ export const configType = new ObjectType({
     },
     [DATA_MANAGEMENT]: {
       type: dataManagementType,
+    },
+    [CLIENT_CONFIG]: {
+      type: clientConfigType,
     },
   },
 })

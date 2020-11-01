@@ -26,7 +26,7 @@ import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
-  Credentials, OauthAccessTokenCredentials } from './types'
+  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -99,9 +99,6 @@ SalesforceConfig => {
   return adapterConfig
 }
 
-const clientFromCredentials = (credentials: InstanceElement): SalesforceClient =>
-  new SalesforceClient({ credentials: credentialsFromConfig(credentials) })
-
 const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
   const endpoint = userInput.value.isSandbox ? 'test' : 'login'
   const url = `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${userInput.value.consumerKey}&redirect_uri=http://localhost:${userInput.value.port}`
@@ -112,11 +109,15 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
 }
 
 export const adapter: Adapter = {
-  operations: context => new SalesforceAdapter({
-    client: clientFromCredentials(context.credentials),
-    config: adapterConfigFromConfig(context.config),
-    getElemIdFunc: context.getElemIdFunc,
-  }),
+  operations: context => {
+    const config = adapterConfigFromConfig(context.config)
+    const credentials = credentialsFromConfig(context.credentials)
+    return new SalesforceAdapter({
+      client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
+      config,
+      getElemIdFunc: context.getElemIdFunc,
+    })
+  },
   validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
   authenticationMethods: {
     basic: {

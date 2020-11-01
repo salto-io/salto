@@ -29,7 +29,7 @@ import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT_ID_FIELD } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
-import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials } from '../types'
+import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials, SalesforceClientConfig } from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -129,18 +129,27 @@ export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
   retryOptions?: RequestRetryOptions
+  config?: SalesforceClientConfig
+}
+
+const DEFAULT_POLLING_CONFIG = {
+  interval: 3000,
+  timeout: 5400000,
 }
 
 export const setPollIntervalForConnection = (
-  connection: RealConnection
+  connection: Connection,
+  pollingConfig: SalesforceClientConfig['polling'],
 ): void => {
+  const interval = pollingConfig?.interval ?? DEFAULT_POLLING_CONFIG.interval
+  const timeout = pollingConfig?.timeout ?? DEFAULT_POLLING_CONFIG.timeout
   // Set poll interval and timeout for deploy
-  connection.metadata.pollInterval = 3000
-  connection.metadata.pollTimeout = 5400000
+  connection.metadata.pollInterval = interval
+  connection.metadata.pollTimeout = timeout
 
   // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
-  connection.bulk.pollInterval = 3000
-  connection.bulk.pollTimeout = 5400000
+  connection.bulk.pollInterval = interval
+  connection.bulk.pollTimeout = timeout
 }
 
 export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =>
@@ -164,7 +173,6 @@ const oauthConnection = (
     accessToken,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-  setPollIntervalForConnection(connection)
   return connection
 }
 
@@ -177,7 +185,6 @@ const realConnection = (
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-  setPollIntervalForConnection(connection)
   return connection
 }
 
@@ -297,13 +304,16 @@ export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
+  private readonly config?: SalesforceClientConfig
 
   constructor(
-    { credentials, connection, retryOptions }: SalesforceClientOpts
+    { credentials, connection, retryOptions, config }: SalesforceClientOpts
   ) {
     this.credentials = credentials
+    this.config = config
     this.conn = connection
       || createConnectionFromCredentials(credentials, retryOptions || DEFAULT_RETRY_OPTS)
+    setPollIntervalForConnection(this.conn, config?.polling)
   }
 
   private async ensureLoggedIn(): Promise<void> {
@@ -506,8 +516,13 @@ export default class SalesforceClient {
   @validateDeployResult
   @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
-    return flatValues(await this.conn.metadata.deploy(zip, { rollbackOnError: true })
-      .complete(true))
+    const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
+    return flatValues(
+      await this.conn.metadata.deploy(
+        zip,
+        _.merge(defaultDeployOptions, this.config?.deploy),
+      ).complete(true)
+    )
   }
 
   /**

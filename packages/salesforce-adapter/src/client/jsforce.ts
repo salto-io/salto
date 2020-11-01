@@ -27,6 +27,8 @@ import { Value } from '@salto-io/adapter-api'
 // It's here so we will be able to mock jsforce efficiently
 
 export interface Metadata {
+  pollInterval: number
+  pollTimeout: number
   describe(): Promise<{ metadataObjects: MetadataObject[] }>
   describeValueType(type: string): Promise<DescribeValueTypeResult>
   read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>
@@ -64,6 +66,8 @@ export type Limits = {
 }
 
 export interface Bulk {
+  pollInterval: number
+  pollTimeout: number
   load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
 }
 

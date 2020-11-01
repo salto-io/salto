@@ -19,6 +19,7 @@ import {
   Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, TypeElement,
   getDeepInnerType,
+  isVariable,
 } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
@@ -131,7 +132,7 @@ const getElementReferenced = (element: Element): ElemID[] => {
   }
   referenced.push(...Object.values(element.annotationTypes)
     .map(anno => getTypeOrContainerTypeID(anno)))
-  if (!isContainerType(element)) {
+  if (!isContainerType(element) && !isVariable(element)) {
     transformElement({ element, transformFunc })
   }
   return _.uniq(referenced)

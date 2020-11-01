@@ -364,7 +364,7 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should retrieve LightningComponentBundle instance', () => {
-      const lwc = findElements(result, 'LightningComponentBundle',
+      const lwc = findElements(result, constants.LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
         'testLightningComponentBundle')[0] as InstanceElement
       expect(lwc.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('testLightningComponentBundle')
@@ -3231,7 +3231,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   ],
                 },
               },
-              type: 'LightningComponentBundle',
+              type: constants.LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
               typeElements: result,
             })
             await removeElementIfAlreadyExists(client, lwcInstance)

@@ -22,6 +22,7 @@ import {
 import { logger } from '@salto-io/logging'
 import { FilterWith } from '../filter'
 import { metadataType } from '../transformers/transformer'
+import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 
@@ -41,7 +42,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => metadataType(instance) === 'LightningComponentBundle')
+      .filter(instance => metadataType(instance) === LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE)
       .forEach(inst => {
         inst.value = mapKeysRecursive(inst.value, trimKeys, inst.elemID)
       })

@@ -16,7 +16,9 @@
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/trim_keys'
 import { FilterWith } from '../../src/filter'
-import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import {
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, METADATA_TYPE, SALESFORCE,
+} from '../../src/constants'
 
 describe('trim keys filter', () => {
   const notTrimmed = '\ntrimMe\n'
@@ -36,7 +38,7 @@ describe('trim keys filter', () => {
   })
 
   it('should trim keys', async () => {
-    instance.type.annotations[METADATA_TYPE] = 'LightningComponentBundle'
+    instance.type.annotations[METADATA_TYPE] = LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.value.trimMe).toBeDefined()
     expect(instance.value[notTrimmed]).toBeUndefined()

@@ -68,6 +68,10 @@ export class StaticFile {
     return this.internalContent
   }
 
+  async getContent(): Promise<Buffer | undefined> {
+    return this.internalContent
+  }
+
   public isEqual(other: StaticFile): boolean {
     return this.hash === other.hash && this.encoding === other.encoding
   }

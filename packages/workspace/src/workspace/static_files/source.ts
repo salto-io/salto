@@ -41,6 +41,13 @@ export class LazyStaticFile extends StaticFile {
     }
     return this.internalContent
   }
+
+  async getContent(): Promise<Buffer | undefined> {
+    if (this.internalContent === undefined) {
+      this.internalContent = (await this.dirStore.get(this.filepath))?.buffer
+    }
+    return this.internalContent
+  }
 }
 
 export const buildStaticFilesSource = (
@@ -104,13 +111,11 @@ export const buildStaticFilesSource = (
     persistStaticFile: async (
       staticFile: StaticFile,
     ): Promise<void> => {
-      if (staticFile.content === undefined) {
+      const buffer = await staticFile.getContent()
+      if (buffer === undefined) {
         throw new Error(`Missing content on static file: ${staticFile.filepath}`)
       }
-      return staticFilesDirStore.set({
-        filename: staticFile.filepath,
-        buffer: staticFile.content,
-      })
+      return staticFilesDirStore.set({ filename: staticFile.filepath, buffer })
     },
     flush: async () => {
       await staticFilesDirStore.flush()

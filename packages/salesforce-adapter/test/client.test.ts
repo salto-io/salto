@@ -24,6 +24,7 @@ import SalesforceClient, { ApiLimitsTooLowError,
   getConnectionDetails, validateCredentials, DEFAULT_RETRY_OPTS } from '../src/client/client'
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
+import Connection from '../src/client/jsforce'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -445,6 +446,63 @@ describe('salesforce client', () => {
         connection)
       expect(orgId).toEqual('')
       expect(remainingDailyRequests).toEqual(10000)
+    })
+  })
+
+  describe('configuration', () => {
+    let testClient: SalesforceClient
+    let testConnection: Connection
+
+    beforeEach(() => {
+      testConnection = mockClient().connection
+    })
+
+    describe('polling config', () => {
+      beforeEach(() => {
+        testClient = new SalesforceClient({
+          credentials: new UsernamePasswordCredentials({
+            username: '',
+            password: '',
+            isSandbox: false,
+          }),
+          connection: testConnection,
+          config: { polling: { interval: 100, timeout: 1000 } },
+        })
+      })
+      it('should set polling and timeout on the metadata connection', () => {
+        expect(testConnection.metadata.pollInterval).toEqual(100)
+        expect(testConnection.metadata.pollTimeout).toEqual(1000)
+      })
+      it('should set polling and timeout on the bulk connection', () => {
+        expect(testConnection.bulk.pollInterval).toEqual(100)
+        expect(testConnection.bulk.pollTimeout).toEqual(1000)
+      })
+    })
+
+    describe('deploy configuration', () => {
+      beforeEach(async () => {
+        testClient = new SalesforceClient({
+          credentials: new UsernamePasswordCredentials({
+            username: '',
+            password: '',
+            isSandbox: false,
+          }),
+          connection: testConnection,
+          config: { deploy: { rollbackOnError: false, testLevel: 'NoTestRun' } },
+        })
+        await testClient.deploy(Buffer.from(''))
+      })
+
+      it('should call deploy with the relevant parameters', () => {
+        expect(testConnection.metadata.deploy).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            rollbackOnError: false,
+            testLevel: 'NoTestRun',
+            ignoreWarnings: true,
+          }),
+        )
+      })
     })
   })
 })

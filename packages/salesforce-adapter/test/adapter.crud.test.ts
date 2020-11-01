@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange } from '@salto-io/adapter-api'
 import { MetadataInfo, SaveResult, Package } from 'jsforce'
 import JSZip from 'jszip'
 import xmlParser from 'fast-xml-parser'
@@ -175,8 +175,6 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
     })
-
-    // TODO:ORI - add test for validations like apiName mismatch
 
     describe('for a type element', () => {
       const element = new ObjectType({
@@ -530,14 +528,11 @@ describe('SalesforceAdapter CRUD', () => {
   })
 
   describe('Remove operation', () => {
-    describe('when the request succeeds', () => {
+    let result: DeployResult
+    describe('for an instance element', () => {
+      let element: InstanceElement
       beforeEach(() => {
-        mockDelete = jest.fn().mockImplementationOnce(async () => ([{ success: true }]))
-        connection.metadata.delete = mockDelete
-      })
-
-      describe('for an instance element', () => {
-        const element = new InstanceElement(
+        element = new InstanceElement(
           instanceName,
           new ObjectType({
             elemID: mockElemID,
@@ -553,99 +548,113 @@ describe('SalesforceAdapter CRUD', () => {
           }),
           { [constants.INSTANCE_FULL_NAME_FIELD]: instanceName },
         )
+      })
 
+      describe('when the remove is successful', () => {
         beforeEach(async () => {
-          await removeElement(adapter, element)
+          mockDeploy.mockReturnValue(mockDeployResult(
+            { componentSuccess: [{ componentType: 'Flow', fullName: instanceName }] }
+          ))
+          result = await removeElement(adapter, element)
         })
-
         it('should call the connection methods correctly', async () => {
           expect(mockDeploy).toHaveBeenCalledTimes(1)
           const { deleteManifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
           expect(deleteManifest).toBeDefined()
           expect(deleteManifest?.types).toEqual({ name: 'Flow', members: instanceName })
         })
+        it('should return the applied remove change', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(result.appliedChanges).toContainEqual(toChange({ before: element }))
+        })
       })
 
-      describe('for a type element', () => {
-        const element = new ObjectType({
-          elemID: mockElemID,
-          fields: {
-            description: { type: stringType },
-          },
-          annotations: {
-            [constants.API_NAME]: 'Test__c',
-            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-          },
-        })
-
+      describe('when the instance has no api name', () => {
         beforeEach(async () => {
-          await removeElement(adapter, element)
+          delete element.value.fullName
+          result = await removeElement(adapter, element, false)
         })
+        it('should return an error', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+        it('should not apply the change', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
+        it('should not make the API call since it is empty', () => {
+          expect(mockDeploy).not.toHaveBeenCalled()
+        })
+      })
 
-        it('should call the connection methods correctly', async () => {
-          expect(mockDeploy).toHaveBeenCalledTimes(1)
-          const { deleteManifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
-          expect(deleteManifest?.types).toEqual(
-            { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
-          )
+      describe('when the instance does not exist but the request succeeds', () => {
+        beforeEach(async () => {
+          mockDeploy.mockReturnValue(mockDeployResult(
+            {
+              // When calling with ignoreWarnings = true we get these warnings in the
+              // componentSuccess list
+              componentSuccess: [{
+                componentType: 'Flow',
+                fullName: 'destructiveChanges.xml',
+                problemType: 'Warning',
+                problem: `No Flow named: ${instanceName} found`,
+              }],
+            }
+          ))
+          result = await removeElement(adapter, element, false)
+        })
+        it('should filter out the un found delete error', () => {
+          expect(result.errors).toHaveLength(0)
+        })
+        it('should return the applied remove change', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(result.appliedChanges).toContainEqual(toChange({ before: element }))
+        })
+      })
+      describe('when the instance does not exist and the request fails', () => {
+        beforeEach(async () => {
+          mockDeploy.mockReturnValue(mockDeployResult(
+            {
+              success: false,
+              componentFailure: [{
+                componentType: 'Flow',
+                fullName: 'destructiveChanges.xml',
+                problemType: 'Warning',
+                problem: `No Flow named: ${instanceName} found`,
+              }],
+            }
+          ))
+          result = await removeElement(adapter, element, false)
+        })
+        it('should filter out the un found delete error', () => {
+          expect(result.errors).toHaveLength(0)
+        })
+        it('should not apply the remove change', () => {
+          expect(result.appliedChanges).toHaveLength(0)
         })
       })
     })
 
-    describe('when the request fails', () => {
-      const before = new ObjectType({
+    describe('for a type element', () => {
+      const element = new ObjectType({
         elemID: mockElemID,
         fields: {
-          one: {
-            type: Types.primitiveDataTypes.Text,
-            annotations: { [constants.API_NAME]: 'Test__c.one__c' },
-          },
-          two: {
-            type: Types.primitiveDataTypes.Number,
-            annotations: { [constants.API_NAME]: 'Test__c.two__c' },
-          },
+          description: { type: stringType },
         },
         annotations: {
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
           [constants.API_NAME]: 'Test__c',
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
 
-      let result: DeployResult
-
       beforeEach(async () => {
-        mockDeploy.mockReturnValue(mockDeployResult({
-          success: false,
-          componentFailure: [
-            {
-              fullName: 'Test__c',
-              componentType: constants.CUSTOM_OBJECT,
-              problem: 'some error',
-              problemType: 'Error',
-            },
-          ],
-        }))
-
-        const after = before.clone()
-        after.annotations[constants.LABEL] = 'new label'
-        delete after.fields.one
-
-        result = await adapter.deploy({
-          groupID: after.elemID.getFullName(),
-          changes: [
-            { action: 'modify', data: { before, after } },
-            { action: 'remove', data: { before: before.fields.one } },
-          ],
-        })
+        await removeElement(adapter, element)
       })
 
-      it('should not apply changes', () => {
-        expect(result.appliedChanges).toHaveLength(0)
-      })
-
-      it('should return an error', () => {
-        expect(result.errors).toHaveLength(1)
-        expect(result.errors[0].message).toContain('some error')
+      it('should call the connection methods correctly', async () => {
+        expect(mockDeploy).toHaveBeenCalledTimes(1)
+        const { deleteManifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+        expect(deleteManifest?.types).toEqual(
+          { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
+        )
       })
     })
   })
@@ -1110,6 +1119,83 @@ describe('SalesforceAdapter CRUD', () => {
           expect(field.length).toBe(80)
           expect(field.required).toBe(false)
         })
+      })
+
+      describe('when the type is not a custom object', () => {
+        beforeEach(async () => {
+          const before = mockTypes.Layout.clone()
+          const after = mockTypes.Layout.clone()
+          after.annotations[constants.LABEL] = 'test'
+          result = await adapter.deploy({
+            groupID: after.elemID.getFullName(),
+            changes: [
+              { action: 'modify', data: { before, after } },
+            ],
+          })
+        })
+        it('should fail because the type is not deployable', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+        it('should not apply the change', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
+        it('should not call the API', () => {
+          expect(mockDeploy).not.toHaveBeenCalled()
+        })
+      })
+    })
+
+    describe('when the request fails', () => {
+      const before = new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          one: {
+            type: Types.primitiveDataTypes.Text,
+            annotations: { [constants.API_NAME]: 'Test__c.one__c' },
+          },
+          two: {
+            type: Types.primitiveDataTypes.Number,
+            annotations: { [constants.API_NAME]: 'Test__c.two__c' },
+          },
+        },
+        annotations: {
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.API_NAME]: 'Test__c',
+        },
+      })
+      beforeEach(async () => {
+        mockDeploy.mockReturnValue(mockDeployResult({
+          success: false,
+          componentFailure: [
+            {
+              fullName: 'Test__c',
+              componentType: constants.CUSTOM_OBJECT,
+              problem: 'some error',
+              problemType: 'Error',
+            },
+          ],
+        }))
+
+        const after = before.clone()
+        after.annotations[constants.LABEL] = 'new label'
+        delete after.fields.one
+
+        result = await adapter.deploy({
+          groupID: after.elemID.getFullName(),
+          changes: [
+            { action: 'modify', data: { before, after } },
+            { action: 'remove', data: { before: before.fields.one } },
+          ],
+        })
+      })
+
+      it('should not apply changes', () => {
+        expect(result.appliedChanges).toHaveLength(0)
+      })
+
+      it('should return an error', () => {
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toContain('some error')
       })
     })
   })

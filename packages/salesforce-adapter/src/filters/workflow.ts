@@ -156,7 +156,7 @@ const getWorkflowApiName = (change: Change<InstanceElement>): string => {
 }
 
 const filterCreator: FilterCreator = () => {
-  let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> | undefined
+  let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> = {}
   return {
     /**
      * Upon fetch, modify the full_names of the inner types of the workflow to contain
@@ -212,7 +212,7 @@ const filterCreator: FilterCreator = () => {
         .map(getWorkflowApiName)
 
       const appliedOriginalChanges = appliedWorkflowApiNames.flatMap(
-        workflowName => originalWorkflowChanges?.[workflowName] ?? []
+        workflowName => originalWorkflowChanges[workflowName] ?? []
       )
 
       // Remove the changes we generated in preDeploy and replace them with the original changes

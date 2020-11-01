@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { isInstanceOfTypeChange } from '../utils'
@@ -156,13 +156,21 @@ const filter: FilterCreator = () => ({
   preDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
     applyFuncOnCustomScriptInstanceChanges(addOrModifyChanges, transformInstanceToSFValues)
-    applyFuncOnCustomScriptObjectChange(addOrModifyChanges, refListFieldsToLongText)
+    applyFuncOnCustomScriptObjectChange(
+      // Fields are taken from object changes only when the object is added
+      addOrModifyChanges.filter(isAdditionChange),
+      refListFieldsToLongText
+    )
     applyFuncOnCustomScriptFieldChange(addOrModifyChanges, fieldTypeFromTextListToLongText)
   },
   onDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
     applyFuncOnCustomScriptInstanceChanges(addOrModifyChanges, refListValuesToArray)
-    applyFuncOnCustomScriptObjectChange(addOrModifyChanges, refListFieldsToTextLists)
+    applyFuncOnCustomScriptObjectChange(
+      // Fields are taken from object changes only when the object is added
+      addOrModifyChanges.filter(isAdditionChange),
+      refListFieldsToTextLists,
+    )
     applyFuncOnCustomScriptFieldChange(addOrModifyChanges, fieldTypeFromLongTextToTextList)
     return []
   },

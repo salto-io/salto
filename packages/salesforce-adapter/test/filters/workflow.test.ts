@@ -16,14 +16,8 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ElemID, InstanceElement, ObjectType, Element, ReferenceExpression,
-  isInstanceElement,
-  Change,
-  getChangeElement,
-  ModificationChange,
-  isModificationChange,
-  Value,
-  isListType,
+  ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, isInstanceElement, Change,
+  getChangeElement, ModificationChange, isModificationChange, Value, isListType,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -39,6 +33,7 @@ import {
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { metadataType, apiName, createInstanceElement, MetadataValues, MetadataTypeAnnotations } from '../../src/transformers/transformer'
+import { isInstanceOfTypeChange } from '../../src/filters/utils'
 
 const { makeArray } = collections.array
 
@@ -178,7 +173,68 @@ describe('Workflow filter', () => {
 
   describe('preDeploy and onDeploy', () => {
     let changes: Change<InstanceElement>[]
+    let innerInstance: InstanceElement
     let testFilter: typeof filter
+    describe('with a new workflow', () => {
+      beforeAll(() => {
+        innerInstance = generateInnerInstance(
+          { fullName: 'Account.MyRule', description: 'my inst' },
+          WORKFLOW_RULES_FIELD,
+        )
+        const workflow = createInstanceElement(
+          {
+            fullName: 'Account',
+            [WORKFLOW_RULES_FIELD]: [apiName(innerInstance)],
+          },
+          mockTypes.Workflow,
+        )
+        changes = [
+          { action: 'add', data: { after: workflow } },
+          { action: 'add', data: { after: innerInstance } },
+        ]
+
+        // Re-create the filter because it is stateful
+        testFilter = filterCreator({ client, config: {} }) as typeof filter
+      })
+
+      describe('preDeploy', () => {
+        let workflowInChange: InstanceElement
+        beforeAll(async () => {
+          await testFilter.preDeploy(changes)
+        })
+        it('should create only one workflow change', () => {
+          expect(changes).toHaveLength(1)
+          const [workflowChange] = changes
+          expect(workflowChange.action).toEqual('add')
+          workflowInChange = getChangeElement(workflowChange)
+        })
+        it('should use the original type from the workflow', () => {
+          expect(workflowInChange.type).toBe(mockTypes.Workflow)
+        })
+        it('should replace the field values with the inner instances with relative fullName', () => {
+          expect(workflowInChange.value[WORKFLOW_RULES_FIELD]).toEqual([
+            { ...innerInstance.value, fullName: 'MyRule' },
+          ])
+        })
+      })
+
+      describe('onDeploy', () => {
+        let workflowAfter: InstanceElement
+        beforeAll(async () => {
+          await testFilter.onDeploy(changes)
+        })
+        it('should return the original changes', () => {
+          expect(changes).toHaveLength(2)
+          const workflowChange = changes.find(isInstanceOfTypeChange(WORKFLOW_METADATA_TYPE))
+          expect(workflowChange).toBeDefined()
+          workflowAfter = getChangeElement(workflowChange as Change<InstanceElement>)
+        })
+        it('should restore the workflow field value to the original value', () => {
+          expect(workflowAfter.value[WORKFLOW_RULES_FIELD]).toEqual([apiName(innerInstance)])
+        })
+      })
+    })
+
     describe('when inner instances are modified', () => {
       beforeAll(() => {
         const createInnerChange = (idx: number): Change<InstanceElement> => {

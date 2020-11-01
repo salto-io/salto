@@ -15,7 +15,7 @@
 */
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement,
-  isElement, ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
+  ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
 } from '@salto-io/adapter-api'
 import {
   resolveChangeElement, restoreChangeElement,
@@ -68,7 +68,7 @@ import profileMapsFilter from './filters/profile_maps'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import { id, addDefaults } from './filters/utils'
+import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
@@ -187,14 +187,11 @@ export interface SalesforceAdapterParams {
   config: SalesforceConfig
 }
 
-const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
+const logDuration = (message: string): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
-    async (original: decorators.OriginalCall): Promise<unknown> => {
-      const element = original.args.find(isElement)
-      const defaultMessage = `running salesforce.${original.name} ${
-        element ? `element=${id(element)}` : ''} `
-      return log.time(original.call, message || defaultMessage)
-    }
+    async (original: decorators.OriginalCall): Promise<unknown> => (
+      log.time(original.call, message)
+    )
   )
 
 const metadataToRetrieveAndDeploy = [
@@ -418,7 +415,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     elements.push(...metadataInstancesElements)
 
     const filtersConfigChanges = (
-      (await this.filtersRunner.onFetch(elements)) ?? []
+      await this.filtersRunner.onFetch(elements)
     ) as ConfigChangeSuggestion[]
     const configChangeSuggestions = [...metadataInstancesConfigInstances, ...filtersConfigChanges]
     const config = getConfigFromConfigChanges(

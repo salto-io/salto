@@ -16,8 +16,10 @@
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, LABEL, OBJECTS_PATH } from '../src/constants'
 import { getChangeGroupIds } from '../src/group_changes'
+import { createInstanceElement } from '../src/transformers/transformer'
+import { mockDefaultValues, mockTypes } from './mock_elements'
 
-describe('Group Instance of CustomObject changes', () => {
+describe('Group changes function', () => {
   const customObjectName = 'objectName'
   const customObject = new ObjectType(
     {
@@ -74,6 +76,10 @@ describe('Group Instance of CustomObject changes', () => {
       path: [SALESFORCE, OBJECTS_PATH, differentCustomObjectName],
     }
   )
+  const metadataInstance = createInstanceElement(
+    mockDefaultValues.StaticResource,
+    mockTypes.StaticResource,
+  )
   let changeGroupIds: Map<ChangeId, ChangeGroupId>
 
   const addInstance = new InstanceElement('addInstance', customObject)
@@ -90,6 +96,8 @@ describe('Group Instance of CustomObject changes', () => {
 
   beforeAll(async () => {
     changeGroupIds = await getChangeGroupIds(new Map([
+      [customObject.elemID.getFullName(), toChange({ after: customObject })],
+      [metadataInstance.elemID.getFullName(), toChange({ before: metadataInstance })],
       [addInstance.elemID.getFullName(), toChange({ after: addInstance })],
       [anotherAddInstance.elemID.getFullName(), toChange({ after: anotherAddInstance })],
       [differentAddInstance.elemID.getFullName(), toChange({ after: differentAddInstance })],
@@ -105,6 +113,17 @@ describe('Group Instance of CustomObject changes', () => {
     ]))
   })
 
+  describe('groups of metadata', () => {
+    it('should have one group for all metadata related changes', () => {
+      expect(changeGroupIds.get(customObject.elemID.getFullName())).toEqual(
+        changeGroupIds.get(metadataInstance.elemID.getFullName())
+      )
+      expect(changeGroupIds.get(customObject.elemID.getFullName())).toEqual(
+        'salesforce_metadata'
+      )
+    })
+  })
+
   describe('groups of add changes', () => {
     it('should have same group id for all adds of same custom object', () => {
       expect(changeGroupIds.get(addInstance.elemID.getFullName()))
@@ -113,7 +132,7 @@ describe('Group Instance of CustomObject changes', () => {
         .toEqual(`add_${customObjectName}_instances`)
     })
 
-    it('should have a seperate group for diff type', () => {
+    it('should have a separate group for diff type', () => {
       expect(changeGroupIds.get(differentAddInstance.elemID.getFullName()))
         .toEqual(`add_${differentCustomObjectName}_instances`)
     })
@@ -127,7 +146,7 @@ describe('Group Instance of CustomObject changes', () => {
         .toEqual(`remove_${customObjectName}_instances`)
     })
 
-    it('should have a seperate group for diff type', () => {
+    it('should have a separate group for diff type', () => {
       expect(changeGroupIds.get(differentRemoveInstance.elemID.getFullName()))
         .toEqual(`remove_${differentCustomObjectName}_instances`)
     })
@@ -141,7 +160,7 @@ describe('Group Instance of CustomObject changes', () => {
         .toEqual(`modify_${customObjectName}_instances`)
     })
 
-    it('should have a seperate group for diff type', () => {
+    it('should have a separate group for diff type', () => {
       expect(changeGroupIds.get(differentModifyInstance.elemID.getFullName()))
         .toEqual(`modify_${differentCustomObjectName}_instances`)
     })

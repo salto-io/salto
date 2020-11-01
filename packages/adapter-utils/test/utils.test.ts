@@ -29,8 +29,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement,
-  toObjectType,
+  transformElement, toObjectType, getParents,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
 
@@ -1847,6 +1846,38 @@ describe('Test utils.ts', () => {
     it('should find referenced ids', () => {
       const res = getAllReferencedIds(mockInstance)
       expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
+    })
+  })
+
+  describe('getParents', () => {
+    let result: ReturnType<typeof getParents>
+    describe('for an element with parents', () => {
+      beforeEach(() => {
+        const inst = new InstanceElement(
+          'test',
+          new ObjectType({ elemID: new ElemID('test', 'test') }),
+          {},
+          undefined,
+          { [INSTANCE_ANNOTATIONS.PARENT]: ['a', 'b'] },
+        )
+        result = getParents(inst)
+      })
+      it('should return the parents annotation', () => {
+        expect(result).toEqual(['a', 'b'])
+      })
+    })
+    describe('for an element without parents', () => {
+      beforeEach(() => {
+        const inst = new InstanceElement(
+          'test',
+          new ObjectType({ elemID: new ElemID('test', 'test') }),
+          {},
+        )
+        result = getParents(inst)
+      })
+      it('should return an empty array', () => {
+        expect(result).toEqual([])
+      })
     })
   })
 })

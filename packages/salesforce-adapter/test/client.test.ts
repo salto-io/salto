@@ -448,7 +448,18 @@ describe('salesforce client', () => {
       expect(remainingDailyRequests).toEqual(10000)
     })
   })
-
+  describe('upsert', () => {
+    it('should call the upsert API endpoint', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*<upsertMetadata>.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
+          success: true,
+          fullName: 'bla',
+        } } } } })
+      await expect(client.upsert('bla', { fullName: 'bla' })).resolves.not.toThrow()
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
   describe('configuration', () => {
     let testClient: SalesforceClient
     let testConnection: Connection

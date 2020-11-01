@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement, DeployResult } from '@salto-io/adapter-api'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
@@ -171,18 +171,18 @@ export const removeElementIfAlreadyExists = async (
 }
 
 export const createElement = async <T extends InstanceElement | ObjectType>(
-  adapter: SalesforceAdapter, element: T
+  adapter: SalesforceAdapter, element: T, verify = true,
 ): Promise<T> => {
   const changeGroup: ChangeGroup = {
     groupID: 'add test elements',
     changes: [{ action: 'add', data: { after: element } }],
   }
   const result = await adapter.deploy(changeGroup)
-  if (result.errors.length > 0) {
+  if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
   }
-  if (result.appliedChanges.length === 0) {
+  if (verify && result.appliedChanges.length === 0) {
     throw new Error(`Failed adding element ${element.elemID.getFullName()}: no applied changes`)
   }
   return getChangeElement(result.appliedChanges[0]) as T
@@ -208,17 +208,18 @@ export const createAndVerify = async (adapter: SalesforceAdapter, client: Salesf
 }
 
 export const removeElement = async <T extends InstanceElement | ObjectType>(
-  adapter: SalesforceAdapter, element: T
-): Promise<void> => {
+  adapter: SalesforceAdapter, element: T, verify = true,
+): Promise<DeployResult> => {
   const changeGroup: ChangeGroup = {
     groupID: 'remove test elements',
     changes: [{ action: 'remove', data: { before: element } }],
   }
   const result = await adapter.deploy(changeGroup)
-  if (result.errors.length > 0) {
+  if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
   }
+  return result
 }
 
 export const removeElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,

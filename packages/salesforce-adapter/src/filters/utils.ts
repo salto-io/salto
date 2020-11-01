@@ -21,8 +21,7 @@ import {
   isReferenceExpression, ReferenceExpression, AdditionChange, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement,
 } from '@salto-io/adapter-api'
-import wu from 'wu'
-import { findElements, getParents } from '@salto-io/adapter-utils'
+import { getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
@@ -42,26 +41,6 @@ export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName
  InstanceElement[] =>
   elements.filter(isInstanceElement)
     .filter(element => metadataType(element) === metadataTypeName)
-
-// collect Object Type's elemID to api name as we have custom Object Types that are split and
-// we need to know the api name to build full field name
-export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Record<string, string> =>
-  _(customObjects)
-    .filter(obj => obj.annotations[API_NAME])
-    .map(obj => [id(obj), obj.annotations[API_NAME]])
-    .fromPairs()
-    .value()
-
-export const removeFieldsFromInstanceAndType = (elements: Element[], fieldNamesToDelete: string[],
-  metadataTypeName: string): void => {
-  getInstancesOfMetadataType(elements, metadataTypeName)
-    .forEach(instance => fieldNamesToDelete
-      .forEach(fieldNameToDelete => delete instance.value[fieldNameToDelete]))
-  elements.filter(isObjectType)
-    .filter(element => metadataType(element) === metadataTypeName)
-    .forEach(elementType => fieldNamesToDelete
-      .forEach(fieldNameToDelete => delete elementType.fields[fieldNameToDelete]))
-}
 
 export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   const { name } = elem.elemID
@@ -148,12 +127,6 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
 
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
   new Map(elements.filter(isCustomObject).map(obj => [apiName(obj), obj]))
-
-export const allCustomObjectFields = (elements: Element[], elemID: ElemID): Iterable<Field> =>
-  wu(findElements(elements, elemID))
-    .filter(isObjectType)
-    .map(elem => Object.values(elem.fields))
-    .flatten()
 
 export const apiNameParts = (elem: Element): string[] =>
   apiName(elem).split(/\.|-/g)

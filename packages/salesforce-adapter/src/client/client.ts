@@ -462,27 +462,6 @@ export default class SalesforceClient {
     return result.result
   }
 
-  /**
-   * Updates salesforce client
-   * @param type The metadata type of the components to be updated
-   * @param metadata The metadata of the object
-   * @returns The save result of the requested update
-   */
-  @SalesforceClient.logDecorator(['fullName'])
-  @validateSaveResult
-  @SalesforceClient.requiresLogin
-  public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
-    Promise<SaveResult[]> {
-    const result = await sendChunked({
-      operationInfo: `update (${type})`,
-      input: metadata,
-      sendChunk: chunk => this.conn.metadata.update(type, chunk),
-    })
-    log.debug('updated %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
-      type, result.result)
-    return result.result
-  }
-
   @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {

@@ -294,16 +294,8 @@
     "id": "LeadConvertSettings",
     "fields": [
       {
-        "name": "inputField",
-        "type": "STRING"
-      },
-      {
-        "name": "outputField",
-        "type": "STRING"
-      },
-      {
-        "name": "outputObject",
-        "type": "STRING"
+        "name": "objectMapping",
+        "type": "ObjectMapping"
       }
     ]
   },

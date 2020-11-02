@@ -15,27 +15,46 @@
 */
 import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { isCustomSettingsObject, apiName } from '../transformers/transformer'
 import { ConfigChangeSuggestion } from '../types'
-import { getAllInstances } from './custom_objects_instances'
+import { getAllInstances, getCustomObjectsFetchSettings, CustomObjectFetchSetting } from './custom_objects_instances'
 import { CUSTOM_SETTINGS_TYPE, LIST_CUSTOM_SETTINGS_TYPE } from '../constants'
+
+const log = logger(module)
 
 export const isListCustomSettingsObject = (obj: ObjectType):
   boolean => (isCustomSettingsObject(obj)
     && obj.annotations[CUSTOM_SETTINGS_TYPE] === LIST_CUSTOM_SETTINGS_TYPE)
 
+const logInvalidCustomSettings = (invalidCustomSettings: CustomObjectFetchSetting[]): void => (
+  invalidCustomSettings.forEach(settings =>
+    (log.debug(`Did not fetch instances for Custom Setting - ${apiName(settings.objectType)} cause ${settings.invalidIdFields} do not exist or are not queryable`)))
+)
+
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
-    const customSettingsFetchSettings = elements.filter(obj => isObjectType(obj)
-    && isListCustomSettingsObject(obj))
+    const customSettingsObjects = elements
       .filter(isObjectType)
-      .map(objectType => ({
-        isBase: true,
-        objectType,
-        idFields: [objectType.fields.Name],
-      }))
-    const customSettingsMap = _.keyBy(customSettingsFetchSettings, obj => apiName(obj.objectType))
+      .filter(isListCustomSettingsObject)
+    const customSettingsObjectNames = customSettingsObjects
+      .map(customSetting => apiName(customSetting))
+    const customSettingsFetchSettings = getCustomObjectsFetchSettings(
+      customSettingsObjects,
+      {
+        includeObjects: customSettingsObjectNames,
+        saltoIDSettings: {
+          defaultIdFields: ['Name'],
+        },
+      }
+    )
+    const [validFetchSettings, invalidFetchSettings] = _.partition(
+      customSettingsFetchSettings,
+      setting => setting.invalidIdFields === undefined
+    )
+    logInvalidCustomSettings(invalidFetchSettings)
+    const customSettingsMap = _.keyBy(validFetchSettings, obj => apiName(obj.objectType))
     const { instances, configChangeSuggestions } = await getAllInstances(client, customSettingsMap)
     elements.push(...instances)
     return [...configChangeSuggestions]

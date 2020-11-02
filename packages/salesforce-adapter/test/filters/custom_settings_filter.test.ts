@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, ServiceIds,
-  InstanceElement, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, ServiceIds, BuiltinTypes, isInstanceElement } from '@salto-io/adapter-api'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -96,6 +95,17 @@ export const createCustomSettingsObject = (
   obj.path = path
   return obj
 }
+
+const customSettingsWithNoNameFieldName = 'noNameField'
+const customSettingsWithNoNameField = new ObjectType({
+  elemID: new ElemID(SALESFORCE, customSettingsWithNoNameFieldName),
+  annotations: {
+    [API_NAME]: customSettingsWithNoNameFieldName,
+    [METADATA_TYPE]: CUSTOM_OBJECT,
+    [CUSTOM_SETTINGS_TYPE]: LIST_CUSTOM_SETTINGS_TYPE,
+  },
+})
+
 /* eslint-disable @typescript-eslint/camelcase */
 describe('Custom settings filter', () => {
   let connection: Connection
@@ -157,14 +167,28 @@ describe('Custom settings filter', () => {
     beforeEach(async () => {
       elements = [
         customSettingsObject,
+        customSettingsWithNoNameField,
       ]
       await filter.onFetch(elements)
     })
 
-    it('should add two instances', () => {
-      expect(elements).toHaveLength(3)
-      expect((elements[1] as InstanceElement).value.Name).toEqual('TestName1')
-      expect((elements[2] as InstanceElement).value.Name).toEqual('TestName2')
+    it('Should no change the objects', () => {
+      const validObject = elements.find(elm => elm.elemID.isEqual(customSettingsObject.elemID))
+      expect(validObject).toEqual(customSettingsObject)
+      const noNameObject = elements
+        .find(elm => elm.elemID.isEqual(customSettingsWithNoNameField.elemID))
+      expect(noNameObject).toEqual(customSettingsWithNoNameField)
+    })
+
+    it('Should add two instances for the valid object and no isntances for noName one', () => {
+      const validObjectInstances = elements
+        .filter(elm => isInstanceElement(elm)
+          && elm.type.elemID.isEqual(customSettingsObject.elemID))
+      expect(validObjectInstances).toHaveLength(2)
+      const noNameObjectInstances = elements
+        .filter(elm => isInstanceElement(elm)
+          && elm.type.elemID.isEqual(customSettingsWithNoNameField.elemID))
+      expect(noNameObjectInstances).toHaveLength(0)
     })
   })
 

@@ -103,7 +103,9 @@ const buildMockWorkspace = async (
       filename: '',
       timestamp: Date.now(),
       errors: [],
+      referenced: [],
     }),
+    getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([filename]),
     clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(naclFile, buffer))),
   } as unknown as Workspace
 }

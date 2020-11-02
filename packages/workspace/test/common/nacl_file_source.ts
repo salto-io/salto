@@ -67,4 +67,5 @@ export const createMockNaclFileSource = (
   ),
   getElementNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.nacl')])),
   clone: jest.fn().mockImplementation(() => Promise.resolve()),
+  getElementReferencedFiles: jest.fn().mockResolvedValue([]),
 })

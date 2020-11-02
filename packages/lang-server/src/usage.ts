@@ -21,6 +21,7 @@ import { getLocations, SaltoElemLocation } from './location'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 
+
 const getElemIDUsages = async (
   element: Element,
   fullName: string

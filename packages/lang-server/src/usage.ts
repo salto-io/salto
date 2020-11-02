@@ -21,9 +21,7 @@ import { getLocations, SaltoElemLocation } from './location'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 
-// TODO - Note that this will have no great performances until we will get the
-// reverse SM from @salto-io/core's core. This is acceptable as this is not called so often
-const getUsages = async (
+const getElemIDUsages = async (
   element: Element,
   fullName: string
 ): Promise<ElemID[]> => {
@@ -98,7 +96,7 @@ export const getUsageInFile = async (
   filename: string,
   fullName: string
 ): Promise<ElemID[]> => _.flatten((await Promise.all(
-  (await workspace.getElements(filename)).map(e => getUsages(e, fullName))
+  (await workspace.getElements(filename)).map(e => getElemIDUsages(e, fullName))
 )))
 
 export const provideWorkspaceReferences = async (

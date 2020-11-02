@@ -106,11 +106,11 @@ const cacheResultKey = (filename: string, timestamp?: number): ParseResultKey =>
   lastModified: timestamp ?? Date.now(),
 })
 
-const getElementReferenced = (element: Element): ElemID[] => {
-  const getTypeOrContainerTypeID = (typeElem: TypeElement): ElemID => (isContainerType(typeElem)
-    ? getDeepInnerType(typeElem).elemID
-    : typeElem.elemID)
+const getTypeOrContainerTypeID = (typeElem: TypeElement): ElemID => (isContainerType(typeElem)
+  ? getDeepInnerType(typeElem).elemID
+  : typeElem.elemID)
 
+const getElementReferenced = (element: Element): ElemID[] => {
   const referenced: ElemID[] = []
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {

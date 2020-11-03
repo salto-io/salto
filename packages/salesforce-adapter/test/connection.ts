@@ -128,7 +128,7 @@ export const mockDeployResult = (
   }),
 } as DeployResultLocator<DeployResult>)
 
-const mockQueryResult = (
+export const mockQueryResult = (
   props: Partial<QueryResult<Value>>,
 ): QueryResult<Value> => ({
   done: true,

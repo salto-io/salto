@@ -21,9 +21,10 @@ import {
 import filterCreator from '../../src/filters/elements_path'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { mockQueryResult } from '../connection'
 
 describe('elements path filter', () => {
-  const { client } = mockClient()
+  const { client, connection } = mockClient()
   const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
   const origInstance = new InstanceElement(
     'test',
@@ -35,16 +36,13 @@ describe('elements path filter', () => {
   let instance: InstanceElement
   beforeEach(() => {
     instance = origInstance.clone()
-    client.queryAll = jest.fn().mockReturnValue([[
-      {
-        Id: 'PlatformPortalInternalId',
-        Name: 'Authenticated Website',
-      },
-      {
-        Id: 'AdminInternalId',
-        Name: 'System Administrator',
-      },
-    ]])
+    connection.query.mockResolvedValue(mockQueryResult({
+      records: [
+        { Id: 'PlatformPortalInternalId', Name: 'Authenticated Website' },
+        { Id: 'AdminInternalId', Name: 'System Administrator' },
+      ],
+      totalSize: 2,
+    }))
   })
 
   it('should replace instance path', async () => {

@@ -37,18 +37,18 @@ const replacePath = (
   profile: InstanceElement,
   profileInternalIdToName: Map<string, string>
 ): void => {
-  const filename = apiName(profile) === 'PlatformPortal'
+  const name = apiName(profile) === 'PlatformPortal'
     // Both 'PlatformPortal' & 'AuthenticatedWebsite' profiles have 'Authenticated Website'
     // display name in SF UI. Since we wouldn't like them to be placed under the same nacl,
     // We modify 'PlatformPortal' filename manually so we'll have Authenticated_Website and
     // Authenticated_Website2 nacls.
-    ? 'Authenticated_Website2'
-    : naclCase(profileInternalIdToName.get(getInternalId(profile)))
+    ? 'Authenticated Website2'
+    : profileInternalIdToName.get(getInternalId(profile))
 
-  if (filename && profile.path) {
+  if (name !== undefined && profile.path) {
     profile.path = [
       ...profile.path.slice(0, -1),
-      filename,
+      naclCase(name),
     ]
   }
 }

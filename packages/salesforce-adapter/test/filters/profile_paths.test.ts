@@ -18,12 +18,12 @@ import {
   INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_FIELD, METADATA_TYPE, PROFILE_METADATA_TYPE, RECORDS_PATH,
   SALESFORCE,
 } from '../../src/constants'
-import filterCreator from '../../src/filters/elements_path'
+import filterCreator from '../../src/filters/profile_paths'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
 
-describe('elements path filter', () => {
+describe('profile paths filter', () => {
   const { client, connection } = mockClient()
   const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
   const origInstance = new InstanceElement(
@@ -45,7 +45,7 @@ describe('elements path filter', () => {
     }))
   })
 
-  it('should replace instance path', async () => {
+  it('should replace profile instance path', async () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
     instance.type.annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
@@ -63,17 +63,10 @@ describe('elements path filter', () => {
       .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'Authenticated_Website2'])
   })
 
-  it('should not replace instance path if its metadataType is not in the mapping', async () => {
+  it('should not replace instance path for other metadataTypes', async () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
     instance.type.annotations[METADATA_TYPE] = 'some other metadataType'
-    await filter.onFetch([instance])
-    expect(instance.path).toEqual(origInstance.path)
-  })
-
-  it('should not replace instance path if its apiName is not in the mapping', async () => {
-    instance.value[INSTANCE_FULL_NAME_FIELD] = 'some other apiName'
-    instance.type.annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.path).toEqual(origInstance.path)
   })

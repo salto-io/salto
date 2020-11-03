@@ -125,12 +125,12 @@ const singlePathInstance = new InstanceElement('singlePathInst', singlePathObjec
   } },
 ['salto', 'inst', 'simple'],)
 // multiPathInstance
-const multiPathInstace1 = new InstanceElement('multiPathInst', singlePathObject, { simple: 'Simple',
+const multiPathInstance1 = new InstanceElement('multiPathInst', singlePathObject, { simple: 'Simple',
   nested: {
     list: [1, 2, 3],
   } },
 ['salto', 'inst', 'nested', '1'],)
-const multiPathInstace2 = new InstanceElement('multiPathInst', singlePathObject, { nested: {
+const multiPathInstance2 = new InstanceElement('multiPathInst', singlePathObject, { nested: {
   str: 'Str',
   num: 7,
 } },
@@ -142,8 +142,8 @@ describe('create path index', () => {
     singlePathInstance,
     multiPathAnnoObj,
     multiPathFieldsObj,
-    multiPathInstace1,
-    multiPathInstace2,
+    multiPathInstance1,
+    multiPathInstance2,
   ])
   describe('elements which are defined in a single fragment', () => {
     it('should return the proper path for top level elements', () => {
@@ -187,27 +187,27 @@ describe('create path index', () => {
     })
   })
   describe('elements which are defined in a multiple fragments', () => {
-    it('should return the all paths for top level elements', () => {
-      const instPath = pathIndex.get(multiPathInstace1.elemID.getFullName())
-      expect(instPath).toEqual([multiPathInstace1.path, multiPathInstace2.path])
+    it('should return all paths for top level elements', () => {
+      const instPath = pathIndex.get(multiPathInstance1.elemID.getFullName())
+      expect(instPath).toEqual([multiPathInstance1.path, multiPathInstance2.path])
 
       const objPath = pathIndex.get(multiPathAnnoObj.elemID.getFullName())
       expect(objPath).toEqual([multiPathAnnoObj.path, multiPathFieldsObj.path])
     })
     it('should return all paths for nested ids which are defined in multiple fragments', () => {
-      const sharedNestedID = multiPathInstace1.elemID.createNestedID('nested').getFullName()
+      const sharedNestedID = multiPathInstance1.elemID.createNestedID('nested').getFullName()
       expect(pathIndex.get(sharedNestedID))
-        .toEqual([multiPathInstace1.path, multiPathInstace2.path])
+        .toEqual([multiPathInstance1.path, multiPathInstance2.path])
     })
     it('should return the path given in the defining element fragment for nested id', () => {
       const nestedInst1Ids = [
-        multiPathInstace1.elemID.createNestedID('simple'),
-        multiPathInstace1.elemID.createNestedID('nested').createNestedID('list'),
+        multiPathInstance1.elemID.createNestedID('simple'),
+        multiPathInstance1.elemID.createNestedID('nested').createNestedID('list'),
       ].map(id => id.getFullName())
 
       const nestedInst2Ids = [
-        multiPathInstace2.elemID.createNestedID('nested').createNestedID('str'),
-        multiPathInstace2.elemID.createNestedID('nested').createNestedID('num'),
+        multiPathInstance2.elemID.createNestedID('nested').createNestedID('str'),
+        multiPathInstance2.elemID.createNestedID('nested').createNestedID('num'),
       ].map(id => id.getFullName())
 
       const nestedObjFieldsIds = [
@@ -225,8 +225,8 @@ describe('create path index', () => {
         multiPathAnnoObj.elemID.createNestedID('attr').createNestedID('nested').createNestedID('list'),
       ].map(id => id.getFullName())
 
-      nestedInst1Ids.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathInstace1.path]))
-      nestedInst2Ids.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathInstace2.path]))
+      nestedInst1Ids.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathInstance1.path]))
+      nestedInst2Ids.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathInstance2.path]))
 
       nestedObjAnnoIds.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathAnnoObj.path]))
       nestedObjFieldsIds.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathFieldsObj.path]))
@@ -246,8 +246,8 @@ describe('create path index', () => {
         singlePathInstance,
         multiPathAnnoObj,
         multiPathFieldsObj,
-        multiPathInstace1,
-        multiPathInstace2,
+        multiPathInstance1,
+        multiPathInstance2,
       ])
     })
     it('symmetric operation on multiple path indexes', () => {

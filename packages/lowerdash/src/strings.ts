@@ -24,3 +24,6 @@ export const insecureRandomString = (
 ): string => Array(...Array(length))
   .map(() => alphabet.charAt(Math.floor(Math.random() * alphabet.length)))
   .join('')
+
+export const capitalizeFirstLetter = (str: string): string =>
+  str.charAt(0).toUpperCase() + str.slice(1)

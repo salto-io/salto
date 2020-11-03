@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values, collections, hash } from '@salto-io/lowerdash'
+import { values, collections, hash, strings } from '@salto-io/lowerdash'
 import {
   ChangeGroup, getChangeElement, DeployResult, Change, isPrimitiveType,
   InstanceElement, isAdditionGroup, isRemovalGroup, Value, PrimitiveTypes,
@@ -71,9 +71,6 @@ const formatValueForWhere = (field: Field, value: Value): string => {
   throw new Error(`Can not create WHERE clause for non-primitve field ${field.name}`)
 }
 
-const capitalizeFirstLetter = (str: string): string =>
-  str.charAt(0).toUpperCase() + str.slice(1)
-
 const getRecordsBySaltoIds = async (
   type: ObjectType,
   instances: InstanceElement[],
@@ -97,7 +94,7 @@ const getRecordsBySaltoIds = async (
                   instance.value[field.name]?.[compoundFieldName]
                 )))),
             ]
-            return `${capitalizeFirstLetter(compoundFieldName)} IN (${compoundFieldValues.join(',')})`
+            return `${strings.capitalizeFirstLetter(compoundFieldName)} IN (${compoundFieldValues.join(',')})`
           })
       }
     }

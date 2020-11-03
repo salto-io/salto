@@ -38,6 +38,7 @@ import layoutFilter from './filters/layouts'
 import customObjectsFilter from './filters/custom_objects'
 import customSettingsFilter from './filters/custom_settings_filter'
 import customObjectsSplitFilter from './filters/custom_object_split'
+import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
 import convertListsFilter from './filters/convert_lists'
@@ -55,10 +56,10 @@ import settingsFilter, { SETTINGS_METADATA_TYPE } from './filters/settings_type'
 import workflowFilter from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
-import referenceAnnotations from './filters/reference_annotations'
-import fieldReferences from './filters/field_references'
+import referenceAnnotationsFilter from './filters/reference_annotations'
+import fieldReferencesFilter from './filters/field_references'
 import customObjectInstanceReferencesFilter from './filters/custom_object_instances_references'
-import foreignKeyReferences from './filters/foreign_key_references'
+import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
@@ -69,7 +70,7 @@ import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import elementsPathFilter from './filters/elements_path'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
-import profileMaps from './filters/profile_maps'
+import profileMapsFilter from './filters/profile_maps'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -101,8 +102,8 @@ export const DEFAULT_FILTERS = [
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   profilePermissionsFilter,
-  // profileMaps should run before profile values are converted to references (fieldReferences)
-  profileMaps,
+  // profileMapsFilter should run before profile fieldReferencesFilter
+  profileMapsFilter,
   standardValueSetFilter,
   flowFilter,
   lookupFiltersFilter,
@@ -121,16 +122,17 @@ export const DEFAULT_FILTERS = [
   convertListsFilter,
   convertTypeFilter,
   replaceFieldValuesFilter,
-  fieldReferences,
-  // should run after custom_object_instances for now
-  referenceAnnotations,
-  // foreignLeyReferences should come after referenceAnnotations
-  foreignKeyReferences,
+  fieldReferencesFilter,
+  // should run after customObjectsInstancesFilter for now
+  referenceAnnotationsFilter,
+  // foreignLeyReferences should come after referenceAnnotationsFilter
+  foreignKeyReferencesFilter,
   // extraDependenciesFilter should run after addMissingIdsFilter
   extraDependenciesFilter,
-  // hideTypesFilter should come before customObjectsSplitFilter
+  // hideTypesFilter should come before customObjectsSplitFilter and profileInstanceSplitFilter
   hideTypesFilter,
   customObjectsSplitFilter,
+  profileInstanceSplitFilter,
   // removeMemoryOnlyAnnotationsFilter should run at the end
   removeMemoryOnlyAnnotationsFilter,
 ]

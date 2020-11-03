@@ -74,8 +74,8 @@ describe('Values', () => {
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
       it('ignores newline differences', () => {
-        const s1 = '\rab\r\n'
-        const s2 = 'a\r\r\r\r\r\rb\n'
+        const s1 = '\r\na\nb\n\r\n\np'
+        const s2 = '\na\r\nb\r\n\r\n\r\np'
         expect(isEqualValues(s1, s2)).toBeTruthy()
       })
     })

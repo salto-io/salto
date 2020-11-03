@@ -209,14 +209,24 @@ const complexTypesMap: ComplexTypesMap = {
 const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
-const xmlToValues = (xmlAsString: string, type: string): Values => parser.parse(
-  xmlAsString,
-  {
-    ignoreAttributes: false,
-    attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
-    tagValueProcessor: val => he.decode(val),
+const xmlToValues = (xmlAsString: string, type: string): Values => {
+  const deleteXmlnsAttributes = (values: Values): void => {
+    delete values[`${XML_ATTRIBUTE_PREFIX}xmlns`]
+    delete values[`${XML_ATTRIBUTE_PREFIX}xmlns:xsi`]
   }
-)[type]
+
+  const values = parser.parse(
+    xmlAsString,
+    {
+      ignoreAttributes: false,
+      attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+      tagValueProcessor: val => he.decode(val),
+    }
+  )[type]
+
+  deleteXmlnsAttributes(values)
+  return values
+}
 
 const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
   complexType: boolean, namespacePrefix?: string): Promise<Record<string, Buffer>> => {

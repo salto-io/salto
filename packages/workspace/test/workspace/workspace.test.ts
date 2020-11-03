@@ -1314,4 +1314,90 @@ describe('workspace', () => {
       expect(credsSource.get).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('getElementReferencedFiles', () => {
+    let workspace: Workspace
+    let referencedFiles: string[]
+    const defFile = `
+      type salesforce.lead {
+
+      }
+    `
+
+    const usedAsInstType = `
+      salesforce.lead inst {
+        key = "value"
+      }
+    `
+
+    const usedAsField = `
+      type salesforce.leader {
+        salesforce.lead lead {
+          
+        }
+      }
+    `
+
+    const usedAsInnerFieldType = `
+    type salesforce.leaders {
+      "List<salesforce.lead>" lead {
+      }
+    }
+  `
+
+    const usedAsReference = `
+      type salesforce.stam {
+        annotations {
+          string key {
+          }
+        }
+        key = salesforce.lead
+      }
+    `
+
+    const usedAsNestedReference = `
+      type salesforce.stam2 {
+        annotations {
+          string key {
+          }
+        }
+        key = salesforce.lead.attr.key
+      }
+    `
+
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'defFile.nacl': defFile,
+      'usedAsInstType.nacl': usedAsInstType,
+      'usedAsField.nacl': usedAsField,
+      'usedAsInnerFieldType.nacl': usedAsInnerFieldType,
+      'usedAsReference.nacl': usedAsReference,
+      'usedAsNestedReference.nacl': usedAsNestedReference,
+    })
+
+    beforeAll(async () => {
+      workspace = await createWorkspace(naclFileStore)
+      referencedFiles = await workspace
+        .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
+    })
+
+    it('should find files in which the id is used as an instance type', () => {
+      expect(referencedFiles).toContain('usedAsInstType.nacl')
+    })
+
+    it('should find files in which the id is used as an field type', () => {
+      expect(referencedFiles).toContain('usedAsField.nacl')
+    })
+
+    it('should find files in which the id is used as an inner field type', () => {
+      expect(referencedFiles).toContain('usedAsInnerFieldType.nacl')
+    })
+
+    it('should find files in which the id is used as reference', () => {
+      expect(referencedFiles).toContain('usedAsReference.nacl')
+    })
+
+    it('should find files in which the id is used as nested reference', () => {
+      expect(referencedFiles).toContain('usedAsNestedReference.nacl')
+    })
+  })
 })

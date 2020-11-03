@@ -19,7 +19,7 @@ E2E tests need real SFDC credentials to run - a free developer account is good e
 - Register and login to your account at <https://developer.salesforce.com/>
 - [Add a security token (aka API token)](https://help.salesforce.com/articleView?id=user_security_token.htm), or make sure your IP address is trusted.
 
-### Using a sepecific set of credentials
+### Using a specific set of credentials
 
 Add the following environment variables to bash_profile:
 ```bash

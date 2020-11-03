@@ -224,6 +224,8 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     { id: '', organizationId: '', url: '' }
   )),
   metadata: {
+    pollInterval: 1000,
+    pollTimeout: 10000,
     describe: mockFunction<Metadata['describe']>().mockResolvedValue({ metadataObjects: [] }),
     describeValueType: mockFunction<Metadata['describeValueType']>().mockResolvedValue(
       mockDescribeValueResult({ valueTypeFields: [] })
@@ -244,6 +246,8 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
   query: mockFunction<Connection['query']>().mockResolvedValue(mockQueryResult({})),
   queryMore: mockFunction<Connection['queryMore']>().mockResolvedValue(mockQueryResult({})),
   bulk: {
+    pollInterval: 1000,
+    pollTimeout: 10000,
     load: mockFunction<Bulk['load']>().mockResolvedValue([]),
   },
   limits: mockFunction<Connection['limits']>().mockResolvedValue({

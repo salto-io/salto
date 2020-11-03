@@ -27,8 +27,7 @@ import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
-import { XML_ATTRIBUTE_PREFIX } from '../../src/constants'
-
+import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, XML_ATTRIBUTE_PREFIX } from '../../src/constants'
 
 describe('XML Transformer', () => {
   describe('createDeployPackage', () => {
@@ -407,7 +406,7 @@ describe('XML Transformer', () => {
           mockFileProperties({
             fileName: 'lwc/myLightningComponentBundle',
             fullName: 'myLightningComponentBundle',
-            type: 'LightningComponentBundle',
+            type: LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
             namespacePrefix,
           })
 

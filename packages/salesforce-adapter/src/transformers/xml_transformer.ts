@@ -26,6 +26,7 @@ import { API_VERSION } from '../client/client'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
   RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
 } from '../constants'
 import {
   apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType,
@@ -38,7 +39,7 @@ const { makeArray } = collections.array
 const log = logger(module)
 
 export const metadataTypesWithAttributes = [
-  'LightningComponentBundle',
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
 ]
 
 const PACKAGE = 'unpackaged'

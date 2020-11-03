@@ -20,6 +20,7 @@ import _ from 'lodash'
 import { FilterWith } from '../../src/filter'
 import {
   IS_ATTRIBUTE, METADATA_TYPE, SALESFORCE, XML_ATTRIBUTE_PREFIX, INSTANCE_FULL_NAME_FIELD,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
 } from '../../src/constants'
 import filterCreator from '../../src/filters/xml_attributes'
 
@@ -50,7 +51,7 @@ describe('XML Attributes Filter', () => {
       },
     },
     annotations: {
-      [METADATA_TYPE]: 'LightningComponentBundle',
+      [METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
     },
   })
 

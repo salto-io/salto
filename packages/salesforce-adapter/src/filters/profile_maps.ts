@@ -294,7 +294,7 @@ export const getInstanceChanges = (
     .filter(change => metadataType(getChangeElement(change)) === PROFILE_METADATA_TYPE)
 )
 
-const findProfileInstances = (
+export const findProfileInstances = (
   elements: Element[],
 ): InstanceElement[] => {
   const instances = elements.filter(isInstanceElement)

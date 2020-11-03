@@ -40,9 +40,9 @@ const generateMetadataTypeToApiNameToFilename = async (
       const filename = apiName(profile) === 'PlatformPortal'
         // Both 'PlatformPortal' & 'AuthenticatedWebsite' profiles have 'Authenticated Website'
         // display name in SF UI. Since we wouldn't like them to be placed under the same nacl,
-        // We modify 'PlatformPortal' filename manually so we'll have AuthenticatedWebsite and
-        // Authenticated_Website nacls.
-        ? 'AuthenticatedWebsite'
+        // We modify 'PlatformPortal' filename manually so we'll have Authenticated_Website and
+        // Authenticated_Website2 nacls.
+        ? 'Authenticated_Website2'
         : naclCase(profileNameById.get(profile.value.internalId))
       return [apiName(profile), filename]
     })

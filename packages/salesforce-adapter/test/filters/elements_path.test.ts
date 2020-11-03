@@ -60,7 +60,7 @@ describe('elements path filter', () => {
     instance.type.annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.path)
-      .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'AuthenticatedWebsite'])
+      .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'Authenticated_Website2'])
   })
 
   it('should not replace instance path if its metadataType is not in the mapping', async () => {

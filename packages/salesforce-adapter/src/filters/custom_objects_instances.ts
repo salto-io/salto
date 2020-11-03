@@ -64,10 +64,14 @@ const isReferenceField = (field: Field): boolean =>
 const getReferenceTo = (field: Field): string[] =>
   makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
 
-export const buildSelectStr = (fields: Field[]): string => (
-  fields
+const getQueryableFields = (object: ObjectType): Field[] => (
+  Object.values(object.fields)
     // the "queryable" annotation defaults to true when missing
     .filter(field => field.annotations[FIELD_ANNOTATIONS.QUERYABLE] !== false)
+)
+
+export const buildSelectStr = (fields: Field[]): string => (
+  fields
     .map(field => {
       if (isNameField(field)) {
         return Object.keys((field.type as ObjectType).fields).join(',')
@@ -75,18 +79,18 @@ export const buildSelectStr = (fields: Field[]): string => (
       return apiName(field, true)
     }).join(','))
 
-const buildQueryString = (type: ObjectType, ids?: string[]): string => {
-  const selectStr = buildSelectStr(Object.values(type.fields))
+const buildQueryString = (typeName: string, fields: Field[], ids?: string[]): string => {
+  const selectStr = buildSelectStr(fields)
   const whereStr = (ids === undefined || _.isEmpty(ids)) ? '' : ` WHERE Id IN (${ids.map(id => `'${id}'`).join(',')})`
-  return `SELECT ${selectStr} FROM ${apiName(type)}${whereStr}`
+  return `SELECT ${selectStr} FROM ${typeName}${whereStr}`
 }
 
-const buildQueryStrings = (type: ObjectType, ids?: string[]): string[] => {
+const buildQueryStrings = (typeName: string, fields: Field[], ids?: string[]): string[] => {
   if (ids === undefined) {
-    return [buildQueryString(type)]
+    return [buildQueryString(typeName, fields)]
   }
   const chunkedIds = _.chunk(ids, MAX_IDS_PER_INSTANCES_QUERY)
-  return chunkedIds.map(idChunk => buildQueryString(type, idChunk))
+  return chunkedIds.map(idChunk => buildQueryString(typeName, fields, idChunk))
 }
 
 const getRecords = async (
@@ -94,7 +98,13 @@ const getRecords = async (
   type: ObjectType,
   ids?: string[],
 ): Promise<RecordById> => {
-  const queries = buildQueryStrings(type, ids)
+  const queryableFields = getQueryableFields(type)
+  const typeName = apiName(type)
+  if (_.isEmpty(queryableFields)) {
+    log.debug(`Type ${typeName} had no queryable fields`)
+    return {}
+  }
+  const queries = buildQueryStrings(typeName, queryableFields, ids)
   const recordsIterables = await Promise.all(queries.map(async query => client.queryAll(query)))
   const records = (await Promise.all(
     recordsIterables.map(async recordsIterable => (await toArrayAsync(recordsIterable)).flat())
@@ -366,7 +376,7 @@ export const getIdFields = (
   return { idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]) }
 }
 
-const getCustomObjectsFetchSettings = (
+export const getCustomObjectsFetchSettings = (
   types: ObjectType[],
   config: DataManagementConfig,
 ): CustomObjectFetchSetting[] => {

@@ -343,6 +343,24 @@ describe('Custom Object Instances filter', () => {
       const simpleName = `${testNamespace}__simple__c`
       const simpleObject = createCustomObject(simpleName)
 
+      const noFieldsName = `${testNamespace}__noQueryablefields`
+      const objWithNoFields = new ObjectType({
+        elemID: new ElemID(SALESFORCE, noFieldsName),
+        fields: {
+          Id: {
+            type: stringType,
+            annotations: {
+              [API_NAME]: 'Id',
+              queryable: false,
+            },
+          },
+        },
+        annotations: {
+          [API_NAME]: noFieldsName,
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+        },
+      })
+
       const withNameName = `${testNamespace}__withCompoundName__c`
       const objWithNameField = createCustomObject(withNameName)
       objWithNameField.fields.Name.type = Types.compoundDataTypes.Name
@@ -363,13 +381,15 @@ describe('Custom Object Instances filter', () => {
       const expectedFirstInstanceName = `${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Id}`
 
       beforeEach(async () => {
-        elements = [simpleObject, objWithNameField, objWithAddressField, objNotInNamespace]
+        elements = [
+          simpleObject, objWithNoFields, objWithNameField, objWithAddressField, objNotInNamespace,
+        ]
         await filter.onFetch(elements)
       })
 
-      it('should add instances per catched by regex object', () => {
+      it('should add instances per catched by regex object with fields', () => {
         // 2 new instances per namespaced object because of TestCustomRecords's length
-        expect(elements.length).toEqual(10)
+        expect(elements.length).toEqual(11)
         expect(elements.filter(e => isInstanceElement(e)).length).toEqual(6)
       })
 
@@ -409,6 +429,23 @@ describe('Custom Object Instances filter', () => {
         it('should omit attributes from the value', () => {
           const { value } = instances[0]
           expect(value.attributes).toBeUndefined()
+        })
+      })
+
+      describe('object with no queryable fields', () => {
+        let instances: InstanceElement[]
+        beforeEach(() => {
+          instances = elements.filter(
+            e => isInstanceElement(e) && e.type === objWithNoFields
+          ) as InstanceElement[]
+        })
+
+        it('should not try to query for object', () => {
+          expect(basicQueryImplementation).not.toHaveBeenCalledWith(expect.stringMatching(/.*noQueryablefields.*/))
+        })
+
+        it('should not create any instances', () => {
+          expect(instances.length).toEqual(0)
         })
       })
 

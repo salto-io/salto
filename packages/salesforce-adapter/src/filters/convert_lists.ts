@@ -57,6 +57,10 @@ const fieldsToSort: ReadonlyArray<UnorderedList> = [
     orderBy: ['inputObject', 'outputObject'],
   },
   {
+    elemId: new ElemID(SALESFORCE, 'LeadConvertSettings', 'field', 'objectMapping'),
+    orderBy: ['inputObject', 'outputObject'],
+  },
+  {
     elemId: new ElemID(SALESFORCE, 'ObjectMapping', 'field', 'mappingFields'),
     orderBy: ['inputField', 'outputField'],
   },

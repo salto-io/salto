@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import { strings } from '@salto-io/lowerdash'
-import { Element, ObjectType, isMapType, InstanceElement } from '@salto-io/adapter-api'
+import { Element, ObjectType, isMapType, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { findProfileInstances } from './profile_maps'
+import { metadataType } from '../transformers/transformer'
+import { PROFILE_METADATA_TYPE } from '../constants'
 
 const DEFAULT_NACL_FILENAME = 'Attributes'
 
@@ -28,14 +29,14 @@ const toNaclFilename = (fieldName: string, objType: ObjectType): string => (
 )
 
 const splitProfile = (profile: InstanceElement): InstanceElement[] => {
-  const toInstancePart = (naclFilename: string, fieldNames: string[]): InstanceElement => {
-    const inst = profile.clone()
-    inst.value = _.pick(inst.value, ...fieldNames)
-    if (inst.path) {
-      inst.path = [...inst.path, naclFilename]
-    }
-    return inst
-  }
+  const toInstancePart = (naclFilename: string, fieldNames: string[]): InstanceElement => (
+    new InstanceElement(
+      profile.elemID.name,
+      profile.type,
+      _.pick(profile.value, ...fieldNames),
+      profile.path === undefined ? undefined : [...profile.path, naclFilename],
+    )
+  )
 
   const targetFieldsByFile = _.groupBy(
     Object.keys(profile.value),
@@ -51,6 +52,10 @@ const splitProfile = (profile: InstanceElement): InstanceElement[] => {
   )
 }
 
+const isProfileInstance = (elem: Element): elem is InstanceElement => (
+  isInstanceElement(elem) && metadataType(elem) === PROFILE_METADATA_TYPE
+)
+
 /**
  * Split profile instances, each assigned to its own nacl path.
  * Each map field is assigned to a separate file, and the other fields and annotations
@@ -62,12 +67,11 @@ const filterCreator: FilterCreator = ({ config }) => ({
       return
     }
 
-    const profileInstances = findProfileInstances(elements)
+    const profileInstances = _.remove(elements, isProfileInstance) as InstanceElement[]
     if (profileInstances.length === 0) {
       return
     }
     const newProfileInstances = profileInstances.flatMap(splitProfile)
-    _.pullAll(elements, profileInstances)
     elements.push(...newProfileInstances)
   },
 })

@@ -129,10 +129,10 @@ export const DEFAULT_FILTERS = [
   foreignKeyReferencesFilter,
   // extraDependenciesFilter should run after addMissingIdsFilter
   extraDependenciesFilter,
-  profileInstanceSplitFilter,
-  // hideTypesFilter should come before customObjectsSplitFilter
+  // hideTypesFilter should come before customObjectsSplitFilter and profileInstanceSplitFilter
   hideTypesFilter,
   customObjectsSplitFilter,
+  profileInstanceSplitFilter,
   // removeMemoryOnlyAnnotationsFilter should run at the end
   removeMemoryOnlyAnnotationsFilter,
 ]

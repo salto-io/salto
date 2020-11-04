@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Element, ReferenceExpression, isObjectType, ChangeDataType, Change, toChange, AdditionChange, ModificationChange, getChangeElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, ReferenceExpression, isObjectType, ChangeDataType, Change, toChange, AdditionChange, ModificationChange, getChangeElement, Field } from '@salto-io/adapter-api'
 import { FilterWith } from '../../../src/filter'
 import SalesforceClient from '../../../src/client/client'
 import mockAdapter from '../../adapter'
@@ -43,13 +43,13 @@ describe('lookup_object filter', () => {
       [CPQ_ACCOUNT]: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: CPQ_ACCOUNT,
+          [API_NAME]: `${CPQ_QUOTE}.${CPQ_ACCOUNT}`,
         },
       },
       [existingFieldName]: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: existingFieldName,
+          [API_NAME]: `${CPQ_QUOTE}.${existingFieldName}`,
         },
       },
     },
@@ -65,7 +65,7 @@ describe('lookup_object filter', () => {
       [CPQ_LOOKUP_OBJECT_NAME]: {
         type: Types.primitiveDataTypes.Picklist,
         annotations: {
-          [API_NAME]: CPQ_LOOKUP_OBJECT_NAME,
+          [API_NAME]: `${CPQ_PRODUCT_RULE}.${CPQ_LOOKUP_OBJECT_NAME}`,
           valueSet: [{
             fullName: existingObjectName,
           }, {
@@ -87,7 +87,7 @@ describe('lookup_object filter', () => {
       [CPQ_DEFAULT_OBJECT_FIELD]: {
         type: Types.primitiveDataTypes.Picklist,
         annotations: {
-          [API_NAME]: CPQ_DEFAULT_OBJECT_FIELD,
+          [API_NAME]: `${CPQ_CONFIGURATION_ATTRIBUTE}.${CPQ_DEFAULT_OBJECT_FIELD}`,
           valueSet: [{
             fullName: CPQ_QUOTE_NO_PRE,
           },
@@ -114,7 +114,7 @@ describe('lookup_object filter', () => {
       [CPQ_CONSTRAINT_FIELD]: {
         type: Types.primitiveDataTypes.Picklist,
         annotations: {
-          [API_NAME]: CPQ_CONSTRAINT_FIELD,
+          [API_NAME]: `${CPQ_PRICE_SCHEDULE}.${CPQ_CONSTRAINT_FIELD}`,
           valueSet: [{
             fullName: CPQ_ACCOUNT_NO_PRE,
           },
@@ -232,7 +232,7 @@ describe('lookup_object filter', () => {
         [CPQ_DEFAULT_OBJECT_FIELD]: {
           type: Types.primitiveDataTypes.Picklist,
           annotations: {
-            [API_NAME]: CPQ_DEFAULT_OBJECT_FIELD,
+            [API_NAME]: `${CPQ_CONFIGURATION_ATTRIBUTE}.${CPQ_DEFAULT_OBJECT_FIELD}`,
             valueSet: [{
               fullName: CPQ_QUOTE,
             },
@@ -257,7 +257,7 @@ describe('lookup_object filter', () => {
         [CPQ_CONSTRAINT_FIELD]: {
           type: Types.primitiveDataTypes.Picklist,
           annotations: {
-            [API_NAME]: CPQ_CONSTRAINT_FIELD,
+            [API_NAME]: `${CPQ_PRICE_SCHEDULE}.${CPQ_CONSTRAINT_FIELD}`,
             valueSet: [{
               fullName: CPQ_ACCOUNT,
             },
@@ -284,38 +284,91 @@ describe('lookup_object filter', () => {
             after: mockAfterResolveConfigurationAttribute.clone(),
           }),
           toChange({
+            before: mockAfterResolveConfigurationAttribute.clone().fields[CPQ_DEFAULT_OBJECT_FIELD],
+            after: mockAfterResolveConfigurationAttribute.clone().fields[CPQ_DEFAULT_OBJECT_FIELD],
+          }),
+          toChange({
             before: mockAfterResolvePriceSchedule.clone(),
             after: mockAfterResolvePriceSchedule.clone(),
+          }),
+          toChange({
+            before: mockAfterResolvePriceSchedule.clone().fields[CPQ_CONSTRAINT_FIELD],
+            after: mockAfterResolvePriceSchedule.clone().fields[CPQ_CONSTRAINT_FIELD],
           }),
         ]
         await filter.preDeploy(changes)
       })
       describe('Object lookup', () => {
-        it('Should map back to the service name instead of api if theres mapping and keep same if not', () => {
+        it('Should not change in object modifications', () => {
           const configAttrChange = changes
             .find(change =>
               getChangeElement(change).elemID.isEqual(mockConfigurationAttributeElemID))
           expect(configAttrChange).toBeDefined()
           const afterData = (configAttrChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[0].fullName)
-            .toEqual(CPQ_QUOTE_NO_PRE)
+            .toEqual(
+              mockAfterResolveConfigurationAttribute
+                .fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[0].fullName
+            )
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[1].fullName)
-            .toEqual(existingObjectName)
+            .toEqual(
+              mockAfterResolveConfigurationAttribute
+                .fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[1].fullName
+            )
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[2].fullName)
+            .toEqual(
+              mockAfterResolveConfigurationAttribute
+                .fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[2].fullName
+            )
+        })
+        it('Should in fields modifications map back to the service name instead of api if theres mapping and keep same if not', () => {
+          const configAttrFieldChange = changes
+            .find(change =>
+              getChangeElement(change).elemID
+                .isEqual(mockConfigurationAttribute.fields[CPQ_DEFAULT_OBJECT_FIELD].elemID))
+          expect(configAttrFieldChange).toBeDefined()
+          const afterData = (configAttrFieldChange as ModificationChange<Field>).data.after
+          expect(afterData.annotations.valueSet[0].fullName)
+            .toEqual(CPQ_QUOTE_NO_PRE)
+          expect(afterData.annotations.valueSet[1].fullName)
+            .toEqual(existingObjectName)
+          expect(afterData.annotations.valueSet[2].fullName)
             .toEqual('nonExistingObject')
         })
       })
       describe('Field lookup', () => {
-        it('Should map back to the service name instead of api if theres mapping and keep same if not', () => {
+        it('Should not change in object modifications', () => {
           const priceSchedulingChange = changes
             .find(change => getChangeElement(change).elemID.isEqual(mockPriceScheduleElemID))
           expect(priceSchedulingChange).toBeDefined()
           const afterData = (priceSchedulingChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[0].fullName)
-            .toEqual(CPQ_ACCOUNT_NO_PRE)
+            .toEqual(
+              mockAfterResolvePriceSchedule.fields[CPQ_CONSTRAINT_FIELD]
+                .annotations.valueSet[0].fullName
+            )
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[1].fullName)
-            .toEqual(existingFieldName)
+            .toEqual(
+              mockAfterResolvePriceSchedule.fields[CPQ_CONSTRAINT_FIELD]
+                .annotations.valueSet[1].fullName
+            )
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[2].fullName)
+            .toEqual(
+              mockAfterResolvePriceSchedule.fields[CPQ_CONSTRAINT_FIELD]
+                .annotations.valueSet[2].fullName
+            )
+        })
+        it('Should in field modigication map back to the service name instead of api if theres mapping and keep same if not', () => {
+          const priceSchedulingFieldChange = changes
+            .find(change => getChangeElement(change).elemID
+              .isEqual(mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].elemID))
+          expect(priceSchedulingFieldChange).toBeDefined()
+          const afterData = (priceSchedulingFieldChange as ModificationChange<Field>).data.after
+          expect(afterData.annotations.valueSet[0].fullName)
+            .toEqual(CPQ_ACCOUNT_NO_PRE)
+          expect(afterData.annotations.valueSet[1].fullName)
+            .toEqual(existingFieldName)
+          expect(afterData.annotations.valueSet[2].fullName)
             .toEqual('nonExistingField')
         })
       })
@@ -373,39 +426,91 @@ describe('lookup_object filter', () => {
             after: mockConfigurationAttribute.clone(),
           }),
           toChange({
+            before: mockConfigurationAttribute.clone().fields[CPQ_DEFAULT_OBJECT_FIELD],
+            after: mockConfigurationAttribute.clone().fields[CPQ_DEFAULT_OBJECT_FIELD],
+          }),
+          toChange({
             before: mockPriceSchedule.clone(),
             after: mockPriceSchedule.clone(),
+          }),
+          toChange({
+            before: mockPriceSchedule.clone().fields[CPQ_CONSTRAINT_FIELD],
+            after: mockPriceSchedule.clone().fields[CPQ_CONSTRAINT_FIELD],
           }),
         ]
         await filter.onDeploy(changes)
       })
       describe('Object lookup', () => {
-        it('Should map to full path api name if theres mapping and keep same if not', () => {
+        it('Should not change on object modifications', () => {
           const configAttrChange = changes
             .find(change =>
               getChangeElement(change).elemID.isEqual(mockConfigurationAttributeElemID))
           expect(configAttrChange).toBeDefined()
           const afterData = (configAttrChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[0].fullName)
-            .toEqual(CPQ_QUOTE)
+            .toEqual(
+              mockConfigurationAttribute.fields[CPQ_DEFAULT_OBJECT_FIELD]
+                .annotations.valueSet[0].fullName
+            )
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[1].fullName)
-            .toEqual(existingObjectName)
+            .toEqual(
+              mockConfigurationAttribute.fields[CPQ_DEFAULT_OBJECT_FIELD]
+                .annotations.valueSet[1].fullName
+            )
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[2].fullName)
+            .toEqual(
+              mockConfigurationAttribute.fields[CPQ_DEFAULT_OBJECT_FIELD]
+                .annotations.valueSet[2].fullName
+            )
+        })
+
+        it('Should on field modification map to full path api name if theres mapping and keep same if not', () => {
+          const configAttrFieldChange = changes
+            .find(change =>
+              getChangeElement(change).elemID
+                .isEqual(mockConfigurationAttribute.fields[CPQ_DEFAULT_OBJECT_FIELD].elemID))
+          expect(configAttrFieldChange).toBeDefined()
+          const afterData = (configAttrFieldChange as ModificationChange<Field>).data.after
+          expect(afterData.annotations.valueSet[0].fullName)
+            .toEqual(CPQ_QUOTE)
+          expect(afterData.annotations.valueSet[1].fullName)
+            .toEqual(existingObjectName)
+          expect(afterData.annotations.valueSet[2].fullName)
             .toEqual('nonExistingObject')
         })
       })
       describe('Field lookup', () => {
-        it('Should map to api name if theres mapping and keep same if not', () => {
+        it('Should not change on object modification', () => {
           const priceSchedulingChange = changes
             .find(change => getChangeElement(change).elemID.isEqual(mockPriceScheduleElemID))
           expect(priceSchedulingChange).toBeDefined()
           const afterData = (priceSchedulingChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[0].fullName)
-            .toEqual('SBQQ__Quote__c.SBQQ__Account__c')
+            .toEqual(
+              mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[0].fullName
+            )
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[1].fullName)
+            .toEqual(
+              mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[1].fullName
+            )
+          expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[2].fullName)
+            .toEqual(
+              mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[2].fullName
+            )
+        })
+
+        it('Should on field modificiation map to api name if theres mapping and keep same if not', () => {
+          const priceSchedulingChange = changes
+            .find(change => getChangeElement(change).elemID
+              .isEqual(mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].elemID))
+          expect(priceSchedulingChange).toBeDefined()
+          const afterData = (priceSchedulingChange as ModificationChange<Field>).data.after
+          expect(afterData.annotations.valueSet[0].fullName)
+            .toEqual('SBQQ__Quote__c.SBQQ__Account__c')
+          expect(afterData.annotations.valueSet[1].fullName)
             .toEqual(`SBQQ__Quote__c.${existingFieldName}`)
           // This is a known issue
-          expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[2].fullName)
+          expect(afterData.annotations.valueSet[2].fullName)
             .toEqual('SBQQ__Quote__c.nonExistingField')
         })
       })

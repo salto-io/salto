@@ -38,6 +38,7 @@ import {
   SALESFORCE,
   FIELD_ANNOTATIONS,
   DEFAULT_VALUE_FORMULA,
+  API_NAME,
 } from '../../src/constants'
 import {
   isCustomObject,
@@ -48,7 +49,7 @@ describe('hide_types filter', () => {
 
 
   const mockCustomObj = new ObjectType({
-    elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+    elemID: new ElemID(SALESFORCE, 'Test'),
     fields: {
       [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
       pluralLabel: { type: BuiltinTypes.STRING },
@@ -56,6 +57,7 @@ describe('hide_types filter', () => {
     },
     annotations: {
       [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'Test__c',
     },
   })
 
@@ -75,7 +77,6 @@ describe('hide_types filter', () => {
       elemID: new ElemID(SALESFORCE, 'mockPrimitive'),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
-
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,

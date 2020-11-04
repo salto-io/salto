@@ -21,9 +21,9 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { getAllReferencedIds } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { metadataType, apiName } from '../transformers/transformer'
+import { metadataType, apiName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getInternalId, getCustomObjects } from './utils'
+import { getInternalId } from './utils'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -103,7 +103,7 @@ const generateElemLookup = (elements: Element[]): ElementMapByMetadataType => (
  */
 const generateCustomObjectLookup = (elements: Element[]): ElementMap => (
   _.keyBy(
-    getCustomObjects(elements),
+    elements.filter(isCustomObject),
     elem => apiName(elem),
   )
 )

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, BuiltinTypes, ListType, MapType, isListType, isMapType, Change } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, BuiltinTypes, ListType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/profile_maps'
 import mockClient from '../client'
@@ -194,8 +194,8 @@ describe('ProfileMaps filter', () => {
         const afterProfileObj = generateProfileType()
         const afterInstances = generateInstances(afterProfileObj)
         await filter.onFetch([afterProfileObj, ...afterInstances])
-        const changes: ReadonlyArray<Change> = instances.map(
-          (inst, idx) => ({ action: 'modify', data: { before: inst, after: afterInstances[idx] } })
+        const changes = instances.map(
+          (inst, idx) => toChange({ before: inst, after: afterInstances[idx] })
         )
         await filter.preDeploy(changes)
         expect(afterProfileObj).toEqual(generateProfileType(false, true))
@@ -275,7 +275,7 @@ describe('ProfileMaps filter', () => {
     let afterProfileObj: ObjectType
     let beforeInstances: InstanceElement[]
     let afterInstances: InstanceElement[]
-    let changes: ReadonlyArray<Change>
+    let changes: Change[]
 
     const generateInstances = (objType: ObjectType): InstanceElement[] => ([
       new InstanceElement(
@@ -355,10 +355,9 @@ describe('ProfileMaps filter', () => {
       beforeInstances = generateInstances(beforeProfileObj)
       afterProfileObj = generateProfileType(true)
       afterInstances = generateInstances(afterProfileObj)
-      changes = beforeInstances.map((inst, idx) => ({
-        action: 'modify',
-        data: { before: inst, after: afterInstances[idx] },
-      }))
+      changes = beforeInstances.map((inst, idx) => (
+        toChange({ before: inst, after: afterInstances[idx] })
+      ))
       await filter.preDeploy(changes)
     })
     it('should convert the object back to list on preDeploy', () => {

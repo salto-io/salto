@@ -17,13 +17,14 @@ import wu from 'wu'
 import _ from 'lodash'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
+  INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -767,3 +768,7 @@ export const getAllReferencedIds = (element: Element, onlyAnnotations = false): 
 
   return allReferencedIds
 }
+
+export const getParents = (instance: Element): Array<Value> => (
+  collections.array.makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+)

@@ -31,12 +31,10 @@ export type FieldPermissions = { field: string } & FieldPermissionsOptions
 export type ObjectPermissions = { object: string } & ObjectPermissionsOptions
 
 
-export class ProfileInfo implements MetadataInfo {
-  constructor(
-    public readonly fullName: string,
-    public fieldPermissions: FieldPermissions[] = [],
-    public objectPermissions: ObjectPermissions[] = [],
-  ) {}
+export interface ProfileInfo extends MetadataInfo {
+  fullName: string
+  fieldPermissions: FieldPermissions[]
+  objectPermissions: ObjectPermissions[]
 }
 
 // https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_metadatawithcontent.htm

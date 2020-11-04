@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType, Change, toChange, getChangeElement, isModificationChange, isAdditionChange, ModificationChange, isObjectTypeChange, AdditionChange, StaticFile } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType, Change, toChange, getChangeElement, isModificationChange, isAdditionChange, ModificationChange, isObjectTypeChange, AdditionChange, StaticFile, isFieldChange, Field } from '@salto-io/adapter-api'
 import { FilterWith } from '../../../src/filter'
 import { fullApiName } from '../../../src/filters/utils'
 import SalesforceClient from '../../../src/client/client'
@@ -179,37 +179,41 @@ describe('cpq custom script filter', () => {
 
     describe('Modification changes', () => {
       beforeAll(async () => {
+        const beforeType = mockCustomScriptObject.clone()
+        const afterType = mockCustomScriptObject.clone()
         changes = [
           toChange({
             before: mockCustomScriptInstance.clone(),
             after: mockCustomScriptInstance.clone(),
           }),
           toChange({
-            before: mockCustomScriptObject.clone(),
-            after: mockCustomScriptObject.clone(),
+            before: beforeType.fields[CPQ_CONSUMPTION_RATE_FIELDS],
+            after: afterType.fields[CPQ_CONSUMPTION_RATE_FIELDS],
+          }),
+          toChange({
+            before: beforeType,
+            after: afterType,
           }),
         ]
         await filter.onDeploy(changes)
       })
 
-      it('Should change fieldsRefList fields type to list of text', () => {
-        const cpqCustomScriptObjModificationChange = changes
-          .find(change =>
-            (isModificationChange(change) && isObjectTypeChange(change)
-              && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
-        expect(cpqCustomScriptObjModificationChange).toBeDefined()
-        const afterData = (cpqCustomScriptObjModificationChange as ModificationChange<ObjectType>)
-          .data.after
-        expect(afterData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
-          .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(afterData.fields[CPQ_GROUP_FIELDS].type)
-          .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        const beforeData = (cpqCustomScriptObjModificationChange as ModificationChange<ObjectType>)
-          .data.before
-        expect(beforeData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
-          .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(beforeData.fields[CPQ_GROUP_FIELDS].type)
-          .toEqual(new ListType(Types.primitiveDataTypes.Text))
+      it('should change field type to list of text for modified fields', () => {
+        const cpqFieldChange = changes.find(isFieldChange) as ModificationChange<Field>
+        expect(cpqFieldChange).toBeDefined()
+        expect(cpqFieldChange.data.before.type).toEqual(new ListType(Types.primitiveDataTypes.Text))
+        expect(cpqFieldChange.data.after.type).toEqual(new ListType(Types.primitiveDataTypes.Text))
+      })
+
+      it('should not change field types in object modification', () => {
+        const cpqTypeChange = changes.find(isObjectTypeChange) as ModificationChange<ObjectType>
+        expect(cpqTypeChange).toBeDefined()
+        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].type).toEqual(
+          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        )
+        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].type).toEqual(
+          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        )
       })
 
       it('Should only change values of multi-line string in fieldsRefList to array of strings', () => {
@@ -247,37 +251,41 @@ describe('cpq custom script filter', () => {
       .value[CPQ_CODE_FIELD] = mockAfterResolveCustomScriptInstance.value[CPQ_CODE_FIELD].content.toString('utf-8')
     describe('Modification changes', () => {
       beforeAll(async () => {
+        const beforeType = mockAfterOnFetchCustomScriptObject.clone()
+        const afterType = mockAfterOnFetchCustomScriptObject.clone()
         changes = [
           toChange({
             before: mockAfterResolveCustomScriptInstance.clone(),
             after: mockAfterResolveCustomScriptInstance.clone(),
           }),
           toChange({
-            before: mockAfterOnFetchCustomScriptObject.clone(),
-            after: mockAfterOnFetchCustomScriptObject.clone(),
+            before: beforeType.fields[CPQ_CONSUMPTION_RATE_FIELDS],
+            after: afterType.fields[CPQ_CONSUMPTION_RATE_FIELDS],
+          }),
+          toChange({
+            before: beforeType,
+            after: afterType,
           }),
         ]
         await filter.preDeploy(changes)
       })
 
-      it('Should change fieldsRefList fields type to long text on modification change', () => {
-        const cpqCustomScriptObjModificationChange = changes
-          .find(change =>
-            (isModificationChange(change) && isObjectTypeChange(change)
-              && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
-        expect(cpqCustomScriptObjModificationChange).toBeDefined()
-        const afterData = (cpqCustomScriptObjModificationChange as ModificationChange<ObjectType>)
-          .data.after
-        expect(afterData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
-          .toEqual(Types.primitiveDataTypes.LongTextArea)
-        expect(afterData.fields[CPQ_GROUP_FIELDS].type)
-          .toEqual(Types.primitiveDataTypes.LongTextArea)
-        const beforeData = (cpqCustomScriptObjModificationChange as ModificationChange<ObjectType>)
-          .data.before
-        expect(beforeData.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
-          .toEqual(Types.primitiveDataTypes.LongTextArea)
-        expect(beforeData.fields[CPQ_GROUP_FIELDS].type)
-          .toEqual(Types.primitiveDataTypes.LongTextArea)
+      it('Should change fieldRefList fields type to long text', () => {
+        const cpqFieldChange = changes.find(isFieldChange) as ModificationChange<Field>
+        expect(cpqFieldChange).toBeDefined()
+        expect(cpqFieldChange.data.before.type).toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(cpqFieldChange.data.after.type).toEqual(Types.primitiveDataTypes.LongTextArea)
+      })
+
+      it('Should not change field types in the object type modification', () => {
+        const cpqTypeChange = changes.find(isObjectTypeChange) as ModificationChange<ObjectType>
+        expect(cpqTypeChange).toBeDefined()
+        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].type).toEqual(
+          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        )
+        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].type).toEqual(
+          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        )
       })
 
       it('Should only change values of multi-line string in fieldsRefList', () => {

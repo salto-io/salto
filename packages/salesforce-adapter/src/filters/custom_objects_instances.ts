@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, isObjectType, Field, isPrimitiveType } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
 import { createInvlidIdFieldConfigChange, createUnresolvedRefIdFieldConfigChange } from '../config_change'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
@@ -26,7 +26,7 @@ import {
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds } from '../transformers/transformer'
-import { getNamespace } from './utils'
+import { getNamespace, isMasterDetailField, isLookupField } from './utils'
 import { DataManagementConfig, ConfigChangeSuggestion } from '../types'
 
 const { mapValuesAsync } = promises.object
@@ -56,10 +56,9 @@ const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
     && field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID))
 
-const isReferenceField = (field: Field): boolean =>
-  (isPrimitiveType(field.type)
-    && (Types.primitiveDataTypes.MasterDetail.isEqual(field.type)
-      || Types.primitiveDataTypes.Lookup.isEqual(field.type)))
+const isReferenceField = (field: Field): boolean => (
+  isMasterDetailField(field) || isLookupField(field)
+)
 
 const getReferenceTo = (field: Field): string[] =>
   makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
@@ -352,8 +351,7 @@ export const getAllInstances = async (
 
 const getParentFieldNames = (fields: Field[]): string[] =>
   fields
-    .filter(field => isPrimitiveType(field.type)
-      && Types.primitiveDataTypes.MasterDetail.isEqual(field.type))
+    .filter(isMasterDetailField)
     .map(field => field.name)
 
 export const getIdFields = (
@@ -407,7 +405,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (config.dataManagement === undefined) {
       return []
     }
-    const customObjects = elements.filter(isObjectType).filter(isCustomObject)
+    const customObjects = elements.filter(isCustomObject)
     const customObjectFetchSetting = getCustomObjectsFetchSettings(
       customObjects,
       config.dataManagement

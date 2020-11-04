@@ -18,21 +18,19 @@ import { logger } from '@salto-io/logging'
 import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
   TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, INSTANCE_ANNOTATIONS,
-  isReferenceExpression, ReferenceExpression,
+  isReferenceExpression, ReferenceExpression, AdditionChange, ChangeDataType, Change, ChangeData,
+  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
-import wu from 'wu'
-import { findElements } from '@salto-io/adapter-utils'
+import { getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
 } from '../constants'
 import { JSONBool } from '../client/types'
-import { isCustomObject, metadataType, apiName, defaultApiName } from '../transformers/transformer'
+import { isCustomObject, metadataType, apiName, defaultApiName, Types } from '../transformers/transformer'
 
 const log = logger(module)
-const { makeArray } = collections.array
 
 export const id = (elem: Element): string => elem.elemID.getFullName()
 
@@ -43,31 +41,6 @@ export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName
  InstanceElement[] =>
   elements.filter(isInstanceElement)
     .filter(element => metadataType(element) === metadataTypeName)
-
-export const getCustomObjects = (elements: Element[]): ObjectType[] =>
-  elements
-    .filter(isObjectType)
-    .filter(isCustomObject)
-
-// collect Object Type's elemID to api name as we have custom Object Types that are split and
-// we need to know the api name to build full field name
-export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Record<string, string> =>
-  _(customObjects)
-    .filter(obj => obj.annotations[API_NAME])
-    .map(obj => [id(obj), obj.annotations[API_NAME]])
-    .fromPairs()
-    .value()
-
-export const removeFieldsFromInstanceAndType = (elements: Element[], fieldNamesToDelete: string[],
-  metadataTypeName: string): void => {
-  getInstancesOfMetadataType(elements, metadataTypeName)
-    .forEach(instance => fieldNamesToDelete
-      .forEach(fieldNameToDelete => delete instance.value[fieldNameToDelete]))
-  elements.filter(isObjectType)
-    .filter(element => metadataType(element) === metadataTypeName)
-    .forEach(elementType => fieldNamesToDelete
-      .forEach(fieldNameToDelete => delete elementType.fields[fieldNameToDelete]))
-}
 
 export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   const { name } = elem.elemID
@@ -102,6 +75,35 @@ export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJ
   }
 }
 
+export const addDefaults = (change: AdditionChange<ChangeDataType>): void => {
+  const addInstanceDefaults = (elem: InstanceElement): void => {
+    if (elem.value[INSTANCE_FULL_NAME_FIELD] === undefined) {
+      elem.value[INSTANCE_FULL_NAME_FIELD] = defaultApiName(elem)
+    }
+  }
+
+  const addFieldDefaults = (field: Field): void => {
+    addApiName(field, undefined, apiName(field.parent))
+    addLabel(field)
+  }
+
+  const addCustomObjectDefaults = (element: ObjectType): void => {
+    addApiName(element)
+    addMetadataType(element)
+    addLabel(element)
+    Object.values(element.fields).forEach(addFieldDefaults)
+  }
+
+  const elem = change.data.after
+  if (isInstanceElement(elem)) {
+    addInstanceDefaults(elem)
+  } else if (isObjectType(elem)) {
+    addCustomObjectDefaults(elem)
+  } else if (isField(elem)) {
+    addFieldDefaults(elem)
+  }
+}
+
 export const getNamespaceFromString = (name: string): string | undefined => {
   const nameParts = name.split(NAMESPACE_SEPARATOR)
   return nameParts.length === 3 ? nameParts[0] : undefined
@@ -124,23 +126,17 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
 }
 
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
-  new Map(getCustomObjects(elements).map(obj => [apiName(obj), obj]))
+  new Map(elements.filter(isCustomObject).map(obj => [apiName(obj), obj]))
 
-export const allCustomObjectFields = (elements: Element[], elemID: ElemID): Iterable<Field> =>
-  wu(findElements(elements, elemID))
-    .filter(isObjectType)
-    .map(elem => Object.values(elem.fields))
-    .flatten()
+export const apiNameParts = (elem: Element): string[] =>
+  apiName(elem).split(/\.|-/g)
 
-export const apiNameParts = (instance: InstanceElement): string[] =>
-  apiName(instance).split(/\.|-/g)
-
-export const parentApiName = (instance: InstanceElement): string =>
-  apiNameParts(instance)[0]
+export const parentApiName = (elem: Element): string =>
+  apiNameParts(elem)[0]
 
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
-  const instanceDeps = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+  const instanceDeps = getParents(instance)
   if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemId.isEqual(objectID))) {
     return
   }
@@ -179,10 +175,41 @@ const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> =>
 
 export const groupByAPIName = (elements: Element[]): ApiNameMapping => (
   _(elements)
-    .map<Element[]>(e => ((isObjectType(e) && isCustomObject(e))
-      ? [e, ...Object.values(e.fields)] : [e]))
-    .flatten()
+    .flatMap(e => (isCustomObject(e) ? [e, ...Object.values(e.fields)] : [e]))
     .groupBy(apiName)
     .mapValues(mapElemTypeToElemID)
     .value()
+)
+
+export const getDataFromChanges = <T extends Change<unknown>>(
+  dataField: 'before' | 'after', changes: ReadonlyArray<T>,
+): ReadonlyArray<ChangeData<T>> => (
+    changes
+      .filter(
+        dataField === 'after' ? isAdditionOrModificationChange : isRemovalOrModificationChange
+      )
+      .map(change => _.get(change.data, dataField))
+  )
+
+// This function checks whether an element is an instance of a certain metadata type
+// note that for instances of custom objects this will check the specific type (i.e Lead)
+// if you want instances of all custom objects use isInstanceOfCustomObject
+export const isInstanceOfType = (type: string) => (
+  (elem: Element): elem is InstanceElement => (
+    isInstanceElement(elem) && apiName(elem.type) === type
+  )
+)
+
+export const isInstanceOfTypeChange = (type: string) => (
+  (change: Change): change is Change<InstanceElement> => (
+    isInstanceOfType(type)(getChangeElement(change))
+  )
+)
+
+export const isMasterDetailField = (field: Field): boolean => (
+  field.type.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
+)
+
+export const isLookupField = (field: Field): boolean => (
+  field.type.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
 )

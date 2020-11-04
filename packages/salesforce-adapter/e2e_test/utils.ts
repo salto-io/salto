@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement, DeployResult } from '@salto-io/adapter-api'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
@@ -23,7 +23,7 @@ import { MetadataInfo } from 'jsforce'
 import { SalesforceRecord } from '../src/client/types'
 import { filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
-import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
+import SalesforceAdapter, { DEFAULT_FILTERS, allSystemFields } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import { ConfigChangeSuggestion, FilterContext } from '../src/types'
@@ -171,16 +171,19 @@ export const removeElementIfAlreadyExists = async (
 }
 
 export const createElement = async <T extends InstanceElement | ObjectType>(
-  adapter: SalesforceAdapter, element: T
+  adapter: SalesforceAdapter, element: T, verify = true,
 ): Promise<T> => {
   const changeGroup: ChangeGroup = {
     groupID: 'add test elements',
     changes: [{ action: 'add', data: { after: element } }],
   }
   const result = await adapter.deploy(changeGroup)
-  if (result.errors.length > 0) {
+  if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
+  }
+  if (verify && result.appliedChanges.length === 0) {
+    throw new Error(`Failed adding element ${element.elemID.getFullName()}: no applied changes`)
   }
   return getChangeElement(result.appliedChanges[0]) as T
 }
@@ -205,17 +208,18 @@ export const createAndVerify = async (adapter: SalesforceAdapter, client: Salesf
 }
 
 export const removeElement = async <T extends InstanceElement | ObjectType>(
-  adapter: SalesforceAdapter, element: T
-): Promise<void> => {
+  adapter: SalesforceAdapter, element: T, verify = true,
+): Promise<DeployResult> => {
   const changeGroup: ChangeGroup = {
     groupID: 'remove test elements',
     changes: [{ action: 'remove', data: { before: element } }],
   }
   const result = await adapter.deploy(changeGroup)
-  if (result.errors.length > 0) {
+  if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
   }
+  return result
 }
 
 export const removeElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
@@ -228,10 +232,14 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
   }
 }
 
+const defaultFilterContext: FilterContext = {
+  systemFields: allSystemFields,
+}
+
 export const runFiltersOnFetch = async (
   client: SalesforceClient,
   context: FilterContext,
   elements: Element[],
   filterCreators = DEFAULT_FILTERS
 ): Promise<void | ConfigChangeSuggestion[]> =>
-  filtersRunner(client, context, filterCreators).onFetch(elements)
+  filtersRunner(client, { ...defaultFilterContext, ...context }, filterCreators).onFetch(elements)

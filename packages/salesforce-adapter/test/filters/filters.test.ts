@@ -13,27 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, toChange } from '@salto-io/adapter-api'
+import { toChange, Change } from '@salto-io/adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
-import { API_NAME } from '../../src/constants'
 import mockAdapter from '../adapter'
-import { mockFunction, MockInterface } from '../utils'
+import { mockFunction, MockInterface, MockFunction } from '../utils'
+import { mockDeployResult, mockDeployMessage } from '../connection'
+import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
+import { mockTypes } from '../mock_elements'
 
 describe('SalesforceAdapter filters', () => {
-  const object = new ObjectType({
-    elemID: new ElemID('bla', 'test'),
-    annotations: { [API_NAME]: 'Bla__c' },
-  })
-
-  let adapter: SalesforceAdapter
-
-  const createAdapter = (
-    filterCreators: FilterCreator[]
-  ): SalesforceAdapter => mockAdapter({ adapterParams: { filterCreators } }).adapter
-
   describe('when filter methods are implemented', () => {
+    let adapter: SalesforceAdapter
     let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>>
+    let filterCreator: MockFunction<FilterCreator>
+    let connection: ReturnType<typeof mockAdapter>['connection']
 
     beforeEach(() => {
       filter = {
@@ -42,7 +36,10 @@ describe('SalesforceAdapter filters', () => {
         onDeploy: mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue([]),
       }
 
-      adapter = createAdapter([() => filter])
+      filterCreator = mockFunction<FilterCreator>().mockReturnValue(filter)
+      const mocks = mockAdapter({ adapterParams: { filterCreators: [filterCreator] } })
+      adapter = mocks.adapter
+      connection = mocks.connection
     })
 
     it('should call inner aspects upon fetch', async () => {
@@ -50,13 +47,58 @@ describe('SalesforceAdapter filters', () => {
       expect(filter.onFetch).toHaveBeenCalledTimes(1)
     })
 
-    it('should call inner aspects upon deploy', async () => {
-      const changes = [toChange({ after: object })]
-      await adapter.deploy({ groupID: object.elemID.getFullName(), changes })
-      expect(filter.onDeploy).toHaveBeenCalledTimes(1)
-      const deployArgs = filter.onDeploy.mock.calls[0][0]
-      expect(deployArgs).toHaveLength(1)
-      expect(deployArgs[0]).toMatchObject(changes[0])
+    describe('deploy', () => {
+      let originalChange: Change
+      let replacementChange: Change
+      let inputChanges: Change[]
+      let preDeployInputChanges: Change[]
+      beforeEach(async () => {
+        const instance = createInstanceElement(
+          { fullName: 'TestLayout' }, mockTypes.Layout,
+        )
+        connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
+          componentSuccess: [mockDeployMessage(
+            { fullName: apiName(instance), componentType: metadataType(instance) }
+          )],
+        }))
+
+        originalChange = toChange({ after: instance })
+        replacementChange = toChange({ before: instance })
+        inputChanges = [originalChange]
+
+        filter.preDeploy.mockImplementationOnce(async changes => {
+          // Copy the input changes before modifying the list
+          preDeployInputChanges = [...changes]
+          changes.pop()
+          changes.push(replacementChange)
+        })
+
+        await adapter.deploy({
+          groupID: instance.elemID.getFullName(),
+          changes: inputChanges,
+        })
+      })
+
+      it('should not change the input changes list', () => {
+        expect(inputChanges).toEqual([originalChange])
+      })
+
+      it('should call preDeploy', () => {
+        expect(filter.preDeploy).toHaveBeenCalledTimes(1)
+        // Because our preDeploy implementation changes its input in place, we cannot use the mock
+        // to check the argument passed into the function.
+        expect(preDeployInputChanges).toEqual(inputChanges)
+      })
+
+      it('should call onDeploy with the changes set by preDeploy', () => {
+        expect(filter.onDeploy).toHaveBeenCalledTimes(1)
+        expect(filter.onDeploy).toHaveBeenCalledWith([replacementChange])
+      })
+
+      it('should create the filter only once', () => {
+        // This is needed to allow the filter to keep context between preDeploy and onDeploy
+        expect(filterCreator).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

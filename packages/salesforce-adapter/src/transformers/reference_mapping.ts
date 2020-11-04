@@ -523,7 +523,11 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
   }
 
   return ({ ref, path, field }) => {
-    if (isElement(ref.value)) {
+    // We skip resolving instance annotations because they are not deployed to the service
+    // and we need the full element context in those
+    const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
+
+    if (isElement(ref.value) && !isInstanceAnnotation) {
       const lookupFunc = determineLookupStrategy({ ref, path, field }).serialize
       return lookupFunc({ ref })
     }

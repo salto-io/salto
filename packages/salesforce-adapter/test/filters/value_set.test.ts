@@ -111,17 +111,18 @@ describe('value set filter', () => {
             },
           } },
           annotations: {
+            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
             [constants.API_NAME]: customObjectName,
             [constants.LABEL]: 'object label',
           },
         })
 
       it('should add inactive values to custom picklist', async () => {
-        const beforeObject = createObjectWithPicklistField(['val1'])
-        const afterObject = createObjectWithPicklistField(['val2'])
+        const before = createObjectWithPicklistField(['val1']).fields[fieldName]
+        const after = createObjectWithPicklistField(['val2']).fields[fieldName]
 
-        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
-        expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
+        await filter.onDeploy([toChange({ before, after })])
+        expect(after.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val2',
             [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -137,11 +138,11 @@ describe('value set filter', () => {
       })
 
       it('should not add inactive values to non restricted custom picklist', async () => {
-        const beforeObject = createObjectWithPicklistField(['val1'], false)
-        const afterObject = createObjectWithPicklistField(['val2'], false)
+        const before = createObjectWithPicklistField(['val1'], false).fields[fieldName]
+        const after = createObjectWithPicklistField(['val2'], false).fields[fieldName]
 
-        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
-        expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
+        await filter.onDeploy([toChange({ before, after })])
+        expect(after.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val2',
             [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -152,11 +153,11 @@ describe('value set filter', () => {
       })
 
       it('should not add inactive values to custom picklist when there were no deletions', async () => {
-        const beforeObject = createObjectWithPicklistField(['val1'])
-        const afterObject = createObjectWithPicklistField(['val1', 'val2'])
+        const before = createObjectWithPicklistField(['val1']).fields[fieldName]
+        const after = createObjectWithPicklistField(['val1', 'val2']).fields[fieldName]
 
-        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
-        expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
+        await filter.onDeploy([toChange({ before, after })])
+        expect(after.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val1',
             [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -173,11 +174,11 @@ describe('value set filter', () => {
       })
 
       it('should not add values to global picklist field in custom object', async () => {
-        const beforeObject = createObjectWithPicklistField(['val1'])
-        const afterObject = createObjectWithPicklistField()
+        const before = createObjectWithPicklistField(['val1']).fields[fieldName]
+        const after = createObjectWithPicklistField().fields[fieldName]
 
-        await filter.onDeploy([toChange({ before: beforeObject, after: afterObject })])
-        expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
+        await filter.onDeploy([toChange({ before, after })])
+        expect(after.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([{
             [constants.CUSTOM_VALUE.FULL_NAME]: 'val1',
             [constants.CUSTOM_VALUE.DEFAULT]: false,

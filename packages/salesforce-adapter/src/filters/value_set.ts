@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import {
   Field, getChangeElement, isField, isModificationChange, ChangeDataType, ReferenceExpression,
-  InstanceElement, isInstanceChange, ModificationChange, isObjectTypeChange,
+  InstanceElement, isInstanceChange, ModificationChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
@@ -87,29 +87,26 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
       })
 
     // Handle restricted picklist fields
-    const changedRestrictedPicklistFields = changes
-      .filter(isObjectTypeChange)
+    changes
+      .filter(isFieldChange)
       .filter(isModificationChange)
-      .flatMap(
-        change => Object.entries(change.data.after.fields)
-          .filter(([_name, field]) => (
-            isRestrictedPicklistField(field)
-            && !isGlobalValueSetPicklistField(field)
-            && !isStandardValueSetPicklistField(field)
-          ))
-          .map(([name, field]) => {
-            const beforeField = change.data.before.fields[name]
-            return beforeField === undefined ? undefined : { beforeField, afterField: field }
-          })
-          .filter(values.isDefined)
-      )
-    changedRestrictedPicklistFields.forEach(({ beforeField, afterField }) => {
-      const beforeCustomValues = makeArray(beforeField.annotations[FIELD_ANNOTATIONS.VALUE_SET])
-      const afterCustomValues = makeArray(afterField.annotations[FIELD_ANNOTATIONS.VALUE_SET])
-      afterField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = withRemovedCustomValues(
-        beforeCustomValues, afterCustomValues
-      )
-    })
+      .filter(change => {
+        const field = getChangeElement(change)
+        return (
+          isRestrictedPicklistField(field)
+          && !isGlobalValueSetPicklistField(field)
+          && !isStandardValueSetPicklistField(field)
+        )
+      })
+      .forEach(change => {
+        const beforeField = change.data.before
+        const afterField = change.data.after
+        const beforeCustomValues = makeArray(beforeField.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+        const afterCustomValues = makeArray(afterField.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+        afterField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = withRemovedCustomValues(
+          beforeCustomValues, afterCustomValues
+        )
+      })
 
     return []
   },

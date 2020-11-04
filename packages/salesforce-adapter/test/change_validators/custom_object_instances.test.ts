@@ -15,7 +15,7 @@
 */
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, ChangeError, toChange } from '@salto-io/adapter-api'
 import customObjectInstancesValidator from '../../src/change_validators/custom_object_instances'
-import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT } from '../../src/constants'
+import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
 
 describe('custom object instances change validator', () => {
   const obj = new ObjectType({
@@ -38,6 +38,7 @@ describe('custom object instances change validator', () => {
     },
     annotations: {
       [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'obj__c',
     },
   })
 

@@ -29,7 +29,7 @@ describe('standard field label modification change validator', () => {
     beforeAll(() => {
       customObj = new ObjectType({
         elemID: new ElemID('salesforce', 'obj'),
-        annotations: { metadataType: CUSTOM_OBJECT },
+        annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
       })
       beforeField = createField(customObj, Types.primitiveDataTypes.Text, 'Something', { [LABEL]: 'testLabel' })
     })

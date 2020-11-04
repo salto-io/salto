@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, isObjectType, Field } from '@salto-io/adapter-api'
+import { Element, ObjectType, Field } from '@salto-io/adapter-api'
 import { isCustomObject, isCustom, relativeApiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
 import { SALESFORCE, INSTALLED_PACKAGES_PATH, OBJECTS_PATH, API_NAME } from '../constants'
@@ -98,14 +98,13 @@ const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] 
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
-    const customObjects = elements.filter(isCustomObject).filter(isObjectType)
+    const customObjects = elements.filter(isCustomObject)
     const newSplittedCustomObjects = _.flatten(customObjects.map(customObjectToSplittedElements))
     _.pullAllWith(
       elements,
       customObjects,
       (elementA: Element, elementB: Element): boolean =>
-        (isCustomObject(elementA) && isObjectType(elementA)
-          && isCustomObject(elementB) && isObjectType(elementB) && elementA.isEqual(elementB))
+        (isCustomObject(elementA) && isCustomObject(elementB) && elementA.isEqual(elementB))
     )
     elements.push(...newSplittedCustomObjects)
   },

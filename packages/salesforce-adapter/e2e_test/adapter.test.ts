@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, isReferenceExpression, ReferenceExpression, CORE_ANNOTATIONS,
-  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
+  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement, Change,
 } from '@salto-io/adapter-api'
 import {
   findElement, naclCase,
@@ -54,6 +54,7 @@ import { mockTypes, lwcJsResourceContent, lwcHtmlResourceContent, mockDefaultVal
 import {
   objectExists, getMetadata, getMetadataFromElement, createInstance, removeElementAndVerify,
   removeElementIfAlreadyExists, createElementAndVerify, createElement, removeElement,
+  removeMetadataIfAlreadyExists,
 } from './utils'
 import {
   accountApiName, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
@@ -438,67 +439,12 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should add new profile instance from scratch', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
 
-      const instance = new InstanceElement(instanceElementName, new ObjectType({
-        elemID: mockElemID,
-        annotationTypes: {},
-        annotations: {
-          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
-        },
-      }),
-      {
-        fieldPermissions: {
-          Lead: {
-            Fax: {
-              field: 'Lead.Fax',
-              readable: true,
-              editable: false,
-            },
-          },
-          Account: {
-            AccountNumber: {
-              editable: false,
-              field: 'Account.AccountNumber',
-              readable: false,
-            },
-          },
-        },
-        objectPermissions: {
-          Account: {
-            allowCreate: true,
-            allowDelete: true,
-            allowEdit: true,
-            allowRead: true,
-            modifyAllRecords: false,
-            viewAllRecords: false,
-            object: 'Account',
-          },
-        },
-        tabVisibilities: [
-          {
-            tab: 'standard-Account',
-            visibility: 'DefaultOff',
-          },
-        ],
-        userPermissions: {
-          ConvertLeads: {
-            enabled: false,
-            name: 'ConvertLeads',
-          },
-        },
-        applicationVisibilities: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          standard__ServiceConsole: {
-            application: 'standard__ServiceConsole',
-            default: false,
-            visible: true,
-          },
-        },
-        description: 'new e2e profile',
-        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
-      })
+      const instance = new InstanceElement(
+        instanceElementName,
+        mockTypes.Profile,
+        mockDefaultValues.Profile,
+      )
 
       await removeElementIfAlreadyExists(client, instance)
       await createElementAndVerify(adapter, client, instance)
@@ -597,6 +543,7 @@ describe('Salesforce adapter E2E with real account', () => {
           description: {
             type: stringType,
             annotations: {
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'description__c'),
               [constants.LABEL]: 'test label',
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
@@ -667,17 +614,20 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       // Test
+      const changes: Change[] = [
+        { action: 'add', data: { after: newElement.fields.description } },
+        { action: 'remove', data: { before: oldElement.fields.address } },
+      ]
       const modificationResult = await adapter.deploy({
         groupID: oldElement.elemID.getFullName(),
-        changes: [
-          { action: 'add', data: { after: newElement.fields.description } },
-          { action: 'remove', data: { before: oldElement.fields.address } },
-        ],
+        changes,
       })
 
       expect(modificationResult.errors).toHaveLength(0)
-      expect(modificationResult.appliedChanges).toHaveLength(1)
-      expect(getChangeElement(modificationResult.appliedChanges[0])).toBeInstanceOf(ObjectType)
+      expect(modificationResult.appliedChanges).toHaveLength(changes.length)
+      modificationResult.appliedChanges.forEach((appliedChange, idx) => {
+        expect(appliedChange).toMatchObject(changes[idx])
+      })
       expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'description__c'],
         ['Address__c'])).toBe(true)
       expect((await fieldPermissionExists(constants.ADMIN_PROFILE, [`${customObjectName}.description__c`]))[0]).toBe(true)
@@ -685,170 +635,76 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should modify an instance', async () => {
       const instanceElementName = 'TestProfileInstanceUpdate__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const oldInstance = new InstanceElement(instanceElementName, new ObjectType({
-        elemID: mockElemID,
-        annotationTypes: {},
-        annotations: {
-          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
+      const oldInstance = createInstanceElement(
+        {
+          ...mockDefaultValues.Profile,
+          [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
         },
-      }),
-      {
-        fieldPermissions: {
-          Lead: {
-            Fax: {
-              field: 'Lead.Fax',
-              readable: 'true',
-              editable: 'false',
+        mockTypes.Profile,
+      )
+      const newInstance = createInstanceElement(
+        {
+          ...oldInstance.value,
+          fieldPermissions: {
+            Lead: {
+              Fax: {
+                field: 'Lead.Fax',
+                readable: true,
+                editable: true,
+              },
+            },
+            Account: {
+              AccountNumber: {
+                editable: false,
+                field: 'Account.AccountNumber',
+                readable: false,
+              },
+              AnnualRevenue: {
+                editable: false,
+                field: 'Account.AnnualRevenue',
+                readable: false,
+              },
             },
           },
-          Account: {
-            AccountNumber: {
-              editable: 'false',
-              field: 'Account.AccountNumber',
-              readable: 'false',
+          objectPermissions: {
+            Account: {
+              allowCreate: true,
+              allowDelete: true,
+              allowEdit: true,
+              allowRead: true,
+              modifyAllRecords: true,
+              viewAllRecords: true,
+              object: 'Account',
             },
           },
-        },
-        objectPermissions: {
-          Account: {
-            allowCreate: 'true',
-            allowDelete: 'true',
-            allowEdit: 'true',
-            allowRead: 'true',
-            modifyAllRecords: 'false',
-            viewAllRecords: 'false',
-            object: 'Account',
-          },
-        },
-        tabVisibilities: [
-          {
-            tab: 'standard-Account',
-            visibility: 'DefaultOff',
-          },
-        ],
-        applicationVisibilities: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          standard__ServiceConsole: {
-            application: 'standard__ServiceConsole',
-            default: 'false',
-            visible: 'true',
-          },
-        },
-        userPermissions: {
-          ApiEnabled: {
-            name: 'ApiEnabled',
-            enabled: 'false',
-          },
-        },
-        pageAccesses: {
-          ApexPageForProfile: {
-            apexPage: 'ApexPageForProfile',
-            enabled: 'false',
-          },
-        },
-        classAccesses: {
-          ApexClassForProfile: {
-            apexClass: 'ApexClassForProfile',
-            enabled: 'false',
-          },
-        },
-        loginHours: {
-          sundayStart: '480',
-          sundayEnd: '1380',
-        },
-        description: 'new e2e profile',
-        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
-
-      })
-
-      const newInstance = new InstanceElement(instanceElementName, new ObjectType({
-        elemID: mockElemID,
-        annotationTypes: {},
-        annotations: {
-          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
-        },
-      }),
-      {
-        fieldPermissions: {
-          Lead: {
-            Fax: {
-              field: 'Lead.Fax',
-              readable: 'true',
-              editable: 'true',
+          userPermissions: {
+            ApiEnabled: {
+              name: 'ApiEnabled',
+              enabled: true,
             },
           },
-          Account: {
-            AccountNumber: {
-              editable: 'false',
-              field: 'Account.AccountNumber',
-              readable: 'false',
-            },
-            AnnualRevenue: {
-              editable: 'false',
-              field: 'Account.AnnualRevenue',
-              readable: 'false',
+          pageAccesses: {
+            ApexPageForProfile: {
+              apexPage: 'ApexPageForProfile',
+              enabled: true,
             },
           },
-        },
-        objectPermissions: {
-          Account: {
-            allowCreate: 'true',
-            allowDelete: 'true',
-            allowEdit: 'true',
-            allowRead: 'true',
-            modifyAllRecords: 'true',
-            viewAllRecords: 'true',
-            object: 'Account',
+          classAccesses: {
+            ApexClassForProfile: {
+              apexClass: 'ApexClassForProfile',
+              enabled: true,
+            },
+          },
+          loginHours: {
+            sundayStart: 300,
+            sundayEnd: 420,
           },
         },
-        // not converted to maps because it's hidden in the regular code
-        tabVisibilities: [
-          {
-            tab: 'standard-Account',
-            visibility: 'DefaultOff',
-          },
-        ],
-        applicationVisibilities: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          standard__ServiceConsole: {
-            application: 'standard__ServiceConsole',
-            default: 'false',
-            visible: 'true',
-          },
-        },
-        userPermissions: {
-          ApiEnabled: {
-            name: 'ApiEnabled',
-            enabled: 'true',
-          },
-        },
-        pageAccesses: {
-          ApexPageForProfile: {
-            apexPage: 'ApexPageForProfile',
-            enabled: 'true',
-          },
-        },
-        classAccesses: {
-          ApexClassForProfile: {
-            apexClass: 'ApexClassForProfile',
-            enabled: 'true',
-          },
-        },
-        loginHours: {
-          sundayStart: '300',
-          sundayEnd: '420',
-        },
-        description: 'updated e2e profile',
-        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
-
-      })
+        mockTypes.Profile,
+      )
 
       await removeElementIfAlreadyExists(client, oldInstance)
       const post = await createElement(adapter, oldInstance)
-      // const post = await adapter.add(oldInstance) as InstanceElement
       const updateResult = await adapter.deploy({
         groupID: newInstance.elemID.getFullName(),
         changes: [{ action: 'modify', data: { before: oldInstance, after: newInstance } }],
@@ -860,38 +716,44 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(getChangeElement(updateResult.appliedChanges[0])).toStrictEqual(newInstance)
 
       // Checking that the saved instance identical to newInstance
-      const savedInstance = await getMetadata(client, PROFILE_METADATA_TYPE,
-        apiName(newInstance)) as Profile
-
       type Profile = ProfileInfo & {
-        tabVisibilities: Record<string, Value>
-        applicationVisibilities: Record<string, Value>
-        objectPermissions: Record<string, Value>
-        userPermissions: Record<string, Value>
-        pageAccesses: Record<string, Value>
-        classAccesses: Record<string, Value>
+        tabVisibilities: Values[]
+        applicationVisibilities: Values[]
+        userPermissions: Values[]
+        pageAccesses: Values[]
+        classAccesses: Values[]
         loginHours: Values
       }
+      const valuesFromService = await getMetadata(
+        client, PROFILE_METADATA_TYPE, apiName(newInstance),
+      ) as Profile
 
-      const valuesMap = new Map<string, Value>()
-      const newValues = newInstance.value
-      savedInstance.fieldPermissions.forEach(f => valuesMap.set(f.field, f))
-      savedInstance.tabVisibilities.forEach((f: Value) => valuesMap.set(f.tab, f))
-      savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
-      savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
-      savedInstance.userPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
-      makeArray(savedInstance.pageAccesses).forEach((f: Value) => valuesMap.set(f.apexPage, f))
-      makeArray(savedInstance.classAccesses).forEach((f: Value) => valuesMap.set(f.apexClass, f))
+      const valuesFromInstance = newInstance.value as Profile
 
-      expect(newValues.fieldPermissions.Lead.Fax).toEqual(valuesMap.get('Lead.Fax'))
-      expect(newValues.applicationVisibilities.standard__ServiceConsole).toEqual(valuesMap.get('standard__ServiceConsole'))
-      expect(newValues.objectPermissions.Account).toEqual(valuesMap.get('Account'))
-      expect(newValues.userPermissions.ApiEnabled).toEqual(valuesMap.get('ApiEnabled'))
-      expect(newValues.pageAccesses.ApexPageForProfile).toEqual(valuesMap.get('ApexPageForProfile'))
-      expect(newValues.classAccesses.ApexClassForProfile).toEqual(valuesMap.get('ApexClassForProfile'))
-      expect((newValues.tabVisibilities as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.tab)))).toBeTruthy()
-      expect(newValues.loginHours).toEqual(savedInstance.loginHours)
+      const compareProfileField = (fieldName: keyof Profile, nestingLevel: 0|1|2 = 1): void => {
+        const deStructureIfNeeded = (level: number) => (value: Value): Value => (
+          level <= nestingLevel ? Object.values(value) : value
+        )
+        // The value we fetch from the service is not converted to JS types so we have to convert
+        // the expected values to strings before comparing, we also need to de-structure the maps
+        // in order to compare
+        const expectedStrings = makeArray(valuesFromInstance[fieldName])
+          .flatMap(deStructureIfNeeded(1))
+          .flatMap(deStructureIfNeeded(2))
+          .map(val => _.mapValues(val, String))
+        expect(makeArray(valuesFromService[fieldName])).toEqual(
+          expect.arrayContaining(expectedStrings)
+        )
+      }
+
+      compareProfileField('fieldPermissions', 2)
+      compareProfileField('tabVisibilities', 0)
+      compareProfileField('applicationVisibilities')
+      compareProfileField('objectPermissions')
+      compareProfileField('userPermissions')
+      compareProfileField('pageAccesses')
+      compareProfileField('classAccesses')
+      compareProfileField('loginHours', 0)
 
       await removeElementAndVerify(adapter, client, post)
     })
@@ -985,22 +847,22 @@ describe('Salesforce adapter E2E with real account', () => {
       )
 
       // Test
+      const changes: Change[] = [
+        {
+          action: 'modify',
+          data: {
+            before: oldElement.fields.banana,
+            after: newElement.fields.banana,
+          },
+        },
+        { action: 'modify', data: { before: oldElement, after: newElement } },
+      ]
       const modificationResult = await adapter.deploy({
         groupID: newElement.elemID.getFullName(),
-        changes: [
-          {
-            action: 'modify',
-            data: {
-              before: oldElement.fields.banana,
-              after: newElement.fields.banana,
-            },
-          },
-          { action: 'modify', data: { before: oldElement, after: newElement } },
-        ],
+        changes,
       })
       expect(modificationResult.errors).toHaveLength(0)
-      expect(modificationResult.appliedChanges).toHaveLength(1)
-      expect(getChangeElement(modificationResult.appliedChanges[0])).toBeInstanceOf(ObjectType)
+      expect(modificationResult.appliedChanges).toEqual(changes)
       expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName,
         undefined, undefined,
         {
@@ -1051,20 +913,19 @@ describe('Salesforce adapter E2E with real account', () => {
       newElement.fields.address.annotations.label = 'Field Updated Label'
 
       // Test
+      const changes: Change[] = [
+        {
+          action: 'modify',
+          data: { before: oldElement.fields.address, after: newElement.fields.address },
+        },
+        { action: 'modify', data: { before: oldElement, after: newElement } },
+      ]
       const modificationResult = await adapter.deploy({
         groupID: newElement.elemID.getFullName(),
-        changes: [
-          {
-            action: 'modify',
-            data: { before: oldElement.fields.address, after: newElement.fields.address },
-          },
-          { action: 'modify', data: { before: oldElement, after: newElement } },
-        ],
+        changes,
       })
       expect(modificationResult.errors).toHaveLength(0)
-      expect(modificationResult.appliedChanges).toHaveLength(1)
-      expect(getChangeElement(modificationResult.appliedChanges[0])).toBeInstanceOf(ObjectType)
-
+      expect(modificationResult.appliedChanges).toEqual(changes)
       expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName,
         undefined, undefined, { [constants.LABEL]: 'Object Updated Label' }))
         .toBeTruthy()
@@ -1532,9 +1393,8 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('rollup summary', () => {
-            const field = (findElements(result, 'Account') as ObjectType[])
-              .find(a => a.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY])
-              ?.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY] as Field
+            const account = findCustomFieldsObject(result, 'Account')
+            const field = account?.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
             verifyFieldFetch(field, testSummary, Types.primitiveDataTypes.Summary)
           })
 
@@ -1830,21 +1690,6 @@ describe('Salesforce adapter E2E with real account', () => {
           it('rollup summary', async () => {
             const rollupSummaryFieldName = summaryFieldName.split('.')[1]
 
-            const findCustomCase = (): ObjectType => {
-              const caseObjects = findElements(result, 'Case') as ObjectType[]
-              const customCase = caseObjects
-                .filter(c => _.isUndefined(c.annotations[constants.API_NAME]))[0]
-              const caseObject = customCase ?? caseObjects[0]
-              // we add API_NAME annotation so the adapter will be
-              //  able to construct the fields full name
-              // upon update. in a real scenario, the case object is merged in the core and passed
-              // to the adapter with the API_NAME annotation
-              caseObject.annotations[constants.API_NAME] = 'Case'
-              return caseObject
-            }
-
-            let origCase = findCustomCase()
-
             const removeRollupSummaryFieldFromCase = async (caseObj: ObjectType, fieldName: string):
               Promise<ObjectType> => {
               const caseAfterFieldRemoval = caseObj.clone()
@@ -1855,11 +1700,14 @@ describe('Salesforce adapter E2E with real account', () => {
               })
               return caseAfterFieldRemoval
             }
-            if (await objectExists(client, constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldName])) {
-              origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldName)
-            }
+            await removeMetadataIfAlreadyExists(
+              client,
+              constants.CUSTOM_FIELD,
+              apiNameAnno('Case', rollupSummaryFieldName)
+            )
 
             const addRollupSummaryField = async (): Promise<ObjectType> => {
+              const origCase = findFullCustomObject(result, 'Case')
               const caseAfterFieldAddition = origCase.clone()
               caseAfterFieldAddition.fields[rollupSummaryFieldName] = new Field(
                 caseAfterFieldAddition,
@@ -1882,7 +1730,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 }
               )
               await adapter.deploy({
-                groupID: origCase.elemID.getFullName(),
+                groupID: caseAfterFieldAddition.elemID.getFullName(),
                 changes: [{
                   action: 'add',
                   data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] },
@@ -2376,8 +2224,7 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'min',
               [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
             }
-            const account = (findElements(result, 'Account') as ObjectType[])
-              .find(a => a.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]) as ObjectType
+            const account = findFullCustomObject(result, 'Account')
             expect(account).toBeDefined()
             const updatedAccount = account.clone()
             const field = account.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
@@ -2466,16 +2313,16 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       // Test
+      const changes: Change[] = [{
+        action: 'modify',
+        data: { before: oldElement.fields[fieldName], after: newElement.fields[fieldName] },
+      }]
       const modificationResult = await adapter.deploy({
         groupID: oldElement.elemID.getFullName(),
-        changes: [{
-          action: 'modify',
-          data: { before: oldElement.fields[fieldName], after: newElement.fields[fieldName] },
-        }],
+        changes,
       })
       expect(modificationResult.errors).toHaveLength(0)
-      expect(modificationResult.appliedChanges).toHaveLength(1)
-      expect(getChangeElement(modificationResult.appliedChanges[0])).toBeInstanceOf(ObjectType)
+      expect(modificationResult.appliedChanges).toEqual(changes)
 
       // Verify the lookup filter was created
       const customObject = await client.describeSObjects([customObjectName])
@@ -2735,7 +2582,7 @@ describe('Salesforce adapter E2E with real account', () => {
         const removeIfAlreadyExists = async (instance: MetadataInstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
             const pkg = createDeployPackage()
-            pkg.delete(instance)
+            pkg.delete(instance.type, apiName(instance))
             await client.deploy(await pkg.getZip())
           }
         }
@@ -3513,8 +3360,14 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
       })
 
-      it('should delete flow', async () => {
-        await removeElementAndVerify(adapter, client, flow)
+      afterAll(() => {
+        // Deleting a flow through the deploy API requires specifying the version (so here the
+        // delete would have to be on MyFlow-1 because we want to delete version 1).
+        // unfortunately we don't have an easy way to get the flow version (it is technically
+        // possible with SOQL on FlowVersionView but not clear if it is enough)
+        // Removing the flow through CRUD does delete the latest version, so we can clean up
+        // even if we don't support deleting flows through deploy
+        removeElementIfAlreadyExists(client, flow)
       })
     })
 

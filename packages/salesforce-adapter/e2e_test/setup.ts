@@ -414,15 +414,20 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
       .filter(field => !field.required)
       .map(f => f.fullName)
     const fieldNames = objectFieldNames.concat(additionalFieldNames)
-    await client.update(constants.PROFILE_METADATA_TYPE,
-      new ProfileInfo(constants.ADMIN_PROFILE, fieldNames.map(name => ({
-        field: name,
-        editable: true,
-        readable: true,
-      }))))
+    await client.upsert(
+      constants.PROFILE_METADATA_TYPE,
+      {
+        fullName: constants.ADMIN_PROFILE,
+        fieldPermissions: fieldNames.map(name => ({
+          field: name,
+          editable: true,
+          readable: true,
+        })),
+      } as ProfileInfo,
+    )
 
     // update lookup filter
-    await client.update(constants.CUSTOM_FIELD,
+    await client.upsert(constants.CUSTOM_FIELD,
       Object.assign(lookupField,
         { fullName: `${customObjectWithFieldsName}.${CUSTOM_FIELD_NAMES.LOOKUP}`, lookupFilter }))
   }

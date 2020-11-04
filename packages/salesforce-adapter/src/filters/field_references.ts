@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import {
-  Field, Element, isInstanceElement, Value, Values, isObjectType, isReferenceExpression,
-  ReferenceExpression, InstanceElement, INSTANCE_ANNOTATIONS, ElemID, getField,
+  Field, Element, isInstanceElement, Value, Values, isReferenceExpression,
+  ReferenceExpression, InstanceElement, ElemID, getField,
 } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues, resolvePath } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues, resolvePath, getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
@@ -37,7 +37,6 @@ import {
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
-const { makeArray } = collections.array
 type ElemLookupMapping = Record<string, Record<string, Element>>
 type ElemIDToElemLookup = Record<string, Element>
 type ContextValueMapperFunc = (val: string) => string | undefined
@@ -131,7 +130,7 @@ const ContextStrategyLookup: Record<
 > = {
   none: () => undefined,
   instanceParent: ({ instance, elemByElemID }) => {
-    const parent = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])[0]
+    const parent = getParents(instance)[0]
     return (isReferenceExpression(parent)
       ? apiName(elemByElemID[parent.elemId.getFullName()])
       : undefined)
@@ -234,13 +233,11 @@ const mapApiNameToElem = (elements: Element[]): Record<string, Element> => (
 )
 
 const toObjectsAndFields = (elements: Element[]): Element[] => (
-  elements.flatMap(e => ((isObjectType(e) && isCustomObject(e)) ? [e, ..._.values(e.fields)] : [e]))
+  elements.flatMap(e => (isCustomObject(e) ? [e, ...Object.values(e.fields)] : [e]))
 )
 
 const groupByMetadataTypeAndApiName = (elements: Element[]): ElemLookupMapping => (
   _(toObjectsAndFields(elements))
-    .flatMap(e => ((isObjectType(e) && isCustomObject(e))
-      ? [e, ..._.values(e.fields)] : [e]))
     .groupBy(metadataType)
     .mapValues(mapApiNameToElem)
     .value()

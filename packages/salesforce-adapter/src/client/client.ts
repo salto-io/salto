@@ -107,24 +107,6 @@ const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorat
 const validateDeleteResult = validateCRUDResult(true)
 const validateSaveResult = validateCRUDResult(false)
 
-const validateDeployResult = decorators.wrapMethodWith(
-  async (original: decorators.OriginalCall): Promise<unknown> => {
-    const result = await original.call() as DeployResult
-    if (result.success) {
-      return result
-    }
-
-    const errors = _(result.details)
-      .map(detail => detail.componentFailures || [])
-      .flatten()
-      .filter(component => !component.success)
-      .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
-      .value()
-
-    throw new Error(errors.join('\n'))
-  }
-)
-
 export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
@@ -480,27 +462,6 @@ export default class SalesforceClient {
     return result.result
   }
 
-  /**
-   * Updates salesforce client
-   * @param type The metadata type of the components to be updated
-   * @param metadata The metadata of the object
-   * @returns The save result of the requested update
-   */
-  @SalesforceClient.logDecorator(['fullName'])
-  @validateSaveResult
-  @SalesforceClient.requiresLogin
-  public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
-    Promise<SaveResult[]> {
-    const result = await sendChunked({
-      operationInfo: `update (${type})`,
-      input: metadata,
-      sendChunk: chunk => this.conn.metadata.update(type, chunk),
-    })
-    log.debug('updated %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
-      type, result.result)
-    return result.result
-  }
-
   @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
@@ -513,7 +474,6 @@ export default class SalesforceClient {
    * @returns The save result of the requested update
    */
   @SalesforceClient.logDecorator()
-  @validateDeployResult
   @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }

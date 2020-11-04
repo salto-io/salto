@@ -82,7 +82,6 @@ const getLookupFields = (object: ObjectType): Field[] =>
 
 const transformLookupValueSetFullNames = (
   lookupField: Field,
-  objectApiName: string,
   transformFullNameFn: (
     objectApiName: string,
     fieldName: string,
@@ -98,8 +97,8 @@ const transformLookupValueSetFullNames = (
       {
         ...value,
         fullName: transformFullNameFn(
-          objectApiName,
-          lookupField.name,
+          apiName(lookupField.parent),
+          apiName(lookupField),
           value.fullName
         ),
       }
@@ -118,7 +117,7 @@ const transformObjectLookupValueSetFullNames = (
 ): ObjectType => {
   const lookupFields = getLookupFields(object)
   lookupFields.forEach(
-    field => transformLookupValueSetFullNames(field, apiName(object), transformFullNameFn)
+    field => transformLookupValueSetFullNames(field, transformFullNameFn)
   )
   return object
 }
@@ -193,10 +192,10 @@ const transformObjectValuesBackToLabel = (object: ObjectType): ObjectType =>
   (transformObjectLookupValueSetFullNames(object, transformFullNameToLabel))
 
 const transformFieldLabelsToApiName = (field: Field): Field =>
-  (transformLookupValueSetFullNames(field, apiName(field.parent), transformFullNameToApiName))
+  (transformLookupValueSetFullNames(field, transformFullNameToApiName))
 
 const transformFieldValuesBackToLabel = (field: Field): Field =>
-  (transformLookupValueSetFullNames(field, apiName(field.parent), transformFullNameToLabel))
+  (transformLookupValueSetFullNames(field, transformFullNameToLabel))
 
 const doesObjectHaveValuesMappingLookup = (objectApiName: string): boolean =>
   (Object.values(LOOKUP_FIELDS[objectApiName] ?? {})
@@ -219,9 +218,10 @@ const applyFuncOnCustomFieldWithMappingLookupChange = (
   (changes
     .filter<Change<Field>>(isFieldChange)
     .filter(change => {
-      const parentApiName = apiName(getChangeElement(change).parent)
+      const changeElement = getChangeElement(change)
+      const parentApiName = apiName(changeElement.parent)
       return doesObjectHaveValuesMappingLookup(parentApiName)
-        && LOOKUP_FIELDS[parentApiName][apiName(getChangeElement(change))]?.valuesMapping
+        && LOOKUP_FIELDS[parentApiName][apiName(changeElement)]?.valuesMapping
           !== undefined
     })
     .forEach(change => applyFunctionToChangeData(change, fn)))

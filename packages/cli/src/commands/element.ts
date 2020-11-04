@@ -118,6 +118,43 @@ const moveElement = async (
   }
 }
 
+const listElements = async (
+  workspace: Workspace,
+  output: CliOutput,
+  cliTelemetry: CliTelemetry,
+  elemIDs: ElemID[],
+  maxDepth: number,
+): Promise<CliExitCode> => {
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  cliTelemetry.start(workspaceTags)
+  const graph = await workspace.listElementDependencies(elemIDs, maxDepth)
+
+  function *traverse(id: string, level: number, seen: string[]): IterableIterator<string> {
+    yield [..._.times(level, () => '  '), id].join(' ')
+    if (level >= maxDepth) {
+      return
+    }
+    const deps = graph.get(id)
+    if (deps === undefined) {
+      log.error(`Could not find dependencies for ${id}`)
+      return
+    }
+    const relevantDepIds = (deps
+      .map(dep => dep.elemId.getFullName())
+      .filter(depId => !seen.includes(depId))
+      .filter(depId => !_.some(
+        seen, seenId => depId.startsWith(`${seenId}${ElemID.NAMESPACE_SEPARATOR}`)
+      )).sort())
+    for (const dep of relevantDepIds) {
+      yield* traverse(dep, level + 1, [...seen, id])
+    }
+  }
+
+  const outputLines = elemIDs.sort().flatMap(id => [...traverse(id.getFullName(), 0, []), ''])
+  outputLines.forEach(line => output.stdout.write(`${line}\n`))
+  return CliExitCode.Success
+}
+
 export const command = (
   workspaceDir: string,
   output: CliOutput,
@@ -129,11 +166,12 @@ export const command = (
   inputFromEnv?: string,
   inputToEnvs?: string[],
   env?: string,
+  maxDepth?: number,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(
       `running element ${commandName} command on '${workspaceDir}' env=${env}, fromEnv=${inputFromEnv}, toEnvs=${inputToEnvs}
-      , force=${force}, elmSelectors=${inputElmSelectors}`
+      , force=${force}, maxDepth=${maxDepth}, elmSelectors=${inputElmSelectors}`
     )
 
     if ((commandName === 'clone')
@@ -177,6 +215,8 @@ export const command = (
         return moveElement(workspace, output, cliTelemetry, COMMON, elmSelectors)
       case 'move-to-envs':
         return moveElement(workspace, output, cliTelemetry, ENVS, elmSelectors)
+      case 'list':
+        return listElements(workspace, output, cliTelemetry, elmSelectors, maxDepth ?? 1)
       default:
         errorOutputLine(formatInvalidElementCommand(commandName), output)
         return CliExitCode.UserInputError
@@ -193,11 +233,15 @@ type MoveArgs = {
   to: string
 } & EnvironmentArgs
 
+type ListArgs = {
+  maxDepth: number
+} & EnvironmentArgs
+
 export type ElementArgs = {
   command: string
   force: boolean
   elementSelector: string[]
-} & CloneArgs & MoveArgs
+} & CloneArgs & MoveArgs & ListArgs
 
 type ElementParsedCliInput = ParsedCliInput<ElementArgs>
 
@@ -209,7 +253,7 @@ const elementBuilder = createCommandBuilder({
     positional: {
       command: {
         type: 'string',
-        choices: ['clone', 'move-to-common', 'move-to-envs'],
+        choices: ['clone', 'move-to-common', 'move-to-envs', 'list'],
         description: 'The element management command',
       },
       'element-selector': {
@@ -234,6 +278,12 @@ const elementBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      // will also be available as maxDepth because of camel-case-expansion
+      'max-depth': {
+        type: 'number',
+        desc: 'Max traversal depth for the element list command',
+        default: 1,
+      },
     },
   },
   async build(input: ElementParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
@@ -248,6 +298,7 @@ const elementBuilder = createCommandBuilder({
       input.args.fromEnv,
       input.args.toEnvs,
       input.args.env,
+      input.args.maxDepth,
     )
   },
 })

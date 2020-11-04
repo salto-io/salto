@@ -17,7 +17,9 @@ import _ from 'lodash'
 import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
+  isReferenceExpression, ReferenceExpression, isElement, isInstanceElement,
 } from '@salto-io/adapter-api'
+import { resolvePath, transformElement, TransformFunc, setPath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
@@ -66,6 +68,8 @@ export type WorkspaceComponents = {
   serviceConfig: boolean
 }
 
+export type ElemDependencyGraph = Map<string, ReferenceExpression[]>
+
 export type Workspace = {
   uid: string
   name: string
@@ -102,6 +106,9 @@ export type Workspace = {
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
   clear: (args: Omit<WorkspaceComponents, 'serviceConfig'>) => Promise<void>
+  listElementDependencies: (
+    elemSelectors: ElemID[], maxDepth: number,
+  ) => Promise<ElemDependencyGraph>
 
   addService: (service: string) => Promise<void>
   addEnvironment: (env: string) => Promise<void>
@@ -177,6 +184,86 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       subRange,
     }
   }
+
+  const listElementDependencies = async (
+    ids: ElemID[], maxDepth: number,
+  ): Promise<ElemDependencyGraph> => {
+    const rootElements = Object.fromEntries((await naclFilesSource.getAll(currentEnv())).filter(
+      e => e.elemID.isTopLevel()
+    ).map(e => [e.elemID.getFullName(), e]))
+
+    const getElem = (id: ElemID): Element | undefined => {
+      const rootElem = rootElements[id.createTopLevelParentID().parent.getFullName()]
+      if (!rootElem) {
+        return undefined
+      }
+      const val = resolvePath(rootElem, id)
+      if (isElement(val)) {
+        return val
+      }
+      if (isInstanceElement(rootElem) && !id.isTopLevel()) {
+        const newInstance = new InstanceElement(
+          rootElem.elemID.name,
+          rootElem.type,
+          {},
+          rootElem.path,
+        )
+        setPath(newInstance, id, val)
+        return newInstance
+      }
+      return undefined
+    }
+
+    const uniq = (deps: ReferenceExpression[]): ReferenceExpression[] => (
+      _.uniqBy(deps, dep => dep.elemId.getFullName())
+    )
+
+    const graph = new Map<string, ReferenceExpression[]>()
+
+    let elemRefs = uniq((ids.map(
+      id => new ReferenceExpression(id, getElem(id))
+    ).filter(ref => ref.value !== undefined)))
+
+    for (let level = 0; level < maxDepth; level += 1) {
+      if (elemRefs.length === 0) {
+        break
+      }
+      const nextLevel: ReferenceExpression[] = []
+      elemRefs.forEach(ref => {
+        if (graph.has(ref.elemId.getFullName())) {
+          return
+        }
+        const deps: ReferenceExpression[] = []
+        const findReferences: TransformFunc = ({ value }) => {
+          if (isReferenceExpression(value)) {
+            deps.push(new ReferenceExpression(
+              value.elemId,
+              value.value ?? getElem(value.elemId),
+            ))
+            return undefined
+          }
+          return value
+        }
+
+        transformElement({
+          element: ref.value,
+          transformFunc: findReferences,
+        })
+
+        // avoid self-loops and parent-child references
+        const refDeps = (uniq(deps)
+          .filter(dep => dep.elemId.getFullName() !== ref.elemId.getFullName())
+          .filter(dep => !ref.elemId.isParentOf(dep.elemId)))
+
+        graph.set(ref.elemId.getFullName(), refDeps)
+        nextLevel.push(...deps)
+      })
+      elemRefs = uniq(nextLevel)
+    }
+
+    return graph
+  }
+
   const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
     ...error,
     sourceFragments: [await getSourceFragment(error.context, error.subject)],
@@ -298,6 +385,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
     },
+    listElementDependencies,
     addService: async (service: string): Promise<void> => {
       const currentServices = services() || []
       if (currentServices.includes(service)) {

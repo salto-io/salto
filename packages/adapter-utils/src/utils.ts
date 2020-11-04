@@ -33,11 +33,11 @@ const log = logger(module)
 
 const SALTO_CASE_SEPERATOR = '$'
 
-export const pathSaltoCase = (name?: string): string =>
+export const pathNaclCase = (name?: string): string =>
   (name ? name.split(SALTO_CASE_SEPERATOR)[0] : '')
 
 /* eslint-disable quote-props */
-const defaultSaltoCaseMapping = {
+const defaultNaclCaseMapping = {
   '_': 'a',
   '-': 'b',
   '\\': 'c',
@@ -72,7 +72,7 @@ const suffixFromList = (specialCharsMappingList: string[]): string => {
   if (specialCharsMappingList.length === 0
       // If all the special chars are _ then the suffix is empty
       || specialCharsMappingList
-        .every(mappedSpecialChar => mappedSpecialChar === defaultSaltoCaseMapping._)) {
+        .every(mappedSpecialChar => mappedSpecialChar === defaultNaclCaseMapping._)) {
     return ''
   }
   if (specialCharsMappingList
@@ -82,16 +82,17 @@ const suffixFromList = (specialCharsMappingList: string[]): string => {
   return `${SALTO_CASE_SEPERATOR}${specialCharsMappingList.join('')}`
 }
 
-export const saltoCase = (name?: string): string => {
+export const naclCase = (name?: string): string => {
   // unescape changes HTML escaped parts (&gt; for example),
-  // then have a special chars mapping with after the seperator for uniqness
+  // replace all special chars with _
+  // then add a special chars mapping after the seperator for uniqness
   if (name === undefined) {
     return ''
   }
   const unescapedName = _.unescape(name)
   const specialCharsMappingList: string[] = []
   const replaceChar = (char: string): string => {
-    specialCharsMappingList.push(defaultSaltoCaseMapping[char] ?? `_${char.charCodeAt(0).toString().padStart(5, '0')}`)
+    specialCharsMappingList.push(defaultNaclCaseMapping[char] ?? `_${char.charCodeAt(0).toString().padStart(5, '0')}`)
     return '_'
   }
   const cleanName = unescapedName.replace(/[^a-zA-Z0-9]/g, replaceChar)

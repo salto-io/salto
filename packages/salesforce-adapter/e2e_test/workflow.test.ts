@@ -197,7 +197,7 @@ describe('workflow filter', () => {
 
     it('should fetch workflow field updates', async () => {
       verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD,
-        `${baseCustomObject}_TestWorkflowFieldUpdate`,
+        `${baseCustomObject}_TestWorkflowFieldUpdate$v`,
         'E2E Fetch WorkflowFieldUpdate')
     })
 

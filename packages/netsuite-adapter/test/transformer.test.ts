@@ -16,7 +16,7 @@
 import {
   ElemID, InstanceElement, ReferenceExpression, ServiceIds, StaticFile,
 } from '@salto-io/adapter-api'
-import { saltoCase } from '@salto-io/adapter-utils'
+import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
@@ -297,7 +297,7 @@ describe('Transformer', () => {
       it('should create instance name correctly for file instance', () => {
         const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
           mockGetElemIdFunc)
-        expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${saltoCase(fileCustomizationInfo.path.join('/'))}`)
+        expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${naclCase(fileCustomizationInfo.path.join('/'))}`)
       })
 
       it('should create instance path correctly for file instance', () => {

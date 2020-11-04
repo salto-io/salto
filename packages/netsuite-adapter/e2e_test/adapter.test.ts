@@ -19,7 +19,7 @@ import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   isInstanceElement, DeployResult, Values, isStaticFile, StaticFile,
 } from '@salto-io/adapter-api'
-import { findElement, saltoCase } from '@salto-io/adapter-utils'
+import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { Credentials } from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
@@ -37,7 +37,7 @@ const { makeArray } = collections.array
 const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
   const isFileCabinetType = Object.keys(fileCabinetTypes).includes(type)
 
-  const instanceName = saltoCase(mockDefaultValues[type][isFileCabinetType ? PATH : SCRIPT_ID]
+  const instanceName = naclCase(mockDefaultValues[type][isFileCabinetType ? PATH : SCRIPT_ID]
     .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
   return new InstanceElement(

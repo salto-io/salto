@@ -21,7 +21,7 @@ import {
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
-import { findObjectType, transformValues, getParents, saltoCase, pathSaltoCase } from '@salto-io/adapter-utils'
+import { findObjectType, transformValues, getParents, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
@@ -145,7 +145,7 @@ const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
 }
 
 const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
-  const objFileName = pathSaltoCase(obj.elemID.name)
+  const objFileName = pathNaclCase(obj.elemID.name)
   if (namespace) {
     return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, objFileName]
   }
@@ -353,10 +353,10 @@ const createNestedMetadataInstances = (instance: InstanceElement,
           nestedInstance[INSTANCE_FULL_NAME_FIELD],
         ].join(API_NAME_SEPARATOR)
         const instanceName = [
-          saltoCase(instance.value[INSTANCE_FULL_NAME_FIELD]),
-          saltoCase(nestedInstance[INSTANCE_FULL_NAME_FIELD]),
+          naclCase(instance.value[INSTANCE_FULL_NAME_FIELD]),
+          naclCase(nestedInstance[INSTANCE_FULL_NAME_FIELD]),
         ].join('_')
-        const instanceFileName = pathSaltoCase(instanceName)
+        const instanceFileName = pathNaclCase(instanceName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         const path = [
           ...(objPath as string[]).slice(0, -1),
@@ -390,7 +390,7 @@ const createObjectType = ({
   addLabel(object, label)
   object.path = [
     ...getObjectDirectoryPath(object, getNamespace(object)),
-    pathSaltoCase(object.elemID.name),
+    pathNaclCase(object.elemID.name),
   ]
   if (!_.isUndefined(fields)) {
     // Only fields with "child's" refering to a field as it's compoundField
@@ -517,10 +517,10 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
       instance.path = [
         ...customObject.path.slice(0, -1),
         ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
-          ? [WORKFLOW_METADATA_TYPE, pathSaltoCase(instance.elemID.typeName)]
-          : [pathSaltoCase(instance.elemID.typeName)]),
+          ? [WORKFLOW_METADATA_TYPE, pathNaclCase(instance.elemID.typeName)]
+          : [pathNaclCase(instance.elemID.typeName)]),
         ...(apiNameParts(instance).length > 1
-          ? [pathSaltoCase(instance.elemID.name)] : []),
+          ? [pathNaclCase(instance.elemID.name)] : []),
       ]
     }
   }

@@ -26,7 +26,7 @@ import {
   Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { TransformFunc, transformElement, saltoCase, pathSaltoCase } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord, CustomProperties } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
@@ -710,8 +710,8 @@ export class Types {
   public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
     const updatedName = METADATA_TYPES_TO_RENAME.get(name) ?? name
     return (customObject && this.getElemIdFunc && serviceIds)
-      ? this.getElemIdFunc(SALESFORCE, serviceIds, saltoCase(updatedName))
-      : new ElemID(SALESFORCE, saltoCase(updatedName))
+      ? this.getElemIdFunc(SALESFORCE, serviceIds, naclCase(updatedName))
+      : new ElemID(SALESFORCE, naclCase(updatedName))
   }
 
   static getAllFieldTypes(): TypeElement[] {
@@ -1276,7 +1276,7 @@ export const createInstanceElement = (
     return [SALESFORCE]
   }
 
-  const typeName = pathSaltoCase(type.elemID.name)
+  const typeName = pathNaclCase(type.elemID.name)
   const { name } = Types.getElemId(
     fullName,
     true,
@@ -1287,7 +1287,7 @@ export const createInstanceElement = (
     type,
     values,
     [...getPackagePath(), RECORDS_PATH,
-      type.isSettings ? SETTINGS_PATH : typeName, pathSaltoCase(name)],
+      type.isSettings ? SETTINGS_PATH : typeName, pathNaclCase(name)],
     annotations,
   ) as MetadataInstanceElement
 }

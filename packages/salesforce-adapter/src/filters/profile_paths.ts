@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, InstanceElement } from '@salto-io/adapter-api'
-import { pathSaltoCase, saltoCase } from '@salto-io/adapter-utils'
+import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator, FilterWith } from '../filter'
 import { apiName } from '../transformers/transformer'
@@ -48,7 +48,7 @@ const replacePath = (
   if (name !== undefined && profile.path) {
     profile.path = [
       ...profile.path.slice(0, -1),
-      pathSaltoCase(saltoCase(name)),
+      pathNaclCase(naclCase(name)),
     ]
   }
 }

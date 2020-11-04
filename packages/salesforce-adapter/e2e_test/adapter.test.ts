@@ -20,7 +20,7 @@ import {
   TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement, Change,
 } from '@salto-io/adapter-api'
 import {
-  findElement, saltoCase,
+  findElement, naclCase,
 } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -1286,9 +1286,9 @@ describe('Salesforce adapter E2E with real account', () => {
               .toEqual(new ReferenceExpression(
                 new ElemID(
                   constants.SALESFORCE,
-                  saltoCase(GLOBAL_VALUE_SET),
+                  naclCase(GLOBAL_VALUE_SET),
                   'instance',
-                  saltoCase(gvsName),
+                  naclCase(gvsName),
                 )
               ))
           })

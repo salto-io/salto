@@ -21,7 +21,7 @@ import {
   isListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { saltoCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
@@ -46,7 +46,7 @@ type MapDef = {
  * so this filter has to run before any filter adding references on the profile objects.
  */
 export const defaultMapper = (val: string): string[] => (
-  val.split(API_NAME_SEPARATOR).map(v => saltoCase(v))
+  val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
 )
 
 export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {

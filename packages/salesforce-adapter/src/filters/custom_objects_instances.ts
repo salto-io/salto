@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
-import { pathSaltoCase } from '@salto-io/adapter-utils'
+import { pathNaclCase } from '@salto-io/adapter-utils'
 import { createInvlidIdFieldConfigChange, createUnresolvedRefIdFieldConfigChange } from '../config_change'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
@@ -157,7 +157,7 @@ const recordToInstance = (
 ): InstanceElement => {
   const getInstancePath = (instanceName: string): string[] => {
     const typeNamespace = getNamespace(type)
-    const instanceFileName = pathSaltoCase(instanceName)
+    const instanceFileName = pathNaclCase(instanceName)
     if (typeNamespace) {
       return [SALESFORCE, INSTALLED_PACKAGES_PATH, typeNamespace, OBJECTS_PATH,
         type.elemID.typeName, RECORDS_PATH, instanceFileName]

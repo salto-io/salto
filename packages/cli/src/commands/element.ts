@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { Workspace, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
+import { listUnresolvedReferences } from '@salto-io/core'
 import { getCliTelemetry } from '../telemetry'
 import { EnvironmentArgs } from './env'
 import { outputLine, errorOutputLine } from '../outputer'
@@ -27,7 +28,7 @@ import Prompts from '../prompts'
 import {
   formatTargetEnvRequired, formatInvalidFilters, formatUnknownTargetEnv, formatCloneToEnvFailed,
   formatMissingCloneArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
-  formatInvalidMoveArg, formatInvalidElementCommand,
+  formatInvalidMoveArg, formatInvalidElementCommand, formatElementListUnresolvedFailed,
 } from '../formatter'
 
 const log = logger(module)
@@ -76,7 +77,7 @@ const cloneElement = async (
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   } catch (e) {
-    cliTelemetry.failure()
+    cliTelemetry.failure(workspaceTags)
     errorOutputLine(formatCloneToEnvFailed(e.message), output)
     return CliExitCode.AppError
   }
@@ -103,15 +104,55 @@ const moveElement = async (
         break
       default:
         errorOutputLine(formatInvalidMoveArg(to), output)
-        cliTelemetry.failure()
+        cliTelemetry.failure(workspaceTags)
         return CliExitCode.UserInputError
     }
     await workspace.flush()
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   } catch (e) {
-    cliTelemetry.failure()
+    cliTelemetry.failure(workspaceTags)
     errorOutputLine(formatMoveFailed(e.message), output)
+    return CliExitCode.AppError
+  }
+}
+
+const listUnresolved = async (
+  workspace: Workspace,
+  output: CliOutput,
+  cliTelemetry: CliTelemetry,
+  completeFrom?: string,
+): Promise<CliExitCode> => {
+  if (completeFrom !== undefined && !validateEnvs(output, workspace, [completeFrom])) {
+    cliTelemetry.failure()
+    return CliExitCode.UserInputError
+  }
+
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  cliTelemetry.start(workspaceTags)
+  outputLine(Prompts.LIST_UNRESOLVED_START(workspace.currentEnv()), output)
+
+  try {
+    const { found, missing } = await listUnresolvedReferences(workspace, completeFrom)
+
+    if (found.length > 0) {
+      outputLine(Prompts.LIST_UNRESOLVED_FOUND(completeFrom || '-'), output)
+      found.forEach(elemID => output.stdout.write(`  ${elemID.getFullName()}\n`))
+    }
+    if (missing.length > 0) {
+      outputLine(Prompts.LIST_UNRESOLVED_MISSING(), output)
+      missing.forEach(elemID => output.stdout.write(`  ${elemID.getFullName()}\n`))
+    }
+    if (missing.length === 0 && found.length === 0) {
+      outputLine(Prompts.LIST_UNRESOLVED_NONE(workspace.currentEnv()), output)
+    }
+
+    cliTelemetry.success(workspaceTags)
+    return CliExitCode.Success
+  } catch (e) {
+    log.error(`Error listing elements: ${e}`)
+    errorOutputLine(formatElementListUnresolvedFailed(e.message), output)
+    cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
 }
@@ -127,12 +168,17 @@ export const command = (
   inputFromEnv?: string,
   inputToEnvs?: string[],
   env?: string,
+  completeFrom?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(
       `running element ${commandName} command on '${workspaceDir}' env=${env}, fromEnv=${inputFromEnv}, toEnvs=${inputToEnvs}
-      , force=${force}, elmSelectors=${inputElmSelectors}`
+      completeFrom=${completeFrom}, force=${force}, elmSelectors=${inputElmSelectors}`
     )
+
+    if (inputElmSelectors.length === 0 && commandName !== 'list-unresolved') {
+      throw new Error('No element selector specified')
+    }
 
     if ((commandName === 'clone')
     && ((inputFromEnv === undefined) || (inputToEnvs === undefined))) {
@@ -155,6 +201,7 @@ export const command = (
         force,
         spinnerCreator,
         sessionEnv,
+        ignoreUnresolvedRefs: (commandName === 'list-unresolved'),
       }
     )
     if (errored) {
@@ -175,6 +222,8 @@ export const command = (
         return moveElement(workspace, output, cliTelemetry, COMMON, validSelectors)
       case 'move-to-envs':
         return moveElement(workspace, output, cliTelemetry, ENVS, validSelectors)
+      case 'list-unresolved':
+        return listUnresolved(workspace, output, cliTelemetry, completeFrom)
       default:
         errorOutputLine(formatInvalidElementCommand(commandName), output)
         return CliExitCode.UserInputError
@@ -191,23 +240,27 @@ type MoveArgs = {
   to: string
 } & EnvironmentArgs
 
+type ListUnresolvedArgs = {
+  completeFrom: string
+} & EnvironmentArgs
+
 export type ElementArgs = {
   command: string
   force: boolean
   elementSelector: string[]
-} & CloneArgs & MoveArgs
+} & CloneArgs & MoveArgs & ListUnresolvedArgs
 
 type ElementParsedCliInput = ParsedCliInput<ElementArgs>
 
 const elementBuilder = createCommandBuilder({
   filters: [environmentFilter],
   options: {
-    command: 'element <command> <element-selector..>',
+    command: 'element <command> [element-selector..]',
     description: 'Manage configuration elements',
     positional: {
       command: {
         type: 'string',
-        choices: ['clone', 'move-to-common', 'move-to-envs'],
+        choices: ['clone', 'move-to-common', 'move-to-envs', 'list-unresolved'],
         description: 'The element management command',
       },
       'element-selector': {
@@ -232,6 +285,11 @@ const elementBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      // will also be available as completeFrom because of camel-case-expansion
+      'complete-from': {
+        type: 'string',
+        desc: 'The environment to use for finding unresolved references in list-unresolved',
+      },
     },
   },
   async build(input: ElementParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
@@ -246,6 +304,7 @@ const elementBuilder = createCommandBuilder({
       input.args.fromEnv,
       input.args.toEnvs,
       input.args.env,
+      input.args.completeFrom,
     )
   },
 })

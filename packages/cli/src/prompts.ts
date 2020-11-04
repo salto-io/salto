@@ -244,11 +244,21 @@ ${Prompts.SERVICE_ADD_HELP}`
     error: string
   ): string => `Failed to move the specified elements: ${error}`
 
+  public static readonly LIST_UNRESOLVED_FAILED = (
+    error: string
+  ): string => `Failed to list unresolved references: ${error}`
+
   public static readonly CLONE_TO_ENV_START = (
     targetEnvs: string[] = []
   ): string => `Cloning the specified elements to ${
     targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
   }.`
+
+  public static readonly LIST_UNRESOLVED_START = (env: string): string => `Looking for unresolved references in ${env}`
+  public static readonly LIST_UNRESOLVED_NONE = (env: string): string => `All references in ${env} were resolved successfully!`
+
+  public static readonly LIST_UNRESOLVED_FOUND = (env: string): string => `The following unresolved references can be copied from ${env}:`
+  public static readonly LIST_UNRESOLVED_MISSING = (): string => 'The following unresolved references could not be found:'
 
   public static readonly CLONE_TO_ENV_FAILED = (
     error: string

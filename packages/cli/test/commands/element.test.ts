@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Workspace } from '@salto-io/workspace'
+import * as core from '@salto-io/core'
 import { ElemID } from '@salto-io/adapter-api'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/element'
@@ -33,6 +34,29 @@ const eventsNames = {
 }
 
 jest.mock('../../src/workspace/workspace')
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
+  listUnresolvedReferences: jest.fn().mockImplementation((workspace, completeFromEnv) => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+    const adapterAPI = require('@salto-io/adapter-api')
+
+    if (workspace.name === 'fail') {
+      throw new Error('oh no')
+    }
+    if (completeFromEnv !== undefined) {
+      return {
+        found: workspace.name === 'empty'
+          ? []
+          : [new adapterAPI.ElemID('salesforce', 'aaa'), new adapterAPI.ElemID('salesforce', 'bbb', 'instance', 'ccc')],
+        missing: workspace.name === 'missing' ? [new adapterAPI.ElemID('salesforce', 'fail')] : [],
+      }
+    }
+    return {
+      found: [],
+      missing: workspace.name === 'empty' ? [] : [new adapterAPI.ElemID('salesforce', 'fail')],
+    }
+  }),
+}))
 describe('element command', () => {
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
@@ -66,7 +90,7 @@ describe('element command', () => {
         spinnerCreator,
         'clone',
         false,
-        [],
+        ['salto.Account'],
         'active',
         ['incative'],
         undefined,
@@ -110,7 +134,6 @@ describe('element command', () => {
         undefined,
       ).execute()
     })
-
 
     it('should return failure code', () => {
       expect(result).toBe(CliExitCode.AppError)
@@ -293,7 +316,7 @@ describe('element command', () => {
         spinnerCreator,
         'clone',
         false,
-        [],
+        ['salesforce.Account'],
         undefined,
         ['inactive'],
         undefined,
@@ -319,7 +342,7 @@ describe('element command', () => {
         spinnerCreator,
         'move-to-common',
         false,
-        [],
+        ['salesforce.Account'],
         undefined,
         undefined,
         undefined,
@@ -345,7 +368,7 @@ describe('element command', () => {
         spinnerCreator,
         'move-to-envs',
         false,
-        [],
+        ['salesforce.Account'],
         undefined,
         undefined,
         undefined,
@@ -371,7 +394,7 @@ describe('element command', () => {
         spinnerCreator,
         'InvalidCommand',
         false,
-        [],
+        ['salesforce.Account'],
         'active',
         ['inactive'],
         undefined,
@@ -641,6 +664,217 @@ describe('element command', () => {
 
     it('should print deployment to console', () => {
       expect(cliOutput.stdout.content).toContain('Moving the specified elements to environment-specific folders.')
+    })
+  })
+
+  describe('list-unresolved', () => {
+    describe('success - all unresolved references are found in complete-from', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        mockTelemetry = mocks.getMockTelemetry()
+        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await command(
+          '',
+          cliOutput,
+          mockCliTelemetry,
+          spinnerCreator,
+          'list-unresolved',
+          false,
+          [],
+          'active',
+          ['inactive'],
+          undefined,
+          'inactive',
+        ).execute()
+      })
+
+      it('should return success', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call listUnresolvedReferences', () => {
+        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
+      })
+
+      it('should send telemetry events', () => {
+        expect(mockTelemetry.getEvents()).toHaveLength(2)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      })
+
+      it('should print found to console', () => {
+        expect(cliOutput.stdout.content).toContain('The following unresolved references can be copied from inactive:')
+        expect(cliOutput.stdout.content).toContain('  salesforce.aaa\n  salesforce.bbb.instance.ccc')
+        expect(cliOutput.stdout.content).not.toContain('The following unresolved references could not be found:')
+      })
+    })
+
+    describe('success - no unresolved references', () => {
+      const workspaceName = 'empty'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        mockTelemetry = mocks.getMockTelemetry()
+        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await command(
+          '',
+          cliOutput,
+          mockCliTelemetry,
+          spinnerCreator,
+          'list-unresolved',
+          false,
+          [],
+          'active',
+          ['inactive'],
+        ).execute()
+      })
+
+      it('should return success', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call listUnresolvedReferences', () => {
+        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, undefined)
+      })
+
+      it('should send telemetry events', () => {
+        expect(mockTelemetry.getEvents()).toHaveLength(2)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      })
+
+      it('should print list to console', () => {
+        expect(cliOutput.stdout.content).toContain('All references in active were resolved successfully!')
+      })
+    })
+
+    describe('success - some references do not exist', () => {
+      const workspaceName = 'missing'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        mockTelemetry = mocks.getMockTelemetry()
+        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await command(
+          '',
+          cliOutput,
+          mockCliTelemetry,
+          spinnerCreator,
+          'list-unresolved',
+          false,
+          [],
+          'active',
+          ['inactive'],
+          undefined,
+          'inactive',
+        ).execute()
+      })
+
+      it('should return success', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call listUnresolvedReferences', () => {
+        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
+      })
+
+      it('should send telemetry events', () => {
+        expect(mockTelemetry.getEvents()).toHaveLength(2)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      })
+
+      it('should print list to console', () => {
+        expect(cliOutput.stdout.content).toContain('The following unresolved references can be copied from inactive:\n  salesforce.aaa\n  salesforce.bbb.instance.ccc')
+        expect(cliOutput.stdout.content).toContain('The following unresolved references could not be found:\n  salesforce.fail')
+      })
+    })
+
+    describe('failure - unexpected error', () => {
+      const workspaceName = 'fail'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        mockTelemetry = mocks.getMockTelemetry()
+        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await command(
+          '',
+          cliOutput,
+          mockCliTelemetry,
+          spinnerCreator,
+          'list-unresolved',
+          false,
+          [],
+          'active',
+          ['inactive'],
+          undefined,
+          'inactive',
+        ).execute()
+      })
+
+      it('should return failure', () => {
+        expect(result).toBe(CliExitCode.AppError)
+      })
+      it('should call listUnresolvedReferences', () => {
+        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
+      })
+
+      it('should send telemetry events', () => {
+        expect(mockTelemetry.getEvents()).toHaveLength(2)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+        expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+      })
+
+      it('should print the error', () => {
+        expect(cliOutput.stderr.content).toContain('Failed to list unresolved references: oh no')
+      })
+    })
+
+    describe('failure - invalid complete-from env', () => {
+      const workspaceName = 'not-called'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        mockTelemetry = mocks.getMockTelemetry()
+        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await command(
+          '',
+          cliOutput,
+          mockCliTelemetry,
+          spinnerCreator,
+          'list-unresolved',
+          false,
+          [],
+          'active',
+          ['inactive'],
+          undefined,
+          'invalid',
+        ).execute()
+      })
+
+      it('should return failure', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
     })
   })
 })

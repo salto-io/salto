@@ -33,6 +33,7 @@ import * as pathIndex from './src/workspace/path_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches,
   selectElementsBySelectors, createElementSelectors, ElementIDToValue,
   getElementIdsFromSelectorsRecursively } from './src/workspace/element_selector'
+import * as validator from './src/validator'
 
 export {
   errors,
@@ -59,6 +60,7 @@ export {
   state,
   workspaceConfigSource,
   WorkspaceComponents,
+  validator,
   createElementSelector,
   ElementSelector,
   validateSelectorsMatches,

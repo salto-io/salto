@@ -20,7 +20,7 @@ import semver from 'semver'
 import { FetchChange, Tags, loadLocalWorkspace, StepEmitter } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
+import { Workspace, nacl, StateRecency, validator as wsValidator } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
   formatFinishedLoading, formatWorkspaceAbort, formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState } from '../formatter'
@@ -33,6 +33,8 @@ import {
 import Prompts from '../prompts'
 import { groupRelatedErrors } from './errors'
 import { version as currentVersion } from '../generated/version.json'
+
+const { isUnresolvedRefError } = wsValidator
 
 const log = logger(module)
 
@@ -58,6 +60,7 @@ export type LoadWorkspaceOptions = {
   spinnerCreator: SpinnerCreator
   sessionEnv?: string
   services?: string[]
+  ignoreUnresolvedRefs?: boolean
 }
 
 
@@ -82,7 +85,10 @@ type ApplyChangesArgs = {
   ) => Promise<ReadonlyArray<FetchChange>>
 }
 
-export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusErrors> => {
+export const validateWorkspace = async (
+  ws: Workspace,
+  ignoreUnresolvedRefs = false,
+): Promise<WorkspaceStatusErrors> => {
   const errors = await ws.errors()
   if (!errors.hasErrors()) {
     return { status: 'Valid', errors: [] }
@@ -90,7 +96,15 @@ export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusE
   if (wu.some(isError, errors.all())) {
     return { status: 'Error', errors: groupRelatedErrors([...wu.filter(isError, errors.all())]) }
   }
-  return { status: 'Warning', errors: groupRelatedErrors([...errors.all()]) }
+
+  const relevantErrors = [...ignoreUnresolvedRefs
+    ? wu.filter(e => !isUnresolvedRefError(e), errors.all())
+    : errors.all()]
+
+  if (relevantErrors.length === 0) {
+    return { status: 'Valid', errors: [] }
+  }
+  return { status: 'Warning', errors: groupRelatedErrors(relevantErrors) }
 }
 
 export const formatWorkspaceErrors = async (
@@ -158,13 +172,19 @@ const shouldRecommendFetch = async (
   return false
 }
 
-export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
-  { force = false,
+export const loadWorkspace = async (
+  workingDir: string,
+  cliOutput: CliOutput,
+  {
+    force = false,
     printStateRecency = false,
     recommendStateStatus: recommendStateRecency = false,
     spinnerCreator = undefined,
     sessionEnv = undefined,
-    services = undefined }: Partial<LoadWorkspaceOptions> = {}): Promise<LoadWorkspaceResult> => {
+    services = undefined,
+    ignoreUnresolvedRefs = false,
+  }: Partial<LoadWorkspaceOptions> = {}
+): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
@@ -174,7 +194,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     await workspace.setCurrentEnv(sessionEnv, false)
   }
 
-  const { status, errors } = await validateWorkspace(workspace)
+  const { status, errors } = await validateWorkspace(workspace, ignoreUnresolvedRefs)
   // Stop the spinner
   if (status === 'Error') {
     spinner.fail(formatWorkspaceLoadFailed(errors.length))

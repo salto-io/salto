@@ -20,7 +20,7 @@ import {
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
-  InstanceAnnotationTypes, GLOBAL_ADAPTER,
+  InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError,
 } from '@salto-io/adapter-api'
 import { toObjectType } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
@@ -162,6 +162,13 @@ export class UnresolvedReferenceValidationError extends ValidationError {
     this.target = target
   }
 }
+
+export const isUnresolvedRefError = (
+  err: SaltoError
+): err is UnresolvedReferenceValidationError => (
+  err instanceof UnresolvedReferenceValidationError
+)
+
 
 export class IllegalReferenceValidationError extends ValidationError {
   constructor(
@@ -472,8 +479,10 @@ const validateVariable = (element: Variable): ValidationError[] => validateVaria
   element.elemID, element.value
 )
 
-export const validateElements = (elements: ReadonlyArray<Element>): ValidationError[] => (
-  _(resolve(elements))
+export const validateElements = (
+  elements: ReadonlyArray<Element>, additionalContext?: ReadonlyArray<Element>,
+): ValidationError[] => (
+  _(resolve(elements, additionalContext))
     .map(e => {
       if (isInstanceElement(e)) {
         return validateInstanceElements(e)

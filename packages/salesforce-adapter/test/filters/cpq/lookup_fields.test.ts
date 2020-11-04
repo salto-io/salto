@@ -43,13 +43,13 @@ describe('lookup_object filter', () => {
       [CPQ_ACCOUNT]: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: CPQ_ACCOUNT,
+          [API_NAME]: `${CPQ_QUOTE}.${CPQ_ACCOUNT}`,
         },
       },
       [existingFieldName]: {
         type: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: existingFieldName,
+          [API_NAME]: `${CPQ_QUOTE}.${existingFieldName}`,
         },
       },
     },
@@ -65,7 +65,7 @@ describe('lookup_object filter', () => {
       [CPQ_LOOKUP_OBJECT_NAME]: {
         type: Types.primitiveDataTypes.Picklist,
         annotations: {
-          [API_NAME]: CPQ_LOOKUP_OBJECT_NAME,
+          [API_NAME]: `${CPQ_PRODUCT_RULE}.${CPQ_LOOKUP_OBJECT_NAME}`,
           valueSet: [{
             fullName: existingObjectName,
           }, {
@@ -87,7 +87,7 @@ describe('lookup_object filter', () => {
       [CPQ_DEFAULT_OBJECT_FIELD]: {
         type: Types.primitiveDataTypes.Picklist,
         annotations: {
-          [API_NAME]: CPQ_DEFAULT_OBJECT_FIELD,
+          [API_NAME]: `${CPQ_CONFIGURATION_ATTRIBUTE}.${CPQ_DEFAULT_OBJECT_FIELD}`,
           valueSet: [{
             fullName: CPQ_QUOTE_NO_PRE,
           },
@@ -114,7 +114,7 @@ describe('lookup_object filter', () => {
       [CPQ_CONSTRAINT_FIELD]: {
         type: Types.primitiveDataTypes.Picklist,
         annotations: {
-          [API_NAME]: CPQ_CONSTRAINT_FIELD,
+          [API_NAME]: `${CPQ_PRICE_SCHEDULE}.${CPQ_CONSTRAINT_FIELD}`,
           valueSet: [{
             fullName: CPQ_ACCOUNT_NO_PRE,
           },
@@ -232,7 +232,7 @@ describe('lookup_object filter', () => {
         [CPQ_DEFAULT_OBJECT_FIELD]: {
           type: Types.primitiveDataTypes.Picklist,
           annotations: {
-            [API_NAME]: CPQ_DEFAULT_OBJECT_FIELD,
+            [API_NAME]: `${CPQ_CONFIGURATION_ATTRIBUTE}.${CPQ_DEFAULT_OBJECT_FIELD}`,
             valueSet: [{
               fullName: CPQ_QUOTE,
             },
@@ -257,7 +257,7 @@ describe('lookup_object filter', () => {
         [CPQ_CONSTRAINT_FIELD]: {
           type: Types.primitiveDataTypes.Picklist,
           annotations: {
-            [API_NAME]: CPQ_CONSTRAINT_FIELD,
+            [API_NAME]: `${CPQ_PRICE_SCHEDULE}.${CPQ_CONSTRAINT_FIELD}`,
             valueSet: [{
               fullName: CPQ_ACCOUNT,
             },

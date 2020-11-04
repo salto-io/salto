@@ -98,7 +98,7 @@ const transformLookupValueSetFullNames = (
         ...value,
         fullName: transformFullNameFn(
           apiName(lookupField.parent),
-          apiName(lookupField),
+          apiName(lookupField, true),
           value.fullName
         ),
       }
@@ -221,7 +221,7 @@ const applyFuncOnCustomFieldWithMappingLookupChange = (
       const changeElement = getChangeElement(change)
       const parentApiName = apiName(changeElement.parent)
       return doesObjectHaveValuesMappingLookup(parentApiName)
-        && LOOKUP_FIELDS[parentApiName][apiName(changeElement)]?.valuesMapping
+        && LOOKUP_FIELDS[parentApiName][apiName(changeElement, true)]?.valuesMapping
           !== undefined
     })
     .forEach(change => applyFunctionToChangeData(change, fn)))

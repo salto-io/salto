@@ -191,7 +191,7 @@ describe('workflow filter', () => {
     })
 
     it('should fetch workflow alerts', async () => {
-      verifySubInstance(WORKFLOW_ALERTS_FIELD, `${baseCustomObject}_TestWorkflowAlert`,
+      verifySubInstance(WORKFLOW_ALERTS_FIELD, `${baseCustomObject}_TestWorkflowAlert$v`,
         'E2E Fetch WorkflowAlert')
     })
 
@@ -202,12 +202,12 @@ describe('workflow filter', () => {
     })
 
     it('should fetch workflow task', async () => {
-      verifySubInstance(WORKFLOW_TASKS_FIELD, `${baseCustomObject}_TestWorkflowTask`,
+      verifySubInstance(WORKFLOW_TASKS_FIELD, `${baseCustomObject}_TestWorkflowTask$v`,
         'E2E Fetch WorkflowTask')
     })
 
     it('should fetch workflow rule', async () => {
-      verifySubInstance(WORKFLOW_RULES_FIELD, `${baseCustomObject}_TestWorkflowRule`,
+      verifySubInstance(WORKFLOW_RULES_FIELD, `${baseCustomObject}_TestWorkflowRule$v`,
         'E2E Fetch WorkflowRule')
     })
   })

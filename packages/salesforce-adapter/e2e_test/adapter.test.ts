@@ -298,7 +298,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should retrieve EmailTemplate instance', () => {
       const emailTemplate = findElements(result, 'EmailTemplate',
-        'TestEmailFolder_TestEmailTemplate')[0] as InstanceElement
+        'TestEmailFolder_TestEmailTemplate$d')[0] as InstanceElement
       expect(emailTemplate.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestEmailFolder/TestEmailTemplate')
       expect(emailTemplate.value.name).toEqual('Test Email Template Name')
@@ -315,7 +315,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should retrieve Report instance', () => {
       const report = findElements(result, 'Report',
-        'TestReportFolder_TestReport')[0] as InstanceElement
+        'TestReportFolder_TestReport$d')[0] as InstanceElement
       expect(report.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestReportFolder/TestReport')
       expect(report.value.name).toEqual('Test Report Name')
@@ -330,7 +330,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should retrieve Dashboard instance', () => {
       const dashboard = findElements(result, 'Dashboard',
-        'TestDashboardFolder_TestDashboard')[0] as InstanceElement
+        'TestDashboardFolder_TestDashboard$d')[0] as InstanceElement
       expect(dashboard.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestDashboardFolder/TestDashboard')
       expect(dashboard.value.title).toEqual('Test Dashboard Title')

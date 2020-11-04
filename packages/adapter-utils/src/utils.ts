@@ -158,11 +158,8 @@ export const transformValues = (
         .filter((val: Value) => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
-    // It shouldn't get here because only ListType should have array values
     if (_.isArray(newVal)) {
-      if (strict) {
-        log.debug(`Array value and isListType mis-match for field - ${field.name}. Only ListTypes should have array values.`)
-      }
+      // Even fields that are not defined as ListType can have array values
       const transformed = newVal
         .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))

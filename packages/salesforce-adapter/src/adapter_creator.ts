@@ -84,7 +84,7 @@ SalesforceConfig => {
   const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
   validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
   validateDataManagement(config?.value?.dataManagement)
-  const adapterConfig = {
+  const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
     maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
@@ -92,10 +92,11 @@ SalesforceConfig => {
     enableHideTypesInNacls: config?.value?.enableHideTypesInNacls,
     dataManagement: config?.value?.dataManagement,
     useOldProfiles: config?.value?.useOldProfiles,
+    client: config?.value?.client,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))
-    .forEach(k => log.debug('Unknon config property was found: %s', k))
+    .forEach(k => log.debug('Unknown config property was found: %s', k))
   return adapterConfig
 }
 

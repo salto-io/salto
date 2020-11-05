@@ -117,8 +117,11 @@ const getElementReferenced = (element: Element): ElemID[] => {
       referenced.push(getTypeOrContainerTypeID(field.type))
     }
     if (isReferenceExpression(value)) {
-      const { parent, path } = value.elemId.createTopLevelParentID()
-      const nestedIds = path.map((_p, index) => parent.createNestedID(value.elemId.idType, ...path.slice(0, index + 1)))
+      const { parent, path: valueIDPath } = value.elemId.createTopLevelParentID()
+      const nestedIds = valueIDPath.map((_p, index) => parent.createNestedID(
+        value.elemId.idType,
+        ...valueIDPath.slice(0, index + 1)
+      ))
       referenced.push(parent, ...nestedIds)
     }
     return value

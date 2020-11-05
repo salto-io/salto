@@ -1399,5 +1399,11 @@ describe('workspace', () => {
     it('should find files in which the id is used as nested reference', () => {
       expect(referencedFiles).toContain('usedAsNestedReference.nacl')
     })
+
+    it('should find nested attr referenced', async () => {
+      const attrRefFiles = await workspace
+        .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+      expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
+    })
   })
 })

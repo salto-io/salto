@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup } from '@salto-io/adapter-api'
 import { MetadataInfo, SaveResult, Package } from 'jsforce'
 import JSZip from 'jszip'
 import xmlParser from 'fast-xml-parser'
@@ -27,7 +27,7 @@ import mockAdapter from './adapter'
 import { createValueSetEntry } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
-import { mockDeployResult } from './connection'
+import { mockDeployResult, mockRunTestFailure } from './connection'
 
 const { makeArray } = collections.array
 
@@ -523,6 +523,60 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[18].type).toBe('Checkbox')
         expect(object.fields[18].label).toBe('Checkbox description label')
         expect(object.fields[18].defaultValue).toBe(true)
+      })
+    })
+
+    describe('when apex tests fail', () => {
+      let instance: InstanceElement
+      let deployResultParams: Parameters<typeof mockDeployResult>[0]
+      let deployChangeGroup: ChangeGroup
+      beforeEach(() => {
+        instance = createInstanceElement(mockDefaultValues.ApexClass, mockTypes.ApexClass)
+        deployResultParams = {
+          success: false,
+          componentSuccess: [
+            { fullName: apiName(instance), componentType: metadataType(instance) },
+          ],
+          runTestResult: { failures: [mockRunTestFailure({ message: 'Test failed' })] },
+        }
+        deployChangeGroup = {
+          groupID: instance.elemID.getFullName(),
+          changes: [toChange({ after: instance })],
+        }
+      })
+      describe('with rollback on error', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          mockDeploy.mockReturnValue(mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: true,
+          }))
+          result = await adapter.deploy(deployChangeGroup)
+        })
+        it('should not apply the instance change', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
+        it('should return the test errors', () => {
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+        })
+      })
+      describe('without rollback on error', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          mockDeploy.mockReturnValue(mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: false,
+          }))
+          result = await adapter.deploy(deployChangeGroup)
+        })
+        it('should apply the component changes', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+        })
+        it('should return the test errors', () => {
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+        })
       })
     })
   })

@@ -68,16 +68,16 @@ export interface ProgramMembership {
   stream?: string // Stream that the lead is a member of
 }
 
-export interface Attribute {
+export interface LeadAttribute {
   id: number // Unique integer id of the field
   dataType: string // Datatype of the field
   displayName: string // UI display-name of the field
   length?: number // Max length of the field. Only applicable to text, string, and text area.
-  rest: MapAttribute // Description of REST API usage attributes
-  soap: MapAttribute // Description of SOAP API usage attributes
+  rest: LeadMapAttribute // Description of REST API usage attributes
+  soap: LeadMapAttribute // Description of SOAP API usage attributes
 }
 
-export interface MapAttribute {
+export interface LeadMapAttribute {
   name: string // Name of the attribute
   readOnly?: boolean // Whether the attribute is read only
 }

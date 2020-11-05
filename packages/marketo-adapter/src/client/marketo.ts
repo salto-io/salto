@@ -17,38 +17,30 @@ import _ from 'lodash'
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
 import axiosRetry from 'axios-retry'
 import { EventEmitter } from 'events'
-import { Attribute, Credentials, Identity } from './types'
+import { Credentials, Identity } from './types'
 
 export type MarketoClientOpts = {
   credentials: Credentials
-  connection?: Connection
+  connection?: MarketoObjectAPI
 }
 
-export default interface Connection {
-  auth: AuthAPI
-  leads: MarketoObjectAPI
-  opportunities: MarketoObjectAPI
-  customObjects: MarketoObjectAPI
-}
+type RestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 export interface RequestOptions {
   id?: string | number
-  method?: string
+  method?: RestMethod
   path?: string
   body?: {[key: string]: string | number}
   qs?: {[key: string]: string | number}
 }
 
-export interface AuthAPI extends MarketoObjectAPI {
-  refreshAccessToken(): Promise<Identity>
-}
-
 export interface MarketoObjectAPI {
-  getAll?<T>(options?: RequestOptions): Promise<T>
-  create?<T>(options?: RequestOptions): Promise<T>
-  delete?<T>(options?: RequestOptions): Promise<T>
-  update?<T>(options?: RequestOptions): Promise<T>
-  describe?<T>(options?: RequestOptions): Promise<T>
+  refreshAccessToken(): Promise<Identity>
+  getAll<T>(options: RequestOptions): Promise<T>
+  create<T>(options: RequestOptions): Promise<T>
+  delete<T>(options: RequestOptions): Promise<T>
+  update<T>(options: RequestOptions): Promise<T>
+  describe<T>(options: RequestOptions): Promise<T>
 }
 
 type MarketoResponse<T> = {
@@ -61,137 +53,48 @@ type MarketoResponse<T> = {
   warnings: {code: string; message: string}[]
 }
 
-abstract class Base implements MarketoObjectAPI {
-  protected client: Marketo
-
-  constructor(client: Marketo) {
-    this.client = client
-  }
-
-  getAll<T>(options: RequestOptions): Promise<T> {
-    return this.request<T>(options, 'GET')
-  }
-
-  describe<T>(options: RequestOptions): Promise<T> {
-    return this.request<T>(options, 'GET')
-  }
-
-  create<T>(options: RequestOptions): Promise<T> {
-    return this.request<T>(options, 'POST')
-  }
-
-  delete<T>(options: RequestOptions): Promise<T> {
-    return this.request(options, 'DELETE')
-  }
-
-  update<T>(options: RequestOptions): Promise<T> {
-    return this.request(options, 'PUT')
-  }
-
-  private async request<T>(options: RequestOptions, method: string): Promise<T> {
-    return this.client.apiRequest<T>(
-      _.assign({ method }, options)
-    )
-  }
-}
-
-class Auth extends Base implements AuthAPI {
-  async refreshAccessToken(): Promise<Identity> {
-    return this.client.refreshAccessToken({
-      method: 'GET',
-      path: '/identity/oauth/token',
-      qs: {
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        client_id: this.client.credentials.clientId,
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        client_secret: this.client.credentials.clientSecret,
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        grant_type: 'client_credentials',
-      },
-    })
-  }
-
-  isAccessTokenValid(): boolean {
-    if (_.isUndefined(this.client.credentials.identity)) {
-      return false
-    }
-    return Date.now() < this.client.credentials.identity.expires_in
-  }
-
-  getAccessToken(): string {
-    if (_.isUndefined(this.client.credentials.identity)) {
-      throw new Error('Missing identity')
-    }
-    return this.client.credentials.identity?.access_token
-  }
-}
-
-class Lead extends Base implements MarketoObjectAPI {
-  describe<T = Attribute[]>(): Promise<T> {
-    return super.describe<T>({
-      path: '/rest/v1/leads/describe.json',
-    })
-  }
-}
-
-class Opportunity extends Base implements MarketoObjectAPI {
-  describe<T = Attribute[]>(): Promise<T> {
-    return super.describe<T>({
-      path: '/rest/v1/opportunities/describe.json',
-    })
-  }
-}
-
-class CustomObject extends Base implements MarketoObjectAPI {
-  getAll<T = CustomObject[]>(): Promise<T> {
-    return super.getAll({
-      path: '/rest/v1/customobjects.json',
-    })
-  }
-
-  describe<T = CustomObject>(options: RequestOptions): Promise<T> {
-    if (!options.qs) {
-      throw new Error('aa')
-    }
-    return super.describe<T>({
-      path: `/rest/v1/customobjects/${options.qs.name}/describe.json`,
-    })
-  }
-}
-
-export class Marketo extends EventEmitter implements Connection {
+export class Marketo extends EventEmitter implements MarketoObjectAPI {
   public credentials: Credentials
   private readonly api: AxiosInstance
-
-  readonly auth: Auth
-  readonly leads: Lead
-  readonly opportunities: Opportunity
-  readonly customObjects: CustomObject
 
   constructor(credentials: Credentials) {
     super()
     this.credentials = credentials
-
-    this.auth = new Auth(this)
-    this.leads = new Lead(this)
-    this.opportunities = new Opportunity(this)
-    this.customObjects = new CustomObject(this)
-
     this.api = axios.create({
       baseURL: this.credentials.endpoint,
     })
     axiosRetry(this.api, { retries: 3, retryDelay: axiosRetry.exponentialDelay })
   }
 
+  async getAll<T>(options: RequestOptions): Promise<T> {
+    return this.apiRequest<T>({ ...options, method: 'GET' })
+  }
+
+  async describe<T>(options: RequestOptions): Promise<T> {
+    return this.apiRequest<T>({ ...options, method: 'GET' })
+  }
+
+  async create<T>(options: RequestOptions): Promise<T> {
+    return this.apiRequest<T>({ ...options, method: 'POST' })
+  }
+
+  async update<T>(options: RequestOptions): Promise<T> {
+    return this.apiRequest<T>({ ...options, method: 'PUT' })
+  }
+
+  async delete<T>(options: RequestOptions): Promise<T> {
+    return this.apiRequest<T>({ ...options, method: 'DELETE' })
+  }
+
   async apiRequest<T>(requestOptions: RequestOptions): Promise<T> {
-    if (!this.auth.isAccessTokenValid()) {
+    if (!this.isAccessTokenValid()) {
       await this.refreshAccessToken()
     }
 
     const config: AxiosRequestConfig = {
       url: requestOptions.path,
       headers: {
-        Authorization: `Bearer ${this.auth.getAccessToken()}`,
+        Authorization: `Bearer ${this.getAccessToken()}`,
       },
       method: requestOptions.method as Method,
       params: requestOptions.qs,
@@ -202,21 +105,38 @@ export class Marketo extends EventEmitter implements Connection {
     return Marketo.success<T>(response).result
   }
 
-  async refreshAccessToken(requestOptions?: RequestOptions): Promise<Identity> {
-    if (_.isUndefined(requestOptions)) {
-      return this.auth.refreshAccessToken()
+  private isAccessTokenValid(): boolean {
+    if (this.credentials.identity === undefined) {
+      return false
     }
+    return Date.now() < this.credentials.identity.expires_in
+  }
 
+  private getAccessToken(): string {
+    if (this.credentials.identity !== undefined) {
+      return this.credentials.identity.access_token
+    }
+    throw new Error('Missing identity')
+  }
+
+  async refreshAccessToken(): Promise<Identity> {
     const config: AxiosRequestConfig = {
-      url: requestOptions.path,
-      method: requestOptions.method as Method,
-      params: requestOptions.qs,
-      data: requestOptions.body,
+      method: 'GET',
+      url: '/identity/oauth/token',
+      params: {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        client_id: this.credentials.clientId,
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        client_secret: this.credentials.clientSecret,
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        grant_type: 'client_credentials',
+      },
     }
 
+    //  Start time is taken before request to avoid edge cases
     const startTime = Date.now()
     const response = await this.api.request<Identity>(config)
-    if (_.isUndefined(response.data)) {
+    if (response.data === undefined) {
       throw new Error('Failed to refresh access token')
     }
 

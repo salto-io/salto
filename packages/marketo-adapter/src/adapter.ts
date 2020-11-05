@@ -24,15 +24,13 @@ import {
 } from '@salto-io/adapter-api'
 import { deployInstance, resolveValues } from '@salto-io/adapter-utils'
 import MarketoClient from './client/client'
-import { FilterCreator } from './filter'
-import { getLookUpName, Types } from './transformers/transformer'
-import { MarketoMetadata } from './client/types'
+import { createMarketoObjectType, getLookUpName, Types } from './transformers/transformer'
+import { LeadAttribute, CustomObject, MarketoMetadata } from './client/types'
 import { MARKETO, OBJECTS_NAMES, TYPES_PATH } from './constants'
 
 
 export interface MarketoAdapterParams {
   client: MarketoClient
-  filtersCreators?: FilterCreator[]
 }
 
 export default class MarketoAdapter implements AdapterOperations {
@@ -49,31 +47,41 @@ export default class MarketoAdapter implements AdapterOperations {
    */
   public async fetch(): Promise<FetchResult> {
     const fieldTypes = Types.getAllFieldTypes()
-    const objects = await Types.getAllMarketoObjects(this.client)
-    // const instances = await this.fetchMarketoInstances(objects)
+    const objectTypes = await this.getAllMarketoObjects()
 
-    const elements = _.flatten(
-      [fieldTypes, objects] as Element[][]
-    )
+    const elements = [...fieldTypes, ...objectTypes] as Element[]
     return { elements }
   }
 
-  // private async fetchMarketoInstances(
-  //   types: ObjectType[]
-  // ): Promise<InstanceElement[]> {
-  //   const instances = await Promise.all((types)
-  //     .map(t => this.getAllMarketoInstances(t)))
-  //   return _.flatten(instances)
-  // }
+  private async getAllMarketoObjects(): Promise<ObjectType[]> {
+    const objectTypes = await Promise.all((_.values(OBJECTS_NAMES))
+      .map(t => this.getAllMarketoObjectTypes(t)))
+    return _.flatten(objectTypes)
+  }
 
-  // private async getAllMarketoInstances(type: ObjectType): Promise<InstanceElement[]> {
-  //   const instances = await this.client.getAllInstances<MarketoMetadata[]>(type.elemID.name)
-  //   if (_.isUndefined(instances)) {
-  //     return []
-  //   }
-  //   return instances
-  //     .map(i => createMarketoInstanceElement(i, type))
-  // }
+  private async getAllMarketoObjectTypes(type: string): Promise<ObjectType[]> {
+    switch (type) {
+      case OBJECTS_NAMES.CUSTOM_OBJECT:
+        return (await this.describeCustomObjects())
+          .map((co: CustomObject) =>
+            createMarketoObjectType(co.name, co.fields))
+      default:
+        return [createMarketoObjectType(type,
+          await this.client.describe<LeadAttribute[]>(type))]
+    }
+  }
+
+  private async describeCustomObjects(): Promise<CustomObject[]> {
+    const customObjectsMetadata = await this.client
+      .getAllInstances<CustomObject[]>(OBJECTS_NAMES.CUSTOM_OBJECT)
+    if (customObjectsMetadata === undefined) {
+      return []
+    }
+    return (await Promise.all(
+      customObjectsMetadata.map((co: CustomObject): Promise<CustomObject[]> =>
+        this.client.describe<CustomObject[]>(`${OBJECTS_NAMES.CUSTOM_OBJECT}/${co.name}`))
+    )).flat()
+  }
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const operations = {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Credentials, Lead, MarketoMetadata } from './types'
-import Connection, { Marketo, MarketoClientOpts, MarketoObjectAPI, RequestOptions } from './marketo'
+import { Marketo, MarketoClientOpts, MarketoObjectAPI, RequestOptions } from './marketo'
 import { OBJECTS_NAMES } from '../constants'
 
 /**
@@ -40,107 +40,64 @@ const extractInstanceId = (marketoMetadata: MarketoMetadata, typeName: string): 
   throw new Error(`Instance id ${marketoMetadata.name} not found.`)
 }
 
-const marketoTypeErr = (typeName: string): void => {
-  throw new Error(`Unknown Marketo type: ${typeName}.`)
-}
-
 export default class MarketoClient {
-  private readonly conn: Connection
-  private readonly marketoObjectsAPI: Record<string, MarketoObjectAPI>
+  private readonly conn: MarketoObjectAPI
 
   static async validateCredentials(
-    credentials: Credentials, connection?: Connection
+    credentials: Credentials, connection?: MarketoObjectAPI
   ): Promise<string> {
-    const endpointURL = new URL(credentials.endpoint)
-    credentials.endpoint = endpointURL.origin
-    const conn = connection || new Marketo(credentials)
-    const identity = await conn.auth.refreshAccessToken()
-    return identity.access_token
+    const conn = connection
+      || new Marketo({ ...credentials, endpoint: new URL(credentials.endpoint).origin })
+    return (await conn.refreshAccessToken()).access_token
   }
 
   constructor(
     { credentials, connection }: MarketoClientOpts
   ) {
-    this.conn = connection
-      || new Marketo(credentials)
-
-    this.marketoObjectsAPI = {
-      [OBJECTS_NAMES.LEAD]: this.conn.leads,
-      [OBJECTS_NAMES.OPPORTUNITY]: this.conn.opportunities,
-      [OBJECTS_NAMES.CUSTOM_OBJECTS]: this.conn.customObjects,
-    }
+    this.conn = connection || new Marketo(credentials)
   }
 
   async getAllInstances<T>(typeName: string): Promise<T | undefined> {
-    const marketoAPI = this.getMarketoObjectAPI(typeName)
-    if (marketoAPI.getAll) {
-      return marketoAPI.getAll<T>()
-    }
-    return undefined
+    return this.conn.getAll<T>({
+      path: `/rest/v1/${typeName}.json`,
+    })
   }
 
-  async describe<T>(typeName: string, options?: RequestOptions): Promise<T | []> {
-    const marketoAPI = this.getMarketoObjectAPI(typeName)
-    if (!marketoAPI.describe) {
-      return []
-    }
-    return marketoAPI.describe<T>(options)
+  async describe<T>(typeName: string, options?: RequestOptions): Promise<T> {
+    return this.conn.describe<T>({
+      path: `/rest/v1/${typeName}/describe.json`,
+      ...options,
+    })
   }
 
   async createInstance<T>(
     typeName: string,
-    marketoMetadata: MarketoMetadata
+    _marketoMetadata: MarketoMetadata
   ): Promise<T | undefined> {
-    const marketoAPI = this.getMarketoObjectAPI(typeName)
-    if (marketoAPI.create) {
-      return marketoAPI.create<T>({
-        id: extractInstanceId(marketoMetadata, typeName),
-        body: {},
-      })
-    }
-    return undefined
+    return this.conn.create<T>({
+      path: `/rest/v1/${typeName}/describe.json`,
+      body: {},
+    })
   }
 
   async updateInstance<T>(
     typeName: string,
     marketoMetadata: MarketoMetadata
   ): Promise<T | undefined> {
-    const marketoAPI = this.getMarketoObjectAPI(typeName)
-    if (marketoAPI.update) {
-      return marketoAPI.update<T>({
-        id: extractInstanceId(marketoMetadata, typeName),
-        body: {},
-      })
-    }
-    return undefined
+    return this.conn.update<T>({
+      id: extractInstanceId(marketoMetadata, typeName),
+      body: {},
+    })
   }
 
   async deleteInstance<T>(
     typeName: string,
     marketoMetadata: MarketoMetadata
   ): Promise<boolean> {
-    const marketoAPI = this.getMarketoObjectAPI(typeName)
-    if (marketoAPI.delete) {
-      await marketoAPI.delete<T>({
-        id: extractInstanceId(marketoMetadata, typeName),
-        body: {},
-      })
-      return true
-    }
-    return false
-  }
-
-  /**
-   * Returning the appropriate MarketoObjectAPI for using Marketo CRUD API operations
-   * @param typeName
-   *
-   * @throws error in case wrong type received
-   */
-  private getMarketoObjectAPI(typeName: string): MarketoObjectAPI {
-    const objectAPI = this.marketoObjectsAPI[typeName]
-    if (objectAPI === undefined) {
-      marketoTypeErr(typeName)
-    }
-    return objectAPI
+    await this.conn.delete<T>({
+      id: extractInstanceId(marketoMetadata, typeName),
+      body: {},
+    })
+    return true
   }
 }

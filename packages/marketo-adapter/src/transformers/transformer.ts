@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
-  ElemID, FieldDefinition,
+  ElemID,
   InstanceElement,
   ObjectType,
   PrimitiveType,
@@ -24,10 +23,10 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
-import { Attribute, CustomObject, Field, MarketoMetadata } from '../client/types'
-import { FIELD_TYPES, MARKETO, OBJECTS_NAMES, SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } from '../constants'
-import MarketoClient from '../client/client'
+import { LeadAttribute, Field, MarketoMetadata } from '../client/types'
+import { FIELD_TYPES, MARKETO, SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } from '../constants'
 
+const isAttributeField = (object: LeadAttribute | Field): object is LeadAttribute => 'rest' in object
 
 export class Types {
   private static fieldTypes: TypeMap = {
@@ -59,6 +58,10 @@ export class Types {
       elemID: new ElemID(MARKETO, FIELD_TYPES.PHONE),
       primitive: PrimitiveTypes.STRING,
     }),
+    [FIELD_TYPES.DATE]: new PrimitiveType({
+      elemID: new ElemID(MARKETO, FIELD_TYPES.DATE),
+      primitive: PrimitiveTypes.STRING,
+    }),
     [FIELD_TYPES.DATETIME]: new PrimitiveType({
       elemID: new ElemID(MARKETO, FIELD_TYPES.DATETIME),
       primitive: PrimitiveTypes.STRING,
@@ -78,94 +81,46 @@ export class Types {
   }
 
   static getFieldType(fieldType: string): TypeElement {
+    if (Types.fieldTypes[fieldType.toLowerCase()] === undefined) {
+      throw new Error(`Field type: ${fieldType.toLowerCase()} does not exists in fieldTypes map`)
+    }
     return Types.fieldTypes[fieldType.toLowerCase()]
-      ?? Types.fieldTypes[FIELD_TYPES.STRING]
   }
 
   /**
    * This method create all the (basic) field types
    */
   static getAllFieldTypes(): TypeElement[] {
-    return _.concat(
-      Object.values(Types.fieldTypes),
-    ).map(type => {
+    return Object.values(Types.fieldTypes).map(type => {
       const fieldType = type.clone()
-      fieldType.path = [MARKETO, TYPES_PATH, SUBTYPES_PATH, 'field_types']
+      fieldType.path = [MARKETO, TYPES_PATH, SUBTYPES_PATH, 'fieldTypes']
       return fieldType
     })
   }
+}
 
-  static async getAllMarketoObjects(client: MarketoClient):
-    Promise<ObjectType[]> {
-    const describe = async (type: string): Promise<Attribute[]> =>
-      client.describe<Attribute[]>(type)
-
-    const customObjectObjectType = async (type: string): Promise<ObjectType[]> => {
-      const customObjectsMetadata = await client.getAllInstances<CustomObject[]>(type)
-      if (_.isUndefined(customObjectsMetadata)) return []
-
-      const customObjects = await Promise.all(
-        customObjectsMetadata
-          .map((customObject: CustomObject) =>
-            client.describe<CustomObject>(type,
-              { qs: { name: customObject.name } }))
-      )
-
-      return _.flatten(customObjects).map((co: CustomObject) => {
-        const elemID = new ElemID(MARKETO, co.name.toLowerCase())
-        const fields: Record<string, FieldDefinition> = {}
-        co.fields.forEach((field: Field) => {
-          fields[field.name] = {
-            type: Types.getFieldType(field.dataType),
-            annotations: field,
-          }
-        })
-
-        return new ObjectType({
-          elemID,
-          fields,
-          path: [MARKETO, SUBTYPES_PATH, elemID.name],
-        })
-      })
-    }
-
-    const objectType = async (type: string): Promise<ObjectType> => {
-      const elemID = new ElemID(MARKETO, type.toLowerCase())
-      const fields: Record<string, FieldDefinition> = {}
-      const attributes = await describe(type)
-      attributes.forEach((field: Attribute) => {
-        fields[field.rest.name] = {
-          type: Types.getFieldType(field.dataType),
-          annotations: field,
-        }
-      })
-
-      return new ObjectType({
-        elemID,
-        fields,
-        path: [MARKETO, TYPES_PATH, elemID.name],
-      })
-    }
-
-    const createObjectType = async (type: string): Promise<ObjectType | ObjectType[]> => {
-      switch (type) {
-        case OBJECTS_NAMES.CUSTOM_OBJECTS:
-          return customObjectObjectType(type)
-        case OBJECTS_NAMES.OPPORTUNITY:
-          // TODO(Guy): Implement
-          return []
-        default:
-          return objectType(type)
-      }
-    }
-
-    return _.flatten(await Promise.all(_.map(_.values(OBJECTS_NAMES), createObjectType)))
-  }
+export const createMarketoObjectType = (
+  name: string,
+  fields: (LeadAttribute | Field)[]
+): ObjectType => {
+  const elemID = new ElemID(MARKETO, name)
+  const fieldsDefinition = Object.fromEntries(
+    fields.map((field: LeadAttribute | Field) =>
+      [isAttributeField(field) ? field.rest.name : field.name, {
+        type: Types.getFieldType(field.dataType),
+        annotations: field,
+      }])
+  )
+  return new ObjectType({
+    elemID,
+    fields: fieldsDefinition,
+    path: [MARKETO, TYPES_PATH, elemID.name],
+  })
 }
 
 export const createInstanceName = (
   name: string
-): string => naclCase(name.trim())
+): string => naclCase(name)
 
 export const getLookUpName: GetLookupNameFunc = ({ ref }) =>
   ref.value

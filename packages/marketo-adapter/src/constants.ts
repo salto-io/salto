@@ -21,9 +21,8 @@ export const SUBTYPES_PATH = 'Subtypes'
 export const NAME = 'name'
 
 export const OBJECTS_NAMES = {
-  LEAD: 'lead',
-  OPPORTUNITY: 'opportunity',
-  CUSTOM_OBJECTS: 'customobject',
+  LEAD: 'leads',
+  CUSTOM_OBJECT: 'customobjects',
 }
 
 export const FIELD_TYPES = {
@@ -34,6 +33,7 @@ export const FIELD_TYPES = {
   URL: 'url',
   EMAIL: 'email',
   PHONE: 'phone',
+  DATE: 'date',
   DATETIME: 'datetime',
   REFERENCE: 'reference',
   INTEGER: 'integer',

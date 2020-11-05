@@ -831,14 +831,42 @@ describe('isolated routing', () => {
 })
 
 describe('track', () => {
+  const onlyInEnvElemID = new ElemID('salto', 'onlyInEnvObj')
   const onlyInEnvObj = new ObjectType({
-    elemID: new ElemID('salto', 'onlyInEnvObj'),
+    elemID: onlyInEnvElemID,
     fields: {
       str: {
         type: BuiltinTypes.STRING,
       },
       num: {
         type: BuiltinTypes.NUMBER,
+      },
+    },
+    annotations: {
+      str: 'STR',
+    },
+  })
+
+  const otherPartOfOnlyInEnvObj = new ObjectType({
+    elemID: onlyInEnvElemID,
+    fields: {
+      otherPartField: {
+        type: BuiltinTypes.STRING,
+      },
+    },
+  })
+
+  const mergedOnlyInEnvObject = new ObjectType({
+    elemID: onlyInEnvElemID,
+    fields: {
+      str: {
+        type: BuiltinTypes.STRING,
+      },
+      num: {
+        type: BuiltinTypes.NUMBER,
+      },
+      otherPartField: {
+        type: BuiltinTypes.STRING,
       },
     },
     annotations: {
@@ -922,7 +950,9 @@ describe('track', () => {
   const inSecObject = new ObjectType({
     elemID: new ElemID('salto', 'inSec'),
   })
-  const primaryElements = [onlyInEnvObj, splitObjEnv, multiFileInstace, inSecObject]
+  const primaryElements = [
+    mergedOnlyInEnvObject, splitObjEnv, multiFileInstace, inSecObject,
+  ]
   const secondaryElements = [inSecObject]
   const commonElements = [splitObjCommon]
 
@@ -930,7 +960,7 @@ describe('track', () => {
     primaryElements,
     {
       'default.nacl': [onlyInEnvObj, splitObjEnv, multiFileInstaceDefault, inSecObject],
-      'other.nacl': [multiFileInstaceOther],
+      'other.nacl': [multiFileInstaceOther, otherPartOfOnlyInEnvObj],
     }
   )
   const commonSrc = createMockNaclFileSource(commonElements, { 'default.nacl': commonElements })
@@ -938,23 +968,27 @@ describe('track', () => {
     sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
   }
 
-  it('should move an entire element which does not exists in the common', async () => {
+  it('should move an entire element in two diff files if not in common and split in source', async () => {
     const changes = await routePromote(
-      [onlyInEnvObj.elemID],
+      [onlyInEnvElemID],
       primarySrc,
       commonSrc,
       secondarySources
     )
     expect(changes.primarySource).toHaveLength(1)
-    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.commonSource).toHaveLength(2)
     expect(changes.secondarySources?.sec).toHaveLength(0)
     const primaryChange = changes.primarySource && changes.primarySource[0]
-    const commonChange = changes.commonSource && changes.commonSource[0]
-    expect(primaryChange?.id).toEqual(onlyInEnvObj.elemID)
+    expect(primaryChange?.id).toEqual(onlyInEnvElemID)
     expect(primaryChange?.action).toEqual('remove')
-    expect(commonChange?.id).toEqual(onlyInEnvObj.elemID)
-    expect(commonChange?.action).toEqual('add')
-    expect(commonChange?.data).toEqual({ after: onlyInEnvObj })
+    const firstPartCommonChange = changes.commonSource && changes.commonSource[0]
+    expect(firstPartCommonChange?.id).toEqual(onlyInEnvElemID)
+    expect(firstPartCommonChange?.action).toEqual('add')
+    expect(firstPartCommonChange?.data).toEqual({ after: onlyInEnvObj })
+    const secondPartCommonChange = changes.commonSource && changes.commonSource[1]
+    expect(secondPartCommonChange?.id).toEqual(onlyInEnvElemID)
+    expect(secondPartCommonChange?.action).toEqual('add')
+    expect(secondPartCommonChange?.data).toEqual({ after: otherPartOfOnlyInEnvObj })
   })
 
   it('should create detailed changes when an element fragment is present in the common source', async () => {
@@ -975,7 +1009,7 @@ describe('track', () => {
     ])).toBeTruthy()
   })
 
-  it('should wrap nested ids in an object when moving nested ids of an element with no common fragment', async () => {
+  it('should wrap nested ids in an object when moving nested ids of an element with no common fragment and without other parts of the element', async () => {
     const changes = await routePromote(
       [
         onlyInEnvObj.fields.str.elemID,

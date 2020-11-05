@@ -29,7 +29,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents,
+  transformElement, toObjectType, getParents, isEmptyElement,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
 
@@ -1838,6 +1838,104 @@ describe('Test utils.ts', () => {
       const regJSON = JSON.stringify(obj)
       it('should serialize to the same result JSON.stringify', () => {
         expect(saltoJSON).toEqual(regJSON)
+      })
+    })
+  })
+
+  describe('isEmptyElement', () => {
+    const dummyElemID = new ElemID('dummy')
+    describe('ObjectType', () => {
+      it('Should be true if annotations, annotationTypes and fields are empty', () => {
+        expect(isEmptyElement(new ObjectType({
+          elemID: dummyElemID,
+        }))).toBeTruthy()
+      })
+
+      it('Shold be false if annotation, annotationTypes or fields are not empty', () => {
+        expect(isEmptyElement(new ObjectType({
+          elemID: dummyElemID,
+          annotations: {
+            a: 'a',
+          },
+        }))).toBeFalsy()
+        expect(isEmptyElement(new ObjectType({
+          elemID: dummyElemID,
+          annotationTypes: {
+            a: BuiltinTypes.STRING,
+          },
+        }))).toBeFalsy()
+        expect(isEmptyElement(new ObjectType({
+          elemID: dummyElemID,
+          fields: {
+            a: { type: BuiltinTypes.STRING },
+          },
+        }))).toBeFalsy()
+      })
+    })
+    describe('PrimitiveType', () => {
+      it('Should be true if annotations, annotationTypes are empty', () => {
+        expect(isEmptyElement(new PrimitiveType({
+          elemID: dummyElemID,
+          primitive: PrimitiveTypes.STRING,
+        }))).toBeTruthy()
+      })
+
+      it('Should be false if annotations or annotationTypes are not empty', () => {
+        expect(isEmptyElement(new PrimitiveType({
+          elemID: dummyElemID,
+          primitive: PrimitiveTypes.STRING,
+          annotations: {
+            a: 'a',
+          },
+        }))).toBeFalsy()
+        expect(isEmptyElement(new PrimitiveType({
+          elemID: dummyElemID,
+          primitive: PrimitiveTypes.STRING,
+          annotationTypes: {
+            a: BuiltinTypes.STRING,
+          },
+        }))).toBeFalsy()
+      })
+    })
+    describe('InstanceElement', () => {
+      it('Should be true if annotations and values are empty', () => {
+        expect(isEmptyElement(new InstanceElement(
+          'name',
+          new ObjectType({ elemID: dummyElemID })
+        ))).toBeTruthy()
+      })
+
+      it('Should be false if annotations or values are not empty', () => {
+        expect(isEmptyElement(new InstanceElement(
+          'name',
+          new ObjectType({ elemID: dummyElemID }),
+          { a: 'a' },
+        ))).toBeFalsy()
+        expect(isEmptyElement(new InstanceElement(
+          'name',
+          new ObjectType({ elemID: dummyElemID }),
+          {},
+          [],
+          { a: 'a' },
+        ))).toBeFalsy()
+      })
+    })
+    describe('Field', () => {
+      it('Should be true if annotations are empty', () => {
+        expect(isEmptyElement(new Field(
+          new ObjectType({ elemID: dummyElemID }),
+          'name',
+          new ObjectType({ elemID: dummyElemID }),
+        ))).toBeTruthy()
+      })
+
+      it('Should be false if annotations are not empty', () => {
+        expect(isEmptyElement(new Field(
+          new ObjectType({ elemID: dummyElemID }),
+          'name',
+          new ObjectType({ elemID: dummyElemID }),
+          { a: 'a' },
+        ))).toBeFalsy()
       })
     })
   })

@@ -17,7 +17,7 @@ import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Elemen
 import _ from 'lodash'
 import path from 'path'
 import { promises, values } from '@salto-io/lowerdash'
-import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData, isEmptyElement } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
@@ -51,18 +51,24 @@ const toPathHint = (filename: string): string[] => {
 const separateChangeByFiles = async (
   change: DetailedChange,
   source: NaclFilesSource
-): Promise<DetailedChange[]> => Promise.all(
-  (await source.getSourceRanges(change.id))
-    .map(range => range.filename)
-    .map(async filename => {
-      const fileElements = (await source.getParsedNaclFile(filename))?.elements || []
-      const filteredChange = applyFunctionToChangeData(
-        change,
-        changeData => filterByFile(change.id, changeData, fileElements),
-      )
-      return { ...filteredChange, path: toPathHint(filename) }
-    })
-)
+): Promise<DetailedChange[]> => {
+  const isEmptyChangeElement = isEmptyElement(getChangeElement(change))
+  return (await Promise.all(
+    (await source.getSourceRanges(change.id))
+      .map(range => range.filename)
+      .map(async filename => {
+        const fileElements = (await source.getParsedNaclFile(filename))?.elements || []
+        const filteredChange = applyFunctionToChangeData(
+          change,
+          changeData => filterByFile(change.id, changeData, fileElements),
+        )
+        if (!isEmptyChangeElement && isEmptyElement(getChangeElement(filteredChange))) {
+          return undefined
+        }
+        return { ...filteredChange, path: toPathHint(filename) }
+      })
+  )).filter(values.isDefined)
+}
 
 const createUpdateChanges = async (
   changes: DetailedChange[],

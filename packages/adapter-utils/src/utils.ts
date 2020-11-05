@@ -31,12 +31,15 @@ const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
-const SALTO_CASE_SEPERATOR = '$'
+const SALTO_CASE_SEPARATOR = '$'
 
 export const pathNaclCase = (name?: string): string =>
-  (name ? name.split(SALTO_CASE_SEPERATOR)[0] : '')
+  (name ? name.split(SALTO_CASE_SEPARATOR)[0] : '')
 
 /* eslint-disable quote-props */
+// Current values in this mapping should not be changed
+// Values in the map should be unique
+// Adding more values should be with a leading z as an indication the value has more than one letter
 const defaultNaclCaseMapping = {
   '_': 'a',
   '-': 'b',
@@ -66,6 +69,7 @@ const defaultNaclCaseMapping = {
   '`': 'za',
   '~': 'zb',
   '$': 'zc',
+  ',': 'zd',
 } as Record<string, string>
 
 const suffixFromList = (specialCharsMappingList: string[]): string => {
@@ -77,15 +81,15 @@ const suffixFromList = (specialCharsMappingList: string[]): string => {
   }
   if (specialCharsMappingList
     .every(mappedSpecialChar => mappedSpecialChar === specialCharsMappingList[0])) {
-    return `${SALTO_CASE_SEPERATOR}${specialCharsMappingList[0]}`
+    return `${SALTO_CASE_SEPARATOR}${specialCharsMappingList[0]}`
   }
-  return `${SALTO_CASE_SEPERATOR}${specialCharsMappingList.join('')}`
+  return `${SALTO_CASE_SEPARATOR}${specialCharsMappingList.join('')}`
 }
 
 export const naclCase = (name?: string): string => {
   // unescape changes HTML escaped parts (&gt; for example),
   // replace all special chars with _
-  // then add a special chars mapping after the seperator for uniqness
+  // then add a special chars mapping after the separator for uniqueness
   if (name === undefined) {
     return ''
   }

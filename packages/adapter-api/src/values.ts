@@ -127,6 +127,15 @@ export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { 
 export type Expression = ReferenceExpression | TemplateExpression
 
 export type TemplatePart = string | Expression
+/*
+  Benchmarking reveals that looping on strings is extremely expensive.
+  It seems that random access to a string is, for some reason, a bit expensive.
+  Using "replace" takes about 30 times as much as a straightforward comparison.
+  However, it's about 20 times better to use replace than to iterate over both strings.
+  For this reason we first check a naive comparison, and then test with replace.
+  */
+const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
+  (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
 export const isEqualValues = (first: Value, second: Value): boolean => _.isEqualWith(
   first,
@@ -141,6 +150,9 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
       return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
         ? f.elemId.isEqual(s.elemId)
         : isEqualValues(fValue, sValue)
+    }
+    if (typeof f === 'string' && typeof s === 'string') {
+      return compareStringsIgnoreNewlineDifferences(f, s)
     }
     return undefined
   }

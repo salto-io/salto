@@ -181,11 +181,13 @@ export const transformValues = (
       return _.isEmpty(transformed) ? undefined : transformed
     }
     if (_.isPlainObject(newVal) && !strict) {
-      const transformed = _(newVal)
-        .mapValues((val, key) => transformValue(
-          val,
-          keyPathID?.createNestedID(key),
-        )).omitBy(_.isUndefined).value()
+      const transformed = _.omitBy(
+        _.mapValues(
+          newVal,
+          (val, key) => transformValue(val, keyPathID?.createNestedID(key)),
+        ),
+        _.isUndefined,
+      )
       return _.isEmpty(transformed) ? undefined : transformed
     }
     return newVal

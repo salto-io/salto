@@ -52,7 +52,7 @@ const getElemIDUsages = async (
     return value
   }
   if (!isContainerType(element)) {
-    transformElement({ element, transformFunc })
+    transformElement({ element, transformFunc, strict: false })
   }
   return _.flatten(
     await Promise.all(wu(pathesToAdd.values()))

@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { IdentityInfo, DeployMessage } from 'jsforce'
 import { MetadataObject, DescribeMetadataResult, ValueTypeField, DescribeValueTypeResult, FileProperties, RetrieveResult, RetrieveResultLocator, DeployResultLocator, DeployResult, QueryResult } from 'jsforce-types'
-import Connection, { Metadata, Soap, Bulk, Tooling } from '../src/client/jsforce'
+import Connection, { Metadata, Soap, Bulk, Tooling, RunTestsResult, RunTestFailure } from '../src/client/jsforce'
 import { createEncodedZipContent, MockInterface, mockFunction, ZipFile } from './utils'
 
 export type MockDescribeResultInput = Pick<MetadataObject, 'xmlName'> & Partial<MetadataObject>
@@ -122,13 +123,45 @@ export const mockDeployMessage = (params: Partial<DeployMessage>): DeployMessage
   ...params,
 })
 
+export const mockRunTestFailure = (params: Partial<RunTestFailure>): RunTestFailure => ({
+  id: _.uniqueId(),
+  message: 'message',
+  methodName: 'methodName',
+  name: 'name',
+  stackTrace: 'stackTrace',
+  time: 1,
+  ...params,
+})
+
+type PartialRunTestResult = Omit<Partial<RunTestsResult>, 'failures'> & {
+  failures?: Partial<RunTestFailure>[]
+}
+
+export const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult | undefined => (
+  params === undefined ? undefined : {
+    numFailures: collections.array.makeArray(params.failures).length,
+    numTestsRun: collections.array.makeArray(params.failures).length,
+    totalTime: 10,
+    ...params,
+    failures: collections.array.makeArray(params.failures).map(mockRunTestFailure),
+  }
+)
+
 type GetDeployResultParams = {
   success?: boolean
   componentSuccess?: Partial<DeployMessage>[]
   componentFailure?: Partial<DeployMessage>[]
+  runTestResult?: PartialRunTestResult
+  rollbackOnError?: boolean
+  ignoreWarnings?: boolean
 }
 export const mockDeployResult = ({
-  success = true, componentSuccess = [], componentFailure = [],
+  success = true,
+  componentSuccess = [],
+  componentFailure = [],
+  ignoreWarnings = true,
+  rollbackOnError = true,
+  runTestResult = undefined,
 }: GetDeployResultParams): DeployResultLocator<DeployResult> => ({
   complete: jest.fn().mockResolvedValue({
     id: _.uniqueId(),
@@ -139,7 +172,9 @@ export const mockDeployResult = ({
     details: [{
       componentFailures: componentFailure.map(mockDeployMessage),
       componentSuccesses: componentSuccess.map(mockDeployMessage),
+      runTestResult: mockRunTestResult(runTestResult),
     }],
+    ignoreWarnings,
     lastModifiedDate: '2020-05-01T14:31:36.000Z',
     numberComponentErrors: componentFailure.length,
     numberComponentsDeployed: componentSuccess.length,
@@ -147,10 +182,11 @@ export const mockDeployResult = ({
     numberTestErrors: 0,
     numberTestsCompleted: 0,
     numberTestsTotal: 0,
+    rollbackOnError,
     startDate: '2020-05-01T14:21:36.000Z',
     status: success ? 'Succeeded' : 'Failed',
     success,
-  }),
+  } as DeployResult),
 }) as unknown as DeployResultLocator<DeployResult>
 
 export const mockQueryResult = (

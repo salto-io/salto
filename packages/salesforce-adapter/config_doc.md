@@ -50,7 +50,7 @@ salesforce {
       rollbackOnError = true
       ignoreWarnings = true
       purgeOnDelete = false
-      runAllTests = false
+      testLevel = "NoTestRun"
       runTests = ["Test name", "Other test"]
     }
   }

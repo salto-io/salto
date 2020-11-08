@@ -88,3 +88,29 @@ export default interface Connection {
   limits(): Promise<Limits>
   identity(): Promise<IdentityInfo>
 }
+
+type ArrayOrSingle<T> = T|T[]
+
+export interface RunTestFailure {
+  id: string
+  message: string
+  methodName: string
+  name: string
+  namespace?: string
+  seeAllData?: boolean
+  stackTrace: string
+  time: number
+}
+
+export interface RunTestsResult {
+  apexLogId?: string
+  codeCoverage?: ArrayOrSingle<object> // CodeCoverageResult[]
+  codeCoverageWarnings?: ArrayOrSingle<object> // CodeCoverageWarning[]
+  failures?: ArrayOrSingle<RunTestFailure>
+  flowCoverage?: ArrayOrSingle<object> // FlowCoverageResult[]
+  flowCoverageWarnings?: ArrayOrSingle<object> // FlowCoverageWarning[]
+  numFailures: number
+  numTestsRun: number
+  successes?: ArrayOrSingle<object> // RunTestSuccess[]
+  totalTime: number
+}

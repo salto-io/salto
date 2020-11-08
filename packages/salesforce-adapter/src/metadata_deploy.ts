@@ -23,6 +23,7 @@ import { createDeployPackage, DeployPackage } from './transformers/xml_transform
 import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement } from './transformers/transformer'
 import { fullApiName } from './filters/utils'
 import { INSTANCE_FULL_NAME_FIELD } from './constants'
+import { RunTestsResult } from './client/jsforce'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -110,11 +111,14 @@ const isUnFoundDelete = (message: DeployMessage): boolean => (
 const processDeployResponse = (
   result: SFDeployResult
 ): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<Error> } => {
-  const allSuccessMessages = collections.array.makeArray(result.details)
-    .flatMap(detail => collections.array.makeArray(detail.componentSuccesses))
+  const allSuccessMessages = makeArray(result.details)
+    .flatMap(detail => makeArray(detail.componentSuccesses))
 
-  const allFailureMessages = collections.array.makeArray(result.details)
-    .flatMap(detail => collections.array.makeArray(detail.componentFailures))
+  const allFailureMessages = makeArray(result.details)
+    .flatMap(detail => makeArray(detail.componentFailures))
+
+  const testFailures = makeArray(result.details)
+    .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
 
   // We want to treat deletes for things we haven't found as success
   // Note that if we deploy with ignoreWarnings, these might show up in the success list
@@ -123,18 +127,27 @@ const processDeployResponse = (
     .map(getUnFoundDeleteName)
     .filter(values.isDefined)
 
-  const successfulFullNames = result.success
+  const successfulFullNames = (result.rollbackOnError === false || result.success)
     ? allSuccessMessages
       .map(success => ({ type: success.componentType, fullName: success.fullName }))
       .concat(unFoundDeleteNames)
     : []
 
-  const errors = allFailureMessages
+  const testErrors = testFailures
+    .map(failure => new Error(
+      `Test failed for class ${failure.name} method ${failure.methodName} with error:\n${failure.message}\n${failure.stackTrace}`
+    ))
+
+  const componentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure))
     .map(failure => new Error(
       `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
-  return { successfulFullNames, errors }
+
+  return {
+    successfulFullNames,
+    errors: [...testErrors, ...componentErrors],
+  }
 }
 
 export type NestedMetadataTypeInfo = {
@@ -205,7 +218,7 @@ export const deployMetadata = async (
 
   const deployRes = await client.deploy(pkgData)
 
-  log.debug('deploy result: %o', deployRes)
+  log.debug('deploy result: %s', JSON.stringify(deployRes, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(deployRes)
 

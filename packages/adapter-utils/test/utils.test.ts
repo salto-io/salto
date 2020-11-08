@@ -29,7 +29,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, pathNaclCase, naclCase,
+  transformElement, toObjectType, getParents,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
 
@@ -1094,84 +1094,6 @@ describe('Test utils.ts', () => {
       it('should call resolve func on before data when removal change', () => {
         resolveChangeElement(removalChange, getName, mockResolve)
         expect(mockResolve).toHaveBeenCalledWith(beforeData, getName)
-      })
-    })
-  })
-
-  const generateRandomChar = (): string =>
-    (String.fromCharCode((Math.random() * 65535)))
-
-  describe('naclCase func', () => {
-    describe('No special chars', () => {
-      const noSpecialChars = [
-        'name', 'nameWithNumber4',
-      ]
-      it('Should remain the same', () => {
-        noSpecialChars.forEach(name => expect(naclCase(name)).toEqual(name))
-      })
-    })
-
-    describe('When all special chars are _', () => {
-      const specialCharOnlyUnderscore = [
-        'a_b_c_d', 'Lala__Lead__c',
-      ]
-      it('Should remain the same', () => {
-        specialCharOnlyUnderscore.forEach(name => expect(naclCase(name)).toEqual(name))
-      })
-    })
-
-    describe('When all special chars are same and "mapped"', () => {
-      it('Should replace special with _, add seperator and mapped val once', () => {
-        expect(naclCase('Name Special Char')).toEqual('Name_Special_Char$s')
-        expect(naclCase('Name@Special@Char')).toEqual('Name_Special_Char$m')
-        expect(naclCase('Name$Special$Char')).toEqual('Name_Special_Char$zc')
-        expect(naclCase('Name-Special-Char')).toEqual('Name_Special_Char$b')
-      })
-    })
-
-    describe('When there are different special chars', () => {
-      it('Should replace special with _, add seperator and add mapping', () => {
-        expect(naclCase('Name Special@Char')).toEqual('Name_Special_Char$sm')
-        expect(naclCase('Name@Special_Char')).toEqual('Name_Special_Char$ma')
-        expect(naclCase('NameאSpecial Char')).toEqual('Name_Special_Char$_01488s')
-      })
-    })
-
-    describe('When two strings have special chars', () => {
-      const numberOfRandomChecks = 100
-      it('Should have different values after naclCase if diff chars and same if same', () => {
-        expect(naclCase('Name Special Char')).not.toEqual(naclCase('Name Special_Char'))
-        expect(naclCase('Name_Special__Char')).not.toEqual(naclCase('Name_Special_Char'))
-        _.times(numberOfRandomChecks, () => {
-          const charA = generateRandomChar()
-          const charB = generateRandomChar()
-          const nameWithCharA = `Name${charA}Special${charA}Char`
-          const nameWithCharB = `Name${charB}Special${charB}Char`
-          if (charA === charB) {
-            expect(naclCase(nameWithCharA)).toEqual(nameWithCharB)
-          } else {
-            expect(naclCase(nameWithCharA)).not.toEqual(nameWithCharB)
-          }
-        })
-      })
-    })
-  })
-
-  describe('pathNaclCase func', () => {
-    describe('Without naclCase seperator', () => {
-      const noSeperatorNames = [
-        'lalala', 'Lead', 'LALA__Lead__c', 'NameWithNumber2',
-      ]
-      it('Should remain the same', () => {
-        noSeperatorNames.forEach(name => expect(pathNaclCase(name)).toEqual(name))
-      })
-    })
-
-    describe('With naclCase seperator', () => {
-      it('Should return up to the seperator', () => {
-        expect(pathNaclCase('Lead$1234')).toEqual('Lead')
-        expect(pathNaclCase('LALA__Lead__c$12_34')).toEqual('LALA__Lead__c')
-        expect(pathNaclCase('NameWithNumber2$12_34')).toEqual('NameWithNumber2')
       })
     })
   })

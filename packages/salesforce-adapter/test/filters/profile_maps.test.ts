@@ -182,7 +182,7 @@ describe('ProfileMaps filter', () => {
               { layout: 'Account-Account Layout' },
             ],
             // eslint-disable-next-line @typescript-eslint/camelcase
-            Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb$bssiiiiiiaibs: [
+            Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb$bssppppppupbs: [
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
@@ -308,7 +308,7 @@ describe('ProfileMaps filter', () => {
               { layout: 'Account-Account Layout' },
             ],
             // eslint-disable-next-line @typescript-eslint/camelcase
-            Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb$bssiiiiiiaibs: [
+            Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb$bssppppppupbs: [
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
               { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },

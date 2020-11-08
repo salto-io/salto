@@ -751,25 +751,6 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
 
 export const safeJsonStringify = (value: Value): string => safeStringify(value)
 
-const isEmptyAnnoAndAnnoTypes = (element: Element): boolean =>
-  (_.isEmpty(element.annotations) && _.isEmpty(element.annotationTypes))
-
-export const isEmptyElement = (element: Element): boolean => {
-  if (isObjectType(element)) {
-    return isEmptyAnnoAndAnnoTypes(element) && _.isEmpty(element.fields)
-  }
-  if (isPrimitiveType(element)) {
-    return isEmptyAnnoAndAnnoTypes(element)
-  }
-  if (isInstanceElement(element)) {
-    return _.isEmpty(element.annotations) && _.isEmpty(element.value)
-  }
-  if (isField(element)) {
-    return _.isEmpty(element.annotations)
-  }
-  return false
-}
-
 export const getAllReferencedIds = (element: Element, onlyAnnotations = false): Set<string> => {
   const allReferencedIds = new Set<string>()
   const transformFunc: TransformFunc = ({ value }) => {

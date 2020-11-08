@@ -111,16 +111,14 @@ const isUnFoundDelete = (message: DeployMessage): boolean => (
 const processDeployResponse = (
   result: SFDeployResult
 ): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<Error> } => {
-  const allSuccessMessages = collections.array.makeArray(result.details)
-    .flatMap(detail => collections.array.makeArray(detail.componentSuccesses))
+  const allSuccessMessages = makeArray(result.details)
+    .flatMap(detail => makeArray(detail.componentSuccesses))
 
-  const allFailureMessages = collections.array.makeArray(result.details)
-    .flatMap(detail => collections.array.makeArray(detail.componentFailures))
+  const allFailureMessages = makeArray(result.details)
+    .flatMap(detail => makeArray(detail.componentFailures))
 
-  const testFailures = collections.array.makeArray(result.details)
-    .flatMap(detail => (
-      collections.array.makeArray((detail.runTestResult as RunTestsResult)?.failures)
-    ))
+  const testFailures = makeArray(result.details)
+    .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
 
   // We want to treat deletes for things we haven't found as success
   // Note that if we deploy with ignoreWarnings, these might show up in the success list

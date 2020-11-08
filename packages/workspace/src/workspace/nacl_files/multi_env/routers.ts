@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element } from '@salto-io/adapter-api'
+import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises, values } from '@salto-io/lowerdash'
@@ -48,21 +48,46 @@ const toPathHint = (filename: string): string[] => {
   return [...dirPathSplitted, path.basename(filename, path.extname(filename))]
 }
 
+const isEmptyAnnoAndAnnoTypes = (element: Element): boolean =>
+  (_.isEmpty(element.annotations) && _.isEmpty(element.annotationTypes))
+
+const isEmptyChangeElement = (element: Element): boolean => {
+  if (isObjectType(element)) {
+    return isEmptyAnnoAndAnnoTypes(element) && _.isEmpty(element.fields)
+  }
+  if (isPrimitiveType(element)) {
+    return isEmptyAnnoAndAnnoTypes(element)
+  }
+  if (isInstanceElement(element)) {
+    return _.isEmpty(element.annotations) && _.isEmpty(element.value)
+  }
+  if (isField(element)) {
+    return _.isEmpty(element.annotations)
+  }
+  return false
+}
+
 const separateChangeByFiles = async (
   change: DetailedChange,
   source: NaclFilesSource
-): Promise<DetailedChange[]> => Promise.all(
-  (await source.getSourceRanges(change.id))
-    .map(range => range.filename)
-    .map(async filename => {
-      const fileElements = (await source.getParsedNaclFile(filename))?.elements || []
-      const filteredChange = applyFunctionToChangeData(
-        change,
-        changeData => filterByFile(change.id, changeData, fileElements),
-      )
-      return { ...filteredChange, path: toPathHint(filename) }
-    })
-)
+): Promise<DetailedChange[]> => {
+  const isEmptyChangeElm = isEmptyChangeElement(getChangeElement(change))
+  return (await Promise.all(
+    (await source.getSourceRanges(change.id))
+      .map(range => range.filename)
+      .map(async filename => {
+        const fileElements = (await source.getParsedNaclFile(filename))?.elements || []
+        const filteredChange = applyFunctionToChangeData(
+          change,
+          changeData => filterByFile(change.id, changeData, fileElements),
+        )
+        if (!isEmptyChangeElm && isEmptyChangeElement(getChangeElement(filteredChange))) {
+          return undefined
+        }
+        return { ...filteredChange, path: toPathHint(filename) }
+      })
+  )).filter(values.isDefined)
+}
 
 const createUpdateChanges = async (
   changes: DetailedChange[],

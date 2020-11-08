@@ -635,12 +635,12 @@ describe('Transformer', () => {
 
     it('should return instance name according to naclCase', async () => {
       const resp = createInstanceName(hubMetadataType.name)
-      expect(resp).toEqual('instance_test_name$s')
+      expect(resp).toEqual('instance_test_name@s')
     })
 
     it('should trim spaces and replace inner spaces with underscore + add naclCase mapping', async () => {
       const resp = createInstanceName(' name secondName ')
-      expect(resp).toEqual('name_secondName$s')
+      expect(resp).toEqual('name_secondName@s')
     })
   })
 

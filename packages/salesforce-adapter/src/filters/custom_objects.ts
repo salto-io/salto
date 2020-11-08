@@ -348,14 +348,9 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         _(instances).keyBy(INSTANCE_FULL_NAME_FIELD).values().value()
       )
       return removeDuplicateInstances(nestedInstances).map(nestedInstance => {
-        const fullName = [
-          instance.value[INSTANCE_FULL_NAME_FIELD],
-          nestedInstance[INSTANCE_FULL_NAME_FIELD],
-        ].join(API_NAME_SEPARATOR)
-        const instanceName = [
-          naclCase(instance.value[INSTANCE_FULL_NAME_FIELD]),
-          naclCase(nestedInstance[INSTANCE_FULL_NAME_FIELD]),
-        ].join('_')
+        const nameParts = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
+        const fullName = nameParts.join(API_NAME_SEPARATOR)
+        const instanceName = naclCase(nameParts.join('_'))
         const instanceFileName = pathNaclCase(instanceName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         const path = [

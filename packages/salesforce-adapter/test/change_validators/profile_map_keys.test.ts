@@ -47,12 +47,10 @@ const generateInstance = (profileObj: ObjectType): InstanceElement => (
         },
       },
       layoutAssignments: {
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        Account_Account_Layout$bs: [
+        'Account_Account_Layout@bs': [
           { layout: 'Account-Account Layout' },
         ],
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb$bssppppppupbs: [
+        'Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb@bssppppppupbs': [
           { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
         ],
       },
@@ -73,7 +71,7 @@ const breakInstanceMaps = (profileInstance: InstanceElement): void => {
       readable: true,
     },
   }
-  profileInstance.value.layoutAssignments.Account_Account_Layout$bs[0].layout = 'new account layout name'
+  profileInstance.value.layoutAssignments['Account_Account_Layout@bs'][0].layout = 'new account layout name'
 }
 
 describe('profile map keys change validator', () => {
@@ -104,13 +102,13 @@ describe('profile map keys change validator', () => {
     expect(changeErrors).toHaveLength(4)
     expect(changeErrors.map(c => c.severity)).toEqual(['Error', 'Error', 'Error', 'Error'])
     expect(changeErrors[0].elemID).toEqual(afterProfileInstance.elemID.createNestedID('applicationVisibilities', 'otherApp'))
-    expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app$s')
+    expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
     expect(changeErrors[1].elemID).toEqual(afterProfileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'wrongName'))
     expect(changeErrors[1].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
     expect(changeErrors[2].elemID).toEqual(afterProfileInstance.elemID.createNestedID('fieldPermissions', 'Something'))
     expect(changeErrors[2].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
-    expect(changeErrors[3].elemID).toEqual(afterProfileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout$bs'))
-    expect(changeErrors[3].detailedMessage).toEqual('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout$bs, should be new_account_layout_name$s')
+    expect(changeErrors[3].elemID).toEqual(afterProfileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'))
+    expect(changeErrors[3].detailedMessage).toEqual('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout@bs, should be new_account_layout_name@s')
   })
 
   it('should have error for invalid keys on add', async () => {
@@ -120,13 +118,13 @@ describe('profile map keys change validator', () => {
     expect(changeErrors).toHaveLength(4)
     expect(changeErrors.map(c => c.severity)).toEqual(['Error', 'Error', 'Error', 'Error'])
     expect(changeErrors[0].elemID).toEqual(profileInstance.elemID.createNestedID('applicationVisibilities', 'otherApp'))
-    expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app$s')
+    expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
     expect(changeErrors[1].elemID).toEqual(profileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'wrongName'))
     expect(changeErrors[1].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
     expect(changeErrors[2].elemID).toEqual(profileInstance.elemID.createNestedID('fieldPermissions', 'Something'))
     expect(changeErrors[2].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
-    expect(changeErrors[3].elemID).toEqual(profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout$bs'))
-    expect(changeErrors[3].detailedMessage).toEqual('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout$bs, should be new_account_layout_name$s')
+    expect(changeErrors[3].elemID).toEqual(profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'))
+    expect(changeErrors[3].detailedMessage).toEqual('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout@bs, should be new_account_layout_name@s')
   })
 
   it('should not validate map keys on delete', async () => {

@@ -569,9 +569,9 @@ describe('Test utils.ts', () => {
     })
 
     describe('when strict is false', () => {
-      const unmergedValues = {
-        unmergedArr: [MAGIC_VAL],
-        unmergedObj: {
+      const unTypedValues = {
+        unTypedArr: [MAGIC_VAL],
+        unTypedObj: {
           key: MAGIC_VAL,
         },
       }
@@ -580,7 +580,7 @@ describe('Test utils.ts', () => {
           {
             values: {
               ...mockInstance.value,
-              ...unmergedValues,
+              ...unTypedValues,
             },
             type: mockType,
             transformFunc: transformTest,
@@ -610,11 +610,11 @@ describe('Test utils.ts', () => {
       })
 
       it('should tranfsorm nested arrays which do not have a field', () => {
-        expect(resp.unmergedArr[0]).toEqual(MOD_MAGIC_VAL)
+        expect(resp.unTypedArr[0]).toEqual(MOD_MAGIC_VAL)
       })
 
       it('should tranfsorm nested objects which do not have a field', () => {
-        expect(resp.unmergedObj.key).toEqual(MOD_MAGIC_VAL)
+        expect(resp.unTypedObj.key).toEqual(MOD_MAGIC_VAL)
       })
     })
 

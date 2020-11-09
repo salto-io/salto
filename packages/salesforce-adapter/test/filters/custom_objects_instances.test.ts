@@ -458,7 +458,7 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should call query with the object fields', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,FirstName,LastName,Salutation,TestField FROM ${withNameName}`)
+          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,FirstName,LastName,Salutation,MiddleName,Suffix,TestField FROM ${withNameName}`)
         })
 
         it('should create instances according to results', () => {

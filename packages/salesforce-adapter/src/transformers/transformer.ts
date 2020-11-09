@@ -649,6 +649,8 @@ export class Types {
         [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
         [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
         [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
+        [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
       },
       annotationTypes: {
         ...Types.commonAnnotationTypes,

@@ -247,6 +247,8 @@ export const NAME_FIELDS = {
   FIRST_NAME: 'FirstName',
   LAST_NAME: 'LastName',
   SALUTATION: 'Salutation',
+  MIDDLE_NAME: 'MiddleName',
+  SUFFIX: 'Suffix',
 }
 
 export const GEOLOCATION_FIELDS = {

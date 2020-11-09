@@ -178,6 +178,11 @@ export class EditorWorkspace {
       .map(filename => this.editorFilename(filename))
   }
 
+  async getElementNaclFiles(id: ElemID): Promise<string[]> {
+    return (await this.workspace.getElementNaclFiles(id))
+      .map(filename => this.editorFilename(filename))
+  }
+
   async awaitAllUpdates(): Promise<void> {
     if (this.runningSetOperation) await this.runningSetOperation
   }

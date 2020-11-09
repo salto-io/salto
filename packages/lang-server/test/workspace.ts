@@ -106,6 +106,7 @@ const buildMockWorkspace = async (
       referenced: [],
     }),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([filename]),
+    getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([filename]),
     clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(naclFile, buffer))),
   } as unknown as Workspace
 }

@@ -26,11 +26,20 @@ export interface SaltoElemLocation {
   range: EditorRange
 }
 
+export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
+
 const MAX_LOCATION_SEARCH_RESULT = 20
 
 const getAllElements = async (workspace: EditorWorkspace):
 Promise<ReadonlyArray<Element>> => (await workspace.elements)
   .flatMap(elem => (isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
+
+const createFileLocations = async (
+  workspace: EditorWorkspace,
+  id: ElemID
+): Promise<SaltoElemFileLocation[]> => (await workspace.getElementNaclFiles(id))
+  .map(filename => ({ filename,
+    fullname: id.getFullName() }))
 
 export const getLocations = async (
   workspace: EditorWorkspace,
@@ -39,11 +48,17 @@ export const getLocations = async (
   (await workspace.getSourceRanges(ElemID.fromFullName(fullname)))
     .map(range => ({ fullname, filename: range.filename, range }))
 
+export const completeSaltoLocation = async (
+  workspace: EditorWorkspace,
+  fileLocation: SaltoElemFileLocation,
+): Promise<SaltoElemLocation[]> => (await workspace.getSourceMap(fileLocation.filename))
+  .get(fileLocation.fullname)?.map(range => ({ ...fileLocation, range })) ?? []
+
 export const getQueryLocations = async (
   workspace: EditorWorkspace,
   query: string,
   sensitive = true,
-): Promise<SaltoElemLocation[]> => {
+): Promise<SaltoElemFileLocation[]> => {
   const lastIDPartContains = (element: Element, isSensitive: boolean): boolean => {
     const fullName = element.elemID.getFullName()
     const fullNameToMatch = isSensitive ? fullName : fullName.toLowerCase()
@@ -60,23 +75,20 @@ export const getQueryLocations = async (
     return isPartOfLastNamePart || isPrefix || isSuffix
   }
 
-  const topMatchingNames = (await getAllElements(workspace))
+  const topMatchingIds = (await getAllElements(workspace))
     .filter(e => lastIDPartContains(e, sensitive))
-    .map(e => e.elemID.getFullName())
+    .map(e => e.elemID)
     .slice(0, MAX_LOCATION_SEARCH_RESULT)
 
-  if (topMatchingNames.length > 0) {
-    const locations = await Promise.all(topMatchingNames
-      .map(name => getLocations(workspace, name)))
-    return _.flatten(locations)
-  }
-  return []
+  return _.flatten(
+    await Promise.all(topMatchingIds.map(id => createFileLocations(workspace, id)))
+  )
 }
 
 export const getQueryLocationsFuzzy = async (
   workspace: EditorWorkspace,
   query: string,
-): Promise<Fuse.FuseResult<SaltoElemLocation>[]> => {
+): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
   const elements = await getAllElements(workspace)
   const fuse = new Fuse(elements.map(e => e.elemID.getFullName()), { includeMatches: true })
   const fuseSearchResult = fuse.search(query)
@@ -86,7 +98,7 @@ export const getQueryLocationsFuzzy = async (
   if (topFuzzyResults.length > 0) {
     const locationsRes = await Promise.all(topFuzzyResults
       .map(async res => {
-        const locations = await getLocations(workspace, res.item)
+        const locations = await createFileLocations(workspace, ElemID.fromFullName(res.item))
         return locations.map(location => ({ ...res, item: location }))
       }))
     return _.flatten(locationsRes)

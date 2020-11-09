@@ -15,7 +15,7 @@
 */
 import * as path from 'path'
 import { EditorWorkspace } from '../src/workspace'
-import { getQueryLocations, getQueryLocationsFuzzy } from '../src/location'
+import { getQueryLocations, getQueryLocationsFuzzy, completeSaltoLocation } from '../src/location'
 import { mockWorkspace } from './workspace'
 
 // eslint-disable-next-line jest/no-disabled-tests
@@ -30,17 +30,17 @@ describe('workspace query locations', () => {
   describe('sensitive', () => {
     it('should find prefixes', async () => {
       const res = await getQueryLocations(workspace, 'vs.per')
-      expect(res).toHaveLength(12)
+      expect(res).toHaveLength(10)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find suffixes', async () => {
       const res = await getQueryLocations(workspace, 's.person')
-      expect(res).toHaveLength(2)
+      expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find fragments in last name part', async () => {
       const res = await getQueryLocations(workspace, 'erso')
-      expect(res).toHaveLength(2)
+      expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should return empty results on not found', async () => {
@@ -55,17 +55,17 @@ describe('workspace query locations', () => {
   describe('insensitive', () => {
     it('should find prefixes', async () => {
       const res = await getQueryLocations(workspace, 'vs.peR', false)
-      expect(res).toHaveLength(12)
+      expect(res).toHaveLength(10)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find suffixes', async () => {
       const res = await getQueryLocations(workspace, 's.PerSon', false)
-      expect(res).toHaveLength(2)
+      expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find fragments in last name part', async () => {
       const res = await getQueryLocations(workspace, 'eRSo', false)
-      expect(res).toHaveLength(2)
+      expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should return empty results on not found', async () => {
@@ -80,7 +80,7 @@ describe('workspace query locations', () => {
   describe('fuzzy', () => {
     it('should find elements', async () => {
       const res = await getQueryLocationsFuzzy(workspace, 'perbon')
-      expect(res).toHaveLength(12)
+      expect(res).toHaveLength(10)
       expect(res[0].item.fullname).toBe('vs.person')
       expect(res[0].matches?.[0].indices).toHaveLength(2)
       expect(res[0].matches?.[0].indices[0]).toEqual([3, 5])
@@ -92,6 +92,26 @@ describe('workspace query locations', () => {
     })
     it('should return empty results on not found', async () => {
       const res = await getQueryLocations(workspace, 'blablablabla')
+      expect(res).toHaveLength(0)
+    })
+  })
+
+  describe('complete file location', () => {
+    it('should return all of the fullname locations in the file', async () => {
+      const fileLocation = {
+        fullname: 'vs.person',
+        filename: 'all.nacl',
+      }
+      const res = await completeSaltoLocation(workspace, fileLocation)
+      expect(res).toHaveLength(2)
+    })
+
+    it('should return an empty array if the fullname is not in the file', async () => {
+      const fileLocation = {
+        fullname: 'vs.drManhaten',
+        filename: 'all.nacl',
+      }
+      const res = await completeSaltoLocation(workspace, fileLocation)
       expect(res).toHaveLength(0)
     })
   })

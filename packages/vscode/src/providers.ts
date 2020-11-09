@@ -18,6 +18,7 @@ import path from 'path'
 import wu from 'wu'
 import { provider, context as ctx, definitions,
   usage, workspace as ws, location } from '@salto-io/lang-server'
+import _ from 'lodash'
 import {
   saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems,
   buildVSSymbol, toVSFileName, sourceRangeToFoldRange,
@@ -117,11 +118,18 @@ export const createWorkspaceSymbolProvider = (
         loc.range.start
       )
     )
-    return Promise.all((await location.getQueryLocations(workspace, query))
-      .map(async l => buildVSSymbol(
-        await locToContext(l),
-        toVSFileName(workspace.baseDir, l.filename),
-      )))
+
+    const fullLocations = _.flatten(
+      await Promise.all(
+        (await location.getQueryLocations(workspace, query))
+          .map(partial => location.completeSaltoLocation(workspace, partial))
+      )
+    )
+
+    return Promise.all(fullLocations.map(async l => buildVSSymbol(
+      await locToContext(l),
+      toVSFileName(workspace.baseDir, l.filename)
+    )))
   },
 })
 

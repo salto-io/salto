@@ -100,7 +100,7 @@ describe('workspace query locations', () => {
     it('should return all of the fullname locations in the file', async () => {
       const fileLocation = {
         fullname: 'vs.person',
-        filename: 'all.nacl'
+        filename: 'all.nacl',
       }
       const res = await completeSaltoLocation(workspace, fileLocation)
       expect(res).toHaveLength(2)
@@ -109,7 +109,7 @@ describe('workspace query locations', () => {
     it('should return an empty array if the fullname is not in the file', async () => {
       const fileLocation = {
         fullname: 'vs.drManhaten',
-        filename: 'all.nacl'
+        filename: 'all.nacl',
       }
       const res = await completeSaltoLocation(workspace, fileLocation)
       expect(res).toHaveLength(0)

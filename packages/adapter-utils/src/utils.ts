@@ -116,8 +116,8 @@ export const transformValues = (
   }
 ): Values | undefined => {
   const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): Value => {
-    if (field === undefined) {
-      return strict ? undefined : transformFunc({ value, path: keyPathID })
+    if (field === undefined && strict) {
+      return undefined
     }
 
     if (isReferenceExpression(value)) {
@@ -133,9 +133,9 @@ export const transformValues = (
       return newVal
     }
 
-    const fieldType = field.type
+    const fieldType = field?.type
 
-    if (isListType(fieldType)) {
+    if (field && isListType(fieldType)) {
       const transformListInnerValue = (item: Value, index?: number): Value =>
         (transformValue(
           item,
@@ -177,6 +177,16 @@ export const transformValues = (
           isTopLevel: false,
         }),
         _.isUndefined
+      )
+      return _.isEmpty(transformed) ? undefined : transformed
+    }
+    if (_.isPlainObject(newVal) && !strict) {
+      const transformed = _.omitBy(
+        _.mapValues(
+          newVal,
+          (val, key) => transformValue(val, keyPathID?.createNestedID(key)),
+        ),
+        _.isUndefined,
       )
       return _.isEmpty(transformed) ? undefined : transformed
     }

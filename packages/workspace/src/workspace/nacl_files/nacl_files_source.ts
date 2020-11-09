@@ -137,7 +137,7 @@ const getElementReferenced = (element: Element): ElemID[] => {
   referenced.push(...Object.values(element.annotationTypes)
     .map(anno => getTypeOrContainerTypeID(anno)))
   if (!isContainerType(element) && !isVariable(element)) {
-    transformElement({ element, transformFunc })
+    transformElement({ element, transformFunc, strict: false })
   }
   return _.uniq(referenced)
 }

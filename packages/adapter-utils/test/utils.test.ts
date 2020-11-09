@@ -515,8 +515,12 @@ describe('Test utils.ts', () => {
         })
       })
     })
-
+    const MAGIC_VAL = 'magix'
+    const MOD_MAGIC_VAL = 'BIRD'
     const transformTest: TransformFunc = ({ value, field }) => {
+      if (value === MAGIC_VAL) {
+        return MOD_MAGIC_VAL
+      }
       if (isReferenceExpression(value)) {
         return value.value
       }
@@ -565,10 +569,19 @@ describe('Test utils.ts', () => {
     })
 
     describe('when strict is false', () => {
+      const unTypedValues = {
+        unTypedArr: [MAGIC_VAL],
+        unTypedObj: {
+          key: MAGIC_VAL,
+        },
+      }
       beforeEach(async () => {
         const result = transformValues(
           {
-            values: mockInstance.value,
+            values: {
+              ...mockInstance.value,
+              ...unTypedValues,
+            },
             type: mockType,
             transformFunc: transformTest,
             strict: false,
@@ -594,6 +607,14 @@ describe('Test utils.ts', () => {
 
       it('should not change non primitive values in primitive fields', () => {
         expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
+      })
+
+      it('should tranfsorm nested arrays which do not have a field', () => {
+        expect(resp.unTypedArr[0]).toEqual(MOD_MAGIC_VAL)
+      })
+
+      it('should tranfsorm nested objects which do not have a field', () => {
+        expect(resp.unTypedObj.key).toEqual(MOD_MAGIC_VAL)
       })
     })
 

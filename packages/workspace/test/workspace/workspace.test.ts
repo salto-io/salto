@@ -1365,6 +1365,16 @@ describe('workspace', () => {
       }
     `
 
+    const usedInUnmerged = `
+      type salesforce.unmerged {
+        annotations {
+          string key {
+          }
+        }
+        whatami = salesforce.lead.attr.key
+      }
+    `
+
     const naclFileStore = mockDirStore(undefined, undefined, {
       'defFile.nacl': defFile,
       'usedAsInstType.nacl': usedAsInstType,
@@ -1372,6 +1382,7 @@ describe('workspace', () => {
       'usedAsInnerFieldType.nacl': usedAsInnerFieldType,
       'usedAsReference.nacl': usedAsReference,
       'usedAsNestedReference.nacl': usedAsNestedReference,
+      'unmerged.nacl': usedInUnmerged,
     })
 
     beforeAll(async () => {
@@ -1404,6 +1415,12 @@ describe('workspace', () => {
       const attrRefFiles = await workspace
         .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
       expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
+    })
+
+    it('should find referenced in values of with no matching field in the type', async () => {
+      const attrRefFiles = await workspace
+        .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+      expect(attrRefFiles).toContain('unmerged.nacl')
     })
   })
 })

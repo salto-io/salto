@@ -99,4 +99,23 @@ describe('Cursor context resolver', () => {
     expect(symbol.name).toBe('global')
     expect(symbol.type).toBe(SaltoSymbolKind.File)
   })
+
+  it('should use the fullname as name if the fullname flag is set', async () => {
+    const pos = { line: 87, col: 10 }
+    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const symbol = createSaltoSymbol(ctx, true)
+    expect(symbol.name).toBe('vs.loan.instance.weekend_car')
+    expect(symbol.type).toBe(SaltoSymbolKind.Instance)
+  })
+
+  it(
+    'should return global as the name when the fullname flag is set and context is global',
+    async () => {
+      const pos = { line: 135, col: 0 }
+      const ctx = await getPositionContext(workspace, naclFilename, pos)
+      const symbol = createSaltoSymbol(ctx)
+      expect(symbol.name).toBe('global')
+      expect(symbol.type).toBe(SaltoSymbolKind.File)
+    }
+  )
 })

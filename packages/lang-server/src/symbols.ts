@@ -33,8 +33,11 @@ export interface SaltoSymbol {
   range: EditorRange
 }
 
-const getSaltoSymbolName = (context: PositionContext): string => {
+const getSaltoSymbolName = (context: PositionContext, useRealFullname = false): string => {
   if (context.ref) {
+    if (useRealFullname) {
+      return context.ref.element.elemID.getFullName()
+    }
     const fullName = _.last(context.ref.path) || context.ref.element.elemID.name
     return isIndexPathPart(fullName) ? `[${fullName}]` : fullName
   }
@@ -63,8 +66,9 @@ const getSaltoSymbolKind = (context: PositionContext): SaltoSymbolKind => {
 
 export const createSaltoSymbol = (
   context: PositionContext,
+  fullname = false
 ): SaltoSymbol => {
-  const name = getSaltoSymbolName(context)
+  const name = getSaltoSymbolName(context, fullname)
   const type = getSaltoSymbolKind(context)
   return { name, type, range: context.range }
 }

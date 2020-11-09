@@ -627,6 +627,14 @@ export class Types {
     Types.getFormulaDataType(FIELD_TYPE_NAMES.TIME),
   )
 
+  private static nameInnerFields = {
+    [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
+    [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
+  }
+
   // Type mapping for compound fields
   public static compoundDataTypes: Record<COMPOUND_FIELD_TYPE_NAMES, ObjectType> = {
     Address: new ObjectType({
@@ -647,25 +655,14 @@ export class Types {
     }),
     Name: new ObjectType({
       elemID: nameElemID,
-      fields: {
-        [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
-        [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
-      },
+      fields: Types.nameInnerFields,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     NameNoSalutation: new ObjectType({
       elemID: nameNoSalutationElemID,
-      fields: {
-        [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
-      },
+      fields: _.omit(Types.nameInnerFields, [NAME_FIELDS.SALUTATION]),
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },

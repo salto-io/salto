@@ -26,7 +26,7 @@ import {
   Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { naclCase, TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord, CustomProperties } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
@@ -1276,9 +1276,9 @@ export const createInstanceElement = (
     return [SALESFORCE]
   }
 
-  const typeName = type.elemID.name
+  const typeName = pathNaclCase(type.elemID.name)
   const { name } = Types.getElemId(
-    naclCase(values[INSTANCE_FULL_NAME_FIELD]),
+    fullName,
     true,
     createInstanceServiceIds(_.pick(values, INSTANCE_FULL_NAME_FIELD), type)
   )
@@ -1287,7 +1287,7 @@ export const createInstanceElement = (
     type,
     values,
     [...getPackagePath(), RECORDS_PATH,
-      type.isSettings ? SETTINGS_PATH : typeName, naclCase(fullName)],
+      type.isSettings ? SETTINGS_PATH : typeName, pathNaclCase(name)],
     annotations,
   ) as MetadataInstanceElement
 }

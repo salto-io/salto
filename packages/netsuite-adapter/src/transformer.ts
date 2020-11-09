@@ -18,10 +18,7 @@ import {
   PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
   ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds, isInstanceElement,
 } from '@salto-io/adapter-api'
-import {
-  MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
-  GetLookupNameFunc,
-} from '@salto-io/adapter-utils'
+import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
@@ -112,9 +109,10 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   }
 
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
+  const instanceFileName = pathNaclCase(instanceName)
   if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
-      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileExtension}`,
+      filepath: `${NETSUITE}/${type.elemID.name}/${instanceFileName}.${customizationInfo.fileExtension}`,
       content: customizationInfo.fileContent,
     })
   }
@@ -124,7 +122,12 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     type,
     transformFunc: transformPrimitive,
   }) as Values
-  return new InstanceElement(instanceName, type, transformedValues, getInstancePath(instanceName))
+  return new InstanceElement(
+    instanceName,
+    type,
+    transformedValues,
+    getInstancePath(instanceFileName)
+  )
 }
 
 export const restoreAttributes = (values: Values, type: ObjectType, instancePath: ElemID):

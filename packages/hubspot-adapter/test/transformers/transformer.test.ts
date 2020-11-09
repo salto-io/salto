@@ -633,14 +633,14 @@ describe('Transformer', () => {
       id: mockId,
     } as HubspotMetadata
 
-    it('should return instance name', async () => {
+    it('should return instance name according to naclCase', async () => {
       const resp = createInstanceName(hubMetadataType.name)
-      expect(resp).toEqual('instance_test_name')
+      expect(resp).toEqual('instance_test_name@s')
     })
 
-    it('should replace all spaces with underscore', async () => {
+    it('should trim spaces and replace inner spaces with underscore + add naclCase mapping', async () => {
       const resp = createInstanceName(' name secondName ')
-      expect(resp).toEqual('name_secondName')
+      expect(resp).toEqual('name_secondName@s')
     })
   })
 

@@ -15,20 +15,22 @@
 */
 import _ from 'lodash'
 import { Element, ObjectType, Field } from '@salto-io/adapter-api'
+import { pathNaclCase } from '@salto-io/adapter-utils'
 import { isCustomObject, isCustom, relativeApiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
 import { SALESFORCE, INSTALLED_PACKAGES_PATH, OBJECTS_PATH, API_NAME } from '../constants'
 import { getNamespace, getNamespaceFromString } from './utils'
 
-export const annotationsFileName = (objectName: string): string => `${objectName}Annotations`
-export const standardFieldsFileName = (objectName: string): string => `${objectName}StandardFields`
-export const customFieldsFileName = (objectName: string): string => `${objectName}CustomFields`
+export const annotationsFileName = (objectName: string): string => `${pathNaclCase(objectName)}Annotations`
+export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
+export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
 const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
+  const elemFileName = pathNaclCase(obj.elemID.name)
   if (namespace) {
-    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
+    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, elemFileName]
   }
-  return [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
+  return [SALESFORCE, OBJECTS_PATH, elemFileName]
 }
 
 const createCustomFieldsObjects = (

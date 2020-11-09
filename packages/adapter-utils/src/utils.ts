@@ -31,13 +31,6 @@ const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
-export const naclCase = (name?: string): string => (
-  // unescape changes HTML escaped parts (&gt; for example), then the regex
-  // replaces url escaped chars as well as any special character to keep names Nacl files friendly
-  // Match multiple consecutive chars to compact names and avoid repeated _
-  name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
-)
-
 export const applyFunctionToChangeData = <T extends Change<unknown>>(
   change: T, func: (arg: ChangeData<T>) => ChangeData<T>,
 ): T => {

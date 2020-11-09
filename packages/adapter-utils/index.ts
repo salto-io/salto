@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 export * from './src/utils'
+export * from './src/nacl_case_utils'
 export * from './src/change_validator'
 export * from './src/deploy'
 export * from './src/compare'

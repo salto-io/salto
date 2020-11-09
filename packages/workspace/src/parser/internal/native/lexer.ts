@@ -56,7 +56,7 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.CCURLY]: '}',
     [TOKEN_TYPES.OCURLY]: '{',
     [TOKEN_TYPES.EQUAL]: '=',
-    [TOKEN_TYPES.WORD]: /[a-zA-Z_][\w.]*/s,
+    [TOKEN_TYPES.WORD]: /[a-zA-Z_][\w.@]*/s,
     [TOKEN_TYPES.COMMENT]: /\/\//,
     [TOKEN_TYPES.WHITESPACE]: { match: /[ \t]+/ },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true },

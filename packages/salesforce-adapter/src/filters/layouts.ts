@@ -19,7 +19,7 @@ import {
   Element, InstanceElement, ObjectType, ElemID,
 } from '@salto-io/adapter-api'
 import {
-  findInstances, naclCase,
+  findInstances, naclCase, pathNaclCase,
 } from '@salto-io/adapter-utils'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
@@ -74,7 +74,11 @@ const fixLayoutPath = (
   if (objectPath === undefined) {
     return
   }
-  layout.path = [...objectPath.slice(0, -1), layout.elemID.typeName, layout.elemID.name]
+  layout.path = [
+    ...objectPath.slice(0, -1),
+    layout.elemID.typeName,
+    pathNaclCase(layout.elemID.name),
+  ]
 }
 
 /**

@@ -21,10 +21,7 @@ import {
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
-import {
-  findObjectType,
-  naclCase, transformValues, getParents,
-} from '@salto-io/adapter-utils'
+import { findObjectType, transformValues, getParents, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
@@ -148,10 +145,11 @@ const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
 }
 
 const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
+  const objFileName = pathNaclCase(obj.elemID.name)
   if (namespace) {
-    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
+    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, objFileName]
   }
-  return [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
+  return [SALESFORCE, OBJECTS_PATH, objFileName]
 }
 
 const getFieldDependency = (values: Values): Values | undefined => {
@@ -350,15 +348,17 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         _(instances).keyBy(INSTANCE_FULL_NAME_FIELD).values().value()
       )
       return removeDuplicateInstances(nestedInstances).map(nestedInstance => {
-        const fullName = [
-          instance.value[INSTANCE_FULL_NAME_FIELD],
-          nestedInstance[INSTANCE_FULL_NAME_FIELD],
-        ].join(API_NAME_SEPARATOR)
-        const elemIdName = naclCase(fullName)
+        const nameParts = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
+        const fullName = nameParts.join(API_NAME_SEPARATOR)
+        const instanceName = naclCase(nameParts.join('_'))
+        const instanceFileName = pathNaclCase(instanceName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
-        const path = [...(objPath as string[]).slice(0, -1),
-          nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name, elemIdName]
-        return new InstanceElement(elemIdName, type, nestedInstance,
+        const path = [
+          ...(objPath as string[]).slice(0, -1),
+          nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name,
+          instanceFileName,
+        ]
+        return new InstanceElement(instanceName, type, nestedInstance,
           path, { [INSTANCE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
       })
     }))
@@ -383,7 +383,10 @@ const createObjectType = ({
   addApiName(object, name)
   addMetadataType(object)
   addLabel(object, label)
-  object.path = [...getObjectDirectoryPath(object, getNamespace(object)), object.elemID.name]
+  object.path = [
+    ...getObjectDirectoryPath(object, getNamespace(object)),
+    pathNaclCase(object.elemID.name),
+  ]
   if (!_.isUndefined(fields)) {
     // Only fields with "child's" refering to a field as it's compoundField
     // should be regarded as compound.
@@ -509,8 +512,10 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
       instance.path = [
         ...customObject.path.slice(0, -1),
         ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
-          ? [WORKFLOW_METADATA_TYPE, instance.elemID.typeName] : [instance.elemID.typeName]),
-        ...(apiNameParts(instance).length > 1 ? [instance.elemID.name] : []),
+          ? [WORKFLOW_METADATA_TYPE, pathNaclCase(instance.elemID.typeName)]
+          : [pathNaclCase(instance.elemID.typeName)]),
+        ...(apiNameParts(instance).length > 1
+          ? [pathNaclCase(instance.elemID.name)] : []),
       ]
     }
   }

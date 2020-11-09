@@ -25,7 +25,7 @@ import {
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
-  findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify, naclCase,
+  findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
@@ -1115,24 +1115,6 @@ describe('Test utils.ts', () => {
       it('should call resolve func on before data when removal change', () => {
         resolveChangeElement(removalChange, getName, mockResolve)
         expect(mockResolve).toHaveBeenCalledWith(beforeData, getName)
-      })
-    })
-  })
-
-  describe('naclCase func', () => {
-    describe('names without special characters', () => {
-      const normalNames = [
-        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
-        'CRMFusionDBR101__Scenario__C',
-      ]
-      it('should remain the same', () => {
-        normalNames.forEach(name => expect(naclCase(name)).toEqual(name))
-      })
-    })
-
-    describe('names with spaces', () => {
-      it('should be replaced with _', () => {
-        expect(naclCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
       })
     })
   })

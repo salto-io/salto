@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, InstanceElement, ObjectType, ElemID,
@@ -24,7 +23,7 @@ import {
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
-  addObjectParentReference, generateApiNameToCustomObject, id,
+  addObjectParentReference, generateApiNameToCustomObject,
 } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 
@@ -32,7 +31,6 @@ const log = logger(module)
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
 export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
-const MIN_NAME_LENGTH = 4
 
 export const specialLayoutObjects = new Map([
   ['CaseClose', 'Case'],
@@ -45,31 +43,10 @@ const layoutObjAndName = (layout: InstanceElement): [string, string] => {
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
 
-const defaultLayoutName = (layout: InstanceElement): string => naclCase(apiName(layout))
-
-const fixNames = (layouts: InstanceElement[]): void => {
-  let names = layouts.map(id)
-
-  const updateElemID = (layout: InstanceElement, newName: string): void => {
-    if (newName.length < MIN_NAME_LENGTH) {
-      return
-    }
-    const newId = layout.type.elemID.createNestedID('instance', naclCase(newName))
-    if (!names.includes(newId.getFullName())) {
-      names = _.without(names, id(layout))
-      names.push(newId.getFullName())
-      _.set(layout, 'elemID', newId)
-    }
-  }
-
-  layouts
-    .filter(layout => layout.elemID.name === defaultLayoutName(layout))
-    .forEach(layout => updateElemID(layout, layoutObjAndName(layout)[1]))
-}
-
 const fixLayoutPath = (
   layout: InstanceElement,
   { path: objectPath }: ObjectType,
+  layoutName: string,
 ): void => {
   if (objectPath === undefined) {
     return
@@ -77,7 +54,7 @@ const fixLayoutPath = (
   layout.path = [
     ...objectPath.slice(0, -1),
     layout.elemID.typeName,
-    pathNaclCase(layout.elemID.name),
+    pathNaclCase(naclCase(layoutName)),
   ]
 }
 
@@ -94,8 +71,6 @@ const filterCreator: FilterCreator = () => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
-    fixNames(layouts)
-
     const apiNameToCustomObject = generateApiNameToCustomObject(elements)
 
     layouts.forEach(layout => {
@@ -107,7 +82,7 @@ const filterCreator: FilterCreator = () => ({
       }
 
       addObjectParentReference(layout, layoutObj)
-      fixLayoutPath(layout, layoutObj)
+      fixLayoutPath(layout, layoutObj, layoutName)
     })
   },
 })

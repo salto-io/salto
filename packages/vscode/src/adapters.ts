@@ -46,9 +46,8 @@ const kindMap: {[key in symbols.SaltoSymbolKind]: vscode.SymbolKind} = {
 export const buildVSSymbol = (
   context: ctx.PositionContext,
   filename: string,
-  fullname = false
 ): vscode.SymbolInformation => {
-  const saltoSymbol = symbols.createSaltoSymbol(context, fullname)
+  const saltoSymbol = symbols.createSaltoSymbol(context, true)
   return {
     kind: kindMap[saltoSymbol.type],
     location: {
@@ -60,7 +59,7 @@ export const buildVSSymbol = (
     },
     name: saltoSymbol.name,
     containerName: context.parent
-      ? symbols.createSaltoSymbol(context.parent).name
+      ? symbols.createSaltoSymbol(context.parent, true).name
       : '',
   }
 }

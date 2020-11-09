@@ -121,7 +121,6 @@ export const createWorkspaceSymbolProvider = (
       .map(async l => buildVSSymbol(
         await locToContext(l),
         toVSFileName(workspace.baseDir, l.filename),
-        true
       )))
   },
 })

@@ -55,7 +55,8 @@ const detectsParentsIndicator = '##allMasterDetailFields##'
 
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
-    && field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID))
+    && (field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
+    || field.type.elemID.isEqual(Types.compoundDataTypes.NameNoSalutation.elemID)))
 
 const isReferenceField = (field: Field): boolean => (
   isMasterDetailField(field) || isLookupField(field)

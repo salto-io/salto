@@ -35,7 +35,7 @@ import {
   WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD,
+  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -401,9 +401,11 @@ const createObjectType = ({
     const objCompoundFieldNames = _.keys(
       _.groupBy(fields.filter(field => field.compoundFieldName), f => f.compoundFieldName)
     )
+    const includesSalutation = fields.map(f => f.name).includes(NAME_FIELDS.SALUTATION)
     fields
       .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
-      .map(f => getSObjectFieldElement(object, f, serviceIds, objCompoundFieldNames, systemFields))
+      .map(f => getSObjectFieldElement(object, f, serviceIds, includesSalutation,
+        objCompoundFieldNames, systemFields))
       .forEach(field => {
         object.fields[field.name] = field
       })

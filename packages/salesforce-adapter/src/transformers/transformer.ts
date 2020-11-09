@@ -151,6 +151,8 @@ const addPicklistAnnotations = (
 
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
+const nameNoSalutationElemID = new ElemID(SALESFORCE,
+  COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME_NO_SALUTATION)
 // We cannot use "Location" as the Salto ID here because there is a standard object called Location
 const geoLocationElemID = new ElemID(SALESFORCE, LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME)
 
@@ -656,6 +658,18 @@ export class Types {
         ...Types.commonAnnotationTypes,
       },
     }),
+    NameNoSalutation: new ObjectType({
+      elemID: nameNoSalutationElemID,
+      fields: {
+        [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
+      },
+      annotationTypes: {
+        ...Types.commonAnnotationTypes,
+      },
+    }),
     Location: new ObjectType({
       elemID: geoLocationElemID,
       fields: {
@@ -765,7 +779,8 @@ const transformCompoundValues = (
     relevantCompoundFields,
     (compoundField, compoundFieldKey) => {
       // Name fields are without a prefix
-      if (compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)) {
+      if (compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
+        || compoundField.type.elemID.isEqual(Types.compoundDataTypes.NameNoSalutation.elemID)) {
         return record[compoundFieldKey]
       }
       // Other compound fields are added a prefix according to the field name
@@ -1021,6 +1036,7 @@ export const getSObjectFieldElement = (
   parent: ObjectType,
   field: SalesforceField,
   parentServiceIds: ServiceIds,
+  includesSalutation: boolean,
   objCompoundFieldNames: string[] = [],
   systemFields: string[] = []
 ): Field => {
@@ -1132,7 +1148,7 @@ export const getSObjectFieldElement = (
     // Only fields that are compound in this object get compound type
     if (objCompoundFieldNames.includes(field.name)) {
       naclFieldType = field.nameField
-        ? Types.compoundDataTypes.Name
+        ? Types.compoundDataTypes[includesSalutation ? 'Name' : 'NameNoSalutation']
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }
   }

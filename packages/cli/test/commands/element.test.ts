@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import * as core from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { ElemID } from '@salto-io/adapter-api'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
@@ -32,6 +33,15 @@ const eventsNames = {
 }
 
 jest.mock('../../src/workspace/workspace')
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
+  listElementDependencies: jest.fn().mockImplementation(workspace => {
+    if (workspace.name === 'fail') {
+      throw new Error('oh no')
+    }
+    return ['salesforce.aaa', 'salesforce.bbb.instance.ccc']
+  }),
+}))
 describe('element command', () => {
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
@@ -640,6 +650,100 @@ describe('element command', () => {
 
     it('should print deployment to console', () => {
       expect(cliOutput.stdout.content).toContain('Moving the specified elements to environment-specific folders.')
+    })
+  })
+
+  describe('list', () => {
+    const selector = new ElemID('salto', 'Account')
+
+    describe('list success', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        mockTelemetry = mocks.getMockTelemetry()
+        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await command(
+          '',
+          cliOutput,
+          mockCliTelemetry,
+          spinnerCreator,
+          'list',
+          false,
+          [selector.getFullName()],
+          'active',
+          ['inactive'],
+          undefined,
+          3,
+        ).execute()
+      })
+
+      it('should return success', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call listElementDependencies', () => {
+        expect(core.listElementDependencies).toHaveBeenCalledWith(workspace, [selector], 3)
+      })
+
+      it('should send telemetry events', () => {
+        expect(mockTelemetry.getEvents()).toHaveLength(2)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      })
+
+      it('should print list to console', () => {
+        expect(cliOutput.stdout.content).toContain('Listing dependencies in active for the specified elements')
+        expect(cliOutput.stdout.content).toContain('  salesforce.aaa\n  salesforce.bbb.instance.ccc')
+      })
+    })
+
+    describe('list failure', () => {
+      const workspaceName = 'fail'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        mockTelemetry = mocks.getMockTelemetry()
+        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await command(
+          '',
+          cliOutput,
+          mockCliTelemetry,
+          spinnerCreator,
+          'list',
+          false,
+          [selector.getFullName()],
+          'active',
+          ['inactive'],
+          undefined,
+        ).execute()
+      })
+
+      it('should return failure', () => {
+        expect(result).toBe(CliExitCode.AppError)
+      })
+      it('should call listElementDependencies', () => {
+        expect(core.listElementDependencies).toHaveBeenCalledWith(workspace, [selector], 1)
+      })
+
+      it('should send telemetry events', () => {
+        expect(mockTelemetry.getEvents()).toHaveLength(2)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+        expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+      })
+
+      it('should print the error', () => {
+        expect(cliOutput.stdout.content).toContain('Listing dependencies in active for the specified elements')
+        expect(cliOutput.stderr.content).toContain('Failed to list dependencies: oh no')
+      })
     })
   })
 })

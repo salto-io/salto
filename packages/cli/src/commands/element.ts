@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { ElemID } from '@salto-io/adapter-api'
+import { listElementDependencies } from '@salto-io/core'
 import { getCliTelemetry } from '../telemetry'
 import { EnvironmentArgs } from './env'
 import { convertToIDSelectors } from '../convertors'
@@ -29,7 +30,7 @@ import Prompts from '../prompts'
 import {
   formatTargetEnvRequired, formatInvalidID, formatUnknownTargetEnv, formatCloneToEnvFailed,
   formatMissingCloneArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
-  formatInvalidMoveArg, formatInvalidElementCommand,
+  formatInvalidMoveArg, formatInvalidElementCommand, formatElementListFailed,
 } from '../formatter'
 
 const log = logger(module)
@@ -127,32 +128,20 @@ const listElements = async (
 ): Promise<CliExitCode> => {
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
-  const graph = await workspace.listElementDependencies(elemIDs, maxDepth)
+  outputLine(Prompts.LIST_START(workspace.currentEnv()), output)
 
-  function *traverse(id: string, level: number, seen: string[]): IterableIterator<string> {
-    yield [..._.times(level, () => '  '), id].join(' ')
-    if (level >= maxDepth) {
-      return
-    }
-    const deps = graph.get(id)
-    if (deps === undefined) {
-      log.error(`Could not find dependencies for ${id}`)
-      return
-    }
-    const relevantDepIds = (deps
-      .map(dep => dep.elemId.getFullName())
-      .filter(depId => !seen.includes(depId))
-      .filter(depId => !_.some(
-        seen, seenId => depId.startsWith(`${seenId}${ElemID.NAMESPACE_SEPARATOR}`)
-      )).sort())
-    for (const dep of relevantDepIds) {
-      yield* traverse(dep, level + 1, [...seen, id])
-    }
+  try {
+    const referencedElements = await listElementDependencies(workspace, elemIDs, maxDepth)
+    referencedElements.forEach(elemID => output.stdout.write(`  ${elemID}\n`))
+
+    cliTelemetry.success(workspaceTags)
+    return CliExitCode.Success
+  } catch (e) {
+    log.error(`Error listing elements: ${e}`)
+    errorOutputLine(formatElementListFailed(e.message), output)
+    cliTelemetry.failure()
+    return CliExitCode.AppError
   }
-
-  const outputLines = elemIDs.sort().flatMap(id => [...traverse(id.getFullName(), 0, []), ''])
-  outputLines.forEach(line => output.stdout.write(`${line}\n`))
-  return CliExitCode.Success
 }
 
 export const command = (

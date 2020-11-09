@@ -635,6 +635,11 @@ export const formatInvalidMoveArg = (invalidTo: string): string => [
   emptyLine(),
 ].join('\n')
 
+export const formatElementListFailed = (errorMessage: string): string => [
+  formatSimpleError(Prompts.LIST_FAILED(errorMessage)),
+  emptyLine(),
+].join('\n')
+
 export const formatInvalidElementCommand = (command: string): string => [
   formatSimpleError(Prompts.INVALID_MOVE_ARG(command)),
   emptyLine(),

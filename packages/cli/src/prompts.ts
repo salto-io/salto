@@ -248,11 +248,17 @@ ${Prompts.SERVICE_ADD_HELP}`
     error: string
   ): string => `Failed to move the specified elements: ${error}`
 
+  public static readonly LIST_FAILED = (
+    error: string
+  ): string => `Failed to list dependencies: ${error}`
+
   public static readonly CLONE_TO_ENV_START = (
     targetEnvs: string[] = []
   ): string => `Cloning the specified elements to ${
     targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
   }.`
+
+  public static readonly LIST_START = (env: string): string => `Listing dependencies in ${env} for the specified elements`
 
   public static readonly CLONE_TO_ENV_FAILED = (
     error: string

@@ -104,7 +104,7 @@ export const mockWorkspace = ({
     elements: jest.fn().mockImplementation(async () => elements),
     name,
     envs: () => ['default'],
-    currentEnv: 'default',
+    currentEnv: () => 'default',
     services: () => services,
     state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),

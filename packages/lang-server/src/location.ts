@@ -90,7 +90,21 @@ export const getQueryLocationsFuzzy = async (
   query: string,
 ): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
   const elements = await getAllElements(workspace)
-  const fuse = new Fuse(elements.map(e => e.elemID.getFullName()), { includeMatches: true })
+  const fuse = new Fuse(
+    elements.map(e => e.elemID.getFullName()),
+    {
+      includeMatches: true,
+      ignoreLocation: true,
+      sortFn: (a, b) => {
+        if (a.score !== b.score) {
+          return a.score - b.score
+        }
+        const aItem = a.item as unknown as string
+        const bItem = b.item as unknown as string
+        return aItem.length - bItem.length
+      },
+    }
+  )
   const fuseSearchResult = fuse.search(query)
   const topFuzzyResults = fuseSearchResult
     .slice(0, MAX_LOCATION_SEARCH_RESULT)

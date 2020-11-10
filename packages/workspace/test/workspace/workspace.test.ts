@@ -60,6 +60,10 @@ const newNaclFile = {
   filename: 'new.nacl',
   buffer: 'type salesforce.new {}',
 }
+const hasExistingElementFile = {
+  filename: 'hasexistingelement.nacl',
+  buffer: 'type salesforce.oldType {}',
+}
 const services = ['salesforce']
 
 const mockWorkspaceConfigSource = (conf?: Values): WorkspaceConfigSource => ({
@@ -292,7 +296,9 @@ describe('workspace', () => {
 
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
-      await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
+      await workspace.setNaclFiles(
+        changedNaclFile, newNaclFile, emptyNaclFile, hasExistingElementFile,
+      )
       elemMap = getElemMap(await workspace.elements())
     })
 
@@ -424,6 +430,9 @@ describe('workspace', () => {
       },
       ['Records', 'Queue', 'queueInstance'],
     )
+
+    const oldType = new ObjectType({ elemID: new ElemID('salesforce', 'oldType') })
+    const newType = new ObjectType({ elemID: new ElemID('salesforce', 'newType') })
 
     const changes: DetailedChange[] = [
       {
@@ -619,6 +628,23 @@ describe('workspace', () => {
         id: new ElemID('salesforce', 'ObjWithComplexHidden', 'instance', 'instWithComplexHidden', 'nested', 'other'),
         action: 'modify',
         data: { before: 3, after: 4 },
+      },
+      // Remove the existing element and add a new one in the same file
+      {
+        path: ['hasexistingelement'],
+        id: oldType.elemID,
+        action: 'remove',
+        data: {
+          before: oldType,
+        },
+      },
+      {
+        path: ['hasexistingelement'],
+        id: newType.elemID,
+        action: 'add',
+        data: {
+          after: newType,
+        },
       },
     ]
 
@@ -831,6 +857,13 @@ describe('workspace', () => {
       await workspace.updateNaclFiles([change1, change2])
       lead = findElement(await workspace.elements(), new ElemID('salesforce', 'lead')) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
+    })
+
+    it('should update file correctly when elements are removed and added in the same file', () => {
+      const oldT = elemMap['salesforce.oldType'] as ObjectType
+      const newT = elemMap['salesforce.newType'] as ObjectType
+      expect(oldT).toBeUndefined()
+      expect(newT).toEqual(newType)
     })
   })
 

@@ -113,6 +113,7 @@ type salesforce.lead {
 }`,
 
   'willbempty.nacl': 'type nonempty { a = 2 }',
+  'hasexistingelement.nacl': 'type salesforce.oldType {}',
 }
 
 export const mockDirStore = (

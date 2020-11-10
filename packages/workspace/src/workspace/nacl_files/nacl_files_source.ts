@@ -238,11 +238,12 @@ const logNaclFileUpdateErrorContext = (
   log.debug('Parse errors in file %s after updating with changes:', filename)
   fileChanges.forEach(change => {
     log.debug(
-      '%s of %s at location: (start=%o end=%o)',
+      '%s of %s at location: (start=%o end=%o eof=%s)',
       change.action,
       change.id.getFullName(),
       change.location.start,
       change.location.end,
+      change.location.eof,
     )
   })
   log.debug('data before:\n%s', naclDataBefore)

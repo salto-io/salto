@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { InstanceElement, StaticFile, ElemID, BuiltinTypes, ObjectType, ListType } from '@salto-io/adapter-api'
-import { getNestedStaticFiles } from '../../../src/workspace/nacl_files/nacl_file_update'
+import { getNestedStaticFiles, getChangeLocations } from '../../../src/workspace/nacl_files/nacl_file_update'
+import { SourceRange } from '../../../src/parser'
 
 const mockType = new ObjectType({
   elemID: new ElemID('salto', 'mock'),
@@ -78,5 +79,24 @@ describe('getNestedStaticFiles', () => {
       .toEqual([
         'plain',
       ])
+  })
+})
+
+describe('getChangeLocations', () => {
+  it('should use eof when adding new elements that are not found in the source map', () => {
+    expect(getChangeLocations(
+      {
+        action: 'add',
+        data: { after: { new: 'data' } },
+        id: new ElemID('salesforce', 'type', 'instance', 'name'),
+      },
+      new Map<string, SourceRange[]>(),
+    )[0].location).toEqual({
+      filename: '',
+      start: { col: 1, line: 1, byte: 0 },
+      end: { col: 1, line: 1, byte: 0 },
+      // if there are existing elements in the file, don't override them
+      eof: true,
+    })
   })
 })

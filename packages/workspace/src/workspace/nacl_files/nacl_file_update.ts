@@ -29,7 +29,8 @@ import { Functions } from '../../parser/functions'
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
 
-export type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
+type SourceRangeWithEOF = SourceRange & { eof?: boolean }
+export type DetailedChangeWithSource = DetailedChange & { location: SourceRangeWithEOF }
 
 const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string =>
   (pathParts
@@ -55,7 +56,7 @@ export const getChangeLocations = (
     }
   }
 
-  const findLocations = (): SourceRange[] => {
+  const findLocations = (): SourceRangeWithEOF[] => {
     if (change.action !== 'add') {
       // We want to get the location of the existing element
       const possibleLocations = sourceMap.get(change.id.getFullName()) || []
@@ -84,6 +85,8 @@ export const getChangeLocations = (
       filename: createFileNameFromPath(naclFilePath),
       start: { col: 1, line: 1, byte: 0 },
       end: { col: 1, line: 1, byte: 0 },
+      // if there are existing elements in the file, don't override them
+      eof: true,
     }]
   }
 
@@ -225,7 +228,14 @@ export const updateNaclFileData = async (
       // This is a removal, we want to replace the original content with an empty string
       newData = ''
     }
-    return { newData, start: change.location.start.byte, end: change.location.end.byte }
+    // if eof is set, make the change relative to the end of the current buffer
+    // (only used for add operations)
+    const eofOffset = change.location.eof ? currentData.length : 0
+    return {
+      newData,
+      start: change.location.start.byte + eofOffset,
+      end: change.location.end.byte + eofOffset,
+    }
   }
 
   const replaceBufferPart = (data: string, change: BufferChange): string => (
@@ -237,7 +247,7 @@ export const updateNaclFileData = async (
   // We want to replace buffers from last to first, that way we won't have to re-calculate
   // the source locations after every change
   const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()
-  const ret = sortedChanges.reduce(replaceBufferPart, currentData)
+  const ret = sortedChanges.reduce(replaceBufferPart, currentData).trimStart()
   return ret
 }
 

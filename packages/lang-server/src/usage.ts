@@ -112,8 +112,8 @@ export const provideWorkspaceReferences = async (
   ))
   // We need a single await for all get location calls in order to take advantage
   // of the Salto SaaS getFiles aggregation functionality
-  return _.flatten(await Promise.all([
+  return (await Promise.all([
     ...usages.map(p => getLocations(workspace, p.getFullName())),
     getLocations(workspace, fullName),
-  ]))
+  ])).flat()
 }

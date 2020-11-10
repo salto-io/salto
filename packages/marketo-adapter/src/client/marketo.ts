@@ -17,7 +17,8 @@ import _ from 'lodash'
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
 import axiosRetry from 'axios-retry'
 import { EventEmitter } from 'events'
-import { Credentials, Identity } from './types'
+import { Values } from '@salto-io/adapter-api'
+import { Credentials, Identity, MarketoError, MarketoResponse } from './types'
 
 export type MarketoClientOpts = {
   credentials: Credentials
@@ -36,21 +37,11 @@ export interface RequestOptions {
 
 export interface MarketoObjectAPI {
   refreshAccessToken(): Promise<Identity>
-  getAll<T>(options: RequestOptions): Promise<T>
-  create<T>(options: RequestOptions): Promise<T>
-  delete<T>(options: RequestOptions): Promise<T>
-  update<T>(options: RequestOptions): Promise<T>
-  describe<T>(options: RequestOptions): Promise<T>
-}
-
-type MarketoResponse<T> = {
-  requestId: string
-  moreResult: boolean
-  nextPageToken: string
-  result: T
-  success: boolean
-  errors: {code: string; message: string}[]
-  warnings: {code: string; message: string}[]
+  getAll(options: RequestOptions): Promise<Values[]>
+  create(options: RequestOptions): Promise<Values[]>
+  delete(options: RequestOptions): Promise<Values[]>
+  update(options: RequestOptions): Promise<Values[]>
+  describe(options: RequestOptions): Promise<Values[]>
 }
 
 export class Marketo extends EventEmitter implements MarketoObjectAPI {
@@ -66,27 +57,27 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
     axiosRetry(this.api, { retries: 3, retryDelay: axiosRetry.exponentialDelay })
   }
 
-  async getAll<T>(options: RequestOptions): Promise<T> {
-    return this.apiRequest<T>({ ...options, method: 'GET' })
+  async getAll(options: RequestOptions): Promise<Values[]> {
+    return this.apiRequest({ ...options, method: 'GET' })
   }
 
-  async describe<T>(options: RequestOptions): Promise<T> {
-    return this.apiRequest<T>({ ...options, method: 'GET' })
+  async describe(options: RequestOptions): Promise<Values[]> {
+    return this.apiRequest({ ...options, method: 'GET' })
   }
 
-  async create<T>(options: RequestOptions): Promise<T> {
-    return this.apiRequest<T>({ ...options, method: 'POST' })
+  async create(options: RequestOptions): Promise<Values[]> {
+    return this.apiRequest({ ...options, method: 'POST' })
   }
 
-  async update<T>(options: RequestOptions): Promise<T> {
-    return this.apiRequest<T>({ ...options, method: 'PUT' })
+  async update(options: RequestOptions): Promise<Values[]> {
+    return this.apiRequest({ ...options, method: 'PUT' })
   }
 
-  async delete<T>(options: RequestOptions): Promise<T> {
-    return this.apiRequest<T>({ ...options, method: 'DELETE' })
+  async delete(options: RequestOptions): Promise<Values[]> {
+    return this.apiRequest({ ...options, method: 'DELETE' })
   }
 
-  async apiRequest<T>(requestOptions: RequestOptions): Promise<T> {
+  async apiRequest(requestOptions: RequestOptions): Promise<Values[]> {
     if (!this.isAccessTokenValid()) {
       await this.refreshAccessToken()
     }
@@ -101,20 +92,20 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
       data: requestOptions.body,
     }
 
-    const response = await this.api.request<MarketoResponse<T>>(config)
-    return Marketo.success<T>(response).result
+    const response = await this.api.request(config) as AxiosResponse<MarketoResponse>
+    return Marketo.success(response).result
   }
 
   private isAccessTokenValid(): boolean {
     if (this.credentials.identity === undefined) {
       return false
     }
-    return Date.now() < this.credentials.identity.expires_in
+    return Date.now() < this.credentials.identity.expiresIn
   }
 
   private getAccessToken(): string {
     if (this.credentials.identity !== undefined) {
-      return this.credentials.identity.access_token
+      return this.credentials.identity.accessToken
     }
     throw new Error('Missing identity')
   }
@@ -135,25 +126,31 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
 
     //  Start time is taken before request to avoid edge cases
     const startTime = Date.now()
-    const response = await this.api.request<Identity>(config)
+    const response = await this.api.request(config) as AxiosResponse<{
+      access_token: string
+      scope: string
+      expires_in: number
+      token_type: string
+    }>
     if (response.data === undefined) {
       throw new Error('Failed to refresh access token')
     }
 
     this.credentials.identity = {
-      ...response.data,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      expires_in: startTime + response.data.expires_in,
+      accessToken: response.data.access_token,
+      scope: response.data.scope,
+      expiresIn: startTime + response.data.expires_in,
+      tokenType: response.data.token_type,
     }
     return this.credentials.identity
   }
 
-  static success<T>(response: AxiosResponse<MarketoResponse<T>>): MarketoResponse<T> {
-    Marketo.validateResponse<T>(response)
+  static success(response: AxiosResponse<MarketoResponse>): MarketoResponse {
+    Marketo.validateResponse(response)
     return response.data
   }
 
-  static validateResponse<T>(response: AxiosResponse<MarketoResponse<T>>): void {
+  static validateResponse(response: AxiosResponse<MarketoResponse>): void {
     if (response.status !== 200) {
       throw new Error(`Request failed with status code ${response.status}`)
     }
@@ -161,7 +158,7 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
       && !response.data.success
       && _.has(response, ['data', 'errors'])) {
       const errorMessages = response.data.errors
-        .map((err: {code: string; message: string}) => err.message)
+        .map((err: MarketoError) => err.message)
         .join('\n')
       throw new Error(errorMessages)
     }

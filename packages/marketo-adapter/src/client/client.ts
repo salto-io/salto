@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Values } from '@salto-io/adapter-api'
 import { Credentials, Lead, MarketoMetadata } from './types'
 import { Marketo, MarketoClientOpts, MarketoObjectAPI, RequestOptions } from './marketo'
 import { OBJECTS_NAMES } from '../constants'
@@ -48,7 +49,7 @@ export default class MarketoClient {
   ): Promise<string> {
     const conn = connection
       || new Marketo({ ...credentials, endpoint: new URL(credentials.endpoint).origin })
-    return (await conn.refreshAccessToken()).access_token
+    return (await conn.refreshAccessToken()).accessToken
   }
 
   constructor(
@@ -57,44 +58,44 @@ export default class MarketoClient {
     this.conn = connection || new Marketo(credentials)
   }
 
-  async getAllInstances<T>(typeName: string): Promise<T | undefined> {
-    return this.conn.getAll<T>({
+  async getAllInstances(typeName: string): Promise<Values[]> {
+    return this.conn.getAll({
       path: `/rest/v1/${typeName}.json`,
     })
   }
 
-  async describe<T>(typeName: string, options?: RequestOptions): Promise<T> {
-    return this.conn.describe<T>({
+  async describe(typeName: string, options?: RequestOptions): Promise<Values[]> {
+    return this.conn.describe({
       path: `/rest/v1/${typeName}/describe.json`,
       ...options,
     })
   }
 
-  async createInstance<T>(
+  async createInstance(
     typeName: string,
     _marketoMetadata: MarketoMetadata
-  ): Promise<T | undefined> {
-    return this.conn.create<T>({
+  ): Promise<Values[]> {
+    return this.conn.create({
       path: `/rest/v1/${typeName}/describe.json`,
       body: {},
     })
   }
 
-  async updateInstance<T>(
+  async updateInstance(
     typeName: string,
     marketoMetadata: MarketoMetadata
-  ): Promise<T | undefined> {
-    return this.conn.update<T>({
+  ): Promise<Values[]> {
+    return this.conn.update({
       id: extractInstanceId(marketoMetadata, typeName),
       body: {},
     })
   }
 
-  async deleteInstance<T>(
+  async deleteInstance(
     typeName: string,
     marketoMetadata: MarketoMetadata
   ): Promise<boolean> {
-    await this.conn.delete<T>({
+    await this.conn.delete({
       id: extractInstanceId(marketoMetadata, typeName),
       body: {},
     })

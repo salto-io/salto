@@ -103,6 +103,7 @@ export const createMarketoObjectType = (
   name: string,
   fields: (LeadAttribute | Field)[]
 ): ObjectType => {
+  // TODO: use the ElemIdGetter functionality
   const elemID = new ElemID(MARKETO, name)
   const fieldsDefinition = Object.fromEntries(
     fields.map((field: LeadAttribute | Field) =>

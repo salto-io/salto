@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 
+import { Values } from '@salto-io/adapter-api'
+
 export type Credentials = {
   endpoint: string
   clientId: string
@@ -22,20 +24,20 @@ export type Credentials = {
 }
 
 export type Identity = {
-  access_token: string
+  accessToken: string
   scope: string
-  expires_in: number
-  token_type: string
+  expiresIn: number
+  tokenType: string
 }
 
 export interface MarketoMetadata {
   name: string
 }
 
-export interface MarketoResponse<T> {
+export interface MarketoResponse {
   requestId: string // Id of the request made
   success: boolean // Whether the request succeeded
-  result: T[] // Array of results for individual records in the operation
+  result: Values[] // Array of results for individual records in the operation
   moreResult?: boolean // Boolean indicating if there are more results in subsequent pages
   nextPageToken?: string // Paging token given if the result set exceeded the allowed batch size
   errors: MarketoError[] // Array of errors that occurred if the request was unsuccessful

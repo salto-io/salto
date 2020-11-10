@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
   FetchResult,
   AdapterOperations,
@@ -54,33 +53,36 @@ export default class MarketoAdapter implements AdapterOperations {
   }
 
   private async getAllMarketoObjects(): Promise<ObjectType[]> {
-    const objectTypes = await Promise.all((_.values(OBJECTS_NAMES))
-      .map(t => this.getAllMarketoObjectTypes(t)))
-    return _.flatten(objectTypes)
+    return (await Promise.all(
+      Object.values(OBJECTS_NAMES)
+        .map(t => this.getAllMarketoObjectTypes(t))
+    )).flat()
   }
 
   private async getAllMarketoObjectTypes(type: string): Promise<ObjectType[]> {
     switch (type) {
       case OBJECTS_NAMES.CUSTOM_OBJECT:
-        return (await this.describeCustomObjects())
+        return (await this.getAllCustomObjects())
           .map((co: CustomObject) =>
             createMarketoObjectType(co.name, co.fields))
-      default:
+      case OBJECTS_NAMES.LEAD:
         return [createMarketoObjectType(type,
-          await this.client.describe<LeadAttribute[]>(type))]
+          await this.client.describe(type) as LeadAttribute[])]
+      default:
+        throw new Error(`Unsupported type: ${type}`)
     }
   }
 
-  private async describeCustomObjects(): Promise<CustomObject[]> {
+  private async getAllCustomObjects(): Promise<CustomObject[]> {
     const customObjectsMetadata = await this.client
-      .getAllInstances<CustomObject[]>(OBJECTS_NAMES.CUSTOM_OBJECT)
+      .getAllInstances(OBJECTS_NAMES.CUSTOM_OBJECT) as CustomObject[]
     if (customObjectsMetadata === undefined) {
       return []
     }
     return (await Promise.all(
-      customObjectsMetadata.map((co: CustomObject): Promise<CustomObject[]> =>
-        this.client.describe<CustomObject[]>(`${OBJECTS_NAMES.CUSTOM_OBJECT}/${co.name}`))
-    )).flat()
+      customObjectsMetadata.map(co =>
+        this.client.describe(`${OBJECTS_NAMES.CUSTOM_OBJECT}/${co.name}`))
+    )).flat() as CustomObject[]
   }
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {

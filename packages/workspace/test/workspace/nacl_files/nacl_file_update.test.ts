@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, StaticFile, ElemID, BuiltinTypes, ObjectType, ListType } from '@salto-io/adapter-api'
-import { getNestedStaticFiles } from '../../../src/workspace/nacl_files/nacl_file_update'
+import { InstanceElement, StaticFile, ElemID, BuiltinTypes, ObjectType, ListType, toChange, DetailedChange } from '@salto-io/adapter-api'
+import { getNestedStaticFiles, getChangeLocations, DetailedChangeWithSource } from '../../../src/workspace/nacl_files/nacl_file_update'
 
 const mockType = new ObjectType({
   elemID: new ElemID('salto', 'mock'),
@@ -78,5 +78,20 @@ describe('getNestedStaticFiles', () => {
       .toEqual([
         'plain',
       ])
+  })
+})
+
+describe('getChangeLocations', () => {
+  let result: DetailedChangeWithSource[]
+  describe('with addition of top level element', () => {
+    beforeEach(() => {
+      const change: DetailedChange = { ...toChange({ after: mockType }), id: mockType.elemID }
+      result = getChangeLocations(change, new Map())
+    })
+    it('should add the element at the end of the file', () => {
+      expect(result).toHaveLength(1)
+      expect(result[0].location.start).toEqual({ col: 1, line: Infinity, byte: Infinity })
+      expect(result[0].location.end).toEqual({ col: 1, line: Infinity, byte: Infinity })
+    })
   })
 })

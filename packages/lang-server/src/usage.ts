@@ -110,6 +110,8 @@ export const provideWorkspaceReferences = async (
   const usages = _.flatten(await Promise.all(
     referencedByFiles.map(filename => getUsageInFile(workspace, filename, fullName))
   ))
+  // We need a single await for all get location calls in order to take advantage
+  // of the Salto SaaS getFiles aggregation functionality
   return _.flatten(await Promise.all([
     ...usages.map(p => getLocations(workspace, p.getFullName())),
     getLocations(workspace, fullName),

@@ -145,7 +145,8 @@ const processDeployResponse = (
     ))
 
   return {
-    successfulFullNames,
+    // When running as "checkOnly" non of the changes are actually applied
+    successfulFullNames: result.checkOnly ? [] : successfulFullNames,
     errors: [...testErrors, ...componentErrors],
   }
 }

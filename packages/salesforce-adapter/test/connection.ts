@@ -154,18 +154,20 @@ type GetDeployResultParams = {
   runTestResult?: PartialRunTestResult
   rollbackOnError?: boolean
   ignoreWarnings?: boolean
+  checkOnly?: boolean
 }
 export const mockDeployResult = ({
   success = true,
   componentSuccess = [],
   componentFailure = [],
+  runTestResult = undefined,
   ignoreWarnings = true,
   rollbackOnError = true,
-  runTestResult = undefined,
+  checkOnly = false,
 }: GetDeployResultParams): DeployResultLocator<DeployResult> => ({
   complete: jest.fn().mockResolvedValue({
     id: _.uniqueId(),
-    checkOnly: false,
+    checkOnly,
     completedDate: '2020-05-01T14:31:36.000Z',
     createdDate: '2020-05-01T14:21:36.000Z',
     done: true,

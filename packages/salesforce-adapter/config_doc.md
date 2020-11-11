@@ -50,6 +50,7 @@ salesforce {
       rollbackOnError = true
       ignoreWarnings = true
       purgeOnDelete = false
+      checkOnly = false
       testLevel = "NoTestRun"
       runTests = ["Test name", "Other test"]
     }
@@ -113,6 +114,7 @@ salesforce {
 | rollbackOnError | `true`                                                 | Indicates whether any failure causes a complete rollback or not. Must be set to `true` if deploying to a production org. 
 | ignoreWarnings  | `true`                                                 | Indicates whether deployments with warnings complete successfully or not.
 | purgeOnDelete   | `false`                                                | If `true`, deleted components aren't stored in the Recycle Bin. Instead, they become immediately eligible for deletion. This option only works in Developer Edition or sandbox orgs. It doesn’t work in production orgs.
+| checkOnly       | `false`                                                | If `true`, deploy will run a "validation deploy", changes will not be immediately applied to the service
 | testLevel       | `NoTestRun` (development) `RunLocalTests` (production) | Specifies which tests are run as part of a deployment. possible values are: `NoTestRun`, `RunSpecifiedTests`, `RunLocalTests` and `RunAllTestsInOrg`
 | runTests        | `[]` (no tests)                                        | A list of Apex tests to run during deployment, must configure `RunSpecifiedTests` in `testLevel` for this option to work
 

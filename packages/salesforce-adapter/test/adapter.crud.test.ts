@@ -174,6 +174,24 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.errors[0].message).toContain('Some error')
         })
       })
+
+      describe('when performing validation deploy with checkOnly', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          mockDeploy.mockReturnValueOnce(mockDeployResult({
+            success: true,
+            componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+            checkOnly: true,
+          }))
+          result = await adapter.deploy({
+            groupID: instance.elemID.getFullName(),
+            changes: [{ action: 'add', data: { after: instance } }],
+          })
+        })
+        it('should not return any changes as applied', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
+      })
     })
 
     describe('for a type element', () => {

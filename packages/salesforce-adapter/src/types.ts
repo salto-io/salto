@@ -66,6 +66,7 @@ type ClientDeployConfig = Partial<{
   rollbackOnError: boolean
   ignoreWarnings: boolean
   purgeOnDelete: boolean
+  checkOnly: boolean
   testLevel: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg'
   runTests: string[]
 }>
@@ -235,6 +236,7 @@ const clientDeployConfigType = new ObjectType({
     rollbackOnError: { type: BuiltinTypes.BOOLEAN },
     ignoreWarnings: { type: BuiltinTypes.BOOLEAN },
     purgeOnDelete: { type: BuiltinTypes.BOOLEAN },
+    checkOnly: { type: BuiltinTypes.BOOLEAN },
     testLevel: {
       type: BuiltinTypes.STRING,
       annotations: {

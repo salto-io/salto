@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Jest Tests",
+      "name": "hubspot-adapter Debug Jest Tests",
       "cwd": "${workspaceFolder}",
       "args": [
         "${workspaceRoot}/node_modules/.bin/jest",
@@ -15,14 +15,7 @@
         "--config",
         "${workspaceRoot}/jest.config.js"
       ],
-      "windows": {
-        "args": [
-          "${workspaceRoot}/node_modules/jest/bin/jest.js",
-          "--runInBand",
-          "--config",
-          "${workspaceRoot}/jest.config.js"
-        ],
-      },
+      "outFiles": [],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     },

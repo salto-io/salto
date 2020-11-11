@@ -425,6 +425,11 @@ describe('workspace', () => {
       ['Records', 'Queue', 'queueInstance'],
     )
 
+    const renamedTypes = {
+      before: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
+      after: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType2'), path: ['renamed_type'] }),
+    }
+
     const changes: DetailedChange[] = [
       {
         path: ['file'],
@@ -620,6 +625,16 @@ describe('workspace', () => {
         action: 'modify',
         data: { before: 3, after: 4 },
       },
+      { // Add and remove a top level element in the same file
+        id: renamedTypes.before.elemID,
+        action: 'remove',
+        data: { before: renamedTypes.before },
+      },
+      {
+        id: renamedTypes.after.elemID,
+        action: 'add',
+        data: { after: renamedTypes.after },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -813,6 +828,16 @@ describe('workspace', () => {
     it('should add values that became visible', () => {
       expect(instWithHidden.value.hide).toEqual('changed')
       expect(instWithNestedHidden.value.nested.hide).toEqual('a')
+    })
+
+    it('should update file correctly when elements are removed and added in the same file', () => {
+      expect(elemMap).not.toHaveProperty(renamedTypes.before.elemID.getFullName())
+      const addedElement = elemMap[renamedTypes.after.elemID.getFullName()]
+      expect(addedElement).toMatchObject(_.omit(renamedTypes.after, 'path'))
+      expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
+        filename: 'renamed_type.nacl',
+        buffer: expect.stringMatching(/^\s*type salesforce.RenamedType2 {\s*}\s*$/),
+      }))
     })
 
     it('should not fail in case one of the changes fails', async () => {

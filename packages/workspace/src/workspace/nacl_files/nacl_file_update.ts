@@ -79,11 +79,12 @@ export const getChangeLocations = (
       }
     }
     // Fallback to using the path from the element itself
-    const naclFilePath = change.path || getChangeElement(change).path
+    const naclFilePath = change.path ?? getChangeElement(change).path
+    const endOfFileLocation = { col: 1, line: Infinity, byte: Infinity }
     return [{
       filename: createFileNameFromPath(naclFilePath),
-      start: { col: 1, line: 1, byte: 0 },
-      end: { col: 1, line: 1, byte: 0 },
+      start: endOfFileLocation,
+      end: endOfFileLocation,
     }]
   }
 

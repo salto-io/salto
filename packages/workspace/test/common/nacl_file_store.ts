@@ -113,6 +113,8 @@ type salesforce.lead {
 }`,
 
   'willbempty.nacl': 'type nonempty { a = 2 }',
+  'renamed_type.nacl': `type salesforce.RenamedType1 {
+  }`,
 }
 
 export const mockDirStore = (

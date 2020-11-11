@@ -44,6 +44,7 @@ import {
   MetadataTypeAnnotations, createInstanceElement, toCustomField, toCustomProperties, isLocalOnly,
   toMetadataInfo,
   isFieldOfCustomObject,
+  createInstanceServiceIds,
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
@@ -347,18 +348,25 @@ const createNestedMetadataInstances = (instance: InstanceElement,
       const removeDuplicateInstances = (instances: Values[]): Values[] => (
         _(instances).keyBy(INSTANCE_FULL_NAME_FIELD).values().value()
       )
-      return removeDuplicateInstances(nestedInstances).map(nestedInstance => {
-        const nameParts = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
+      return removeDuplicateInstances(nestedInstances).map(nestedInstanceValues => {
+        const nameParts = [apiName(instance), nestedInstanceValues[INSTANCE_FULL_NAME_FIELD]]
         const fullName = nameParts.join(API_NAME_SEPARATOR)
-        const instanceName = naclCase(nameParts.join('_'))
+        const instanceName = Types.getElemId(
+          naclCase(nameParts.join('_')),
+          true,
+          createInstanceServiceIds(_.pick(nestedInstanceValues, INSTANCE_FULL_NAME_FIELD), type)
+        ).name
         const instanceFileName = pathNaclCase(instanceName)
-        nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
+        const typeFolderName = pathNaclCase(naclCase(
+          nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name
+        ))
+        nestedInstanceValues[INSTANCE_FULL_NAME_FIELD] = fullName
         const path = [
           ...(objPath as string[]).slice(0, -1),
-          nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name,
+          typeFolderName,
           instanceFileName,
         ]
-        return new InstanceElement(instanceName, type, nestedInstance,
+        return new InstanceElement(instanceName, type, nestedInstanceValues,
           path, { [INSTANCE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
       })
     }))

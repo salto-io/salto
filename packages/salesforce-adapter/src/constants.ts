@@ -62,7 +62,7 @@ export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES
 export enum COMPOUND_FIELD_TYPE_NAMES {
   ADDRESS = 'Address',
   FIELD_NAME = 'Name',
-  FIELD_NAME_NO_SALUTATION = 'NameNoSalutation',
+  FIELD_NAME_NO_SALUTATION = 'Name2',
   LOCATION = 'Location',
 }
 // We use Geolocation internally to avoid conflicts with the Location standard object

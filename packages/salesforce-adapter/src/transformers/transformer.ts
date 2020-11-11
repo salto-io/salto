@@ -660,7 +660,8 @@ export class Types {
         ...Types.commonAnnotationTypes,
       },
     }),
-    NameNoSalutation: new ObjectType({
+    Name2: new ObjectType({
+      // replaces the regular Name for types that don't have Salutation attribute (i.e User)
       elemID: nameNoSalutationElemID,
       fields: _.omit(Types.nameInnerFields, [NAME_FIELDS.SALUTATION]),
       annotationTypes: {
@@ -777,7 +778,7 @@ const transformCompoundValues = (
     (compoundField, compoundFieldKey) => {
       // Name fields are without a prefix
       if (compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-        || compoundField.type.elemID.isEqual(Types.compoundDataTypes.NameNoSalutation.elemID)) {
+        || compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)) {
         return record[compoundFieldKey]
       }
       // Other compound fields are added a prefix according to the field name
@@ -1145,7 +1146,7 @@ export const getSObjectFieldElement = (
     // Only fields that are compound in this object get compound type
     if (objCompoundFieldNames.includes(field.name)) {
       naclFieldType = field.nameField
-        ? Types.compoundDataTypes[includesSalutation ? 'Name' : 'NameNoSalutation']
+        ? Types.compoundDataTypes[includesSalutation ? 'Name' : 'Name2']
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }
   }

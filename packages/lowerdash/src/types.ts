@@ -31,10 +31,8 @@ export const filterHasMember = <T, M extends keyof T>(
   m: M, objs: T[]
 ): HasMember<T, M>[] => objs.filter(f => hasMember(m, f)) as HasMember<T, M>[]
 
-// Names of function properties defined on an object
-export type FunctionPropertyNames<T> = {
-  [K in keyof T]: T[K] extends Function ? K : never
-}[keyof T]
+export type KeysOfType<T, U> = { [K in keyof T]: T[K] extends U ? K : never }[keyof T]
+export type KeysOfExtendingType<T, U> = { [K in keyof T]: U extends T[K] ? K : never }[keyof T]
 
 export type ValueOf<T> = T[keyof T]
 

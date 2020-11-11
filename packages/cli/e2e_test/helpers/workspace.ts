@@ -25,16 +25,16 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
-import { command as fetch } from '../../src/commands/fetch'
+import fetchDef from '../../src/commands/fetch'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace/workspace'
-import { DeployCommand } from '../../src/commands/deploy'
-import { command as servicesCommand } from '../../src/commands/service'
-import { command as initCommand } from '../../src/commands/init'
-import { command as envCommand } from '../../src/commands/env'
-import { command as cleanCommand } from '../../src/commands/clean'
-import { getCliTelemetry } from '../../src/telemetry'
+import deployDef from '../../src/commands/deploy'
+import serviceDef from '../../src/commands/service'
+import initDef from '../../src/commands/init'
+import { createAction, setAction, deleteAction } from '../../src/commands/env'
+import cleanDef from '../../src/commands/clean'
+import { isCommand } from '../../src/command_builder'
 
 declare global {
   // eslint-disable-next-line
@@ -71,7 +71,9 @@ const services = ['salesforce']
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
-const mockCliTelementy: CliTelemetry = {
+const config = { shouldCalcTotalSize: true }
+
+const cliTelemetry: CliTelemetry = {
   start: () => jest.fn(),
   failure: () => jest.fn(),
   success: () => jest.fn(),
@@ -79,7 +81,6 @@ const mockCliTelementy: CliTelemetry = {
   changes: () => jest.fn(),
   changesToApply: () => jest.fn(),
   errors: () => jest.fn(),
-  failedRows: () => jest.fn(),
   actionsSuccess: () => jest.fn(),
   actionsFailure: () => jest.fn(),
   workspaceSize: () => jest.fn(),
@@ -93,45 +94,43 @@ const telemetry = telemetrySender(
 
 export const cleanup = async (): Promise<void> => telemetry.stop(0)
 
-export const runAddSalesforceService = async (
-  workspaceDir: string, credentials: InstanceElement
-): Promise<void> => {
-  await servicesCommand(
-    workspaceDir,
-    'add',
-    mockCliOutput(),
-    () => Promise.resolve(credentials),
-    'basic',
-    'salesforce',
-  ).execute()
+export const runAddSalesforceService = async (workspaceDir: string): Promise<void> => {
+  const addAction = serviceDef.subCommands.find(subCommand =>
+    subCommand.properties.name === 'add')
+  if (addAction !== undefined && isCommand(addAction)) {
+    await addAction.action({
+      input: {
+        login: true,
+        serviceName: 'salesforce',
+        authType: 'basic',
+      },
+      config,
+      output: mockCliOutput(),
+      telemetry,
+      workingDir: workspaceDir,
+    })
+  } else {
+    throw Error('service add command is not defined well')
+  }
 }
 
-export const runSalesforceOauthLogin = async (
-  workspaceDir: string,
-  sfCredsInstance: InstanceElement
-): Promise<void> => {
-  await servicesCommand(
-    workspaceDir,
-    'login',
-    mockCliOutput(),
-    () => Promise.resolve(sfCredsInstance),
-    'oauth',
-    'salesforce',
-  ).execute()
-}
-
-export const runSalesforceLogin = async (
-  workspaceDir: string,
-  sfCredsInstance: InstanceElement
-): Promise<void> => {
-  await servicesCommand(
-    workspaceDir,
-    'login',
-    mockCliOutput(),
-    () => Promise.resolve(sfCredsInstance),
-    'basic',
-    'salesforce',
-  ).execute()
+export const runSalesforceLogin = async (workspaceDir: string): Promise<void> => {
+  const loginAction = serviceDef.subCommands.find(subCommand =>
+    subCommand.properties.name === 'login')
+  if (loginAction !== undefined && isCommand(loginAction)) {
+    await loginAction.action({
+      input: {
+        serviceName: 'salesforce',
+        authType: 'basic',
+      },
+      telemetry,
+      config,
+      output: mockCliOutput(),
+      workingDir: workspaceDir,
+    })
+  } else {
+    throw Error('service login command is not defined well')
+  }
 }
 
 export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
@@ -151,19 +150,21 @@ export const getNaclFileElements = async (filename: string):
 
 export const runInit = async (
   workspaceName: string,
-  defaultEnvName: string,
   baseDir?: string
 ): Promise<void> => {
   const origDir = process.cwd()
   if (baseDir) {
     process.chdir(baseDir)
   }
-  await initCommand(
-    workspaceName,
-    mockCliTelementy,
-    mockCliOutput(),
-    jest.fn().mockResolvedValue(defaultEnvName)
-  ).execute()
+  await initDef.action({
+    input: {
+      workspaceName,
+    },
+    telemetry,
+    config,
+    output: mockCliOutput(),
+    workingDir: workspaceName,
+  })
   if (baseDir) {
     process.chdir(origDir)
   }
@@ -174,15 +175,40 @@ export const runCreateEnv = async (
   envName: string,
   force?: boolean,
 ): Promise<void> => {
-  await envCommand(workspaceDir, 'create', mockCliOutput(), envName, undefined, force).execute()
+  await createAction({
+    input: {
+      envName,
+      force,
+    },
+    config,
+    cliTelemetry,
+    output: mockCliOutput(),
+    workingDir: workspaceDir,
+  })
 }
 
 export const runSetEnv = async (workspaceDir: string, envName: string): Promise<void> => {
-  await envCommand(workspaceDir, 'set', mockCliOutput(), envName).execute()
+  await setAction({
+    input: {
+      envName,
+    },
+    config,
+    cliTelemetry,
+    output: mockCliOutput(),
+    workingDir: workspaceDir,
+  })
 }
 
 export const runDeleteEnv = async (workspaceDir: string, envName: string): Promise<void> => {
-  await envCommand(workspaceDir, 'delete', mockCliOutput(), envName).execute()
+  await deleteAction({
+    input: {
+      envName,
+    },
+    config,
+    cliTelemetry,
+    output: mockCliOutput(),
+    workingDir: workspaceDir,
+  })
 }
 
 export const getCurrentEnv = async (workspaceDir: string): Promise<string> => {
@@ -195,21 +221,22 @@ export const runFetch = async (
   isolated = false,
   inputEnvironment?: string,
 ): Promise<void> => {
-  const result = await fetch(
-    fetchOutputDir,
-    true,
-    false,
+  const result = await fetchDef.action({
+    input: {
+      services,
+      env: inputEnvironment,
+      mode: isolated ? 'isolated' : 'override',
+      force: true,
+      interactive: false,
+      stateOnly: false,
+    },
+    config,
     telemetry,
-    mockCliOutput(),
-    mockSpinnerCreator([]),
-    isolated ? 'isolated' : 'override',
-    true,
-    services,
-    inputEnvironment,
-  ).execute()
+    output: mockCliOutput(),
+    workingDir: fetchOutputDir,
+  })
   expect(result).toEqual(CliExitCode.Success)
 }
-
 
 export const runDeploy = async ({
   lastPlan,
@@ -230,16 +257,19 @@ export const runDeploy = async ({
     lastPlan.clear()
   }
   const output = mockCliOutput()
-  const result = await new DeployCommand(
-    fetchOutputDir,
-    force,
-    dryRun,
-    detailedPlan,
-    getCliTelemetry(telemetry, 'deploy'),
-    output,
-    mockSpinnerCreator([]),
-    services
-  ).execute()
+  const result = await deployDef.action({
+    input: {
+      force,
+      dryRun,
+      detailedPlan,
+      services,
+    },
+    config,
+    telemetry,
+    output: mockCliOutput(),
+    spinnerCreator: mockSpinnerCreator([]),
+    workingDir: fetchOutputDir,
+  })
   const errs = (output.stderr as MockWriteStream).content
   // This assert is before result assert so will see the error
   // This is not a mistake, we will have errors on some deployments
@@ -258,13 +288,16 @@ export const runClean = async (
   workspaceName: string,
   cleanArgs: WorkspaceComponents,
 ): Promise<void> => {
-  await cleanCommand(
-    workspaceName,
-    mockCliTelementy,
-    mockCliOutput(),
-    true,
-    cleanArgs,
-  ).execute()
+  await cleanDef.action({
+    input: {
+      ...cleanArgs,
+      force: true,
+    },
+    config,
+    telemetry,
+    output: mockCliOutput(),
+    workingDir: workspaceName,
+  })
 }
 
 export const loadValidWorkspace = async (

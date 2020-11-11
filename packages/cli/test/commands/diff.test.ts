@@ -14,13 +14,15 @@
 * limitations under the License.
 */
 import { diff, loadLocalWorkspace } from '@salto-io/core'
-import { CliExitCode, CliTelemetry } from '../../src/types'
-import { command } from '../../src/commands/diff'
-import { expectElementSelector } from '../utils'
-
+import { CliExitCode } from '../../src/types'
+import envDef from '../../src/commands/env'
+import { expectElementSelector, getSubCommandAction } from '../utils'
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
-import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import { buildEventName } from '../../src/telemetry'
+import { CommandAction } from '../../src/command_builder'
+
+const { subCommands } = envDef
 
 const commandName = 'diff'
 const eventsNames = {
@@ -39,13 +41,14 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace/workspace')
 describe('diff command', () => {
-  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockApplyChangesToWorkspace = mockCliWorkspace.applyChangesToWorkspace as jest.Mock
   const mockUpdateWorkspace = mockCliWorkspace.updateWorkspace as jest.Mock
   const mockUpdateStateOnly = mockCliWorkspace.updateStateOnly as jest.Mock
+  const config = { shouldCalcTotalSize: true }
   mockApplyChangesToWorkspace.mockImplementation(
-    ({ workspace, output, changes, isIsolated }) => (
-      mockUpdateWorkspace(workspace, output, changes, isIsolated)
+    ({ workspace, output: cliOutput, changes, isIsolated }) => (
+      mockUpdateWorkspace(workspace, cliOutput, changes, isIsolated)
     )
   )
   mockUpdateWorkspace.mockImplementation(ws =>
@@ -54,48 +57,62 @@ describe('diff command', () => {
   const mockLoadWorkspace = loadLocalWorkspace as jest.Mock
 
   let result: number
-  let mockTelemetry: mocks.MockTelemetry
-  let mockCliTelemetry: CliTelemetry
+  let telemetry: mocks.MockTelemetry
 
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  let diffAction: CommandAction<any>
+  beforeAll((() => {
+    const diffSubCommandAction = getSubCommandAction(subCommands, commandName)
+    expect(diffSubCommandAction).toBeDefined()
+    if (diffSubCommandAction !== undefined) {
+      diffAction = diffSubCommandAction
+    }
+  }))
   describe('with invalid source environment', () => {
     const workspaceName = 'valid-workspace'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
+    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    telemetry = mocks.getMockTelemetry()
     mockLoadWorkspace.mockResolvedValue(workspace)
     it('should throw Error', async () => {
-      await expect(await command(
-        '',
-        true,
-        mockCliTelemetry,
-        cliOutput,
-        'NotExist',
-        'inactive',
-        false,
-        false,
-      ).execute()).toBe(CliExitCode.UserInputError)
+      result = await diffAction({
+        input: {
+          fromEnv: 'NotExist',
+          toEnv: 'inactive',
+          detailedPlan: true,
+          hidden: false,
+          state: false,
+        },
+        output,
+        telemetry,
+        config,
+        workingDir: workspaceName,
+      })
+      expect(result).toBe(CliExitCode.UserInputError)
     })
   })
 
   describe('with invalid destination environment', () => {
     const workspaceName = 'valid-workspace'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
+    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    telemetry = mocks.getMockTelemetry()
     mockLoadWorkspace.mockResolvedValue(workspace)
     it('should throw Error', async () => {
-      await expect(await command(
-        '',
-        true,
-        mockCliTelemetry,
-        cliOutput,
-        'active',
-        'NotExist',
-        false,
-        false,
-      ).execute()).toBe(CliExitCode.UserInputError)
+      result = await diffAction({
+        input: {
+          fromEnv: 'active',
+          toEnv: 'NotExist',
+          detailedPlan: true,
+          hidden: false,
+          state: false,
+        },
+        output,
+        telemetry,
+        config,
+        workingDir: workspaceName,
+      })
+      expect(result).toBe(CliExitCode.UserInputError)
     })
   })
 
@@ -103,31 +120,32 @@ describe('diff command', () => {
     const workspaceName = 'valid-workspace'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
+      output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue(workspace)
-      result = await command(
-        '',
-        true,
-        mockCliTelemetry,
-        cliOutput,
-        'active',
-        'inactive',
-        false,
-        false,
-      ).execute()
+      result = await diffAction({
+        input: {
+          fromEnv: 'active',
+          toEnv: 'inactive',
+          detailedPlan: true,
+          hidden: false,
+          state: false,
+        },
+        output,
+        telemetry,
+        config,
+        workingDir: workspaceName,
+      })
     })
-
 
     it('should return success status', async () => {
       expect(result).toBe(CliExitCode.Success)
-      expect(mockTelemetry.getEvents().length).toEqual(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
+      expect(telemetry.getEvents().length).toEqual(2)
+      expect(telemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      expect(telemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, false, undefined, [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, false, workspace.services(), [])
     })
   })
 
@@ -135,31 +153,32 @@ describe('diff command', () => {
     const workspaceName = 'hidden-types-workspace'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
+      output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue(workspace)
-      result = await command(
-        '',
-        true,
-        mockCliTelemetry,
-        cliOutput,
-        'active',
-        'inactive',
-        true,
-        false,
-      ).execute()
+      await diffAction({
+        input: {
+          fromEnv: 'active',
+          toEnv: 'inactive',
+          detailedPlan: true,
+          hidden: true,
+          state: false,
+        },
+        output,
+        telemetry,
+        config,
+        workingDir: workspaceName,
+      })
     })
-
 
     it('should return success status', async () => {
       expect(result).toBe(CliExitCode.Success)
-      expect(mockTelemetry.getEvents().length).toEqual(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
+      expect(telemetry.getEvents().length).toEqual(2)
+      expect(telemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      expect(telemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', true, false, undefined, [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', true, false, workspace.services(), [])
     })
   })
 
@@ -167,31 +186,32 @@ describe('diff command', () => {
     const workspaceName = 'hidden-types-workspace'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
+      output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue(workspace)
-      result = await command(
-        '',
-        true,
-        mockCliTelemetry,
-        cliOutput,
-        'active',
-        'inactive',
-        false,
-        true,
-      ).execute()
+      result = await diffAction({
+        input: {
+          fromEnv: 'active',
+          toEnv: 'inactive',
+          detailedPlan: true,
+          hidden: false,
+          state: true,
+        },
+        output,
+        telemetry,
+        config,
+        workingDir: workspaceName,
+      })
     })
-
 
     it('should return success status', async () => {
       expect(result).toBe(CliExitCode.Success)
-      expect(mockTelemetry.getEvents().length).toEqual(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
+      expect(telemetry.getEvents().length).toEqual(2)
+      expect(telemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      expect(telemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, undefined, [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, workspace.services(), [])
     })
   })
 
@@ -200,34 +220,34 @@ describe('diff command', () => {
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     const regex = 'account.*'
     beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
+      output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue(workspace)
-      result = await command(
-        '',
-        true,
-        mockCliTelemetry,
-        cliOutput,
-        'active',
-        'inactive',
-        false,
-        true,
-        undefined,
-        [regex]
-      ).execute()
+      result = await diffAction({
+        input: {
+          fromEnv: 'active',
+          toEnv: 'inactive',
+          detailedPlan: true,
+          hidden: false,
+          state: true,
+          elementSelector: [regex],
+        },
+        output,
+        telemetry,
+        config,
+        workingDir: workspaceName,
+      })
     })
-
 
     it('should return success status', async () => {
       expect(result).toBe(CliExitCode.Success)
-      expect(mockTelemetry.getEvents().length).toEqual(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
+      expect(telemetry.getEvents().length).toEqual(2)
+      expect(telemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      expect(telemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
       expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive',
-        false, true, undefined, expectElementSelector(regex))
+        false, true, workspace.services(), expectElementSelector(regex))
     })
   })
 
@@ -236,22 +256,23 @@ describe('diff command', () => {
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     const regex = '['
     beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'diff')
+      output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue(workspace)
-      result = await command(
-        '',
-        true,
-        mockCliTelemetry,
-        cliOutput,
-        'active',
-        'inactive',
-        false,
-        true,
-        undefined,
-        [regex]
-      ).execute()
+      result = await diffAction({
+        input: {
+          fromEnv: 'active',
+          toEnv: 'inactive',
+          detailedPlan: true,
+          hidden: false,
+          state: true,
+          elementSelector: [regex],
+        },
+        output,
+        telemetry,
+        config,
+        workingDir: workspaceName,
+      })
     })
 
     it('should return success status', async () => {

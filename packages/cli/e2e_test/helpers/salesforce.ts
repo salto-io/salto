@@ -24,7 +24,6 @@ import SalesforceAdapter, {
 import _ from 'lodash'
 import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
 
-
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
   missingFields: string[] = []): Promise<boolean> => {

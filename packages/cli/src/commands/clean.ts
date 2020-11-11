@@ -17,143 +17,126 @@ import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { loadLocalWorkspace, cleanWorkspace } from '@salto-io/core'
 import { WorkspaceComponents } from '@salto-io/workspace'
-import { ParsedCliInput, CliOutput, CliExitCode, CliCommand, CliTelemetry } from '../types'
-import { createCommandBuilder } from '../command_builder'
-import { getCliTelemetry } from '../telemetry'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { errorOutputLine, outputLine } from '../outputer'
 import { getUserBooleanInput } from '../callbacks'
 import { formatCleanWorkspace, formatCancelCommand, header, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
 import Prompts from '../prompts'
+import { CliExitCode } from '../types'
+import { createPublicCommandDef, DefActionInput } from '../command_builder'
 
 const log = logger(module)
 
-type CleanArgs = WorkspaceComponents & { force: boolean }
+type CleanArgs = {
+    force: boolean
+} & WorkspaceComponents
 
-type CleanParsedCliInput = ParsedCliInput<CleanArgs>
+const action = async (
+  {
+    input: { force, ...cleanArgs },
+    cliTelemetry,
+    output,
+    workingDir = '.',
+  }: DefActionInput<CleanArgs>
+): Promise<CliExitCode> => {
+  log.debug('running clean command on \'%s\', force=%s, args=%o', workingDir, force, cleanArgs)
 
-export const command = (
-  workspaceDir: string,
-  cliTelemetry: CliTelemetry,
-  output: CliOutput,
-  force: boolean,
-  cleanArgs: WorkspaceComponents,
-): CliCommand => ({
-  async execute(): Promise<CliExitCode> {
-    log.debug('running clean command on \'%s\', force=%s, args=%o', workspaceDir, force, cleanArgs)
-
-    const shouldCleanAnything = Object.values(cleanArgs).some(shouldClean => shouldClean)
-    if (!shouldCleanAnything) {
-      outputLine(header(Prompts.EMPTY_PLAN), output)
-      outputLine(EOL, output)
-      return CliExitCode.UserInputError
-    }
-    if (cleanArgs.staticResources && !(cleanArgs.state && cleanArgs.cache && cleanArgs.nacl)) {
-      errorOutputLine('Cannot clear static resources without clearing the state, cache and nacls', output)
-      outputLine(EOL, output)
-      return CliExitCode.UserInputError
-    }
-
-    const workspace = await loadLocalWorkspace(workspaceDir)
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-
-    outputLine(header(
-      formatCleanWorkspace(cleanArgs)
-    ), output)
-    if (!(force || await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN))) {
-      outputLine(formatCancelCommand, output)
-      return CliExitCode.Success
-    }
-
-    outputLine(formatStepStart(Prompts.CLEAN_STARTED), output)
-    cliTelemetry.start(workspaceTags)
-
-    try {
-      await cleanWorkspace(workspace, cleanArgs)
-    } catch (e) {
-      errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
-      cliTelemetry.failure(workspaceTags)
-      return CliExitCode.AppError
-    }
-
-    outputLine(formatStepCompleted(Prompts.CLEAN_FINISHED), output)
+  const shouldCleanAnything = Object.values(cleanArgs).some(shouldClean => shouldClean)
+  if (!shouldCleanAnything) {
+    outputLine(header(Prompts.EMPTY_PLAN), output)
     outputLine(EOL, output)
-    cliTelemetry.success(workspaceTags)
+    return CliExitCode.UserInputError
+  }
+  if (cleanArgs.staticResources && !(cleanArgs.state && cleanArgs.cache && cleanArgs.nacl)) {
+    errorOutputLine('Cannot clear static resources without clearing the state, cache and nacls', output)
+    outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
+
+  const workspace = await loadLocalWorkspace(workingDir)
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+
+  outputLine(header(
+    formatCleanWorkspace(cleanArgs)
+  ), output)
+  if (!(force || await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN))) {
+    outputLine(formatCancelCommand, output)
     return CliExitCode.Success
-  },
-})
+  }
 
-const diffBuilder = createCommandBuilder({
-  options: {
-    command: 'clean',
+  outputLine(formatStepStart(Prompts.CLEAN_STARTED), output)
+  cliTelemetry.start(workspaceTags)
+
+  try {
+    await cleanWorkspace(workspace, cleanArgs)
+  } catch (e) {
+    errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.AppError
+  }
+
+  outputLine(formatStepCompleted(Prompts.CLEAN_FINISHED), output)
+  outputLine(EOL, output)
+  cliTelemetry.success(workspaceTags)
+  return CliExitCode.Success
+}
+
+const cleanDef = createPublicCommandDef({
+  properties: {
+    name: 'clean',
     description: 'Maintenance command for cleaning workspace data. This operation cannot be undone, it\'s highly recommended to backup the workspace data before executing it.',
-    keyed: {
-      force: {
-        alias: ['f'],
-        describe: 'Do not ask for approval before applying the changes',
-        boolean: true,
-        default: false,
-      },
-      nacl: {
-        alias: ['n'],
-        describe: 'Remove all nacl files',
-        boolean: true,
-        default: true,
-      },
-      state: {
-        alias: ['s'],
-        describe: 'Clear the state',
-        boolean: true,
-        default: true,
-      },
-      cache: {
-        alias: ['c'],
-        describe: 'Clear the cache',
-        boolean: true,
-        default: true,
-      },
-      // will also be available as staticResources because of camel-case-expansion
-      'static-resources': {
-        alias: ['r'],
-        describe: 'Remove all static resources',
-        boolean: true,
-        default: true,
-      },
-      credentials: {
-        alias: ['l'],
-        describe: 'Clear the service login credentials',
-        boolean: true,
-        default: false,
-      },
-      // will also be available as serviceConfig because of camel-case-expansion
-      'service-config': {
-        alias: ['g'],
-        describe: 'Restore service configuration to default',
-        boolean: true,
-        default: false,
-      },
-    },
-  },
-
-  async build(
-    input: CleanParsedCliInput,
-    output: CliOutput,
-  ): Promise<CliCommand> {
-    return command(
-      '.',
-      getCliTelemetry(input.telemetry, 'clean'),
-      output,
-      input.args.force,
+    options: [
       {
-        nacl: input.args.nacl,
-        state: input.args.state,
-        cache: input.args.cache,
-        staticResources: input.args.staticResources,
-        credentials: input.args.credentials,
-        serviceConfig: input.args.serviceConfig,
+        name: 'force',
+        alias: 'f',
+        description: 'Do not ask for approval before applying the changes',
+        type: 'boolean',
       },
-    )
+      {
+        name: 'nacl',
+        alias: 'n',
+        description: 'Do not remove the nacl files',
+        type: 'boolean',
+        default: true,
+      },
+      {
+        name: 'state',
+        alias: 's',
+        description: 'Do not clear the state',
+        type: 'boolean',
+        default: true,
+      },
+      {
+        name: 'cache',
+        alias: 'c',
+        description: 'Do not clear the cache',
+        type: 'boolean',
+        default: true,
+      },
+      {
+        name: 'staticResources',
+        alias: 'r',
+        description: 'Do not remove remove the static resources',
+        type: 'boolean',
+        default: true,
+      },
+      {
+        name: 'credentials',
+        alias: 'l',
+        description: 'Clear the service login credentials',
+        type: 'boolean',
+        default: false,
+      },
+      {
+        name: 'serviceConfig',
+        alias: 'g',
+        description: 'Restore service configuration to default',
+        type: 'boolean',
+        default: false,
+      },
+    ],
   },
+  action,
 })
 
-export default diffBuilder
+export default cleanDef

@@ -22,7 +22,7 @@ import {
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
   isStaticFile,
 } from '@salto-io/adapter-api'
-import { Plan, PlanItem, FetchChange, FetchResult } from '@salto-io/core'
+import { Plan, PlanItem, FetchChange, FetchResult, LocalChange } from '@salto-io/core'
 import { errors, SourceFragment, parser, WorkspaceComponents } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import Prompts from './prompts'
@@ -263,7 +263,6 @@ export const formatChangeErrors = (
   return ret
 }
 
-
 export const formatExecutionPlan = (
   plan: Plan,
   workspaceErrors: ReadonlyArray<ChangeWorkspaceError>,
@@ -405,7 +404,6 @@ export const formatFetchChangeForApproval = (
     header(Prompts.FETCH_SHOULD_APPROVE_CHANGE),
   ].join('\n')
 }
-
 
 export const formatChangesSummary = (changes: number, approved: number): string => {
   if (changes === 0) {
@@ -630,11 +628,6 @@ export const formatMoveFailed = (errorMessage: string): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatInvalidMoveArg = (invalidTo: string): string => [
-  formatSimpleError(Prompts.INVALID_MOVE_ARG(invalidTo)),
-  emptyLine(),
-].join('\n')
-
 export const formatElementListUnresolvedFailed = (errorMessage: string): string => [
   formatSimpleError(Prompts.LIST_UNRESOLVED_FAILED(errorMessage)),
   emptyLine(),
@@ -663,3 +656,20 @@ export const formatListUnresolvedMissing = (elemIDs: ElemID[]): string => [
   ...elemIDs.map(id => `  ${id.getFullName()}`),
   emptyLine(),
 ].join('\n')
+
+export const formatEnvDiff = (
+  changes: LocalChange[],
+  detailed: boolean,
+  toEnv: string,
+  fromEnv: string
+): string => {
+  const changesStr = changes.length > 0
+    ? formatDetailedChanges([changes.map(change => change.change)], detailed)
+    : 'No changes'
+  return [
+    emptyLine(),
+    header(Prompts.DIFF_CALC_DIFF_RESULT_HEADER(toEnv, fromEnv)),
+    changesStr,
+    emptyLine(),
+  ].join('\n')
+}

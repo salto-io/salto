@@ -15,7 +15,6 @@
 */
 import { streams } from '@salto-io/lowerdash'
 import { Telemetry, Tags, CommandConfig } from '@salto-io/core'
-import yargs from 'yargs'
 
 export type WriteStream = streams.MaybeTty & {
   write(s: string): void
@@ -30,6 +29,15 @@ export enum CliExitCode {
   Success = 0,
   UserInputError = 1,
   AppError = 2,
+}
+
+export class CliError extends Error {
+  constructor(
+    message: string,
+    readonly exitCode: CliExitCode,
+  ) {
+    super(message)
+  }
 }
 
 export interface Spinner {
@@ -65,13 +73,21 @@ export interface CliInput {
   // fs abstractions
 }
 
-// CliInput transformed after yargs did its work - args is replaced
-export interface ParsedCliInput<TParsedArgs = {}> extends Omit<CliInput, 'args'> {
-  args: yargs.Arguments<TParsedArgs>
+export type CommanderArgs<TParsedArgs = {}> = TParsedArgs & {
+  [key: string]: unknown
 }
 
+// export interface ParsedCliInput<TParsedArgs = {}> extends Omit<CliInput, 'args'> {
+//   args: CommanderArgs<TParsedArgs>
+// }
+
 export interface CliCommand {
-  execute(): Promise<CliExitCode>
+  execute(
+    telemetry?: Telemetry,
+    config?: CommandConfig,
+    output?: CliOutput,
+    spinnerCreator?: SpinnerCreator,
+  ): Promise<CliExitCode>
 }
 
 export type TelemetryEventNames = {
@@ -82,7 +98,6 @@ export type TelemetryEventNames = {
   changes: string
   changesToApply: string
   errors: string
-  failedRows: string
   actionsFailure: string
   actionsSuccess: string
   workspaceSize: string
@@ -96,10 +111,8 @@ export type CliTelemetry = {
   changes(n: number, tags?: Tags): void
   changesToApply(n: number, tags?: Tags): void
   errors(n: number, tags?: Tags): void
-  failedRows(n: number, tags?: Tags): void
   actionsSuccess(n: number, tags?: Tags): void
   actionsFailure(n: number, tags?: Tags): void
   workspaceSize(n: number, tags?: Tags): void
-
   stacktrace(err: Error, tags?: Tags): void
 }

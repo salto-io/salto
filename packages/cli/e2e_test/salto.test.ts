@@ -45,7 +45,6 @@ import {
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
-
 let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>
 
@@ -72,6 +71,8 @@ describe('cli e2e', () => {
     jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
       () => Promise.resolve('default')
     )
+    jest.spyOn(callbacksImpl, 'getCredentialsFromUser').mockImplementation(() =>
+      Promise.resolve(getSalesforceCredsInstance(credsLease.value)))
   })
 
   afterAll(workspaceHelpersCleanup)
@@ -148,7 +149,7 @@ describe('cli e2e', () => {
     if (await instanceExists(client, ROLE, newInstance2FullName)) {
       await client.delete(ROLE, newInstance2FullName)
     }
-    await runSalesforceLogin(fetchOutputDir, getSalesforceCredsInstance(credsLease.value))
+    await runSalesforceLogin(fetchOutputDir)
     await runFetch(fetchOutputDir)
   })
 

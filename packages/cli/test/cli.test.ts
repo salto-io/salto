@@ -15,82 +15,28 @@
 */
 import { logger } from '@salto-io/logging'
 import * as mocks from './mocks'
-import deployBuilder from '../src/commands/deploy'
+import deployDef from '../src/commands/deploy'
+import fetchDef from '../src/commands/fetch'
 import { CliExitCode } from '../src/types'
 
-describe('cli', () => {
+describe('cli as a whole', () => {
   let o: mocks.MockCliOutput
   const cliLogger = logger('cli/cli')
 
   jest.setTimeout(200)
   jest.spyOn(logger, 'end').mockResolvedValue(undefined)
-
-  const noArgsTests = (args: string | string[]): void => {
-    describe('when stderr is TTY with colors', () => {
-      beforeEach(async () => {
-        o = await mocks.cli({ args })
-      })
-
-      it('outputs the salto logo', () => {
-        expect(o.err).toContain('| () |')
-      })
-
-      it('outputs help to stderr', () => {
-        expect(o.err).toMatch(/\bCommands\b/)
-        expect(o.err).toMatch(/\bdeploy\b/)
-      })
-
-      it('exits with code 1 (user input error)', () => {
-        expect(o.exitCode).toEqual(CliExitCode.UserInputError)
-      })
-    })
-
-    describe('when stderr is not TTY', () => {
-      beforeEach(async () => {
-        o = await mocks.cli({ args, err: { isTTY: false } })
-      })
-
-      it('does not output the salto logo', () => {
-        expect(o.err).not.toContain('|\\   ____\\|\\')
-      })
-
-      it('outputs help to stderr', () => {
-        expect(o.err).toMatch(/\bCommands\b/)
-        expect(o.err).toMatch(/\bdeploy\b/)
-      })
-
-      it('exits with code 1', () => {
-        expect(o.exitCode).toEqual(1)
-      })
-    })
-
-    describe('when stderr is TTY without colors', () => {
-      beforeEach(async () => {
-        o = await mocks.cli({ args, err: { hasColors: false } })
-      })
-
-      it('does not use colors', () => {
-        expect(o.err).not.toMatch('\u001B')
-      })
-    })
-  }
-
-  describe('when called with no arguments', () => {
-    noArgsTests('')
-  })
-
-  describe('when called with only --verbose', () => {
-    noArgsTests('--verbose')
-  })
+  const consoleErrorSpy = jest.spyOn(console, 'error')
+  const stdout = jest.spyOn(process.stdout, 'write')
 
   describe('when called with --help', () => {
     beforeEach(async () => {
-      o = await mocks.cli({ args: '--help' })
+      stdout.mockClear()
+      o = await mocks.cli({ args: ['--help'] })
     })
 
     it('outputs help to stdout', () => {
-      expect(o.out).toMatch(/deploy/)
-      expect(o.out).toMatch('help')
+      expect(stdout).toHaveBeenCalledWith(expect.stringMatching(/deploy/))
+      expect(stdout).toHaveBeenCalledWith(expect.stringMatching('help'))
     })
 
     it('exits with code 0', () => {
@@ -100,11 +46,12 @@ describe('cli', () => {
 
   describe('when called with --version', () => {
     beforeEach(async () => {
-      o = await mocks.cli({ args: '--version' })
+      stdout.mockClear()
+      o = await mocks.cli({ args: ['--version'] })
     })
 
     it('outputs the version to stdout', () => {
-      expect(o.out).toMatch(/version \d+\.\d+\.\d+/)
+      expect(stdout).toHaveBeenCalledWith(expect.stringMatching(/version \d+\.\d+\.\d+/))
     })
 
     it('exits with code 0', () => {
@@ -114,12 +61,13 @@ describe('cli', () => {
 
   describe('when called with an invalid command', () => {
     beforeEach(async () => {
-      o = await mocks.cli({ args: 'nosuchcommand' })
+      consoleErrorSpy.mockClear()
+      o = await mocks.cli({ args: ['nosuchcommand'] })
     })
 
     it('outputs an error message to stderr', () => {
-      expect(o.err).toMatch(/Unknown argument: nosuchcommand/)
-      expect(o.err).toMatch(/--help/)
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringMatching(/unknown command 'nosuchcommand'/))
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringMatching(/--help/))
     })
 
     it('exits with code 1', () => {
@@ -128,16 +76,16 @@ describe('cli', () => {
   })
 
   describe('when called with a valid command argument', () => {
-    let deployCommand: jest.Mock<Promise<CliExitCode>>
+    let deployAction: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      deployCommand = jest.fn().mockImplementation(() => CliExitCode.Success)
-      jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
-      o = await mocks.cli({ args: 'deploy --force' })
+      deployAction = jest.fn().mockImplementation(() => CliExitCode.Success)
+      jest.spyOn(deployDef, 'action').mockImplementation(deployAction)
+      o = await mocks.cli({ args: ['deploy', '--force'] })
     })
 
     it('calls the command handler', () => {
-      expect(deployCommand).toHaveBeenCalled()
+      expect(deployAction).toHaveBeenCalled()
     })
 
     it('exits with code 0 (success)', () => {
@@ -145,17 +93,38 @@ describe('cli', () => {
     })
   })
 
+  describe('When called with an invalid choice', () => {
+    let fetchAction: jest.Mock<Promise<CliExitCode>>
+    beforeEach(async () => {
+      fetchAction = jest.fn()
+      jest.spyOn(fetchDef, 'action').mockImplementation(fetchAction)
+      o = await mocks.cli({ args: ['fetch', '--mode', 'unknown'] })
+    })
+
+    it('Should print error to stderr', () => {
+      expect(o.err).toMatch(/must be one of/)
+    })
+
+    it('Should not call fetch action', () => {
+      expect(fetchAction).not.toHaveBeenCalled()
+    })
+
+    it('exits with code 0', () => {
+      expect(o.exitCode).toEqual(0)
+    })
+  })
+
   describe('when command execution fails ', () => {
-    let deployCommand: jest.Mock<Promise<CliExitCode>>
+    let deployAction: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      deployCommand = jest.fn().mockImplementation(() => CliExitCode.AppError)
-      jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
-      o = await mocks.cli({ args: 'deploy --force' })
+      deployAction = jest.fn().mockImplementation(() => CliExitCode.AppError)
+      jest.spyOn(deployDef, 'action').mockImplementation(deployAction)
+      o = await mocks.cli({ args: ['deploy', '--force'] })
     })
 
     it('calls the command handler', () => {
-      expect(deployCommand).toHaveBeenCalled()
+      expect(deployAction).toHaveBeenCalled()
     })
 
     it('exits with code 2 (app error)', () => {
@@ -168,17 +137,17 @@ describe('cli', () => {
   })
 
   describe('when command execution throws error ', () => {
-    let deployCommand: jest.Mock<Promise<CliExitCode>>
+    let deployAction: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      deployCommand = jest.fn().mockImplementation(() => { throw new Error('blabla') })
+      deployAction = jest.fn().mockImplementation(() => { throw new Error('blabla') })
       jest.spyOn(cliLogger, 'error').mockReturnValue(undefined)
-      jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
-      o = await mocks.cli({ args: 'deploy --force' })
+      jest.spyOn(deployDef, 'action').mockImplementation(deployAction)
+      o = await mocks.cli({ args: ['deploy', '--force'] })
     })
 
     it('calls the command handler', () => {
-      expect(deployCommand).toHaveBeenCalled()
+      expect(deployAction).toHaveBeenCalled()
     })
 
     it('exits with code 2 (app error)', () => {
@@ -199,25 +168,11 @@ describe('cli', () => {
 
     beforeEach(async () => {
       setMinLevel = jest.spyOn(logger, 'setMinLevel')
-      await mocks.cli({ args: 'deploy --force --verbose' })
+      await mocks.cli({ args: ['deploy', '--force', '--verbose'] })
     })
 
     it('configures the logging to level debug', () => {
       expect(setMinLevel).toHaveBeenCalledWith('debug')
-    })
-  })
-
-  describe('when called with "completion"', () => {
-    beforeEach(async () => {
-      o = await mocks.cli({ args: 'completion' })
-    })
-
-    it('outputs a completion script', () => {
-      expect(o.out).toMatch(/begin-[^-]+-completions/)
-    })
-
-    it('exits with code 0 (success)', () => {
-      expect(o.exitCode).toEqual(CliExitCode.Success)
     })
   })
 })

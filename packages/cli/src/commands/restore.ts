@@ -13,37 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { restore, LocalChange, Tags } from '@salto-io/core'
-import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import { Workspace, nacl, createElementSelectors } from '@salto-io/workspace'
 import { EOL } from 'os'
-import _ from 'lodash'
-import { ServicesArgs, servicesFilter } from '../filters/service'
-import { EnvironmentArgs } from './env'
-import { ParsedCliInput, CliOutput, SpinnerCreator, CliExitCode, CliCommand, CliTelemetry } from '../types'
-import { createCommandBuilder } from '../command_builder'
-import { environmentFilter } from '../filters/env'
-import { getCliTelemetry } from '../telemetry'
+import { logger } from '@salto-io/logging'
+import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
+import { CliOutput, CliExitCode, CliTelemetry } from '../types'
+import { errorOutputLine, outputLine } from '../outputer'
+import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatChangesSummary, formatStepCompleted, formatStepFailed } from '../formatter'
+import Prompts from '../prompts'
 import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
-import Prompts from '../prompts'
-import { formatChangesSummary, formatDetailedChanges, formatRestoreFinish, formatInvalidFilters, formatStepStart, formatStepCompleted, formatStepFailed, header } from '../formatter'
-import { outputLine, errorOutputLine } from '../outputer'
-import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
+import { createPublicCommandDef, DefActionInput } from '../command_builder'
+import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './commons/services'
+import { EnvArg, ENVIORMENT_OPTION } from './commons/env'
 
 const log = logger(module)
-
-type RestoreArgs = {
-    force: boolean
-    interactive: boolean
-    dryRun: boolean
-    detailedPlan: boolean
-    listPlannedChanges: boolean
-    elementSelector: string[]
-  } & ServicesArgs & EnvironmentArgs & FetchModeArgs
-
-type RestoreParsedCliInput = ParsedCliInput<RestoreArgs>
-
 
 const printRestorePlan = (changes: LocalChange[], detailed: boolean, output: CliOutput): void => {
   outputLine(EOL, output)
@@ -59,213 +44,196 @@ const printRestorePlan = (changes: LocalChange[], detailed: boolean, output: Cli
   outputLine(EOL, output)
 }
 
-export const command = (
-  workspaceDir: string,
-  {
-    force,
-    interactive,
-    dryRun,
-    detailedPlan,
-    listPlannedChanges,
-  }: {
+type RestoreArgs = {
+    elementSelectors?: string[]
     force: boolean
     interactive: boolean
     dryRun: boolean
     detailedPlan: boolean
     listPlannedChanges: boolean
-  },
+    mode: nacl.RoutingMode
+} & ServicesArg & EnvArg
+
+const applyLocalChangesToWorkspace = async (
+  changes: LocalChange[],
+  workspace: Workspace,
+  workspaceTags: Tags,
   cliTelemetry: CliTelemetry,
+  config: CommandConfig,
   output: CliOutput,
-  spinnerCreator: SpinnerCreator,
   mode: nacl.RoutingMode,
-  shouldCalcTotalSize: boolean,
-  inputServices?: string[],
-  inputEnvironment?: string,
-  elementSelectors: string[] = []
-): CliCommand => {
-  const applyLocalChangesToWorkspace = async (
-    changes: LocalChange[],
-    workspace: Workspace,
-    workspaceTags: Tags,
-  ): Promise<boolean> => {
-    // If the workspace starts empty there is no point in showing a huge amount of changes
-    const changesToApply = force || (await workspace.isEmpty())
-      ? changes
-      : await getApprovedChanges(changes, interactive)
+  force: boolean,
+  interactive: boolean
+): Promise<boolean> => {
+  // If the workspace starts empty there is no point in showing a huge amount of changes
+  const changesToApply = force || (await workspace.isEmpty())
+    ? changes
+    : await getApprovedChanges(changes, interactive)
 
-    cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
-    outputLine(EOL, output)
-    outputLine(
-      formatStepStart(formatChangesSummary(changes.length, changesToApply.length)),
-      output,
-    )
+  cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
+  outputLine(EOL, output)
+  outputLine(
+    formatStepStart(formatChangesSummary(changes.length, changesToApply.length)),
+    output,
+  )
 
-    const success = await updateWorkspace({
-      workspace,
-      output,
-      changes: changesToApply,
-      mode,
-      force,
-    })
-    if (success) {
-      outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), output)
-      if (shouldCalcTotalSize) {
-        const totalSize = await workspace.getTotalSize()
-        log.debug(`Total size of the workspace is ${totalSize} bytes`)
-        cliTelemetry.workspaceSize(totalSize, workspaceTags)
-      }
-      return true
+  const success = await updateWorkspace({
+    workspace,
+    output,
+    changes: changesToApply,
+    mode,
+    force,
+  })
+  if (success) {
+    outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), output)
+    if (config.shouldCalcTotalSize) {
+      const totalSize = await workspace.getTotalSize()
+      log.debug(`Total size of the workspace is ${totalSize} bytes`)
+      cliTelemetry.workspaceSize(totalSize, workspaceTags)
     }
-    outputLine(formatStepFailed(Prompts.RESTORE_UPDATE_WORKSPACE_FAIL), output)
-    outputLine(EOL, output)
-    return false
+    return true
   }
-
-  return {
-    async execute(): Promise<CliExitCode> {
-      log.debug(`running restore command on '${workspaceDir}' [force=${force}, interactive=${
-        interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
-        listPlannedChanges}, mode=${mode}], environment=${inputEnvironment}, services=${inputServices}`)
-
-      const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
-      if (!_.isEmpty(invalidSelectors)) {
-        errorOutputLine(formatInvalidFilters(invalidSelectors), output)
-        return CliExitCode.UserInputError
-      }
-
-      const { workspace, errored } = await loadWorkspace(
-        workspaceDir,
-        output,
-        {
-          force,
-          printStateRecency: true,
-          spinnerCreator,
-          sessionEnv: inputEnvironment,
-        }
-      )
-      if (errored) {
-        cliTelemetry.failure()
-        return CliExitCode.AppError
-      }
-
-      const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-      cliTelemetry.start(workspaceTags)
-
-      outputLine(EOL, output)
-      outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
-
-      const changes = await restore(workspace, inputServices, validSelectors)
-      if (listPlannedChanges || dryRun) {
-        printRestorePlan(changes, detailedPlan, output)
-      }
-
-      outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), output)
-      outputLine(EOL, output)
-
-      if (dryRun) {
-        cliTelemetry.success(workspaceTags)
-        return CliExitCode.Success
-      }
-
-      const updatingWsSucceeded = await applyLocalChangesToWorkspace(
-        changes,
-        workspace,
-        workspaceTags,
-      )
-
-      if (updatingWsSucceeded) {
-        outputLine(formatRestoreFinish(), output)
-        cliTelemetry.success(workspaceTags)
-        return CliExitCode.Success
-      }
-      cliTelemetry.failure(workspaceTags)
-      return CliExitCode.AppError
-    },
-  }
+  outputLine(formatStepFailed(Prompts.RESTORE_UPDATE_WORKSPACE_FAIL), output)
+  outputLine(EOL, output)
+  return false
 }
 
-const restoreBuilder = createCommandBuilder({
-  options: {
-    command: 'restore [element-selector..]',
-    description: 'Restore configuration element(s) from the state file',
-    positional: {
-      'element-selector': {
-        description: 'Array of configuration element patterns',
-      },
+const action = async (
+  {
+    input: {
+      elementSelectors = [], force, interactive, dryRun,
+      detailedPlan, listPlannedChanges, services, env, mode,
     },
-    keyed: {
-      force: {
-        alias: ['f'],
-        describe: 'Accept all incoming changes',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      interactive: {
-        alias: ['i'],
-        describe: 'Interactively approve every incoming change',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      isolated: {
-        alias: ['t'],
-        describe: 'Restrict restore from modifying common configuration '
-            + '(might result in changes in other env folders)',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      'dry-run': {
-        alias: ['d'],
-        describe: 'Preview the restore plan without making changes',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      'detailed-plan': {
-        alias: ['p'],
-        describe: 'Print detailed changes including values',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      'list-planned-changes': {
-        alias: ['l'],
-        describe: 'Print a summary of the planned changes',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-    },
-  },
-
-  filters: [servicesFilter, environmentFilter, fetchModeFilter],
-
-  async build(
-    input: RestoreParsedCliInput,
-    output: CliOutput,
-    spinnerCreator: SpinnerCreator
-  ): Promise<CliCommand> {
-    return command(
-      '.',
-      {
-        force: input.args.force,
-        interactive: input.args.interactive,
-        dryRun: input.args.dryRun,
-        detailedPlan: input.args.detailedPlan,
-        listPlannedChanges: input.args.listPlannedChanges,
-      },
-      getCliTelemetry(input.telemetry, 'restore'),
-      output,
+    cliTelemetry,
+    config,
+    output,
+    spinnerCreator,
+    workingDir = '.',
+  }: DefActionInput<RestoreArgs>,
+): Promise<CliExitCode> => {
+  log.debug(`running restore command on '${workingDir}' [force=${force}, interactive=${
+    interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
+    listPlannedChanges}, mode=${mode}], environment=${env}, services=${services}`)
+  const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
+  if (!_.isEmpty(invalidSelectors)) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
+  const { workspace, errored } = await loadWorkspace(
+    workingDir,
+    output,
+    {
+      force,
+      printStateRecency: true,
       spinnerCreator,
-      input.args.mode,
-      input.config.shouldCalcTotalSize,
-      input.args.services,
-      input.args.env,
-      input.args.elementSelector
-    )
+      sessionEnv: env,
+    }
+  )
+  if (errored) {
+    cliTelemetry.failure()
+    return CliExitCode.AppError
+  }
+  const actualServices = getAndValidateActiveServices(workspace, services)
+
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  cliTelemetry.start(workspaceTags)
+
+  outputLine(EOL, output)
+  outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
+
+  const changes = await restore(workspace, actualServices, validSelectors)
+  if (listPlannedChanges || dryRun) {
+    printRestorePlan(changes, detailedPlan, output)
+  }
+
+  outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), output)
+  outputLine(EOL, output)
+
+  if (dryRun) {
+    cliTelemetry.success(workspaceTags)
+    return CliExitCode.Success
+  }
+
+  const updatingWsSucceeded = await applyLocalChangesToWorkspace(
+    changes,
+    workspace,
+    workspaceTags,
+    cliTelemetry,
+    config,
+    output,
+    mode,
+    force,
+    interactive,
+  )
+
+  if (updatingWsSucceeded) {
+    outputLine(formatRestoreFinish(), output)
+    cliTelemetry.success(workspaceTags)
+    return CliExitCode.Success
+  }
+  cliTelemetry.failure(workspaceTags)
+  return CliExitCode.AppError
+}
+
+const restoreDef = createPublicCommandDef({
+  properties: {
+    name: 'restore',
+    description: 'Restore configuration element(s) from the state file',
+    positionals: [
+      {
+        name: 'elementSelectors',
+        description: 'Array of configuration element patterns',
+        type: 'stringsList',
+        required: false,
+      },
+    ],
+    options: [
+      {
+        name: 'force',
+        alias: 'f',
+        required: false,
+        description: 'Accept all incoming changes, even if there\'s a conflict with local changes',
+        type: 'boolean',
+      },
+      {
+        name: 'interactive',
+        alias: 'i',
+        required: false,
+        description: 'Interactively approve every incoming change',
+        type: 'boolean',
+      },
+      {
+        name: 'dryRun',
+        alias: 'd',
+        description: 'Review the execution plan without deploying the changes',
+        type: 'boolean',
+      },
+      {
+        name: 'detailedPlan',
+        alias: 'p',
+        description: 'Print detailed plan including value changes',
+        type: 'boolean',
+      },
+      {
+        name: 'listPlannedChanges',
+        alias: 'l',
+        description: 'Print a summary of the planned changes',
+        type: 'boolean',
+      },
+      SERVICES_OPTION,
+      ENVIORMENT_OPTION,
+      {
+        name: 'mode',
+        alias: 'm',
+        required: false,
+        description: 'Choose a restore mode. Options - [align, override, isolated]',
+        type: 'string',
+        choices: ['isolated', 'default', 'align', 'override'],
+        default: 'default',
+      },
+    ],
   },
+  action,
 })
 
-export default restoreBuilder
+export default restoreDef

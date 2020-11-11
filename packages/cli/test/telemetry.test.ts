@@ -1,4 +1,3 @@
-
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -14,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { buildEventName, getCliTelemetry } from '../src/telemetry'
 import { CliTelemetry } from '../src/types'
 import { getMockTelemetry, MockTelemetry } from './mocks'

@@ -13,85 +13,126 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import yargs from 'yargs'
-import { ParsedCliInput, CliOutput, CliCommand, SpinnerCreator } from './types'
-import { Filter } from './filter'
+import { types, collections } from '@salto-io/lowerdash'
+import { Telemetry, CommandConfig } from '@salto-io/core'
+import { CliOutput, SpinnerCreator, CliExitCode, CliTelemetry } from './types'
+import { VERBOSE_OPTION } from './commands/commons/options'
+import { getCliTelemetry } from './telemetry'
 
-export type CommandBuilder<
-  TArgs = {},
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
-  > =
-  // Create a CliCommand given a parsed CLI input (output of yargs parser) and output interface
-  (input: TParsedCliInput, output: CliOutput, spinner: SpinnerCreator) => Promise<CliCommand>
+const { makeArray } = collections.array
 
-export interface KeyedOptions { [key: string]: yargs.Options }
-export interface PositionalOptions { [key: string]: yargs.PositionalOptions }
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
-export interface YargsModuleOpts {
-  // Name of this command in the CLI, e.g., 'deploy'
-  // If positional arguments are included, they also need to be specified here
-  // See: https://github.com/yargs/yargs/blob/master/docs/advanced.md#positional-arguments
-  command: string
+export interface CommandsGroupDef {
+  properties: BasicCommandProperties
+  subCommands: CommandOrGroupDef[]
+}
 
-  // Additional or shorthand names, e.g, 'a'
-  aliases?: string[]
+export type ActionInput<T> = {
+  input: T
+  telemetry: Telemetry
+  config: CommandConfig
+  output: CliOutput
+  spinnerCreator?: SpinnerCreator
+  workingDir?: string
+}
 
-  // Description to be shown in help
+export type CommandAction<T> = (args: ActionInput<T>) => Promise<CliExitCode>
+
+export type DefActionInput<T> = {
+  input: T
+  output: CliOutput
+  cliTelemetry: CliTelemetry
+  config: CommandConfig
+  spinnerCreator?: SpinnerCreator
+  workingDir?: string
+}
+
+type CommandDefAction<T> = (args: DefActionInput<T>) => Promise<CliExitCode>
+
+export type CommandDef<T> = {
+  properties: CommandOptions<T>
+  action: CommandAction<T>
+}
+
+export type CommandInnerDef<T> = {
+  properties: CommandOptions<T>
+  action: CommandDefAction<T>
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export const isCommand = (c: CommandOrGroupDef): c is CommandDef<any> =>
+  (c !== undefined && Object.keys(c).includes('action'))
+
+type BasicCommandProperties = {
+  name: string
   description: string
-
-  // Positional arguments
-  positional?: PositionalOptions
-
-  // Keyed arguments
-  keyed?: KeyedOptions
+  aliases?: string[]
 }
 
-export interface YargsCommandBuilder<
-  TArgs = {},
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
-  > {
-  // Yargs CommandModule for this command
-  // See https://github.com/yargs/yargs/blob/master/docs/advanced.md#providing-a-command-module
-  yargsModule: Omit<yargs.CommandModule, 'handler'>
-
-  // Creates the actual command
-  build: CommandBuilder<TArgs, TParsedCliInput>
+type CommandOptions<T> = BasicCommandProperties & {
+  options?: KeyedOption<T>[]
+  positionals?: PositionalOption<T>[]
 }
 
-export const createCommandBuilder = <
-  TArgs = {},
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
->(
-    { options, filters = [], build }:
-    {
-      options: YargsModuleOpts
-      filters?: Filter[]
-      build: CommandBuilder<TArgs, TParsedCliInput>
-    }): YargsCommandBuilder<TArgs, TParsedCliInput> => ({
+export type OptionType = {
+  boolean: boolean
+  string: string
+  stringsList: string[]
+}
 
-    yargsModule: {
-      command: options.command,
-      aliases: options.aliases,
-      describe: options.description,
-      builder: (parser: yargs.Argv) => {
-        // deploy positional arguments
-        Object.entries(options.positional || {})
-          .reduce((res, [key, opt]) => res.positional(key, opt), parser)
+type GetTypeEnumValue<T> = types.KeysOfExtendingType<OptionType, T>
 
-        // apply keyed arguments
-        parser.options(options.keyed || {})
-        parser.version(false)
+// TODO: Remove this when default string[] is allowed in Commander
+type GetOptionsDefaultType<T> = T extends string[] ? never : T
 
-        // apply filters
-        return Filter.applyParser(filters, parser)
-      },
+type PossiblePositionalArgs<T> = types.KeysOfExtendingType<T, string | string[] | undefined>
+
+type ChoicesType<T> = T extends string ? string[] : never
+
+export type PositionalOption<T, Name = PossiblePositionalArgs<T>>
+  = Name extends PossiblePositionalArgs<T> ? {
+  name: Name
+  required: boolean
+  description?: string
+  type: Exclude<GetTypeEnumValue<T[Name]>, 'boolean'>
+  default?: GetOptionsDefaultType<T[Name]>
+  choices?: ChoicesType<T[Name]>
+} : never
+
+export type KeyedOption<T, Name extends keyof T = keyof T> = Name extends keyof T ? {
+  name: Name
+  required?: boolean
+  description?: string
+  alias?: string
+  type: GetTypeEnumValue<T[Name]>
+  default?: GetOptionsDefaultType<T[Name]>
+  choices?: ChoicesType<T[Name]>
+} : never
+
+export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T> => {
+  const action = async (
+    { input, telemetry, config, output, spinnerCreator, workingDir }: ActionInput<T>,
+  ): Promise<CliExitCode> => {
+    // TODO: Handle sub command full names
+    const cliTelemetry = getCliTelemetry(telemetry, def.properties.name)
+    return def.action({
+      input, cliTelemetry, config, output, spinnerCreator, workingDir,
+    })
+  }
+  // Add verbose to all commands
+  const options = [
+    ...makeArray(def.properties.options),
+    VERBOSE_OPTION as KeyedOption<T>,
+  ]
+  return {
+    properties: {
+      ...def.properties,
+      options,
     },
-    async build(
-      input: TParsedCliInput,
-      output: CliOutput,
-      spinnerCreator: SpinnerCreator
-    ): Promise<CliCommand> {
-      const transformedInput = await Filter.applyParsedCliInput(filters, input) as TParsedCliInput
-      return build(transformedInput, output, spinnerCreator)
-    },
-  })
+    action,
+  }
+}
+
+export const createCommandGroupDef = (def: CommandsGroupDef): CommandsGroupDef => def

@@ -103,7 +103,6 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly FINISHED_LOADING = 'Finished loading workspace'
   public static readonly FINISHED_LOADING_FOR_ENV = `${Prompts.FINISHED_LOADING} for environment`
 
-
   public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`}.`
 
@@ -203,7 +202,6 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Failed to created element ID filters for: ${invalidFilters}. Invalid Regex provided.`
 
   public static readonly MISSING_ELEMENT_SELECTORS = 'No element selectors specified'
-
   public static readonly DIFF_CALC_DIFF_START = (
     toEnv: string,
     fromEnv: string
@@ -242,13 +240,13 @@ ${Prompts.SERVICE_ADD_HELP}`
     to: string,
   ): string => `Moving the specified elements to ${to}.`
 
-  public static readonly MOVE_FAILED = (
-    error: string
-  ): string => `Failed to move the specified elements: ${error}`
-
   public static readonly LIST_UNRESOLVED_FAILED = (
     error: string
   ): string => `Failed to list unresolved references: ${error}`
+
+  public static readonly MOVE_FAILED = (
+    error: string
+  ): string => `Failed to move the specified elements: ${error}`
 
   public static readonly CLONE_TO_ENV_START = (
     targetEnvs: string[] = []

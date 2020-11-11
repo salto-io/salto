@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { createElementSelector } from '@salto-io/workspace'
+import { CommandOrGroupDef, isCommand, CommandAction } from '../src/command_builder'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const expectElementSelector = (selector: string): any => (
@@ -23,3 +24,20 @@ export const expectElementSelector = (selector: string): any => (
       'idTypeSelector', 'nameSelectorRegexes', 'origin', 'typeNameSelector')
   )])
 )
+
+export const findSubCommandByName = (
+  subCommands: CommandOrGroupDef[],
+  name: string,
+): CommandOrGroupDef | undefined =>
+  (subCommands.find(subCommand => subCommand.properties.name === name))
+
+export const getSubCommandAction = <T>(
+  subCommands: CommandOrGroupDef[],
+  name: string,
+): CommandAction<T> | undefined => {
+  const command = findSubCommandByName(subCommands, name)
+  if (command !== undefined && isCommand(command)) {
+    return command.action
+  }
+  return undefined
+}

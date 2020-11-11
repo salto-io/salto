@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
 import { Plan, PlanItem } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
+import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import { DeployCommand } from '../../src/commands/deploy'
+import deployDef from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace/workspace'
-import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import { buildEventName } from '../../src/telemetry'
 
+const { action } = deployDef
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -54,136 +54,86 @@ const eventsNames = {
 }
 
 describe('deploy command', () => {
-  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  let command: DeployCommand
-  let mockTelemetry: mocks.MockTelemetry
-  let mockCliTelemetry: CliTelemetry
+  let telemetry: mocks.MockTelemetry
+  const config = { shouldCalcTotalSize: true }
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
+  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const services = ['salesforce']
-  const environment = 'inactive'
+  const env = 'inactive'
 
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
   mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
 
   beforeEach(() => {
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'deploy')
+    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     spinnerCreator = mocks.mockSpinnerCreator(spinners)
   })
 
-  describe('valid deploy', () => {
-    beforeEach(() => {
-      command = new DeployCommand(
-        '',
-        true /* force */,
-        false /* dryRun */,
-        false /* detailedPlan */,
-        mockCliTelemetry,
-        cliOutput,
-        spinnerCreator,
-        services,
-      )
-    })
-
-    describe('report progress upon updates', () => {
-      describe('items updated as started', () => {
-        beforeEach(() => {
-          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'started'))
-        })
-        it('should print action upon started step', async () => {
-          expect(cliOutput.stdout.content.search('salesforce.lead')).toBeGreaterThan(0)
-          expect(cliOutput.stdout.content.search('Changing')).toBeGreaterThan(0)
-        })
-        it('should print completion upon finish', async () => {
-          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'finished'))
-          expect(cliOutput.stdout.content.search('Change completed')).toBeGreaterThan(0)
-        })
-        it('should print failure upon error', async () => {
-          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'error', 'error reason'))
-          expect(cliOutput.stderr.content.search('Failed')).toBeGreaterThan(0)
-        })
-        it('it should cancel upon cancelling', async () => {
-          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'cancelled', 'parent-node-name'))
-          expect(cliOutput.stdout.content.search('Cancelled')).toBeGreaterThan(0)
-        })
-      })
-    })
-
-    describe('execute deploy', () => {
-      let content: string
-      beforeAll(async () => {
-        await command.execute()
-        content = cliOutput.stdout.content
-      })
-      it('should load workspace', () => {
-        expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-      })
-      it('should print completeness', () => {
-        expect(content).toContain('Deployment succeeded')
-      })
-      it('should update workspace', () => {
-        expect(workspace.updateWorkspace as jest.Mock).toHaveBeenCalledTimes(1)
-      })
-      it('should use current env when env is not provided', () => {
-        expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual('active')
-      })
-    })
-  })
-
-  describe('should deploy user input', () => {
+  describe('should deploy considering user input', () => {
     let content: string
     const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
-    beforeEach(async () => {
-      command = new DeployCommand(
-        '',
-        false /* force */,
-        false /* dryRun */,
-        false /* detailedPlan */,
-        mockCliTelemetry,
-        cliOutput,
-        spinnerCreator,
-        services,
-      )
+    beforeEach(() => {
+      telemetry = mocks.getMockTelemetry()
     })
 
     it('should continue with deploy when user input is y', async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(true)
-      await command.execute()
-      content = cliOutput.stdout.content
+      await action({
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          services,
+        },
+        output,
+        telemetry,
+        spinnerCreator,
+        config,
+      })
+      content = output.stdout.content
       expect(content).toContain('Starting the deployment plan')
       expect(content).toContain('Deployment succeeded')
     })
 
     it('should not deploy when user input is n', async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(false)
-      await command.execute()
-      content = cliOutput.stdout.content
+      await action({
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          services,
+        },
+        output,
+        telemetry,
+        spinnerCreator,
+        config,
+      })
+      content = output.stdout.content
       expect(content).toContain('Cancelling deploy')
       expect(content).not.toContain('Deployment succeeded')
     })
   })
 
-  describe('should not deploy dry-run', () => {
+  describe('should not deploy on dry-run', () => {
     let content: string
-    beforeEach(async () => {
-      command = new DeployCommand(
-        '',
-        false /* force */,
-        true /* dryRun */,
-        false /* detailedPlan */,
-        mockCliTelemetry,
-        cliOutput,
-        spinnerCreator,
-        services,
-      )
-    })
-
     it('should not deploy when dry-run flag is set', async () => {
-      const result = await command.execute()
+      telemetry = mocks.getMockTelemetry()
+      const result = await action({
+        input: {
+          force: false,
+          dryRun: true,
+          detailedPlan: false,
+          services,
+        },
+        output,
+        telemetry,
+        spinnerCreator,
+        config,
+      })
       expect(result).toBe(CliExitCode.Success)
-      content = cliOutput.stdout.content
+      content = output.stdout.content
       // exit without attempting to deploy
       expect(content).not.toContain('Cancelling deploy')
       expect(content).not.toContain('Deployment succeeded')
@@ -192,50 +142,52 @@ describe('deploy command', () => {
 
   describe('detailed plan', () => {
     let content: string
-    beforeEach(async () => {
-      command = new DeployCommand(
-        '',
-        false /* force */,
-        true /* dryRun */,
-        true /* detailedPlan */,
-        mockCliTelemetry,
-        cliOutput,
-        spinnerCreator,
-        services,
-      )
-    })
 
     it('should include value changes when detailed-plan is set', async () => {
-      await command.execute()
-      content = cliOutput.stdout.content
+      telemetry = mocks.getMockTelemetry()
+      await action({
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: true,
+          services,
+        },
+        output,
+        telemetry,
+        spinnerCreator,
+        config,
+      })
+      content = output.stdout.content
       expect(content).toMatch(/M.*name: "FirstEmployee" => "PostChange"/)
     })
   })
 
   describe('invalid deploy', () => {
-    beforeEach(() => {
-      // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new DeployCommand(
-        'errorDir',
-        true /* force */,
-        false /* dryRun */,
-        false /* detailedPlan */,
-        mockCliTelemetry,
-        cliOutput,
-        spinnerCreator,
-        services,
-      )
-    })
     it('should fail gracefully', async () => {
-      const result = await command.execute()
+      telemetry = mocks.getMockTelemetry()
+      // Running with base dir 'errorDir' will cause the mock to throw an error
+      const result = await action({
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          services,
+        },
+        output,
+        telemetry,
+        spinnerCreator,
+        config,
+        workingDir: 'errorDir',
+      })
       expect(result).toBe(CliExitCode.AppError)
-      expect(mockTelemetry.getEvents()).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+      expect(telemetry.getEvents()).toHaveLength(1)
+      expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     })
   })
   describe('when deploy result makes the workspace invalid', () => {
     beforeEach(() => {
-      const mockWs = mocks.mockLoadWorkspaceEnvironment('', cliOutput, {})
+      telemetry = mocks.getMockTelemetry()
+      const mockWs = mocks.mockLoadWorkspaceEnvironment('', output, {})
       mockLoadWorkspace.mockResolvedValueOnce(mockWs)
       const mockUpdateNacls = mockWs.workspace.updateNaclFiles as jest.Mock
       const mockWorkspaceErrors = mockWs.workspace.errors as jest.Mock
@@ -249,62 +201,60 @@ describe('deploy command', () => {
       mockGetUserBooleanInput.mockReturnValue(true)
     })
     describe('when called without force', () => {
-      beforeEach(() => {
-        command = new DeployCommand(
-          '',
-          false /* force */,
-          false /* dryRun */,
-          false /* detailedPlan */,
-          mockCliTelemetry,
-          cliOutput,
-          spinnerCreator,
-          services,
-        )
-      })
       it('should fail after asking whether to write', async () => {
-        const result = await command.execute()
+        const result = await action({
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: false,
+            services,
+          },
+          output,
+          telemetry,
+          spinnerCreator,
+          config,
+        })
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).toHaveBeenCalled()
       })
     })
     describe('when called with force', () => {
-      beforeEach(() => {
-        command = new DeployCommand(
-          '',
-          true /* force */,
-          false /* dryRun */,
-          false /* detailedPlan */,
-          mockCliTelemetry,
-          cliOutput,
-          spinnerCreator,
-          services,
-        )
-      })
       it('should fail without user interaction', async () => {
-        const result = await command.execute()
+        const result = await action({
+          input: {
+            force: true,
+            dryRun: false,
+            detailedPlan: false,
+            services,
+          },
+          output,
+          telemetry,
+          spinnerCreator,
+          config,
+        })
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
       })
     })
   })
   describe('Using environment variable', () => {
-    beforeAll(async () => {
+    it('should use provided env', async () => {
+      telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockClear()
-      command = new DeployCommand(
-        '',
-        true /* force */,
-        false /* dryRun */,
-        false /* detailedPlan */,
-        mockCliTelemetry,
-        cliOutput,
+      await action({
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          services,
+          env,
+        },
+        output,
+        telemetry,
         spinnerCreator,
-        services,
-        environment,
-      )
-      await command.execute()
-    })
-    it('should use provided env', () => {
-      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(environment)
+        config,
+      })
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(env)
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
     })
   })

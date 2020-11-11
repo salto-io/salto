@@ -18,7 +18,7 @@ import { Repo, Pool, LeaseWithStatus } from '../src/index'
 
 const mockFunc = <
   T,
-  FN extends types.FunctionPropertyNames<T>,
+  FN extends types.KeysOfType<T, Function>,
   F extends T[FN] = T[FN],
   RT extends ReturnType<F> = ReturnType<F>,
   PT extends Parameters<F> = Parameters<F>,
@@ -31,7 +31,7 @@ export type MockObj<T> = T & {
 
 const mockPoolFunc = <
   T,
-  FN extends types.FunctionPropertyNames<Pool<T>>,
+  FN extends types.KeysOfType<Pool<T>, Function>,
   F extends Pool<T>[FN] = Pool<T>[FN],
   >(): jest.Mock<ReturnType<F>, Parameters<F>> => mockFunc<Pool<T>, FN>()
 

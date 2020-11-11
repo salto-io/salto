@@ -16,21 +16,24 @@
 import { Workspace } from '@salto-io/workspace'
 import * as core from '@salto-io/core'
 import { ElemID } from '@salto-io/adapter-api'
-import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
-import { command } from '../../src/commands/element'
-
+import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
+import elementDef from '../../src/commands/element'
 import * as mocks from '../mocks'
+import { getSubCommandAction } from '../utils'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
-import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import { buildEventName } from '../../src/telemetry'
 import Prompts from '../../src/prompts'
 import { formatTargetEnvRequired } from '../../src/formatter'
 
-const commandName = 'element'
-const eventsNames = {
-  success: buildEventName(commandName, 'success'),
-  start: buildEventName(commandName, 'start'),
-  failure: buildEventName(commandName, 'failure'),
-}
+import { CommandAction } from '../../src/command_builder'
+
+const { subCommands } = elementDef
+
+const eventsNames = (cmdName: string): Record<string, string> => ({
+  success: buildEventName(cmdName, 'success'),
+  start: buildEventName(cmdName, 'start'),
+  failure: buildEventName(cmdName, 'failure'),
+})
 
 const mockedList: typeof core.listUnresolvedReferences = (_workspace, completeFromEnv) => (
   completeFromEnv !== undefined
@@ -49,11 +52,12 @@ jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   listUnresolvedReferences: jest.fn().mockImplementation((_ws, env) => mockedList(_ws, env)),
 }))
-describe('element command', () => {
+describe('Element command group', () => {
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
-  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  const config = { shouldCalcTotalSize: true }
+  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockLoadWorkspace = mockCliWorkspace.loadWorkspace as jest.Mock
 
   beforeEach(() => {
@@ -62,677 +66,724 @@ describe('element command', () => {
   })
 
   let result: number
-  let mockTelemetry: mocks.MockTelemetry
-  let mockCliTelemetry: CliTelemetry
-  describe('with errored workspace', () => {
-    beforeEach(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      const erroredWorkspace = {
-        hasErrors: () => true,
-        errors: { strings: () => ['some error'] },
-        config: { services },
-      } as unknown as Workspace
-      mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        ['salto.Account'],
-        'active',
-        ['incative'],
-        undefined,
-      ).execute()
-    })
+  let telemetry: mocks.MockTelemetry
 
-    it('should fail', async () => {
-      expect(result).toBe(CliExitCode.AppError)
-      expect(mockTelemetry.getEvents().length).toEqual(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure][0].value).toEqual(1)
-    })
-  })
-
-  describe('when workspace throws an error on clone', () => {
-    const workspaceName = 'unexpected-error'
-    const workspace = {
-      ...mocks.mockLoadWorkspace(workspaceName),
-      flush: async () => {
-        throw new Error('Oy Vey Zmir')
-      },
-    }
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+  describe('Clone command', () => {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    let cloneAction: CommandAction<any>
+    const cloneName = 'clone'
+    beforeAll((() => {
+      const cloneSubCommandAction = getSubCommandAction(subCommands, cloneName)
+      expect(cloneSubCommandAction).toBeDefined()
+      if (cloneSubCommandAction !== undefined) {
+        cloneAction = cloneSubCommandAction
+      }
+    }))
+    describe('with errored workspace', () => {
+      beforeEach(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        const erroredWorkspace = {
+          hasErrors: () => true,
+          errors: { strings: () => ['some error'] },
+          config: { services },
+        } as unknown as Workspace
+        mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
+        result = await cloneAction({
+          input: {
+            elementSelector: ['salto.Account'],
+            toEnvs: ['incative'],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+        })
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        ['salto.Account'],
-        'active',
-        ['inactive'],
-        undefined,
-      ).execute()
-    })
 
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.AppError)
-    })
-
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain('Failed to clone the specified elements to the target environments')
-    })
-  })
-
-  describe('when workspace throws an error on move-to-envs', () => {
-    const workspaceName = 'unexpected-error'
-    const workspace = {
-      ...mocks.mockLoadWorkspace(workspaceName),
-      flush: async () => {
-        throw new Error('Oy Vey Zmir')
-      },
-    }
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should fail', async () => {
+        expect(result).toBe(CliExitCode.AppError)
+        expect(telemetry.getEvents().length).toEqual(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).failure]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).failure][0].value).toEqual(1)
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move-to-envs',
-        false,
-        ['salto.Account'],
-        undefined,
-        undefined,
-        undefined
-      ).execute()
     })
 
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.AppError)
-    })
-
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
-    })
-  })
-
-  describe('when workspace throws an error on move-to-common', () => {
-    const workspaceName = 'unexpected-error'
-    const workspace = {
-      ...mocks.mockLoadWorkspace(workspaceName),
-      flush: async () => {
-        throw new Error('Oy Vey Zmir')
-      },
-    }
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+    describe('when workspace throws an error on clone', () => {
+      const workspaceName = 'unexpected-error'
+      const workspace = {
+        ...mocks.mockLoadWorkspace(workspaceName),
+        flush: async () => {
+          throw new Error('Oy Vey Zmir')
+        },
+      }
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await cloneAction({
+          input: {
+            elementSelector: ['salto.Account'],
+            toEnvs: ['inactive'],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move-to-common',
-        false,
-        ['salto.Account'],
-        undefined,
-        undefined,
-        undefined
-      ).execute()
-    })
 
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.AppError)
-    })
-
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
-    })
-  })
-
-  describe('with invalid element selectors', () => {
-    const workspaceName = 'invalid-input'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.AppError)
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        ['a.b.c.d'],
-        'active',
-        ['inactive'],
-        undefined,
 
-      ).execute()
-    })
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.UserInputError)
-    })
-    it('should not call workspace copyTo', () => {
-      expect(workspace.copyTo).not.toHaveBeenCalled()
-    })
-    it('should not call workspace promote', () => {
-      expect(workspace.promote).not.toHaveBeenCalled()
-    })
-    it('should not call workspace demote', () => {
-      expect(workspace.demote).not.toHaveBeenCalled()
-    })
-
-    it('should not flush workspace', () => {
-      expect(workspace.flush).not.toHaveBeenCalled()
-    })
-
-    it('should not send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(0)
-    })
-
-    it('should print clone to console', () => {
-      expect(cliOutput.stderr.content).toContain('Failed to created element ID filters')
-    })
-  })
-
-  describe('with missing element selectors', () => {
-    const workspaceName = 'missing-selectors'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).failure]).toHaveLength(1)
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        [],
-        'active',
-        ['inactive'],
-        undefined,
 
-      ).execute()
-    })
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.UserInputError)
-    })
-    it('should not call workspace copyTo', () => {
-      expect(workspace.copyTo).not.toHaveBeenCalled()
-    })
-    it('should not flush workspace', () => {
-      expect(workspace.flush).not.toHaveBeenCalled()
-    })
-    it('should not send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(0)
-    })
-
-    it('should print clone to console', () => {
-      expect(cliOutput.stderr.content).toContain('No element selectors specified')
-    })
-  })
-
-  describe('with clone without to-envs', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-    mockLoadWorkspace.mockResolvedValue({
-      workspace,
-      errored: false,
-    })
-    it('should fail', async () => {
-      await expect(await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        ['salesforce.Account'],
-        undefined,
-        ['inactive'],
-        undefined,
-      ).execute()).toBe(CliExitCode.UserInputError)
-    })
-  })
-
-  describe('with move-to-common without env option', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-    mockLoadWorkspace.mockResolvedValue({
-      workspace,
-      errored: false,
-    })
-    it('should succeed', async () => {
-      await expect(await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move-to-common',
-        false,
-        ['salesforce.Account'],
-        undefined,
-        undefined,
-        undefined,
-      ).execute()).toBe(CliExitCode.Success)
-    })
-  })
-
-  describe('with move-to-envs without env option', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-    mockLoadWorkspace.mockResolvedValue({
-      workspace,
-      errored: false,
-    })
-    it('should succeed', async () => {
-      await expect(await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move-to-envs',
-        false,
-        ['salesforce.Account'],
-        undefined,
-        undefined,
-        undefined,
-      ).execute()).toBe(CliExitCode.Success)
-    })
-  })
-
-  describe('with invalid element command', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-    mockLoadWorkspace.mockResolvedValue({
-      workspace,
-      errored: false,
-    })
-    it('should fail', async () => {
-      await expect(await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'InvalidCommand',
-        false,
-        ['salesforce.Account'],
-        'active',
-        ['inactive'],
-        undefined,
-      ).execute()).toBe(CliExitCode.UserInputError)
-    })
-  })
-
-  describe('valid clone', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain('Failed to clone the specified elements to the target environments')
       })
-      workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        [selector.getFullName()],
-        'active',
-        ['inactive'],
-        undefined,
-      ).execute()
     })
 
-
-    it('should return success code', () => {
-      expect(result).toBe(CliExitCode.Success)
-    })
-    it('should call workspace copyTo', () => {
-      expect(workspace.copyTo).toHaveBeenCalledWith([selector], ['inactive'])
-    })
-
-    it('should flush workspace', () => {
-      expect(workspace.flush).toHaveBeenCalled()
-    })
-
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
-    })
-
-    it('should print clone to console', () => {
-      expect(cliOutput.stdout.content).toContain('Cloning the specified elements to inactive.')
-    })
-  })
-
-  describe('clone with invalid envs', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+    describe('with invalid element selectors', () => {
+      const workspaceName = 'invalid-input'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await cloneAction({
+          input: {
+            elementSelector: ['a.b.c.d'],
+            toEnvs: ['inactive'],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        [selector.getFullName()],
-        'active',
-        ['inactive', 'unknown'],
-        undefined,
-      ).execute()
-    })
 
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.UserInputError)
-    })
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain('Unknown target environment')
-    })
-  })
-  describe('clone with empty list as target envs', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        [selector.getFullName()],
-        'active',
-        [],
-        undefined
-      ).execute()
-    })
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.UserInputError)
-    })
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain(formatTargetEnvRequired())
-    })
-  })
-  describe('clone with current env as target env', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should not call workspace copyTo', () => {
+        expect(workspace.copyTo).not.toHaveBeenCalled()
       })
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'clone',
-        false,
-        [selector.getFullName()],
-        'active',
-        ['active'],
-        undefined
-      ).execute()
-    })
-
-    it('should return failure code', () => {
-      expect(result).toBe(CliExitCode.UserInputError)
-    })
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
-    })
-
-    it('should print failure to console', () => {
-      expect(cliOutput.stderr.content)
-        .toContain(Prompts.INVALID_ENV_TARGET_CURRENT)
-    })
-  })
-  describe('valid move to common', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should not call workspace promote', () => {
+        expect(workspace.promote).not.toHaveBeenCalled()
       })
-      workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move-to-common',
-        false,
-        [selector.getFullName()],
-        undefined,
-        undefined,
-        'active',
-      ).execute()
-    })
-
-
-    it('should return success code', () => {
-      expect(result).toBe(CliExitCode.Success)
-    })
-    it('should call workspace promote', () => {
-      expect(workspace.promote).toHaveBeenCalledWith([selector])
-    })
-
-    it('should flush workspace', () => {
-      expect(workspace.flush).toHaveBeenCalled()
-    })
-
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
-    })
-
-    it('should print deployment to console', () => {
-      expect(cliOutput.stdout.content).toContain('Moving the specified elements to common')
-    })
-  })
-
-  describe('valid move to envs', () => {
-    const workspaceName = 'valid-ws'
-    const workspace = mocks.mockLoadWorkspace(workspaceName)
-    const selector = new ElemID('salto', 'Account')
-    beforeAll(async () => {
-      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      mockTelemetry = mocks.getMockTelemetry()
-      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
-      mockLoadWorkspace.mockResolvedValue({
-        workspace,
-        errored: false,
+      it('should not call workspace demote', () => {
+        expect(workspace.demote).not.toHaveBeenCalled()
       })
-      workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
-      result = await command(
-        '',
-        cliOutput,
-        mockCliTelemetry,
-        spinnerCreator,
-        'move-to-envs',
-        false,
-        [selector.getFullName()],
-        undefined,
-        undefined,
-        'active',
-      ).execute()
+
+      it('should not flush workspace', () => {
+        expect(workspace.flush).not.toHaveBeenCalled()
+      })
+
+      it('should not send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(0)
+      })
+
+      it('should print clone to console', () => {
+        expect(output.stderr.content).toContain('Failed to created element ID filters')
+      })
     })
 
+    describe('valid clone', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
+        result = await cloneAction({
+          input: {
+            elementSelector: [selector.getFullName()],
+            toEnvs: ['inactive'],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
 
-    it('should return success code', () => {
-      expect(result).toBe(CliExitCode.Success)
-    })
-    it('should call workspace demote', () => {
-      expect(workspace.demote).toHaveBeenCalledWith([selector])
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call workspace copyTo', () => {
+        expect(workspace.copyTo).toHaveBeenCalledWith([selector], ['inactive'])
+      })
+
+      it('should flush workspace', () => {
+        expect(workspace.flush).toHaveBeenCalled()
+      })
+
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).success]).toHaveLength(1)
+      })
+
+      it('should print clone to console', () => {
+        expect(output.stdout.content).toContain('Cloning the specified elements to inactive.')
+      })
     })
 
-    it('should flush workspace', () => {
-      expect(workspace.flush).toHaveBeenCalled()
+    describe('clone with invalid target envs', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await cloneAction({
+          input: {
+            elementSelector: [selector.getFullName()],
+            toEnvs: ['inactive', 'unknown', 'unknown2'],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).failure]).toHaveLength(1)
+      })
+
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain('Unknown target environment')
+      })
     })
 
-    it('should send telemetry events', () => {
-      expect(mockTelemetry.getEvents()).toHaveLength(2)
-      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
-    })
+    describe('clone with invalid env', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await cloneAction({
+          input: {
+            elementSelector: [selector.getFullName()],
+            toEnvs: ['inactive', 'unknown'],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
 
-    it('should print deployment to console', () => {
-      expect(cliOutput.stdout.content).toContain('Moving the specified elements to environment-specific folders.')
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).failure]).toHaveLength(1)
+      })
+
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain('Unknown target environment')
+      })
+    })
+    describe('clone with empty list as target envs', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await cloneAction({
+          input: {
+            elementSelector: [selector.getFullName()],
+            toEnvs: [],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).failure]).toHaveLength(1)
+      })
+
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain(formatTargetEnvRequired())
+      })
+    })
+    describe('clone with current env as target env', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await cloneAction({
+          input: {
+            elementSelector: [selector.getFullName()],
+            toEnvs: ['active'],
+            env: 'active',
+            force: false,
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(cloneName).failure]).toHaveLength(1)
+      })
+
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain(Prompts.INVALID_ENV_TARGET_CURRENT)
+      })
     })
   })
 
-  describe('list-unresolved', () => {
+  describe('move-to-envs command', () => {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    let moveToEnvsAction: CommandAction<any>
+    const moveToEnvsName = 'move-to-envs'
+    beforeAll((() => {
+      const moveToEnvSubCommandAction = getSubCommandAction(subCommands, moveToEnvsName)
+      expect(moveToEnvSubCommandAction).toBeDefined()
+      if (moveToEnvSubCommandAction !== undefined) {
+        moveToEnvsAction = moveToEnvSubCommandAction
+      }
+    }))
+    describe('when workspace throws an error', () => {
+      const workspaceName = 'unexpected-error'
+      const workspace = {
+        ...mocks.mockLoadWorkspace(workspaceName),
+        flush: async () => {
+          throw new Error('Oy Vey Zmir')
+        },
+      }
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await moveToEnvsAction({
+          input: {
+            elementSelector: ['salto.Account'],
+          },
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.AppError)
+      })
+
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(moveToEnvsName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(moveToEnvsName).failure]).toHaveLength(1)
+      })
+
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
+      })
+    })
+
+    describe('with invalid element selectors', () => {
+      const workspaceName = 'invalid-input'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await moveToEnvsAction({
+          input: {
+            elementSelector: ['a.b.c.d'],
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should not call workspace demote', () => {
+        expect(workspace.demote).not.toHaveBeenCalled()
+      })
+
+      it('should not flush workspace', () => {
+        expect(workspace.flush).not.toHaveBeenCalled()
+      })
+
+      it('should not send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(0)
+      })
+
+      it('should print failed to console', () => {
+        expect(output.stderr.content).toContain('Failed')
+      })
+    })
+
+    describe('valid move to envs', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
+        result = await moveToEnvsAction({
+          input: {
+            elementSelector: [selector.getFullName()],
+          },
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call workspace demote', () => {
+        expect(workspace.demote).toHaveBeenCalledWith([selector])
+      })
+
+      it('should flush workspace', () => {
+        expect(workspace.flush).toHaveBeenCalled()
+      })
+
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(moveToEnvsName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(moveToEnvsName).success]).toHaveLength(1)
+      })
+
+      it('should print deployment to console', () => {
+        expect(output.stdout.content).toContain('Moving the specified elements to environment-specific folders.')
+      })
+    })
+  })
+
+  describe('move-to-common command', () => {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    let moveToCommonAction: CommandAction<any>
+    const moveToCommonName = 'move-to-common'
+    beforeAll((() => {
+      const moveToCommonSubCommandAction = getSubCommandAction(subCommands, moveToCommonName)
+      expect(moveToCommonSubCommandAction).toBeDefined()
+      if (moveToCommonSubCommandAction !== undefined) {
+        moveToCommonAction = moveToCommonSubCommandAction
+      }
+    }))
+    describe('when workspace throws an error on move-to-common', () => {
+      const workspaceName = 'unexpected-error'
+      const workspace = {
+        ...mocks.mockLoadWorkspace(workspaceName),
+        flush: async () => {
+          throw new Error('Oy Vey Zmir')
+        },
+      }
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await moveToCommonAction({
+          input: {
+            elementSelector: ['salto.Account'],
+          },
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.AppError)
+      })
+
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(moveToCommonName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(moveToCommonName).failure]).toHaveLength(1)
+      })
+
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
+      })
+    })
+
+    describe('with invalid element selectors', () => {
+      const workspaceName = 'invalid-input'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        result = await moveToCommonAction({
+          input: {
+            elementSelector: ['a.b.c.d', 'e.f.g.h'],
+          },
+          output,
+          telemetry,
+          config,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should not call workspace promote', () => {
+        expect(workspace.promote).not.toHaveBeenCalled()
+      })
+
+      it('should not flush workspace', () => {
+        expect(workspace.flush).not.toHaveBeenCalled()
+      })
+
+      it('should not send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(0)
+      })
+
+      it('should print failed to console', () => {
+        expect(output.stderr.content).toContain('Failed')
+      })
+    })
+
+    describe('Without env option', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
+        result = await moveToCommonAction({
+          input: {
+            elementSelector: ['salto.Account'],
+            env: 'active',
+          },
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call workspace promote', () => {
+        expect(workspace.promote).toHaveBeenCalledWith([selector])
+      })
+
+      it('should flush workspace', () => {
+        expect(workspace.flush).toHaveBeenCalled()
+      })
+
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(moveToCommonName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(moveToCommonName).success]).toHaveLength(1)
+      })
+
+      it('should print deployment to console', () => {
+        expect(output.stdout.content).toContain('Moving the specified elements to common')
+      })
+    })
+
+    describe('With env option', () => {
+      const workspaceName = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
+        mockLoadWorkspace.mockResolvedValue({
+          workspace,
+          errored: false,
+        })
+        workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
+        result = await moveToCommonAction({
+          input: {
+            elementSelector: ['salto.Account'],
+            env: 'active',
+          },
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          workingDir: workspaceName,
+        })
+      })
+
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call workspace promote', () => {
+        expect(workspace.promote).toHaveBeenCalledWith([selector])
+      })
+
+      it('should flush workspace', () => {
+        expect(workspace.flush).toHaveBeenCalled()
+      })
+
+      it('should send telemetry events', () => {
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(moveToCommonName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(moveToCommonName).success]).toHaveLength(1)
+      })
+
+      it('should print deployment to console', () => {
+        expect(output.stdout.content).toContain('Moving the specified elements to common')
+      })
+    })
+  })
+
+  describe('list-unresolved command', () => {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    let listUnresolvedAction: CommandAction<any>
+    const listUnresolvedName = 'list-unresolved'
+    beforeAll((() => {
+      const listUnresolvedSubCommandAction = getSubCommandAction(subCommands, listUnresolvedName)
+      expect(listUnresolvedSubCommandAction).toBeDefined()
+      if (listUnresolvedSubCommandAction !== undefined) {
+        listUnresolvedAction = listUnresolvedSubCommandAction
+      }
+    }))
     const mockListUnresolved = core.listUnresolvedReferences as jest.MockedFunction<
-      typeof core.listUnresolvedReferences>
+            typeof core.listUnresolvedReferences>
 
     describe('success - all unresolved references are found in complete-from', () => {
       const workspaceName = 'valid-ws'
       const workspace = mocks.mockLoadWorkspace(workspaceName)
       beforeAll(async () => {
-        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-        mockTelemetry = mocks.getMockTelemetry()
-        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
         })
-        result = await command(
-          '',
-          cliOutput,
-          mockCliTelemetry,
+        result = await listUnresolvedAction({
+          input: {
+            completeFrom: 'inactive',
+            env: 'active',
+          },
+          output,
+          config,
+          telemetry,
           spinnerCreator,
-          'list-unresolved',
-          false,
-          [],
-          'active',
-          ['inactive'],
-          undefined,
-          'inactive',
-        ).execute()
+          workingDir: workspaceName,
+        })
       })
 
       it('should return success', () => {
@@ -740,24 +791,28 @@ describe('element command', () => {
       })
 
       it('should ignore unresolved references when loading the workspace', () => {
-        expect(mockLoadWorkspace).toHaveBeenCalledWith('', cliOutput, expect.objectContaining({
-          ignoreUnresolvedRefs: true,
-        }))
+        expect(mockLoadWorkspace).toHaveBeenCalledWith(
+          workspaceName,
+          output,
+          expect.objectContaining({
+            ignoreUnresolvedRefs: true,
+          })
+        )
       })
       it('should call listUnresolvedReferences', () => {
         expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
       })
 
       it('should send telemetry events', () => {
-        expect(mockTelemetry.getEvents()).toHaveLength(2)
-        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).success]).toHaveLength(1)
       })
 
       it('should print found to console', () => {
-        expect(cliOutput.stdout.content).toContain('The following unresolved references can be copied from inactive:')
-        expect(cliOutput.stdout.content).toMatch(/salesforce.aaa(\s*)salesforce.bbb.instance.ccc/)
-        expect(cliOutput.stdout.content).not.toContain('The following unresolved references could not be found:')
+        expect(output.stdout.content).toContain('The following unresolved references can be copied from inactive:')
+        expect(output.stdout.content).toMatch(/salesforce.aaa(\s*)salesforce.bbb.instance.ccc/)
+        expect(output.stdout.content).not.toContain('The following unresolved references could not be found:')
       })
     })
 
@@ -765,9 +820,8 @@ describe('element command', () => {
       const workspaceName = 'empty'
       const workspace = mocks.mockLoadWorkspace(workspaceName)
       beforeAll(async () => {
-        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-        mockTelemetry = mocks.getMockTelemetry()
-        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -777,17 +831,14 @@ describe('element command', () => {
           missing: [],
         }))
 
-        result = await command(
-          '',
-          cliOutput,
-          mockCliTelemetry,
+        result = await listUnresolvedAction({
+          input: {},
+          output,
+          config,
+          telemetry,
           spinnerCreator,
-          'list-unresolved',
-          false,
-          [],
-          'active',
-          ['inactive'],
-        ).execute()
+          workingDir: workspaceName,
+        })
       })
 
       it('should return success', () => {
@@ -798,13 +849,13 @@ describe('element command', () => {
       })
 
       it('should send telemetry events', () => {
-        expect(mockTelemetry.getEvents()).toHaveLength(2)
-        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).success]).toHaveLength(1)
       })
 
       it('should print list to console', () => {
-        expect(cliOutput.stdout.content).toContain('All references in active were resolved successfully!')
+        expect(output.stdout.content).toContain('All references in active were resolved successfully!')
       })
     })
 
@@ -812,9 +863,8 @@ describe('element command', () => {
       const workspaceName = 'missing'
       const workspace = mocks.mockLoadWorkspace(workspaceName)
       beforeAll(async () => {
-        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-        mockTelemetry = mocks.getMockTelemetry()
-        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -823,20 +873,16 @@ describe('element command', () => {
           found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
           missing: [new ElemID('salesforce', 'fail')],
         }))
-
-        result = await command(
-          '',
-          cliOutput,
-          mockCliTelemetry,
+        result = await listUnresolvedAction({
+          input: {
+            completeFrom: 'inactive',
+          },
+          output,
+          config,
+          telemetry,
           spinnerCreator,
-          'list-unresolved',
-          false,
-          [],
-          'active',
-          ['inactive'],
-          undefined,
-          'inactive',
-        ).execute()
+          workingDir: workspaceName,
+        })
       })
 
       it('should return success', () => {
@@ -847,14 +893,14 @@ describe('element command', () => {
       })
 
       it('should send telemetry events', () => {
-        expect(mockTelemetry.getEvents()).toHaveLength(2)
-        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).success]).toHaveLength(1)
       })
 
       it('should print list to console', () => {
-        expect(cliOutput.stdout.content).toMatch(/The following unresolved references can be copied from inactive:(\s*)salesforce.aaa(\s*)salesforce.bbb.instance.ccc/)
-        expect(cliOutput.stdout.content).toMatch(/The following unresolved references could not be found:(\s*)salesforce.fail/)
+        expect(output.stdout.content).toMatch(/The following unresolved references can be copied from inactive:(\s*)salesforce.aaa(\s*)salesforce.bbb.instance.ccc/)
+        expect(output.stdout.content).toMatch(/The following unresolved references could not be found:(\s*)salesforce.fail/)
       })
     })
 
@@ -862,9 +908,8 @@ describe('element command', () => {
       const workspaceName = 'fail'
       const workspace = mocks.mockLoadWorkspace(workspaceName)
       beforeAll(async () => {
-        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-        mockTelemetry = mocks.getMockTelemetry()
-        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -873,19 +918,16 @@ describe('element command', () => {
           throw new Error('oh no')
         })
 
-        result = await command(
-          '',
-          cliOutput,
-          mockCliTelemetry,
+        result = await listUnresolvedAction({
+          input: {
+            completeFrom: 'inactive',
+          },
+          output,
+          config,
+          telemetry,
           spinnerCreator,
-          'list-unresolved',
-          false,
-          [],
-          'active',
-          ['inactive'],
-          undefined,
-          'inactive',
-        ).execute()
+          workingDir: workspaceName,
+        })
       })
 
       it('should return failure', () => {
@@ -896,14 +938,14 @@ describe('element command', () => {
       })
 
       it('should send telemetry events', () => {
-        expect(mockTelemetry.getEvents()).toHaveLength(2)
-        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
-        expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
-        expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+        expect(telemetry.getEvents()).toHaveLength(2)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).start]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).success]).toBeUndefined()
+        expect(telemetry.getEventsMap()[eventsNames(listUnresolvedName).failure]).toHaveLength(1)
       })
 
       it('should print the error', () => {
-        expect(cliOutput.stderr.content).toContain('Failed to list unresolved references: oh no')
+        expect(output.stderr.content).toContain('Failed to list unresolved references: oh no')
       })
     })
 
@@ -911,30 +953,26 @@ describe('element command', () => {
       const workspaceName = 'not-called'
       const workspace = mocks.mockLoadWorkspace(workspaceName)
       beforeAll(async () => {
-        cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-        mockTelemetry = mocks.getMockTelemetry()
-        mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        telemetry = mocks.getMockTelemetry()
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
         })
-        result = await command(
-          '',
-          cliOutput,
-          mockCliTelemetry,
+        await listUnresolvedAction({
+          input: {
+            completeFrom: 'invalid',
+          },
+          output,
+          config,
+          telemetry,
           spinnerCreator,
-          'list-unresolved',
-          false,
-          [],
-          'active',
-          ['inactive'],
-          undefined,
-          'invalid',
-        ).execute()
+          workingDir: workspaceName,
+        })
       })
 
       it('should return failure', () => {
-        expect(result).toBe(CliExitCode.UserInputError)
+        expect(result).toBe(CliExitCode.AppError)
       })
     })
   })

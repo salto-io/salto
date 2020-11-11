@@ -28,8 +28,8 @@ import {
 import { Workspace, errors as wsErrors } from '@salto-io/workspace'
 import * as workspace from '../src/workspace/workspace'
 import realCli from '../src/cli'
-import builders from '../src/commands/index'
-import { YargsCommandBuilder } from '../src/command_builder'
+import commandDefinitions from '../src/commands/index'
+import { CommandOrGroupDef } from '../src/command_builder'
 import { Spinner, SpinnerCreator, CliOutput } from '../src/types'
 
 export const mockFunction = <T extends (...args: never[]) => unknown>():
@@ -107,18 +107,18 @@ const getMockCommandConfig = (): CommandConfig => ({
 })
 
 export const cli = async ({
-  commandBuilders = builders,
+  commandDefs = commandDefinitions,
   args = [],
   out = {},
   err = {},
 }: {
-  commandBuilders?: YargsCommandBuilder[]
-  args?: string[] | string
+  commandDefs?: CommandOrGroupDef[]
+  args?: string[]
   out?: MockWriteStreamOpts
   err?: MockWriteStreamOpts
 } = {}): Promise<MockCliOutput> => {
   const input = {
-    args: _.isArray(args) ? args : args.split(' '),
+    args,
     stdin: {},
     telemetry: getMockTelemetry(),
     config: getMockCommandConfig(),
@@ -141,11 +141,10 @@ export const cli = async ({
       shouldCalcTotalSize: false,
     } }
 
-  const exitCode = await realCli({ input, output, commandBuilders, spinnerCreator, config })
+  const exitCode = await realCli({ input, output, commandDefs, spinnerCreator, config })
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }
-
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createMockGetCredentialsFromUser = (value: Values) =>
@@ -240,13 +239,14 @@ export const mockLoadWorkspace = (
   envs = ['active', 'inactive'],
   isEmpty = false,
   hasElementsInServices = true,
+  services = ['salesforce', 'hubspot']
 ): Workspace =>
   ({
     uid: '123',
     name,
     currentEnv: () => 'active',
     envs: () => envs,
-    services: () => ['salesforce', 'hubspot'],
+    services: () => services,
     elements: jest.fn().mockResolvedValue([] as ReadonlyArray<Element>),
     hasErrors: () => jest.fn().mockResolvedValue(false),
     errors: () => jest.fn().mockResolvedValue(mockErrors([])),
@@ -264,7 +264,7 @@ export const mockLoadWorkspace = (
       severity: 'Error',
     }),
     state: jest.fn().mockImplementation(() => ({
-      existingServices: jest.fn().mockResolvedValue(['salesforce', 'hubspot']),
+      existingServices: jest.fn().mockResolvedValue(services),
     })),
     fetchedServices: jest.fn().mockResolvedValue([]),
     promote: jest.fn().mockResolvedValue(undefined),
@@ -545,9 +545,21 @@ export const deploy = async (
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
   _services: string[],
 ): Promise<DeployResult> => {
+  let numOfChangesReported = 0
   wu(actionPlan.itemsByEvalOrder()).forEach(change => {
+    numOfChangesReported += 1
+    if (numOfChangesReported / 3 === 1) {
+      reportProgress(change, 'started')
+      reportProgress(change, 'error', 'details')
+      return
+    }
+    if (numOfChangesReported / 2 === 1) {
+      reportProgress(change, 'started')
+      reportProgress(change, 'finished')
+      return
+    }
     reportProgress(change, 'started')
-    reportProgress(change, 'finished')
+    reportProgress(change, 'cancelled', 'details')
   })
 
   return {

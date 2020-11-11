@@ -13,27 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { YargsCommandBuilder } from '../command_builder'
-import fetchBuilder from './fetch'
-import deployBuilder from './deploy'
-import initBuilder from './init'
-import servicesBuilder from './service'
-import envsBuilder from './env'
-import restoreBuilder from './restore'
-import elementBuilder from './element'
-import diffBuilder from './diff'
-import cleanBuilder from './clean'
-
+import fetchDef from './fetch'
+import envGroupDef from './env'
+import serviceGroupDef from './service'
+import deployDef from './deploy'
+import initDef from './init'
+import restoreDef from './restore'
+import elementGroupDef from './element'
+import cleanDef from './clean'
 
 // The order of the builders determines order of appearance in help text
 export default [
-  initBuilder,
-  fetchBuilder,
-  deployBuilder,
-  restoreBuilder,
-  servicesBuilder,
-  envsBuilder,
-  elementBuilder,
-  diffBuilder,
-  cleanBuilder,
-] as YargsCommandBuilder[]
+  initDef,
+  envGroupDef,
+  serviceGroupDef,
+  fetchDef,
+  deployDef,
+  restoreDef,
+  elementGroupDef,
+  cleanDef,
+]

@@ -25,7 +25,7 @@ const filterChangesBySelectors = async (
   changes: DetailedChange[],
   selectors: ElementSelector[]
 ): Promise<DetailedChange[]> => {
-  const changeIds = selectElementsBySelectors(changes.map(change => change.id), selectors)[0]
+  const changeIds = selectElementsBySelectors(changes.map(change => change.id), selectors).elements
   const filterChangeByID = (change: DetailedChange): DetailedChange | undefined => {
     const filteredChange = applyFunctionToChangeData(
       change,

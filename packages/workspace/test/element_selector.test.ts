@@ -79,7 +79,7 @@ const mockInstance = new InstanceElement(
 )
 describe('element selector', () => {
   const selectElements = (elements: ElemID[], selectors: string[]): ElemID[] =>
-    selectElementsBySelectors(elements, createElementSelectors(selectors).validSelectors)[0]
+    selectElementsBySelectors(elements, createElementSelectors(selectors).validSelectors).elements
   it('should handle asterisks in adapter and type', () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),

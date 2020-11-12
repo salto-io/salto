@@ -23,7 +23,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace } from '@salto-io/workspace'
+import { Workspace, ElementSelector } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -251,7 +251,7 @@ export type LocalChange = Omit<FetchChange, 'pendingChange'>
 export const restore = async (
   workspace: Workspace,
   servicesFilters?: string[],
-  idFilters: RegExp[] = [],
+  elementSelectors: ElementSelector[] = [],
 ): Promise<LocalChange[]> => {
   log.debug('restore starting..')
   const fetchServices = servicesFilters ?? workspace.services()
@@ -268,7 +268,7 @@ export const restore = async (
     workspaceElements,
     stateElements,
     pathIndex,
-    idFilters,
+    elementSelectors,
   )
   return changes.map(change => ({ change, serviceChange: change }))
 }
@@ -280,7 +280,7 @@ export const diff = async (
   includeHidden = false,
   useState = false,
   servicesFilters?: string[],
-  idFilters: RegExp[] = [],
+  elementSelectors: ElementSelector[] = [],
 ): Promise<LocalChange[]> => {
   const diffServices = servicesFilters ?? workspace.services()
   const fromElements = useState
@@ -291,7 +291,8 @@ export const diff = async (
     : await workspace.elements(includeHidden, toEnv)
   const fromServiceElements = filterElementsByServices(fromElements, diffServices)
   const toServiceElements = filterElementsByServices(toElements, diffServices)
-  const diffChanges = await createDiffChanges(toServiceElements, fromServiceElements, idFilters)
+  const diffChanges = await createDiffChanges(toServiceElements,
+    fromServiceElements, elementSelectors)
   return diffChanges.map(change => ({ change, serviceChange: change }))
 }
 

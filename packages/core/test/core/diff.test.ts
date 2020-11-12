@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { merger } from '@salto-io/workspace'
+import { merger, createElementSelector } from '@salto-io/workspace'
 import { createDiffChanges } from '../../src/core/diff'
 
 const { mergeElements } = merger
@@ -176,11 +176,11 @@ describe('diff', () => {
         .createNestedID('nested')
         .createNestedID('str')
       beforeAll(async () => {
-        const filters = [
-          new RegExp(singlePathObjMerged.elemID.getFullName()),
-          new RegExp(nestedID.getFullName()),
+        const selectors = [
+          createElementSelector(singlePathObjMerged.elemID.getFullName()),
+          createElementSelector(nestedID.getFullName()),
         ]
-        changes = await createDiffChanges(toElements, beforeElements, filters)
+        changes = await createDiffChanges(toElements, beforeElements, selectors)
       })
       it('should filter out changes that did not pass any of the filters', () => {
         expect(changes).toHaveLength(2)

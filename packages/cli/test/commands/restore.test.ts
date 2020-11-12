@@ -329,7 +329,7 @@ describe('restore command', () => {
       ).execute()
       expect(result).toBe(CliExitCode.UserInputError)
     })
-    it('should succeed when invalid filters are provided', async () => {
+    it('should succeed when valid filters are provided', async () => {
       result = await command(
         workspaceName,
         {
@@ -346,7 +346,7 @@ describe('restore command', () => {
         true,
         services,
         undefined,
-        ['salto']
+        ['salto.*']
       ).execute()
       expect(result).toBe(CliExitCode.Success)
     })

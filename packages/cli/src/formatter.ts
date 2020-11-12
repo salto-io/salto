@@ -595,11 +595,6 @@ export const formatInvalidFilters = (invalidFilters: string[]): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatInvalidID = (invalidIds: string[]): string => [
-  formatSimpleError(Prompts.INVALID_IDS(formatWordsSeries(invalidIds))),
-  emptyLine(),
-].join('\n')
-
 export const formatUnknownTargetEnv = (unknownEnvs: string[]): string => [
   formatSimpleError(Prompts.UNKNOWN_TARGET_ENVS(unknownEnvs)),
   emptyLine(),

@@ -15,30 +15,27 @@
 */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { Element, ElemID, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { Element, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { ElementSelector, selectElementsBySelectors } from '@salto-io/workspace'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { getDetailedChanges } from './fetch'
 
-const filterChangesByIDRegex = async (
+const filterChangesBySelectors = async (
   changes: DetailedChange[],
-  filters: RegExp[]
+  selectors: ElementSelector[]
 ): Promise<DetailedChange[]> => {
-  const filterIDByRegex = (elemID: ElemID): boolean => _.some(
-    filters, f => f.test(elemID.getFullName())
-  )
-
+  const changeIds = selectElementsBySelectors(changes.map(change => change.id), selectors).elements
   const filterChangeByID = (change: DetailedChange): DetailedChange | undefined => {
     const filteredChange = applyFunctionToChangeData(
       change,
-      changeData => filterByID(change.id, changeData, filterIDByRegex),
+      changeData => filterByID(change.id, changeData, id => changeIds.includes(id)),
     )
     return getChangeElement(filteredChange) === undefined
       ? undefined
       : filteredChange
   }
-
-  return _.isEmpty(filters)
+  return _.isEmpty(selectors)
     ? changes
     : changes.map(filterChangeByID).filter(values.isDefined)
 }
@@ -46,8 +43,8 @@ const filterChangesByIDRegex = async (
 export const createDiffChanges = async (
   toElements: readonly Element[],
   fromElements: Element[],
-  idFilters: RegExp[] = [],
-): Promise<DetailedChange[]> => filterChangesByIDRegex(
+  elementSelectors: ElementSelector[] = [],
+): Promise<DetailedChange[]> => filterChangesBySelectors(
   wu(await getDetailedChanges(toElements, fromElements)).toArray(),
-  idFilters
+  elementSelectors
 )

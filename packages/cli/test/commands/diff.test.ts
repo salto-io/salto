@@ -16,6 +16,7 @@
 import { diff, loadLocalWorkspace } from '@salto-io/core'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/diff'
+import { expectElementSelector } from './element.test'
 
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
@@ -225,7 +226,8 @@ describe('diff command', () => {
       expect(mockTelemetry.getEventsMap()[eventsNames.success][0].value).toEqual(1)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, undefined, [new RegExp(regex)])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive',
+        false, true, undefined, expectElementSelector(regex))
     })
   })
 

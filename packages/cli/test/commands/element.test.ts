@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace } from '@salto-io/workspace'
+import _ from 'lodash'
+import { Workspace, createElementSelector } from '@salto-io/workspace'
 import { ElemID } from '@salto-io/adapter-api'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/element'
@@ -30,6 +31,13 @@ const eventsNames = {
   start: buildEventName(commandName, 'start'),
   failure: buildEventName(commandName, 'failure'),
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const expectElementSelector = (selector: string): any =>
+  expect.arrayContaining([expect.objectContaining(
+    _.pick(createElementSelector(selector), 'adapterSelector',
+      'idTypeSelector', 'nameSelectorRegexes', 'origin', 'typeNameSelector')
+  )])
 
 jest.mock('../../src/workspace/workspace')
 describe('element command', () => {
@@ -409,7 +417,7 @@ describe('element command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should call workspace copyTo', () => {
-      expect(workspace.copyTo).toHaveBeenCalledWith([selector], ['inactive'])
+      expect(workspace.copyTo).toHaveBeenCalledWith(expectElementSelector(selector.getFullName()), ['inactive'])
     })
 
     it('should flush workspace', () => {
@@ -576,7 +584,7 @@ describe('element command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should call workspace promote', () => {
-      expect(workspace.promote).toHaveBeenCalledWith([selector])
+      expect(workspace.promote).toHaveBeenCalledWith(expectElementSelector(selector.getFullName()))
     })
 
     it('should flush workspace', () => {
@@ -625,7 +633,7 @@ describe('element command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should call workspace demote', () => {
-      expect(workspace.demote).toHaveBeenCalledWith([selector])
+      expect(workspace.demote).toHaveBeenCalledWith(expectElementSelector(selector.getFullName()))
     })
 
     it('should flush workspace', () => {

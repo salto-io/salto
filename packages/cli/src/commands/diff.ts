@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { diff, LocalChange, loadLocalWorkspace } from '@salto-io/core'
+import { createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import _ from 'lodash'
@@ -26,7 +27,6 @@ import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { formatDetailedChanges, formatInvalidFilters, formatStepStart, formatStepCompleted, header } from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
-import { createRegexFilters } from '../convertors'
 
 const log = logger(module)
 
@@ -79,9 +79,9 @@ export const command = (
         , services=${inputServices}, fromEnv=${fromEnv}, toEnv=${toEnv}
         , inputHidden=${inputHidden}, inputState=${inputState}, elmSelectors=${elmSelectors}`)
 
-    const { filters, invalidFilters } = createRegexFilters(elmSelectors)
-    if (!_.isEmpty(invalidFilters)) {
-      errorOutputLine(formatInvalidFilters(invalidFilters), output)
+    const { validSelectors, invalidSelectors } = createElementSelectors(elmSelectors)
+    if (!_.isEmpty(invalidSelectors)) {
+      errorOutputLine(formatInvalidFilters(invalidSelectors), output)
       return CliExitCode.UserInputError
     }
 
@@ -106,7 +106,7 @@ export const command = (
       inputHidden,
       inputState,
       inputServices,
-      filters
+      validSelectors
     )
     printDiff(changes, detailedPlan, toEnv, fromEnv, output)
 

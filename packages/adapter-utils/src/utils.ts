@@ -454,7 +454,7 @@ export const findInstances = (
   return instances.filter(e => e.type.elemID.isEqual(typeID))
 }
 
-const getPath = (
+export const getPath = (
   rootElement: Element,
   fullElemID: ElemID
 ): string[] | undefined => {
@@ -483,7 +483,6 @@ const getPath = (
   }
   return undefined
 }
-
 
 export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value): void => {
   const path = getPath(rootElement, fullElemID)

@@ -152,21 +152,21 @@ describe('transformer', () => {
       it('should fetch lookup relationships with restricted deletion', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', true)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, true)
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, false, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', false)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, true)
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', undefined)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, true)
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
       })
 
@@ -175,7 +175,7 @@ describe('transformer', () => {
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, true)
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
@@ -185,7 +185,7 @@ describe('transformer', () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {}, true)
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
         expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
@@ -195,7 +195,7 @@ describe('transformer', () => {
       it('should fetch lookup filters and init its annotation', async () => {
         _.set(salesforceReferenceField, 'filteredLookupInfo', {})
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, true)
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, {})
       })
     })
@@ -251,7 +251,7 @@ describe('transformer', () => {
 
       it('should fetch field dependency and init its annotation for picklist', async () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField,
-          serviceIds, true)
+          serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Picklist)
       })
@@ -259,7 +259,7 @@ describe('transformer', () => {
       it('should fetch field dependency and init its annotation for multi picklist', async () => {
         salesforceFieldDependencyField.type = 'multipicklist'
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField,
-          serviceIds, true)
+          serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.MultiselectPicklist)
       })
@@ -267,7 +267,7 @@ describe('transformer', () => {
       it('should not init field dependency annotation when having no field dependency ', async () => {
         salesforceFieldDependencyField.dependentPicklist = false
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField,
-          serviceIds, true)
+          serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toBeUndefined()
       })
     })
@@ -319,14 +319,14 @@ describe('transformer', () => {
 
       it('should fetch rollup summary field', async () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
-          serviceIds, true)
+          serviceIds)
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Summary)
       })
 
       it('should not fetch summary field if it is a calculated formula', async () => {
         salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
-          serviceIds, true)
+          serviceIds)
         expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.Summary)
       })
     })
@@ -380,8 +380,7 @@ describe('transformer', () => {
         const scale = 6
         salesforceNumberField.precision = precision
         salesforceNumberField.scale = scale
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds,
-          true)
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.SCALE]).toEqual(scale)
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
@@ -391,8 +390,7 @@ describe('transformer', () => {
         const precision = 8
         salesforceNumberField.type = 'int'
         salesforceNumberField.digits = precision
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds,
-          true)
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
       })
@@ -443,7 +441,12 @@ describe('transformer', () => {
       })
 
       it('should fetch address field with the object type when object has it as compound field', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceAddressField, serviceIds, true, ['OtherAddress'])
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceAddressField,
+          serviceIds,
+          { OtherAddress: 'OtherAddress' }
+        )
         expect(fieldElement.type).toEqual(Types.compoundDataTypes.Address)
       })
     })
@@ -491,7 +494,7 @@ describe('transformer', () => {
       it('should fetch idLookup & typed id fields as serviceId', () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField,
-          serviceIds, true, [])
+          serviceIds, {})
         expect(fieldElement.type).toEqual(BuiltinTypes.SERVICE_ID)
       })
     })
@@ -545,8 +548,7 @@ describe('transformer', () => {
             dummyElem,
             salesforceAutoNumberField,
             serviceIds,
-            true,
-            []
+            {}
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
@@ -561,8 +563,7 @@ describe('transformer', () => {
             dummyElem,
             salesforceAutoNumberField,
             serviceIds,
-            true,
-            []
+            {}
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
@@ -617,13 +618,17 @@ describe('transformer', () => {
       })
 
       it('should fetch name field with the object type when object has it as compound field', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, true, ['Name'])
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceNameField,
+          serviceIds,
+          { Name: 'Name' }
+        )
         expect(fieldElement.type).toEqual(Types.compoundDataTypes.Name)
       })
 
       it('should fetch name field as text type when no name compound field in object', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds,
-          true, [])
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, {})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Text)
       })
     })

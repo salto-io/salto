@@ -1034,8 +1034,7 @@ export const getSObjectFieldElement = (
   parent: ObjectType,
   field: SalesforceField,
   parentServiceIds: ServiceIds,
-  includesSalutation: boolean,
-  objCompoundFieldNames: string[] = [],
+  objCompoundFieldNames: Record<string, string> = {},
   systemFields: string[] = []
 ): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPARATOR)
@@ -1144,9 +1143,10 @@ export const getSObjectFieldElement = (
   // Compound Fields
   } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
     // Only fields that are compound in this object get compound type
-    if (objCompoundFieldNames.includes(field.name)) {
+    if (objCompoundFieldNames[field.name] !== undefined) {
       naclFieldType = field.nameField
-        ? Types.compoundDataTypes[includesSalutation ? 'Name' : 'Name2']
+      // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
+        ? Types.compoundDataTypes[objCompoundFieldNames[field.name] as COMPOUND_FIELD_TYPE_NAMES]
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }
   }

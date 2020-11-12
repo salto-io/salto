@@ -396,16 +396,18 @@ const createObjectType = ({
     pathNaclCase(object.elemID.name),
   ]
   if (!_.isUndefined(fields)) {
+    const hasSalutationField = fields.map(f => f.name).includes(NAME_FIELDS.SALUTATION)
+
     // Only fields with "child's" refering to a field as it's compoundField
     // should be regarded as compound.
-    const objCompoundFieldNames = _.keys(
-      _.groupBy(fields.filter(field => field.compoundFieldName), f => f.compoundFieldName)
-    )
-    const includesSalutation = fields.map(f => f.name).includes(NAME_FIELDS.SALUTATION)
+    const objCompoundFieldNames = Object.fromEntries(Object.entries(_.groupBy(
+      fields.filter(field => field.compoundFieldName),
+      field => field.compoundFieldName
+    )).map(([fieldName, _nestedFields]) => [fieldName, !hasSalutationField && fieldName === 'Name' ? 'Name2' : fieldName]))
+
     fields
       .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
-      .map(f => getSObjectFieldElement(object, f, serviceIds, includesSalutation,
-        objCompoundFieldNames, systemFields))
+      .map(f => getSObjectFieldElement(object, f, serviceIds, objCompoundFieldNames, systemFields))
       .forEach(field => {
         object.fields[field.name] = field
       })

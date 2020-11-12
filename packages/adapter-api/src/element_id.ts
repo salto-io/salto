@@ -222,3 +222,8 @@ export class ElemID {
       )
   }
 }
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isElemID(value: any): value is ElemID {
+  return value instanceof ElemID
+}

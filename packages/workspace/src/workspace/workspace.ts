@@ -113,10 +113,10 @@ export type Workspace = {
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
   getStateRecency(services: string): Promise<StateRecency>
-  promote(selectors: ElementSelector[]): Promise<void>
-  demote(selectors: ElementSelector[]): Promise<void>
+  promote(selectors: ElementSelector[] | ElemID[]): Promise<void>
+  demote(selectors: ElementSelector[] | ElemID[]): Promise<void>
   demoteAll(): Promise<void>
-  copyTo(selectors: ElementSelector[], targetEnvs?: string[]): Promise<void>
+  copyTo(selectors: ElementSelector[] | ElemID[], targetEnvs?: string[]): Promise<void>
 }
 
 // common source has no state
@@ -268,10 +268,10 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),
     getParsedNaclFile: (filename: string) => naclFilesSource.getParsedNaclFile(filename),
-    promote: (selectors: ElementSelector[]) => naclFilesSource.promote(selectors),
-    demote: (selectors: ElementSelector[]) => naclFilesSource.demote(selectors),
+    promote: (selectors: ElementSelector[] | ElemID[]) => naclFilesSource.promote(selectors),
+    demote: (selectors: ElementSelector[] | ElemID[]) => naclFilesSource.demote(selectors),
     demoteAll: () => naclFilesSource.demoteAll(),
-    copyTo: (selectors: ElementSelector[],
+    copyTo: (selectors: ElementSelector[] | ElemID[],
       targetEnvs: string[]) => naclFilesSource.copyTo(selectors, targetEnvs),
     transformToWorkspaceError,
     transformError,

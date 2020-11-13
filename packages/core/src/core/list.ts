@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, Element,
 } from '@salto-io/adapter-api'
-import { Workspace, validator } from '@salto-io/workspace'
+import { Workspace, validator, createElementSelectors } from '@salto-io/workspace'
 
 const { validateElements, isUnresolvedRefError } = validator
 
@@ -27,14 +27,14 @@ export type UnresolvedElemIDs = {
 }
 
 /**
- * Filter out descendants from the list of sorted elem ids.
+ * Filter out descendants from a list of sorted elem ids.
  *
  * @param sortedIds   The list of elem id full names, sorted alphabetically
  */
 const compact = (sortedIds: string[]): string[] => {
   const ret = sortedIds.slice(0, 1)
   sortedIds.slice(1).forEach(id => {
-    if (!id.startsWith(`${ret.slice(-1)[0]}.`)) {
+    if (!id.startsWith(`${ret.slice(-1)[0]}${ElemID.NAMESPACE_SEPARATOR}`)) {
       ret.push(id)
     }
   })
@@ -84,7 +84,11 @@ export const listUnresolvedReferences = async (
 
       const copyWithRetry = async (elemIDs: ElemID[]): Promise<ElemID[]> => {
         try {
-          await workspace.copyTo(elemIDs, [env])
+          // elem id full names are valid selectors
+          await workspace.copyTo(
+            createElementSelectors(elemIDs.map(id => id.getFullName())).validSelectors,
+            [env],
+          )
           return []
         } catch (e) {
           if (elemIDs.length <= 1) {

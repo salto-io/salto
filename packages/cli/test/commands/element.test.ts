@@ -697,6 +697,10 @@ describe('element command', () => {
       it('should return success', () => {
         expect(result).toBe(CliExitCode.Success)
       })
+
+      it('should ignore unresolved references when loading the workspace', () => {
+        expect(mockLoadWorkspace.mock.calls.slice(-1)[0][2].ignoreUnresolvedRefs).toBeTruthy()
+      })
       it('should call listUnresolvedReferences', () => {
         expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
       })

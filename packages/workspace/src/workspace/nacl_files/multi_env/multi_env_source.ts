@@ -169,7 +169,7 @@ const buildMultiEnvSource = (
   const getElementsFromSource = async (source: NaclFilesSource): Promise<ElementIDToValue[]> =>
     (await source.getAll()).map(elem => ({ elemID: elem.elemID, element: elem }))
 
-  const toElemIDs = async (
+  const getElemIDs = async (
     selectors: ElementSelector[] | ElemID[],
     source: NaclFilesSource,
   ): Promise<ElemID[]> => (
@@ -182,7 +182,7 @@ const buildMultiEnvSource = (
   )
 
   const promote = async (selectors: ElementSelector[] | ElemID[]): Promise<void> => {
-    const ids = await toElemIDs(selectors, primarySource())
+    const ids = await getElemIDs(selectors, primarySource())
     const routedChanges = await routePromote(
       ids,
       primarySource(),
@@ -193,7 +193,7 @@ const buildMultiEnvSource = (
   }
 
   const demote = async (selectors: ElementSelector[] | ElemID[]): Promise<void> => {
-    const ids = await toElemIDs(selectors, commonSource())
+    const ids = await getElemIDs(selectors, commonSource())
     const routedChanges = await routeDemote(
       ids,
       primarySource(),
@@ -208,7 +208,7 @@ const buildMultiEnvSource = (
     const targetSources = _.isEmpty(targetEnvs)
       ? secondarySources()
       : _.pick(secondarySources(), targetEnvs)
-    const ids = await toElemIDs(selectors, primarySource())
+    const ids = await getElemIDs(selectors, primarySource())
     const routedChanges = await routeCopyTo(
       ids,
       primarySource(),

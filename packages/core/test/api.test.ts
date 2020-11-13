@@ -42,85 +42,13 @@ import adapterCreators from '../src/core/adapters/creators'
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { mockFunction, MockFunction } from './common/helpers'
-import { mockState } from './common/state'
+import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
 
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 const mockServiceWithInstall = 'adapterWithInstallMethod'
 
 const SERVICES = [mockService, emptyMockService]
-
-const configID = new ElemID(mockService)
-const emptyConfigID = new ElemID(emptyMockService)
-const mockConfigType = new ObjectType({
-  elemID: configID,
-  fields: {
-    username: { type: BuiltinTypes.STRING },
-    password: { type: BuiltinTypes.STRING },
-    token: { type: BuiltinTypes.STRING },
-    sandbox: { type: BuiltinTypes.BOOLEAN },
-  },
-})
-
-const mockEmptyConfigType = new ObjectType({
-  elemID: emptyConfigID,
-  fields: {
-    username: { type: BuiltinTypes.STRING },
-    password: { type: BuiltinTypes.STRING },
-    token: { type: BuiltinTypes.STRING },
-    sandbox: { type: BuiltinTypes.BOOLEAN },
-  },
-})
-
-const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
-  username: 'test@test',
-  password: 'test',
-  token: 'test',
-  sandbox: false,
-})
-
-const mockEmptyConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockEmptyConfigType, {
-  username: 'test@test',
-  password: 'test',
-  token: 'test',
-  sandbox: false,
-})
-
-export const mockWorkspace = ({
-  elements = [],
-  name = undefined,
-  index = undefined,
-  stateElements = undefined,
-  services = SERVICES,
-}: {
-  elements?: Element[]
-  name?: string
-  index?: workspace.pathIndex.PathIndex
-  stateElements?: Element[]
-  services?: string[]
-}): workspace.Workspace => {
-  const state = mockState(SERVICES, stateElements || elements, index)
-  return {
-    elements: jest.fn().mockImplementation(async () => elements),
-    name,
-    envs: () => ['default'],
-    currentEnv: 'default',
-    services: () => services,
-    state: jest.fn().mockReturnValue(state),
-    updateNaclFiles: jest.fn(),
-    flush: jest.fn(),
-    servicesCredentials: jest.fn().mockResolvedValue({
-      [mockService]: mockConfigInstance,
-      [emptyMockService]: mockEmptyConfigInstance,
-    }),
-    servicesConfig: jest.fn().mockResolvedValue({}),
-    getWorkspaceErrors: jest.fn().mockResolvedValue([]),
-    addService: jest.fn(),
-    updateServiceCredentials: jest.fn(),
-    updateServiceConfig: jest.fn(),
-    clear: jest.fn(),
-  } as unknown as workspace.Workspace
-}
 
 jest.mock('../src/core/fetch', () => ({
   ...jest.requireActual('../src/core/fetch'),

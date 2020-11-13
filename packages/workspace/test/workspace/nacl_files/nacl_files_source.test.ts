@@ -20,7 +20,7 @@ import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_fi
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { ParseResultCache } from '../../../src/workspace/cache'
 
-import { mockStaticFilesSource } from '../static_files/common.test'
+import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
 
 jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({

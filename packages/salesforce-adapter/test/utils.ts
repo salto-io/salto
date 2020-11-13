@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  Element, ElemID, Values, ObjectType, Field, TypeElement,
+  Element, ElemID, Values, ObjectType, Field, TypeElement, BuiltinTypes, ListType, MapType,
+  CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
   findElements as findElementsByID,
@@ -25,6 +26,7 @@ import * as constants from '../src/constants'
 import {
   annotationsFileName, customFieldsFileName, standardFieldsFileName,
 } from '../src/filters/custom_object_split'
+import { getNamespaceFromString } from '../src/filters/utils'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -123,3 +125,136 @@ export type MockInterface<T extends {}> = {
 export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
   jest.fn()
 )
+
+export const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
+  const ProfileApplicationVisibility = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileApplicationVisibility'),
+    fields: {
+      application: { type: BuiltinTypes.STRING },
+      default: { type: BuiltinTypes.BOOLEAN },
+      visible: { type: BuiltinTypes.BOOLEAN },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'ProfileApplicationVisibility',
+    },
+  })
+  const ProfileLayoutAssignment = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileLayoutAssignment'),
+    fields: {
+      layout: { type: BuiltinTypes.STRING },
+      recordType: { type: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'ProfileLayoutAssignment',
+    },
+  })
+  const ProfileFieldLevelSecurity = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileFieldLevelSecurity'),
+    fields: {
+      field: { type: BuiltinTypes.STRING },
+      editable: { type: BuiltinTypes.BOOLEAN },
+      readable: { type: BuiltinTypes.BOOLEAN },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity',
+    },
+  })
+
+  // we only define types as lists if they use non-unique maps - so for onDeploy, fieldPermissions
+  // will not appear as a list unless conflicts were found during the previous fetch
+  const fieldPermissionsNonMapType = preDeploy
+    ? ProfileFieldLevelSecurity
+    : new ListType(ProfileFieldLevelSecurity)
+
+  return new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, constants.PROFILE_METADATA_TYPE),
+    fields: {
+      [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+      applicationVisibilities: { type: useMaps
+        ? new MapType(ProfileApplicationVisibility)
+        : ProfileApplicationVisibility },
+      layoutAssignments: { type: useMaps
+        ? new MapType(new ListType(ProfileLayoutAssignment))
+        : new ListType(ProfileLayoutAssignment) },
+      fieldPermissions: { type: useMaps
+        ? new MapType(new MapType(ProfileFieldLevelSecurity))
+        : fieldPermissionsNonMapType },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
+    },
+  })
+}
+
+const stringType = new PrimitiveType({
+  elemID: new ElemID(constants.SALESFORCE, 'Text'),
+  primitive: PrimitiveTypes.STRING,
+  annotationTypes: {
+    [constants.LABEL]: BuiltinTypes.STRING,
+  },
+})
+const idType = new PrimitiveType({
+  elemID: new ElemID('id'),
+  primitive: PrimitiveTypes.STRING,
+})
+
+export const createCustomSettingsObject = (
+  name: string,
+  settingsType: string,
+): ObjectType => {
+  const namespace = getNamespaceFromString(name)
+  const basicFields = {
+    Id: {
+      type: idType,
+      label: 'id',
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [constants.LABEL]: 'Record ID',
+        [constants.API_NAME]: 'Id',
+      },
+    },
+    Name: {
+      type: stringType,
+      label: 'Name',
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [constants.LABEL]: 'Name',
+        [constants.API_NAME]: 'Name',
+        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+      },
+    },
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    TestField__c: {
+      label: 'TestField',
+      type: stringType,
+      annotations: {
+        [constants.LABEL]: 'TestField',
+        [constants.API_NAME]: `${name}.TestField__c`,
+        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+      },
+      annotationTypes: {
+        [constants.LABEL]: BuiltinTypes.STRING,
+        [constants.API_NAME]: BuiltinTypes.STRING,
+      },
+    },
+  }
+  const obj = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, name),
+    annotations: {
+      [constants.API_NAME]: name,
+      [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+      [constants.CUSTOM_SETTINGS_TYPE]: settingsType,
+    },
+    annotationTypes: {
+      [constants.CUSTOM_SETTINGS_TYPE]: BuiltinTypes.STRING,
+      [constants.METADATA_TYPE]: BuiltinTypes.STRING,
+    },
+    fields: basicFields,
+  })
+  const path = namespace
+    ? [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespace,
+      constants.OBJECTS_PATH, obj.elemID.name]
+    : [constants.SALESFORCE, constants.OBJECTS_PATH, obj.elemID.name]
+  obj.path = path
+  return obj
+}

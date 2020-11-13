@@ -19,9 +19,7 @@ import {
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
   VariableExpression, StaticFile, MapType,
 } from '@salto-io/adapter-api'
-import {
-  TestFuncImpl,
-} from '../parser/functions.test'
+import { TestFuncImpl } from '../utils'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'

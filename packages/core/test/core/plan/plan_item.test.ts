@@ -19,7 +19,7 @@ import { Group } from '@salto-io/dag'
 import { isListType, Change, ChangeDataType, toChange } from '@salto-io/adapter-api'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
-import { planGenerators } from './plan.test'
+import { planGenerators } from '../../common/plan_generator'
 import { PlanItem } from '../../../src/core/plan'
 import { addPlanItemAccessors } from '../../../src/core/plan/plan_item'
 

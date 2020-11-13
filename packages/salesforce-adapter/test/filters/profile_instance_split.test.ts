@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ObjectType, Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/profile_instance_split'
 import { FilterWith } from '../../src/filter'
-import { generateProfileType } from './profile_maps.test'
+import { generateProfileType } from '../utils'
 import mockClient from '../client'
 
 

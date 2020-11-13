@@ -16,7 +16,7 @@
 import { Workspace } from '@salto-io/workspace'
 import { cleanWorkspace } from '../../src/core/clean'
 import * as adapters from '../../src/core/adapters'
-import { mockWorkspace } from '../api.test'
+import { mockWorkspace } from '../common/workspace'
 
 jest.mock('../../src/core/adapters', () => ({
   ...jest.requireActual('../../src/core/adapters'),

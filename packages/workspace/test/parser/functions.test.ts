@@ -13,50 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Value } from '@salto-io/adapter-api'
-import {
-  evaluateFunction,
-  Functions,
-  FunctionImplementation,
-  MissingFunctionError,
-  FunctionExpression,
-} from '../../src/parser/functions'
-
-export class TestFuncImpl extends FunctionExpression {}
-
-const registerFunction = (
-  funcName: string,
-  func: FunctionImplementation,
-  functions: Functions = {},
-  aliases: string[] = [],
-): Functions => ({
-  ...functions,
-  ...[funcName].concat(aliases).reduce((acc, alias: string) => ({
-    ...acc,
-    ...{
-      [alias]: func,
-    },
-  }), {}),
-})
-
-export const registerTestFunction = (
-  funcName: string,
-  aliases: string[] = [],
-  functions: Functions = {}
-): Functions =>
-  registerFunction(
-    funcName,
-    {
-      parse: (parameters: Value[]) => Promise.resolve(new TestFuncImpl(funcName, parameters)),
-      dump: (val: Value) => Promise.resolve(new FunctionExpression(
-        funcName,
-        val.parameters,
-      )),
-      isSerializedAsFunction: (val: Value) => val instanceof TestFuncImpl,
-    },
-    functions,
-    aliases,
-  )
+import { evaluateFunction, MissingFunctionError } from '../../src/parser/functions'
 
 describe('Functions', () => {
   describe('MissingFunctionError', () => {

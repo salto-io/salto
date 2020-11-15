@@ -7,7 +7,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Debug Jest Tests",
+            "name": "cli Debug Jest Tests",
             "cwd": "${workspaceFolder}",
             "args": [
                 "${workspaceRoot}/node_modules/.bin/jest",
@@ -15,21 +15,14 @@
                 "--config",
                 "${workspaceRoot}/jest.config.js"
             ],
-            "windows": {
-                "args": [
-                    "${workspaceRoot}/node_modules/jest/bin/jest.js",
-                    "--runInBand",
-                    "--config",
-                    "${workspaceRoot}/jest.config.js"
-                ],
-            },
+            "outFiles": [],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
         {
             "type": "node",
             "request": "launch",
-            "name": "Debug Jest E2E Tests",
+            "name": "cli Debug Jest E2E Tests",
             "cwd": "${workspaceFolder}",
             "env": {
               "RUN_E2E_TESTS": "1"
@@ -40,15 +33,7 @@
               "--config",
               "${workspaceRoot}/jest.config.js"
             ],
-            "windows": {
-                "args": [
-                  "RUN_E2E_TESTS=1",
-                  "${workspaceRoot}/node_modules/jest/bin/jest.js",
-                  "--runInBand",
-                  "--config",
-                  "${workspaceRoot}/jest.config.js"
-                ]
-            },
+            "outFiles": [],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         }

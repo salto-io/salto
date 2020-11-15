@@ -1,22 +1,10 @@
 {
     "version": "0.2.0",
-    "configurations": [{
-            "name": "Run Extension",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
-            "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
-            ],
-            "preLaunchTask": "npm: build-ts"
-        },
+    "configurations": [
         {
             "type": "node",
             "request": "launch",
-            "name": "Debug Jest Tests",
+            "name": "lang-server Debug Jest Tests",
             "cwd": "${workspaceFolder}",
             "args": [
                 "${workspaceRoot}/node_modules/.bin/jest",
@@ -24,6 +12,7 @@
                 "--config",
                 "${workspaceRoot}/jest.config.js"
             ],
+            "outFiles": [],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         }

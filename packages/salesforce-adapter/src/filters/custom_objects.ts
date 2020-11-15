@@ -21,7 +21,7 @@ import {
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
-import { findObjectType, transformValues, getParents, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { findObjectType, transformValues, getParents, pathNaclCase } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
@@ -352,7 +352,7 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         const nameParts = [apiName(instance), nestedInstanceValues[INSTANCE_FULL_NAME_FIELD]]
         const fullName = nameParts.join(API_NAME_SEPARATOR)
         const instanceName = Types.getElemId(
-          naclCase(nameParts.join('_')),
+          nameParts.join('_'),
           true,
           createInstanceServiceIds(_.pick(nestedInstanceValues, INSTANCE_FULL_NAME_FIELD), type)
         ).name

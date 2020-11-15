@@ -72,15 +72,16 @@ function timeMethod<T>(
   this: BaseLogger, inner: () => T| Promise<T>, desc: string, ...descArgs: unknown[]
 ): T | Promise<T> {
   const before = Date.now()
-  const log = (): void => {
+  const logDuration = (): void => {
     this.log('debug', `${desc} took %o ms`, ...descArgs, Date.now() - before)
   }
 
+  this.log('debug', `${desc} starting`, ...descArgs)
   const result = inner()
   if (result instanceof Promise) {
-    return result.finally(log)
+    return result.finally(logDuration)
   }
-  log()
+  logDuration()
   return result
 }
 

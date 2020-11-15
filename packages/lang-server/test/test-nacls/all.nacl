@@ -222,4 +222,6 @@ type vs.annotated {
             year = 2016
         }
     }
+
+    attr = vs.name.attr.owner.first_name
 }

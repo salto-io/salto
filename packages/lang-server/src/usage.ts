@@ -24,7 +24,7 @@ import { PositionContext } from './context'
 
 const getElemIDUsages = async (
   element: Element,
-  fullName: string
+  id: ElemID
 ): Promise<ElemID[]> => {
   const pathesToAdd = new Set<ElemID>()
   if (isObjectType(element)) {
@@ -33,19 +33,18 @@ const getElemIDUsages = async (
       .filter(f => {
         const fieldType = f.type
         const nonGenericType = isContainerType(fieldType) ? getDeepInnerType(fieldType) : f.type
-        return fullName === nonGenericType.elemID.getFullName()
+        return id.isEqual(nonGenericType.elemID)
       }).forEach(f => pathesToAdd.add(f.elemID))
   }
-  if (isInstanceElement(element) && element.type.elemID.getFullName() === fullName) {
+  if (isInstanceElement(element) && element.type.elemID.isEqual(id)) {
     pathesToAdd.add(element.elemID)
   }
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
-    if (field?.elemID.getFullName() === fullName && path && !isIndexPathPart(path.name)) {
+    if (field?.elemID.isEqual(id) && path && !isIndexPathPart(path.name)) {
       pathesToAdd.add(path)
     }
     if (isReferenceExpression(value) && path) {
-      const { parent } = value.elemId.createTopLevelParentID()
-      if (parent.getFullName() === fullName || value.elemId.getFullName() === fullName) {
+      if (id.isParentOf(value.elemId)) {
         pathesToAdd.add(path)
       }
     }
@@ -68,16 +67,19 @@ const isTokenElemID = (token: string): boolean => {
   }
 }
 
-export const getSearchElementFullName = (context: PositionContext, token: string): string => {
+export const getSearchElementFullName = (
+  context: PositionContext,
+  token: string
+): ElemID | undefined => {
   if (isTokenElemID(token)) {
-    return token
+    return ElemID.fromFullName(token)
   }
   if (context.ref !== undefined) {
     return !_.isEmpty(context.ref.path) && context.type === 'type'
-      ? context.ref?.element.elemID.createNestedID('attr', token).getFullName()
-      : context.ref?.element.elemID.getFullName()
+      ? context.ref?.element.elemID.createNestedID('attr', token)
+      : context.ref?.element.elemID
   }
-  return token
+  return undefined
 }
 
 export const getReferencingFiles = async (
@@ -95,9 +97,9 @@ export const getReferencingFiles = async (
 export const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
-  fullName: string
+  id: ElemID
 ): Promise<ElemID[]> => _.flatten((await Promise.all(
-  (await workspace.getElements(filename)).map(e => getElemIDUsages(e, fullName))
+  (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id))
 )))
 
 export const provideWorkspaceReferences = async (
@@ -105,15 +107,18 @@ export const provideWorkspaceReferences = async (
   token: string,
   context: PositionContext
 ): Promise<SaltoElemLocation[]> => {
-  const fullName = getSearchElementFullName(context, token)
-  const referencedByFiles = await getReferencingFiles(workspace, fullName)
+  const id = getSearchElementFullName(context, token)
+  if (id === undefined) {
+    return []
+  }
+  const referencedByFiles = await getReferencingFiles(workspace, id.getFullName())
   const usages = _.flatten(await Promise.all(
-    referencedByFiles.map(filename => getUsageInFile(workspace, filename, fullName))
+    referencedByFiles.map(filename => getUsageInFile(workspace, filename, id))
   ))
   // We need a single await for all get location calls in order to take advantage
   // of the Salto SaaS getFiles aggregation functionality
   return (await Promise.all([
     ...usages.map(p => getLocations(workspace, p.getFullName())),
-    getLocations(workspace, fullName),
+    getLocations(workspace, id.getFullName()),
   ])).flat()
 }

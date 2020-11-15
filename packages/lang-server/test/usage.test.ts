@@ -87,4 +87,20 @@ describe('Test go to definitions', () => {
     const defs = await provideWorkspaceReferences(workspace, token, context)
     expect(getRefLines(defs)).toEqual([208])
   })
+
+  it('should find (goto) refrences of a nested (salto) references', async () => {
+    const token = 'reason'
+    const pos = {
+      line: 67,
+      col: 14,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
+    expect(getRefLines(defs)).toEqual([
+      67,
+      88,
+      151,
+      209,
+    ])
+  })
 })

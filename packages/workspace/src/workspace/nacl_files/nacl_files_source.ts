@@ -283,9 +283,26 @@ const buildNaclFilesSource = (
     return state
   }
 
+  const getNaclFile = (filename: string): Promise<NaclFile | undefined> =>
+    naclFilesStore.get(filename)
+
+  const getParsedNaclFile = async (filename: string): Promise<ParsedNaclFile | undefined> => {
+    // We don't want to parse all nacl files here when we want only parsedResult of one file.
+    if (state !== undefined) {
+      return (await getState()).parsedNaclFiles[filename]
+    }
+    const naclFile = await getNaclFile(filename)
+    if (naclFile === undefined) return undefined
+    return (await parseNaclFiles([naclFile], cache, functions))[0]
+  }
+
   const getElementNaclFiles = async (elemID: ElemID): Promise<string[]> => {
     const topLevelID = elemID.createTopLevelParentID()
-    return (await getState()).elementsIndex[topLevelID.parent.getFullName()] || []
+    const topLevelFiles = (await getState()).elementsIndex[topLevelID.parent.getFullName()] || []
+    return (await Promise.all(topLevelFiles.map(async filename => {
+      const fragments = (await getParsedNaclFile(filename))?.elements ?? []
+      return fragments.find(fragment => resolvePath(fragment, elemID)) ? filename : undefined
+    }))).filter(name => name !== undefined) as string[]
   }
 
   const getElementReferencedFiles = async (
@@ -393,8 +410,6 @@ const buildNaclFilesSource = (
       )
     }
   }
-  const getNaclFile = (filename: string): Promise<NaclFile | undefined> =>
-    naclFilesStore.get(filename)
 
   return {
     list: async (): Promise<ElemID[]> =>
@@ -431,15 +446,7 @@ const buildNaclFilesSource = (
 
     getNaclFile,
 
-    getParsedNaclFile: async filename => {
-      // We don't want to parse all nacl files here when we want only parsedResult of one file.
-      if (state !== undefined) {
-        return (await getState()).parsedNaclFiles[filename]
-      }
-      const naclFile = await getNaclFile(filename)
-      if (naclFile === undefined) return undefined
-      return (await parseNaclFiles([naclFile], cache, functions))[0]
-    },
+    getParsedNaclFile,
 
     getSourceRanges: async elemID => {
       const naclFiles = await getElementNaclFiles(elemID)

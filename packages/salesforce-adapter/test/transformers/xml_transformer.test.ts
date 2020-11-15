@@ -623,5 +623,39 @@ describe('XML Transformer', () => {
         })
       })
     })
+
+    describe('with empty XML', () => {
+      let fileProperties: FileProperties[]
+      let retrieveResult: RetrieveResult
+      beforeEach(async () => {
+        fileProperties = [mockFileProperties({
+          fileName: 'reportTypes/MyReportType.reportType',
+          fullName: 'MyReportType',
+          type: 'ReportType',
+        })]
+        retrieveResult = {
+          fileProperties: toResultProperties(fileProperties),
+          id: '09S4J000001dSRcUAM',
+          messages: [],
+          zipFile: await createEncodedZipContent([
+            {
+              path: 'unpackaged/reportTypes/MyReportType.reportType',
+              content: '<?xml version="1.0" encoding="UTF-8"?>\n',
+            },
+          ]),
+        }
+      })
+      it('should return empty object', async () => {
+        const values = await fromRetrieveResult(
+          retrieveResult,
+          fileProperties,
+          new Set(),
+          new Set(),
+        )
+        expect(values).toContainEqual(
+          expect.objectContaining({ values: expect.objectContaining({ fullName: 'MyReportType' }) })
+        )
+      })
+    })
   })
 })

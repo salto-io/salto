@@ -210,22 +210,22 @@ const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
 const xmlToValues = (xmlAsString: string, type: string): Values => {
-  const deleteXmlnsAttributes = (values: Values): void => {
-    delete values[`${XML_ATTRIBUTE_PREFIX}xmlns`]
-    delete values[`${XML_ATTRIBUTE_PREFIX}xmlns:xsi`]
-  }
-
-  const values = parser.parse(
+  const parsedXml = parser.parse(
     xmlAsString,
     {
       ignoreAttributes: false,
       attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
       tagValueProcessor: val => he.decode(val),
     }
-  )[type]
+  )
 
-  deleteXmlnsAttributes(values)
-  return values
+  const values = parsedXml[type]
+  if (!_.isPlainObject(values)) {
+    log.debug('Could not find values for type %s in xml:\n%s', type, xmlAsString)
+    return {}
+  }
+  const xmlnsAttributes = ['xmlns', 'xmlns:xsi'].map(attr => `${XML_ATTRIBUTE_PREFIX}${attr}`)
+  return _.omit(values, xmlnsAttributes)
 }
 
 const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
@@ -262,7 +262,7 @@ export const fromRetrieveResult = async (
     }
     const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
     const metadataValues = Object.assign(
-      xmlToValues(instanceValuesBuffer.toString(), file.type) ?? {},
+      xmlToValues(instanceValuesBuffer.toString(), file.type),
       { [INSTANCE_FULL_NAME_FIELD]: file.fullName }
     )
 

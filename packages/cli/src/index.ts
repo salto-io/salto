@@ -46,6 +46,7 @@ const main = async (): Promise<CliExitCode> => {
     output: { stdout, stderr },
     commandBuilders,
     spinnerCreator: oraSpinnerCreator,
+    config,
   })
 }
 

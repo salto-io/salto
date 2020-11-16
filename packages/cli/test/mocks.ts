@@ -131,7 +131,17 @@ export const cli = async ({
   const spinners: Spinner[] = []
   const spinnerCreator = mockSpinnerCreator(spinners)
 
-  const exitCode = await realCli({ input, output, commandBuilders, spinnerCreator })
+  const config = { installationID: 'installationID',
+    telemetry: {
+      url: 'url',
+      token: 'token',
+      enabled: false,
+    },
+    command: {
+      shouldCalcTotalSize: false,
+    } }
+
+  const exitCode = await realCli({ input, output, commandBuilders, spinnerCreator, config })
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }

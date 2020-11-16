@@ -130,6 +130,9 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   elementsSources: EnvironmentsSources):
   Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
+
+  log.debug('Loading workspace with id: %s', workspaceConfig.uid)
+
   if (_.isEmpty(workspaceConfig.envs)) {
     throw new Error('Workspace with no environments is illegal')
   }
@@ -412,6 +415,7 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
 ): Promise<Workspace> => {
+  log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
     uid,
     name,

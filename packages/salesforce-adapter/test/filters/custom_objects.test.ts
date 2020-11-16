@@ -245,7 +245,7 @@ describe('Custom Objects filter', () => {
         expect(leadObj.fields.Formula__c.type.elemID.name).toBe('FormulaText')
         expect(leadObj.fields.Formula__c.annotations[FORMULA]).toBe('my formula')
       })
-      it('should fetch sobject with compound field', async () => {
+      it('should fetch sobject with Name compound field', async () => {
         mockSingleSObject('Lead', [
           {
             name: 'Name',
@@ -294,6 +294,39 @@ describe('Custom Objects filter', () => {
         expect(lead.fields.LastName).toBe(undefined)
       })
 
+      it('should fetch sobject with Address compound field', async () => {
+        mockSingleSObject('Lead', [
+          {
+            name: 'Address',
+            type: 'string',
+            label: 'Full Name',
+            nillable: false,
+            nameField: true,
+          },
+          {
+            name: 'City',
+            type: 'string',
+            label: 'City',
+            nillable: false,
+            compoundFieldName: 'Address',
+          },
+          {
+            name: 'Country',
+            type: 'string',
+            label: 'Country',
+            nillable: true,
+            compoundFieldName: 'Address',
+          },
+        ])
+
+        await filter.onFetch(result)
+        const lead = findElements(result, 'Lead').pop() as ObjectType
+        expect(lead).toBeDefined()
+        expect(lead.fields.Address.type.elemID.name).toBe('Address')
+        expect(lead.fields.Address.annotations.label).toBe('Full Name')
+        expect(lead.fields.City).toBe(undefined)
+        expect(lead.fields.Country).toBe(undefined)
+      })
       it('should fetch sobject with Name compound field without salutation', async () => {
         mockSingleSObject('Lead', [
           {

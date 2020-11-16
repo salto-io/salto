@@ -213,8 +213,3 @@ export const isMasterDetailField = (field: Field): boolean => (
 export const isLookupField = (field: Field): boolean => (
   field.type.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
 )
-
-export const isNameField = (field: Field): boolean =>
-  (isObjectType(field.type)
-    && (field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-    || field.type.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))

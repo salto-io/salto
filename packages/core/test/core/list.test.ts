@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace, ElementSelector, createElementSelector } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import { ObjectType, InstanceElement, Element, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { listUnresolvedReferences } from '../../src/api'
 import { UnresolvedElemIDs } from '../../src/core/list'
@@ -24,29 +24,12 @@ const mockWorkspace = ({
 }: {
   name: string
   envElements: Record<string, Element[]>
-}): Workspace => {
-  let curEnv = name
-  return {
-    elements: jest.fn().mockImplementation(async (_, env: string) => envElements[env]),
-    name,
-    envs: () => Object.keys(envElements),
-    currentEnv: () => curEnv,
-    setCurrentEnv: jest.fn().mockImplementation((env: string) => { curEnv = env }),
-    copyTo: jest.fn().mockImplementation((selectors: ElementSelector[], targetEnvs: string[]) => {
-      if (selectors.some(s => s.typeNameSelector.test('unresolved'))) {
-        throw new Error('unresolved')
-      }
-      targetEnvs.forEach(target => envElements[target].push(
-        ...envElements[curEnv].filter(e => selectors.some(
-          // this is enough for what we need in the tests
-          s => s.idTypeSelector === e.elemID.idType
-          && s.typeNameSelector.test(e.elemID.typeName)
-          && s.nameSelectors?.some(ns => ns.test(e.elemID.name))
-        ))
-      ))
-    }),
-  } as unknown as Workspace
-}
+}): Workspace => ({
+  elements: jest.fn().mockImplementation(async (_, env: string) => envElements[env]),
+  name,
+  envs: () => Object.keys(envElements),
+  currentEnv: () => name,
+} as unknown as Workspace)
 
 describe('listUnresolvedReferences', () => {
   let workspace: Workspace
@@ -131,10 +114,6 @@ describe('listUnresolvedReferences', () => {
       expect(res.found).toHaveLength(0)
       expect(res.missing).toHaveLength(0)
     })
-
-    it('should not call copyTo', () => {
-      expect(workspace.copyTo).not.toHaveBeenCalled()
-    })
   })
 
   describe('workspace with unresolved references and no complete-from env', () => {
@@ -156,12 +135,7 @@ describe('listUnresolvedReferences', () => {
       expect(res.found).toHaveLength(0)
       expect(res.missing).toEqual([
         new ElemID('salesforce', 'someType', 'instance', 'inst1'),
-        new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1'),
       ])
-    })
-
-    it('should not call copyTo', () => {
-      expect(workspace.copyTo).not.toHaveBeenCalled()
     })
   })
 
@@ -186,16 +160,6 @@ describe('listUnresolvedReferences', () => {
         new ElemID('salesforce', 'someType', 'instance', 'inst1'),
       ])
       expect(res.missing).toHaveLength(0)
-    })
-
-    it('should call copyTo with the relevant elem ids', () => {
-      expect(workspace.copyTo).toHaveBeenCalledWith([
-        createElementSelector('salesforce.someType.field.f3'),
-      ], ['default'])
-      expect(workspace.copyTo).toHaveBeenCalledWith([
-        createElementSelector('salesforce.someType.instance.inst1.f1'),
-        createElementSelector('salesforce.someType.instance.inst1'),
-      ], ['default'])
     })
   })
 
@@ -225,19 +189,6 @@ describe('listUnresolvedReferences', () => {
       expect(res.missing).toEqual([
         new ElemID('salesforce', 'unresolved'),
       ])
-    })
-
-    it('should retry with individual calls to copyTo', () => {
-      expect(workspace.copyTo).toHaveBeenCalledWith([
-        createElementSelector('salesforce.someType.instance.inst1.f1'),
-        createElementSelector('salesforce.unresolved'),
-      ], ['default'])
-      expect(workspace.copyTo).toHaveBeenCalledWith([
-        createElementSelector('salesforce.someType.instance.inst1.f1'),
-      ], ['default'])
-      expect(workspace.copyTo).toHaveBeenCalledWith([
-        createElementSelector('salesforce.unresolved'),
-      ], ['default'])
     })
   })
 })

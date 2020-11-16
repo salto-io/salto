@@ -29,6 +29,7 @@ import {
   formatTargetEnvRequired, formatInvalidFilters, formatUnknownTargetEnv, formatCloneToEnvFailed,
   formatMissingCloneArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
   formatInvalidMoveArg, formatInvalidElementCommand, formatElementListUnresolvedFailed,
+  formatMissingElementSelectors, formatListUnresolvedFound, formatListUnresolvedMissing, emptyLine,
 } from '../formatter'
 
 const log = logger(module)
@@ -131,20 +132,20 @@ const listUnresolved = async (
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
   outputLine(Prompts.LIST_UNRESOLVED_START(workspace.currentEnv()), output)
+  outputLine(emptyLine(), output)
 
   try {
     const { found, missing } = await listUnresolvedReferences(workspace, completeFrom)
 
-    if (found.length > 0) {
-      outputLine(Prompts.LIST_UNRESOLVED_FOUND(completeFrom || '-'), output)
-      found.forEach(elemID => output.stdout.write(`  ${elemID.getFullName()}\n`))
-    }
-    if (missing.length > 0) {
-      outputLine(Prompts.LIST_UNRESOLVED_MISSING(), output)
-      missing.forEach(elemID => output.stdout.write(`  ${elemID.getFullName()}\n`))
-    }
     if (missing.length === 0 && found.length === 0) {
       outputLine(Prompts.LIST_UNRESOLVED_NONE(workspace.currentEnv()), output)
+    } else {
+      if (found.length > 0) {
+        outputLine(formatListUnresolvedFound(completeFrom ?? '-', found), output)
+      }
+      if (missing.length > 0) {
+        outputLine(formatListUnresolvedMissing(missing), output)
+      }
     }
 
     cliTelemetry.success(workspaceTags)
@@ -177,7 +178,8 @@ export const command = (
     )
 
     if (inputElmSelectors.length === 0 && commandName !== 'list-unresolved') {
-      throw new Error('No element selector specified')
+      errorOutputLine(formatMissingElementSelectors(), output)
+      return CliExitCode.UserInputError
     }
 
     if ((commandName === 'clone')

@@ -14,12 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  ElemID, Element,
+  ElemID, Element, isElement, isInstanceElement, InstanceElement,
 } from '@salto-io/adapter-api'
-import { Workspace, validator, createElementSelectors } from '@salto-io/workspace'
+import { Workspace, validator } from '@salto-io/workspace'
+import { resolvePath, setPath } from '@salto-io/adapter-utils'
 
 const { validateElements, isUnresolvedRefError } = validator
+const { isDefined } = lowerDashValues
 
 export type UnresolvedElemIDs = {
   found: ElemID[]
@@ -31,10 +34,10 @@ export type UnresolvedElemIDs = {
  *
  * @param sortedIds   The list of elem id full names, sorted alphabetically
  */
-const compact = (sortedIds: string[]): string[] => {
+const compact = (sortedIds: ElemID[]): ElemID[] => {
   const ret = sortedIds.slice(0, 1)
   sortedIds.slice(1).forEach(id => {
-    if (!id.startsWith(`${ret.slice(-1)[0]}${ElemID.NAMESPACE_SEPARATOR}`)) {
+    if (!ret.slice(-1)[0].isParentOf(id)) {
       ret.push(id)
     }
   })
@@ -61,17 +64,23 @@ export const listUnresolvedReferences = async (
     elemID => elemID.getFullName(),
   )
 
-  const workspaceElements = await workspace.elements(true, workspace.currentEnv())
-  const unresolvedElemIDs = getUnresolvedElemIDs(workspaceElements)
+  const elementsWithCompletions = [...await workspace.elements(true, workspace.currentEnv())]
+  const unresolvedElemIDs = getUnresolvedElemIDs(elementsWithCompletions)
 
   if (completeFromEnv === undefined) {
     return {
       found: [],
-      missing: _.sortBy(unresolvedElemIDs, id => id.getFullName()),
+      missing: compact(_.sortBy(unresolvedElemIDs, id => id.getFullName())),
     }
   }
 
-  const idsToMove = new Set<string>()
+  const elemCompletionLookup: Record<string, Element> = Object.fromEntries(
+    (await workspace.elements(true, completeFromEnv))
+      .filter(e => e.elemID.isTopLevel())
+      .map(e => [e.elemID.getFullName(), e])
+  )
+
+  const completed = new Set<string>()
   const missing = new Set<string>()
 
   const addAndValidate = async (ids: ElemID[]): Promise<void> => {
@@ -79,50 +88,47 @@ export const listUnresolvedReferences = async (
       return
     }
 
-    const copy = async (idsToCopy: ElemID[]): Promise<ElemID[]> => {
-      const env = workspace.currentEnv()
-
-      const copyWithRetry = async (elemIDs: ElemID[]): Promise<ElemID[]> => {
-        try {
-          // elem id full names are valid selectors
-          await workspace.copyTo(
-            createElementSelectors(elemIDs.map(id => id.getFullName())).validSelectors,
-            [env],
-          )
-          return []
-        } catch (e) {
-          if (elemIDs.length <= 1) {
-            return elemIDs
-          }
-          return (await Promise.all(elemIDs.map(id => copyWithRetry([id])))).flat()
-        }
+    const getCompletionElem = (id: ElemID): Element | undefined => {
+      const rootElem = elemCompletionLookup[id.createTopLevelParentID().parent.getFullName()]
+      if (!rootElem) {
+        return undefined
       }
-
-      await workspace.setCurrentEnv(completeFromEnv, false)
-      const failed = await copyWithRetry(idsToCopy)
-      await workspace.setCurrentEnv(env, false)
-      return failed
+      const val = resolvePath(rootElem, id)
+      if (isElement(val)) {
+        return val
+      }
+      if (isInstanceElement(rootElem) && !id.isTopLevel()) {
+        const newInstance = new InstanceElement(
+          rootElem.elemID.name,
+          rootElem.type,
+          {},
+          rootElem.path,
+        )
+        setPath(newInstance, id, val)
+        return newInstance
+      }
+      return undefined
     }
 
-    ids.forEach(id => idsToMove.add(id.getFullName()))
-    const failed = await copy(ids)
-    failed.forEach(id => missing.add(id.getFullName()))
-    const idLookup = new Set(ids.map(id => id.getFullName()))
-    const [moved, existing] = _.partition(
-      await workspace.elements(true, workspace.currentEnv()),
-      e => (
-        idLookup.has(e.elemID.getFullName())
-        || idLookup.has(e.elemID.createTopLevelParentID().parent.getFullName())
-      ),
+    const completionRes = Object.fromEntries(
+      ids.map(id => ([id.getFullName(), getCompletionElem(id)]))
     )
-    const unresolvedIDs = getUnresolvedElemIDs(moved, existing)
-    await addAndValidate(unresolvedIDs.filter(id => !idsToMove.has(id.getFullName())))
+    const [completionSuccess, completionFailure] = _.partition(
+      Object.entries(completionRes), ([_id, elem]) => isDefined(elem)
+    )
+    completionFailure.forEach(([id]) => missing.add(id))
+    completionSuccess.forEach(([id]) => completed.add(id))
+    const resolvedElements = Object.values(completionRes).filter(isDefined)
+    elementsWithCompletions.push(...resolvedElements)
+    const unresolvedIDs = getUnresolvedElemIDs(resolvedElements, elementsWithCompletions)
+
+    await addAndValidate(unresolvedIDs)
   }
 
   await addAndValidate(unresolvedElemIDs)
 
   return {
-    found: compact([...idsToMove].filter(id => !missing.has(id)).sort()).map(ElemID.fromFullName),
-    missing: [...missing].sort().map(ElemID.fromFullName),
+    found: compact([...completed].sort().map(ElemID.fromFullName)),
+    missing: compact([...missing].sort().map(ElemID.fromFullName)),
   }
 }

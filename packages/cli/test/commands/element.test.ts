@@ -33,29 +33,22 @@ const eventsNames = {
   failure: buildEventName(commandName, 'failure'),
 }
 
+const mockedList: typeof core.listUnresolvedReferences = (_workspace, completeFromEnv) => (
+  completeFromEnv !== undefined
+    ? Promise.resolve({
+      found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
+      missing: [],
+    })
+    : Promise.resolve({
+      found: [],
+      missing: [new ElemID('salesforce', 'fail')],
+    })
+)
+
 jest.mock('../../src/workspace/workspace')
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
-  listUnresolvedReferences: jest.fn().mockImplementation((workspace, completeFromEnv) => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-    const adapterAPI = require('@salto-io/adapter-api')
-
-    if (workspace.name === 'fail') {
-      throw new Error('oh no')
-    }
-    if (completeFromEnv !== undefined) {
-      return {
-        found: workspace.name === 'empty'
-          ? []
-          : [new adapterAPI.ElemID('salesforce', 'aaa'), new adapterAPI.ElemID('salesforce', 'bbb', 'instance', 'ccc')],
-        missing: workspace.name === 'missing' ? [new adapterAPI.ElemID('salesforce', 'fail')] : [],
-      }
-    }
-    return {
-      found: [],
-      missing: workspace.name === 'empty' ? [] : [new adapterAPI.ElemID('salesforce', 'fail')],
-    }
-  }),
+  listUnresolvedReferences: jest.fn().mockImplementation((_ws, env) => mockedList(_ws, env)),
 }))
 describe('element command', () => {
   let spinners: Spinner[]
@@ -271,7 +264,6 @@ describe('element command', () => {
       ).execute()
     })
 
-
     it('should return failure code', () => {
       expect(result).toBe(CliExitCode.UserInputError)
     })
@@ -295,6 +287,50 @@ describe('element command', () => {
 
     it('should print clone to console', () => {
       expect(cliOutput.stderr.content).toContain('Failed to created element ID filters')
+    })
+  })
+
+  describe('with missing element selectors', () => {
+    const workspaceName = 'missing-selectors'
+    const workspace = mocks.mockLoadWorkspace(workspaceName)
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'element')
+      mockLoadWorkspace.mockResolvedValue({
+        workspace,
+        errored: false,
+      })
+      result = await command(
+        '',
+        cliOutput,
+        mockCliTelemetry,
+        spinnerCreator,
+        'clone',
+        false,
+        [],
+        'active',
+        ['inactive'],
+        undefined,
+
+      ).execute()
+    })
+
+    it('should return failure code', () => {
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+    it('should not call workspace copyTo', () => {
+      expect(workspace.copyTo).not.toHaveBeenCalled()
+    })
+    it('should not flush workspace', () => {
+      expect(workspace.flush).not.toHaveBeenCalled()
+    })
+    it('should not send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(0)
+    })
+
+    it('should print clone to console', () => {
+      expect(cliOutput.stderr.content).toContain('No element selectors specified')
     })
   })
 
@@ -668,6 +704,8 @@ describe('element command', () => {
   })
 
   describe('list-unresolved', () => {
+    const mockListUnresolved = core.listUnresolvedReferences as jest.Mock
+
     describe('success - all unresolved references are found in complete-from', () => {
       const workspaceName = 'valid-ws'
       const workspace = mocks.mockLoadWorkspace(workspaceName)
@@ -699,7 +737,9 @@ describe('element command', () => {
       })
 
       it('should ignore unresolved references when loading the workspace', () => {
-        expect(mockLoadWorkspace.mock.calls.slice(-1)[0][2].ignoreUnresolvedRefs).toBeTruthy()
+        expect(mockLoadWorkspace).toHaveBeenCalledWith('', cliOutput, expect.objectContaining({
+          ignoreUnresolvedRefs: true,
+        }))
       })
       it('should call listUnresolvedReferences', () => {
         expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
@@ -713,7 +753,7 @@ describe('element command', () => {
 
       it('should print found to console', () => {
         expect(cliOutput.stdout.content).toContain('The following unresolved references can be copied from inactive:')
-        expect(cliOutput.stdout.content).toContain('  salesforce.aaa\n  salesforce.bbb.instance.ccc')
+        expect(cliOutput.stdout.content).toMatch(/salesforce.aaa(\s*)salesforce.bbb.instance.ccc/)
         expect(cliOutput.stdout.content).not.toContain('The following unresolved references could not be found:')
       })
     })
@@ -729,6 +769,11 @@ describe('element command', () => {
           workspace,
           errored: false,
         })
+        mockListUnresolved.mockImplementationOnce(() => Promise.resolve({
+          found: [],
+          missing: [],
+        }))
+
         result = await command(
           '',
           cliOutput,
@@ -771,6 +816,11 @@ describe('element command', () => {
           workspace,
           errored: false,
         })
+        mockListUnresolved.mockImplementationOnce(() => Promise.resolve({
+          found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
+          missing: [new ElemID('salesforce', 'fail')],
+        }))
+
         result = await command(
           '',
           cliOutput,
@@ -800,8 +850,8 @@ describe('element command', () => {
       })
 
       it('should print list to console', () => {
-        expect(cliOutput.stdout.content).toContain('The following unresolved references can be copied from inactive:\n  salesforce.aaa\n  salesforce.bbb.instance.ccc')
-        expect(cliOutput.stdout.content).toContain('The following unresolved references could not be found:\n  salesforce.fail')
+        expect(cliOutput.stdout.content).toMatch(/The following unresolved references can be copied from inactive:(\s*)salesforce.aaa(\s*)salesforce.bbb.instance.ccc/)
+        expect(cliOutput.stdout.content).toMatch(/The following unresolved references could not be found:(\s*)salesforce.fail/)
       })
     })
 
@@ -816,6 +866,10 @@ describe('element command', () => {
           workspace,
           errored: false,
         })
+        mockListUnresolved.mockImplementationOnce(() => {
+          throw new Error('oh no')
+        })
+
         result = await command(
           '',
           cliOutput,

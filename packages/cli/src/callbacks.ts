@@ -187,12 +187,13 @@ export const getConfigWithHeader = async (output: WriteStream, credentialsType: 
 }
 
 export const getEnvName = async (currentName = 'env1'): Promise<string> => {
-  const questions = [{
+  const questions: inquirer.Questions = [{
     type: 'input',
     mask: '*',
     message: 'Enter a name for the first environment in the workspace',
     name: currentName,
     default: currentName,
+    validate: input => (input === '' ? 'Environment name cannot be empty' : true),
   }]
   return (await inquirer.prompt(questions))[currentName]
 }

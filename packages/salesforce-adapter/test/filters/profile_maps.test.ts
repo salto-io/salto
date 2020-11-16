@@ -13,75 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, BuiltinTypes, ListType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/profile_maps'
 import mockClient from '../client'
-import {
-  SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
-} from '../../src/constants'
+import { generateProfileType } from '../utils'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
-
-export const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
-  const ProfileApplicationVisibility = new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
-    fields: {
-      application: { type: BuiltinTypes.STRING },
-      default: { type: BuiltinTypes.BOOLEAN },
-      visible: { type: BuiltinTypes.BOOLEAN },
-    },
-    annotations: {
-      [METADATA_TYPE]: 'ProfileApplicationVisibility',
-    },
-  })
-  const ProfileLayoutAssignment = new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'ProfileLayoutAssignment'),
-    fields: {
-      layout: { type: BuiltinTypes.STRING },
-      recordType: { type: BuiltinTypes.STRING },
-    },
-    annotations: {
-      [METADATA_TYPE]: 'ProfileLayoutAssignment',
-    },
-  })
-  const ProfileFieldLevelSecurity = new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'ProfileFieldLevelSecurity'),
-    fields: {
-      field: { type: BuiltinTypes.STRING },
-      editable: { type: BuiltinTypes.BOOLEAN },
-      readable: { type: BuiltinTypes.BOOLEAN },
-    },
-    annotations: {
-      [METADATA_TYPE]: 'ProfileFieldLevelSecurity',
-    },
-  })
-
-  // we only define types as lists if they use non-unique maps - so for onDeploy, fieldPermissions
-  // will not appear as a list unless conflicts were found during the previous fetch
-  const fieldPermissionsNonMapType = preDeploy
-    ? ProfileFieldLevelSecurity
-    : new ListType(ProfileFieldLevelSecurity)
-
-  return new ObjectType({
-    elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
-    fields: {
-      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
-      applicationVisibilities: { type: useMaps
-        ? new MapType(ProfileApplicationVisibility)
-        : ProfileApplicationVisibility },
-      layoutAssignments: { type: useMaps
-        ? new MapType(new ListType(ProfileLayoutAssignment))
-        : new ListType(ProfileLayoutAssignment) },
-      fieldPermissions: { type: useMaps
-        ? new MapType(new MapType(ProfileFieldLevelSecurity))
-        : fieldPermissionsNonMapType },
-    },
-    annotations: {
-      [METADATA_TYPE]: PROFILE_METADATA_TYPE,
-    },
-  })
-}
 
 const generateProfileInstance = ({
   profileObj,

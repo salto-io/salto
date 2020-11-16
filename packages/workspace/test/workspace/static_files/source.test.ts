@@ -25,7 +25,7 @@ import {
 import {
   hashedContent, exampleStaticFileWithHash,
   exampleStaticFileWithContent, defaultBuffer, defaultFile,
-} from './common.test'
+} from '../../utils'
 
 describe('Static Files', () => {
   describe('Static Files Source', () => {

@@ -17,7 +17,7 @@ import {
   ChangeError, ObjectType, toChange, InstanceElement,
 } from '@salto-io/adapter-api'
 import profileMapKeysValidator from '../../src/change_validators/profile_map_keys'
-import { generateProfileType } from '../filters/profile_maps.test'
+import { generateProfileType } from '../utils'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 
 const generateInstance = (profileObj: ObjectType): InstanceElement => (

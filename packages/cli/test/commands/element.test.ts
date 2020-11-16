@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { Workspace, createElementSelector } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import { ElemID } from '@salto-io/adapter-api'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/element'
 
 import * as mocks from '../mocks'
+import { expectElementSelector } from '../utils'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 import Prompts from '../../src/prompts'
@@ -31,13 +31,6 @@ const eventsNames = {
   start: buildEventName(commandName, 'start'),
   failure: buildEventName(commandName, 'failure'),
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const expectElementSelector = (selector: string): any =>
-  expect.arrayContaining([expect.objectContaining(
-    _.pick(createElementSelector(selector), 'adapterSelector',
-      'idTypeSelector', 'nameSelectorRegexes', 'origin', 'typeNameSelector')
-  )])
 
 jest.mock('../../src/workspace/workspace')
 describe('element command', () => {

@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  isInvalidStaticFile, MissingStaticFile, AccessDeniedStaticFile,
-} from '../../../src/workspace/static_files/common'
+import _ from 'lodash'
+import { createElementSelector } from '@salto-io/workspace'
 
-describe('Static Files Common', () => {
-  it('isInvalidStaticFile for MissingStaticFile', () => expect(isInvalidStaticFile(new MissingStaticFile('aaa'))).toBeTruthy())
-  it('isInvalidStaticFile for AccessDeniedStaticFile', () => expect(isInvalidStaticFile(new AccessDeniedStaticFile('aaa'))).toBeTruthy())
-  it('isInvalidStaticFile for not InvalidStaticFile', () => expect(isInvalidStaticFile('ZOMG')).toBeFalsy())
-})
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const expectElementSelector = (selector: string): any => (
+  expect.arrayContaining([expect.objectContaining(
+    _.pick(createElementSelector(selector), 'adapterSelector',
+      'idTypeSelector', 'nameSelectorRegexes', 'origin', 'typeNameSelector')
+  )])
+)

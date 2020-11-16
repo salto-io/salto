@@ -13,88 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, ServiceIds, BuiltinTypes, isInstanceElement } from '@salto-io/adapter-api'
-import { getNamespaceFromString } from '../../src/filters/utils'
+import { ElemID, ObjectType, Element, ServiceIds, isInstanceElement } from '@salto-io/adapter-api'
+import { createCustomSettingsObject } from '../utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_settings_filter'
 import mockAdapter from '../adapter'
 import {
-  LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
-  OBJECTS_PATH, CUSTOM_SETTINGS_TYPE, FIELD_ANNOTATIONS, LIST_CUSTOM_SETTINGS_TYPE,
+  CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, CUSTOM_SETTINGS_TYPE,
+  LIST_CUSTOM_SETTINGS_TYPE,
 } from '../../src/constants'
-
-const stringType = new PrimitiveType({
-  elemID: new ElemID(SALESFORCE, 'Text'),
-  primitive: PrimitiveTypes.STRING,
-  annotationTypes: {
-    [LABEL]: BuiltinTypes.STRING,
-  },
-})
-const idType = new PrimitiveType({
-  elemID: new ElemID('id'),
-  primitive: PrimitiveTypes.STRING,
-})
-export const createCustomSettingsObject = (
-  name: string,
-  settingsType: string,
-): ObjectType => {
-  const namespace = getNamespaceFromString(name)
-  const basicFields = {
-    Id: {
-      type: idType,
-      label: 'id',
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
-        [LABEL]: 'Record ID',
-        [API_NAME]: 'Id',
-      },
-    },
-    Name: {
-      type: stringType,
-      label: 'Name',
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
-        [LABEL]: 'Name',
-        [API_NAME]: 'Name',
-        [FIELD_ANNOTATIONS.CREATABLE]: true,
-      },
-    },
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    TestField__c: {
-      label: 'TestField',
-      type: stringType,
-      annotations: {
-        [LABEL]: 'TestField',
-        [API_NAME]: `${name}.TestField__c`,
-        [FIELD_ANNOTATIONS.CREATABLE]: true,
-      },
-      annotationTypes: {
-        [LABEL]: BuiltinTypes.STRING,
-        [API_NAME]: BuiltinTypes.STRING,
-      },
-    },
-  }
-  const obj = new ObjectType({
-    elemID: new ElemID(SALESFORCE, name),
-    annotations: {
-      [API_NAME]: name,
-      [METADATA_TYPE]: CUSTOM_OBJECT,
-      [CUSTOM_SETTINGS_TYPE]: settingsType,
-    },
-    annotationTypes: {
-      [CUSTOM_SETTINGS_TYPE]: BuiltinTypes.STRING,
-      [METADATA_TYPE]: BuiltinTypes.STRING,
-    },
-    fields: basicFields,
-  })
-  const path = namespace
-    ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
-    : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
-  obj.path = path
-  return obj
-}
 
 const customSettingsWithNoNameFieldName = 'noNameField'
 const customSettingsWithNoNameField = new ObjectType({

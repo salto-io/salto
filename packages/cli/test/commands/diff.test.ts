@@ -16,7 +16,7 @@
 import { diff, loadLocalWorkspace } from '@salto-io/core'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/diff'
-import { expectElementSelector } from './element.test'
+import { expectElementSelector } from '../utils'
 
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'

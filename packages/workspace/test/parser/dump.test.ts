@@ -26,10 +26,7 @@ import {
 import {
   Functions,
 } from '../../src/parser/functions'
-import {
-  registerTestFunction,
-  TestFuncImpl,
-} from './functions.test'
+import { registerTestFunction, TestFuncImpl } from '../utils'
 
 const funcName = 'ZOMG'
 let functions: Functions

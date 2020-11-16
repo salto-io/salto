@@ -19,9 +19,7 @@ import {
   isType, isPrimitiveType, ListType,
 } from '@salto-io/adapter-api'
 // import each from 'jest-each'
-import {
-  registerTestFunction,
-} from './functions.test'
+import { registerTestFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'

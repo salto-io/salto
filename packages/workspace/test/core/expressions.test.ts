@@ -19,9 +19,7 @@ import {
   ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
   isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
-import {
-  TestFuncImpl,
-} from '../parser/functions.test'
+import { TestFuncImpl } from '../utils'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
 
 describe('Test Salto Expressions', () => {

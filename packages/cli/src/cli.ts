@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { EOL } from 'os'
+import os from 'os'
 import chalk from 'chalk'
 import { compareLogLevels, LogLevel, logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'
@@ -21,6 +21,7 @@ import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
 import { YargsCommandBuilder } from './command_builder'
 import parse, { ERROR_STYLE } from './argparser'
 import { versionString } from './version'
+import { AppConfig } from '../../core/src/app_config'
 
 export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 const EVENTS_FLUSH_WAIT_TIME = 1000
@@ -39,11 +40,12 @@ const increaseLoggingLogLevel = (): void => {
 }
 
 export default async (
-  { input, output, commandBuilders, spinnerCreator }: {
+  { input, output, commandBuilders, spinnerCreator, config }: {
     input: CliInput
     output: CliOutput
     commandBuilders: YargsCommandBuilder[]
     spinnerCreator: SpinnerCreator
+    config: AppConfig
   }
 ): Promise<CliExitCode> => {
   const [nodeExecLoc, saltoExecLoc, ...cmdLineArgs] = process.argv
@@ -69,6 +71,8 @@ export default async (
       nodeExecLoc,
       saltoExecLoc,
       process.cwd())
+      log.debug('OS properties - platform: %s, release: %s, arch %s', os.platform(), os.release(), os.arch())
+      log.debug('Installation ID: %s', config.installationID)
       log.info('running "%s"', cmdStr)
 
       const parsedInput = { ...input, args: parsedArgs }
@@ -78,15 +82,15 @@ export default async (
 
     return CliExitCode.Success
   } catch (err) {
-    log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(EOL)}`)
+    log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(os.EOL)}`)
     input.telemetry.sendStackEvent(exceptionEvent, err, {})
 
     const errorStream = output.stderr
-    const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`
+    const unstyledErrorString = `${[err].filter(n => n).join(os.EOL)}`
     const errorString = streams.hasColors(errorStream)
       ? chalk`{${ERROR_STYLE} ${unstyledErrorString}}` : unstyledErrorString
     errorStream.write(errorString)
-    errorStream.write(EOL)
+    errorStream.write(os.EOL)
     return CliExitCode.AppError
   } finally {
     await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)

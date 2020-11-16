@@ -1449,3 +1449,62 @@ describe('workspace', () => {
     })
   })
 })
+
+describe('getElementNaclFiles', () => {
+  let workspace: Workspace
+  const firstFile = `
+    type salesforce.lead {
+      salesforce.text singleDef {
+
+      }
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+  const secondFile = `
+    type salesforce.lead {
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+
+  const redHeringFile = `
+    type salesforce.hearing {
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+  const naclFileStore = mockDirStore(undefined, undefined, {
+    'firstFile.nacl': firstFile,
+    'secondFile.nacl': secondFile,
+    'redHeringFile.nacl': redHeringFile,
+  })
+
+  beforeAll(async () => {
+    workspace = await createWorkspace(naclFileStore)
+  })
+
+  it('should find all files for a top level id', async () => {
+    const id = ElemID.fromFullName('salesforce.lead')
+    const res = await workspace.getElementNaclFiles(id)
+    expect(res).toContain('secondFile.nacl')
+    expect(res).toContain('firstFile.nacl')
+  })
+
+  it('should find all files with a nested level id that apears in multiple files', async () => {
+    const id = ElemID.fromFullName('salesforce.lead.field.multiDef')
+    const res = await workspace.getElementNaclFiles(id)
+    expect(res).toContain('secondFile.nacl')
+    expect(res).toContain('firstFile.nacl')
+  })
+
+  it('should find only files with the nested id', async () => {
+    const id = ElemID.fromFullName('salesforce.lead.field.singleDef')
+    const res = await workspace.getElementNaclFiles(id)
+    expect(res).toContain('firstFile.nacl')
+    expect(res).not.toContain('secondFile.nacl')
+  })
+})

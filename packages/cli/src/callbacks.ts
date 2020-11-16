@@ -193,6 +193,12 @@ export const getEnvName = async (currentName = 'env1'): Promise<string> => {
     message: 'Enter a name for the first environment in the workspace',
     name: currentName,
     default: currentName,
+    validate: (input: string): boolean | string => {
+      if (input === '') {
+        return 'Environment name cannot be empty'
+      }
+      return true
+    },
   }]
   return (await inquirer.prompt(questions))[currentName]
 }

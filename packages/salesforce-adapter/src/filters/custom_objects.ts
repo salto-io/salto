@@ -36,6 +36,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
+  COMPOUND_FIELD_TYPE_NAMES,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -396,14 +397,24 @@ const createObjectType = ({
     pathNaclCase(object.elemID.name),
   ]
   if (!_.isUndefined(fields)) {
-    const hasSalutationField = fields.map(f => f.name).includes(NAME_FIELDS.SALUTATION)
+    const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
+      if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
+        return nestedFields.some(field => field.name === NAME_FIELDS.SALUTATION)
+          ? COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
+          : COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME_NO_SALUTATION
+      }
+      return compoundName
+    }
 
     // Only fields with "child's" refering to a field as it's compoundField
     // should be regarded as compound.
-    const objCompoundFieldNames = Object.fromEntries(Object.entries(_.groupBy(
-      fields.filter(field => field.compoundFieldName),
-      field => field.compoundFieldName
-    )).map(([fieldName, _nestedFields]) => [fieldName, !hasSalutationField && fieldName === 'Name' ? 'Name2' : fieldName]))
+    const objCompoundFieldNames = _.mapValues(
+      _.groupBy(
+        fields.filter(field => field.compoundFieldName !== undefined),
+        field => field.compoundFieldName,
+      ),
+      getCompoundTypeName,
+    )
 
     fields
       .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields

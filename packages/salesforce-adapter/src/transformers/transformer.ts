@@ -661,7 +661,7 @@ export class Types {
       },
     }),
     Name2: new ObjectType({
-      // replaces the regular Name for types that don't have Salutation attribute (i.e User)
+      // replaces the regular Name for types that don't have Salutation attribute (e.g User)
       elemID: nameNoSalutationElemID,
       fields: _.omit(Types.nameInnerFields, [NAME_FIELDS.SALUTATION]),
       annotationTypes: {
@@ -762,6 +762,11 @@ export class Types {
   }
 }
 
+export const isNameField = (field: Field): boolean =>
+  (isObjectType(field.type)
+    && (field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
+    || field.type.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
+
 const transformCompoundValues = (
   record: SalesforceRecord,
   instance: InstanceElement
@@ -777,8 +782,7 @@ const transformCompoundValues = (
     relevantCompoundFields,
     (compoundField, compoundFieldKey) => {
       // Name fields are without a prefix
-      if (compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-        || compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)) {
+      if (isNameField(compoundField)) {
         return record[compoundFieldKey]
       }
       // Other compound fields are added a prefix according to the field name

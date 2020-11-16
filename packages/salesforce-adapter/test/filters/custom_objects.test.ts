@@ -281,6 +281,7 @@ describe('Custom Objects filter', () => {
               { value: 'Mrs.', defaultValue: false },
             ],
             restrictedPicklist: true,
+            compoundFieldName: 'Name',
           },
         ])
 
@@ -293,7 +294,7 @@ describe('Custom Objects filter', () => {
         expect(lead.fields.LastName).toBe(undefined)
       })
 
-      it('should fetch sobject with NAme compound field without salutation', async () => {
+      it('should fetch sobject with Name compound field without salutation', async () => {
         mockSingleSObject('Lead', [
           {
             name: 'Name',

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as os from 'os'
+import os from 'os'
 import chalk from 'chalk'
 import { compareLogLevels, LogLevel, logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'

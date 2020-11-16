@@ -353,7 +353,7 @@ const buildNaclFilesSource = (
     }
 
     const naclFiles = _(await Promise.all(changes.map(change => change.id)
-      .map(elemID => getElementNaclFiles(elemID))))
+      .map(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))))
       .flatten().uniq().value()
     const { parsedNaclFiles } = await getState()
     const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(

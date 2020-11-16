@@ -87,4 +87,45 @@ describe('Test go to definitions', () => {
     const defs = await provideWorkspaceReferences(workspace, token, context)
     expect(getRefLines(defs)).toEqual([208])
   })
+
+  it('should find (goto) refrences of a nested (salto) references', async () => {
+    const token = 'reason'
+    const pos = {
+      line: 67,
+      col: 14,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
+    expect(getRefLines(defs)).toEqual([
+      67,
+      88,
+      151,
+      209,
+    ])
+  })
+
+  it('should find (salto) references to nested type annotations', async () => {
+    const token = 'first_name'
+    const pos = {
+      line: 178,
+      col: 13,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
+    expect(getRefLines(defs)).toEqual([
+      178,
+      226,
+    ])
+  })
+
+  it('should find (salto) references to nested field annotations', async () => {
+    const token = 'first_name'
+    const pos = {
+      line: 187,
+      col: 23,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
+    expect(getRefLines(defs)).toEqual([166, 187])
+  })
 })

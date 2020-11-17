@@ -200,12 +200,12 @@ Promise<NaclFilesState> => {
   Object.values(allParsed).forEach(naclFile => {
     naclFile.elements.forEach(element => {
       const elementFullName = element.elemID.getFullName()
-      elementsIndex[elementFullName] = elementsIndex[elementFullName] || new Set<string>()
+      elementsIndex[elementFullName] = elementsIndex[elementFullName] ?? new Set<string>()
       elementsIndex[elementFullName].add(naclFile.filename)
     })
     naclFile.referenced.forEach(elemID => {
       const elementFullName = elemID.getFullName()
-      referencedIndex[elementFullName] = referencedIndex[elementFullName] || new Set<string>()
+      referencedIndex[elementFullName] = referencedIndex[elementFullName] ?? new Set<string>()
       referencedIndex[elementFullName].add(naclFile.filename)
     })
   })

@@ -16,7 +16,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
-  ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType,
+  ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, Field,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
   INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
@@ -370,6 +370,24 @@ describe('Elements validation', () => {
         [typeWithHidden, objWithListWithHidden]
       )
       expect(errors).toHaveLength(1)
+    })
+
+    it('should not get stuck or return errors if there is a cyclic type', () => {
+      const objWithCyclicElemID = new ElemID('salto', 'objWithCyclic')
+      const objWithCyclic = new ObjectType({
+        elemID: objWithCyclicElemID,
+        fields: {
+        },
+      })
+      objWithCyclic.fields.cyclic = new Field(
+        objWithCyclic,
+        'cyclic',
+        new ListType(objWithCyclic),
+      )
+      const errors = validateElements(
+        [objWithCyclic]
+      )
+      expect(errors).toHaveLength(0)
     })
 
     it('should return error if innerType of list has an hidden field in object inner to map', () => {

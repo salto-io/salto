@@ -19,7 +19,7 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
-  isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
+  isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType, getDeepInnerType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { toObjectType } from '@salto-io/adapter-utils'
@@ -419,22 +419,42 @@ const validateFieldValue = (elemID: ElemID, value: Value, field: Field): Validat
 }
 
 const doesTypeHaveHiddenFields = (typeElement: TypeElement): boolean => {
-  if (isPrimitiveType(typeElement)) {
-    return false
-  }
-  if (isContainerType(typeElement)) {
-    return doesTypeHaveHiddenFields(typeElement.innerType)
-  }
-  return Object.values(typeElement.fields)
-    .find(field => {
-      if (field.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-        return true
-      }
-      if (isContainerType(field.type)) {
-        return doesTypeHaveHiddenFields(field.type.innerType)
-      }
+  const checkedTypes: TypeElement[] = []
+  const alreadyCheckedType = (type: TypeElement): boolean =>
+    (checkedTypes.find(t => t.elemID.isEqual(type.elemID)) !== undefined)
+  const doesTypeHaveHiddenFieldsRecursively = (type: TypeElement): boolean => {
+    if (isPrimitiveType(type)) {
       return false
-    }) !== undefined
+    }
+    if (isContainerType(type)) {
+      const deepInnerType = getDeepInnerType(type)
+      if (alreadyCheckedType(deepInnerType)) {
+        return false
+      }
+      // Before the recursion on the inner type single it as checked for the cyclic case
+      checkedTypes.push(deepInnerType)
+      return doesTypeHaveHiddenFieldsRecursively(deepInnerType)
+    }
+    const objectHasHidden = Object.values(type.fields)
+      .find(field => {
+        if (field.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
+          return true
+        }
+        if (isContainerType(field.type)) {
+          const deepInnerType = getDeepInnerType(field.type)
+          if (alreadyCheckedType(deepInnerType)) {
+            return false
+          }
+          // Before the recursion on the inner type single it as checked for the cyclic case
+          checkedTypes.push(deepInnerType)
+          return doesTypeHaveHiddenFieldsRecursively(deepInnerType)
+        }
+        return false
+      }) !== undefined
+    checkedTypes.push(type)
+    return objectHasHidden
+  }
+  return doesTypeHaveHiddenFieldsRecursively(typeElement)
 }
 
 const validateFieldType = (field: Field): ValidationError[] =>

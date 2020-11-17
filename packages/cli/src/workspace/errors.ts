@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { errors as wsErrors } from '@salto-io/workspace'
+import { errors as wsErrors, validator as wsValidator } from '@salto-io/workspace'
 import { ElemID, SaltoError, SaltoElementError, SaltoErrorSeverity } from '@salto-io/adapter-api'
 
+const { isUnresolvedRefError } = wsValidator
 
 export class UnresolvedReferenceGroupError implements SaltoElementError {
   readonly elemID: ElemID
@@ -32,12 +33,6 @@ export class UnresolvedReferenceGroupError implements SaltoElementError {
     this.severity = 'Warning'
   }
 }
-
-const isUnresolvedRefError = (
-  err: SaltoError
-): err is wsErrors.UnresolvedReferenceValidationError => (
-  err instanceof wsErrors.UnresolvedReferenceValidationError
-)
 
 const groupUnresolvedRefsByTarget = (
   origErrors: ReadonlyArray<SaltoError>,

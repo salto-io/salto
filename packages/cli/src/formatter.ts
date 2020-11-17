@@ -595,6 +595,11 @@ export const formatInvalidFilters = (invalidFilters: string[]): string => [
   emptyLine(),
 ].join('\n')
 
+export const formatMissingElementSelectors = (): string => [
+  formatSimpleError(Prompts.MISSING_ELEMENT_SELECTORS),
+  emptyLine(),
+].join('\n')
+
 export const formatUnknownTargetEnv = (unknownEnvs: string[]): string => [
   formatSimpleError(Prompts.UNKNOWN_TARGET_ENVS(unknownEnvs)),
   emptyLine(),
@@ -630,6 +635,11 @@ export const formatInvalidMoveArg = (invalidTo: string): string => [
   emptyLine(),
 ].join('\n')
 
+export const formatElementListUnresolvedFailed = (errorMessage: string): string => [
+  formatSimpleError(Prompts.LIST_UNRESOLVED_FAILED(errorMessage)),
+  emptyLine(),
+].join('\n')
+
 export const formatInvalidElementCommand = (command: string): string => [
   formatSimpleError(Prompts.INVALID_MOVE_ARG(command)),
   emptyLine(),
@@ -641,3 +651,15 @@ export const formatCleanWorkspace = (cleanArgs: WorkspaceComponents): string => 
     .map(([comp]) => _.startCase(comp).toLowerCase())
   return Prompts.CLEAN_WORKSPACE_SUMMARY(componentsToClean)
 }
+
+export const formatListUnresolvedFound = (env: string, elemIDs: ElemID[]): string => [
+  Prompts.LIST_UNRESOLVED_FOUND(env),
+  ...elemIDs.map(id => `  ${id.getFullName()}`),
+  emptyLine(),
+].join('\n')
+
+export const formatListUnresolvedMissing = (elemIDs: ElemID[]): string => [
+  Prompts.LIST_UNRESOLVED_MISSING(),
+  ...elemIDs.map(id => `  ${id.getFullName()}`),
+  emptyLine(),
+].join('\n')

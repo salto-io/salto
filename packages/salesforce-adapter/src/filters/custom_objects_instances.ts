@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { createInvlidIdFieldConfigChange, createUnresolvedRefIdFieldConfigChange } from '../config_change'
 import SalesforceClient from '../client/client'
@@ -26,7 +26,7 @@ import {
   OBJECTS_PATH, FIELD_ANNOTATIONS, MAX_IDS_PER_INSTANCES_QUERY,
 } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, isCustomObject, Types, createInstanceServiceIds } from '../transformers/transformer'
+import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import { getNamespace, isMasterDetailField, isLookupField } from './utils'
 import { DataManagementConfig, ConfigChangeSuggestion } from '../types'
 
@@ -52,10 +52,6 @@ export type CustomObjectFetchSetting = {
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const detectsParentsIndicator = '##allMasterDetailFields##'
-
-const isNameField = (field: Field): boolean =>
-  (isObjectType(field.type)
-    && field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID))
 
 const isReferenceField = (field: Field): boolean => (
   isMasterDetailField(field) || isLookupField(field)

@@ -151,6 +151,8 @@ const addPicklistAnnotations = (
 
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
+const nameNoSalutationElemID = new ElemID(SALESFORCE,
+  COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME_NO_SALUTATION)
 // We cannot use "Location" as the Salto ID here because there is a standard object called Location
 const geoLocationElemID = new ElemID(SALESFORCE, LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME)
 
@@ -625,6 +627,14 @@ export class Types {
     Types.getFormulaDataType(FIELD_TYPE_NAMES.TIME),
   )
 
+  private static nameInnerFields = {
+    [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
+    [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
+  }
+
   // Type mapping for compound fields
   public static compoundDataTypes: Record<COMPOUND_FIELD_TYPE_NAMES, ObjectType> = {
     Address: new ObjectType({
@@ -645,11 +655,15 @@ export class Types {
     }),
     Name: new ObjectType({
       elemID: nameElemID,
-      fields: {
-        [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
-        [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
+      fields: Types.nameInnerFields,
+      annotationTypes: {
+        ...Types.commonAnnotationTypes,
       },
+    }),
+    Name2: new ObjectType({
+      // replaces the regular Name for types that don't have Salutation attribute (e.g User)
+      elemID: nameNoSalutationElemID,
+      fields: _.omit(Types.nameInnerFields, [NAME_FIELDS.SALUTATION]),
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
@@ -748,6 +762,11 @@ export class Types {
   }
 }
 
+export const isNameField = (field: Field): boolean =>
+  (isObjectType(field.type)
+    && (field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
+    || field.type.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
+
 const transformCompoundValues = (
   record: SalesforceRecord,
   instance: InstanceElement
@@ -763,7 +782,7 @@ const transformCompoundValues = (
     relevantCompoundFields,
     (compoundField, compoundFieldKey) => {
       // Name fields are without a prefix
-      if (compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)) {
+      if (isNameField(compoundField)) {
         return record[compoundFieldKey]
       }
       // Other compound fields are added a prefix according to the field name
@@ -1019,7 +1038,7 @@ export const getSObjectFieldElement = (
   parent: ObjectType,
   field: SalesforceField,
   parentServiceIds: ServiceIds,
-  objCompoundFieldNames: string[] = [],
+  objCompoundFieldNames: Record<string, string> = {},
   systemFields: string[] = []
 ): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPARATOR)
@@ -1128,9 +1147,10 @@ export const getSObjectFieldElement = (
   // Compound Fields
   } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
     // Only fields that are compound in this object get compound type
-    if (objCompoundFieldNames.includes(field.name)) {
+    if (objCompoundFieldNames[field.name] !== undefined) {
       naclFieldType = field.nameField
-        ? Types.compoundDataTypes.Name
+      // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
+        ? Types.compoundDataTypes[objCompoundFieldNames[field.name] as COMPOUND_FIELD_TYPE_NAMES]
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }
   }

@@ -245,7 +245,125 @@ describe('Custom Objects filter', () => {
         expect(leadObj.fields.Formula__c.type.elemID.name).toBe('FormulaText')
         expect(leadObj.fields.Formula__c.annotations[FORMULA]).toBe('my formula')
       })
+      it('should fetch sobject with Name compound field', async () => {
+        mockSingleSObject('Lead', [
+          {
+            name: 'Name',
+            type: 'string',
+            label: 'Full Name',
+            nillable: false,
+            nameField: true,
+          },
+          {
+            name: 'LastName',
+            type: 'string',
+            label: 'Last Name',
+            nillable: false,
+            defaultValue: {
+              $: { 'xsi:type': 'xsd:string' },
+              _: 'BLABLA',
+            },
+            compoundFieldName: 'Name',
+          },
+          {
+            name: 'FirstName',
+            type: 'string',
+            label: 'First Name',
+            nillable: true,
+            compoundFieldName: 'Name',
+          },
+          {
+            name: 'Salutation',
+            type: 'picklist',
+            label: 'Salutation',
+            nillable: false,
+            picklistValues: [
+              { value: 'Mrs.', defaultValue: false },
+            ],
+            restrictedPicklist: true,
+            compoundFieldName: 'Name',
+          },
+        ])
 
+        await filter.onFetch(result)
+        const lead = findElements(result, 'Lead').pop() as ObjectType
+        expect(lead).toBeDefined()
+        expect(lead.fields.Name.type.elemID.name).toBe('Name')
+        expect(lead.fields.Name.annotations.label).toBe('Full Name')
+        expect(lead.fields.FirstName).toBe(undefined)
+        expect(lead.fields.LastName).toBe(undefined)
+      })
+
+      it('should fetch sobject with Address compound field', async () => {
+        mockSingleSObject('Lead', [
+          {
+            name: 'Address',
+            type: 'string',
+            label: 'Full Name',
+            nillable: false,
+            nameField: true,
+          },
+          {
+            name: 'City',
+            type: 'string',
+            label: 'City',
+            nillable: false,
+            compoundFieldName: 'Address',
+          },
+          {
+            name: 'Country',
+            type: 'string',
+            label: 'Country',
+            nillable: true,
+            compoundFieldName: 'Address',
+          },
+        ])
+
+        await filter.onFetch(result)
+        const lead = findElements(result, 'Lead').pop() as ObjectType
+        expect(lead).toBeDefined()
+        expect(lead.fields.Address.type.elemID.name).toBe('Address')
+        expect(lead.fields.Address.annotations.label).toBe('Full Name')
+        expect(lead.fields.City).toBe(undefined)
+        expect(lead.fields.Country).toBe(undefined)
+      })
+      it('should fetch sobject with Name compound field without salutation', async () => {
+        mockSingleSObject('Lead', [
+          {
+            name: 'Name',
+            type: 'string',
+            label: 'Full Name',
+            nillable: false,
+            nameField: true,
+          },
+          {
+            name: 'LastName',
+            type: 'string',
+            label: 'Last Name',
+            nillable: false,
+            defaultValue: {
+              $: { 'xsi:type': 'xsd:string' },
+              _: 'BLABLA',
+            },
+            compoundFieldName: 'Name',
+          },
+          {
+            name: 'FirstName',
+            type: 'string',
+            label: 'First Name',
+            nillable: true,
+            compoundFieldName: 'Name',
+          },
+        ])
+
+        await filter.onFetch(result)
+        const lead = findElements(result, 'Lead').pop() as ObjectType
+        expect(lead).toBeDefined()
+        expect(lead.fields.Name.type.elemID.name).toBe('Name2')
+        expect(lead.fields.Name.annotations.label).toBe('Full Name')
+        expect(lead.fields.FirstName).toBe(undefined)
+        expect(lead.fields.LastName).toBe(undefined)
+      })
       it('should fetch sobject with picklist field', async () => {
         mockSingleSObject('Lead', [
           {

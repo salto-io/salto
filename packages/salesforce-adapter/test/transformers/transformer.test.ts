@@ -441,7 +441,12 @@ describe('transformer', () => {
       })
 
       it('should fetch address field with the object type when object has it as compound field', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceAddressField, serviceIds, ['OtherAddress'])
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceAddressField,
+          serviceIds,
+          { OtherAddress: 'OtherAddress' }
+        )
         expect(fieldElement.type).toEqual(Types.compoundDataTypes.Address)
       })
     })
@@ -488,7 +493,8 @@ describe('transformer', () => {
       let salesforceIdField: SalesforceField
       it('should fetch idLookup & typed id fields as serviceId', () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField, serviceIds, [])
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField,
+          serviceIds, {})
         expect(fieldElement.type).toEqual(BuiltinTypes.SERVICE_ID)
       })
     })
@@ -542,7 +548,7 @@ describe('transformer', () => {
             dummyElem,
             salesforceAutoNumberField,
             serviceIds,
-            []
+            {}
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
@@ -557,7 +563,7 @@ describe('transformer', () => {
             dummyElem,
             salesforceAutoNumberField,
             serviceIds,
-            []
+            {}
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
@@ -612,12 +618,17 @@ describe('transformer', () => {
       })
 
       it('should fetch name field with the object type when object has it as compound field', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, ['Name'])
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceNameField,
+          serviceIds,
+          { Name: 'Name' }
+        )
         expect(fieldElement.type).toEqual(Types.compoundDataTypes.Name)
       })
 
       it('should fetch name field as text type when no name compound field in object', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, [])
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, {})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Text)
       })
     })

@@ -62,6 +62,7 @@ export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES
 export enum COMPOUND_FIELD_TYPE_NAMES {
   ADDRESS = 'Address',
   FIELD_NAME = 'Name',
+  FIELD_NAME_NO_SALUTATION = 'Name2',
   LOCATION = 'Location',
 }
 // We use Geolocation internally to avoid conflicts with the Location standard object
@@ -247,6 +248,8 @@ export const NAME_FIELDS = {
   FIRST_NAME: 'FirstName',
   LAST_NAME: 'LastName',
   SALUTATION: 'Salutation',
+  MIDDLE_NAME: 'MiddleName',
+  SUFFIX: 'Suffix',
 }
 
 export const GEOLOCATION_FIELDS = {

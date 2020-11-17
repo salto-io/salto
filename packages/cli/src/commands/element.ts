@@ -64,12 +64,13 @@ const cloneElement = async (
   toEnvs: string[],
   selectors: ElementSelector[],
 ): Promise<CliExitCode> => {
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+
   if (!validateEnvs(output, workspace, toEnvs)) {
-    cliTelemetry.failure()
+    cliTelemetry.failure(workspaceTags)
     return CliExitCode.UserInputError
   }
 
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
   try {
     outputLine(Prompts.CLONE_TO_ENV_START(toEnvs), output)
@@ -124,12 +125,13 @@ const listUnresolved = async (
   cliTelemetry: CliTelemetry,
   completeFrom?: string,
 ): Promise<CliExitCode> => {
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+
   if (completeFrom !== undefined && !validateEnvs(output, workspace, [completeFrom])) {
-    cliTelemetry.failure()
+    cliTelemetry.failure(workspaceTags)
     return CliExitCode.UserInputError
   }
 
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
   outputLine(Prompts.LIST_UNRESOLVED_START(workspace.currentEnv()), output)
   outputLine(emptyLine(), output)
@@ -207,7 +209,8 @@ export const command = (
       }
     )
     if (errored) {
-      cliTelemetry.failure()
+      const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+      cliTelemetry.failure(workspaceTags)
       return CliExitCode.AppError
     }
 

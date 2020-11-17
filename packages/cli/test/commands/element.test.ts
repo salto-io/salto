@@ -704,7 +704,8 @@ describe('element command', () => {
   })
 
   describe('list-unresolved', () => {
-    const mockListUnresolved = core.listUnresolvedReferences as jest.Mock
+    const mockListUnresolved = core.listUnresolvedReferences as jest.MockedFunction<
+      typeof core.listUnresolvedReferences>
 
     describe('success - all unresolved references are found in complete-from', () => {
       const workspaceName = 'valid-ws'

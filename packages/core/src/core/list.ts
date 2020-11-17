@@ -37,7 +37,8 @@ export type UnresolvedElemIDs = {
 const compact = (sortedIds: ElemID[]): ElemID[] => {
   const ret = sortedIds.slice(0, 1)
   sortedIds.slice(1).forEach(id => {
-    if (!ret.slice(-1)[0].isParentOf(id)) {
+    const lastItem = _.last(ret) as ElemID // if we're in the loop then ret is not empty
+    if (!lastItem.isParentOf(id)) {
       ret.push(id)
     }
   })
@@ -74,10 +75,9 @@ export const listUnresolvedReferences = async (
     }
   }
 
-  const elemCompletionLookup: Record<string, Element> = Object.fromEntries(
-    (await workspace.elements(true, completeFromEnv))
-      .filter(e => e.elemID.isTopLevel())
-      .map(e => [e.elemID.getFullName(), e])
+  const elemCompletionLookup: Record<string, Element> = _.keyBy(
+    await workspace.elements(true, completeFromEnv),
+    e => e.elemID.getFullName(),
   )
 
   const completed = new Set<string>()

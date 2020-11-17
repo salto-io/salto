@@ -195,25 +195,20 @@ Promise<NaclFilesState> => {
   const allParsed = _.omitBy({ ...current, ...newParsed },
     parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
 
-  const elementsIndex: Record<string, string[]> = {}
-  const referencedIndex: Record<string, string[]> = {}
+  const elementsIndex: Record<string, Set<string>> = {}
+  const referencedIndex: Record<string, Set<string>> = {}
   Object.values(allParsed).forEach(naclFile => {
     naclFile.elements.forEach(element => {
       const elementFullName = element.elemID.getFullName()
-      elementsIndex[elementFullName] = elementsIndex[elementFullName] || []
-      elementsIndex[elementFullName] = _.uniq(
-        [...elementsIndex[elementFullName], naclFile.filename]
-      )
+      elementsIndex[elementFullName] = elementsIndex[elementFullName] || new Set<string>()
+      elementsIndex[elementFullName].add(naclFile.filename)
     })
     naclFile.referenced.forEach(elemID => {
       const elementFullName = elemID.getFullName()
-      referencedIndex[elementFullName] = referencedIndex[elementFullName] || []
-      referencedIndex[elementFullName] = _.uniq(
-        [...referencedIndex[elementFullName], naclFile.filename]
-      )
+      referencedIndex[elementFullName] = referencedIndex[elementFullName] || new Set<string>()
+      referencedIndex[elementFullName].add(naclFile.filename)
     })
   })
-
   const mergeResult = mergeElements(
     Object.values(allParsed).flatMap(parsed => parsed.elements)
   )
@@ -224,8 +219,8 @@ Promise<NaclFilesState> => {
     parsedNaclFiles: allParsed,
     mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
     mergeErrors: mergeResult.errors,
-    elementsIndex,
-    referencedIndex,
+    elementsIndex: _.mapValues(elementsIndex, val => Array.from(val)),
+    referencedIndex: _.mapValues(referencedIndex, val => Array.from(val)),
   }
 }
 

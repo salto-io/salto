@@ -317,6 +317,97 @@ describe('Elements validation', () => {
       const errors = validateElements([objWithListAnnotation])
       expect(errors).toHaveLength(2)
     })
+
+    it('should return error if innerType of list has an hidden field', () => {
+      const typeWithHiddenElemID = new ElemID('salto', 'typeWithHidden')
+      const typeWithHidden = new ObjectType({
+        elemID: typeWithHiddenElemID,
+        fields: {
+          hiddenField: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [CORE_ANNOTATIONS.HIDDEN]: true,
+            },
+          },
+        },
+      })
+      const objWithListWithHiddenElemID = new ElemID('salto', 'objWithListWithHidden')
+      const objWithListWithHidden = new ObjectType({
+        elemID: objWithListWithHiddenElemID,
+        fields: {
+          listField: {
+            type: new ListType(typeWithHidden),
+          },
+        },
+      })
+      const errors = validateElements([typeWithHidden, objWithListWithHidden])
+      expect(errors).toHaveLength(1)
+    })
+
+    it('should return error if innerType of list is map of object with hidden field', () => {
+      const typeWithHiddenElemID = new ElemID('salto', 'typeWithHidden')
+      const typeWithHidden = new ObjectType({
+        elemID: typeWithHiddenElemID,
+        fields: {
+          hiddenField: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [CORE_ANNOTATIONS.HIDDEN]: true,
+            },
+          },
+        },
+      })
+      const objWithListWithHiddenElemID = new ElemID('salto', 'objWithListWithHidden')
+      const objWithListWithHidden = new ObjectType({
+        elemID: objWithListWithHiddenElemID,
+        fields: {
+          listField: {
+            type: new ListType(new MapType(typeWithHidden)),
+          },
+        },
+      })
+      const errors = validateElements(
+        [typeWithHidden, objWithListWithHidden]
+      )
+      expect(errors).toHaveLength(1)
+    })
+
+    it('should return error if innerType of list has an hidden field in object inner to map', () => {
+      const typeWithHiddenElemID = new ElemID('salto', 'typeWithHidden')
+      const typeWithHidden = new ObjectType({
+        elemID: typeWithHiddenElemID,
+        fields: {
+          hiddenField: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [CORE_ANNOTATIONS.HIDDEN]: true,
+            },
+          },
+        },
+      })
+      const typeWithMapWithHiddenElemID = new ElemID('salto', 'typeWithMapWithHidden')
+      const typeWithMapWithHidden = new ObjectType({
+        elemID: typeWithMapWithHiddenElemID,
+        fields: {
+          mapField: {
+            type: new MapType(typeWithHidden),
+          },
+        },
+      })
+      const objWithListWithHiddenElemID = new ElemID('salto', 'objWithListWithHidden')
+      const objWithListWithHidden = new ObjectType({
+        elemID: objWithListWithHiddenElemID,
+        fields: {
+          listField: {
+            type: new ListType(typeWithMapWithHidden),
+          },
+        },
+      })
+      const errors = validateElements(
+        [typeWithHidden, typeWithMapWithHidden, objWithListWithHidden]
+      )
+      expect(errors).toHaveLength(1)
+    })
   })
 
   describe('validate instances', () => {

@@ -191,6 +191,16 @@ export class InvalidStaticFileError extends ValidationError {
   }
 }
 
+class ListInnerTypeWithHiddenError extends ValidationError {
+  constructor({ field }: { field: Field }) {
+    super({
+      elemID: field.elemID,
+      error: `Invalid type for field ${field.elemID.name} in ${field.parent.elemID.getFullName()}. List can not have hidden fields in it's inner types.`,
+      severity: 'Error',
+    })
+  }
+}
+
 const validateAnnotationsValue = (
   elemID: ElemID, value: Value, annotations: Values, type: TypeElement
 ): ValidationError[] | undefined => {
@@ -408,14 +418,43 @@ const validateFieldValue = (elemID: ElemID, value: Value, field: Field): Validat
   ))
 }
 
-const validateField = (field: Field): ValidationError[] =>
-  Object.keys(field.annotations)
+const doesTypeHaveHiddenFields = (typeElement: TypeElement): boolean => {
+  if (isPrimitiveType(typeElement)) {
+    return false
+  }
+  if (isContainerType(typeElement)) {
+    return doesTypeHaveHiddenFields(typeElement.innerType)
+  }
+  return Object.values(typeElement.fields)
+    .find(field => {
+      if (field.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
+        return true
+      }
+      if (isContainerType(field.type)) {
+        return doesTypeHaveHiddenFields(field.type.innerType)
+      }
+      return false
+    }) !== undefined
+}
+
+const validateFieldType = (field: Field): ValidationError[] =>
+  (isListType(field.type)
+    && doesTypeHaveHiddenFields(field.type.innerType)
+    ? [new ListInnerTypeWithHiddenError({ field })] : [])
+
+const validateField = (field: Field): ValidationError[] => {
+  const annotationsValidationErrors = Object.keys(field.annotations)
     .filter(k => field.type.annotationTypes[k])
     .flatMap(k => validateValue(
       field.elemID.createNestedID(k),
       field.annotations[k],
       field.type.annotationTypes[k],
     ))
+
+  const fieldTypeErrors = validateFieldType(field)
+
+  return [...annotationsValidationErrors, ...fieldTypeErrors]
+}
 
 const validateType = (element: TypeElement): ValidationError[] => {
   const errors = Object.keys(element.annotations)

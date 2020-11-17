@@ -26,8 +26,7 @@ import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
-  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, MAX_CONCURRENT_API_REQUESTS } from './types'
-import { DEFAULT_MAX_CONCURRENT_API_REQUESTS } from './constants'
+  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -82,13 +81,23 @@ SalesforceConfig => {
     }
   }
 
+  const validateClientConfig = (clientConfig: SalesforceClientConfig | undefined): void => {
+    if (clientConfig?.maxConcurrentApiRequests !== undefined) {
+      const invalidValues = (Object.entries(clientConfig.maxConcurrentApiRequests)
+        .filter(([_name, value]) => value === 0))
+      if (invalidValues.length > 0) {
+        throw Error(`${CLIENT_CONFIG}.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
+      }
+    }
+  }
+
   const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
   validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
   validateDataManagement(config?.value?.dataManagement)
+  validateClientConfig(config?.value?.client)
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
-    maxConcurrentApiRequests: config?.value?.maxConcurrentApiRequests,
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
     enableHideTypesInNacls: config?.value?.enableHideTypesInNacls,
     dataManagement: config?.value?.dataManagement,
@@ -115,11 +124,7 @@ export const adapter: Adapter = {
     const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)
     return new SalesforceAdapter({
-      client: new SalesforceClient({
-        credentials,
-        rateLimit: config[MAX_CONCURRENT_API_REQUESTS] ?? DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        config: config[CLIENT_CONFIG],
-      }),
+      client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
       config,
       getElemIdFunc: context.getElemIdFunc,
     })

@@ -16,7 +16,7 @@
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
-import { SalesforceConfig, Credentials, RateLimitConfig } from '../src/types'
+import { SalesforceConfig, Credentials } from '../src/types'
 
 export type Reals = {
   client: SalesforceClient
@@ -26,19 +26,12 @@ export type Reals = {
 export type Opts = {
   adapterParams?: Partial<SalesforceAdapterParams>
   credentials: Credentials
-  rateLimit?: RateLimitConfig
 }
 const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
   ElemID => new ElemID(adapterName, name)
 
-const realAdapter = ({
-  adapterParams,
-  credentials,
-  rateLimit,
-}: Opts, config?: SalesforceConfig): Reals => {
-  const client = (adapterParams && adapterParams.client) || new SalesforceClient({
-    credentials, rateLimit,
-  })
+const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceConfig): Reals => {
+  const client = (adapterParams && adapterParams.client) || new SalesforceClient({ credentials })
   const adapter = new SalesforceAdapter({
     client,
     config: config ?? {},

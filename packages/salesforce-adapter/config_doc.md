@@ -16,9 +16,6 @@ salesforce {
     "^StandardValueSet.AddressCountryCode",
     "^StandardValueSet.AddressStateCode",
   ]
-  maxConcurrentApiRequests = {
-    retrieve = 3
-  }
   maxItemsInRetrieveRequest = 2500
   enableHideTypesInNacls = false
   dataManagement = {
@@ -56,6 +53,12 @@ salesforce {
       testLevel = "NoTestRun"
       runTests = ["Test name", "Other test"]
     }
+    maxConcurrentApiRequests = {
+      total = -1
+      retrieve = 3
+      read = -1
+      list = -1
+    }
   }
 }
 ```
@@ -66,20 +69,10 @@ salesforce {
 | ---------------------------------------------------------| ------------------------------| -----------
 | metadataTypesSkippedList                                 | [] (fetch all Metadata Types) | Specified types and their instances will not be fetched
 | instancesRegexSkippedList                                | [] (fetch all instances)      | Matching instances names will not be fetched
-| [maxConcurrentApiRequests](#rate-limit-configuration-options) | { retrieve = 3 }         | Limits the max number of concurrent requests of different types
 | maxItemsInRetrieveRequest                                | 2500                          | Limits the max number of requested items a single retrieve request
 | enableHideTypesInNacls                                   | false                         | Control whether to generate NaCL files for salesforce types (will be placed under the Types folder)
 | [dataManagement](#data-management-configuration-options) | {} (do not manage data)       | Data management configuration 
 | [client](#client-configuration-options)                  | {} (no overrides)             | Configuration relating to the client used to interact with salesforce
-
-### Rate limit configuration options
-
-| Name                                                        | Default when undefined                           | Description
-| ------------------------------------------------------------| -------------------------------------------------| -----------
-| retrieve                                                    | 3                                                | Max number of concurrent retrieve requests
-| read                                                        | -1 (unlimited)                                   | Max number of concurrent read requests
-| list                                                        | -1 (unlimited)                                   | Max number of concurrent list requests
-| total                                                       | -1 (unlimited)                                   | Shared limit for read, retrieve and list
 
 ### Data management configuration options
 
@@ -106,10 +99,11 @@ salesforce {
 
 ### Client configuration options
 
-| Name                                | Default when undefined   | Description
-|-------------------------------------|--------------------------|------------
-| [polling](#client-polling-options)  | `{}` (no overrides)      | Configuration for polling asynchronous operations (deploy, retrieve, bulk data operations)
-| [deploy](#client-deploy-options)    | `{}` (no overrides)      | Deploy options
+| Name                                                          | Default when undefined   | Description
+|---------------------------------------------------------------|--------------------------|------------
+| [polling](#client-polling-options)                            | `{}` (no overrides)      | Configuration for polling asynchronous operations (deploy, retrieve, bulk data operations)
+| [deploy](#client-deploy-options)                              | `{}` (no overrides)      | Deploy options
+| [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 
 #### Client polling options
 
@@ -129,5 +123,13 @@ salesforce {
 | testLevel       | `NoTestRun` (development) `RunLocalTests` (production) | Specifies which tests are run as part of a deployment. possible values are: `NoTestRun`, `RunSpecifiedTests`, `RunLocalTests` and `RunAllTestsInOrg`
 | runTests        | `[]` (no tests)                                        | A list of Apex tests to run during deployment, must configure `RunSpecifiedTests` in `testLevel` for this option to work
 
-
 For more details see the DeployOptions section in the [salesforce documentation of the deploy API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_deploy.htm)
+
+### Rate limit configuration options
+
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| retrieve                                                    | `3`                                              | Max number of concurrent retrieve requests
+| read                                                        | `-1` (unlimited)                                 | Max number of concurrent read requests
+| list                                                        | `-1` (unlimited)                                 | Max number of concurrent list requests
+| total                                                       | `-1` (unlimited)                                 | Shared limit for read, retrieve and list

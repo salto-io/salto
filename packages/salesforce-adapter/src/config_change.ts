@@ -127,7 +127,6 @@ export const getConfigFromConfigChanges = (
         .concat(currentMetadataTypesSkippedList),
       instancesRegexSkippedList: instancesRegexSkippedList
         .concat(currentInstancesRegexSkippedList),
-      maxConcurrentApiRequests: currentConfig.maxConcurrentApiRequests,
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
       enableHideTypesInNacls: currentConfig.enableHideTypesInNacls,
       useOldProfiles: currentConfig.useOldProfiles,
@@ -135,6 +134,7 @@ export const getConfigFromConfigChanges = (
         ...currentDataManagement,
         ...dataManagementOverrides,
       },
+      client: currentConfig.client,
     }, isDefined)
   )
 }

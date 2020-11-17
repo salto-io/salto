@@ -18,6 +18,7 @@ import { adapter } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType } from '../src/types'
+import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -51,6 +52,14 @@ describe('SalesforceAdapter creator', () => {
       metadataTypesSkippedList: ['test1'],
       instancesRegexSkippedList: ['test3', 'test2'],
       notExist: ['not exist'],
+      client: {
+        maxConcurrentApiRequests: {
+          list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+          read: 55,
+          retrieve: 3,
+          total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        },
+      },
     }
   )
   describe('when validateCredentials is called with username/password credentials', () => {
@@ -119,11 +128,13 @@ describe('SalesforceAdapter creator', () => {
           isSandbox: false,
           apiToken: 'myToken',
         }),
-        rateLimit: {
-          list: -1,
-          read: -1,
-          retrieve: 3,
-          total: -1,
+        config: {
+          maxConcurrentApiRequests: {
+            list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+            read: 55,
+            retrieve: 3,
+            total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+          },
         },
       })
     })
@@ -134,6 +145,14 @@ describe('SalesforceAdapter creator', () => {
         config: {
           metadataTypesSkippedList: ['test1'],
           instancesRegexSkippedList: ['test3', 'test2'],
+          client: {
+            maxConcurrentApiRequests: {
+              list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+              read: 55,
+              retrieve: 3,
+              total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+            },
+          },
         },
         client: expect.any(Object),
         getElemIdFunc: undefined,
@@ -252,6 +271,53 @@ describe('SalesforceAdapter creator', () => {
         } },
       )
       expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
+    })
+
+    it('should throw an error when creating adapter with invalid rate limits in client.maxConcurrentApiRequests', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          client: {
+            maxConcurrentApiRequests: {
+              list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+              read: 0,
+              retrieve: 3,
+              total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+            },
+          },
+        },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('client.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: read')
+    })
+    it('should not throw an error when all rate limits client.maxConcurrentApiRequests are valid', () => {
+      const validConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          client: {
+            maxConcurrentApiRequests: {
+              list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+              retrieve: 3,
+              total: undefined,
+            },
+          },
+        },
+      )
+      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+    })
+
+    it('should not throw an error when maxConcurrentApiRequests is not set', () => {
+      const validConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {},
+      )
+      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+    })
+
+    it('should not throw an error when no config is passed', () => {
+      expect(() => adapter.operations({ credentials })).not.toThrow()
     })
   })
 })

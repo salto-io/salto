@@ -30,7 +30,7 @@ import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_MAX_CONCURRENT_API_REQUESTS } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
-import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials, SalesforceClientConfig, RateLimitConfig } from '../types'
+import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials, SalesforceClientConfig, ClientRateLimitConfig } from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -69,7 +69,7 @@ export const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
   },
 }
 
-type RateLimitBucketName = keyof RateLimitConfig
+type RateLimitBucketName = keyof ClientRateLimitConfig
 
 const isAlreadyDeletedError = (error: SfError): boolean => (
   error.statusCode === 'INVALID_CROSS_REFERENCE_KEY'
@@ -112,7 +112,6 @@ const validateSaveResult = validateCRUDResult(false)
 
 export type SalesforceClientOpts = {
   credentials: Credentials
-  rateLimit?: RateLimitConfig
   connection?: Connection
   retryOptions?: RequestRetryOptions
   config?: SalesforceClientConfig
@@ -246,10 +245,11 @@ const createConnectionFromCredentials = (
 }
 
 const createRateLimitersFromConfig = (
-  rateLimit: RateLimitConfig,
+  rateLimit: ClientRateLimitConfig,
 ): Record<RateLimitBucketName, Bottleneck> => {
   const toLimit = (
     num: number | undefined
+  // 0 is an invalid value (blocked in configuration)
   ): number | undefined => (num && num < 0 ? undefined : num)
   const rateLimitConfig = _.mapValues(rateLimit, toLimit)
   log.debug('Salesforce rate limit config: %o', rateLimitConfig)
@@ -326,7 +326,7 @@ export default class SalesforceClient {
   private readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
 
   constructor(
-    { credentials, connection, retryOptions, config, rateLimit }: SalesforceClientOpts
+    { credentials, connection, retryOptions, config }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.config = config
@@ -334,7 +334,7 @@ export default class SalesforceClient {
       || createConnectionFromCredentials(credentials, retryOptions || DEFAULT_RETRY_OPTS)
     setPollIntervalForConnection(this.conn, config?.polling)
     this.rateLimiters = createRateLimitersFromConfig(
-      rateLimit || DEFAULT_MAX_CONCURRENT_API_REQUESTS
+      config?.maxConcurrentApiRequests ?? DEFAULT_MAX_CONCURRENT_API_REQUESTS
     )
   }
 

@@ -54,7 +54,6 @@ describe('custom object instances e2e', () => {
     credLease = await testHelpers().credentials()
     const adapterParams = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
-      rateLimit: { total: -1, retrieve: 3, read: -1, list: -1 },
     }, filtersContext)
     adapter = adapterParams.adapter
     client = adapterParams.client

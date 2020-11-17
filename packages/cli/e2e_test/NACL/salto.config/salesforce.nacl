@@ -10,7 +10,9 @@ salesforce {
   instancesRegexSkippedList = [
     "^EmailTemplate.MarketoEmailTemplates",
   ]
-  maxConcurrentRetrieveRequests = 3
+  maxConcurrentApiRequests = {
+    retrieve = 3
+  }
   maxItemsInRetrieveRequest = 2500
   enableHideTypesInNacls = true
 }

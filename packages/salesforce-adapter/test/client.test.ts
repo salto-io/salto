@@ -60,16 +60,24 @@ describe('salesforce client', () => {
     apiToken: 'myToken',
   })
   const { connection } = mockClient()
-  const client = new SalesforceClient({ credentials: new UsernamePasswordCredentials({
-    username: '',
-    password: '',
-    isSandbox: true,
-  }),
-  retryOptions: {
-    maxAttempts: 4, // try 5 times
-    retryDelay: 100, // wait for 100ms before trying again
-    retryStrategy: RetryStrategies.NetworkError, // retry on network errors
-  } })
+  const client = new SalesforceClient({
+    credentials: new UsernamePasswordCredentials({
+      username: '',
+      password: '',
+      isSandbox: true,
+    }),
+    retryOptions: {
+      maxAttempts: 4, // try 4 times
+      retryDelay: 100, // wait for 100ms before trying again
+      retryStrategy: RetryStrategies.NetworkError, // retry on network errors
+    },
+    rateLimit: {
+      total: -1, // unlimited total requests
+      retrieve: 3, // at most 3 concurrent retrieve requests
+      read: -1, // unlimited read requests
+      list: -1, // unlimited list requests
+    },
+  })
   const headers = { 'content-type': 'application/json' }
   const workingReadReplay = {
     'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
@@ -477,6 +485,12 @@ describe('salesforce client', () => {
             isSandbox: false,
           }),
           connection: testConnection,
+          rateLimit: {
+            total: undefined,
+            retrieve: 3,
+            read: undefined,
+            list: undefined,
+          },
           config: { polling: { interval: 100, timeout: 1000 } },
         })
       })
@@ -498,6 +512,12 @@ describe('salesforce client', () => {
             password: '',
             isSandbox: false,
           }),
+          rateLimit: {
+            total: undefined,
+            retrieve: 3,
+            read: undefined,
+            list: undefined,
+          },
           connection: testConnection,
           config: { deploy: { rollbackOnError: false, testLevel: 'NoTestRun' } },
         })

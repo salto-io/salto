@@ -76,7 +76,9 @@ describe('workspace local config', () => {
         "^ConnectedApp.CPQIntegrationUserApp$",
         "^EmailTemplate.MarketoEmailTemplates",
     ]
-    maxConcurrentRetrieveRequests = 3
+    maxConcurrentApiRequests = {
+      retrieve = 3
+    }
     maxItemsInRetrieveRequest = 2500
   }
   `,

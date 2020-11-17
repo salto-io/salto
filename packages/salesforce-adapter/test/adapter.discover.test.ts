@@ -29,7 +29,7 @@ import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
 import {
   INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
-  MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  MAX_CONCURRENT_API_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST,
   ENABLE_HIDE_TYPES_IN_NACLS,
 } from '../src/types'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
@@ -42,7 +42,10 @@ describe('SalesforceAdapter fetch', () => {
   const testInstancesRegexSkippedList = [
     'Test2.instance1', 'SkippedList$', '^ReportFolder.skip$', 'AssignmentRules.MyRules',
   ]
-  const testMaxConcurrentRetrieveRequests = 4
+  const testMaxConcurrentApiRequests = {
+    retrieve: 4,
+  }
+
   const testMaxItemsInRetrieveRequest = 100
   const testEnableHideTypesInNacls = false
 
@@ -57,7 +60,7 @@ describe('SalesforceAdapter fetch', () => {
         config: {
           metadataTypesSkippedList: testMetadataTypesSkippedList,
           instancesRegexSkippedList: testInstancesRegexSkippedList,
-          maxConcurrentRetrieveRequests: testMaxConcurrentRetrieveRequests,
+          maxConcurrentApiRequests: testMaxConcurrentApiRequests,
           maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
           enableHideTypesInNacls: testEnableHideTypesInNacls,
         },
@@ -895,7 +898,7 @@ public class MyClass${index} {
               .concat(testInstancesRegexSkippedList),
             [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
               .concat(testMetadataTypesSkippedList),
-            [MAX_CONCURRENT_RETRIEVE_REQUESTS]: testMaxConcurrentRetrieveRequests,
+            [MAX_CONCURRENT_API_REQUESTS]: testMaxConcurrentApiRequests,
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
             [ENABLE_HIDE_TYPES_IN_NACLS]: testEnableHideTypesInNacls,
           }

@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
+import Bottleneck from 'bottleneck'
 import { collections, decorators } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
@@ -27,9 +28,9 @@ import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT_ID_FIELD } from '../constants'
+import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_MAX_CONCURRENT_API_REQUESTS } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
-import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials, SalesforceClientConfig } from '../types'
+import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials, SalesforceClientConfig, RateLimitConfig } from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -67,6 +68,8 @@ export const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
     return RETRY_DELAY
   },
 }
+
+type RateLimitBucketName = keyof RateLimitConfig
 
 const isAlreadyDeletedError = (error: SfError): boolean => (
   error.statusCode === 'INVALID_CROSS_REFERENCE_KEY'
@@ -109,6 +112,7 @@ const validateSaveResult = validateCRUDResult(false)
 
 export type SalesforceClientOpts = {
   credentials: Credentials
+  rateLimit?: RateLimitConfig
   connection?: Connection
   retryOptions?: RequestRetryOptions
   config?: SalesforceClientConfig
@@ -241,6 +245,22 @@ const createConnectionFromCredentials = (
   return realConnection(creds.isSandbox, options)
 }
 
+const createRateLimitersFromConfig = (
+  rateLimit: RateLimitConfig,
+): Record<RateLimitBucketName, Bottleneck> => {
+  const toLimit = (
+    num: number | undefined
+  ): number | undefined => (num && num < 0 ? undefined : num)
+  const rateLimitConfig = _.mapValues(rateLimit, toLimit)
+  log.debug('Salesforce rate limit config: %o', rateLimitConfig)
+  return {
+    total: new Bottleneck({ maxConcurrent: rateLimitConfig.total }),
+    retrieve: new Bottleneck({ maxConcurrent: rateLimitConfig.retrieve }),
+    read: new Bottleneck({ maxConcurrent: rateLimitConfig.read }),
+    list: new Bottleneck({ maxConcurrent: rateLimitConfig.list }),
+  }
+}
+
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
@@ -282,20 +302,40 @@ export const validateCredentials = async (
   return orgId
 }
 
+type LogDescFunc = (origCall: decorators.OriginalCall) => string
+const logDecorator = (keys?: string[]): LogDescFunc => ((
+  { name, args }: decorators.OriginalCall,
+) => {
+  const printableArgs = args
+    .map(arg => {
+      const keysValues = (keys ?? [])
+        .map(key => _.get(arg, key))
+        .filter(_.isString)
+      return _.isEmpty(keysValues) ? arg : keysValues.join(', ')
+    })
+    .filter(_.isString)
+    .join(', ')
+  return `client.${name}(${printableArgs})`
+})
+
 export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
+  private readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
 
   constructor(
-    { credentials, connection, retryOptions, config }: SalesforceClientOpts
+    { credentials, connection, retryOptions, config, rateLimit }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.config = config
     this.conn = connection
       || createConnectionFromCredentials(credentials, retryOptions || DEFAULT_RETRY_OPTS)
     setPollIntervalForConnection(this.conn, config?.polling)
+    this.rateLimiters = createRateLimitersFromConfig(
+      rateLimit || DEFAULT_MAX_CONCURRENT_API_REQUESTS
+    )
   }
 
   private async ensureLoggedIn(): Promise<void> {
@@ -315,25 +355,34 @@ export default class SalesforceClient {
     }
   )
 
+  private static throttle = (
+    bucketName?: RateLimitBucketName,
+    keys?: string[],
+  ): decorators.InstanceMethodDecorator =>
+    decorators.wrapMethodWith(
+      async function withRateLimit(
+        this: SalesforceClient,
+        originalMethod: decorators.OriginalCall,
+      ): Promise<unknown> {
+        log.debug('%s enqueued', logDecorator(keys)(originalMethod))
+        const wrappedCall = this.rateLimiters.total.wrap(async () => originalMethod.call())
+        if (bucketName !== undefined && bucketName !== 'total') {
+          return this.rateLimiters[bucketName].wrap(async () => wrappedCall())()
+        }
+        return wrappedCall()
+      }
+    )
+
   private static logDecorator = (keys?: string[]): decorators.InstanceMethodDecorator =>
     decorators.wrapMethodWith(
       // eslint-disable-next-line prefer-arrow-callback
       async function logFailure(
         this: SalesforceClient,
-        { call, name, args }: decorators.OriginalCall,
+        originalMethod: decorators.OriginalCall,
       ): Promise<unknown> {
-        const printableArgs = args
-          .map(arg => {
-            const keysValues = (keys ?? [])
-              .map(key => _.get(arg, key))
-              .filter(_.isString)
-            return _.isEmpty(keysValues) ? arg : keysValues.join(', ')
-          })
-          .filter(_.isString)
-          .join(', ')
-        const desc = `client.${name}(${printableArgs})`
+        const desc = logDecorator(keys)(originalMethod)
         try {
-          return await log.time(call, desc)
+          return await log.time(originalMethod.call, desc)
         } catch (e) {
           log.error('failed to run SFDC client call %s: %s', desc, e.message)
           throw e
@@ -363,6 +412,7 @@ export default class SalesforceClient {
     return flatValues(describeResult)
   }
 
+  @SalesforceClient.throttle('list', ['type', '0.type'])
   @SalesforceClient.logDecorator(['type', '0.type'])
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(
@@ -381,6 +431,7 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
+  @SalesforceClient.throttle('read')
   @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async readMetadata(
@@ -462,6 +513,7 @@ export default class SalesforceClient {
     return result.result
   }
 
+  @SalesforceClient.throttle('retrieve')
   @SalesforceClient.logDecorator()
   @SalesforceClient.requiresLogin
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {

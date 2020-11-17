@@ -119,6 +119,12 @@ describe('SalesforceAdapter creator', () => {
           isSandbox: false,
           apiToken: 'myToken',
         }),
+        rateLimit: {
+          list: -1,
+          read: -1,
+          retrieve: 3,
+          total: -1,
+        },
       })
     })
 

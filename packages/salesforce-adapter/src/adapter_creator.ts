@@ -26,7 +26,8 @@ import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
-  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG } from './types'
+  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, MAX_CONCURRENT_API_REQUESTS } from './types'
+import { DEFAULT_MAX_CONCURRENT_API_REQUESTS } from './constants'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -87,7 +88,7 @@ SalesforceConfig => {
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
-    maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
+    maxConcurrentApiRequests: config?.value?.maxConcurrentApiRequests,
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
     enableHideTypesInNacls: config?.value?.enableHideTypesInNacls,
     dataManagement: config?.value?.dataManagement,
@@ -114,7 +115,11 @@ export const adapter: Adapter = {
     const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)
     return new SalesforceAdapter({
-      client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
+      client: new SalesforceClient({
+        credentials,
+        rateLimit: config[MAX_CONCURRENT_API_REQUESTS] ?? DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+        config: config[CLIENT_CONFIG],
+      }),
       config,
       getElemIdFunc: context.getElemIdFunc,
     })

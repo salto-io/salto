@@ -26,6 +26,12 @@ const mockClient = (): { connection: MockInterface<Connection>; client: Salesfor
       password: 'mockPassword',
       isSandbox: false,
     },
+    rateLimit: {
+      total: -1,
+      retrieve: 3,
+      read: -1,
+      list: -1,
+    },
     connection,
   })
 

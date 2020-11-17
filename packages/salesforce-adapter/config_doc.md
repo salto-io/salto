@@ -16,7 +16,9 @@ salesforce {
     "^StandardValueSet.AddressCountryCode",
     "^StandardValueSet.AddressStateCode",
   ]
-  maxConcurrentRetrieveRequests = 3
+  maxConcurrentApiRequests = {
+    retrieve = 3
+  }
   maxItemsInRetrieveRequest = 2500
   enableHideTypesInNacls = false
   dataManagement = {
@@ -64,11 +66,20 @@ salesforce {
 | ---------------------------------------------------------| ------------------------------| -----------
 | metadataTypesSkippedList                                 | [] (fetch all Metadata Types) | Specified types and their instances will not be fetched
 | instancesRegexSkippedList                                | [] (fetch all instances)      | Matching instances names will not be fetched
-| maxConcurrentRetrieveRequests                            | 3                             | Limits the max number of concurrent retrieve requests
+| [maxConcurrentApiRequests](#rate-limit-configuration-options) | { retrieve = 3 }         | Limits the max number of concurrent requests of different types
 | maxItemsInRetrieveRequest                                | 2500                          | Limits the max number of requested items a single retrieve request
 | enableHideTypesInNacls                                   | false                         | Control whether to generate NaCL files for salesforce types (will be placed under the Types folder)
 | [dataManagement](#data-management-configuration-options) | {} (do not manage data)       | Data management configuration 
 | [client](#client-configuration-options)                  | {} (no overrides)             | Configuration relating to the client used to interact with salesforce
+
+### Rate limit configuration options
+
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| retrieve                                                    | 3                                                | Max number of concurrent retrieve requests
+| read                                                        | -1 (unlimited)                                   | Max number of concurrent read requests
+| list                                                        | -1 (unlimited)                                   | Max number of concurrent list requests
+| total                                                       | -1 (unlimited)                                   | Shared limit for read, retrieve and list
 
 ### Data management configuration options
 

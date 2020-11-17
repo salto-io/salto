@@ -65,8 +65,8 @@ export const listUnresolvedReferences = async (
     elemID => elemID.getFullName(),
   )
 
-  const elementsWithCompletions = [...await workspace.elements(true, workspace.currentEnv())]
-  const unresolvedElemIDs = getUnresolvedElemIDs(elementsWithCompletions)
+  const initialElements = [...await workspace.elements(true, workspace.currentEnv())]
+  const unresolvedElemIDs = getUnresolvedElemIDs(initialElements)
 
   if (completeFromEnv === undefined) {
     return {
@@ -80,12 +80,11 @@ export const listUnresolvedReferences = async (
     e => e.elemID.getFullName(),
   )
 
-  const completed = new Set<string>()
-  const missing = new Set<string>()
-
-  const addAndValidate = async (ids: ElemID[]): Promise<void> => {
+  const addAndValidate = async (
+    ids: ElemID[], elements: Element[],
+  ): Promise<{ completed: string[]; missing: string[] }> => {
     if (ids.length === 0) {
-      return
+      return { completed: [], missing: [] }
     }
 
     const getCompletionElem = (id: ElemID): Element | undefined => {
@@ -113,22 +112,23 @@ export const listUnresolvedReferences = async (
     const completionRes = Object.fromEntries(
       ids.map(id => ([id.getFullName(), getCompletionElem(id)]))
     )
-    const [completionSuccess, completionFailure] = _.partition(
-      Object.entries(completionRes), ([_id, elem]) => isDefined(elem)
+    const [completed, missing] = _.partition(
+      Object.keys(completionRes), id => isDefined(completionRes[id])
     )
-    completionFailure.forEach(([id]) => missing.add(id))
-    completionSuccess.forEach(([id]) => completed.add(id))
     const resolvedElements = Object.values(completionRes).filter(isDefined)
-    elementsWithCompletions.push(...resolvedElements)
-    const unresolvedIDs = getUnresolvedElemIDs(resolvedElements, elementsWithCompletions)
+    const unresolvedIDs = getUnresolvedElemIDs(resolvedElements, elements)
 
-    await addAndValidate(unresolvedIDs)
+    const innerRes = await addAndValidate(unresolvedIDs, [...elements, ...resolvedElements])
+    return {
+      completed: [...completed, ...innerRes.completed],
+      missing: [...missing, ...innerRes.missing],
+    }
   }
 
-  await addAndValidate(unresolvedElemIDs)
+  const { completed, missing } = await addAndValidate(unresolvedElemIDs, initialElements)
 
   return {
-    found: compact([...completed].sort().map(ElemID.fromFullName)),
-    missing: compact([...missing].sort().map(ElemID.fromFullName)),
+    found: compact(completed.sort().map(ElemID.fromFullName)),
+    missing: compact(missing.sort().map(ElemID.fromFullName)),
   }
 }

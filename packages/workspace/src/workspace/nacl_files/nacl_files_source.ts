@@ -190,7 +190,7 @@ export const getParsedNaclFiles = async (
 
 const buildNaclFilesState = async (newNaclFiles: ParsedNaclFile[], current?: ParsedNaclFileMap):
 Promise<NaclFilesState> => {
-  log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
+  log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
   const allParsed = _.omitBy({ ...current, ...newParsed },
     parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))

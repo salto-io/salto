@@ -449,7 +449,8 @@ const buildNaclFilesSource = (
     getParsedNaclFile,
 
     getSourceRanges: async elemID => {
-      const naclFiles = await getElementNaclFiles(elemID)
+      // TODO MAYBE
+      const naclFiles = await getElementNaclFiles(elemID.createTopLevelParentID().parent)
       const sourceRanges = await withLimitedConcurrency(naclFiles
         .map(naclFile => async () => (await getSourceMap(naclFile))
           .get(elemID.getFullName()) || []),

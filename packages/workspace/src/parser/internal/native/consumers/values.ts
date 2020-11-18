@@ -41,17 +41,27 @@ const consumeWord: Consumer<string> = context => {
   }
 }
 
-const createSimpleStringValue = (tokens: Required<Token>[]): string => (
-  tokens.map(token => unescapeTemplateMarker(token.text)).join('')
+const defaultStringTokenTranformFunc = (
+  token: Required<Token>
+): string => JSON.parse(`"${unescapeTemplateMarker(token.text)}"`)
+
+const createSimpleStringValue = (
+  tokens: Required<Token>[],
+  transformFunc: (token: Required<Token>) => string = defaultStringTokenTranformFunc
+): string => (
+  tokens.map(token => transformFunc(token)).join('')
 )
 
-const createTemplateExpressions = (tokens: Required<Token>[]): TemplateExpression => (
+const createTemplateExpressions = (
+  tokens: Required<Token>[],
+  transformFunc: (token: Required<Token>) => string = defaultStringTokenTranformFunc
+): TemplateExpression => (
   new TemplateExpression({ parts: tokens.map(token => {
     if (token.type === TOKEN_TYPES.REFERENCE) {
       const ref = createReferenceExpresion(token.value)
       return ref instanceof IllegalReference ? token.text : ref
     }
-    return unescapeTemplateMarker(token.value)
+    return transformFunc(token)
   }) })
 )
 
@@ -63,7 +73,8 @@ const trimToken = (token: Required<Token>): Required<Token> => ({
 
 const createStringValue = (
   tokens: Required<Token>[],
-  trim? : boolean
+  trim?: boolean,
+  transformFunc? : (token: Required<Token>) => string
 ): string|TemplateExpression => {
   const trimmedTokens = trim && tokens.length > 0
     ? [...tokens.slice(0, -1), trimToken(tokens[tokens.length - 1])]
@@ -71,8 +82,8 @@ const createStringValue = (
 
   const simpleString = _.every(trimmedTokens, token => token.type === TOKEN_TYPES.CONTENT)
   return simpleString
-    ? createSimpleStringValue(trimmedTokens)
-    : createTemplateExpressions(trimmedTokens)
+    ? createSimpleStringValue(trimmedTokens, transformFunc)
+    : createTemplateExpressions(trimmedTokens, transformFunc)
 }
 
 const consumeStringData = (
@@ -224,7 +235,7 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
   // We get rid of the trailing newline
   // Getting the position of the end marker
   const end = positionAtEnd(context.lexer.next())
-  const value = createStringValue(tokens, true)
+  const value = createStringValue(tokens, true, t => t.text)
 
   return {
     value,

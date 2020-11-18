@@ -185,6 +185,10 @@ let functions: Functions
       type salesforce.emptyString {
         str = ""
       }
+
+      type salesforce.escapedQuoates {
+        str = "Is this \\"escaped\\"?"
+      }
        `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
@@ -195,7 +199,7 @@ let functions: Functions
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(20)
+        expect(elements.length).toBe(21)
         expect(genericTypes.length).toBe(2)
       })
     })
@@ -639,6 +643,15 @@ let functions: Functions
         expect(isObjectType(element)).toBeTruthy()
         const obj = element as ObjectType
         expect(obj.annotations.str).toEqual('')
+      })
+    })
+
+    describe('escaped quotes', () => {
+      it('should parse a string value with escaped qoutes', () => {
+        const element = elements[19]
+        expect(isObjectType(element)).toBeTruthy()
+        const obj = element as ObjectType
+        expect(obj.annotations.str).toEqual('Is this "escaped"?')
       })
     })
   })

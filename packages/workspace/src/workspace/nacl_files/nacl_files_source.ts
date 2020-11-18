@@ -301,7 +301,7 @@ const buildNaclFilesSource = (
     const topLevelFiles = (await getState()).elementsIndex[topLevelID.parent.getFullName()] || []
     return (await Promise.all(topLevelFiles.map(async filename => {
       const fragments = (await getParsedNaclFile(filename))?.elements ?? []
-      return fragments.find(fragment => resolvePath(fragment, elemID)) !== undefined
+      return fragments.some(fragment => resolvePath(fragment, elemID) !== undefined)
         ? filename
         : undefined
     }))).filter(values.isDefined) as string[]

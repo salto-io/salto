@@ -369,9 +369,12 @@ const buildNaclFilesSource = (
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
         .flatten()
-        .groupBy(change => change.location.filename)
+        // Group changes file, we use lower case in order to support case insensitive file systems
+        .groupBy(change => change.location.filename.toLowerCase())
         .entries()
-        .map(([filename, fileChanges]) => async () => {
+        .map(([_lowerCaseFilename, fileChanges]) => async () => {
+          // Changes might have a different cased filename, we just take the first variation
+          const [filename] = fileChanges.map(change => change.location.filename).sort()
           try {
             const naclFileData = await getNaclFileData(filename)
             const buffer = await updateNaclFileData(naclFileData, fileChanges, functions)

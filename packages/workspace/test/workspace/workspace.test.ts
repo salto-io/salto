@@ -347,7 +347,7 @@ describe('workspace', () => {
     )
 
     const queueSobjectHiddenSubType = new ObjectType({
-      elemID: new ElemID('salesforce', 'QueueSobject', 'type', ''),
+      elemID: new ElemID('salesforce', 'QueueSobject'),
       annotations: {
         [CORE_ANNOTATIONS.HIDDEN]: true,
         [METADATA_TYPE]: 'QueueSobject',
@@ -363,7 +363,7 @@ describe('workspace', () => {
 
 
     const accountInsightsSettingsType = new ObjectType({
-      elemID: new ElemID('salesforce', 'AccountInsightsSettings', 'type'),
+      elemID: new ElemID('salesforce', 'AccountInsightsSettings'),
       annotations: {
         [METADATA_TYPE]: 'AccountInsightsSettings',
       },
@@ -371,7 +371,7 @@ describe('workspace', () => {
     })
 
     const queueHiddenType = new ObjectType({
-      elemID: new ElemID('salesforce', 'Queue', 'type', ''),
+      elemID: new ElemID('salesforce', 'Queue'),
       annotations: {
         [CORE_ANNOTATIONS.HIDDEN]: true,
         [METADATA_TYPE]: 'Queue',
@@ -423,6 +423,13 @@ describe('workspace', () => {
         boolNotHidden: false,
       },
       ['Records', 'Queue', 'queueInstance'],
+    )
+
+    const differentCaseQueue = new InstanceElement(
+      'QueueInstance',
+      queueHiddenType,
+      queueInstance.value,
+      ['Records', 'Queue', 'QueueInstance'],
     )
 
     const renamedTypes = {
@@ -593,6 +600,13 @@ describe('workspace', () => {
         action: 'add',
         data: {
           after: queueInstance,
+        },
+      },
+      { // new instance with a similar name
+        id: differentCaseQueue.elemID,
+        action: 'add',
+        data: {
+          after: differentCaseQueue,
         },
       },
       { // Hidden field change to visible
@@ -814,6 +828,13 @@ describe('workspace', () => {
       // Not hidden fields values should be defined
       expect(newInstance.value.queueSobjectNotHidden).toBeDefined()
       expect(newInstance.value.boolNotHidden).toEqual(false)
+    })
+
+    it('should add different cased elements to the same file', () => {
+      expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
+        filename: 'Records/Queue/QueueInstance.nacl',
+        buffer: expect.stringMatching(/.*salesforce.Queue QueueInstance.*salesforce.Queue queueInstance.*/s),
+      }))
     })
 
     it('should not add changes in hidden values', () => {

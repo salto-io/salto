@@ -211,8 +211,9 @@ const selectElementsForDepth = (selectors: ElementSelector[], elements: ElementI
   } => {
   const [topLevelSelectors, subElementSelectors] = _.partition(selectors, selector =>
     isTopLevelSelector(selector, depth))
-  const { elements: currentLevelElementsSelected, matches } = selectElementsBySelectors(elements,
-    topLevelSelectors, false)
+  const { elements: currentLevelElementsSelected, matches } = topLevelSelectors.length > 0
+    ? selectElementsBySelectors(elements, topLevelSelectors, false)
+    : { elements: [], matches: {} }
   return {
     subElementSelectors,
     matches,

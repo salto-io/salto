@@ -1431,6 +1431,10 @@ describe('Salesforce adapter E2E with real account', () => {
                 const annotations = _.cloneDeep(field.annotations)
                 annotations[constants.API_NAME] = `${customObjectAddFieldsName}.${name}`
 
+                if (constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME in field.annotations) {
+                  annotations[constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME] = `${testAddFieldPrefix}${annotations[constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]}`
+                }
+
                 if (name === CUSTOM_FIELD_NAMES.MULTI_PICKLIST) {
                   annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
                 }
@@ -1965,6 +1969,8 @@ describe('Salesforce adapter E2E with real account', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: true,
             [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Opportunity'],
+            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: CUSTOM_FIELD_NAMES.LOOKUP
+              .split(constants.SALESFORCE_CUSTOM_SUFFIX)[0],
             [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
               [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: false,
               [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1',
@@ -2204,8 +2210,7 @@ describe('Salesforce adapter E2E with real account', () => {
             const annotations = fieldNamesToAnnotations[CUSTOM_FIELD_NAMES.MASTER_DETAIL]
             verifyFieldUpdate(
               CUSTOM_FIELD_NAMES.MASTER_DETAIL,
-              constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
-              _.omit(annotations, constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME)
+              constants.FIELD_TYPE_NAMES.MASTER_DETAIL, annotations
             )
           })
 
@@ -2267,6 +2272,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: [
               'Case',
             ],
+            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: 'TestAddLookupFilterRelationshipName',
           },
         } },
         annotations: {
@@ -2302,6 +2308,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
               ],
             },
+            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: 'TestAddLookupFilterRelationshipName',
           },
         } },
         annotations: {

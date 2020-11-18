@@ -558,6 +558,7 @@ export class Types {
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
       },
     }),
     MasterDetail: new PrimitiveType({
@@ -570,6 +571,7 @@ export class Types {
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: restrictedNumberTypes.RelationshipOrder,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
       },
     }),
     Summary: new PrimitiveType({
@@ -839,7 +841,7 @@ export const toCustomField = (field: Field): CustomField => {
     field.annotations[FORMULA],
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
-    field.name.split(SALESFORCE_CUSTOM_SUFFIX)[0],
+    field.annotations[FIELD_ANNOTATIONS.RELATIONSHIP_NAME],
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION],
     field.annotations[FIELD_ANNOTATIONS.LENGTH],
   )

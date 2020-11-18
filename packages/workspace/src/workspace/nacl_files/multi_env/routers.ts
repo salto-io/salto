@@ -342,8 +342,9 @@ const getChangePathHint = async (
   commonSource: NaclFilesSource
 ): Promise<ReadonlyArray<string> | undefined> => {
   if (change.path) return change.path
-  const refFilename = (await commonSource.getSourceRanges(change.id))
-    .map(sourceRange => sourceRange.filename)[0]
+  const refFilename = (
+    await commonSource.getSourceRanges(change.id.createTopLevelParentID().parent)
+  ).map(sourceRange => sourceRange.filename)[0]
 
   return refFilename
     ? toPathHint(refFilename)

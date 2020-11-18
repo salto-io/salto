@@ -304,7 +304,7 @@ const buildNaclFilesSource = (
       return fragments.some(fragment => resolvePath(fragment, elemID) !== undefined)
         ? filename
         : undefined
-    }))).filter(values.isDefined) as string[]
+    }))).filter(values.isDefined)
   }
 
   const getElementReferencedFiles = async (

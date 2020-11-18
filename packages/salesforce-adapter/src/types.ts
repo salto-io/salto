@@ -80,7 +80,7 @@ type ClientDeployConfig = Partial<{
 export enum RetryStrategyName {
   'HttpError',
   'HTTPOrNetworkError',
-  'NetworkError'
+  'NetworkError',
 }
 type RetryStrategy = keyof typeof RetryStrategyName
 export type ClientRetryConfig = Partial<{

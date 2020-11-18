@@ -335,7 +335,7 @@ export default class SalesforceClient {
   ) {
     this.credentials = credentials
     this.config = config
-    this.conn = connection || createConnectionFromCredentials(
+    this.conn = connection ?? createConnectionFromCredentials(
       credentials,
       createRetryOptions(_.defaults(config?.retry, DEFAULT_RETRY_OPTS)),
     )

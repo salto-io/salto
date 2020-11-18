@@ -16,7 +16,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isContainerType, isMapType } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
@@ -248,26 +248,11 @@ export class Types {
         elemID: actionElemID,
         fields: {
           [ACTION_FIELDS.TYPE]: { type: BuiltinTypes.STRING },
-          [ACTION_FIELDS.ACTIONID]: {
-            type: BuiltinTypes.NUMBER,
-            annotations: {
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-          },
+          [ACTION_FIELDS.ACTIONID]: { type: BuiltinTypes.NUMBER },
           [ACTION_FIELDS.DELAYMILLS]: { type: BuiltinTypes.NUMBER },
-          [ACTION_FIELDS.STEPID]: {
-            type: BuiltinTypes.NUMBER,
-            annotations: {
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-          },
+          [ACTION_FIELDS.STEPID]: { type: BuiltinTypes.NUMBER },
           [ACTION_FIELDS.ANCHORSETTING]: { type: Types.anchorSettingType },
-          [ACTION_FIELDS.FILTERSLISTID]: {
-            type: BuiltinTypes.NUMBER,
-            annotations: {
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-          },
+          [ACTION_FIELDS.FILTERSLISTID]: { type: BuiltinTypes.NUMBER },
           [ACTION_FIELDS.FILTERS]: { type: new ListType(new ListType(Types.criteriaType)) },
           [ACTION_FIELDS.PROPERTYNAME]: { type: BuiltinTypes.STRING },
           [ACTION_FIELDS.BODY]: { type: BuiltinTypes.STRING },
@@ -1046,7 +1031,7 @@ export const createHubspotInstanceElement = (
     new ElemID(HUBSPOT, instanceName).name,
     type,
     hubspotMetadata as Values,
-    [HUBSPOT, RECORDS_PATH, typeName, instanceName],
+    [HUBSPOT, RECORDS_PATH, typeName, pathNaclCase(instanceName)],
   )
 }
 

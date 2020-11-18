@@ -10,6 +10,7 @@ salesforce {
     "DashboardFolder",
     "Profile",
     "ForecastingSettings",
+    "PermissionSet",
   ]
   instancesRegexSkippedList = [
     "^EmailTemplate.MarketoEmailTemplates",

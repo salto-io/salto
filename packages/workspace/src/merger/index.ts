@@ -78,6 +78,7 @@ const getContainerTypes = (containerTypes: ContainerType[]): Record<string, List
  * to the updated elements.
  */
 export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => {
+  log.debug('starting to merge %d elements', elements.length)
   const objects = mergeObjectTypes(elements.filter(isObjectType))
   const instances = mergeInstances(elements.filter(isInstanceElement))
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]

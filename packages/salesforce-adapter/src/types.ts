@@ -280,7 +280,13 @@ export const configType = new ObjectType({
       type: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
-          'Report', 'ReportType', 'ReportFolder', 'Dashboard', 'DashboardFolder', 'Profile',
+          'Report',
+          'ReportType',
+          'ReportFolder',
+          'Dashboard',
+          'DashboardFolder',
+          'Profile',
+          'PermissionSet',
         ],
       },
     },

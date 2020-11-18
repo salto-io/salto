@@ -17,6 +17,7 @@ import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import { mockJsforce } from './connection'
 import { MockInterface } from './utils'
+import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
 const mockClient = (): { connection: MockInterface<Connection>; client: SalesforceClient } => {
   const connection = mockJsforce()
@@ -27,6 +28,14 @@ const mockClient = (): { connection: MockInterface<Connection>; client: Salesfor
       isSandbox: false,
     },
     connection,
+    config: {
+      maxConcurrentApiRequests: {
+        total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        retrieve: 3,
+        read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      },
+    },
   })
 
   return { connection, client }

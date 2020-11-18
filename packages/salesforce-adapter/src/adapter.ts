@@ -140,9 +140,6 @@ export interface SalesforceAdapterParams {
   // For example: CustomObject.Lead
   instancesRegexSkippedList?: string[]
 
-  // Max retrieve requests that we want to send concurrently
-  maxConcurrentRetrieveRequests?: number
-
   // Max items to fetch in one retrieve request
   maxItemsInRetrieveRequest?: number
 
@@ -251,7 +248,6 @@ export default class SalesforceAdapter implements AdapterOperations {
   private enableHideTypesInNacls: boolean
   private metadataTypesSkippedList: string[]
   private instancesRegexSkippedList: RegExp[]
-  private maxConcurrentRetrieveRequests: number
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
   private metadataAdditionalTypes: string[]
@@ -273,7 +269,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     ],
     metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
     instancesRegexSkippedList = [],
-    maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = metadataToRetrieveAndDeploy,
     metadataAdditionalTypes = [
@@ -360,8 +355,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.instancesRegexSkippedList = instancesRegexSkippedList
       .concat(makeArray(config.instancesRegexSkippedList))
       .map(e => new RegExp(e))
-    this.maxConcurrentRetrieveRequests = config.maxConcurrentRetrieveRequests
-      ?? maxConcurrentRetrieveRequests
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
     this.userConfig = config
@@ -531,7 +524,6 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         instancesRegexSkippedList: this.instancesRegexSkippedList,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
-        maxConcurrentRetrieveRequests: this.maxConcurrentRetrieveRequests,
       }),
       readInstances(metadataTypesToRead),
     ])

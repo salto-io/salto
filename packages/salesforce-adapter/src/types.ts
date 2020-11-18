@@ -24,7 +24,6 @@ export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
 export const DATA_MANAGEMENT = 'dataManagement'
 export const CLIENT_CONFIG = 'client'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
-export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const ENABLE_HIDE_TYPES_IN_NACLS = 'enableHideTypesInNacls'
 export const SYSTEM_FIELDS = 'systemFields'
@@ -57,6 +56,13 @@ export type DataManagementConfig = {
   saltoIDSettings: SaltoIDSettings
 }
 
+export type ClientRateLimitConfig = Partial<{
+  total: number
+  retrieve: number
+  read: number
+  list: number
+}>
+
 type ClientPollingConfig = Partial<{
   interval: number
   timeout: number
@@ -74,12 +80,12 @@ type ClientDeployConfig = Partial<{
 export type SalesforceClientConfig = Partial<{
   polling: ClientPollingConfig
   deploy: ClientDeployConfig
+  maxConcurrentApiRequests: ClientRateLimitConfig
 }>
 
 export type SalesforceConfig = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
-  [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
   [USE_OLD_PROFILES]?: boolean
@@ -221,7 +227,6 @@ const dataManagementType = new ObjectType({
   } as Record<keyof DataManagementConfig, FieldDefinition>,
 })
 
-
 const clientPollingConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientPollingConfig'),
   fields: {
@@ -249,11 +254,22 @@ const clientDeployConfigType = new ObjectType({
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
 })
 
+const clientRateLimitType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'clientRateLimitConfig'),
+  fields: {
+    total: { type: BuiltinTypes.NUMBER },
+    retrieve: { type: BuiltinTypes.NUMBER },
+    read: { type: BuiltinTypes.NUMBER },
+    list: { type: BuiltinTypes.NUMBER },
+  } as Record<keyof ClientRateLimitConfig, FieldDefinition>,
+})
+
 const clientConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientConfig'),
   fields: {
     polling: { type: clientPollingConfigType },
     deploy: { type: clientDeployConfigType },
+    maxConcurrentApiRequests: { type: clientRateLimitType },
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
 })
 
@@ -278,13 +294,6 @@ export const configType = new ObjectType({
           '^StandardValueSet.AddressCountryCode',
           '^StandardValueSet.AddressStateCode',
         ],
-      },
-    },
-    [MAX_CONCURRENT_RETRIEVE_REQUESTS]: {
-      type: BuiltinTypes.NUMBER,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 25 }),
       },
     },
     [MAX_ITEMS_IN_RETRIEVE_REQUEST]: {

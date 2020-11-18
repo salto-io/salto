@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { FileProperties, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
-import { promises, values as lowerDashValues, collections } from '@salto-io/lowerdash'
+import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD } from './constants'
@@ -159,7 +159,6 @@ type RetrieveMetadataInstancesArgs = {
   client: SalesforceClient
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
-  maxConcurrentRetrieveRequests: number
   instancesRegexSkippedList: ReadonlyArray<RegExp>
 }
 
@@ -167,7 +166,6 @@ export const retrieveMetadataInstances = async ({
   client,
   types,
   maxItemsInRetrieveRequest,
-  maxConcurrentRetrieveRequests,
   instancesRegexSkippedList,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
@@ -237,12 +235,9 @@ export const retrieveMetadataInstances = async ({
     .filter(notInSkipList)
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
-  const instances = await promises.array.withLimitedConcurrency(
-    _.chunk(filesToRetrieve, maxItemsInRetrieveRequest)
-      .filter(filesChunk => filesChunk.length > 0)
-      .map(filesChunk => () => retrieveInstances(filesChunk)),
-    maxConcurrentRetrieveRequests,
-  )
+  const instances = await Promise.all(_.chunk(filesToRetrieve, maxItemsInRetrieveRequest)
+    .filter(filesChunk => filesChunk.length > 0)
+    .map(filesChunk => retrieveInstances(filesChunk)))
 
   return {
     elements: _.flatten(instances),

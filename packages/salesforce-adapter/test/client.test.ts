@@ -25,6 +25,7 @@ import SalesforceClient, { ApiLimitsTooLowError,
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
+import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -60,16 +61,26 @@ describe('salesforce client', () => {
     apiToken: 'myToken',
   })
   const { connection } = mockClient()
-  const client = new SalesforceClient({ credentials: new UsernamePasswordCredentials({
-    username: '',
-    password: '',
-    isSandbox: true,
-  }),
-  retryOptions: {
-    maxAttempts: 4, // try 5 times
-    retryDelay: 100, // wait for 100ms before trying again
-    retryStrategy: RetryStrategies.NetworkError, // retry on network errors
-  } })
+  const client = new SalesforceClient({
+    credentials: new UsernamePasswordCredentials({
+      username: '',
+      password: '',
+      isSandbox: true,
+    }),
+    retryOptions: {
+      maxAttempts: 4, // try 4 times
+      retryDelay: 100, // wait for 100ms before trying again
+      retryStrategy: RetryStrategies.NetworkError, // retry on network errors
+    },
+    config: {
+      maxConcurrentApiRequests: {
+        total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        retrieve: 3,
+        read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        list: 1,
+      },
+    },
+  })
   const headers = { 'content-type': 'application/json' }
   const workingReadReplay = {
     'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
@@ -464,12 +475,9 @@ describe('salesforce client', () => {
     let testClient: SalesforceClient
     let testConnection: Connection
 
-    beforeEach(() => {
-      testConnection = mockClient().connection
-    })
-
     describe('polling config', () => {
       beforeEach(() => {
+        testConnection = mockClient().connection
         testClient = new SalesforceClient({
           credentials: new UsernamePasswordCredentials({
             username: '',
@@ -492,6 +500,7 @@ describe('salesforce client', () => {
 
     describe('deploy configuration', () => {
       beforeEach(async () => {
+        testConnection = mockClient().connection
         testClient = new SalesforceClient({
           credentials: new UsernamePasswordCredentials({
             username: '',
@@ -513,6 +522,171 @@ describe('salesforce client', () => {
             ignoreWarnings: true,
           }),
         )
+      })
+    })
+
+    describe('rate limit configuration', () => {
+      type Resolvable<T> = { promise: T; resolve: () => void }
+      let reads: Resolvable<ReturnType<typeof testConnection.metadata.read>>[]
+      let mockRead: jest.MockedFunction<typeof testConnection.metadata.read>
+      let readReqs: ReturnType<typeof testClient.readMetadata>[]
+      let retrieves: Resolvable<ReturnType<typeof testConnection.metadata.retrieve>>[]
+      let mockRetrieve: jest.MockedFunction<typeof testConnection.metadata.retrieve>
+      let retrieveReqs: ReturnType<typeof testClient.retrieve>[]
+      let lists: Resolvable<ReturnType<typeof testConnection.metadata.list>>[]
+      let mockList: jest.MockedFunction<typeof testConnection.metadata.list>
+      let listReqs: ReturnType<typeof testClient.listMetadataObjects>[]
+
+      const makeResolvablePromise = <T>(): Resolvable<T> => {
+        const res = {
+          promise: undefined,
+          resolve: undefined,
+        } as unknown as Resolvable<T>
+        res.promise = new Promise(resolve => {
+          res.resolve = resolve
+        }) as unknown as T
+        return res
+      }
+
+      describe('with total and individual limits', () => {
+        beforeAll(async () => {
+          testConnection = mockClient().connection
+          testClient = new SalesforceClient({
+            credentials: new UsernamePasswordCredentials({
+              username: '',
+              password: '',
+              isSandbox: false,
+            }),
+            connection: testConnection,
+            config: {
+              maxConcurrentApiRequests: {
+                total: 5,
+                retrieve: 3,
+                read: 1,
+                list: undefined,
+              },
+            },
+          })
+          mockRead = testConnection.metadata.read as jest.MockedFunction<
+            typeof testConnection.metadata.read>
+          mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
+            typeof testConnection.metadata.retrieve>
+          mockList = testConnection.metadata.list as jest.MockedFunction<
+            typeof testConnection.metadata.list>
+
+          reads = _.times(2, () => makeResolvablePromise())
+          _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
+          readReqs = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
+          retrieves = _.times(4, () => makeResolvablePromise())
+          _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
+          retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
+            apiVersion: '47.0',
+            singlePackage: false,
+            unpackaged: { version: '47.0', types: [{ name: `n${i}`, members: ['x', 'y'] }] },
+          }))
+          lists = _.times(2, () => makeResolvablePromise())
+          _.times(lists.length, i => mockList.mockResolvedValueOnce(lists[i].promise))
+          listReqs = _.times(lists.length, i => testClient.listMetadataObjects({ type: `t${i}` }))
+
+          retrieves[0].resolve()
+          retrieves[1].resolve()
+          lists[0].resolve()
+          await Promise.all(retrieveReqs.slice(0, 2))
+          await listReqs[0]
+        })
+
+        it('should not call 2nd read before 1st completed', () => {
+          expect(mockRead).toHaveBeenCalledTimes(1)
+        })
+        it('should not call last retrieve when there are too many in-flight requests', () => {
+          expect(mockRetrieve.mock.calls.length).toBeGreaterThanOrEqual(2)
+          expect(mockRetrieve.mock.calls.length).toBeLessThan(4)
+        })
+
+        it('should complete all the requests when they free up', async () => {
+          reads[0].resolve()
+          reads[1].resolve()
+          retrieves[2].resolve()
+          retrieves[3].resolve()
+          await Promise.all(readReqs)
+          await Promise.all(retrieveReqs)
+          expect(mockRead).toHaveBeenCalledTimes(2)
+          expect(mockRetrieve).toHaveBeenCalledTimes(4)
+        })
+      })
+
+      describe('with no limits', () => {
+        beforeAll(async () => {
+          testConnection = mockClient().connection
+          testClient = new SalesforceClient({
+            credentials: new UsernamePasswordCredentials({
+              username: '',
+              password: '',
+              isSandbox: false,
+            }),
+            connection: testConnection,
+            config: {
+              maxConcurrentApiRequests: { },
+            },
+          })
+          mockRead = testConnection.metadata.read as jest.MockedFunction<
+            typeof testConnection.metadata.read>
+          mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
+            typeof testConnection.metadata.retrieve>
+
+          reads = _.times(2, () => makeResolvablePromise())
+          _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
+          readReqs = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
+          retrieves = _.times(4, () => makeResolvablePromise())
+          _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
+          retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
+            apiVersion: '47.0',
+            singlePackage: false,
+            unpackaged: { version: '47.0', types: [{ name: `n${i}`, members: ['x', 'y'] }] },
+          }))
+
+          retrieves[0].resolve()
+          retrieves[1].resolve()
+          await Promise.all(retrieveReqs.slice(0, 2))
+        })
+
+        it('should call 2nd read before 1st completed', () => {
+          expect(mockRead).toHaveBeenCalledTimes(2)
+        })
+        it('should call more retrieves', () => {
+          expect(mockRetrieve.mock.calls.length).toBeGreaterThanOrEqual(3)
+        })
+      })
+
+      describe('with no config', () => {
+        beforeAll(async () => {
+          testConnection = mockClient().connection
+          testClient = new SalesforceClient({
+            credentials: new UsernamePasswordCredentials({
+              username: '',
+              password: '',
+              isSandbox: false,
+            }),
+            connection: testConnection,
+          })
+          mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
+            typeof testConnection.metadata.retrieve>
+
+          retrieves = _.times(6, () => makeResolvablePromise())
+          _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
+          retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
+            apiVersion: '47.0',
+            singlePackage: false,
+            unpackaged: { version: '47.0', types: [{ name: `n${i}`, members: ['x', 'y'] }] },
+          }))
+
+          retrieves[0].resolve()
+          await retrieveReqs[0]
+        })
+
+        it('should call at most 4 retrieves', () => {
+          expect(mockRetrieve.mock.calls.length).toBeLessThanOrEqual(4)
+        })
       })
     })
   })

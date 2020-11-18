@@ -273,4 +273,18 @@ describe('select elements recursively', () => {
         element,
       })))).rejects.toThrow(new Error('No salto ids matched the provided selectors nonExistentAdapter.*,nonExistentAdapter2.*'))
   })
+
+  it('should return only the exact match when the selector is a valid elemID', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.instance.mockInstance.bool',
+    ]).validSelectors
+    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      })))).map(e => e.elemID)
+    expect(elementIds).toEqual([
+      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool'),
+    ])
+  })
 })

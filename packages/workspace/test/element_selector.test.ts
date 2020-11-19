@@ -91,12 +91,13 @@ describe('element selector', () => {
     expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
   })
 
-  it('should only select specific type when given specific type element it', () => {
+  it('should only select specific type when given specific type element', () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),
       new ElemID('salesforce', 'sometypewithsameprefix'),
       new ElemID('otheradapter', 'othertype'),
-      new ElemID('salesforce', 'othertype', 'instance'),
+      new ElemID('salesforce', 'othertype', 'instance', 'y'),
+      new ElemID('salesforce', 'sometype', 'instance', 'x'),
     ]
     const selectedElements = selectElements(elements, ['salesforce.sometype'])
     expect(selectedElements).toEqual([elements[0]])
@@ -106,7 +107,7 @@ describe('element selector', () => {
     const elements = [
       new ElemID('salesforce', 'sometype', 'instance', 'one_instance'),
       new ElemID('salesforce', 'othertype', 'type', 'typename'),
-      new ElemID('otheradapter', 'othertype', 'instance', 'some_other_instace2'),
+      new ElemID('otheradapter', 'othertype', 'instance', 'some_other_instance2'),
       new ElemID('salesforce', 'othertype', 'instance', 'some_other_instance'),
     ]
     const selectedElements = selectElements(elements, ['salesforce.*.instance.*'])

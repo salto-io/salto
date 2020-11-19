@@ -30,11 +30,6 @@ export type ElementIDToValue = {
   element: Value
 }
 
-type ElementIDToValueResult = {
-  elementIdToValue: ElementIDToValue[]
-  matches: Record<string, boolean>
-}
-
 type ElementIDContainer = {
   elemID: ElemID
 }
@@ -176,14 +171,15 @@ const getPossiblePathsFromParent = (parent: Element): string[] => {
   return paths
 }
 
-const pathNameToIdType = (path: string): string => ((path === 'annotations') ? 'annotation.' : '')
+const getSubElementIdType = (elemID: ElemID, path: string): string =>
+  ((path === 'annotations' && elemID.idType === 'type') ? 'annotation.' : '')
 
 const isNestedElement = (parentElement: ElementIDToValue): boolean =>
   parentElement.elemID.getFullNameParts().length > ElemID.NUM_ELEM_ID_NON_NAME_PARTS
 
 const createPathToPropertyMapping = (parentElement: ElementIDToValue, path: string):
 [string, unknown][] => ((parentElement.element[path]) ? Object.entries(parentElement.element[path])
-  .map((entry): [string, unknown] => [`${pathNameToIdType(path)}${entry[0]}`, entry[1]]) : [])
+  .map((entry): [string, unknown] => [`${getSubElementIdType(parentElement.elemID, path)}${entry[0]}`, entry[1]]) : [])
 
 const subElementIDToValue = (subElement: [string, unknown], parentElement: ElementIDToValue):
   { elemID: ElemID; element: unknown } => ({
@@ -206,54 +202,50 @@ const removeChildElements = (currentLevelElementsSelected:
 const selectElementsForDepth = (selectors: ElementSelector[], elements: ElementIDToValue[],
   compact: boolean, depth: number): {
     subElementSelectors: ElementSelector[]
-    matches: Record<string, boolean>
     currentLevelElementsSelected: ElementIDToValue[]
   } => {
   const [topLevelSelectors, subElementSelectors] = _.partition(selectors, selector =>
     isTopLevelSelector(selector, depth))
-  const { elements: currentLevelElementsSelected, matches } = topLevelSelectors.length > 0
+  const { elements: currentLevelElementsSelected } = topLevelSelectors.length > 0
     ? selectElementsBySelectors(elements, topLevelSelectors, false)
-    : { elements: [], matches: {} }
+    : { elements: [] }
   return {
     subElementSelectors,
-    matches,
     currentLevelElementsSelected:
       compact ? removeChildElements(currentLevelElementsSelected) : currentLevelElementsSelected,
   }
 }
 
-const getElementIdsFromSelectorsRecursivelyInner = async (
+export const getElementIdsFromSelectorsRecursively = async (
   selectors: ElementSelector[], elements: ElementIDToValue[], compact = false, depth = 1
-): Promise<ElementIDToValueResult> => {
-  const { subElementSelectors, matches,
-    currentLevelElementsSelected } = selectElementsForDepth(selectors, elements, compact, depth)
-  if (_.isEmpty(subElementSelectors)) {
-    return { elementIdToValue: currentLevelElementsSelected, matches }
+): Promise<ElemID[]> => {
+  const [wildcardSelectors, determinedSelectors] = _.partition(selectors, selector => selector.origin.includes('*'))
+  const currentLevelDeterminedElementsIds = determinedSelectors
+    .map(selector => ElemID.fromFullName(selector.origin))
+  if (_.isEmpty(wildcardSelectors)) {
+    return currentLevelDeterminedElementsIds
   }
+  const { subElementSelectors, currentLevelElementsSelected } = selectElementsForDepth(
+    wildcardSelectors, elements, compact, depth
+  )
+  if (_.isEmpty(subElementSelectors)) {
+    return currentLevelElementsSelected.map(elem => elem.elemID)
+  }
+  const currentElementIds = currentLevelElementsSelected.map(elem => elem.elemID)
+    .concat(currentLevelDeterminedElementsIds)
   const subElementParentSelectors = createParentSelectors(subElementSelectors,
     currentLevelElementsSelected, compact, depth)
   if (subElementParentSelectors.length === 0) {
-    return { elementIdToValue: currentLevelElementsSelected, matches }
+    return currentElementIds
   }
   const { elements: possibleParentElements } = selectElementsBySelectors(elements,
     subElementParentSelectors, false)
   if (possibleParentElements.length === 0) {
-    return { elementIdToValue: currentLevelElementsSelected, matches }
+    return currentElementIds
   }
   const possibleSubElements = (await Promise.all(possibleParentElements.map(getSubElements))).flat()
-  const { elementIdToValue: lowerLevelElements,
-    matches: lowerLevelMatches } = await getElementIdsFromSelectorsRecursivelyInner(
+  const lowerLevelElements = await getElementIdsFromSelectorsRecursively(
     subElementSelectors, possibleSubElements, compact, depth + 1
   )
-  return { elementIdToValue: currentLevelElementsSelected.concat(lowerLevelElements),
-    matches: Object.assign(matches, lowerLevelMatches) }
-}
-
-export const getElementIdsFromSelectorsRecursively = async (
-  selectors: ElementSelector[], elements: ElementIDToValue[],
-  compact = false): Promise<ElementIDToValue[]> => {
-  const { elementIdToValue: results,
-    matches } = await getElementIdsFromSelectorsRecursivelyInner(selectors, elements, compact)
-  validateSelectorsMatches(selectors, matches)
-  return results
+  return currentElementIds.concat(lowerLevelElements)
 }

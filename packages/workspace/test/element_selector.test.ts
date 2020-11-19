@@ -162,7 +162,14 @@ describe('element selector', () => {
     const selectedElements = selectElements(elements, ['salesforce.*', 'netsuite.*'])
     expect(selectedElements).toEqual([elements[0], elements[1]])
   })
-
+  it('returns all elements with no selectors', async () => {
+    const elements = [
+      new ElemID('salesforce', 'value'),
+      new ElemID('netsuite', 'value'),
+      new ElemID('hubspot', 'value'),
+    ]
+    expect(selectElements(elements, [])).toEqual(elements)
+  })
   it('should use a wildcard and a specific elment id and not throw error if the wildcard covers the element id', () => {
     const elements = [
       new ElemID('salesforce', 'value'),
@@ -225,17 +232,17 @@ describe('select elements recursively', () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
       'mockAdapter.test.instance.mockInstance.bool',
-      'mockAdapter.test.instance.mockInstance.strMap.bla',
+      'mockAdapter.test.instance.mockInstance.strMap.*',
       'mockAdapter.test.annotation.*']).validSelectors
     const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })))).map(element => element.elemID).sort((el1, el2) =>
-      (el1.getFullName() > el2.getFullName() ? 1 : -1))
+      })))).sort((el1, el2) => (el1.getFullName() > el2.getFullName() ? 1 : -1))
     expect(elementIds).toEqual([mockInstance.elemID, mockType.elemID,
       ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool'),
       ElemID.fromFullName('mockAdapter.test.instance.mockInstance.strMap.bla'),
+      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.strMap.a'),
       ElemID.fromFullName('mockAdapter.test.field.bool'),
       ElemID.fromFullName('mockAdapter.test.field.strMap'),
       ElemID.fromFullName('mockAdapter.test.field.obj'),
@@ -244,6 +251,15 @@ describe('select elements recursively', () => {
       ElemID.fromFullName('mockAdapter.test.annotation.testAnno')].sort((el1, el2) =>
       (el1.getFullName() > el2.getFullName() ? 1 : -1)))
   })
+  it('returns nothing with non-matching subelements', async () => {
+    const selectors = createElementSelectors(['mockAdapter.test.instance.mockInstance.obj.NoSuchThingExists*']).validSelectors
+    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      })))).sort((el1, el2) => (el1.getFullName() > el2.getFullName() ? 1 : -1))
+    expect(elementIds).toEqual([])
+  })
   it('removes fields of type from list when compact', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.field.*',
       'mockAdapter.test.field.obj.*']).validSelectors
@@ -251,7 +267,7 @@ describe('select elements recursively', () => {
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })), true)).map(element => element.elemID)
+      })), true))
     expect(elementIds).toEqual([mockType.elemID])
   })
 
@@ -263,27 +279,8 @@ describe('select elements recursively', () => {
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })), true)).map(element => element.elemID)
+      })), true))
     expect(elementIds).toEqual([mockInstance.elemID])
-  })
-
-  it('fails with bad selector: element id matches nothing', async () => {
-    const selectors = createElementSelectors(['mockAdapter.*',
-      'mockAdapter.test.instance.mockInstance.strMap.noChanceThisSelectorExists']).validSelectors
-    await expect(getElementIdsFromSelectorsRecursively(selectors,
-      [mockInstance, mockType].map(element => ({
-        elemID: element.elemID,
-        element,
-      })))).rejects.toThrow(new Error('The following salto ids were not found: mockAdapter.test.instance.mockInstance.strMap.noChanceThisSelectorExists'))
-  })
-
-  it('fails with bad selector: selectors match nothing', async () => {
-    const selectors = createElementSelectors(['nonExistentAdapter.*', 'nonExistentAdapter2.*']).validSelectors
-    await expect(getElementIdsFromSelectorsRecursively(selectors,
-      [mockInstance, mockType].map(element => ({
-        elemID: element.elemID,
-        element,
-      })))).rejects.toThrow(new Error('No salto ids matched the provided selectors nonExistentAdapter.*,nonExistentAdapter2.*'))
   })
 
   it('should return only the exact match when the selector is a valid elemID', async () => {
@@ -294,7 +291,7 @@ describe('select elements recursively', () => {
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })))).map(e => e.elemID)
+      }))))
     expect(elementIds).toEqual([
       ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool'),
     ])

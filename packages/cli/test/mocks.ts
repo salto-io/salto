@@ -252,6 +252,7 @@ export const mockLoadWorkspace = (
     errors: () => jest.fn().mockResolvedValue(mockErrors([])),
     isEmpty: jest.fn().mockResolvedValue(isEmpty),
     hasElementsInServices: jest.fn().mockResolvedValue(hasElementsInServices),
+    getElementIdsBySelectors: jest.fn(),
     getTotalSize: jest.fn().mockResolvedValue(0),
     addEnvironment: jest.fn(),
     deleteEnvironment: jest.fn(),

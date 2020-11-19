@@ -91,8 +91,8 @@ SalesforceConfig => {
     }
 
     if (clientConfig?.retry?.retryStrategy !== undefined
-        && RetryStrategyName[clientConfig?.retry.retryStrategy] === undefined) {
-      throw Error(`${CLIENT_CONFIG}.clientConfig.retry.retryStrategy value '${clientConfig?.retry?.retryStrategy}' is not supported`)
+        && RetryStrategyName[clientConfig.retry.retryStrategy] === undefined) {
+      throw Error(`${CLIENT_CONFIG}.clientConfig.retry.retryStrategy value '${clientConfig.retry.retryStrategy}' is not supported`)
     }
   }
 

@@ -146,27 +146,25 @@ const oauthConnection = (
   instanceUrl: string,
   accessToken: string,
   retryOptions: RequestRetryOptions,
-): Connection => {
-  const connection = new RealConnection({
+): Connection => (
+  new RealConnection({
     version: API_VERSION,
     instanceUrl,
     accessToken,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-  return connection
-}
+)
 
 const realConnection = (
   isSandbox: boolean,
   retryOptions: RequestRetryOptions,
-): Connection => {
-  const connection = new RealConnection({
+): Connection => (
+  new RealConnection({
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-  return connection
-}
+)
 
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]

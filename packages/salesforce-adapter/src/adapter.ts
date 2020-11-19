@@ -64,6 +64,7 @@ import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
 import profilePathsFilter from './filters/profile_paths'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
+import valueToStaticFileFilter from './filters/value_to_static_file'
 import profileMapsFilter from './filters/profile_maps'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
@@ -116,6 +117,7 @@ export const DEFAULT_FILTERS = [
   convertListsFilter,
   convertTypeFilter,
   replaceFieldValuesFilter,
+  valueToStaticFileFilter,
   fieldReferencesFilter,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,

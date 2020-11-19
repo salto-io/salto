@@ -51,7 +51,7 @@ const extractToStaticFile = (instance: InstanceElement): void => {
     if (_.isUndefined(field) || !shouldReplace(field, value, instance)) {
       return value
     }
-    return getStaticFile(instance, value)
+    return getStaticFile(instance, value) ?? value
   }
 
   const values = instance.value

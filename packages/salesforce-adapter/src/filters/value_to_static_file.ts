@@ -48,7 +48,7 @@ const createStaticFile = (instance: InstanceElement, value: string): StaticFile 
     return undefined
   }
   return new StaticFile({
-    filepath: `${(instance.path ?? []).join('/')}.js`,
+    filepath: `${instance.path.join('/')}.js`,
     content: Buffer.from(value),
     encoding: 'utf-8',
   })

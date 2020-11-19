@@ -54,6 +54,11 @@ salesforce {
       testLevel = "NoTestRun"
       runTests = ["Test name", "Other test"]
     }
+    retry = {
+      maxAttempts = 5
+      retryDelay = 5000
+      retryStrategy = "NetworkError"
+    }
     maxConcurrentApiRequests = {
       total = -1
       retrieve = 3
@@ -104,6 +109,7 @@ salesforce {
 |---------------------------------------------------------------|--------------------------|------------
 | [polling](#client-polling-options)                            | `{}` (no overrides)      | Configuration for polling asynchronous operations (deploy, retrieve, bulk data operations)
 | [deploy](#client-deploy-options)                              | `{}` (no overrides)      | Deploy options
+| [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 
 #### Client polling options
@@ -125,6 +131,14 @@ salesforce {
 | runTests        | `[]` (no tests)                                        | A list of Apex tests to run during deployment, must configure `RunSpecifiedTests` in `testLevel` for this option to work
 
 For more details see the DeployOptions section in the [salesforce documentation of the deploy API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_deploy.htm)
+
+#### Client retry options
+
+| Name           | Default when undefined | Description
+|----------------|------------------------|------------
+| maxAttempts    | `5`                    | The number of attempts to make for each request
+| retryDelay     | `5000` (5 seconds)     | The time (milliseconds) to wait between attempts
+| retryStrategy  | `NetworkError`         | In which cases to retry. Supported choices: `NetworkError` (retry on network errors), `HttpError` (retry on HTTP 5xx errors), or `HTTPOrNetworkError` (both)
 
 ### Rate limit configuration options
 

@@ -316,6 +316,38 @@ describe('SalesforceAdapter creator', () => {
       expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
     })
 
+    it('should not throw an error when a valid retry strategy is set', () => {
+      const validConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          client: {
+            retry: {
+              maxAttempts: 5,
+              retryDelay: 5000,
+              retryStrategy: 'HttpError',
+            },
+          },
+        },
+      )
+      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      validConfig.value.client.retry.retryStrategy = 'HTTPOrNetworkError'
+      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      validConfig.value.client.retry.retryStrategy = 'NetworkError'
+      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      validConfig.value.client.retry.retryStrategy = undefined
+      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+    })
+
+    it('should throw an error when an invalid retry strategy is set', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { client: { retry: { retryStrategy: 'somethingElse' } } },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('client.clientConfig.retry.retryStrategy value \'somethingElse\' is not supported')
+    })
+
     it('should not throw an error when no config is passed', () => {
       expect(() => adapter.operations({ credentials })).not.toThrow()
     })

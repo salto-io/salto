@@ -15,13 +15,11 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { mockRequest } from 'mock-req-res'
 import nock from 'nock'
-import { RetryStrategies } from 'requestretry'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import SalesforceClient, { ApiLimitsTooLowError,
-  getConnectionDetails, validateCredentials, DEFAULT_RETRY_OPTS } from '../src/client/client'
+  getConnectionDetails, validateCredentials } from '../src/client/client'
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
@@ -30,21 +28,7 @@ import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 const { array, asynciterable } = collections
 const { makeArray } = array
 const { mapAsync, toArrayAsync } = asynciterable
-
-describe('Delay strategy sanity test', () => {
-  let log: jest.SpyInstance
-  beforeEach(async () => {
-    const logging = logger('salesforce-adapter/client/client')
-    log = jest.spyOn(logging, 'error')
-    if (DEFAULT_RETRY_OPTS.delayStrategy) {
-      DEFAULT_RETRY_OPTS.delayStrategy(new Error('error message'), mockRequest(), undefined)
-    }
-  })
-
-  it('writes the right things to log', () => {
-    expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'error message', 5)
-  })
-})
+const logging = logger('salesforce-adapter/client/client')
 
 describe('salesforce client', () => {
   beforeEach(() => {
@@ -67,12 +51,12 @@ describe('salesforce client', () => {
       password: '',
       isSandbox: true,
     }),
-    retryOptions: {
-      maxAttempts: 4, // try 4 times
-      retryDelay: 100, // wait for 100ms before trying again
-      retryStrategy: RetryStrategies.NetworkError, // retry on network errors
-    },
     config: {
+      retry: {
+        maxAttempts: 4, // try 4 times
+        retryDelay: 100, // wait for 100ms before trying again
+        retryStrategy: 'NetworkError', // retry on network errors
+      },
       maxConcurrentApiRequests: {
         total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retrieve: 3,
@@ -120,6 +104,12 @@ describe('salesforce client', () => {
   })
 
   describe('with network errors ', () => {
+    let log: jest.SpyInstance
+
+    beforeAll(() => {
+      log = jest.spyOn(logging, 'error')
+    })
+
     it('fails if max attempts was reached ', async () => {
       const dodoScope = nock('http://dodo22')
         .persist()
@@ -155,6 +145,9 @@ describe('salesforce client', () => {
       const res = await client.listMetadataTypes()
       expect(dodoScope.isDone()).toBeTruthy()
       expect(res).toEqual([])
+    })
+    it('writes the right things to log', () => {
+      expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'something awful happened', 0.1)
     })
   })
 

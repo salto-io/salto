@@ -63,7 +63,7 @@ export type ClientRateLimitConfig = Partial<{
   list: number
 }>
 
-type ClientPollingConfig = Partial<{
+export type ClientPollingConfig = Partial<{
   interval: number
   timeout: number
 }>
@@ -77,10 +77,23 @@ type ClientDeployConfig = Partial<{
   runTests: string[]
 }>
 
+export enum RetryStrategyName {
+  'HttpError',
+  'HTTPOrNetworkError',
+  'NetworkError',
+}
+type RetryStrategy = keyof typeof RetryStrategyName
+export type ClientRetryConfig = Partial<{
+  maxAttempts: number
+  retryDelay: number
+  retryStrategy: RetryStrategy
+}>
+
 export type SalesforceClientConfig = Partial<{
   polling: ClientPollingConfig
   deploy: ClientDeployConfig
   maxConcurrentApiRequests: ClientRateLimitConfig
+  retry: ClientRetryConfig
 }>
 
 export type SalesforceConfig = {
@@ -254,7 +267,7 @@ const clientDeployConfigType = new ObjectType({
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
 })
 
-const clientRateLimitType = new ObjectType({
+const clientRateLimitConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientRateLimitConfig'),
   fields: {
     total: { type: BuiltinTypes.NUMBER },
@@ -264,12 +277,29 @@ const clientRateLimitType = new ObjectType({
   } as Record<keyof ClientRateLimitConfig, FieldDefinition>,
 })
 
+const clientRetryConfigType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'clientRetryConfig'),
+  fields: {
+    maxAttempts: { type: BuiltinTypes.NUMBER },
+    retryDelay: { type: BuiltinTypes.NUMBER },
+    retryStrategy: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: Object.keys(RetryStrategyName),
+        }),
+      },
+    },
+  } as Record<keyof ClientRetryConfig, FieldDefinition>,
+})
+
 const clientConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientConfig'),
   fields: {
     polling: { type: clientPollingConfigType },
     deploy: { type: clientDeployConfigType },
-    maxConcurrentApiRequests: { type: clientRateLimitType },
+    retry: { type: clientRetryConfigType },
+    maxConcurrentApiRequests: { type: clientRateLimitConfigType },
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
 })
 

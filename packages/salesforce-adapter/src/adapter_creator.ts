@@ -26,7 +26,7 @@ import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
-  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig } from './types'
+  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -88,6 +88,11 @@ SalesforceConfig => {
       if (invalidValues.length > 0) {
         throw Error(`${CLIENT_CONFIG}.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
       }
+    }
+
+    if (clientConfig?.retry?.retryStrategy !== undefined
+        && RetryStrategyName[clientConfig.retry.retryStrategy] === undefined) {
+      throw Error(`${CLIENT_CONFIG}.clientConfig.retry.retryStrategy value '${clientConfig.retry.retryStrategy}' is not supported`)
     }
   }
 

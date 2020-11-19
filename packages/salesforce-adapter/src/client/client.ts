@@ -30,7 +30,10 @@ import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_MAX_CONCURRENT_API_REQUESTS } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
-import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials, SalesforceClientConfig, ClientRateLimitConfig } from '../types'
+import {
+  UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
+  SalesforceClientConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPollingConfig,
+} from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -58,15 +61,10 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
 
-const RETRY_DELAY = 5000
-
-export const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
+const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
-  retryStrategy: RetryStrategies.NetworkError, // retry on network errors
-  delayStrategy: (err, _response, _body) => {
-    log.error('failed to run SFDC call for reason: %s. Retrying in %ss.', err.message, (RETRY_DELAY / 1000))
-    return RETRY_DELAY
-  },
+  retryDelay: 5000, // wait for 5s before trying again
+  retryStrategy: 'NetworkError', // retry on network errors
 }
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -113,7 +111,6 @@ const validateSaveResult = validateCRUDResult(false)
 export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
-  retryOptions?: RequestRetryOptions
   config?: SalesforceClientConfig
 }
 
@@ -124,17 +121,15 @@ const DEFAULT_POLLING_CONFIG = {
 
 export const setPollIntervalForConnection = (
   connection: Connection,
-  pollingConfig: SalesforceClientConfig['polling'],
+  pollingConfig: Required<ClientPollingConfig>,
 ): void => {
-  const interval = pollingConfig?.interval ?? DEFAULT_POLLING_CONFIG.interval
-  const timeout = pollingConfig?.timeout ?? DEFAULT_POLLING_CONFIG.timeout
   // Set poll interval and timeout for deploy
-  connection.metadata.pollInterval = interval
-  connection.metadata.pollTimeout = timeout
+  connection.metadata.pollInterval = pollingConfig.interval
+  connection.metadata.pollTimeout = pollingConfig.timeout
 
   // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
-  connection.bulk.pollInterval = interval
-  connection.bulk.pollTimeout = timeout
+  connection.bulk.pollInterval = pollingConfig.interval
+  connection.bulk.pollTimeout = pollingConfig.timeout
 }
 
 export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =>
@@ -151,27 +146,25 @@ const oauthConnection = (
   instanceUrl: string,
   accessToken: string,
   retryOptions: RequestRetryOptions,
-): Connection => {
-  const connection = new RealConnection({
+): Connection => (
+  new RealConnection({
     version: API_VERSION,
     instanceUrl,
     accessToken,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-  return connection
-}
+)
 
 const realConnection = (
   isSandbox: boolean,
   retryOptions: RequestRetryOptions,
-): Connection => {
-  const connection = new RealConnection({
+): Connection => (
+  new RealConnection({
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-  return connection
-}
+)
 
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]
@@ -233,6 +226,16 @@ const sendChunked = async <TIn, TOut>({
 }
 
 export class ApiLimitsTooLowError extends Error {}
+
+const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestRetryOptions => ({
+  maxAttempts: retryOptions.maxAttempts,
+  retryStrategy: RetryStrategies[retryOptions.retryStrategy],
+  delayStrategy: (err, _response, _body) => {
+    log.error('failed to run SFDC call for reason: %s. Retrying in %ss.',
+      err.message, (retryOptions.retryDelay / 1000))
+    return retryOptions.retryDelay
+  },
+})
 
 const createConnectionFromCredentials = (
   creds: Credentials,
@@ -326,15 +329,17 @@ export default class SalesforceClient {
   private readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
 
   constructor(
-    { credentials, connection, retryOptions, config }: SalesforceClientOpts
+    { credentials, connection, config }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.config = config
-    this.conn = connection
-      || createConnectionFromCredentials(credentials, retryOptions || DEFAULT_RETRY_OPTS)
-    setPollIntervalForConnection(this.conn, config?.polling)
+    this.conn = connection ?? createConnectionFromCredentials(
+      credentials,
+      createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS)),
+    )
+    setPollIntervalForConnection(this.conn, _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG))
     this.rateLimiters = createRateLimitersFromConfig(
-      config?.maxConcurrentApiRequests ?? DEFAULT_MAX_CONCURRENT_API_REQUESTS
+      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS)
     )
   }
 

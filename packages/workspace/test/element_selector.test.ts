@@ -91,12 +91,23 @@ describe('element selector', () => {
     expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
   })
 
+  it('should only select specific type when given specific type element it', () => {
+    const elements = [
+      new ElemID('salesforce', 'sometype'),
+      new ElemID('salesforce', 'sometypewithsameprefix'),
+      new ElemID('otheradapter', 'othertype'),
+      new ElemID('salesforce', 'othertype', 'instance'),
+    ]
+    const selectedElements = selectElements(elements, ['salesforce.sometype'])
+    expect(selectedElements).toEqual([elements[0]])
+  })
+
   it('should handle asterisks in field type and instance name', () => {
     const elements = [
-      new ElemID('salesforce', 'sometype', 'instance', 'one instance'),
+      new ElemID('salesforce', 'sometype', 'instance', 'one_instance'),
       new ElemID('salesforce', 'othertype', 'type', 'typename'),
-      new ElemID('otheradapter', 'othertype', 'instance', 'some other instace2'),
-      new ElemID('salesforce', 'othertype', 'instance', 'some other instance'),
+      new ElemID('otheradapter', 'othertype', 'instance', 'some_other_instace2'),
+      new ElemID('salesforce', 'othertype', 'instance', 'some_other_instance'),
     ]
     const selectedElements = selectElements(elements, ['salesforce.*.instance.*'])
     expect(selectedElements).toEqual([elements[0], elements[3]])
@@ -130,10 +141,10 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype'),
       new ElemID('salesforce', 'othertype', 'instance', 'American', 'Australian'),
       new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric chan'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'Imericchan'),
       new ElemID('salesforce', 'ApexClass', 'instance', 'eric'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'eric chan'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'Imeric'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'ericchan'),
     ]
     const selectedElements = selectElements(elements, ['salesforce.ApexClass.instance.*eric*'])
     expect(selectedElements).toEqual(

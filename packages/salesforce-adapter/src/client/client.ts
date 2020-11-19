@@ -335,11 +335,11 @@ export default class SalesforceClient {
     this.config = config
     this.conn = connection ?? createConnectionFromCredentials(
       credentials,
-      createRetryOptions(_.defaults(config?.retry, DEFAULT_RETRY_OPTS)),
+      createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS)),
     )
-    setPollIntervalForConnection(this.conn, _.defaults(config?.polling, DEFAULT_POLLING_CONFIG))
+    setPollIntervalForConnection(this.conn, _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG))
     this.rateLimiters = createRateLimitersFromConfig(
-      _.defaults(config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS)
+      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS)
     )
   }
 

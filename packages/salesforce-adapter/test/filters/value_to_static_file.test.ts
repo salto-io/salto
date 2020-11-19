@@ -22,6 +22,7 @@ import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/value_to_static_file'
 import mockAdapter from '../adapter'
 import { SALESFORCE, WEBLINK_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
+import { metadataType } from '../../src/transformers/transformer'
 
 const LINK_TYPE_FIELD = 'linkType'
 const JAVASCRIPT = 'javascript'
@@ -73,19 +74,22 @@ describe('value to static file filter', () => {
       [URL]: codeAsString,
       [LINK_TYPE_FIELD]: URL,
       [NOT_URL]: anotherFieldContent,
-    })
+    },
+    ['Objects', 'dir'])
 
     const webLinkInstanceCode = new InstanceElement('webLinkInstanceCode', webLinkType, {
       [URL]: codeAsString,
       [LINK_TYPE_FIELD]: JAVASCRIPT,
       [NOT_URL]: anotherFieldContent,
-    })
+    },
+    ['Objects', 'dir'])
 
 
     const anotherInstance = new InstanceElement('anotherInstance', anotherType, {
       [URL]: regularUrl,
       [NOT_URL]: anotherFieldContent,
-    })
+    },
+    ['Objects', 'dir2'])
 
     elements = [webLinkInstanceNotCode, webLinkInstanceCode, anotherInstance,
       webLinkType, anotherType]

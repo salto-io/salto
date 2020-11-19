@@ -18,9 +18,13 @@ import {
 } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { WEBLINK_METADATA_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
+import { apiName, metadataType } from '../transformers/transformer'
+
+const log = logger(module)
 
 const LINK_TYPE_FIELD = 'linkType'
 const JAVASCRIPT = 'javascript'
@@ -29,7 +33,7 @@ const fieldSelectMapping = [
 ]
 
 const hasCodeField = (instance: InstanceElement): boolean => (
-  instance.value[LINK_TYPE_FIELD] !== undefined && instance.value[LINK_TYPE_FIELD] === JAVASCRIPT
+  instance.value[LINK_TYPE_FIELD] === JAVASCRIPT
 )
 
 const shouldReplace = (field: Field, value: Value, instance: InstanceElement): boolean => {
@@ -38,20 +42,25 @@ const shouldReplace = (field: Field, value: Value, instance: InstanceElement): b
 }
 
 
-const getStaticFile = (instance: InstanceElement, value: string): StaticFile => (
-  new StaticFile({
+const createStaticFile = (instance: InstanceElement, value: string): StaticFile | undefined => {
+  if (instance.path === undefined) {
+    log.error(`could not extract value of instance ${apiName(instance)} to static file, instance path is undefined`)
+    return undefined
+  }
+  return new StaticFile({
     filepath: `${(instance.path ?? []).join('/')}.js`,
     content: Buffer.from(value),
     encoding: 'utf-8',
-  }))
+  })
+}
 
 
 const extractToStaticFile = (instance: InstanceElement): void => {
   const transformFunc: TransformFunc = ({ value, field }) => {
-    if (_.isUndefined(field) || !shouldReplace(field, value, instance)) {
+    if (field === undefined || !shouldReplace(field, value, instance)) {
       return value
     }
-    return getStaticFile(instance, value) ?? value
+    return createStaticFile(instance, value) ?? value
   }
 
   const values = instance.value
@@ -73,6 +82,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
+      .filter(e => metadataType(e) === WEBLINK_METADATA_TYPE)
       .forEach(inst => extractToStaticFile(inst))
   },
 })

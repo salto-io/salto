@@ -213,6 +213,7 @@ const metadataToRetrieveAndDeploy = [
   'Report', // contains encoded zip content, is under a folder
   'ReportFolder',
   'ReportType',
+  'Scontrol', // contains encoded zip content
   'SiteDotCom', // contains encoded zip content
   'StaticResource', // contains encoded zip content
   // Other types that need retrieve / deploy to work

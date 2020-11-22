@@ -83,14 +83,18 @@ describe('value to static file filter', () => {
     },
     ['Objects', 'dir'])
 
-
+    const webLinkInstanceNoPath = new InstanceElement('weblinkUndefinedPathInstance', webLinkType, {
+      [URL]: codeAsString,
+      [LINK_TYPE_FIELD]: JAVASCRIPT,
+      [NOT_URL]: anotherFieldContent,
+    })
     const anotherInstance = new InstanceElement('anotherInstance', anotherType, {
       [URL]: regularUrl,
       [NOT_URL]: anotherFieldContent,
     },
     ['Objects', 'dir2'])
 
-    elements = [webLinkInstanceNotCode, webLinkInstanceCode, anotherInstance,
+    elements = [webLinkInstanceNotCode, webLinkInstanceCode, anotherInstance, webLinkInstanceNoPath,
       webLinkType, anotherType]
 
     codeAsFile = new StaticFile({
@@ -104,12 +108,14 @@ describe('value to static file filter', () => {
       type FilterType = FilterWith<'onFetch'>
       let filter: FilterType
 
-      beforeAll(async () => {
+      beforeAll(() => {
         filter = filterCreator({ client, config: {} }) as FilterType
-        await filter.onFetch(elements)
       })
 
       describe('extract code to static file', () => {
+        beforeAll(async () => {
+          await filter.onFetch(elements)
+        })
         it('should not extract from non-weblink instances', () => {
           const anotherInstanceAfterFilter = elements.filter(isInstanceElement)
             .find(e => e.elemID.name === 'anotherInstance')
@@ -128,6 +134,24 @@ describe('value to static file filter', () => {
             .find(e => e.elemID.name === 'webLinkInstanceNotCode')
           expect(weblinkInstanceAfterFilterWithoutCode?.value[URL]).toBe(codeAsString)
           expect(weblinkInstanceAfterFilterWithoutCode?.value[NOT_URL]).toBe(anotherFieldContent)
+        })
+      })
+      describe('do not replace value for undefined path', () => {
+        let instanceUndefinedPath: InstanceElement | undefined
+        beforeAll(async () => {
+          instanceUndefinedPath = elements?.filter(isInstanceElement)
+            .find(e => e.path === undefined)
+          if (instanceUndefinedPath !== undefined) {
+            instanceUndefinedPath.path = undefined
+          }
+          await filter.onFetch(elements)
+        })
+
+        it('do not replace value for undefined path', () => {
+          instanceUndefinedPath = elements?.filter(isInstanceElement)
+            .find(e => e.path === undefined)
+          expect(instanceUndefinedPath?.value[URL]).toBe(codeAsString)
+          expect(instanceUndefinedPath?.value[NOT_URL]).toBe(anotherFieldContent)
         })
       })
   })

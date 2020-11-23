@@ -2272,7 +2272,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: [
               'Case',
             ],
-            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: 'TestAddLookupFilterRelationshipName',
+            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: fieldName,
           },
         } },
         annotations: {
@@ -2308,7 +2308,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
               ],
             },
-            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: 'TestAddLookupFilterRelationshipName',
+            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: fieldName,
           },
         } },
         annotations: {

@@ -774,11 +774,13 @@ describe('transformer', () => {
 
     describe('reference field transformation', () => {
       const relatedTo = ['User', 'Property__c']
+      const relationshipName = 'relationship_name'
       const annotations: Values = {
         [API_NAME]: COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME,
         [LABEL]: 'field_label',
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: relatedTo,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: relationshipName,
       }
       const fieldName = COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
       const origObjectType = new ObjectType({
@@ -805,7 +807,7 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, 'Name', 'Restrict', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, relationshipName, 'Restrict', relatedTo)
       })
 
       it('should transform lookup field with no deletion constraint', async () => {
@@ -813,7 +815,7 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, 'Name', 'SetNull', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, relationshipName, 'SetNull', relatedTo)
       })
 
       it('should transform masterdetail field', async () => {
@@ -823,7 +825,7 @@ describe('transformer', () => {
         masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
         const customMasterDetailField = toCustomField(masterDetailField)
         assertCustomFieldTransformation(customMasterDetailField,
-          FIELD_TYPE_NAMES.MASTER_DETAIL, 'Name', undefined, relatedTo)
+          FIELD_TYPE_NAMES.MASTER_DETAIL, relationshipName, undefined, relatedTo)
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
         expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
       })

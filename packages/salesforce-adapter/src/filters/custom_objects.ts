@@ -36,7 +36,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
-  COMPOUND_FIELD_TYPE_NAMES,
+  COMPOUND_FIELD_TYPE_NAMES, INTERNAL_ID_ANNOTATION, INTERNAL_ID_FIELD,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -120,7 +120,7 @@ const CUSTOM_SETTINGS_ONLY_ANNOTATION_TYPE_NAMES = ['customSettingsType', 'apiNa
   'metadataType', 'enableFeeds', 'visibility']
 
 const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fields',
-  INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay']
+  INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay', INTERNAL_ID_FIELD]
 
 const nestedMetadatatypeToReplaceDirName: Record<string, string> = { // <type, new-dir-name>
   [WEBLINK_METADATA_TYPE]: 'ButtonsLinksAndActions',
@@ -765,6 +765,11 @@ const filterCreator: FilterCreator = ({ client, config }) => {
           const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
             ObjectType
           compactLayoutType.fields.fields.type = new ListType(compactLayoutType.fields.fields.type)
+          // internalId is also the name of a field on the custom object instances, therefore
+          // we override it here to have the right type for the annotation.
+          // we don't want to use HIDDEN_STRING as the type for the field because on fields
+          // we can set annotations directly.
+          typesFromInstance[INTERNAL_ID_ANNOTATION] = BuiltinTypes.HIDDEN_STRING
         }
 
         const getAllTypesFromInstance = (): TypeMap => {

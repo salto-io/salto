@@ -133,11 +133,7 @@ export const CUSTOM_SETTINGS_TYPE = 'customSettingsType'
 export const LIST_CUSTOM_SETTINGS_TYPE = 'List'
 export const IS_ATTRIBUTE = 'isAttribute'
 // must have the same name as INTERNAL_ID_FIELD
-// TODO should be state-only once that's supported for annotations (SALTO-910)
 export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
-
-// Temporary list of memory-only annotations, until we support state-only (SALTO-910)
-export const MEMORY_ONLY_ANNOTATIONS = [INTERNAL_ID_ANNOTATION]
 
 // Salesforce annotations
 export const LABEL = 'label'

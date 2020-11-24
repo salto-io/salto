@@ -164,6 +164,7 @@ export const setInternalId = (elem: Element, val: string): void => {
     elem.value[INTERNAL_ID_FIELD] = val
   } else {
     elem.annotations[INTERNAL_ID_ANNOTATION] = val
+    // no need to set the annotation type - already defined
   }
 }
 

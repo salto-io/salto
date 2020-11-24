@@ -20,7 +20,7 @@ import { parser } from '@salto-io/workspace'
 import { strings } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
-import { isObjectType, ObjectType, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { isObjectType, ObjectType, Element, isInstanceElement } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
 import {
@@ -285,21 +285,36 @@ describe('multi env tests', () => {
     })
 
     describe('should have hidden fields in state but not in nacls', () => {
-      let visibleElements: readonly InstanceElement[]
-      let elementsWithHidden: readonly InstanceElement[]
+      let visibleElements: readonly Element[]
+      let elementsWithHidden: readonly Element[]
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
         const workspace = await loadValidWorkspace(baseDir, true)
-        visibleElements = (await workspace.elements(false)).filter(isInstanceElement)
-        elementsWithHidden = (await workspace.elements(true)).filter(isInstanceElement)
+        visibleElements = (await workspace.elements(false))
+        elementsWithHidden = (await workspace.elements(true))
       })
 
       it('not have internalId in visible elements', async () => {
-        expect(visibleElements.some(e => e?.value?.internalId !== undefined)).toEqual(false)
+        expect(visibleElements
+          .filter(isInstanceElement)
+          .some(e => e?.value?.internalId !== undefined)).toEqual(false)
+        expect(visibleElements
+          .filter(isObjectType)
+          .flatMap(e => [e, ...Object.values(e.fields)])
+          .some(e => e?.annotations?.internalId !== undefined)).toEqual(false)
       })
 
       it('have internalId in state', async () => {
-        expect(elementsWithHidden.some(e => e?.value?.internalId !== undefined)).toEqual(true)
+        expect(elementsWithHidden
+          .filter(isInstanceElement)
+          .some(e => e?.value?.internalId !== undefined)).toEqual(true)
+        expect(elementsWithHidden
+          .filter(isObjectType)
+          .some(e => e?.annotations?.internalId !== undefined)).toEqual(true)
+        expect(elementsWithHidden
+          .filter(isObjectType)
+          .flatMap(e => Object.values(e.fields))
+          .some(e => e?.annotations?.internalId !== undefined)).toEqual(true)
       })
     })
   })

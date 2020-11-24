@@ -1321,6 +1321,7 @@ const createIdField = (parent: ObjectType): void => {
     BuiltinTypes.STRING,
     {
       [CORE_ANNOTATIONS.REQUIRED]: false,
+      // TODO change to HIDDEN_VALUE (need to handle upgrade remove+add)
       [CORE_ANNOTATIONS.HIDDEN]: true,
       [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
     }

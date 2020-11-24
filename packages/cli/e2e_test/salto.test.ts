@@ -332,7 +332,7 @@ describe('cli e2e', () => {
     })
 
 
-    it('should not hide Types folder', async () => {
+    it('should hide Types folder', async () => {
       expect(await exists(`${fetchOutputDir}/salesforce/Types`))
         .toBe(false)
     })

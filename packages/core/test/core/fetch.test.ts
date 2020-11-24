@@ -62,6 +62,10 @@ describe('fetch', () => {
         type: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
+      hiddenValue: {
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
     },
     path: ['records', 'hidden'],
   })
@@ -70,6 +74,7 @@ describe('fetch', () => {
     reg: 'reg',
     notHidden: 'notHidden',
     hidden: 'Hidden',
+    hiddenValue: 'hidden val',
   })
 
   // // Workspace elements should not contains hidden values
@@ -259,11 +264,13 @@ describe('fetch', () => {
 
     describe('when the change is only in the service', () => {
       const hiddenChangedVal = 'hiddenChanged'
+      const hiddenValueChangedVal = 'hiddenChanged2'
 
       beforeEach(async () => {
         // the (changed) service instance
         const hiddenInstanceFromService = hiddenInstance.clone()
         hiddenInstanceFromService.value.hidden = hiddenChangedVal
+        hiddenInstanceFromService.value.hiddenValue = hiddenValueChangedVal
         hiddenInstanceFromService.value.notHidden = 'notHiddenChanged'
 
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
@@ -280,13 +287,15 @@ describe('fetch', () => {
       })
 
       it('should return the change with no conflict', () => {
-        expect(changes).toHaveLength(3)
+        expect(changes).toHaveLength(4)
         changes.forEach(c => expect(c.pendingChange).toBeUndefined())
       })
 
       it('shouldn not remove hidden values from changes', () => {
         // changes.forEach(c => expect(isModificationChange(c.change)).toEqual(true))
         expect(changes.some(c => (getChangeElement(c.change)) === hiddenChangedVal))
+          .toBeTruthy()
+        expect(changes.some(c => (getChangeElement(c.change)) === hiddenValueChangedVal))
           .toBeTruthy()
       })
     })

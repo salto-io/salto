@@ -51,19 +51,41 @@ type salesforce.WithAnnotationsBlock {
   annotations {
     string firstAnnotation {
     }
+    hidden_string internalId {
+    }
   }
 }
 
 type salesforce.WithoutAnnotationsBlock {
 }
 
+
 type salesforce.ObjWithHidden {
+  annotations {
+    hidden_string internalId {
+    }
+  }
   number visible {
   }
   string hide {
     ${CORE_ANNOTATIONS.HIDDEN} = true
   }
+  string hide_val {
+    ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
+  }
   number other {
+  }
+}
+
+type salesforce.VisibleObjWithHidden {
+  annotations {
+    hidden_string internalId {
+    }
+  }
+  number visible {
+  }
+  string hide {
+    ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
   }
 }
 
@@ -75,12 +97,17 @@ salesforce.ObjWithHidden instWithHidden {
 type salesforce.ObjWithNestedHidden {
   salesforce.ObjWithHidden nested {
   }
+  salesforce.VisibleObjWithHidden nested_visible {
+  }
   number other {
   }
 }
 
 salesforce.ObjWithNestedHidden instWithNestedHidden {
   other = 1
+  nested_visible = {
+    visible = 111
+  }
 }
 
 type salesforce.ObjWithComplexHidden {
@@ -93,6 +120,59 @@ type salesforce.ObjWithComplexHidden {
 
 salesforce.ObjWithComplexHidden instWithComplexHidden {
   other = 1
+}
+
+type salesforce.ObjWithDoublyNestedHidden {
+  salesforce.ObjWithNestedHidden doubleNest {
+  }
+  salesforce.ObjWithHidden singleNest {
+  }
+  number noNest {
+  }
+  salesforce.ObjWithNestedHidden doubleHiddenVal {
+    ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
+  }
+}
+
+salesforce.ObjWithDoublyNestedHidden instWithDoublyNestedHidden {
+  noNest = 44
+  singleNest = {
+    other = 2
+    visible = 333
+  }
+  doubleNest = {
+    nested = {
+      other = -3
+      visible = 0
+    }
+  }
+}
+
+type salesforce.HiddenVal {
+  ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
+  string something {
+  }
+  number somethingElse {
+  }
+}
+
+type salesforce.HiddenToVisibleVal {
+  ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
+  string something {
+  }
+  number somethingElse {
+  }
+}
+
+type salesforce.NestedHiddenVal {
+  annotations {
+    salesforce.HiddenVal hidden_val_anno {
+    }
+    salesforce.HiddenToVisibleVal hidden_to_visible_anno {
+    }
+  }
+  string visible_val {
+  }
 }
 
 type multi.loc { a = 1 }

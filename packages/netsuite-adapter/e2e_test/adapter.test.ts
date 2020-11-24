@@ -59,9 +59,6 @@ describe('Netsuite adapter E2E with real account', () => {
     credentialsLease = await credsLease()
     const adapterAttr = realAdapter(
       { credentials: credentialsLease.value },
-      // we use the default config in order to test the main users flow. We can comment in the
-      // below row in order to make the test run ~1 minute faster for our small e2e accounts.
-      // { [FETCH_ALL_TYPES_AT_ONCE]: true }
     )
     adapter = adapterAttr.adapter
   })

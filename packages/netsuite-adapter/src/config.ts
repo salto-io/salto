@@ -22,6 +22,7 @@ import {
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, SAVED_SEARCH, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -29,8 +30,49 @@ const { makeArray } = collections.array
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_SDF_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
-export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 12
+export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 20
+export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 30
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
+
+const clientConfigType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'clientConfig'),
+  fields: {
+    [FETCH_ALL_TYPES_AT_ONCE]: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
+      },
+    },
+    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+        }),
+      },
+    },
+    [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+        }),
+      },
+    },
+    [SDF_CONCURRENCY_LIMIT]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_SDF_CONCURRENCY,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+          max: 50,
+        }),
+      },
+    },
+  },
+})
 
 const configID = new ElemID(NETSUITE)
 export const configType = new ObjectType({
@@ -52,47 +94,30 @@ export const configType = new ObjectType({
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
     },
-    [FETCH_ALL_TYPES_AT_ONCE]: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
-      },
-    },
-    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
-      type: BuiltinTypes.NUMBER,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          min: 1,
-        }),
-      },
-    },
     [DEPLOY_REFERENCED_ELEMENTS]: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       },
     },
-    [SDF_CONCURRENCY_LIMIT]: {
-      type: BuiltinTypes.NUMBER,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_SDF_CONCURRENCY,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          min: 1,
-          max: 50,
-        }),
-      },
+    [CLIENT_CONFIG]: {
+      type: clientConfigType,
     },
   },
 })
 
+export type NetsuiteClientConfig = {
+  [FETCH_ALL_TYPES_AT_ONCE]?: boolean
+  [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]?: number
+  [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
+  [SDF_CONCURRENCY_LIMIT]?: number
+}
+
 export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
-  [FETCH_ALL_TYPES_AT_ONCE]?: boolean
-  [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
-  [SDF_CONCURRENCY_LIMIT]?: number
+  [CLIENT_CONFIG]?: NetsuiteClientConfig
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite. '
@@ -102,8 +127,11 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
 // create escaped regex string that will match the new RegExp() input format
 const wrapAsRegex = (str: string): string => `^${_.escapeRegExp(str)}$`
 
-const toConfigSuggestions = (failedToFetchAllAtOnce: boolean, failedTypes: string[],
-  failedFilePaths: string[]): Partial<Record<keyof NetsuiteConfig, Value>> => ({
+const toConfigSuggestions = (
+  failedToFetchAllAtOnce: boolean,
+  failedTypes: string[],
+  failedFilePaths: string[]
+): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof NetsuiteClientConfig, Value>> => ({
   ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
   ...(!_.isEmpty(failedTypes) ? { [TYPES_TO_SKIP]: failedTypes } : {}),
   ...(!_.isEmpty(failedFilePaths)
@@ -118,6 +146,18 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
   if (_.isEmpty(suggestions)) {
     return undefined
   }
+
+  const clientConfigSuggestion = suggestions[FETCH_ALL_TYPES_AT_ONCE] !== undefined
+    ? _.pickBy({
+      [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE],
+      [SDF_CONCURRENCY_LIMIT]: currentConfig[CLIENT_CONFIG]?.[SDF_CONCURRENCY_LIMIT],
+      [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: currentConfig[CLIENT_CONFIG]
+        ?.[MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST],
+      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: currentConfig[CLIENT_CONFIG]
+        ?.[FETCH_TYPE_TIMEOUT_IN_MINUTES],
+    }, values.isDefined)
+    : currentConfig[CLIENT_CONFIG]
+
   return new InstanceElement(
     ElemID.CONFIG_NAME,
     configType,
@@ -126,11 +166,8 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
         .concat(makeArray(suggestions[TYPES_TO_SKIP])),
       [FILE_PATHS_REGEX_SKIP_LIST]: makeArray(currentConfig[FILE_PATHS_REGEX_SKIP_LIST])
         .concat(makeArray(suggestions[FILE_PATHS_REGEX_SKIP_LIST])),
-      [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE]
-        ?? currentConfig[FETCH_ALL_TYPES_AT_ONCE],
       [DEPLOY_REFERENCED_ELEMENTS]: currentConfig[DEPLOY_REFERENCED_ELEMENTS],
-      [SDF_CONCURRENCY_LIMIT]: currentConfig[SDF_CONCURRENCY_LIMIT],
-      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: currentConfig[FETCH_TYPE_TIMEOUT_IN_MINUTES],
+      [CLIENT_CONFIG]: clientConfigSuggestion,
     }, values.isDefined)
   )
 }

@@ -1290,18 +1290,18 @@
   dependencies:
     "@types/node" ">= 8"
 
-"@oracle/suitecloud-cli-localserver-command@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@oracle/suitecloud-cli-localserver-command/-/suitecloud-cli-localserver-command-1.1.0.tgz#ee284ead21c74a93b6e44eabac37550927ce33f3"
-  integrity sha512-ynTZLrpsdajJDx1N3svTlhkV1d54vXYFCwoUg/7NWgms/CgDhmXQRZ62J3xUYr3++H1QVbByUkL5nNwBqdb/sg==
+"@oracle/suitecloud-cli-localserver-command@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@oracle/suitecloud-cli-localserver-command/-/suitecloud-cli-localserver-command-1.1.1.tgz#b1d613efb45c7c64e72cfed80a316c75b97cf19a"
+  integrity sha512-A4aqiu2Y8kNNgSYnanpTdcr0FU0EMU1cN0+oba2pE1uUL+YxKEdpd6JI/oWbWvs61w79AH1pnJQAz91/DlFiMQ==
   dependencies:
     async "3.0.1"
     cors "2.8.5"
     express "4.17.1"
     glob "7.1.4"
-    handlebars "4.5.3"
+    handlebars "4.7.6"
     node-sass "4.12.0"
-    node-watch "0.6.2"
+    node-watch "0.6.3"
     requirejs "2.3.6"
     xml2js "0.4.19"
 
@@ -1328,12 +1328,12 @@
     stacktrace-parser "^0.1.9"
     wu "^2.1.0"
 
-"@salto-io/suitecloud-cli@1.1.0-salto-9":
-  version "1.1.0-salto-9"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.0-salto-9.tgz#3759fa314fd6ec14456d8803c50d4a72c3c7d3a7"
-  integrity sha512-E19wnJ4aZ3endUuN6WLlm5ggfixxTTXAQX14l/R6837TMzLpVVdAjUTpPMxNUF3/vBBZjqrO28U3nJeyeYHiGQ==
+"@salto-io/suitecloud-cli@1.1.2-salto-1":
+  version "1.1.2-salto-1"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-1.tgz#0481cb61599d821cd3359b5b863d3b2a20ed84ac"
+  integrity sha512-7GqioXDSXoFa+FvG4GTk207gtxEQXxnUlsuoZ7n37wXIfkZgwyoxqvcoF0KrYUIT7okbHv9k74NcZiBir18bbQ==
   dependencies:
-    "@oracle/suitecloud-cli-localserver-command" "^1.1.0"
+    "@oracle/suitecloud-cli-localserver-command" "^1.1.1"
     "@salto-io/logging" "0.1.35-master.b11f0d71"
     chalk "^4.0.0"
     cli-spinner "^0.2.10"
@@ -5885,18 +5885,7 @@ growly@^1.3.0:
   resolved "https://registry.yarnpkg.com/growly/-/growly-1.3.0.tgz#f10748cbe76af964b7c96c93c6bcc28af120c081"
   integrity sha1-8QdIy+dq+WS3yWyTxrzCivEgwIE=
 
-handlebars@4.5.3:
-  version "4.5.3"
-  resolved "https://registry.yarnpkg.com/handlebars/-/handlebars-4.5.3.tgz#5cf75bd8714f7605713511a56be7c349becb0482"
-  integrity sha512-3yPecJoJHK/4c6aZhSvxOyG4vJKDshV36VHp0iVCDVh7o9w2vwi3NSnL2MMPj3YdduqaBcu7cGbggJQM0br9xA==
-  dependencies:
-    neo-async "^2.6.0"
-    optimist "^0.6.1"
-    source-map "^0.6.1"
-  optionalDependencies:
-    uglify-js "^3.1.4"
-
-handlebars@^4.7.6:
+handlebars@4.7.6, handlebars@^4.7.6:
   version "4.7.6"
   resolved "https://registry.yarnpkg.com/handlebars/-/handlebars-4.7.6.tgz#d4c05c1baf90e9945f77aa68a7a219aa4a7df74e"
   integrity sha512-1f2BACcBfiwAfStCKZNrUCgqNZkGsAT7UM3kkYtXuLo0KnaVfjKOyf7PRzB6++aK9STyT1Pd2ZCPe3EGOXleXA==
@@ -8228,11 +8217,6 @@ minimist@^1.1.1, minimist@^1.1.3, minimist@^1.2.0, minimist@^1.2.5:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
   integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
 
-minimist@~0.0.1:
-  version "0.0.10"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-0.0.10.tgz#de3f98543dbf96082be48ad1a0c7cda836301dcf"
-  integrity sha1-3j+YVD2/lggr5IrRoMfNqDYwHc8=
-
 minipass@^2.3.5, minipass@^2.6.0, minipass@^2.8.6, minipass@^2.9.0:
   version "2.9.0"
   resolved "https://registry.yarnpkg.com/minipass/-/minipass-2.9.0.tgz#e713762e7d3e32fed803115cf93e04bca9fcc9a6"
@@ -8614,10 +8598,10 @@ node-sass@4.12.0:
     stdout-stream "^1.4.0"
     "true-case-path" "^1.0.2"
 
-node-watch@0.6.2:
-  version "0.6.2"
-  resolved "https://registry.yarnpkg.com/node-watch/-/node-watch-0.6.2.tgz#48fd517b527ec21ac4f5f981aad2a6ddebc0131c"
-  integrity sha512-qmb/2ehVk1DC4gZYox7JgWXNucKnVk7uQmcoSeRaC7kzXsT8VOPIe7mbrR9Vc2TpGggS2yGUcgC98A2fKE53AA==
+node-watch@0.6.3:
+  version "0.6.3"
+  resolved "https://registry.yarnpkg.com/node-watch/-/node-watch-0.6.3.tgz#9abf739ae0638435be6c0d1c99d4dc2e53df7317"
+  integrity sha512-InVPsg51EemnMVH3fvrrSVgqVBMlksZ/mK7ZDWx/NuWdNQi28wcVJX1/BP38alraPFXbRi9jZ35OfK4Ra7l8Bg==
 
 nodemailer@^6.4.8:
   version "6.4.10"
@@ -8928,14 +8912,6 @@ opn@^5.3.0:
   integrity sha512-PqHpggC9bLV0VeWcdKhkpxY+3JTzetLSqTCWL/z/tFIbI6G8JCjondXklT1JinczLz2Xib62sSp0T/gKT4KksA==
   dependencies:
     is-wsl "^1.1.0"
-
-optimist@^0.6.1:
-  version "0.6.1"
-  resolved "https://registry.yarnpkg.com/optimist/-/optimist-0.6.1.tgz#da3ea74686fa21a19a111c326e90eb15a0196686"
-  integrity sha1-2j6nRob6IaGaERwybpDrFaAZZoY=
-  dependencies:
-    minimist "~0.0.1"
-    wordwrap "~0.0.2"
 
 optionator@^0.8.1, optionator@^0.8.3:
   version "0.8.3"
@@ -12134,11 +12110,6 @@ wordwrap@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/wordwrap/-/wordwrap-1.0.0.tgz#27584810891456a4171c8d0226441ade90cbcaeb"
   integrity sha1-J1hIEIkUVqQXHI0CJkQa3pDLyus=
-
-wordwrap@~0.0.2:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/wordwrap/-/wordwrap-0.0.3.tgz#a3d5da6cd5c0bc0008d37234bbaf1bed63059107"
-  integrity sha1-o9XabNXAvAAI03I0u68b7WMFkQc=
 
 worker-farm@^1.7.0:
   version "1.7.0"

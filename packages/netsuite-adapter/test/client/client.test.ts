@@ -143,11 +143,6 @@ describe('netsuite client', () => {
   })
 
   describe('getCustomObjects', () => {
-    let client: NetsuiteClient
-    beforeEach(() => {
-      client = mockClient()
-    })
-
     it('should fail when CREATE_PROJECT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.CREATE_PROJECT) {
@@ -155,7 +150,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.getCustomObjects(typeNames, true, 1)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -168,7 +163,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.getCustomObjects(typeNames, true, 1)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -182,7 +177,8 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, true, 1)
+      const client = mockClient({ fetchAllTypesAtOnce: true })
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames)
       const numberOfCallsToImport = typeNames.length + 1 // 1 stands for import 'ALL'
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
@@ -206,7 +202,8 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, false, 1)
+      const client = mockClient({ fetchAllTypesAtOnce: false })
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames)
       const numberOfCallsToImport = typeNames.length
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
@@ -236,7 +233,8 @@ describe('netsuite client', () => {
       const typesToFetch = [
         CUSTOM_RECORD_TYPE, ENTRY_FORM, ROLE, SAVED_SEARCH, TRANSACTION_FORM, WORKFLOW,
       ]
-      await client.getCustomObjects(typesToFetch, false, 1)
+      const client = mockClient({ fetchAllTypesAtOnce: false })
+      await client.getCustomObjects(typesToFetch)
       const numberOfCallsToImport = typesToFetch.length
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         numberOfCallsToImport + 3 /* createProject & setupAccount & deleteAuthId */
@@ -266,7 +264,8 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const getCustomObjectsResult = await client.getCustomObjects(typesToFetch, false, 0.001)
+      const client = mockClient({ fetchAllTypesAtOnce: false, fetchTypeTimeoutInMinutes: 0.001 })
+      const getCustomObjectsResult = await client.getCustomObjects(typesToFetch)
       expect(getCustomObjectsResult.failedTypes).toEqual(['Long'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
     })
@@ -285,15 +284,19 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const getCustomObjectsResult = await client.getCustomObjects(typesToFetch, true, 0.0001)
+      const client = mockClient({ fetchAllTypesAtOnce: true, fetchTypeTimeoutInMinutes: 0.0001 })
+      const getCustomObjectsResult = await client.getCustomObjects(typesToFetch)
       expect(getCustomObjectsResult.failedTypes).toEqual([])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
     })
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const { elements: customizationInfos, failedToFetchAllAtOnce, failedTypes } = await client
-        .getCustomObjects(typeNames, true, 1)
+      const {
+        elements: customizationInfos,
+        failedToFetchAllAtOnce,
+        failedTypes,
+      } = await mockClient().getCustomObjects(typeNames)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toHaveLength(0)
       expect(readDirMock).toHaveBeenCalledTimes(1)

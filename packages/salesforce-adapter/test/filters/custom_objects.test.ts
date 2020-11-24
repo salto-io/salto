@@ -600,7 +600,7 @@ describe('Custom Objects filter', () => {
         expect(lead.fields.SystemField.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(lead.fields.SystemField.annotations[FIELD_ANNOTATIONS.CREATABLE]).toBeFalsy()
         expect(lead.fields.SystemField.annotations[FIELD_ANNOTATIONS.UPDATEABLE]).toBeFalsy()
-        expect(lead.fields.SystemField.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+        expect(lead.fields.SystemField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
       })
 
       it('should fetch sobject with nameField system fields with original required/createable/updateable values', async () => {

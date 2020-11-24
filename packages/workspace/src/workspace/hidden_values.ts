@@ -46,8 +46,15 @@ const splitElementHiddenParts = <T extends Element>(
   }
 
   const hiddenPaths: ElemID[] = []
+
+  // There are two "hidden" annotations - _hidden, and _hidden_value.
+  // If this is an instance, the field belongs to the type so we want to check if
+  // the field is marked as _hidden_value.
+  // Otherwise, we're looking for either a _hidden annotation on the element,
+  // or a _hidden_value annotation on its type definition.
+  const hiddenFunc = isInstanceElement(element) ? isHiddenValue : isHidden
   const removeHiddenAndStorePath: TransformFunc = ({ value, field, path }) => {
-    if (isHidden(field)) {
+    if (hiddenFunc(field)) {
       if (path !== undefined) {
         hiddenPaths.push(path)
       }
@@ -104,14 +111,18 @@ export const mergeWithHidden = (
   return mergeElements([...workspaceElements, ...hiddenElements])
 }
 
-const removeHiddenValue: TransformFunc = ({ value, field }) => (
+const removeHidden: TransformFunc = ({ value, field }) => (
   isHidden(field) ? undefined : value
+)
+
+const removeHiddenValue: TransformFunc = ({ value, field }) => (
+  isHiddenValue(field) ? undefined : value
 )
 
 const removeHiddenFromElement = <T extends Element>(element: T): T => (
   transformElement({
     element,
-    transformFunc: removeHiddenValue,
+    transformFunc: isInstanceElement(element) ? removeHiddenValue : removeHidden,
     strict: false,
   })
 )
@@ -143,10 +154,10 @@ const isHiddenChangeOnElement = (change: DetailedChange, hiddenValue: boolean): 
   && (isChangeToHidden(change, hiddenValue) || isChangeToNotHidden(change, hiddenValue))
 )
 
-const isHiddenChangeOnField = (change: DetailedChange, hiddenValue: boolean): boolean => (
+const isHiddenChangeOnField = (change: DetailedChange): boolean => (
   change.id.idType === 'field'
   && change.id.nestingLevel === 2
-  && (isChangeToHidden(change, hiddenValue) || isChangeToNotHidden(change, hiddenValue))
+  && (isChangeToHidden(change, true) || isChangeToNotHidden(change, true))
 )
 
 /**
@@ -187,15 +198,11 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   state: State,
   getWorkspaceElements: () => Promise<Element[]>,
 ): Promise<DetailedChange[]> => {
-  // TODO checking both _hidden and _hidden_value for backward compatibility in calls to
-  // isHiddenChangeOnField and isChangeToHidden - should change to
-  //  1. only hide values when _hidden_value=true
-  //  2. hide fields marked with _hidden=true
-  // once all existing usages of _hidden for hiding values are eliminated
-  // (all current scenarios of 2 are intended only to hide the value).
-  const hiddenFieldChanges = changes.filter(c =>
-    isHiddenChangeOnField(c, true) || isHiddenChangeOnField(c, false)
-    || isHiddenChangeOnElement(c, true))
+  // TODO hide fields marked with _hidden=true
+
+  const hiddenFieldChanges = changes.filter(
+    c => isHiddenChangeOnField(c) || isHiddenChangeOnElement(c, true)
+  )
   if (hiddenFieldChanges.length === 0) {
     // This should be the common case where there are no changes to the hidden annotation
     return []
@@ -203,8 +210,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
 
   const [hideFieldChanges, unHideFieldChanges] = _.partition(
     hiddenFieldChanges,
-    // TODO should only check _hidden_value (true)
-    c => isChangeToHidden(c, true) || isChangeToHidden(c, false),
+    c => isChangeToHidden(c, true),
   )
   const hideFieldIds = new Set(
     hideFieldChanges.map(change => change.id.createParentID().getFullName())
@@ -296,12 +302,17 @@ const mergeWithHiddenChangeSideEffects = async (
     : removeDuplicateChanges(changes, additionalChanges)
 }
 
-const isHiddenField = (baseType: TypeElement, fieldPath: ReadonlyArray<string>): boolean => (
-  fieldPath.length === 0
+const isHiddenField = (
+  baseType: TypeElement,
+  fieldPath: ReadonlyArray<string>,
+  hiddenValue: boolean,
+): boolean => {
+  const hiddenFunc = hiddenValue ? isHiddenValue : isHidden
+  return fieldPath.length === 0
     ? false
-    : isHidden(getField(baseType, fieldPath))
-      || isHiddenField(baseType, fieldPath.slice(0, -1))
-)
+    : hiddenFunc(getField(baseType, fieldPath))
+      || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue)
+}
 
 const filterOutHiddenChanges = async (
   changes: DetailedChange[],
@@ -370,7 +381,7 @@ const filterOutHiddenChanges = async (
         return undefined
       }
 
-      if (isHiddenField(changeType, changePath)) {
+      if (isHiddenField(changeType, changePath, isInstanceElement(baseElem))) {
         // The change is inside a hidden field value, omit the change
         return undefined
       }

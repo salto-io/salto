@@ -28,6 +28,7 @@ export class EditorWorkspace {
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
   private wsElements?: Promise<readonly Element[]>
+  private wsErrors?: Promise<Readonly<errors.Errors>>
 
   constructor(public baseDir: string, workspace: Workspace) {
     this.workspace = workspace
@@ -41,7 +42,10 @@ export class EditorWorkspace {
   }
 
   errors(): Promise<errors.Errors> {
-    return this.workspace.errors()
+    if (_.isUndefined(this.wsErrors)) {
+      this.wsErrors = this.workspace.errors()
+    }
+    return this.wsErrors
   }
 
   private workspaceFilename(filename: string): string {
@@ -100,6 +104,7 @@ export class EditorWorkspace {
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       this.wsElements = undefined
+      this.wsErrors = undefined
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
         await this.workspace.removeNaclFiles(...opDeletes)

@@ -15,6 +15,8 @@
 */
 import wu from 'wu'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { hash } from '@salto-io/lowerdash'
+import each from 'jest-each'
 import { mockDirStore } from '../common/nacl_file_store'
 import { parseResultCache } from '../../src/workspace/cache'
 import * as serializer from '../../src/serializer/elements'
@@ -42,14 +44,27 @@ describe('parseResultCache', () => {
       byte: 4,
     },
   })
-  const parseResult = {
+
+  const mockCacheFileContent = 'content'
+  const mockCacheFileMD5 = hash.toMD5(mockCacheFileContent)
+
+  const parseResultWithoutMD5 = {
     elements: [dummyObjectType],
     errors: [],
     sourceMap,
   }
-  const mockSerializedCacheFile = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
+
+  const parseResult = {
+    ...parseResultWithoutMD5,
+    metadata: { md5: mockCacheFileMD5 },
+  }
+
+  const mockSerializedCacheFileWithoutMD5 = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
 []
 [["salesforce.dummy",[{"filename":"dummy.nacl","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
+
+  const mockSerializedCacheFile = `${mockSerializedCacheFileWithoutMD5}
+{"md5":"${mockCacheFileMD5}"}`
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -61,6 +76,7 @@ describe('parseResultCache', () => {
     it('writes a content with the right filename', async () => {
       await cache.put({
         filename: 'blabla/blurprint.nacl',
+        buffer: mockCacheFileContent,
         lastModified: 0,
       }, parseResult)
       expect(dirStore.set as jest.Mock)
@@ -71,6 +87,7 @@ describe('parseResultCache', () => {
       jest.spyOn(serializer, 'serialize')
       await cache.put({
         filename: 'blabla/blurprint.nacl',
+        buffer: 'buffer',
         lastModified: 0,
       }, parseResult)
       expect((serializer.serialize as jest.Mock).mock.calls.length).toBe(1)
@@ -79,11 +96,14 @@ describe('parseResultCache', () => {
   })
 
   describe('get', () => {
-    it('tries to read the file if exists and newer', async () => {
-      dirStoreGet.mockResolvedValue({ buffer: mockSerializedCacheFile })
+    each([
+      ['', mockSerializedCacheFile],
+      [' without md5', mockSerializedCacheFileWithoutMD5],
+    ]).it('tries to read the file if exists and newer%s', async (_text, serializedCacheFile) => {
+      dirStoreGet.mockResolvedValue({ buffer: serializedCacheFile })
       dirStoreMtimestamp.mockResolvedValue(1)
       const parseResultFromCache = await cache
-        .get({ filename: 'blabla/blurprint3.nacl', lastModified: 0 })
+        .get({ filename: 'blabla/blurprint3.nacl', buffer: 'buffer', lastModified: 0 })
       expect(parseResultFromCache).toBeDefined()
       if (parseResultFromCache !== undefined) {
         expect(parseResultFromCache.elements[0].elemID.name).toBe(
@@ -104,22 +124,47 @@ describe('parseResultCache', () => {
       dirStoreGet.mockResolvedValue(undefined)
       dirStoreMtimestamp.mockResolvedValue(1)
       const parseResultFromCache = await cache
-        .get({ filename: 'blabla/notexist.nacl', lastModified: 0 })
+        .get({ filename: 'blabla/notexist.nacl', buffer: 'buffer', lastModified: 0 })
       expect(parseResultFromCache).toBeUndefined()
     })
 
-    it('does not return the file if it nacl file timestamp is later', async () => {
+    it('does not return the file if it nacl file timestamp is later and content changed', async () => {
       (dirStore.mtimestamp as jest.Mock).mockResolvedValue(4000)
+      dirStoreGet.mockResolvedValue({ buffer: mockSerializedCacheFile })
       const parseResultFromCache = await cache
-        .get({ filename: 'blabla/blurprint2.nacl', lastModified: 4000 })
+        .get({ filename: 'blabla/blurprint2.nacl', buffer: 'buffer', lastModified: 5000 })
       expect(parseResultFromCache).toBeUndefined()
+    })
+
+    it('does not return the file if it nacl file timestamp is later and there is no metadata', async () => {
+      (dirStore.mtimestamp as jest.Mock).mockResolvedValue(4000)
+      dirStoreGet.mockResolvedValue({ buffer: mockSerializedCacheFileWithoutMD5 })
+      const parseResultFromCache = await cache
+        .get({ filename: 'blabla/blurprint2.nacl', buffer: 'buffer', lastModified: 5000 })
+      expect(parseResultFromCache).toBeUndefined()
+    })
+
+    it('does not return the file if it nacl file timestamp is later and key does not contain buffer', async () => {
+      (dirStore.mtimestamp as jest.Mock).mockResolvedValue(4000)
+      dirStoreGet.mockResolvedValue({ buffer: mockSerializedCacheFile })
+      const parseResultFromCache = await cache
+        .get({ filename: 'blabla/blurprint2.nacl', lastModified: 5000 })
+      expect(parseResultFromCache).toBeUndefined()
+    })
+
+    it('return the file if it nacl file timestamp is later but the content is the same', async () => {
+      (dirStore.mtimestamp as jest.Mock).mockResolvedValue(4000)
+      dirStoreGet.mockResolvedValue({ buffer: mockSerializedCacheFile })
+      const parseResultFromCache = await cache
+        .get({ filename: 'blabla/blurprint2.nacl', buffer: mockCacheFileContent, lastModified: 5000 })
+      expect(parseResultFromCache).toBeDefined()
     })
 
     it('gracefully handles an invalid cache file content', async () => {
       dirStoreGet.mockResolvedValue({ buffer: '[]]' })
       dirStoreMtimestamp.mockResolvedValue(1)
       const parseResultFromCache = await cache
-        .get({ filename: 'blabla/malformed.nacl', lastModified: 0 })
+        .get({ filename: 'blabla/malformed.nacl', buffer: 'buffer', lastModified: 0 })
       expect(parseResultFromCache).toBeUndefined()
     })
   })

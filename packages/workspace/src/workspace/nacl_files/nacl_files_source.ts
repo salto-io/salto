@@ -43,6 +43,7 @@ const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
 
+
 export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
@@ -101,9 +102,11 @@ type NaclFilesState = {
   readonly referencedIndex: Record<string, string[]>
 }
 
-const cacheResultKey = (filename: string, timestamp?: number): ParseResultKey => ({
-  filename,
-  lastModified: timestamp ?? Date.now(),
+const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer?: string }):
+ ParseResultKey => ({
+  filename: naclFile.filename,
+  lastModified: naclFile.timestamp ?? Date.now(),
+  buffer: naclFile.buffer,
 })
 
 const getTypeOrContainerTypeID = (typeElem: TypeElement): ElemID => (isContainerType(typeElem)
@@ -157,7 +160,7 @@ const parseNaclFile = async (
   naclFile: NaclFile, cache: ParseResultCache, functions: Functions
 ): Promise<Required<ParseResult>> => {
   const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename, functions)
-  const key = cacheResultKey(naclFile.filename)
+  const key = cacheResultKey(naclFile)
   await cache.put(key, parseResult)
   return parseResult
 }
@@ -166,7 +169,7 @@ const parseNaclFiles = async (
   naclFiles: NaclFile[], cache: ParseResultCache, functions: Functions
 ): Promise<ParsedNaclFile[]> =>
   withLimitedConcurrency(naclFiles.map(naclFile => async () => {
-    const key = cacheResultKey(naclFile.filename, naclFile.timestamp)
+    const key = cacheResultKey(naclFile)
     const cachedResult = await cache.get(key)
     return cachedResult
       ? toParsedNaclFile(naclFile, cachedResult)
@@ -255,6 +258,7 @@ const buildNaclFilesSource = (
   const createNaclFileFromChange = async (
     filename: string,
     change: AdditionDiff<Element>,
+    fileData: string,
   ): Promise<ParsedNaclFile> => {
     const elements = [(change as AdditionDiff<Element>).data.after]
     const parsed = {
@@ -264,7 +268,9 @@ const buildNaclFilesSource = (
       errors: [],
       referenced: elements.flatMap(getElementReferenced),
     }
-    const key = cacheResultKey(parsed.filename, parsed.timestamp)
+    const key = cacheResultKey({ filename: parsed.filename,
+      buffer: fileData,
+      timestamp: parsed.timestamp })
     await cache.put(key, { elements, errors: [] })
     return parsed
   }
@@ -308,7 +314,7 @@ const buildNaclFilesSource = (
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
-    const key = cacheResultKey(parsedNaclFile.filename, parsedNaclFile.timestamp)
+    const key = cacheResultKey(parsedNaclFile)
     const cachedResult = await cache.get(key)
     if (cachedResult && cachedResult.sourceMap) {
       return cachedResult.sourceMap
@@ -383,7 +389,8 @@ const buildNaclFilesSource = (
               && fileChanges[0].action === 'add'
               && isElement(fileChanges[0].data.after)
             const parsed = shouldNotParse
-              ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>)
+              ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>,
+                buffer)
               : toParsedNaclFile({ filename, buffer },
                 await parseNaclFile({ filename, buffer }, cache, functions))
             if (parsed.errors.length > 0) {

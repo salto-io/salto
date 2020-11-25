@@ -14,10 +14,19 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
+
+import { values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ParseResult, ParseError, SourceMap } from '../parser'
 import * as elementSerializer from './elements'
 
+export type ParseResultMetadata = {
+  md5: string
+}
+
+type SerializeableParseResult = ParseResult & {
+  metadata?: ParseResultMetadata
+}
 
 const serializeErrors = (errors: ParseError[]): string =>
   safeJsonStringify(errors)
@@ -26,13 +35,14 @@ const serializeSourceMap = (sourceMap: SourceMap): string => (
   safeJsonStringify(Array.from(sourceMap.entries()))
 )
 
-export const serialize = (parseResult: ParseResult): string => [
+export const serialize = (parseResult: SerializeableParseResult): string => [
   // When serializing for the cache, keep reference expressions
   // since the idea is to reflect the nacl files, not the state file.
   elementSerializer.serialize(parseResult.elements, 'keepRef'),
   serializeErrors(parseResult.errors),
   parseResult.sourceMap ? serializeSourceMap(parseResult.sourceMap) : undefined,
-].filter(line => line !== undefined).join(EOL)
+  JSON.stringify(parseResult.metadata),
+].join(EOL)
 
 const deserializeParseErrors = (data: string): ParseError[] =>
   JSON.parse(data)
@@ -53,4 +63,14 @@ export const deserialize = async (
     elements,
     sourceMap: sourceMapData ? deserializeSourceMap(sourceMapData) : undefined,
   }
+}
+
+export const deserializeMetadata = (
+  data: string,
+): ParseResultMetadata | undefined => {
+  // We seperate the deserialization of the metadata from the rest of the object to prevent
+  // unessecery desirialization of the rest of the object since the metadata of the object can be
+  // used to determine whether the deserialization of the rest of the object is even necessery
+  const metadata = data.split(EOL)[3]
+  return values.isDefined(metadata) ? JSON.parse(metadata) : undefined
 }

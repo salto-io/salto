@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { hash } from '@salto-io/lowerdash'
 import { ParseResult } from '../parser'
 import * as parseResultSerializer from '../serializer/parse_result'
-import { DirectoryStore } from './dir_store'
+import { ContentType, DirectoryStore } from './dir_store'
 import { StaticFilesSource } from './static_files'
 
 const log = logger(module)
@@ -32,6 +33,7 @@ type AsyncCache<K, V> = {
 export type ParseResultKey = {
   filename: string
   lastModified: number
+  buffer?: ContentType
 }
 
 export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> & {
@@ -41,6 +43,18 @@ export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> & {
   rename: (name: string) => Promise<void>
 }
 
+const doesBufferMatchCachedMD5 = (buffer: ContentType | undefined,
+  serializedResult: string): boolean => {
+  if (_.isUndefined(buffer)) {
+    return false
+  }
+  const metadata = parseResultSerializer.deserializeMetadata(serializedResult)
+  if (_.isUndefined(metadata)) {
+    return false
+  }
+  return hash.toMD5(buffer) === metadata.md5
+}
+
 export const parseResultCache = (
   dirStore: DirectoryStore<string>, staticFilesSource: StaticFilesSource
 ): ParseResultCache => {
@@ -48,27 +62,34 @@ export const parseResultCache = (
     _.replace(key.filename, /.nacl$/, CACHE_EXTENSION)
 
   return {
-    put: async (key: ParseResultKey, value: ParseResult): Promise<void> =>
+    put: async (key: Required<ParseResultKey>, value: ParseResult): Promise<void> => {
       dirStore.set({
         filename: resolveCacheFileName(key),
-        buffer: parseResultSerializer.serialize(value),
-      }),
+        buffer: parseResultSerializer.serialize({ ...value,
+          metadata: { md5: hash.toMD5(key.buffer) } }),
+      })
+    },
 
     get: async (key: ParseResultKey): Promise<ParseResult | undefined> => {
       const cacheFileName = resolveCacheFileName(key)
-      const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
-      if ((cacheTimeMs > key.lastModified) || (cacheTimeMs === key.lastModified)) {
+      try {
         const file = await dirStore.get(cacheFileName)
-        try {
-          return file === undefined
-            ? undefined
-            : await parseResultSerializer.deserialize(
-              file.buffer,
-              val => staticFilesSource.getStaticFile(val.filepath, val.encoding)
-            )
-        } catch (err) {
-          log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)
+
+        if (file === undefined) {
+          return undefined
         }
+
+        const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
+
+        if (cacheTimeMs >= key.lastModified
+          || doesBufferMatchCachedMD5(key.buffer, file.buffer)) {
+          return await parseResultSerializer.deserialize(
+            file.buffer,
+            val => staticFilesSource.getStaticFile(val.filepath, val.encoding)
+          )
+        }
+      } catch (err) {
+        log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)
       }
       return undefined
     },

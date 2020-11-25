@@ -15,6 +15,7 @@
 */
 import wu from 'wu'
 import * as path from 'path'
+import { hash } from '@salto-io/lowerdash'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { stat, mkdirp, replaceContents, readFile, exists } from '@salto-io/file'
 import { parseCache, parser, staticFiles } from '@salto-io/workspace'
@@ -66,14 +67,21 @@ describe('localParseResultCache', () => {
       byte: 4,
     },
   })
+
+  const mockCacheFileContent = 'content'
+
   const parseResult = {
     elements: [dummyObjectType],
     errors: [],
     sourceMap,
   }
-  const mockSerializedCacheFile = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
+
+  const mockSerializedCacheFileWithoutMD5 = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
 []
 [["salesforce.dummy",[{"filename":"dummy.nacl","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
+
+  const mockSerializedCacheFile = `${mockSerializedCacheFileWithoutMD5}
+{"md5":"${hash.toMD5(mockCacheFileContent)}"}`
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -89,6 +97,7 @@ describe('localParseResultCache', () => {
     it('writes a content with the right filename', async () => {
       await cache.put({
         filename: 'blabla/blurprint.nacl',
+        buffer: mockCacheFileContent,
         lastModified: 0,
       }, parseResult)
       expect(mkdirp).not.toHaveBeenCalled()
@@ -103,7 +112,7 @@ describe('localParseResultCache', () => {
   describe('get', () => {
     it('tries to read the file if exists and newer', async () => {
       mockFileExists.mockResolvedValueOnce(true)
-      const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint3.nacl', lastModified: 0 })
+      const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint3.nacl', buffer: 'buffer', lastModified: 0 })
       expect(parseResultFromCache).toBeDefined()
       const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/blurprint3.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(expectedCacheFileName)
@@ -126,23 +135,23 @@ describe('localParseResultCache', () => {
 
     it('does not return the file if it does not exist', async () => {
       const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/notexist.jsonl')
-      const parseResultFromCache = await cache.get({ filename: 'blabla/notexist.nacl', lastModified: 0 })
+      const parseResultFromCache = await cache.get({ filename: 'blabla/notexist.nacl', buffer: 'buffer', lastModified: 0 })
       expect(exists).toHaveBeenLastCalledWith(expectedCacheFileName)
       expect(readFile).not.toHaveBeenCalled()
       expect(parseResultFromCache).toBeUndefined()
     })
 
-    it('does not return the file if it nacl file timestamp is later', async () => {
+    it('does not return the file if it nacl file timestamp is later and content changed', async () => {
       mockFileExists.mockResolvedValueOnce(true)
-      const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint2.nacl', lastModified: 4000 })
+      const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint2.nacl', buffer: 'buffer', lastModified: 4000 })
       const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/blurprint2.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenLastCalledWith(expectedCacheFileName)
-      expect(readFile).not.toHaveBeenCalled()
       expect(parseResultFromCache).toBeUndefined()
     })
     it('gracefully handles an invalid cache file content', async () => {
+      mockFileExists.mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce('[]]')
-      const parseResultFromCache = await cache.get({ filename: 'blabla/malformed.nacl', lastModified: 0 })
+      const parseResultFromCache = await cache.get({ filename: 'blabla/malformed.nacl', buffer: 'buffer', lastModified: 0 })
       const mockMalformedCacheLoc = path.resolve(mockBaseDirPath, 'blabla/malformed.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(mockMalformedCacheLoc)
       expect(readFile).toHaveBeenCalledWith(mockMalformedCacheLoc, { encoding: 'utf8' })

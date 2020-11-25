@@ -23,20 +23,13 @@ import { registerTestFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
-import { SourceRange, parse, ParseError, SourceMap } from '../../src/parser'
-import { HclParseError } from '../../src/parser/internal/types'
+import { SourceRange, parse, SourceMap } from '../../src/parser'
 
 const funcName = 'funcush'
 
 let functions: Functions
-/* each([true, false]). */describe('Salto parser', (/* useLegacyParser: boolean */) => {
-  const useLegacyParser = false
+describe('Salto parser', () => {
   beforeAll(() => {
-    if (!useLegacyParser) {
-      process.env.USE_NATIVE_PARSER = '1'
-    } else {
-      delete process.env.USE_NATIVE_PARSER
-    }
     functions = registerTestFunction(funcName)
   })
   describe('primitive, model and extensions', () => {
@@ -663,9 +656,7 @@ let functions: Functions
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = useLegacyParser
-        ? 'expected keyword is. found string'
-        : 'invalid type definition'
+      const expectedErrMsg = 'invalid type definition'
       expect(result.errors[0].summary).toEqual(expectedErrMsg)
     })
 
@@ -677,9 +668,7 @@ let functions: Functions
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = useLegacyParser
-        ? 'Unexpected token: :'
-        : 'Invalid block item'
+      const expectedErrMsg = 'Invalid block item'
       expect(result.errors[0].summary).toEqual(expectedErrMsg)
     })
   })
@@ -688,87 +677,5 @@ let functions: Functions
     const body = 'bla'
     const result = await parse(Buffer.from(body), 'none', functions)
     expect(result.errors).not.toHaveLength(0)
-  })
-  describe('Advanced error tests', () => {
-    let errors: HclParseError[]
-    const src = `
-    type salesforce.AnimationRule {
-      annotations {
-        serviceid metadataType {
-        }
-      }
-      serviceid fullName {
-        _required = false
-      }
-      string animationFrequency {
-        _required = false
-        _values = [
-            "always",
-            "often",
-            "rarely",
-            "sometimes",
-        ]
-        _restriction = {
-            enforce_value = fal se e
-        }
-      }
-      string developerName {
-        _required = falsee
-      }
-      boolean isActive {
-        _required = false
-      }
-    }
-    `
-    // Irrelevant for the new parser - which is tested in more details in errors.ts
-    if (useLegacyParser) {
-      beforeAll(async () => {
-        const result = await parse(Buffer.from(src), 'none', functions)
-        errors = result.errors
-      })
-      it('should have 2 errors', () => {
-        expect(errors.length).toEqual(2) // This verifies the filter heuristics for the errors.
-      })
-      it('should contain correct first error info', () => {
-        const error = (errors[0] as ParseError)
-        expect(error.subject.start.line).toEqual(19)
-        expect(error.subject.start.col).toEqual(36)
-        expect(error.subject.start.byte).toEqual(409)
-        expect(error.subject.end.line).toEqual(19)
-        expect(error.subject.end.col).toEqual(37)
-        expect(error.subject.end.byte).toEqual(410)
-        expect(error.subject.filename).toEqual('none')
-        expect(error.context.start.line).toEqual(17)
-        expect(error.context.start.col).toEqual(0)
-        expect(error.context.start.byte).toEqual(339)
-        expect(error.context.end.line).toEqual(21)
-        expect(error.context.end.col).toEqual(8)
-        expect(error.context.end.byte).toEqual(428)
-        expect(error.context.filename).toEqual('none')
-        expect(error.message).toEqual('Expected ws, comment or = token but found instead: e.')
-        expect(error.summary).toEqual('Unexpected token: e')
-        expect(error.severity).toEqual('Error')
-      })
-      it('should contain correct second error info', () => {
-        const error = (errors[1] as ParseError)
-        expect(error.subject.start.line).toEqual(23)
-        expect(error.subject.start.col).toEqual(26)
-        expect(error.subject.start.byte).toEqual(483)
-        expect(error.subject.end.line).toEqual(23)
-        expect(error.subject.end.col).toEqual(27)
-        expect(error.subject.end.byte).toEqual(484)
-        expect(error.subject.filename).toEqual('none')
-        expect(error.context.start.line).toEqual(21)
-        expect(error.context.start.col).toEqual(0)
-        expect(error.context.start.byte).toEqual(421)
-        expect(error.context.end.line).toEqual(25)
-        expect(error.context.end.col).toEqual(25)
-        expect(error.context.end.byte).toEqual(517)
-        expect(error.context.filename).toEqual('none')
-        expect(error.message).toEqual('Expected ws, ws, comment or } token but found instead: e.')
-        expect(error.summary).toEqual('Unexpected token: e')
-        expect(error.severity).toEqual('Error')
-      })
-    }
   })
 })

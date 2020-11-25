@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression, isListType, MapType,
+  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
@@ -304,7 +304,7 @@ describe('Salto Dump', () => {
     it('can be parsed back', async () => {
       const result = await parse(Buffer.from(body), 'none', functions)
       const { elements, errors } = result
-      const [listTypes, nonListElements] = _.partition(elements, e => isListType(e))
+      const [listTypes, nonListElements] = _.partition(elements, e => isContainerType(e))
       expect(errors).toHaveLength(0)
       expect(elements).toHaveLength(13)
       expect(nonListElements[0]).toEqual(strType)
@@ -314,15 +314,15 @@ describe('Salto Dump', () => {
       TestHelpers.expectTypesToMatch(nonListElements[4] as TypeElement, model)
       TestHelpers.expectTypesToMatch(listTypes[0] as ListType, model.fields.list.type)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[6] as InstanceElement, instance)
+        .expectInstancesToMatch(nonListElements[5] as InstanceElement, instance)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[7] as InstanceElement, config)
+        .expectInstancesToMatch(nonListElements[6] as InstanceElement, config)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[8] as InstanceElement, instanceStartsWithNumber)
+        .expectInstancesToMatch(nonListElements[7] as InstanceElement, instanceStartsWithNumber)
       TestHelpers
-        .expectInstancesToMatch(nonListElements[9] as InstanceElement, instanceWithFunctions)
-      TestHelpers.expectInstancesToMatch(nonListElements[10] as InstanceElement, instanceWithArray)
-      expect(nonListElements[11]).toEqual(unknownType)
+        .expectInstancesToMatch(nonListElements[8] as InstanceElement, instanceWithFunctions)
+      TestHelpers.expectInstancesToMatch(nonListElements[9] as InstanceElement, instanceWithArray)
+      expect(nonListElements[10]).toEqual(unknownType)
     })
   })
   describe('dump field', () => {

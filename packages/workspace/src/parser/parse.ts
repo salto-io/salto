@@ -44,7 +44,7 @@ export const parse = async (
   functions: Functions = {},
 ): Promise<Required<ParseResult>> => {
   const srcString = naclFile.toString()
-  return process.env.USE_NATIVE_PARSER
-    ? parseBuffer(srcString, filename, functions)
-    : parseBufferAndFixErrors(srcString, filename, functions)
+  return process.env.SALTO_USE_LEGACY_PARSER
+    ? parseBufferAndFixErrors(srcString, filename, functions)
+    : parseBuffer(srcString, filename, functions)
 }

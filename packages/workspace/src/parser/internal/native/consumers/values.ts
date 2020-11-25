@@ -235,8 +235,16 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
   // We get rid of the trailing newline
   // Getting the position of the end marker
   const end = positionAtEnd(context.lexer.next())
-  const value = createStringValue(tokens, true, t => t.text)
-
+  const value = createStringValue(
+    tokens,
+    true,
+    t => {
+      const endsWithNewline = t.text[t.text.length - 1] === '\n'
+      return endsWithNewline
+        ? `${defaultStringTokenTranformFunc(trimToken(t))}\n`
+        : defaultStringTokenTranformFunc(t)
+    }
+  )
   return {
     value,
     range: { start, end },

@@ -149,12 +149,8 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
 
   const clientConfigSuggestion = suggestions[FETCH_ALL_TYPES_AT_ONCE] !== undefined
     ? _.pickBy({
+      ...(currentConfig[CLIENT_CONFIG] ?? {}),
       [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE],
-      [SDF_CONCURRENCY_LIMIT]: currentConfig[CLIENT_CONFIG]?.[SDF_CONCURRENCY_LIMIT],
-      [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: currentConfig[CLIENT_CONFIG]
-        ?.[MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST],
-      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: currentConfig[CLIENT_CONFIG]
-        ?.[FETCH_TYPE_TIMEOUT_IN_MINUTES],
     }, values.isDefined)
     : currentConfig[CLIENT_CONFIG]
 
@@ -162,11 +158,11 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
     ElemID.CONFIG_NAME,
     configType,
     _.pickBy({
+      ...currentConfig,
       [TYPES_TO_SKIP]: makeArray(currentConfig[TYPES_TO_SKIP])
         .concat(makeArray(suggestions[TYPES_TO_SKIP])),
       [FILE_PATHS_REGEX_SKIP_LIST]: makeArray(currentConfig[FILE_PATHS_REGEX_SKIP_LIST])
         .concat(makeArray(suggestions[FILE_PATHS_REGEX_SKIP_LIST])),
-      [DEPLOY_REFERENCED_ELEMENTS]: currentConfig[DEPLOY_REFERENCED_ELEMENTS],
       [CLIENT_CONFIG]: clientConfigSuggestion,
     }, values.isDefined)
   )

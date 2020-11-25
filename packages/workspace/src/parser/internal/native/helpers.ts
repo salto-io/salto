@@ -89,7 +89,7 @@ export const createFieldType = (context: ParseContext, blockType: string): TypeE
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
-    context.listTypes.add(listType)
+    context.listTypes[listType.elemID.getFullName()] = listType
     return listType
   }
   if (blockType.startsWith(Keywords.MAP_PREFIX) && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
@@ -100,7 +100,7 @@ export const createFieldType = (context: ParseContext, blockType: string): TypeE
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
-    context.mapTypes.add(mapType)
+    context.mapTypes[mapType.elemID.getFullName()] = mapType
     return mapType
   }
   return new ObjectType({ elemID: parseElemID(blockType) })

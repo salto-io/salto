@@ -16,7 +16,7 @@
 import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes,
   ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
 import { selectElementsBySelectors, createElementSelectors, createElementSelector,
-  getElementIdsFromSelectorsRecursively } from '../src/workspace/element_selector'
+  selectElementIdsByTraversal } from '../src/workspace/element_selector'
 
 const mockStrType = new PrimitiveType({
   elemID: new ElemID('mockAdapter', 'str'),
@@ -231,29 +231,24 @@ describe('select elements recursively', () => {
   it('finds subElements one and two layers deep', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
-      'mockAdapter.test.instance.mockInstance.bool',
-      'mockAdapter.test.instance.mockInstance.strMap.*',
-      'mockAdapter.test.annotation.*']).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+      '*.*.annotation.*.*']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
       })))).sort((el1, el2) => (el1.getFullName() > el2.getFullName() ? 1 : -1))
-    expect(elementIds).toEqual([mockInstance.elemID, mockType.elemID,
-      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool'),
-      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.strMap.bla'),
-      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.strMap.a'),
+    const expectedElements = [mockInstance.elemID, mockType.elemID,
       ElemID.fromFullName('mockAdapter.test.field.bool'),
       ElemID.fromFullName('mockAdapter.test.field.strMap'),
       ElemID.fromFullName('mockAdapter.test.field.obj'),
       ElemID.fromFullName('mockAdapter.test.field.num'),
-      ElemID.fromFullName('mockAdapter.test.field.strArray'),
-      ElemID.fromFullName('mockAdapter.test.annotation.testAnno')].sort((el1, el2) =>
-      (el1.getFullName() > el2.getFullName() ? 1 : -1)))
+      ElemID.fromFullName('mockAdapter.test.field.strArray')].sort((el1, el2) =>
+      (el1.getFullName() > el2.getFullName() ? 1 : -1))
+    expect(elementIds).toEqual(expectedElements)
   })
   it('returns nothing with non-matching subelements', async () => {
     const selectors = createElementSelectors(['mockAdapter.test.instance.mockInstance.obj.NoSuchThingExists*']).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
@@ -263,7 +258,7 @@ describe('select elements recursively', () => {
   it('removes fields of type from list when compact', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.field.*',
       'mockAdapter.test.field.obj.*']).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
@@ -275,7 +270,7 @@ describe('select elements recursively', () => {
     const selectors = createElementSelectors(['mockAdapter.*.instance.*',
       'mockAdapter.test.instance.mockInstance.*',
       'mockAdapter.test.instance.mockInstance.strMap.*']).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
@@ -287,7 +282,7 @@ describe('select elements recursively', () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.instance.mockInstance.bool',
     ]).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,

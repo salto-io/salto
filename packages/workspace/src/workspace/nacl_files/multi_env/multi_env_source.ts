@@ -21,7 +21,7 @@ import { Element, ElemID, getChangeElement, isInstanceElement, Value,
   DetailedChange } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
-import { ElementSelector, getElementIdsFromSelectorsRecursively, ElementIDToValue } from '../../element_selector'
+import { ElementSelector, selectElementIdsByTraversal, ElementIDToValue } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 
@@ -173,8 +173,8 @@ const buildMultiEnvSource = (
 
   const getElementIdsBySelectors = async (selectors: ElementSelector[],
     commonOnly = false): Promise<ElemID[]> =>
-    (getElementIdsFromSelectorsRecursively(selectors,
-      await getElementsFromSource(commonOnly ? commonSource() : primarySource())))
+    (selectElementIdsByTraversal(selectors, await getElementsFromSource(commonOnly
+      ? commonSource() : primarySource())))
 
   const promote = async (ids: ElemID[]): Promise<void> => {
     const routedChanges = await routePromote(

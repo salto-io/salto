@@ -32,7 +32,7 @@ import * as serialization from './src/serializer/elements'
 import * as pathIndex from './src/workspace/path_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches,
   selectElementsBySelectors, createElementSelectors, ElementIDToValue,
-  getElementIdsFromSelectorsRecursively } from './src/workspace/element_selector'
+  selectElementIdsByTraversal } from './src/workspace/element_selector'
 import * as validator from './src/validator'
 
 export {
@@ -67,5 +67,5 @@ export {
   selectElementsBySelectors,
   createElementSelectors,
   ElementIDToValue,
-  getElementIdsFromSelectorsRecursively,
+  selectElementIdsByTraversal,
 }

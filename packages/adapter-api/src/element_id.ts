@@ -18,7 +18,6 @@ import _ from 'lodash'
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
 export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
-export const ElemIDTopLevelTypes = ['instance']
 
 export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: '_depends_on',
@@ -31,7 +30,8 @@ export class ElemID {
   static readonly NUM_ELEM_ID_NON_NAME_PARTS = 3
   static readonly CONFIG_NAME = '_config'
   static readonly VARIABLES_NAMESPACE = 'var'
-  private static readonly TOP_LEVEL_ID_TYPES = ['type', 'var']
+  static readonly TOP_LEVEL_ID_TYPES_WITH_NAME = ['instance']
+  static readonly TOP_LEVEL_ID_TYPES = ['type', 'var']
 
   static getDefaultIdType = (adapter: string): ElemIDType => (adapter === ElemID.VARIABLES_NAMESPACE ? 'var' : 'type')
 
@@ -137,7 +137,7 @@ export class ElemID {
 
   isTopLevel(): boolean {
     return ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
-      || (this.idType === 'instance' && this.nameParts.length === 1)
+      || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType) && this.nameParts.length === 1)
   }
 
   isEqual(other: ElemID): boolean {
@@ -191,7 +191,7 @@ export class ElemID {
       // This is already the top level ID
       return { parent: this, path: [] }
     }
-    if (ElemIDTopLevelTypes.includes(this.idType)) {
+    if (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType)) {
       // Instance is a top level ID, the name of the instance is always the first name part
       return {
         parent: new ElemID(this.adapter, this.typeName, this.idType, this.nameParts[0]),

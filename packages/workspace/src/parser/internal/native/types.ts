@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Value, ListType, MapType } from '@salto-io/adapter-api'
+import { Value, ListType, MapType } from '@salto-io/adapter-api'
+import { ParseError } from '../../types'
 import { SourceRange } from '../types'
 import Lexer from './lexer'
-import { ParseError } from './errors'
 import { Functions } from '../../functions'
 import { SourceMap } from '../../source_map'
 
@@ -43,9 +43,3 @@ export type ParseContext = {
 }
 
 export type Consumer<T> = (context: ParseContext) => ConsumerReturnType<T>
-
-export type ParseResult = {
-  elements: Element[]
-  errors: ParseError[]
-  sourceMap: SourceMap
-}

@@ -14,31 +14,20 @@
 * limitations under the License.
 */
 import {
-  Element, SaltoError,
-} from '@salto-io/adapter-api'
-import {
   SourceRange as InternalSourceRange,
-  HclParseError,
 } from './internal/types'
 import { parseBufferAndFixErrors } from './internal/nearly/parse'
 import {
   Functions,
 } from './functions'
-import { SourceMap } from './source_map'
 import { parseBuffer } from './internal/native/parse'
+import { ParseResult } from './types'
 
 export { parseElemID } from './internal/nearly/converter/elements'
 export { IllegalReference } from './internal/types'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
-export type ParseError = HclParseError & SaltoError
-
-export type ParseResult = {
-  elements: Element[]
-  errors: ParseError[]
-  sourceMap?: SourceMap
-}
 
 /**
  * Parse a Nacl file

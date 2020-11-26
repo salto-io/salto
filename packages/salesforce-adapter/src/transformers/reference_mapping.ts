@@ -17,6 +17,7 @@ import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { apiName } from './transformer'
 import {
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_OBJECT, API_NAME_SEPARATOR,
@@ -33,7 +34,7 @@ import {
 } from '../constants'
 
 const log = logger(module)
-
+const { awu } = collections.asynciterable
 type LookupFunc = (val: Value, context?: string) => string
 
 export type ReferenceSerializationStrategy = {
@@ -58,18 +59,18 @@ const ReferenceSerializationStrategyLookup: Record<
     ),
   },
   configurationAttributeMapping: {
-    serialize: ({ ref }) => (_.invert(DEFAULT_OBJECT_TO_API_MAPPING)[apiName(ref.value)]
+    serialize: async ({ ref }) => (_.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await apiName(ref.value)]
       ?? apiName(ref.value)),
     lookup: val => (_.isString(val) ? (DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val) : val),
   },
   lookupQueryMapping: {
-    serialize: ({ ref }) => (_.invert(TEST_OBJECT_TO_API_MAPPING)[apiName(ref.value)]
+    serialize: async ({ ref }) => (_.invert(TEST_OBJECT_TO_API_MAPPING)[await apiName(ref.value)]
       ?? apiName(ref.value)),
     lookup: val => (_.isString(val) ? (TEST_OBJECT_TO_API_MAPPING[val] ?? val) : val),
   },
   scheduleConstraintFieldMapping: {
-    serialize: ({ ref }) => {
-      const relativeApiName = apiName(ref.value, true)
+    serialize: async ({ ref }) => {
+      const relativeApiName = await apiName(ref.value, true)
       return (
         _.invert(SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING)[relativeApiName]
           ?? relativeApiName
@@ -84,7 +85,7 @@ const ReferenceSerializationStrategyLookup: Record<
     },
   },
   mapKey: {
-    serialize: ({ ref }) => ref.elemID.name,
+    serialize: async ({ ref }) => ref.elemID.name,
     lookup: val => val,
   },
 }
@@ -454,8 +455,8 @@ const matchName = (fieldName: string, matcher: string | RegExp): boolean => (
     : matcher.test(fieldName)
 )
 
-const matchApiName = (elem: Element, types: string[]): boolean => (
-  types.includes(apiName(elem))
+const matchApiName = async (elem: Element, types: string[]): Promise<boolean> => (
+  types.includes(await apiName(elem))
 )
 
 export class FieldReferenceResolver {
@@ -477,7 +478,7 @@ export class FieldReferenceResolver {
     return new FieldReferenceResolver(def)
   }
 
-  match(field: Field): boolean {
+  async match(field: Field): Promise<boolean> {
     return (
       matchName(field.name, this.src.field)
       && matchApiName(field.parent, this.src.parentTypes)
@@ -485,7 +486,7 @@ export class FieldReferenceResolver {
   }
 }
 
-export type ReferenceResolverFinder = (field: Field) => FieldReferenceResolver[]
+export type ReferenceResolverFinder = (field: Field) => Promise<FieldReferenceResolver[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
@@ -508,24 +509,22 @@ export const generateReferenceResolverFinder = (
     .mapValues(items => items.map(item => item.def))
     .value()
 
-  return (field => (
-    [
-      ...(matchersByFieldName[field.name] ?? []),
-      ...(regexFieldMatchersByParent[apiName(field.parent)] || []),
-    ].filter(resolver => resolver.match(field))
-  ))
+  return (async field => awu([
+    ...(matchersByFieldName[field.name] ?? []),
+    ...(regexFieldMatchersByParent[await apiName(field.parent)] || []),
+  ]).filter(resolver => resolver.match(field)).toArray())
 }
 
 const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
-  const determineLookupStrategy = (args: GetLookupNameFuncArgs):
-    ReferenceSerializationStrategy | undefined => {
+  const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
+    Promise<ReferenceSerializationStrategy | undefined> => {
     if (args.field === undefined) {
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
-    const strategies = resolverFinder(args.field)
+    const strategies = (await resolverFinder(args.field))
       .map(def => def.serializationStrategy)
 
     if (strategies.length === 0) {
@@ -544,13 +543,13 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
     return strategies[0]
   }
 
-  return ({ ref, path, field }) => {
+  return async ({ ref, path, field }) => {
     // We skip resolving instance annotations because they are not deployed to the service
     // and we need the full element context in those
     const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
 
     if (!isInstanceAnnotation) {
-      const strategy = determineLookupStrategy({ ref, path, field })
+      const strategy = await determineLookupStrategy({ ref, path, field })
       if (strategy !== undefined) {
         return strategy.serialize({ ref, field })
       }

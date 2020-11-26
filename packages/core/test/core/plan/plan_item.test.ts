@@ -161,10 +161,10 @@ describe('PlanItem', () => {
       const [toListChange, fromListChange] = changes
       expect(toListChange.action).toEqual('modify')
       expect(toListChange.id).toEqual(changedElem.fields.name.elemID)
-      expect(isListType(_.get(toListChange.data, 'after').getType())).toBeTruthy()
+      expect(isListType(await _.get(toListChange.data, 'after').getType())).toBeTruthy()
       expect(fromListChange.action).toEqual('modify')
       expect(fromListChange.id).toEqual(changedElem.fields.rooms.elemID)
-      expect(isListType(_.get(fromListChange.data, 'after').getType())).toBeFalsy()
+      expect(isListType(await _.get(fromListChange.data, 'after').getType())).toBeFalsy()
     })
   })
 })

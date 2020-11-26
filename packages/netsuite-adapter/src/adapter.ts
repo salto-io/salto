@@ -40,6 +40,7 @@ import {
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
@@ -114,12 +115,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await importFileCabinetResult
 
     const customizationInfos = [...customObjects, ...fileCabinetContent]
-    const instances = customizationInfos.map(customizationInfo => {
+    const instances = await awu(customizationInfos).map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]
         ?? fileCabinetTypes[customizationInfo.typeName]
       return type && !this.shouldSkipType(type)
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
     }).filter(isInstanceElement)
+      .toArray()
     const elements = [...getAllTypes(), ...instances]
     await this.runFiltersOnFetch(elements)
     const config = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedTypes, failedFilePaths,
@@ -134,9 +136,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return this.typesToSkip.includes(type.elemID.name)
   }
 
-  private getAllRequiredReferencedInstances(
+  private async getAllRequiredReferencedInstances(
     changedInstances: ReadonlyArray<InstanceElement>
-  ): ReadonlyArray<InstanceElement> {
+  ): Promise<ReadonlyArray<InstanceElement>> {
     if (this.deployReferencedElements) {
       return getAllReferencedInstances(changedInstances)
     }
@@ -145,9 +147,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
-    const customizationInfosToDeploy = this.getAllRequiredReferencedInstances(changedInstances)
-      .map(instance => resolveValues(instance, getLookUpName))
+    const customizationInfosToDeploy = await awu(
+      await this.getAllRequiredReferencedInstances(changedInstances)
+    ).map(async instance => resolveValues(instance, getLookUpName))
       .map(toCustomizationInfo)
+      .toArray()
     try {
       await this.client.deploy(customizationInfosToDeploy)
     } catch (e) {

@@ -17,6 +17,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isContainerType, isMapType } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { promises } from '@salto-io/lowerdash'
 import { isFormInstance } from '../filters/form_field'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
@@ -36,6 +37,8 @@ import {
   HubspotMetadata,
 } from '../client/types'
 import HubspotClient from '../client/client'
+
+const { mapValuesAsync } = promises.object
 
 export class Types {
   private static fieldTypes: TypeMap = {
@@ -1073,8 +1076,8 @@ export const createInstanceName = (
   name: string
 ): string => naclCase(name.trim())
 
-export const transformPrimitive: TransformFunc = ({ value, field, path }) => {
-  const fieldType = field?.getType()
+export const transformPrimitive: TransformFunc = async ({ value, field, path }) => {
+  const fieldType = await field?.getType()
   if (!isPrimitiveType(fieldType)) {
     return value
   }
@@ -1115,10 +1118,10 @@ export const transformAfterUpdateOrAdd = async (
   // If transform/filter moves auto-generated fields from being at the same
   // "location" as it comes from the api then we need transform^-1 here before this merge
   const mergedValues = _.mergeWith(updateResult as Values, clonedInstance.value, mergeCustomizer)
-  clonedInstance.value = transformValues(
+  clonedInstance.value = await transformValues(
     {
       values: mergedValues,
-      type: instance.getType(),
+      type: await instance.getType(),
       transformFunc: transformPrimitive,
     }
   ) || {}
@@ -1178,28 +1181,29 @@ const createOwnersMap = async (client: HubspotClient): Promise<Map<string, numbe
 export const isUserIdentifierType = (type: TypeElement): boolean =>
   isPrimitiveType(type) && type.elemID.isEqual(Types.userIdentifierType.elemID)
 
-const doesObjectIncludeUserIdentifier = (
+const doesObjectIncludeUserIdentifier = async (
   objectType: Readonly<ObjectType>,
   checkedTypes: TypeElement[] = []
-): boolean => {
-  const doesTypeIncludeUserIdentifier = (type: TypeElement): boolean => {
+): Promise<boolean> => {
+  const doesTypeIncludeUserIdentifier = async (type: TypeElement): Promise<boolean> => {
     if (isObjectType(type)) {
       return doesObjectIncludeUserIdentifier(type, checkedTypes)
     }
     if (isContainerType(type)) {
-      return doesTypeIncludeUserIdentifier(type.getInnerType())
+      return doesTypeIncludeUserIdentifier(await type.getInnerType())
     }
     return isUserIdentifierType(type)
   }
-  return _.some(_.values(objectType.fields), (field: Field): boolean => {
-    const fieldType = field.getType()
-    if (!_.isUndefined(_.find(checkedTypes, (type: TypeElement): boolean =>
-      type.elemID.isEqual(fieldType.elemID)))) {
-      return false
-    }
-    checkedTypes.push(fieldType)
-    return doesTypeIncludeUserIdentifier(fieldType)
-  })
+  return _.some(await Promise.all(_.values(objectType.fields)
+    .map(async (field: Field): Promise<boolean> => {
+      const fieldType = await field.getType()
+      if (!_.isUndefined(_.find(checkedTypes, (type: TypeElement): boolean =>
+        type.elemID.isEqual(fieldType.elemID)))) {
+        return false
+      }
+      checkedTypes.push(fieldType)
+      return doesTypeIncludeUserIdentifier(fieldType)
+    })))
 }
 
 export const createHubspotMetadataFromInstanceElement = async (
@@ -1208,16 +1212,19 @@ export const createHubspotMetadataFromInstanceElement = async (
 ):
   Promise<HubspotMetadata> => {
   let ownersMap: Map<string, number>
-  if (doesObjectIncludeUserIdentifier(instance.getType())) {
+  if (await doesObjectIncludeUserIdentifier(await instance.getType())) {
     ownersMap = await createOwnersMap(client)
   }
-  const createMetadataValueFromObject = (objectType: ObjectType, values: Values): Values =>
-    (_.mapValues(values, (val, key) => {
-      const fieldType = objectType.fields[key]?.getType()
+  const createMetadataValueFromObject = async (
+    objectType: ObjectType,
+    values: Values
+  ): Promise<Values> =>
+    (mapValuesAsync(values, async (val, key) => {
+      const fieldType = await objectType.fields[key]?.getType()
       if (_.isUndefined(fieldType) || _.isUndefined(val)) {
         return val
       }
-      if (isFormInstance(instance) && key === FORM_FIELDS.FORMFIELDGROUPS) {
+      if (await isFormInstance(instance) && key === FORM_FIELDS.FORMFIELDGROUPS) {
         return val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
           (formFieldGroupVal, formFieldGroupKey) => {
             if (!(formFieldGroupKey === FORM_PROPERTY_GROUP_FIELDS.FIELDS)) {
@@ -1237,7 +1244,7 @@ export const createHubspotMetadataFromInstanceElement = async (
         return ownersMap.get(val) || numVal
       }
       if (isListType(fieldType) && _.isArray(val)) {
-        const fieldDeepInnerType = getDeepInnerType(fieldType)
+        const fieldDeepInnerType = await getDeepInnerType(fieldType)
         if (isUserIdentifierType(fieldDeepInnerType)) {
           return _.cloneDeepWith(val, v =>
             (_.every(v, _.isString)
@@ -1247,11 +1254,22 @@ export const createHubspotMetadataFromInstanceElement = async (
               : undefined))
         }
         if (isObjectType(fieldDeepInnerType) || isMapType(fieldDeepInnerType)) {
-          return _.cloneDeepWith(val, v =>
-            (!_.every(v, _.isArray)
-              ? v.map((objVal: Values) =>
-                createMetadataValueFromObject(toObjectType(fieldDeepInnerType, objVal), objVal))
-              : undefined))
+          const transformFunc: TransformFunc = async ({ value }) => (
+            _.isArray(value) && !_.every(value, _.isArray)
+              ? Promise.all(value.map(
+                (objVal: Values) => createMetadataValueFromObject(toObjectType(
+                  fieldDeepInnerType,
+                  objVal
+                ),
+                objVal)
+              ))
+              : value)
+          return transformValues({
+            values: val,
+            transformFunc,
+            strict: false,
+            type: fieldType,
+          })
         }
       }
       if (isObjectType(fieldType) || isMapType(fieldType)) {
@@ -1259,7 +1277,10 @@ export const createHubspotMetadataFromInstanceElement = async (
       }
       return val
     }))
-  return createMetadataValueFromObject(instance.getType(), instance.value) as HubspotMetadata
+  return createMetadataValueFromObject(
+    await instance.getType(),
+    instance.value
+  ) as Promise<HubspotMetadata>
 }
 
 /**

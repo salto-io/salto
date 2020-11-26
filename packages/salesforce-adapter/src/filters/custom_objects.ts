@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections, strings } from '@salto-io/lowerdash'
+import { collections, strings, promises } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values,
@@ -63,6 +63,9 @@ import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } fro
 
 const log = logger(module)
 const { makeArray } = collections.array
+const { awu, groupByAsync, keyByAsync } = collections.asynciterable
+const { removeAsync } = promises.array
+const { mapValuesAsync, mapKeysAsync } = promises.object
 
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
@@ -232,10 +235,10 @@ const transfromAnnotationsNames = (fields: Values, parentName: string): Values =
   return annotations
 }
 
-export const transformFieldAnnotations = (
+export const transformFieldAnnotations = async (
   instanceFieldValues: Values,
   parentName: string
-): Values => {
+): Promise<Values> => {
   // Ignores instances without a defined type
   if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
     return {}
@@ -247,10 +250,10 @@ export const transformFieldAnnotations = (
   }
 
   const annotations = transfromAnnotationsNames(instanceFieldValues, parentName)
-  const annotationsType = buildAnnotationsObjectType(fieldType.getAnnotationTypes())
-  convertList(annotationsType, annotations)
+  const annotationsType = buildAnnotationsObjectType(await fieldType.getAnnotationTypes())
+  await convertList(annotationsType, annotations)
 
-  return transformValues(
+  return await transformValues(
     {
       values: annotations,
       type: annotationsType,
@@ -261,7 +264,7 @@ export const transformFieldAnnotations = (
 
 const transformObjectAnnotationValues = (instance: InstanceElement,
   annotationTypesFromInstance: TypeMap):
-  Values | undefined => {
+  Promise<Values | undefined> => {
   const annotationsObject = buildAnnotationsObjectType(annotationTypesFromInstance)
   return transformValues(
     {
@@ -272,8 +275,11 @@ const transformObjectAnnotationValues = (instance: InstanceElement,
   )
 }
 
-const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
-  instance: InstanceElement): void => {
+const transformObjectAnnotations = async (
+  customObject: ObjectType,
+  annotationTypesFromInstance: TypeMap,
+  instance: InstanceElement
+): Promise<void> => {
   customObject.annotationRefTypes = {
     ...customObject.annotationRefTypes,
     ..._.mapValues(annotationTypesFromInstance, t => createRefToElmWithValue(t)),
@@ -281,20 +287,20 @@ const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFro
 
   customObject.annotations = {
     ...customObject.annotations,
-    ...transformObjectAnnotationValues(instance, annotationTypesFromInstance),
+    ...await transformObjectAnnotationValues(instance, annotationTypesFromInstance),
   }
 }
 
-const createFieldFromMetadataInstance = (
+const createFieldFromMetadataInstance = async (
   customObject: ObjectType,
   field: Values,
   instanceName: string,
-): Field => {
+): Promise<Field> => {
   let fieldValues = field
   if (!fieldValues[INSTANCE_TYPE_FIELD]) {
     fieldValues = { [INSTANCE_TYPE_FIELD]: INTERNAL_FIELD_TYPE_NAMES.UNKNOWN, ...fieldValues }
   }
-  const annotations = transformFieldAnnotations(
+  const annotations = await transformFieldAnnotations(
     fieldValues,
     instanceName,
   )
@@ -310,26 +316,29 @@ const createFieldFromMetadataInstance = (
   )
 }
 
-const mergeCustomObjectWithInstance = (
+const mergeCustomObjectWithInstance = async (
   customObject: ObjectType, instance: InstanceElement, annotationTypesFromInstance: TypeMap
-): void => {
+): Promise<void> => {
   const instanceFields = makeArray(instance.value.fields)
-  const fieldByApiName = _.mapKeys(customObject.fields, field => apiName(field, true))
+  const fieldByApiName = await mapKeysAsync(
+    customObject.fields,
+    async field => apiName(field, true)
+  )
   const instanceName = instance.value[INSTANCE_FULL_NAME_FIELD]
 
-  instanceFields.forEach(values => {
+  await awu(instanceFields).forEach(async values => {
     const fieldName = values[INSTANCE_FULL_NAME_FIELD]
     if (fieldByApiName[fieldName] !== undefined) {
       // extend annotations from metadata API
-      Object.assign(fieldByApiName[fieldName].annotations, transformFieldAnnotations(
+      Object.assign(fieldByApiName[fieldName].annotations, await transformFieldAnnotations(
         values,
         instanceName
       ))
     } else {
       // doesn't exist in SOAP - initialize from metadata API
-      const field = createFieldFromMetadataInstance(customObject, values, instanceName)
-      if (apiName(field) !== undefined) {
-        log.debug(`Extending SObject ${apiName(customObject)} with field ${fieldName} from metadata API`)
+      const field = await createFieldFromMetadataInstance(customObject, values, instanceName)
+      if (await apiName(field) !== undefined) {
+        log.debug(`Extending SObject ${await apiName(customObject)} with field ${fieldName} from metadata API`)
         customObject.fields[fieldName] = field
       }
     }
@@ -340,46 +349,50 @@ const mergeCustomObjectWithInstance = (
     && field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   )).forEach(field => delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
 
-  transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
+  await transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
 }
 
 const createNestedMetadataInstances = (instance: InstanceElement,
   { elemID: objElemID, path: objPath }: ObjectType,
   nestedMetadataTypes: Record<string, ObjectType>):
-  InstanceElement[] =>
-  _.flatten(Object.entries(nestedMetadataTypes)
-    .map(([name, type]) => {
+  Promise<InstanceElement[]> =>
+  awu(Object.entries(nestedMetadataTypes))
+    .flatMap(([name, type]) => {
       const nestedInstancesValues = makeArray(instance.value[name])
       if (_.isEmpty(nestedInstancesValues)) {
-        return []
+        return [] as InstanceElement[]
       }
       const removeDuplicateInstances = (instances: Values[]): Values[] => (
         _(instances).keyBy(INSTANCE_FULL_NAME_FIELD).values().value()
       )
-      return removeDuplicateInstances(nestedInstancesValues).map(nestedInstanceValues => {
-        const nameParts = [apiName(instance), nestedInstanceValues[INSTANCE_FULL_NAME_FIELD]]
-        const fullName = nameParts.join(API_NAME_SEPARATOR)
-        const instanceName = Types.getElemId(
-          nameParts.join('_'),
-          true,
-          createInstanceServiceIds(_.pick(nestedInstanceValues, INSTANCE_FULL_NAME_FIELD), type)
-        ).name
-        const instanceFileName = pathNaclCase(instanceName)
-        const typeFolderName = pathNaclCase(
-          nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name
-        )
-        nestedInstanceValues[INSTANCE_FULL_NAME_FIELD] = fullName
-        const path = [
-          ...(objPath as string[]).slice(0, -1),
-          typeFolderName,
-          instanceFileName,
-        ]
-        return new InstanceElement(instanceName, type, nestedInstanceValues,
-          path, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
-      })
-    }))
+      return awu(removeDuplicateInstances(nestedInstancesValues))
+        .map(async nestedInstanceValues => {
+          const nameParts = [
+            await apiName(instance),
+            nestedInstanceValues[INSTANCE_FULL_NAME_FIELD],
+          ]
+          const fullName = nameParts.join(API_NAME_SEPARATOR)
+          const instanceName = Types.getElemId(
+            nameParts.join('_'),
+            true,
+            createInstanceServiceIds(_.pick(nestedInstanceValues, INSTANCE_FULL_NAME_FIELD), type)
+          ).name
+          const instanceFileName = pathNaclCase(instanceName)
+          const typeFolderName = pathNaclCase(
+            nestedMetadatatypeToReplaceDirName[type.elemID.name] ?? type.elemID.name
+          )
+          nestedInstanceValues[INSTANCE_FULL_NAME_FIELD] = fullName
+          const path = [
+            ...(objPath as string[]).slice(0, -1),
+            typeFolderName,
+            instanceFileName,
+          ]
+          return new InstanceElement(instanceName, type, nestedInstanceValues,
+            path, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
+        })
+    }).toArray()
 
-const createObjectType = ({
+const createObjectType = async ({
   name,
   label,
   fields,
@@ -389,7 +402,7 @@ const createObjectType = ({
   label: string
   fields?: SObjField[]
   systemFields?: string[]
-}): ObjectType => {
+}): Promise<ObjectType> => {
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
     [API_NAME]: name,
@@ -400,7 +413,7 @@ const createObjectType = ({
   addMetadataType(object)
   addLabel(object, label)
   object.path = [
-    ...getObjectDirectoryPath(object, getNamespace(object)),
+    ...getObjectDirectoryPath(object, await getNamespace(object)),
     pathNaclCase(object.elemID.name),
   ]
   if (!_.isUndefined(fields)) {
@@ -433,24 +446,24 @@ const createObjectType = ({
   return object
 }
 
-const createFromInstance = (instance: InstanceElement,
-  typesFromInstance: TypesFromInstance): Element[] => {
+const createFromInstance = async (instance: InstanceElement,
+  typesFromInstance: TypesFromInstance): Promise<Element[]> => {
   const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
-  const object = createObjectType({
+  const object = await createObjectType({
     name: objectName,
     label: instance.value[LABEL],
   })
   const annotationTypes = annotationTypesForObject(typesFromInstance, instance,
     isCustom(objectName))
-  transformObjectAnnotations(object, annotationTypes, instance)
+  await transformObjectAnnotations(object, annotationTypes, instance)
   const instanceFields = makeArray(instance.value.fields)
-  instanceFields
-    .forEach((field: Values) => {
+  await awu(instanceFields)
+    .forEach(async (field: Values) => {
       const fieldFullName = field[INSTANCE_FULL_NAME_FIELD]
       object.fields[fieldFullName] = new Field(object, fieldFullName,
-        getFieldType(getFieldName(field)), transformFieldAnnotations(field, objectName))
+        getFieldType(getFieldName(field)), await transformFieldAnnotations(field, objectName))
     })
-  const nestedMetadataInstances = createNestedMetadataInstances(instance, object,
+  const nestedMetadataInstances = await createNestedMetadataInstances(instance, object,
     typesFromInstance.nestedMetadataTypes)
   return [object, ...nestedMetadataInstances]
 }
@@ -482,34 +495,37 @@ const fetchSObjects = async (client: SalesforceClient):
     .value()
 }
 
-const createFromSObjectsAndInstances = (
+const createFromSObjectsAndInstances = async (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>,
   typesFromInstance: TypesFromInstance,
   systemFields: string[],
-): Element[] =>
-  _.flatten(sObjects.map(({ name, label, custom, fields }) => {
-    const object = createObjectType({ name, label, fields, systemFields })
+): Promise<Element[]> =>
+  awu(sObjects).flatMap(async ({ name, label, custom, fields }) => {
+    const object = await createObjectType({ name, label, fields, systemFields })
     const instance = instances[name]
     if (!instance) {
       return [object]
     }
     const annotationTypes = annotationTypesForObject(typesFromInstance, instance, custom)
-    mergeCustomObjectWithInstance(
+    await mergeCustomObjectWithInstance(
       object, instance, annotationTypes
     )
-    return [object, ...createNestedMetadataInstances(instance, object,
+    return [object, ...await createNestedMetadataInstances(instance, object,
       typesFromInstance.nestedMetadataTypes)]
-  }))
+  }).toArray()
 
-const removeIrrelevantElements = (elements: Element[]): void => {
-  _.remove(elements, isInstanceOfType(CUSTOM_OBJECT))
-  _.remove(elements, elem => apiName(elem) === CUSTOM_OBJECT)
+const removeIrrelevantElements = async (elements: Element[]): Promise<void> => {
+  await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
+  await removeAsync(elements, async elem => await apiName(elem) === CUSTOM_OBJECT)
   // We currently don't support platform event and article type objects (SALTO-530, SALTO-531)
-  _.remove(elements, elem => (isObjectType(elem) && isCustomObject(elem) && apiName(elem)
-    && (apiName(elem).endsWith('__e') || apiName(elem).endsWith('__kav'))))
-  _.remove(elements, elem => (isObjectType(elem)
-    && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
+  await removeAsync(elements, async elem => {
+    const elemApiName = await apiName(elem)
+    return (isObjectType(elem) && await isCustomObject(elem)
+    && (elemApiName.endsWith('__e') || elemApiName.endsWith('__kav')))
+  })
+  await removeAsync(elements, async elem => (isObjectType(elem)
+    && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(await metadataType(elem))))
 }
 
 const removeUnsupportedFields = (elements: Element[], unsupportedSystemFields: string[]): void => {
@@ -532,12 +548,12 @@ const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE
   ...workflowDependentMetadataTypes.values(),
 ])
 
-const hasCustomObjectParent = (instance: InstanceElement): boolean =>
-  dependentMetadataTypes.has(metadataType(instance))
+const hasCustomObjectParent = async (instance: InstanceElement): Promise<boolean> =>
+  dependentMetadataTypes.has(await metadataType(instance))
 
-const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
-  const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType):
-    void => {
+const fixDependentInstancesPathAndSetParent = async (elements: Element[]): Promise<void> => {
+  const setDependingInstancePath = async (instance: InstanceElement, customObject: ObjectType):
+    Promise<void> => {
     if (customObject.path) {
       instance.path = [
         ...customObject.path.slice(0, -1),
@@ -549,71 +565,80 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
               )
             )]
           : [pathNaclCase(instance.elemID.typeName)]),
-        ...(apiNameParts(instance).length > 1
+        ...((await apiNameParts(instance)).length > 1
           ? [pathNaclCase(instance.elemID.name)] : []),
       ]
     }
   }
 
-  const apiNameToCustomObject = generateApiNameToCustomObject(elements)
+  const apiNameToCustomObject = await generateApiNameToCustomObject(elements)
 
-  const getDependentCustomObj = (instance: InstanceElement): ObjectType | undefined => {
-    const customObject = apiNameToCustomObject.get(parentApiName(instance))
+  const getDependentCustomObj = async (
+    instance: InstanceElement
+  ): Promise<ObjectType | undefined> => {
+    const customObject = apiNameToCustomObject.get(await parentApiName(instance))
     if (_.isUndefined(customObject)
-      && metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE) {
+      && await metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE) {
       return apiNameToCustomObject.get('Lead')
     }
     return customObject
   }
 
-  elements
+  await awu(elements)
     .filter(isInstanceElement)
     .filter(hasCustomObjectParent)
-    .forEach(instance => {
-      const customObj = getDependentCustomObj(instance)
+    .forEach(async instance => {
+      const customObj = await getDependentCustomObj(instance)
       if (_.isUndefined(customObj)) {
         return
       }
-      setDependingInstancePath(instance, customObj)
+      await setDependingInstancePath(instance, customObj)
       addObjectParentReference(instance, customObj)
     })
 }
 
 const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
-  (fieldChange: Change): fieldChange is Change<Field> => {
+  async (fieldChange: Change): Promise<boolean> => {
     if (!isFieldChange(fieldChange)) {
       return false
     }
     const field = getChangeElement(fieldChange)
     const isRelevantField = (
-      isField(field) && !isLocalOnly(field) && !fieldsToSkip.includes(apiName(field, true))
+      isField(field) && !isLocalOnly(field) && !fieldsToSkip.includes(await apiName(field, true))
     )
     return isRelevantField && (
       isAdditionOrRemovalChange(fieldChange)
-      || !_.isEqual(toCustomField(fieldChange.data.before), toCustomField(fieldChange.data.after))
+      || !_.isEqual(
+        await toCustomField(fieldChange.data.before),
+        await toCustomField(fieldChange.data.after)
+      )
     )
   }
 )
 
-const getNestedCustomObjectValues = (
+const getNestedCustomObjectValues = async (
   fullName: string,
   changes: ReadonlyArray<Change>,
   fieldsToSkip: ReadonlyArray<string>,
   dataField: 'before' | 'after',
-): Partial<CustomObject> & Pick<MetadataValues, 'fullName'> => ({
+): Promise<Partial<CustomObject> & Pick<MetadataValues, 'fullName'>> => ({
   fullName,
-  ..._.mapValues(
+  ...await mapValuesAsync(
     NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
-    fieldType => (
-      getDataFromChanges(dataField, changes.filter(isInstanceOfTypeChange(fieldType)))
-        .map(nestedInstance => ({
-          ...toMetadataInfo(nestedInstance),
-          [INSTANCE_FULL_NAME_FIELD]: apiName(nestedInstance, true),
-        }))
+    async fieldType => (
+      awu(getDataFromChanges(
+        dataField,
+        await awu(changes).filter(isInstanceOfTypeChange(fieldType)).toArray()
+      )).map(async nestedInstance => ({
+        ...await toMetadataInfo(nestedInstance as InstanceElement),
+        [INSTANCE_FULL_NAME_FIELD]: await apiName(nestedInstance, true),
+      })).toArray()
     )
   ),
-  fields: getDataFromChanges(dataField, changes.filter(shouldIncludeFieldChange(fieldsToSkip)))
-    .map(field => toCustomField(field)),
+  fields: await awu(getDataFromChanges(
+    dataField,
+    await awu(changes).filter(shouldIncludeFieldChange(fieldsToSkip)).toArray()
+  )).map(field => toCustomField(field as Field)).toArray(),
 })
 
 const createCustomObjectInstance = (values: MetadataValues): InstanceElement => {
@@ -653,9 +678,9 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
   return createInstanceElement(values, customObjectType)
 }
 
-const getCustomObjectFromChange = (change: Change): ObjectType => {
+const getCustomObjectFromChange = async (change: Change): Promise<ObjectType> => {
   const elem = getChangeElement(change)
-  if (isCustomObject(elem)) {
+  if (isObjectType(elem) && await isCustomObject(elem)) {
     return elem
   }
   if (isField(elem)) {
@@ -663,33 +688,33 @@ const getCustomObjectFromChange = (change: Change): ObjectType => {
   }
   // If we reach here this is a child instance.
   // If it passed the isCustomObjectRelatedChange filter then it must have a custom object parent
-  return getParents(elem).filter(isCustomObject)[0]
+  return awu(getParents(elem)).filter(isCustomObject).peek()
 }
 
-const getCustomObjectApiName = (change: Change): string => (
-  apiName(getCustomObjectFromChange(change))
+const getCustomObjectApiName = async (change: Change): Promise<string> => (
+  apiName(await getCustomObjectFromChange(change))
 )
 
-const isCustomObjectChildInstance = (instance: InstanceElement): boolean =>
-  Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME).includes(metadataType(instance))
+const isCustomObjectChildInstance = async (instance: InstanceElement): Promise<boolean> =>
+  Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME).includes(await metadataType(instance))
 
-const isCustomObjectRelatedChange = (change: Change): boolean => {
+const isCustomObjectRelatedChange = async (change: Change): Promise<boolean> => {
   const elem = getChangeElement(change)
-  return isCustomObject(elem)
-  || (isField(elem) && isFieldOfCustomObject(elem))
+  return (await isCustomObject(elem))
+  || (isField(elem) && await isFieldOfCustomObject(elem))
   || (
     isInstanceElement(elem)
-    && isCustomObjectChildInstance(elem)
-    && getCustomObjectFromChange(change) !== undefined
+    && await isCustomObjectChildInstance(elem)
+    && await getCustomObjectFromChange(change) !== undefined
   )
 }
 
-const createCustomObjectChange = (
+const createCustomObjectChange = async (
   fieldsToSkip: string[] = [],
   fullName: string,
   changes: ReadonlyArray<Change>,
-): Change<InstanceElement> => {
-  const objectChange = changes
+): Promise<Change<InstanceElement>> => {
+  const objectChange = await awu(changes)
     .filter(isObjectTypeChange)
     .find(change => isCustomObject(getChangeElement(change)))
 
@@ -704,8 +729,8 @@ const createCustomObjectChange = (
       action: 'remove',
       data: {
         before: createCustomObjectInstance({
-          ...toCustomProperties(objectChange.data.before, false),
-          ...getNestedCustomObjectValues(
+          ...await toCustomProperties(objectChange.data.before, false),
+          ...await getNestedCustomObjectValues(
             fullName, masterDetailFieldRemovals, fieldsToSkip, 'before'
           ),
         }),
@@ -713,8 +738,8 @@ const createCustomObjectChange = (
     }
   }
 
-  const getAfterInstanceValues = (): MetadataValues => {
-    const nestedValues = getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'after')
+  const getAfterInstanceValues = async (): Promise<MetadataValues> => {
+    const nestedValues = await getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'after')
     const afterParent = objectChange?.data.after
     if (afterParent === undefined) {
       return {
@@ -726,17 +751,22 @@ const createCustomObjectChange = (
     }
     // This means there is a change on one of the custom object annotations.
     const includeFieldsFromParent = objectChange?.action === 'add'
-    const parentValues = toCustomProperties(afterParent, includeFieldsFromParent, fieldsToSkip)
+    const parentValues = await toCustomProperties(
+      afterParent,
+      includeFieldsFromParent,
+      fieldsToSkip
+    )
     if (parentValues.sharingModel === 'ControlledByParent' && !includeFieldsFromParent) {
       // If we have to deploy the custom object and it is controlled by parent we must include
       // master-detail fields in the deployment, otherwise the deploy request will fail validation
-      parentValues.fields = Object.values(afterParent.fields)
+      parentValues.fields = await awu(Object.values(afterParent.fields))
         .filter(isMasterDetailField)
         .map(toCustomField)
         // new fields in the custom object can have an undefined fullName if they are new and rely
         // on our "addDefaults" to get an api name - in that case the field with the api name will
         // be in nestedValues so it is safe to filter it out here
         .filter(field => field.fullName !== undefined)
+        .toArray()
     }
     const allFields = [
       ...makeArray(nestedValues.fields),
@@ -749,7 +779,7 @@ const createCustomObjectChange = (
     }
   }
 
-  const after = createCustomObjectInstance(getAfterInstanceValues())
+  const after = createCustomObjectInstance(await getAfterInstanceValues())
 
   if (objectChange !== undefined && objectChange.action === 'add') {
     return { action: 'add', data: { after } }
@@ -757,20 +787,22 @@ const createCustomObjectChange = (
 
   const beforeParent = objectChange?.data.before
   const before = createCustomObjectInstance({
-    ...getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'before'),
-    ...beforeParent === undefined ? {} : toCustomProperties(beforeParent, false),
+    ...await getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'before'),
+    ...(beforeParent === undefined ? {} : await toCustomProperties(beforeParent, false)),
   })
 
   return { action: 'modify', data: { before, after } }
 }
 
-const getParentCustomObjectName = (change: Change): string | undefined => {
-  const parent = getParents(getChangeElement(change)).find(isCustomObject)
+const getParentCustomObjectName = async (change: Change): Promise<string | undefined> => {
+  const parent = await awu(getParents(getChangeElement(change))).find(isCustomObject)
   return parent === undefined ? undefined : apiName(parent)
 }
 
-const isSideEffectRemoval = (removedObjectNames: string[]) => (change: Change): boolean => {
-  const parentName = getParentCustomObjectName(change)
+const isSideEffectRemoval = (
+  removedObjectNames: string[]
+) => async (change: Change): Promise<boolean> => {
+  const parentName = await getParentCustomObjectName(change)
   return isInstanceChange(change)
     && isRemovalChange(change)
     && parentName !== undefined && removedObjectNames.includes(parentName)
@@ -789,33 +821,33 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         return []
       })
 
-      const customObjectInstances = _.keyBy(
-        elements.filter(isInstanceOfType(CUSTOM_OBJECT)),
+      const customObjectInstances = await keyByAsync(
+        await awu(elements).filter(isInstanceOfType(CUSTOM_OBJECT)).toArray() as InstanceElement[],
         instance => apiName(instance),
       )
 
-      const typesToMergeFromInstance = (): TypesFromInstance => {
-        const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
+      const typesToMergeFromInstance = async (): Promise<TypesFromInstance> => {
+        const fixTypesDefinitions = async (typesFromInstance: TypeMap): Promise<void> => {
           const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as
             ObjectType
           listViewType.fields.columns.refType = createRefToElmWithValue(
-            new ListType(listViewType.fields.columns.getType())
+            new ListType(await listViewType.fields.columns.getType())
           )
           listViewType.fields.filters.refType = createRefToElmWithValue(
-            new ListType(listViewType.fields.filters.getType())
+            new ListType(await listViewType.fields.filters.getType())
           )
           const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS] as
             ObjectType
           fieldSetType.fields.availableFields.refType = createRefToElmWithValue(new ListType(
-            fieldSetType.fields.availableFields.getType()
+            await fieldSetType.fields.availableFields.getType()
           ))
           fieldSetType.fields.displayedFields.refType = createRefToElmWithValue(new ListType(
-            fieldSetType.fields.displayedFields.getType()
+            await fieldSetType.fields.displayedFields.getType()
           ))
           const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
             ObjectType
           compactLayoutType.fields.fields.refType = createRefToElmWithValue(
-            new ListType(compactLayoutType.fields.fields.getType())
+            new ListType(await compactLayoutType.fields.fields.getType())
           )
           // internalId is also the name of a field on the custom object instances, therefore
           // we override it here to have the right type for the annotation.
@@ -824,23 +856,22 @@ const filterCreator: FilterCreator = ({ client, config }) => {
           typesFromInstance[INTERNAL_ID_ANNOTATION] = BuiltinTypes.HIDDEN_STRING
         }
 
-        const getAllTypesFromInstance = (): TypeMap => {
+        const getAllTypesFromInstance = async (): Promise<TypeMap> => {
           const customObjectType = findObjectType(elements, CUSTOM_OBJECT_TYPE_ID)
           if (_.isUndefined(customObjectType)) {
             return {}
           }
-          const typesFromInstance: TypeMap = _(customObjectType.fields)
-            .entries()
-            .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
-            .map(([name, field]) => [name, field.getType()])
-            .fromPairs()
-            .value()
-
-          fixTypesDefinitions(typesFromInstance)
+          const typesFromInstance: TypeMap = Object.fromEntries(
+            await awu(Object.entries(customObjectType.fields))
+              .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
+              .map(async ([name, field]) => [name, await field.getType()])
+              .toArray()
+          )
+          await fixTypesDefinitions(typesFromInstance)
           return typesFromInstance
         }
 
-        const typesFromInstance = getAllTypesFromInstance()
+        const typesFromInstance = await getAllTypesFromInstance()
         const nestedMetadataTypes = _.pick(typesFromInstance,
           Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)) as Record<string, ObjectType>
         const customOnlyAnnotationTypes = _.pick(typesFromInstance,
@@ -858,8 +889,8 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         }
       }
 
-      const typesFromInstance = typesToMergeFromInstance()
-      const newElements: Element[] = createFromSObjectsAndInstances(
+      const typesFromInstance = await typesToMergeFromInstance()
+      const newElements: Element[] = await createFromSObjectsAndInstances(
         _.flatten(Object.values(sObjects)),
         customObjectInstances,
         typesFromInstance,
@@ -867,30 +898,32 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       )
 
       const objectTypeNames = new Set(Object.keys(sObjects))
-      Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
-        // Adds objects that exists in the metadata api but don't exist in the soap api
-        if (!objectTypeNames.has(instanceApiName)) {
-          newElements.push(...createFromInstance(instance, typesFromInstance))
-        }
-      })
+      await awu(Object.entries(customObjectInstances))
+        .forEach(async ([instanceApiName, instance]) => {
+          // Adds objects that exists in the metadata api but don't exist in the soap api
+          if (!objectTypeNames.has(instanceApiName)) {
+            newElements.push(...await createFromInstance(instance, typesFromInstance))
+          }
+        })
 
-      removeIrrelevantElements(elements)
+      await removeIrrelevantElements(elements)
       const elementFullNames = new Set(elements.map(elem => id(elem)))
       newElements
         .filter(newElem => !elementFullNames.has(id(newElem)))
         .forEach(newElem => elements.push(newElem))
-      fixDependentInstancesPathAndSetParent(elements)
+      await fixDependentInstancesPathAndSetParent(elements)
       removeUnsupportedFields(elements, config[UNSUPPORTED_SYSTEM_FIELDS] ?? [])
     },
 
     preDeploy: async changes => {
-      const originalChangeMapping = _.groupBy(
-        changes.filter(isCustomObjectRelatedChange),
+      const originalChangeMapping = await groupByAsync(
+        awu(changes).filter(isCustomObjectRelatedChange),
         getCustomObjectApiName,
       )
 
-      const deployableCustomObjectChanges = Object.entries(originalChangeMapping)
+      const deployableCustomObjectChanges = await awu(Object.entries(originalChangeMapping))
         .map(entry => createCustomObjectChange(config.systemFields, ...entry))
+        .toArray()
 
       // Handle known side effects - if we remove a custom object we don't need to also remove
       // its dependent instances (like layouts, custom object translations and so on)
@@ -899,37 +932,41 @@ const filterCreator: FilterCreator = ({ client, config }) => {
           name => originalChangeMapping[name].filter(isObjectTypeChange).some(isRemovalChange)
         )
 
-      const sideEffectRemovalsByObject = _.groupBy(
-        changes.filter(isSideEffectRemoval(removedCustomObjectNames)),
-        getParentCustomObjectName,
+      const sideEffectRemovalsByObject = await groupByAsync(
+        await awu(changes)
+          .filter(isSideEffectRemoval(removedCustomObjectNames))
+          .toArray() as Change[],
+        async c => await getParentCustomObjectName(c) ?? '',
       )
+
       if (!_.isEmpty(sideEffectRemovalsByObject)) {
         // Store the changes we are about to remove in the original changes so we will restore
         // them if the custom object is deleted successfully
         Object.entries(sideEffectRemovalsByObject).forEach(([objectName, sideEffects]) => {
           originalChangeMapping[objectName].push(...sideEffects)
         })
-        _.remove(changes, isSideEffectRemoval(removedCustomObjectNames))
+        await removeAsync(changes, isSideEffectRemoval(removedCustomObjectNames))
       }
 
       // Remove all the non-deployable custom object changes from the original list and replace them
       // with the deployable changes we created here
       originalChanges = originalChangeMapping
-      _.remove(changes, isCustomObjectRelatedChange)
+      await removeAsync(changes, isCustomObjectRelatedChange)
       changes.push(...deployableCustomObjectChanges)
     },
 
     onDeploy: async changes => {
-      const appliedCustomObjectApiNames = changes
+      const appliedCustomObjectApiNames = await awu(changes)
         .filter(isInstanceOfTypeChange(CUSTOM_OBJECT))
         .map(change => apiName(getChangeElement(change)))
+        .toArray()
 
       const appliedOriginalChanges = appliedCustomObjectApiNames.flatMap(
         objectApiName => originalChanges[objectApiName] ?? []
       )
 
       // Remove the changes we generated in preDeploy and replace them with the original changes
-      _.remove(changes, isInstanceOfTypeChange(CUSTOM_OBJECT))
+      await removeAsync(changes, isInstanceOfTypeChange(CUSTOM_OBJECT))
       changes.push(...appliedOriginalChanges)
       return []
     },

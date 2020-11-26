@@ -17,9 +17,12 @@ import _ from 'lodash'
 import {
   Element, ObjectType, Field, ReferenceExpression, isInstanceElement,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import { VALUE_SET_FIELDS, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { metadataType, isCustomObject } from '../transformers/transformer'
+
+const { awu } = collections.asynciterable
 
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
 export const CUSTOM_VALUE = 'customValue'
@@ -27,10 +30,11 @@ export const MASTER_LABEL = 'master_label'
 
 type GlobalValueSetsLookup = Record<string, ReferenceExpression>
 
-const getValueSetNameToRef = (elements: Element[]): GlobalValueSetsLookup => {
-  const globalValueSets = elements
+const getValueSetNameToRef = async (elements: Element[]): Promise<GlobalValueSetsLookup> => {
+  const globalValueSets = await awu(elements)
     .filter(isInstanceElement)
-    .filter(e => metadataType(e) === GLOBAL_VALUE_SET)
+    .filter(async e => await metadataType(e) === GLOBAL_VALUE_SET)
+    .toArray()
   return _.fromPairs(globalValueSets
     .map(gvs => [
       gvs.value[INSTANCE_FULL_NAME_FIELD],
@@ -63,8 +67,8 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const valueSetNameToRef = getValueSetNameToRef(elements)
-    const customObjects = elements.filter(isCustomObject)
+    const valueSetNameToRef = await getValueSetNameToRef(elements)
+    const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
   },
 })

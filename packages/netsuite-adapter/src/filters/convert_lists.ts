@@ -18,10 +18,13 @@ import {
   Element, Field, isInstanceElement, isListType, ObjectType, Values, Value,
 } from '@salto-io/adapter-api'
 import { applyRecursive } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { dataset_dependencies } from '../types/custom_types/dataset'
 import { savedcsvimport_filemappings } from '../types/custom_types/savedcsvimport'
+
+const { awu } = collections.asynciterable
 
 type FieldFullNameToOrderBy = Map<string, string | undefined>
 
@@ -30,13 +33,13 @@ const unorderedListFields: FieldFullNameToOrderBy = new Map([
   [savedcsvimport_filemappings.fields.filemapping.elemID.getFullName(), 'file'],
 ])
 
-const castAndOrderListsRecursively = (
+const castAndOrderListsRecursively = async (
   type: ObjectType,
   values: Values,
-): void => {
+): Promise<void> => {
   // Cast all values of list type to list and order lists according to unorderedListFields
-  const castAndOrderLists = (field: Field, value: Value): Value => {
-    if (!isListType(field.getType())) {
+  const castAndOrderLists = async (field: Field, value: Value): Promise<Value> => {
+    if (!isListType(await field.getType())) {
       return value
     }
     if (!_.isArray(value)) {
@@ -47,7 +50,7 @@ const castAndOrderListsRecursively = (
       ? _.orderBy(value, unorderedListFields.get(field.elemID.getFullName()))
       : value
   }
-  applyRecursive(type, values, castAndOrderLists)
+  await applyRecursive(type, values, castAndOrderLists)
 }
 
 
@@ -58,9 +61,9 @@ const filterCreator: FilterCreator = () => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
-      .forEach(inst => castAndOrderListsRecursively(inst.getType(), inst.value))
+      .forEach(async inst => castAndOrderListsRecursively(await inst.getType(), inst.value))
   },
 })
 

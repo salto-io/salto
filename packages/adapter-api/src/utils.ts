@@ -29,33 +29,36 @@ type SubElementSearchResult = {
 
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
 
-export const getDeepInnerType = (
+export const getDeepInnerType = async (
   containerType: ContainerType,
   elementsSource?: ReadOnlyElementsSource,
-): ObjectType | PrimitiveType => {
-  const innerType = containerType.getInnerType(elementsSource)
+): Promise<ObjectType | PrimitiveType> => {
+  const innerType = await containerType.getInnerType(elementsSource)
   if (!isContainerType(innerType)) {
     return innerType
   }
   return getDeepInnerType(innerType, elementsSource)
 }
 
-export const getSubElement = (
+export const getSubElement = async (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
-): SubElementSearchResult | undefined => {
-  const getChildElement = (type: TypeElement, key: string): Field | TypeElement | undefined => {
+): Promise<SubElementSearchResult | undefined> => {
+  const getChildElement = async (
+    type: TypeElement,
+    key: string
+  ): Promise<Field | TypeElement | undefined> => {
     if ((isIndexPathPart(key) && isListType(type)) || isMapType(type)) {
       return type.getInnerType(elementsSource)
     }
-    if (type.annotationRefTypes[key]) return type.getAnnotationTypes(elementsSource)?.[key]
+    if (type.annotationRefTypes[key]) return (await type.getAnnotationTypes(elementsSource))?.[key]
     if (isObjectType(type)) return type.fields[key]
     return undefined
   }
 
   const [curPart, ...restOfParts] = pathParts
-  const nextBase = getChildElement(baseType, curPart)
+  const nextBase = await getChildElement(baseType, curPart)
   if (_.isUndefined(nextBase)) {
     return undefined
   }
@@ -66,8 +69,8 @@ export const getSubElement = (
 
   const fieldData = isField(nextBase)
     // This will fail if not called from the adapters
-    ? getSubElement(nextBase.getType(elementsSource), restOfParts, elementsSource)
-    : getSubElement(nextBase, restOfParts, elementsSource)
+    ? await getSubElement(await nextBase.getType(elementsSource), restOfParts, elementsSource)
+    : await getSubElement(nextBase, restOfParts, elementsSource)
 
   if (_.isUndefined(fieldData)) return undefined
   if (fieldData.field) return fieldData
@@ -82,59 +85,59 @@ export const getSubElement = (
   }
 }
 
-const getFieldAndPath = (
+const getFieldAndPath = async (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
-): SubElementSearchResult | undefined => {
-  const fieldData = getSubElement(baseType, pathParts, elementsSource)
+): Promise<SubElementSearchResult | undefined> => {
+  const fieldData = await getSubElement(baseType, pathParts, elementsSource)
   if (fieldData && fieldData.field) {
     return fieldData
   }
   return undefined
 }
 
-export const getField = (
+export const getField = async (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
-): Field | undefined => (
-  getFieldAndPath(baseType, pathParts, elementsSource)?.field
+): Promise<Field | undefined> => (
+  (await getFieldAndPath(baseType, pathParts, elementsSource))?.field
 )
 
-export const getFieldType = (
+export const getFieldType = async (
   baseType: TypeElement,
   path: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
-): TypeElement | undefined => {
-  const getFieldInternalType = (
+): Promise<TypeElement | undefined> => {
+  const getFieldInternalType = async (
     fieldType: TypeElement,
     pathParts: ReadonlyArray<string>
-  ): TypeElement | undefined => {
+  ): Promise<TypeElement | undefined> => {
     const [curPart, ...restOfParts] = pathParts
     if (_.isEmpty(curPart)) {
       return fieldType
     }
     if ((isIndexPathPart(curPart) && isListType(fieldType)) || isMapType(fieldType)) {
-      return getFieldInternalType(fieldType.getInnerType(elementsSource), restOfParts)
+      return getFieldInternalType(await fieldType.getInnerType(elementsSource), restOfParts)
     }
     return undefined
   }
-  const fieldData = getFieldAndPath(baseType, path, elementsSource)
+  const fieldData = await getFieldAndPath(baseType, path, elementsSource)
   // This will fail if not called from the adapters
   return fieldData?.field
-    && getFieldInternalType(fieldData.field.getType(elementsSource), fieldData.path)
+    && getFieldInternalType(await fieldData.field.getType(elementsSource), fieldData.path)
 }
 
-export const getFieldNames = (
+export const getFieldNames = async (
   refType: ObjectType,
   path: string[],
   elementsSource?: ReadOnlyElementsSource,
-): string[] => {
+): Promise<string[]> => {
   if (_.isEmpty(path)) {
     return _.keys(refType.fields)
   }
-  const fieldType = getFieldType(refType, path, elementsSource)
+  const fieldType = await getFieldType(refType, path, elementsSource)
   if (isObjectType(fieldType)) {
     return _.keys(fieldType.fields)
   }

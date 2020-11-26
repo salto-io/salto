@@ -57,7 +57,9 @@ export const initAdapters = (
     }
   )
 
-export const getDefaultAdapterConfig = (adapterName: string): InstanceElement | undefined => {
+export const getDefaultAdapterConfig = async (
+  adapterName: string
+): Promise<InstanceElement | undefined> => {
   const { configType } = adapterCreators[adapterName]
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
@@ -74,7 +76,7 @@ export const getAdaptersCreatorConfigs = async (
         const adapterConfig = config[adapter]
         return ([adapter, {
           credentials: credentials[adapter],
-          config: adapterConfig ?? getDefaultAdapterConfig(adapter),
+          config: adapterConfig ?? await getDefaultAdapterConfig(adapter),
           getElemIdFunc: elemIdGetter,
         }])
       }

@@ -19,11 +19,15 @@ import {
   ElemID, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isCustomObject, apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
 import { boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange } from './utils'
+
+const { awu } = collections.asynciterable
+const { removeAsync } = promises.array
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
@@ -56,12 +60,12 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
 
 const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const customObjectTypes = elements.filter(isCustomObject)
+    const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     if (_.isEmpty(customObjectTypes)) {
       return
     }
 
-    const topicsForObjectsInstances = getInstancesOfMetadataType(elements,
+    const topicsForObjectsInstances = await getInstancesOfMetadataType(elements,
       TOPICS_FOR_OBJECTS_METADATA_TYPE)
     if (_.isEmpty(topicsForObjectsInstances)) {
       return
@@ -72,22 +76,26 @@ const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => (
     const topics: Record<string, boolean> = _.merge({}, ...topicsPerObject)
 
     // Add topics for objects to all fetched elements
-    customObjectTypes.forEach(obj => {
-      const fullName = apiName(obj)
+    await awu(customObjectTypes).forEach(async obj => {
+      const fullName = await apiName(obj)
       if (Object.keys(topics).includes(fullName)) {
         setTopicsForObjects(obj, topics[fullName])
       }
     })
 
     // Remove TopicsForObjects Instances & Type to avoid information duplication
-    _.remove(elements, elem => (metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE))
+    await removeAsync(
+      elements,
+      async elem => (await metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
+    )
   },
 
   preDeploy: async changes => {
-    const customObjectChanges = changes
+    const customObjectChanges = await awu(changes)
       .filter(isObjectTypeChange)
       .filter(isAdditionOrModificationChange)
       .filter(change => isCustomObject(getChangeElement(change)))
+      .toArray()
 
     const newObjects = customObjectChanges
       .filter(isAdditionChange)
@@ -114,20 +122,21 @@ const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => (
 
     // Add topics for objects instances to the list of changes to deploy
     changes.push(
-      ...topicsToSet
-        .map(obj => {
+      ...await awu(topicsToSet)
+        .map(async obj => {
           const topics = getTopicsForObjects(obj)
           const topicsEnabled = boolValue(topics[ENABLE_TOPICS] ?? false)
-          return new TopicsForObjectsInfo(apiName(obj), apiName(obj), topicsEnabled)
+          return new TopicsForObjectsInfo(await apiName(obj), await apiName(obj), topicsEnabled)
         })
         .map(createTopicsForObjectsInstance)
         .map(after => toChange({ after }))
+        .toArray()
     )
   },
 
   onDeploy: async changes => {
     // Remove all the topics for objects instance changes that we added in preDeploy
-    _.remove(changes, isInstanceOfTypeChange(TOPICS_FOR_OBJECTS_METADATA_TYPE))
+    await removeAsync(changes, isInstanceOfTypeChange(TOPICS_FOR_OBJECTS_METADATA_TYPE))
     return []
   },
 })

@@ -241,4 +241,6 @@ export const mockParseCache = (): ParseResultCache => ({
   clear: () => Promise.resolve(),
   rename: () => Promise.resolve(),
   clone: () => mockParseCache(),
+  delete: () => Promise.resolve(),
+  list: () => Promise.resolve([]),
 })

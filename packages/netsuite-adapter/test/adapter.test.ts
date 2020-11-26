@@ -131,13 +131,21 @@ describe('Adapter', () => {
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
       expect(elements).toContainEqual(
-        createInstanceElement(customTypeInfo, customFieldType, mockGetElemIdFunc)
+        await createInstanceElement(customTypeInfo, customFieldType, mockGetElemIdFunc)
       )
       expect(elements).toContainEqual(
-        createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE], mockGetElemIdFunc)
+        await createInstanceElement(
+          fileCustomizationInfo,
+          fileCabinetTypes[FILE],
+          mockGetElemIdFunc
+        )
       )
       expect(elements).toContainEqual(
-        createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER], mockGetElemIdFunc)
+        await createInstanceElement(
+          folderCustomizationInfo,
+          fileCabinetTypes[FOLDER],
+          mockGetElemIdFunc
+        )
       )
     })
 
@@ -289,7 +297,7 @@ describe('Adapter', () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([toCustomizationInfo(expectedResolvedInstance)])
+          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedInstance)])
         expect(post.isEqual(instance)).toBe(true)
       })
 
@@ -298,7 +306,7 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(fileInstance)])
+        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(fileInstance)])
         expect(post.isEqual(fileInstance)).toBe(true)
       })
 
@@ -307,7 +315,7 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(folderInstance)])
+        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(folderInstance)])
         expect(post.isEqual(folderInstance)).toBe(true)
       })
 
@@ -320,7 +328,7 @@ describe('Adapter', () => {
           ],
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
-          [toCustomizationInfo(folderInstance), toCustomizationInfo(fileInstance)]
+          [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
         ))
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
@@ -337,7 +345,7 @@ describe('Adapter', () => {
           ],
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
-          [toCustomizationInfo(folderInstance), toCustomizationInfo(fileInstance)]
+          [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
         ))
         expect(result.errors).toHaveLength(1)
         expect(result.errors).toEqual([clientError])
@@ -362,7 +370,7 @@ describe('Adapter', () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([toCustomizationInfo(expectedResolvedInstance)])
+          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedInstance)])
         expect(post).toEqual(instance)
       })
 
@@ -371,7 +379,7 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(fileInstance)])
+        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(fileInstance)])
         expect(post).toEqual(fileInstance)
       })
 
@@ -380,7 +388,7 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(folderInstance)])
+        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(folderInstance)])
         expect(post).toEqual(folderInstance)
       })
 
@@ -398,7 +406,7 @@ describe('Adapter', () => {
         const expectedResolvedAfter = after.clone()
         expectedResolvedAfter.value.description = 'edited description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([toCustomizationInfo(expectedResolvedAfter)])
+          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedAfter)])
         expect(post).toEqual(after)
       })
     })

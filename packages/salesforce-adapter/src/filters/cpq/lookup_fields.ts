@@ -17,9 +17,12 @@ import _ from 'lodash'
 import { Element, ObjectType, ReferenceExpression, Value, Change, ChangeDataType, isAdditionOrModificationChange, getChangeElement, isObjectTypeChange, Field, isAdditionChange, isFieldChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { apiName, isCustomObject, relativeApiName } from '../../transformers/transformer'
 import { FIELD_ANNOTATIONS, CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, DEFAULT_OBJECT_TO_API_MAPPING, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, TEST_OBJECT_TO_API_MAPPING, CUSTOM_OBJECT, CUSTOM_FIELD, CPQ_PRICE_SCHEDULE, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD, CPQ_DISCOUNT_SCHEDULE, API_NAME_SEPARATOR } from '../../constants'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -79,57 +82,62 @@ const LOOKUP_FIELDS = {
   },
 } as Record<string, Record<string, LookupFieldDef>>
 
-const getLookupFields = (object: ObjectType): Field[] =>
-  (Object.values(_.pick(object.fields, Object.keys(LOOKUP_FIELDS[apiName(object)]))))
+const getLookupFields = async (object: ObjectType): Promise<Field[]> =>
+  (Object.values(_.pick(object.fields, Object.keys(LOOKUP_FIELDS[await apiName(object)]))))
 
-const transformLookupValueSetFullNames = (
+const transformLookupValueSetFullNames = async (
   lookupField: Field,
   transformFullNameFn: (
     objectApiName: string,
     fieldName: string,
     fullName: string
   ) => (ReferenceExpression | string | undefined)
-): Field => {
+): Promise<Field> => {
   const lookupValueSet = lookupField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
   if (lookupValueSet === undefined) {
     return lookupField
   }
-  lookupField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = lookupValueSet.map(
-    (value: Value) => (
+  lookupField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = await awu(lookupValueSet).map(
+    async (value: Value) => (
       {
         ...value,
         fullName: transformFullNameFn(
-          apiName(lookupField.parent),
-          apiName(lookupField, true),
+          await apiName(lookupField.parent),
+          await apiName(lookupField, true),
           value.fullName
         ),
       }
     )
-  )
+  ).toArray()
   return lookupField
 }
 
-const transformObjectLookupValueSetFullNames = (
+const transformObjectLookupValueSetFullNames = async (
   object: ObjectType,
   transformFullNameFn: (
     objectApiName: string,
     fieldName: string,
     fullName: string
   ) => (ReferenceExpression | string | undefined)
-): ObjectType => {
-  const lookupFields = getLookupFields(object)
+): Promise<ObjectType> => {
+  const lookupFields = await getLookupFields(object)
   lookupFields.forEach(
     field => transformLookupValueSetFullNames(field, transformFullNameFn)
   )
   return object
 }
 
-const replaceLookupObjectValueSetValuesWithReferences = (customObjects: ObjectType[]): void => {
+const replaceLookupObjectValueSetValuesWithReferences = async (
+  customObjects: ObjectType[]
+): Promise<void> => {
   const apiNameToCustomObject = Object.fromEntries(
-    customObjects.map(object => [apiName(object), object])
+    await awu(customObjects)
+      .map(async object => [await apiName(object), object])
+      .toArray()
   )
-  const relevantObjects = customObjects
-    .filter(object => Object.keys(LOOKUP_FIELDS).includes(apiName(object)))
+  const relevantObjects = await awu(customObjects)
+    .filter(async object => Object.keys(LOOKUP_FIELDS).includes(await apiName(object)))
+    .toArray()
 
   const transformFullNameToRef = (
     objectApiName: string,
@@ -187,16 +195,16 @@ const transformFullNameToLabel = (
   return nameToApiMapping[lookupApiName] ?? lookupApiName
 }
 
-const transformObjectLabelsToApiName = (object: ObjectType): ObjectType =>
+const transformObjectLabelsToApiName = (object: ObjectType): Promise<ObjectType> =>
   (transformObjectLookupValueSetFullNames(object, transformFullNameToApiName))
 
-const transformObjectValuesBackToLabel = (object: ObjectType): ObjectType =>
+const transformObjectValuesBackToLabel = (object: ObjectType): Promise<ObjectType> =>
   (transformObjectLookupValueSetFullNames(object, transformFullNameToLabel))
 
-const transformFieldLabelsToApiName = (field: Field): Field =>
+const transformFieldLabelsToApiName = (field: Field): Promise<Field> =>
   (transformLookupValueSetFullNames(field, transformFullNameToApiName))
 
-const transformFieldValuesBackToLabel = (field: Field): Field =>
+const transformFieldValuesBackToLabel = (field: Field): Promise<Field> =>
   (transformLookupValueSetFullNames(field, transformFullNameToLabel))
 
 const doesObjectHaveValuesMappingLookup = (objectApiName: string): boolean =>
@@ -205,35 +213,39 @@ const doesObjectHaveValuesMappingLookup = (objectApiName: string): boolean =>
 
 const getCustomObjectWithMappingLookupChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
-): ReadonlyArray<Change<ObjectType>> =>
-  (changes
+): Promise<ReadonlyArray<Change<ObjectType>>> => (
+  awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isObjectTypeChange)
-    .filter(change =>
-      (isCustomObject(getChangeElement(change)))
-        && doesObjectHaveValuesMappingLookup(apiName(getChangeElement(change)))))
+    .filter(async change =>
+      (await isCustomObject(getChangeElement(change)))
+        && doesObjectHaveValuesMappingLookup(await apiName(getChangeElement(change))))
+    .toArray()
+)
 
-const applyFuncOnCustomFieldWithMappingLookupChange = (
+const applyFuncOnCustomFieldWithMappingLookupChange = async (
   changes: ReadonlyArray<Change<ChangeDataType>>,
-  fn: (customField: Field) => Field
-): void =>
-  (changes
+  fn: (customField: Field) => Promise<Field>
+): Promise<void> =>
+  (awu(changes)
     .filter<Change<Field>>(isFieldChange)
-    .filter(change => {
+    .filter(async change => {
       const changeElement = getChangeElement(change)
-      const parentApiName = apiName(changeElement.parent)
+      const parentApiName = await apiName(changeElement.parent)
       return doesObjectHaveValuesMappingLookup(parentApiName)
-        && LOOKUP_FIELDS[parentApiName][apiName(changeElement, true)]?.valuesMapping
+        && LOOKUP_FIELDS[parentApiName][await apiName(changeElement, true)]?.valuesMapping
           !== undefined
     })
-    .forEach(change => applyFunctionToChangeData(change, fn)))
+    .forEach(async change => applyFunctionToChangeData(change, fn)))
 
-const applyFuncOnCustomObjectWithMappingLookupChange = (
+const applyFuncOnCustomObjectWithMappingLookupChange = async (
   changes: ReadonlyArray<Change<ChangeDataType>>,
-  fn: (customObject: ObjectType) => ObjectType
-): void => {
-  const customObjectWithMappingLookupChanges = getCustomObjectWithMappingLookupChanges(changes)
-  customObjectWithMappingLookupChanges.forEach(change => (
+  fn: (customObject: ObjectType) => Promise<ObjectType>
+): Promise<void> => {
+  const customObjectWithMappingLookupChanges = await getCustomObjectWithMappingLookupChanges(
+    changes
+  )
+  await awu(customObjectWithMappingLookupChanges).forEach(async change => (
     applyFunctionToChangeData(
       change,
       fn,
@@ -244,31 +256,31 @@ const applyFuncOnCustomObjectWithMappingLookupChange = (
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     log.debug('Started replacing lookupObject values with references')
-    replaceLookupObjectValueSetValuesWithReferences(
-      elements.filter(isCustomObject)
+    await replaceLookupObjectValueSetValuesWithReferences(
+      await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     )
     log.debug('Finished replacing lookupObject values with references')
   },
   preDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
-    applyFuncOnCustomObjectWithMappingLookupChange(
+    await applyFuncOnCustomObjectWithMappingLookupChange(
       // Fields are taken from object changes only when the object is added
       addOrModifyChanges.filter(isAdditionChange),
       transformObjectValuesBackToLabel
     )
-    applyFuncOnCustomFieldWithMappingLookupChange(
+    await applyFuncOnCustomFieldWithMappingLookupChange(
       addOrModifyChanges,
       transformFieldValuesBackToLabel,
     )
   },
   onDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
-    applyFuncOnCustomObjectWithMappingLookupChange(
+    await applyFuncOnCustomObjectWithMappingLookupChange(
       // Fields are taken from object changes only when the object is added
       addOrModifyChanges.filter(isAdditionChange),
       transformObjectLabelsToApiName
     )
-    applyFuncOnCustomFieldWithMappingLookupChange(
+    await applyFuncOnCustomFieldWithMappingLookupChange(
       addOrModifyChanges,
       transformFieldLabelsToApiName,
     )

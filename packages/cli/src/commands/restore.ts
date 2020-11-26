@@ -30,12 +30,16 @@ import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
 
 const log = logger(module)
 
-const printRestorePlan = (changes: LocalChange[], detailed: boolean, output: CliOutput): void => {
+const printRestorePlan = async (
+  changes: LocalChange[],
+  detailed: boolean,
+  output: CliOutput
+): Promise<void> => {
   outputLine(EOL, output)
   outputLine(header(Prompts.RESTORE_CALC_DIFF_RESULT_HEADER), output)
   if (changes.length > 0) {
     outputLine(
-      formatDetailedChanges([changes.map(change => change.change)], detailed),
+      await formatDetailedChanges([changes.map(change => change.change)], detailed),
       output,
     )
   } else {
@@ -140,7 +144,7 @@ export const action: CommandDefAction<RestoreArgs> = async ({
 
   const changes = await restore(workspace, actualServices, validSelectors)
   if (listPlannedChanges || dryRun) {
-    printRestorePlan(changes, detailedPlan, output)
+    await printRestorePlan(changes, detailedPlan, output)
   }
 
   outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), output)

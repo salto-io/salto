@@ -19,8 +19,11 @@ import {
 import {
   transformValues,
 } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
+
+const { awu } = collections.asynciterable
 
 
 /**
@@ -35,14 +38,14 @@ const filterCreator: FilterCreator = () => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
-      .filter(instance => isObjectType(instance.getType()))
-      .forEach(instance => {
-        instance.value = transformValues(
+      .filter(async instance => isObjectType(await instance.getType()))
+      .forEach(async instance => {
+        instance.value = await transformValues(
           {
             values: instance.value,
-            type: instance.getType(),
+            type: await instance.getType(),
             transformFunc: transformPrimitive,
             strict: false,
           }

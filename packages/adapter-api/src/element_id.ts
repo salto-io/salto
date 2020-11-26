@@ -19,6 +19,13 @@ import { CORE_ANNOTATIONS } from './core_annotations'
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
 export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
+export const MAP_ID_PREFIX = 'Map'
+export const LIST_ID_PREFIX = 'List'
+export const GENERIC_ID_PREFIX = '<'
+export const GENERIC_ID_SUFFIX = '>'
+
+const CONTAINER_PREFIXES = [MAP_ID_PREFIX, LIST_ID_PREFIX]
+const CONTAINER_PARTS_REGEX = new RegExp(`^(${CONTAINER_PREFIXES.join('|')})${GENERIC_ID_PREFIX}(.+)${GENERIC_ID_SUFFIX}$`)
 
 export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: CORE_ANNOTATIONS.DEPENDS_ON,
@@ -26,6 +33,14 @@ export const INSTANCE_ANNOTATIONS = {
   GENERATED_DEPENDENCIES: CORE_ANNOTATIONS.GENERATED_DEPENDENCIES,
   HIDDEN: CORE_ANNOTATIONS.HIDDEN,
   SERVICE_URL: CORE_ANNOTATIONS.SERVICE_URL,
+}
+
+const getContainerPrefix = (fullName: string): {prefix: string; innerName: string} | undefined => {
+  const [prefix, innerName] = fullName.match(CONTAINER_PARTS_REGEX)?.slice(1) ?? []
+  if (prefix !== undefined && innerName !== undefined) {
+    return { prefix, innerName }
+  }
+  return undefined
 }
 
 export class ElemID {
@@ -39,6 +54,11 @@ export class ElemID {
   static getDefaultIdType = (adapter: string): ElemIDType => (adapter === ElemID.VARIABLES_NAMESPACE ? 'var' : 'type')
 
   static fromFullName(fullName: string): ElemID {
+    const containerNameParts = getContainerPrefix(fullName)
+    if (containerNameParts !== undefined) {
+      // const innerID = ElemID.fromFullName(containerNameParts.innerName)
+      return new ElemID('', fullName)
+    }
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
     if (idType === undefined) {
       return new ElemID(adapter, typeName)

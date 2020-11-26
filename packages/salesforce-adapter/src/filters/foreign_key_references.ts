@@ -20,9 +20,12 @@ import {
 import _ from 'lodash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
+
 import { FilterCreator } from '../filter'
 import { groupByAPIName, ApiNameMapping } from './utils'
 import { FOREIGN_KEY_DOMAIN } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const { makeArray } = collections.array
 
@@ -32,10 +35,10 @@ const { makeArray } = collections.array
  * @param instance                The current instance being modified
  * @param apiNameToElemIDs        Known element ids, mapped by API name and metadata type
  */
-const resolveReferences = (
+const resolveReferences = async (
   instance: InstanceElement,
   apiNameToElemIDs: ApiNameMapping,
-): void => {
+): Promise<void> => {
   const transformPrimitive: TransformFunc = ({ value, field }) => {
     if (field === undefined || value === undefined || !_.isString(value)) {
       return value
@@ -51,9 +54,9 @@ const resolveReferences = (
   }
 
   // not using transformElement because we're editing the instance in-place
-  instance.value = transformValues({
+  instance.value = await transformValues({
     values: instance.value,
-    type: instance.getType(),
+    type: await instance.getType(),
     transformFunc: transformPrimitive,
     strict: false,
   }) ?? instance.value
@@ -65,9 +68,9 @@ const resolveReferences = (
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const apiNameToElemIDs = groupByAPIName(elements)
-    elements.filter(isInstanceElement).forEach(instance => {
-      resolveReferences(instance, apiNameToElemIDs)
+    const apiNameToElemIDs = await groupByAPIName(elements)
+    await awu(elements).filter(isInstanceElement).forEach(async instance => {
+      await resolveReferences(instance, apiNameToElemIDs)
     })
   },
 })

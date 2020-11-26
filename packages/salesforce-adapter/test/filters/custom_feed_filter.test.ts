@@ -83,7 +83,7 @@ describe('Test CustomFeedFilter', () => {
       expect(testElements).toHaveLength(4)
       const instance = testElements[3]
       expect(isInstanceElement(instance)).toBeTruthy()
-      expect(apiName(instance)).toEqual(instanceName)
+      expect(await apiName(instance)).toEqual(instanceName)
     })
   })
 })

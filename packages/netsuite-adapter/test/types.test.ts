@@ -17,11 +17,12 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, getRestriction, isPrimitiveType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import { ADDITIONAL_FILE_SUFFIX, SCRIPT_ID, PATH } from '../src/constants'
 import { fieldTypes } from '../src/types/field_types'
 
+const { awu } = collections.asynciterable
 
 describe('Types', () => {
   describe('CustomTypes', () => {
@@ -36,14 +37,15 @@ describe('Types', () => {
         })
     })
 
-    it('should have at most 1 fileContent field with ADDITIONAL_FILE_SUFFIX annotation', () => {
-      Object.values(customTypes)
-        .forEach(typeDef => {
-          const fileContentFields = Object.values(typeDef.fields)
-            .filter(f => {
-              const fType = f.getType()
+    it('should have at most 1 fileContent field with ADDITIONAL_FILE_SUFFIX annotation', async () => {
+      await awu(Object.values(customTypes))
+        .forEach(async typeDef => {
+          const fileContentFields = await awu(Object.values(typeDef.fields))
+            .filter(async f => {
+              const fType = await f.getType()
               return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
             })
+            .toArray()
           expect(fileContentFields.length).toBeLessThanOrEqual(1)
           if (!_.isEmpty(fileContentFields)) {
             expect(fileContentFields[0].annotations[ADDITIONAL_FILE_SUFFIX]).toBeDefined()
@@ -56,16 +58,16 @@ describe('Types', () => {
     describe('file type definition', () => {
       it('should have single fileContent field', () => {
         expect(Object.values(fileCabinetTypes.file.fields)
-          .find(f => {
-            const fType = f.getType()
+          .find(async f => {
+            const fType = await f.getType()
             return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
           }))
           .toBeDefined()
       })
 
-      it('should have service_id path field', () => {
+      it('should have service_id path field', async () => {
         expect(Object.keys(fileCabinetTypes.file.fields)).toContain(PATH)
-        const pathFieldType = fileCabinetTypes.file.fields[PATH].getType()
+        const pathFieldType = await fileCabinetTypes.file.fields[PATH].getType()
         expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
           .toBe(true)
       })
@@ -86,9 +88,9 @@ describe('Types', () => {
     })
 
     describe('folder type definition', () => {
-      it('should have service_id path field', () => {
+      it('should have service_id path field', async () => {
         expect(Object.keys(fileCabinetTypes.folder.fields)).toContain(PATH)
-        const pathFieldType = fileCabinetTypes.folder.fields[PATH].getType()
+        const pathFieldType = await fileCabinetTypes.folder.fields[PATH].getType()
         expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
           .toBe(true)
       })

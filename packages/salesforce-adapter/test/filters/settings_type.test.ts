@@ -132,7 +132,7 @@ describe('Test Settings Type', () => {
         expect(path[2]).toEqual('MacroSettings')
       }
       expect(isInstanceElement(testElements[4])).toBeTruthy()
-      expect((testElements[4] as InstanceElement).getType()).toEqual(testElements[3])
+      expect(await (testElements[4] as InstanceElement).getType()).toEqual(testElements[3])
     })
   })
 })

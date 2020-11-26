@@ -29,7 +29,7 @@ export default class DummyAdapter implements AdapterOperations {
    */
   public async fetch(progressReporter?: ProgressReporter): Promise<FetchResult> {
     return {
-      elements: generateElements(this.genParams, progressReporter),
+      elements: await generateElements(this.genParams, progressReporter),
     }
   }
 

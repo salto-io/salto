@@ -21,6 +21,9 @@ module.exports = deepMerge(
     parserOptions: {
       tsconfigRootDir: __dirname,
     },
+    rules: {
+      '@typescript-eslint/no-floating-promises' : 2
+    }
   },
 )
 

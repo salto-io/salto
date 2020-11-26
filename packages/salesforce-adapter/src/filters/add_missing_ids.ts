@@ -16,14 +16,15 @@
 import {
   Element, isObjectType, isInstanceElement, isField,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { getFullName, getInternalId, setInternalId } from './utils'
 
 const log = logger(module)
+const { awu, groupByAsync } = collections.asynciterable
 
 export const getIdsForType = async (
   client: SalesforceClient, type: string,
@@ -51,19 +52,20 @@ const addMissingIds = async (
   elements: Element[],
 ): Promise<void> => {
   const allIds = await getIdsForType(client, typeName)
-  elements.forEach(element => {
-    const id = allIds[apiName(element)]
+  await awu(elements).forEach(async element => {
+    const id = allIds[await apiName(element)]
     if (id !== undefined) {
       setInternalId(element, id)
     }
   })
 }
 
-const elementsWithMissingIds = (elements: Element[]): Element[] => (
-  elements
+const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> => (
+  awu(elements)
     .flatMap(e => (isObjectType(e) ? Object.values(e.fields) : [e]))
-    .filter(e => (isInstanceElement(e) && !e.getType().isSettings) || isField(e))
-    .filter(e => apiName(e) !== undefined && getInternalId(e) === undefined)
+    .filter(async e => (isInstanceElement(e) && !(await e.getType()).isSettings) || isField(e))
+    .filter(async e => await apiName(e) !== undefined && getInternalId(e) === undefined)
+    .toArray()
 )
 
 /**
@@ -71,8 +73,8 @@ const elementsWithMissingIds = (elements: Element[]): Element[] => (
  */
 const filter: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]) => {
-    const groupedElements = _.groupBy(
-      elementsWithMissingIds(elements),
+    const groupedElements = await groupByAsync(
+      await elementsWithMissingIds(elements),
       metadataType,
     )
     log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)

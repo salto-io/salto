@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import { ModificationChange, InstanceElement, RemovalChange, ObjectType,
-  ElemID, AdditionChange, DetailedChange, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+  ElemID, AdditionChange, DetailedChange, BuiltinTypes, ReferenceExpression, getChangeElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -25,6 +26,8 @@ import { ParseResultCache } from '../../../src/workspace/cache'
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
+
+const { awu } = collections.asynciterable
 
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
@@ -40,6 +43,8 @@ describe('Nacl Files Source', () => {
       flush: () => Promise.resolve(),
       clear: () => Promise.resolve(),
       rename: () => Promise.resolve(),
+      delete: () => Promise.resolve(),
+      list: () => Promise.resolve([]),
     }
     mockDirStore = {
       list: () => Promise.resolve([]),
@@ -109,13 +114,13 @@ describe('Nacl Files Source', () => {
           naclFile,
           await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})
         )))
-      naclFileSourceTest = naclFilesSource(
-        mockDirStore, mockCache, mockedStaticFilesSource, parsedNaclFiles
+      naclFileSourceTest = await naclFilesSource(
+        mockDirStore, mockCache, mockedStaticFilesSource, undefined, parsedNaclFiles
       )
       await naclFileSourceTest.getAll()
     })
     it('should includes expected elements', async () => {
-      const elements = await naclFileSourceTest.getAll()
+      const elements = await awu(await naclFileSourceTest.getAll()).toArray()
       expect(elements).toHaveLength(2)
     })
     describe('setNaclFiles', () => {
@@ -142,7 +147,7 @@ describe('Nacl Files Source', () => {
             after: { value: newInstanceElementValue },
           },
         })
-        expect(await naclFileSourceTest.getAll()).toHaveLength(2)
+        expect(await awu(await naclFileSourceTest.getAll()).toArray()).toHaveLength(2)
         expect((await naclFileSourceTest.get(change.data.before.elemID)))
           .toMatchObject({
             elemID: instanceElementElemID, value: newInstanceElementValue,
@@ -165,7 +170,7 @@ describe('Nacl Files Source', () => {
           action: 'remove',
           data: { before: instanceElementObjectMatcher },
         })
-        const allElements = await naclFileSourceTest.getAll()
+        const allElements = await awu(await naclFileSourceTest.getAll()).toArray()
         expect(allElements).toHaveLength(1)
         expect(allElements[0] as ObjectType).toMatchObject(objectTypeObjectMatcher)
       })
@@ -188,7 +193,7 @@ describe('Nacl Files Source', () => {
           action: 'add',
           data: { after: { value: { a: 'me again', b: 6 } } },
         })
-        const allElements = await naclFileSourceTest.getAll()
+        const allElements = await awu(await naclFileSourceTest.getAll()).toArray()
         expect(allElements).toHaveLength(3)
         expect(await naclFileSourceTest.get(objectTypeElemID))
           .toMatchObject(objectTypeObjectMatcher)
@@ -209,7 +214,7 @@ describe('Nacl Files Source', () => {
         }
         const res = await naclFileSourceTest.setNaclFiles(newFile)
         expect(res).toHaveLength(0)
-        const allElements = await naclFileSourceTest.getAll()
+        const allElements = await awu(await naclFileSourceTest.getAll()).toArray()
         expect(allElements).toHaveLength(2)
         expect(await naclFileSourceTest.get(objectTypeElemID))
           .toMatchObject(objectTypeObjectMatcher)
@@ -270,11 +275,11 @@ describe('Nacl Files Source', () => {
         }
         const res = await naclFileSourceTest.setNaclFiles(newFile)
         expect(res).toHaveLength(1)
-        const elements = await naclFileSourceTest.getAll()
+        const elements = await awu(await naclFileSourceTest.getAll()).toArray()
         expect(elements).toHaveLength(2)
-        const instance = elements
+        const instance = await awu(elements)
           .find(e => e.elemID.getFullName() === 'dummy.test.instance.inst') as InstanceElement
-        const objType = elements.find(e => e.elemID.getFullName() === 'dummy.test') as ObjectType
+        const objType = await awu(elements).find(e => e.elemID.getFullName() === 'dummy.test') as ObjectType
         expect(objType).toBeDefined()
         expect(instance.refType.elemID.isEqual(objType.elemID)).toBeTruthy()
       })
@@ -310,8 +315,8 @@ describe('Nacl Files Source', () => {
                 naclFile,
                 await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})
               )))
-            naclFileSourceWithFragments = naclFilesSource(
-              mockDirStore, mockCache, mockedStaticFilesSource, parsedNaclFiles
+            naclFileSourceWithFragments = await naclFilesSource(
+              mockDirStore, mockCache, mockedStaticFilesSource, undefined, parsedNaclFiles
             )
           })
           it('should change splitted element correctly', async () => {
@@ -323,7 +328,7 @@ describe('Nacl Files Source', () => {
                 }
               `,
             }
-            const currentElements = await naclFileSourceWithFragments.getAll()
+            const currentElements = await awu(await naclFileSourceWithFragments.getAll()).toArray()
             const res = await naclFileSourceWithFragments.setNaclFiles(newFile)
             expect(res).toHaveLength(2)
             const objType1ElemID = new ElemID('dummy', 'test1')
@@ -374,7 +379,7 @@ describe('Nacl Files Source', () => {
               { action: 'modify', data: objType1 },
             ])
             expect(currentElements).toEqual([objType2.before, objType1.before])
-            expect(await naclFileSourceWithFragments.getAll())
+            expect(await awu(await naclFileSourceWithFragments.getAll()).toArray())
               .toEqual([objType2.after, objType1.after])
           })
         })
@@ -383,7 +388,7 @@ describe('Nacl Files Source', () => {
     describe('removeNaclFiles', () => {
       it('should not change anything if the file does not exist', async () => {
         expect(await naclFileSourceTest.removeNaclFiles('blabla')).toHaveLength(0)
-        expect(await naclFileSourceTest.getAll()).toMatchObject([
+        expect(await awu(await naclFileSourceTest.getAll()).toArray()).toMatchObject([
           objectTypeObjectMatcher, instanceElementObjectMatcher,
         ])
       })
@@ -409,7 +414,7 @@ describe('Nacl Files Source', () => {
             data: { before: instanceElementObjectMatcher },
           },
         ])
-        const currentElements = await naclFileSourceTest.getAll()
+        const currentElements = await awu(await naclFileSourceTest.getAll()).toArray()
         expect(currentElements).toHaveLength(1)
         const typeElement = currentElements[0] as ObjectType
         expect(Object.keys(typeElement.fields)).toHaveLength(1)
@@ -427,13 +432,13 @@ describe('Nacl Files Source', () => {
             data: { before: instanceElementObjectMatcher },
           },
         ])
-        expect(await naclFileSourceTest.getAll()).toEqual([])
+        expect(await awu(await naclFileSourceTest.getAll()).toArray()).toEqual([])
       })
     })
     describe('updateNaclFiles', () => {
       it('should not change anything if there are no changes', async () => {
         expect(await naclFileSourceTest.updateNaclFiles([])).toHaveLength(0)
-        expect(await naclFileSourceTest.getAll()).toMatchObject([
+        expect(await awu(await naclFileSourceTest.getAll()).toArray()).toMatchObject([
           objectTypeObjectMatcher, instanceElementObjectMatcher,
         ])
       })
@@ -450,13 +455,16 @@ describe('Nacl Files Source', () => {
         const changes = await naclFileSourceTest.updateNaclFiles([detailedChange])
         expect(changes).toHaveLength(1)
         expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path']))
-        expect(await naclFileSourceTest.getAll()).toMatchObject([
+        expect(_.sortBy(
+          await awu(await naclFileSourceTest.getAll()).toArray(),
+          e => e.elemID.getFullName()
+        )).toMatchObject(_.sortBy([
           instanceElementObjectMatcher,
           {
             elemID: objectTypeElemID,
             fields: { b: { refType: { elemID: BuiltinTypes.NUMBER.elemID } } },
           },
-        ])
+        ], e => e.elemID.getFullName()))
       })
       it('should add an element correctly', async () => {
         const currentObjectType = await naclFileSourceTest.get(objectTypeElemID)
@@ -470,10 +478,17 @@ describe('Nacl Files Source', () => {
         mockDirStoreGet.mockResolvedValue(file1)
         const changes = await naclFileSourceTest.updateNaclFiles([detailedChange])
         expect(changes).toHaveLength(1)
-        // expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path']))
-        expect(await naclFileSourceTest.getAll()).toMatchObject([
+        expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path', 'data']))
+        expect(getChangeElement(changes[0]).isEqual(getChangeElement(detailedChange)))
+          .toBeTruthy()
+
+        const sortedAll = _.sortBy(
+          await awu(await naclFileSourceTest.getAll()).toArray(),
+          e => e.elemID.getFullName()
+        )
+        expect(sortedAll).toMatchObject(_.sortBy([
           instanceElementObjectMatcher, objectTypeObjectMatcher, newInstanceElementObjectMatcher,
-        ])
+        ], e => e.elemID.getFullName()))
       })
       it('should remove an element correctly', async () => {
         const currentInstanceElement = await naclFileSourceTest.get(instanceElementElemID)
@@ -487,7 +502,8 @@ describe('Nacl Files Source', () => {
         const changes = await naclFileSourceTest.updateNaclFiles([detailedChange])
         expect(changes).toHaveLength(1)
         expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path']))
-        expect(await naclFileSourceTest.getAll()).toMatchObject([objectTypeObjectMatcher])
+        expect(await awu(await naclFileSourceTest.getAll()).toArray())
+          .toMatchObject([objectTypeObjectMatcher])
       })
     })
   })

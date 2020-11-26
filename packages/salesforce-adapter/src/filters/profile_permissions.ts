@@ -19,11 +19,15 @@ import {
   isFieldChange, InstanceElement, ElemID, Change,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections, promises } from '@salto-io/lowerdash'
 import { PROFILE_METADATA_TYPE, ADMIN_PROFILE, API_NAME, SALESFORCE } from '../constants'
 import { isCustomObject, apiName, isCustom, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
 import { isInstanceOfType, isMasterDetailField } from './utils'
+
+const { removeAsync } = promises.array
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -67,11 +71,11 @@ const createAdminProfile = (): InstanceElement => createInstanceElement(
   })
 )
 
-const addMissingPermissions = (
+const addMissingPermissions = async (
   profile: InstanceElement,
   elemType: 'object' | 'field',
   newElements: ReadonlyArray<ObjectType | Field>,
-): void => {
+): Promise<void> => {
   if (newElements.length === 0) {
     return
   }
@@ -82,9 +86,10 @@ const addMissingPermissions = (
       : profileValues.fieldPermissions.map(permission => permission.field)
   )
 
-  const missingIds = newElements
+  const missingIds = await awu(newElements)
     .map(elem => apiName(elem))
     .filter(id => !existingIds.has(id))
+    .toArray()
 
   if (missingIds.length === 0) {
     return
@@ -102,10 +107,10 @@ const addMissingPermissions = (
   }
 }
 
-const isAdminProfileChange = (change: Change): change is Change<InstanceElement> => {
+const isAdminProfileChange = async (change: Change): Promise<boolean> => {
   const changeElem = getChangeElement(change)
   return isInstanceOfType(PROFILE_METADATA_TYPE)(changeElem)
-    && apiName(changeElem) === ADMIN_PROFILE
+    && await apiName(changeElem) === ADMIN_PROFILE
 }
 
 /**
@@ -118,28 +123,28 @@ const filterCreator: FilterCreator = () => {
     preDeploy: async changes => {
       const allAdditions = changes.filter(isAdditionChange)
 
-      const newCustomObjects = allAdditions
+      const newCustomObjects = await awu(allAdditions)
         .map(getChangeElement)
         .filter(isCustomObject)
+        .toArray() as ObjectType[]
 
       const newFields = [
         ...newCustomObjects.flatMap(objType => Object.values(objType.fields)),
         ...allAdditions.filter(isFieldChange).map(getChangeElement),
-      ]
-        .filter(shouldSetDefaultPermissions)
+      ].filter(shouldSetDefaultPermissions)
 
       if (newCustomObjects.length === 0 && newFields.length === 0) {
         return
       }
 
-      const adminProfileChange = changes.find(isAdminProfileChange)
+      const adminProfileChange = await awu(changes).find(isAdminProfileChange)
 
       const adminProfile = adminProfileChange !== undefined
-        ? getChangeElement(adminProfileChange)
+        ? getChangeElement(adminProfileChange) as InstanceElement
         : createAdminProfile()
 
-      addMissingPermissions(adminProfile, 'object', newCustomObjects)
-      addMissingPermissions(adminProfile, 'field', newFields)
+      await addMissingPermissions(adminProfile, 'object', newCustomObjects)
+      await addMissingPermissions(adminProfile, 'field', newFields)
 
       if (adminProfileChange === undefined) {
         // If we did not originally have a change to the admin profile, we need to create a new one
@@ -153,7 +158,7 @@ const filterCreator: FilterCreator = () => {
       if (isPartialAdminProfile) {
         // we created a partial admin profile change, we have to remove it here otherwise it will
         // override the real admin profile
-        _.remove(changes, isAdminProfileChange)
+        await removeAsync(changes, isAdminProfileChange)
       }
       return []
     },

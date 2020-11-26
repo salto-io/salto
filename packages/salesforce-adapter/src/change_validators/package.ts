@@ -15,12 +15,15 @@
 */
 import { Element, getChangeElement, InstanceElement, isAdditionChange, isModificationChange, isObjectType, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR } from '../constants'
 
+const { awu } = collections.asynciterable
 
-export const hasNamespace = (customElement: Element): boolean => {
-  const apiNameResult = apiName(customElement, true)
+
+export const hasNamespace = async (customElement: Element): Promise<boolean> => {
+  const apiNameResult = await apiName(customElement, true)
   if (_.isUndefined(apiNameResult)) {
     return false
   }
@@ -30,8 +33,8 @@ export const hasNamespace = (customElement: Element): boolean => {
   return cleanFullName.includes(NAMESPACE_SEPARATOR)
 }
 
-export const getNamespace = (customElement: Element): string =>
-  apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]
+export const getNamespace = async (customElement: Element): Promise<string> =>
+  (await apiName(customElement, true)).split(NAMESPACE_SEPARATOR)[0]
 
 export const PACKAGE_VERSION_FIELD_NAME = 'version_number'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
@@ -47,31 +50,35 @@ const packageChangeError = (
   detailedMessage,
 })
 
-const isInstalledPackageVersionChange = (
+const isInstalledPackageVersionChange = async (
   { before, after }: { before: InstanceElement; after: InstanceElement }
-): boolean => (
-  metadataType(after) === INSTALLED_PACKAGE_METADATA
+): Promise<boolean> => (
+  await metadataType(after) === INSTALLED_PACKAGE_METADATA
   && before.value[PACKAGE_VERSION_FIELD_NAME] !== after.value[PACKAGE_VERSION_FIELD_NAME]
 )
 
 const changeValidator: ChangeValidator = async changes => {
-  const addRemoveErrors = changes
+  const addRemoveErrors = await awu(changes)
     .filter(change => isAdditionChange(change) || isRemovalChange(change))
     .filter(change => hasNamespace(getChangeElement(change)))
     .map(change => packageChangeError(change.action, getChangeElement(change)))
+    .toArray()
 
-  const removeObjectWithPackageFieldsErrors = changes
+  const removeObjectWithPackageFieldsErrors = awu(changes)
     .filter(isRemovalChange)
     .map(getChangeElement)
     .filter(isObjectType)
-    .filter(obj => !hasNamespace(obj) && _.some(Object.values(obj.fields).map(hasNamespace)))
+    .filter(async obj =>
+      !(await hasNamespace(obj))
+      && awu(Object.values(obj.fields)).some(hasNamespace))
     .map(obj => packageChangeError(
       'remove',
       obj,
       'Cannot remove type because some of its fields belong to a managed package',
     ))
+    .toArray()
 
-  const packageVersionChangeErrors = changes
+  const packageVersionChangeErrors = await awu(changes)
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(change => isInstalledPackageVersionChange(change.data))
@@ -80,10 +87,11 @@ const changeValidator: ChangeValidator = async changes => {
       getChangeElement(change),
       'Cannot change installed package version',
     ))
+    .toArray()
 
   return [
     ...addRemoveErrors,
-    ...removeObjectWithPackageFieldsErrors,
+    ...await removeObjectWithPackageFieldsErrors,
     ...packageVersionChangeErrors,
   ]
 }

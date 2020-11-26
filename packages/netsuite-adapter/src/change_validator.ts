@@ -36,7 +36,7 @@ const changeValidators: ChangeValidator[] = [
 const validateChangesAndDependingElements: ChangeValidator = async changes => {
   const changeErrors = await createChangeValidator(changeValidators)(changes)
   const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
-  return changeErrors.concat(validateDependsOnInvalidElement(invalidElementIds, changes))
+  return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
 }
 
 export default validateChangesAndDependingElements

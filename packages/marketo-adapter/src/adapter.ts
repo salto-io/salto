@@ -95,8 +95,11 @@ export default class MarketoAdapter implements AdapterOperations {
    */
   // TODO(Guy): Implement
   private async add(instance: InstanceElement): Promise<InstanceElement> {
-    const resolved = resolveValues(instance, getLookUpName)
-    await this.client.createInstance(OBJECTS_NAMES.LEAD, { name: resolved.getType().elemID.name })
+    const resolved = await resolveValues(instance, getLookUpName)
+    await this.client.createInstance(
+      OBJECTS_NAMES.LEAD,
+      { name: (await resolved.getType()).elemID.name }
+    )
     const dummyObj = new ObjectType({
       elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),
       fields: {
@@ -126,9 +129,9 @@ export default class MarketoAdapter implements AdapterOperations {
    */
   // TODO(Guy): Implement
   private async remove(instance: InstanceElement): Promise<void> {
-    const resolved = resolveValues(instance, getLookUpName)
+    const resolved = await resolveValues(instance, getLookUpName)
     await this.client.deleteInstance(
-      resolved.getType().elemID.name,
+      (await resolved.getType()).elemID.name,
       resolved.value as MarketoMetadata
     )
   }
@@ -144,16 +147,16 @@ export default class MarketoAdapter implements AdapterOperations {
     before: InstanceElement,
     after: InstanceElement,
   ): Promise<InstanceElement> {
-    const resolvedBefore = resolveValues(before, getLookUpName)
-    const resolvedAfter = resolveValues(after, getLookUpName)
+    const resolvedBefore = await resolveValues(before, getLookUpName)
+    const resolvedAfter = await resolveValues(after, getLookUpName)
 
     await this.client.updateInstance(
       OBJECTS_NAMES.LEAD,
-      { name: resolvedBefore.getType().elemID.name }
+      { name: (await resolvedBefore.getType()).elemID.name }
     )
     await this.client.updateInstance(
       OBJECTS_NAMES.LEAD,
-      { name: resolvedAfter.getType().elemID.name }
+      { name: (await resolvedAfter.getType()).elemID.name }
     )
     const dummyObj = new ObjectType({
       elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),

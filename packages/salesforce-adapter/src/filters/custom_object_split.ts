@@ -16,10 +16,13 @@
 import _ from 'lodash'
 import { Element, ObjectType, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { isCustomObject, isCustom, relativeApiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
 import { SALESFORCE, INSTALLED_PACKAGES_PATH, OBJECTS_PATH, API_NAME } from '../constants'
 import { getNamespace, getNamespaceFromString } from './utils'
+
+const { awu } = collections.asynciterable
 
 export const annotationsFileName = (objectName: string): string => `${pathNaclCase(objectName)}Annotations`
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
@@ -79,8 +82,8 @@ const createCustomFieldsObjects = (
   return customFieldsObjects
 }
 
-const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] => {
-  const namespace = getNamespace(customObject)
+const customObjectToSplittedElements = async (customObject: ObjectType): Promise<ObjectType[]> => {
+  const namespace = await getNamespace(customObject)
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
     annotationRefsOrTypes: customObject.annotationRefTypes,
@@ -100,13 +103,17 @@ const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] 
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
-    const customObjects = elements.filter(isCustomObject)
-    const newSplittedCustomObjects = _.flatten(customObjects.map(customObjectToSplittedElements))
+    const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
+    const newSplittedCustomObjects = await awu(customObjects)
+      .flatMap(customObjectToSplittedElements)
+      .toArray()
+
     _.pullAllWith(
       elements,
       customObjects,
-      (elementA: Element, elementB: Element): boolean =>
-        (isCustomObject(elementA) && isCustomObject(elementB) && elementA.isEqual(elementB))
+      // Just incase this gets weird - This used to include a
+      // verification both objects are custom objects. Not sure why.
+      (elementA: Element, elementB: Element): boolean => elementA.isEqual(elementB)
     )
     elements.push(...newSplittedCustomObjects)
   },

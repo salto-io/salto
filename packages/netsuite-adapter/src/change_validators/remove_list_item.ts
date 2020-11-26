@@ -17,11 +17,14 @@ import {
   ChangeValidator, getChangeElement, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
   ElemID,
+  ChangeError,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import wu from 'wu'
 import _ from 'lodash'
+
+const { awu } = collections.asynciterable
 
 
 const getScriptId = (value: unknown): string | undefined => {
@@ -36,12 +39,12 @@ const getScriptId = (value: unknown): string | undefined => {
   return undefined
 }
 
-const getScriptIdsUnderLists = (instance: InstanceElement):
-  collections.map.DefaultMap<string, Set<string>> => {
+const getScriptIdsUnderLists = async (instance: InstanceElement):
+  Promise<collections.map.DefaultMap<string, Set<string>>> => {
   const pathToScriptIds = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
-  transformValues({
+  await transformValues({
     values: instance.value,
-    type: instance.getType(),
+    type: await instance.getType(),
     transformFunc: ({ value, path }) => {
       if (path !== undefined && Array.isArray(value)) {
         wu(value)
@@ -59,13 +62,13 @@ const getScriptIdsUnderLists = (instance: InstanceElement):
   return pathToScriptIds
 }
 
-const getRemovedListItems = (change: ModificationChange<InstanceElement>):
-  {
+const getRemovedListItems = async (change: ModificationChange<InstanceElement>):
+  Promise<{
     removedListItems: string[]
     elemID: ElemID
-  } => {
-  const idsUnderListsBefore = getScriptIdsUnderLists(change.data.before)
-  const idsUnderListsAfter = getScriptIdsUnderLists(change.data.after)
+  }> => {
+  const idsUnderListsBefore = await getScriptIdsUnderLists(change.data.before)
+  const idsUnderListsAfter = await getScriptIdsUnderLists(change.data.after)
   const removedListItems = wu(idsUnderListsBefore.entries()).map(
     ([path, beforeIds]) =>
       wu(beforeIds).filter(beforeId => !idsUnderListsAfter.get(path).has(beforeId))
@@ -73,18 +76,21 @@ const getRemovedListItems = (change: ModificationChange<InstanceElement>):
   return { removedListItems, elemID: getChangeElement(change).elemID }
 }
 
-const changeValidator: ChangeValidator = async changes => (
-  changes
+const changeValidator: ChangeValidator = async changes => {
+  const instanceChanges = await awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .map(getRemovedListItems)
-    .filter(({ removedListItems }) => !_.isEmpty(removedListItems))
-    .map(({ elemID, removedListItems }) => ({
+    .toArray() as ModificationChange<InstanceElement>[]
+
+  return awu(instanceChanges).map(getRemovedListItems)
+    .filter(({ removedListItems }: {removedListItems: string[]}) => !_.isEmpty(removedListItems))
+    .map(({ elemID, removedListItems }: {removedListItems: string[]; elemID: ElemID}) => ({
       elemID,
       severity: 'Error',
       message: 'Removing inner elements from custom types is forbidden',
       detailedMessage: `Unable to remove the following inner element scriptids from ${elemID.name}: ${removedListItems}`,
     }))
-)
+    .toArray() as Promise<ChangeError[]>
+}
 
 export default changeValidator

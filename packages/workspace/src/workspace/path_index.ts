@@ -19,6 +19,8 @@ import { collections } from '@salto-io/lowerdash'
 import { ElemID, Element, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
 import { TransformFunc, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 
+const { awu } = collections.asynciterable
+
 type Path = readonly string[]
 export class PathIndex extends collections.treeMap.PartialTreeMap<Path> {
   constructor(entries: Iterable<[string, Path[]]> = []) {
@@ -62,7 +64,7 @@ export class PathIndex extends collections.treeMap.PartialTreeMap<Path> {
   }
 }
 
-const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
+const getElementPathHints = async (element: Element): Promise<Iterable<[string, Path[]]>> => {
   if (element.path === undefined) {
     return []
   }
@@ -81,7 +83,7 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
     }
     return _.isArrayLikeObject(value) ? undefined : value
   }
-  transformElement({
+  await transformElement({
     element,
     transformFunc,
     strict: false,
@@ -94,25 +96,25 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
   return wu(_.entries(pathHints))
 }
 
-export const getElementsPathHints = (unmergedElements: Element[]): Iterable<[string, Path[]]> =>
-  wu(unmergedElements.map(getElementPathHints)).flatten(true)
+export const getElementsPathHints = (unmergedElements: Element[]): Promise<[string, Path[]][]> =>
+  awu(unmergedElements).flatMap(getElementPathHints).toArray()
 
 
-export const createPathIndex = (unmergedElements: Element[]): PathIndex => {
-  const pathHints = getElementsPathHints(unmergedElements)
+export const createPathIndex = async (unmergedElements: Element[]): Promise<PathIndex> => {
+  const pathHints = await getElementsPathHints(unmergedElements)
   const pathIndex = new PathIndex(pathHints)
   return pathIndex
 }
 
-export const updatePathIndex = (current: PathIndex, unmergedElements: Element[],
-  servicesToMaintain: string[]): PathIndex => {
+export const updatePathIndex = async (current: PathIndex, unmergedElements: Element[],
+  servicesToMaintain: string[]): Promise<PathIndex> => {
   if (servicesToMaintain.length === 0) {
     return createPathIndex(unmergedElements)
   }
   const oldPathHintsToMaintain = wu(current.entries()).filter(([value]) =>
     servicesToMaintain.includes(ElemID.fromFullName(value).adapter))
   const pathIndex = new PathIndex(oldPathHintsToMaintain)
-  pathIndex.setAll(getElementsPathHints(unmergedElements))
+  pathIndex.setAll(await getElementsPathHints(unmergedElements))
   return pathIndex
 }
 

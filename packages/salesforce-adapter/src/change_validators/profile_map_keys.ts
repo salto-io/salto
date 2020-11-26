@@ -18,26 +18,29 @@ import {
   ChangeValidator, getChangeElement, InstanceElement, ChangeError, isMapType, MapType, isObjectType,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { getInstanceChanges, PROFILE_MAP_FIELD_DEF, defaultMapper } from '../filters/convert_maps'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
+
+const { awu } = collections.asynciterable
 
 const isNum = (str: string | undefined): boolean => (
   !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
 )
 
-const getMapKeyErrors = (
+const getMapKeyErrors = async (
   after: InstanceElement
-): ChangeError[] => {
+): Promise<ChangeError[]> => {
   const errors: ChangeError[] = []
-  Object.entries(after.value).filter(
-    ([fieldName]) => isMapType(after.getType().fields[fieldName]?.getType())
+  await awu(Object.entries(after.value)).filter(
+    async ([fieldName]) => isMapType(await (await after.getType()).fields[fieldName]?.getType())
     && PROFILE_MAP_FIELD_DEF[fieldName] !== undefined
-  ).forEach(([fieldName, fieldValues]) => {
-    const fieldType = after.getType().fields[fieldName].getType() as MapType
+  ).forEach(async ([fieldName, fieldValues]) => {
+    const fieldType = await (await after.getType()).fields[fieldName].getType() as MapType
     const mapDef = PROFILE_MAP_FIELD_DEF[fieldName]
-    const findInvalidPaths: TransformFunc = ({ value, path, field }) => {
-      if (isObjectType(field?.getType()) && path !== undefined) {
+    const findInvalidPaths: TransformFunc = async ({ value, path, field }) => {
+      if (isObjectType(await field?.getType()) && path !== undefined) {
         // we reached the map's inner value
         const expectedPath = defaultMapper(value[mapDef.key]).slice(0, mapDef.nested ? 2 : 1)
         const pathParts = path.getFullNameParts().filter(part => !isNum(part))
@@ -58,7 +61,7 @@ const getMapKeyErrors = (
       return value
     }
 
-    transformValues({
+    await transformValues({
       values: fieldValues,
       type: fieldType,
       transformFunc: findInvalidPaths,
@@ -70,9 +73,10 @@ const getMapKeyErrors = (
 }
 
 const changeValidator: ChangeValidator = async changes => (
-  getInstanceChanges(changes, PROFILE_METADATA_TYPE).flatMap(change => getMapKeyErrors(
-    resolveValues(getChangeElement(change), getLookUpName)
-  ))
+  awu(await getInstanceChanges(changes, PROFILE_METADATA_TYPE))
+    .flatMap(async change => getMapKeyErrors(
+      await resolveValues(getChangeElement(change), getLookUpName)
+    )).toArray()
 )
 
 export default changeValidator

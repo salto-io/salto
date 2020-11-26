@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { awu } from '../collections/asynciterable'
+import { isDefined } from '../values'
 
 /**
  * transforms an object's values using an async mapper function
@@ -22,16 +24,22 @@ import _ from 'lodash'
 export const mapValuesAsync = async <TVal1, TVal2>(
   o: Record<string, TVal1>,
   mapper: (val: TVal1, key: string) => Promise<TVal2>
-): Promise<Record<string, TVal2>> => {
-  const pairsPromises = Object.entries(o).map(async ([key, val]) => {
+): Promise<Record<string, TVal2>> => _.fromPairs(
+  await awu(Object.entries(o)).map(async ([key, val]) => {
     const mappedVal = await mapper(val, key)
     return [key, mappedVal]
-  })
+  }).toArray()
+)
 
-  const pairs = await Promise.all(pairsPromises)
-
-  return _.fromPairs(pairs)
-}
+export const mapKeysAsync = async <T>(
+  o: Record<string, T>,
+  mapper: (val: T, key: string) => Promise<string>
+): Promise<Record<string, T>> => _.fromPairs(
+  await awu(Object.entries(o)).map(async ([key, val]) => {
+    const mappedKey = await mapper(val, key)
+    return [mappedKey, val]
+  }).toArray()
+)
 
 /**
  * transforms an object whos values are promises
@@ -41,3 +49,15 @@ export const mapValuesAsync = async <TVal1, TVal2>(
 export const resolveValues = <TVal>(
   o: Record<string, Promise<TVal>>
 ): Promise<Record<string, TVal>> => mapValuesAsync(o, _.identity)
+
+export const pickAsync = async <T>(
+  o: Record<string, T>,
+  pickFunc: (t: T, k: string) => Promise<unknown> | unknown
+): Promise<Record<string, T>> => Object.fromEntries(
+  (await Promise.all(Object.entries(o).map(async ([k, v]) => {
+    if (await pickFunc(v, k)) {
+      return [k, v]
+    }
+    return undefined
+  }))).filter(isDefined) as [string, T][]
+)

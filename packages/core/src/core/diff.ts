@@ -13,11 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, DetailedChange, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { ElementSelector, selectElementIdsByTraversal } from '@salto-io/workspace'
+import { Element, DetailedChange, ElemID } from '@salto-io/adapter-api'
+import { ElementSelector, selectElementIdsByTraversal, elementSource } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
+import { collections } from '@salto-io/lowerdash'
 import { getDetailedChanges } from './fetch'
+import { IDFilter } from './plan/plan'
+
+const { awu } = collections.asynciterable
 
 const isIdRelevant = (relevantIds: ElemID[], id: ElemID): boolean =>
   relevantIds.some(elemId =>
@@ -36,46 +40,49 @@ const filterRelevantParts = (elementIds: ElemID[],
 }
 
 const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
-  selectorsToVerify: Set<string>): Element[] => {
+  selectorsToVerify: Set<string>): Promise<Element[]> => {
   const topLevelIds = new Set<string>(relevantIds
     .map(id => id.createTopLevelParentID().parent.getFullName()))
-  return elements.filter(elem => topLevelIds.has(elem.elemID.getFullName())).map(elem => {
+  return awu(elements).filter(elem => topLevelIds.has(elem.elemID.getFullName())).map(elem => {
     selectorsToVerify.delete(elem.elemID.getFullName())
     return transformElement({
       element: elem,
       transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
-      // TODO: Check if elementsSource is needed
     })
-  })
+  }).toArray()
 }
 
 export const createDiffChanges = async (
-  toElements: readonly Element[],
-  fromElements: Element[],
-  toSource: ReadOnlyElementsSource,
-  fromSource: ReadOnlyElementsSource,
+  toElementsSrc: elementSource.ElementsSource,
+  fromElementsSrc: elementSource.ElementsSource,
   elementSelectors: ElementSelector[] = [],
+  topLevelFilters: IDFilter[] = []
 ): Promise<DetailedChange[]> => {
   if (elementSelectors.length > 0) {
-    const toElementIdsFiltered = selectElementIdsByTraversal(elementSelectors,
+    const toElements = await awu(await toElementsSrc.getAll()).toArray()
+    const fromElements = await awu(await fromElementsSrc.getAll()).toArray()
+    const toElementIdsFiltered = await selectElementIdsByTraversal(elementSelectors,
       toElements.map(element => ({ elemID: element.elemID, element })), true)
-    const fromElementIdsFiltered = selectElementIdsByTraversal(elementSelectors,
+    const fromElementIdsFiltered = await selectElementIdsByTraversal(elementSelectors,
       fromElements.map(element => ({ elemID: element.elemID, element })), true)
     const selectorsToVerify = new Set<string>(elementSelectors
       .map(sel => sel.origin).filter(sel => !sel.includes('*')))
-    const toElementsFiltered = filterElementsByRelevance([...toElements],
+    const toElementsFiltered = await filterElementsByRelevance([...toElements],
       toElementIdsFiltered, selectorsToVerify)
-    const fromElementsFiltered = filterElementsByRelevance(fromElements,
+    const fromElementsFiltered = await filterElementsByRelevance(fromElements,
       fromElementIdsFiltered, selectorsToVerify)
     if (selectorsToVerify.size > 0) {
       throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)
     }
     return wu(await getDetailedChanges(
-      toElementsFiltered,
-      fromElementsFiltered,
-      toSource,
-      fromSource
+      elementSource.createInMemoryElementSource(toElementsFiltered),
+      elementSource.createInMemoryElementSource(fromElementsFiltered),
+      topLevelFilters
     )).toArray()
   }
-  return wu(await getDetailedChanges(toElements, fromElements, toSource, fromSource)).toArray()
+  return wu(await getDetailedChanges(
+    toElementsSrc,
+    fromElementsSrc,
+    topLevelFilters
+  )).toArray()
 }

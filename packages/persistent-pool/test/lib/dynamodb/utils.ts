@@ -47,7 +47,7 @@ export const testDbUtils = (db: DynamoDB) => {
       throw e
     }
 
-    withRetry(async () => !(await utils.tableExists(tableName)))
+    await withRetry(async () => !(await utils.tableExists(tableName)))
     return undefined
   }
 

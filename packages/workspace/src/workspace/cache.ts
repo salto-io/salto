@@ -41,6 +41,9 @@ export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> & {
   clone: () => ParseResultCache
   clear: () => Promise<void>
   rename: (name: string) => Promise<void>
+  list: () => Promise<string[]>
+  delete: (filename: string) => Promise<void>
+  get(key: ParseResultKey, allowInvalid: boolean): Promise<ParseResult | undefined>
 }
 
 const doesBufferMatchCachedMD5 = (buffer: ContentType | undefined,
@@ -58,44 +61,64 @@ const doesBufferMatchCachedMD5 = (buffer: ContentType | undefined,
 export const parseResultCache = (
   dirStore: DirectoryStore<string>, staticFilesSource: StaticFilesSource
 ): ParseResultCache => {
-  const resolveCacheFileName = (key: ParseResultKey): string =>
-    _.replace(key.filename, /.nacl$/, CACHE_EXTENSION)
+  const cahceSuffixRegex = new RegExp(`${CACHE_EXTENSION}$`)
+  const resolveCacheFileName = (filename: string): string =>
+    _.replace(filename, /.nacl$/, CACHE_EXTENSION)
+
+  const resolveFileName = (filename: string): string => _.replace(filename, cahceSuffixRegex, '.nacl')
+
+  const getCacheData = async (
+    key: ParseResultKey,
+    allowInvalid = false
+  ): Promise<string | undefined> => {
+    const cacheFileName = resolveCacheFileName(key.filename)
+    const file = await dirStore.get(cacheFileName)
+    if (file === undefined) {
+      return undefined
+    }
+    const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
+    if (allowInvalid
+        || (cacheTimeMs >= key.lastModified
+        || doesBufferMatchCachedMD5(key.buffer, file.buffer)
+        )) {
+      return file.buffer
+    }
+    return undefined
+  }
 
   return {
     put: async (key: Required<ParseResultKey>, value: ParseResult): Promise<void> => {
-      dirStore.set({
-        filename: resolveCacheFileName(key),
-        buffer: parseResultSerializer.serialize({ ...value,
+      await dirStore.set({
+        filename: resolveCacheFileName(key.filename),
+        buffer: await parseResultSerializer.serialize({ ...value,
           metadata: { md5: hash.toMD5(key.buffer) } }),
       })
     },
-
-    get: async (key: ParseResultKey): Promise<ParseResult | undefined> => {
-      const cacheFileName = resolveCacheFileName(key)
+    get: async (key: ParseResultKey, allowInvalid = false): Promise<ParseResult | undefined> => {
       try {
-        const file = await dirStore.get(cacheFileName)
-
-        if (file === undefined) {
-          return undefined
-        }
-
-        const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
-
-        if (cacheTimeMs >= key.lastModified
-          || doesBufferMatchCachedMD5(key.buffer, file.buffer)) {
-          return await parseResultSerializer.deserialize(
-            file.buffer,
+        const validCacheBuffer = await getCacheData(key, allowInvalid)
+        if (validCacheBuffer !== undefined) {
+          // We await on deserialize instead of just returning it so we can catch the error.
+          const res = await parseResultSerializer.deserialize(
+            validCacheBuffer,
             val => staticFilesSource.getStaticFile(val.filepath, val.encoding)
           )
+          return res
         }
       } catch (err) {
-        log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)
+        log.debug('Failed to handle cache file "%o": %o', resolveCacheFileName(key.filename), err)
       }
       return undefined
     },
+    delete: async (filename: string): Promise<void> => {
+      const cacheFilename = resolveCacheFileName(filename)
+      await dirStore.delete(cacheFilename)
+    },
+    list: async () => (await dirStore.list()).map(resolveFileName),
     clear: dirStore.clear,
     rename: dirStore.rename,
     flush: dirStore.flush,
     clone: (): ParseResultCache => parseResultCache(dirStore.clone(), staticFilesSource.clone()),
+
   }
 }

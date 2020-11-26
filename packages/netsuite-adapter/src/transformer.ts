@@ -19,6 +19,7 @@ import {
   ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
@@ -32,6 +33,7 @@ import {
 import { fieldTypes } from './types/field_types'
 import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
 
+const { awu } = collections.asynciterable
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -40,8 +42,8 @@ const XML_FALSE_VALUE = 'F'
 // don't load hidden files to the workspace in the core.
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
-export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType,
-  getElemIdFunc?: ElemIdGetter): InstanceElement => {
+export const createInstanceElement = async (customizationInfo: CustomizationInfo, type: ObjectType,
+  getElemIdFunc?: ElemIdGetter): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
     if (!isCustomType(type.elemID) && !isFileCabinetType(type.elemID)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
@@ -65,8 +67,8 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
       ? [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path.map(removeDotPrefix)]
       : [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 
-  const transformPrimitive: TransformFunc = ({ value, field }) => {
-    const fieldType = field?.getType()
+  const transformPrimitive: TransformFunc = async ({ value, field }) => {
+    const fieldType = await field?.getType()
     if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
       return value
     }
@@ -94,9 +96,9 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values,
     transformAttributeKey)
 
-  const fileContentField = Object.values(type.fields)
-    .find(f => {
-      const fType = f.getType()
+  const fileContentField = await awu(Object.values(type.fields))
+    .find(async f => {
+      const fType = await f.getType()
       return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
     })
 
@@ -120,7 +122,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     })
   }
 
-  const transformedValues = transformValues({
+  const transformedValues = await transformValues({
     values: valuesWithTransformedAttrs,
     type,
     transformFunc: transformPrimitive,
@@ -133,8 +135,8 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   )
 }
 
-export const restoreAttributes = (values: Values, type: ObjectType, instancePath: ElemID):
-  Values => {
+export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID):
+  Promise<Values> => {
   const allAttributesPaths = new Set<string>()
   const createPathSetCallback: TransformFunc = ({ value, field, path }) => {
     if (path && field && field.annotations[IS_ATTRIBUTE]) {
@@ -143,7 +145,7 @@ export const restoreAttributes = (values: Values, type: ObjectType, instancePath
     return value
   }
 
-  transformValues({
+  await transformValues({
     values,
     type,
     transformFunc: createPathSetCallback,
@@ -161,12 +163,14 @@ export const restoreAttributes = (values: Values, type: ObjectType, instancePath
   return mapKeysRecursive(values, restoreAttributeFunc, instancePath)
 }
 
-const sortValuesBasedOnType = (typeName: string, values: Values, instancePath: ElemID): Values => {
+const sortValuesBasedOnType = async (
+  typeName: string, values: Values, instancePath: ElemID
+): Promise<Values> => {
   // we use customTypes[typeName] and not instance.type since it preserves fields order
   const topLevelType = customTypes[typeName]
 
-  const sortValues: TransformFunc = ({ field, value, path }) => {
-    const type = field?.getType()
+  const sortValues: TransformFunc = async ({ field, value, path }) => {
+    const type = await field?.getType()
       ?? (path && path.isEqual(instancePath) ? topLevelType : undefined)
     if (isObjectType(type) && _.isPlainObject(value)) {
       const fieldsOrder = Object.keys(type.fields)
@@ -177,9 +181,9 @@ const sortValuesBasedOnType = (typeName: string, values: Values, instancePath: E
     return value
   }
 
-  return transformValues(
+  return (await transformValues(
     { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath, strict: true }
-  ) ?? {}
+  )) ?? {}
 }
 
 // According to https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html
@@ -187,9 +191,11 @@ const sortValuesBasedOnType = (typeName: string, values: Values, instancePath: E
 const shouldSortValues = (typeName: string): boolean =>
   [ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM].includes(typeName)
 
-export const toCustomizationInfo = (instance: InstanceElement): CustomizationInfo => {
-  const transformPrimitive: TransformFunc = ({ value, field }) => {
-    const fieldType = field?.getType()
+export const toCustomizationInfo = async (
+  instance: InstanceElement
+): Promise<CustomizationInfo> => {
+  const transformPrimitive: TransformFunc = async ({ value, field }) => {
+    const fieldType = await field?.getType()
     if (!isPrimitiveType(fieldType)) {
       return value
     }
@@ -204,24 +210,24 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     }
     return String(value)
   }
-  const instanceType = instance.getType()
-  const transformedValues = transformValues({
+  const instanceType = await instance.getType()
+  const transformedValues = (await transformValues({
     values: instance.value,
     type: instanceType,
     transformFunc: transformPrimitive,
-  }) || {}
+  })) ?? {}
 
   const typeName = instance.refType.elemID.name
 
   const sortedValues = shouldSortValues(typeName)
-    ? sortValuesBasedOnType(typeName, transformedValues, instance.elemID)
+    ? await sortValuesBasedOnType(typeName, transformedValues, instance.elemID)
     : transformedValues
 
-  const values = restoreAttributes(sortedValues, instanceType, instance.elemID)
+  const values = await restoreAttributes(sortedValues, instanceType, instance.elemID)
 
-  const fileContentField = Object.values(instanceType.fields)
-    .find(f => {
-      const fType = f.getType()
+  const fileContentField = await awu(Object.values(instanceType.fields))
+    .find(async f => {
+      const fType = await f.getType()
       return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
     })
 

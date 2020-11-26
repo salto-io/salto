@@ -18,6 +18,7 @@ import {
   Element, isObjectType, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+import { collections } from '@salto-io/lowerdash'
 import { SalesforceRecord } from '../src/client/types'
 import SalesforceAdapter, { testHelpers } from '../index'
 import realAdapter from './adapter'
@@ -29,6 +30,8 @@ import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
 import { LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
+
+const { awu } = collections.asynciterable
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('custom object instances e2e', () => {
@@ -67,8 +70,10 @@ describe('custom object instances e2e', () => {
     )
   })
 
-  it('should fetch custom object instances', () => {
-    const customObjectInstances = elements.filter(isInstanceOfCustomObject)
+  it('should fetch custom object instances', async () => {
+    const customObjectInstances = await awu(elements)
+      .filter(isInstanceOfCustomObject)
+      .toArray()
     expect(customObjectInstances.length).toBeGreaterThanOrEqual(1)
   })
 
@@ -101,8 +106,8 @@ describe('custom object instances e2e', () => {
     let createdInstance: InstanceElement
 
     it('should create the new instance', async () => {
-      const productTwoObjectType = elements
-        .find(e => isObjectType(e) && (apiName(e, true) === productTwoMetadataName))
+      const productTwoObjectType = await awu(elements)
+        .find(async e => isObjectType(e) && (await apiName(e, true) === productTwoMetadataName))
       expect(productTwoObjectType).toBeDefined()
       expect(isObjectType(productTwoObjectType)).toBeTruthy()
       const value = {

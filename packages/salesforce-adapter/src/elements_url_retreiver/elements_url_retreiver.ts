@@ -15,14 +15,14 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
-import wu from 'wu'
+import { values, collections } from '@salto-io/lowerdash'
 import { ElementIDResolver, resolvers } from './lightining_url_resolvers'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export type ElementsUrlRetreiver = {
-  retreiveUrl(element: Element): URL | undefined
+  retreiveUrl(element: Element): Promise<URL | undefined>
 }
 
 
@@ -35,8 +35,8 @@ export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementIDResolver: 
   }
   const lightiningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
 
-  const retreiveUrl = (element: Element): URL | undefined =>
-    wu(resolvers)
+  const retreiveUrl = async (element: Element): Promise<URL | undefined> =>
+    awu(resolvers)
       .map(resolver => resolver(element, lightiningUrl, elementIDResolver))
       .find(values.isDefined)
 

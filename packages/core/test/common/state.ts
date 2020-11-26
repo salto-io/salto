@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
-import { pathIndex, state } from '@salto-io/workspace'
+import { pathIndex, state, elementSource } from '@salto-io/workspace'
 
 
 export const mockState = (
@@ -24,9 +23,11 @@ export const mockState = (
   index?: pathIndex.PathIndex
 ): state.State => (
   state.buildInMemState(async () => ({
-    elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
+    elements: elementSource.createInMemoryElementSource(elements),
     pathIndex: index ?? new pathIndex.PathIndex(),
-    servicesUpdateDate: Object.fromEntries(services.map(serviceName => [serviceName, new Date()])),
+    servicesUpdateDate: Object.fromEntries(
+      services.map(serviceName => [serviceName, new Date()])
+    ),
     saltoVersion: '0.0.1',
   }))
 )

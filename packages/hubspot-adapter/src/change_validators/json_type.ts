@@ -16,28 +16,33 @@
 import _ from 'lodash'
 import { ChangeError, BuiltinTypes, InstanceElement, isPrimitiveType, isInstanceChange, ChangeValidator, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { resolveValues } from '@salto-io/adapter-utils'
+import { promises } from '@salto-io/lowerdash'
 import { getLookUpName } from '../transformers/transformer'
+
+const { mapValuesAsync } = promises.object
 
 const getJsonValidationErrorsFromAfter = async (after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
-  const resolvedAfter = resolveValues(after, getLookUpName)
-  const errors = Object.values(_.pickBy(_.mapValues(resolvedAfter.value, (val, key) => {
-    const field = after.getType().fields[key]
-    const fieldType = field?.getType()
-    if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
-      try {
-        JSON.parse(val)
-      } catch (error) {
-        return {
-          elemID: after.elemID,
-          severity: 'Error',
-          message: `Error parsing the json string in field ${after.elemID.name}.${field.name}`,
-          detailedMessage: `Error (${error.message}) parsing the json string in field ${after.elemID.name}.${field.name}`,
+  const resolvedAfter = await resolveValues(after, getLookUpName)
+  const errors = Object.values(
+    _.pickBy(await mapValuesAsync(resolvedAfter.value, async (val, key) => {
+      const field = (await after.getType()).fields[key]
+      const fieldType = await field?.getType()
+      if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
+        try {
+          JSON.parse(val)
+        } catch (error) {
+          return {
+            elemID: after.elemID,
+            severity: 'Error',
+            message: `Error parsing the json string in field ${after.elemID.name}.${field.name}`,
+            detailedMessage: `Error (${error.message}) parsing the json string in field ${after.elemID.name}.${field.name}`,
+          }
         }
       }
-    }
-    return undefined
-  }), v => !_.isUndefined(v))) as ChangeError[]
+      return undefined
+    }), v => !_.isUndefined(v))
+  ) as ChangeError[]
   return errors
 }
 

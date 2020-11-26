@@ -13,40 +13,41 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType } from '@salto-io/adapter-api'
+import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType, isContainerType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { RemoteMap, InMemoryRemoteMap } from './remote_map'
+import { Keywords } from '../parser/language'
 
 const { awu } = collections.asynciterable
+
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
+
 export interface ElementsSource {
-  list(): Promise<ElemID[]>
+  list(): Promise<AsyncIterable<ElemID>>
+  has(id: ElemID): Promise<boolean>
   get(id: ElemID): Promise<Element | Value>
-  getAll(): Promise<Element[]>
+  getAll(): Promise<AsyncIterable<Element>>
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
+  set(element: Element): Promise<void>
+  delete(id: ElemID): Promise<void>
 }
 
-const LIST_PREFIX = 'List<'
-const MAP_PREFIX = 'Map<'
-const GENERICS_SUFFIX = '>'
-
-export class InMemoryRemoteElementSource {
+export class InMemoryRemoteElementSource implements ElementsSource {
   private elements: RemoteMap<Element>
-  constructor(elements: readonly Element[] = []) {
-    this.elements = new InMemoryRemoteMap(
-      elements.map(e => [e.elemID.getFullName(), e])
-    )
+
+  constructor(elementsMap: RemoteMap<Element>) {
+    this.elements = elementsMap
   }
 
-  private getContainerType(fullName: string): Value {
-    if (fullName.startsWith(LIST_PREFIX) && fullName.endsWith(GENERICS_SUFFIX)) {
-      const innerElem = this.getSync(
+  private async getContainerType(fullName: string): Promise<Value> {
+    if (fullName.startsWith(Keywords.LIST_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
+      const innerElem = await this.get(
         ElemID.fromFullName(fullName.substring(
-          LIST_PREFIX.length,
-          fullName.length - GENERICS_SUFFIX.length
+          Keywords.LIST_PREFIX.length,
+          fullName.length - Keywords.GENERICS_SUFFIX.length
         ))
       )
       if (innerElem === undefined) {
@@ -54,11 +55,11 @@ export class InMemoryRemoteElementSource {
       }
       return new ListType(innerElem)
     }
-    if (fullName.startsWith(MAP_PREFIX) && fullName.endsWith(GENERICS_SUFFIX)) {
-      const innerElem = this.getSync(
+    if (fullName.startsWith(Keywords.MAP_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
+      const innerElem = await this.get(
         ElemID.fromFullName(fullName.substring(
-          MAP_PREFIX.length,
-          fullName.length - GENERICS_SUFFIX.length
+          Keywords.MAP_PREFIX.length,
+          fullName.length - Keywords.GENERICS_SUFFIX.length
         ))
       )
       if (innerElem === undefined) {
@@ -69,20 +70,6 @@ export class InMemoryRemoteElementSource {
     throw new Error('Not a container type')
   }
 
-  getSync(id: ElemID): Value {
-    const elemFullName = id.getFullName()
-    if (BuiltinTypesByFullName[elemFullName] !== undefined) {
-      return BuiltinTypesByFullName[elemFullName]
-    }
-    if ((elemFullName.startsWith(LIST_PREFIX) || elemFullName.startsWith(MAP_PREFIX))
-     && (elemFullName.endsWith(GENERICS_SUFFIX))) {
-      return this.getContainerType(elemFullName)
-    }
-    const { parent } = id.createTopLevelParentID()
-    const topLevel = this.elements.getSync(parent.getFullName())
-    return topLevel && resolvePath(topLevel, id)
-  }
-
   async list(): Promise<AsyncIterable<ElemID>> {
     return awu(this.elements.keys()).map(fullname => ElemID.fromFullName(fullname))
   }
@@ -91,14 +78,25 @@ export class InMemoryRemoteElementSource {
     return this.elements.values()
   }
 
-  async get(id: ElemID): Promise<Element | undefined> {
+  async get(id: ElemID): Promise<Value | undefined> {
+    const elemFullName = id.getFullName()
+    if (BuiltinTypesByFullName[elemFullName] !== undefined) {
+      return BuiltinTypesByFullName[elemFullName]
+    }
+    if ((elemFullName.startsWith(Keywords.LIST_PREFIX)
+      || elemFullName.startsWith(Keywords.MAP_PREFIX))
+     && (elemFullName.endsWith(Keywords.GENERICS_SUFFIX))) {
+      return this.getContainerType(elemFullName)
+    }
     const { parent } = id.createTopLevelParentID()
     const topLevel = await this.elements.get(parent.getFullName())
     return topLevel && resolvePath(topLevel, id)
   }
 
   async set(element: Element): Promise<void> {
-    return this.elements.set(element.elemID.getFullName(), element)
+    if (!isContainerType(element)) {
+      await this.elements.set(element.elemID.getFullName(), element)
+    }
   }
 
   async delete(id: ElemID): Promise<void> {
@@ -106,7 +104,11 @@ export class InMemoryRemoteElementSource {
   }
 
   async setAll(elements: ThenableIterable<Element>): Promise<void> {
-    return this.elements.setAll(awu(elements).map(e => [e.elemID.getFullName(), e]))
+    await this.elements.setAll(
+      awu(elements)
+        .filter(element => !isContainerType(element))
+        .map(e => [e.elemID.getFullName(), e])
+    )
   }
 
   async has(id: ElemID): Promise<boolean> {
@@ -115,7 +117,7 @@ export class InMemoryRemoteElementSource {
 
   async overide(elements: ThenableIterable<Element>): Promise<void> {
     await this.elements.clear()
-    return this.setAll(elements)
+    await this.setAll(elements)
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -132,4 +134,11 @@ export class InMemoryRemoteElementSource {
   rename(_name: string): Promise<void> {
     throw new Error('Method not implemented.')
   }
+}
+
+export const createInMemoryElementSource = (
+  elements: readonly Element[] = []
+): InMemoryRemoteElementSource => {
+  const inMemMap = new InMemoryRemoteMap(elements.map(e => [e.elemID.getFullName(), e]))
+  return new InMemoryRemoteElementSource(inMemMap)
 }

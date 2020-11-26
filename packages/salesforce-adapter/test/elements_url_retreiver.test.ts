@@ -44,84 +44,85 @@ describe('lightiningElementsUrlRetreiver', () => {
     })
 
     describe('retreiveUrl', () => {
-      it('genernalConstantsResolver', () => {
+      it('genernalConstantsResolver', async () => {
         const element = new ObjectType({ elemID: new ElemID('salesforce', 'PermissionSetGroup'), annotations: { metadataType: 'PermissionSetGroup' } })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/PermSetGroups/home'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/PermSetGroups/home'))
       })
 
-      it('settingsConstantsResolver type', () => {
+      it('settingsConstantsResolver type', async () => {
         const element = new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings'), annotations: { metadataType: 'BusinessHoursSettings' } })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home'))
       })
 
-      it('settingsConstantsResolver instance', () => {
+      it('settingsConstantsResolver instance', async () => {
         const element = new InstanceElement(ElemID.CONFIG_NAME, new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings'), annotations: { metadataType: 'BusinessHoursSettings' } }))
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home'))
       })
 
-      it('AssignmentRulesResolver', () => {
+      it('AssignmentRulesResolver', async () => {
         const element = new InstanceElement('Lead', new ObjectType({ elemID: new ElemID('salesforce', 'AssignmentRules'), annotations: { metadataType: 'AssignmentRules' } }), { fullName: 'Lead' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/LeadRules/home'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element))
+          .toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/LeadRules/home'))
       })
 
-      it('standard object', () => {
-        expect(elementUrlRetreiver?.retreiveUrl(standardObject)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view'))
+      it('standard object', async () => {
+        expect(await elementUrlRetreiver?.retreiveUrl(standardObject)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view'))
       })
 
-      it('custom object', () => {
-        expect(elementUrlRetreiver?.retreiveUrl(customObject)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/Details/view'))
+      it('custom object', async () => {
+        expect(await elementUrlRetreiver?.retreiveUrl(customObject)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/Details/view'))
       })
 
-      it('standard field standard object', () => {
+      it('standard field standard object', async () => {
         const element = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view'))
       })
 
-      it('custom field standard object', () => {
+      it('custom field standard object', async () => {
         const element = new Field(standardObject, 'customField__c', BuiltinTypes.NUMBER, { internalId: 'someId' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/someId/view'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/someId/view'))
       })
 
-      it('standard field custom object', () => {
+      it('standard field custom object', async () => {
         const element = new Field(customObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/FieldsAndRelationships/standardField/view'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/FieldsAndRelationships/standardField/view'))
       })
 
-      it('custom field custom object', () => {
+      it('custom field custom object', async () => {
         const element = new Field(customObject, 'customField__c', BuiltinTypes.NUMBER, { internalId: 'fieldId' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/FieldsAndRelationships/fieldId/view'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/FieldsAndRelationships/fieldId/view'))
       })
 
-      it('standard relationship field standard object', () => {
+      it('standard relationship field standard object', async () => {
         const element = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER, { relationshipName: 'someRelationshipName' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/someRelationshipName/view'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/someRelationshipName/view'))
       })
 
-      it('custom metadata type', () => {
+      it('custom metadata type', async () => {
         const element = new ObjectType({ elemID: new ElemID('salesforce', 'custom__mdt'), annotations: { internalId: 'someId', apiName: 'custom__mdt' } })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/CustomMetadata/page?address=%2FsomeId%3Fsetupid%3DCustomMetadata'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/CustomMetadata/page?address=%2FsomeId%3Fsetupid%3DCustomMetadata'))
       })
 
-      it('flow', () => {
+      it('flow', async () => {
         const element = new InstanceElement('flowName', flowType, { processType: 'Flow', internalId: 'someId' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/builder_platform_interaction/flowBuilder.app?flowId=someId'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/builder_platform_interaction/flowBuilder.app?flowId=someId'))
       })
 
-      it('ProcessBuilder', () => {
+      it('ProcessBuilder', async () => {
         const element = new InstanceElement('flowName', flowType, { processType: 'Workflow', internalId: 'someId' })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ProcessAutomation/home'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ProcessAutomation/home'))
       })
 
-      it('Queue', () => {
+      it('Queue', async () => {
         const element = new InstanceElement(
           'testQueue',
           new ObjectType({ elemID: new ElemID('salesforce', 'Queue'), annotations: { metadataType: 'Queue' } }),
           { internalId: 'someId' }
         )
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3DsomeId'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3DsomeId'))
       })
 
-      it('Layout', () => {
+      it('Layout', async () => {
         const element = new InstanceElement(
           'testLayout',
           new ObjectType({ elemID: new ElemID('salesforce', 'Layout'), annotations: { metadataType: 'Layout' } }),
@@ -129,10 +130,10 @@ describe('lightiningElementsUrlRetreiver', () => {
           [],
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Account'))] }
         )
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view'))
       })
 
-      it('Layout without parent', () => {
+      it('Layout without parent', async () => {
         const element = new InstanceElement(
           'testLayout',
           new ObjectType({ elemID: new ElemID('salesforce', 'Layout') }),
@@ -140,19 +141,19 @@ describe('lightiningElementsUrlRetreiver', () => {
           [],
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'NotExists'))] }
         )
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId'))
       })
 
-      it('internalIdResolver', () => {
+      it('internalIdResolver', async () => {
         const element = new ObjectType({ elemID: new ElemID('salesforce', 'someType'), annotations: { internalId: 'someId' } })
-        expect(elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId'))
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId'))
       })
 
-      it('unkown element', () => {
+      it('unkown element', async () => {
         const element = new ObjectType({ elemID: new ElemID('salesforce', 'someType') })
         expect(elementUrlRetreiver).toBeDefined()
         if (elementUrlRetreiver !== undefined) {
-          expect(elementUrlRetreiver.retreiveUrl(element)).toBeUndefined()
+          expect(await elementUrlRetreiver.retreiveUrl(element)).toBeUndefined()
         }
       })
     })

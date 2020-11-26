@@ -37,7 +37,7 @@ describe('dummy adapter', () => {
     }
     it('should return the result of the generateElement command withuot modifications', async () => {
       const fetchResult = await adapter.fetch()
-      expect(fetchResult).toEqual({ elements: generator.generateElements(testParams) })
+      expect(fetchResult).toEqual({ elements: await generator.generateElements(testParams) })
     })
     it('should report fetch progress', async () => {
       await adapter.fetch(progressReportMock)

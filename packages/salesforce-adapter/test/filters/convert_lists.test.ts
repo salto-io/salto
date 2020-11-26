@@ -285,14 +285,14 @@ describe('convert lists filter', () => {
       nonLstInst = testElements[3] as InstanceElement
     })
 
-    it('should mark fields as list types', () => {
-      expect(isListType(type.fields.lst.getType())).toBeTruthy()
-      expect(isListType(type.fields.single.getType())).toBeFalsy()
+    it('should mark fields as list types', async () => {
+      expect(isListType(await type.fields.lst.getType())).toBeTruthy()
+      expect(isListType(await type.fields.single.getType())).toBeFalsy()
     })
 
-    it('should not mark map fields as list types', () => {
-      expect(isListType(type.fields.mockFieldMap.getType())).toBeFalsy()
-      expect(isMapType(type.fields.mockFieldMap.getType())).toBeTruthy()
+    it('should not mark map fields as list types', async () => {
+      expect(isListType(await type.fields.mockFieldMap.getType())).toBeFalsy()
+      expect(isMapType(await type.fields.mockFieldMap.getType())).toBeTruthy()
     })
 
     it('should convert lists in instances', () => {
@@ -306,60 +306,60 @@ describe('convert lists filter', () => {
       expect(Array.isArray(lstInst.value.mockFieldMap)).toBeFalsy()
     })
 
-    it('should sort unordered lists', () => {
-      expect(isListType(type.fields.unordered.getType())).toBeTruthy()
+    it('should sort unordered lists', async () => {
+      expect(isListType(await type.fields.unordered.getType())).toBeTruthy()
       expect(lstInst.value.unordered).toHaveLength(2)
       expect(lstInst.value.unordered.map((item: Value) => item.key)).toEqual(['a', 'b'])
     })
 
-    it('should not reorder regular lists', () => {
-      expect(isListType(type.fields.ordered.getType())).toBeTruthy()
+    it('should not reorder regular lists', async () => {
+      expect(isListType((await type.fields.ordered.getType()))).toBeTruthy()
       expect(lstInst.value.ordered).toHaveLength(2)
       expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
     })
 
-    it('should convert list inside objs in lists', () => {
-      expect(isListType(type.fields.ordered.getType())).toBeTruthy()
-      const innerType = (type.fields.ordered.getType() as ListType).getInnerType()
+    it('should convert list inside objs in lists', async () => {
+      expect(isListType((await type.fields.ordered.getType()))).toBeTruthy()
+      const innerType = await ((await type.fields.ordered.getType()) as ListType).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
-      expect(isListType((innerType as ObjectType).fields.list.getType())).toBeTruthy()
+      expect(isListType(await (innerType as ObjectType).fields.list.getType())).toBeTruthy()
     })
 
-    it('should convert list inside objs in list inside list of obj', () => {
-      expect(isListType(type.fields.ordered.getType())).toBeTruthy()
-      const innerType = (type.fields.ordered.getType() as ListType).getInnerType()
+    it('should convert list inside objs in list inside list of obj', async () => {
+      expect(isListType((await type.fields.ordered.getType()))).toBeTruthy()
+      const innerType = await ((await type.fields.ordered.getType()) as ListType).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
-      expect(isListType((innerType as ObjectType).fields.listOfObj.getType())).toBeTruthy()
-      const innerInnerType = ((innerType as ObjectType).fields.listOfObj
+      expect(isListType(await (innerType as ObjectType).fields.listOfObj.getType())).toBeTruthy()
+      const innerInnerType = await (await (innerType as ObjectType).fields.listOfObj
         .getType() as ListType).getInnerType()
       expect(isObjectType(innerInnerType)).toBeTruthy()
-      expect(isListType((innerInnerType as ObjectType).fields.list.getType())).toBeTruthy()
+      expect(isListType(await (innerInnerType as ObjectType).fields.list.getType())).toBeTruthy()
     })
 
-    it('should convert hardcoded fields to lists', () => {
-      expect(isListType(type.fields.singleHardcoded.getType())).toBeTruthy()
+    it('should convert hardcoded fields to lists', async () => {
+      expect(isListType(await type.fields.singleHardcoded.getType())).toBeTruthy()
       expect(lstInst.value.singleHardcoded).toEqual(['val'])
     })
 
-    it('should convert a list inside an hardcoded field to list', () => {
-      const hardcodedObjType = type.fields.singleObjHardcoded.getType()
+    it('should convert a list inside an hardcoded field to list', async () => {
+      const hardcodedObjType = await type.fields.singleObjHardcoded.getType()
       expect(isListType(hardcodedObjType)).toBeTruthy()
-      const innerObj = (hardcodedObjType as ListType).getInnerType()
+      const innerObj = await (hardcodedObjType as ListType).getInnerType()
       expect(isObjectType(innerObj)).toBeTruthy()
-      expect(isListType((innerObj as ObjectType).fields.list.getType())).toBeTruthy()
+      expect(isListType(await (innerObj as ObjectType).fields.list.getType())).toBeTruthy()
     })
 
     it('should convert val of a list inside an hardcoded field to list', () => {
       expect(lstInst.value.singleObjHardcoded).toEqual([{ key: 'b', value: '1', list: ['val1', 'val2'] }])
     })
 
-    it('should convert empty hardcoded fields to empty lists', () => {
-      expect(isListType(type.fields.emptyHardcoded.getType())).toBeTruthy()
+    it('should convert empty hardcoded fields to empty lists', async () => {
+      expect(isListType(await type.fields.emptyHardcoded.getType())).toBeTruthy()
       expect(lstInst.value.emptyHardcoded).toEqual([])
     })
 
-    it('should convert hardcoded fields to lists even when there are no instances', () => {
-      expect(isListType(typeNoInstances.fields.single.getType())).toBeTruthy()
+    it('should convert hardcoded fields to lists even when there are no instances', async () => {
+      expect(isListType(await typeNoInstances.fields.single.getType())).toBeTruthy()
     })
 
     it('should sort unordered annotations of fields', () => {

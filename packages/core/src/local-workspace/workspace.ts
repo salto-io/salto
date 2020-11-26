@@ -105,7 +105,7 @@ const loadNaclFileSource = (
   cacheBaseDir: string,
   sourceName: string,
   excludeDirs: string[] = []
-): nacl.NaclFilesSource => {
+): Promise<nacl.NaclFilesSource> => {
   const { naclFilesStore, cache, staticFileSource } = getNaclFilesSourceParams(
     sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
   )
@@ -121,24 +121,24 @@ const getEnvPath = (baseDir: string, env: string): string => (
   path.resolve(baseDir, getLocalEnvName(env))
 )
 
-export const loadLocalElementsSources = (baseDir: string, localStorage: string,
-  envs: ReadonlyArray<string>): EnvironmentsSources => ({
+export const loadLocalElementsSources = async (baseDir: string, localStorage: string,
+  envs: ReadonlyArray<string>): Promise<EnvironmentsSources> => ({
   commonSourceName: COMMON_ENV_PREFIX,
   sources: {
-    ..._.fromPairs(envs.map(env =>
+    ..._.fromPairs(await Promise.all(envs.map(async env =>
       [
         env,
         {
-          naclFiles: loadNaclFileSource(
+          naclFiles: await loadNaclFileSource(
             baseDir,
             path.resolve(localStorage, CACHE_DIR_NAME),
             getLocalEnvName(env)
           ),
           state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, env)),
         },
-      ])),
+      ]))),
     [COMMON_ENV_PREFIX]: {
-      naclFiles: loadNaclFileSource(
+      naclFiles: await loadNaclFileSource(
         baseDir,
         path.resolve(localStorage, CACHE_DIR_NAME),
         getLocalEnvName(COMMON_ENV_PREFIX),
@@ -178,7 +178,7 @@ export const loadLocalWorkspace = async (
   const workspaceConfig = await workspaceConfigSource(baseDir, undefined, configOverrides)
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
-  const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
+  const elemSources = await loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
   const ws = await loadWorkspace(workspaceConfig, credentials, elemSources)
 
   return {
@@ -222,7 +222,7 @@ Promise<Workspace> => {
 
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
   const credentials = credentialsSource(localStorage)
-  const elemSources = loadLocalElementsSources(path.resolve(baseDir), localStorage, [envName])
+  const elemSources = await loadLocalElementsSources(path.resolve(baseDir), localStorage, [envName])
 
   return initWorkspace(
     workspaceName, uid, envName, workspaceConfig,

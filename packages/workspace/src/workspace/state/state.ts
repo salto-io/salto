@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
-import { ElementsSource } from '../elements_source'
+import { Element, ElemID } from '@salto-io/adapter-api'
+import { ElementsSource, InMemoryRemoteElementSource } from '../elements_source'
 import { PathIndex } from '../path_index'
 
 export type StateData = {
-  elements: ElementMap
+  elements: InMemoryRemoteElementSource
   // The date of the last fetch
   servicesUpdateDate: Record<string, Date>
   pathIndex: PathIndex
@@ -28,7 +28,7 @@ export type StateData = {
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
-  override(element: Element | Element[], services?: string[]): Promise<void>
+  override(elements: AsyncIterable<Element>, services?: string[]): Promise<void>
   getServicesUpdateDates(): Promise<Record<string, Date>>
   existingServices(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>

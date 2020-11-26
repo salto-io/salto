@@ -137,7 +137,7 @@ export const projectChange = async (
     )
   }
 
-  const projectedChange = applyFunctionToChangeData(
+  const projectedChange = await applyFunctionToChangeData(
     change,
     changeData => projectElementOrValueToEnv(changeData, targetElement),
   )

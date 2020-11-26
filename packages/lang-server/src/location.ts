@@ -18,9 +18,12 @@ import Fuse from 'fuse.js'
 
 import { Element, ElemID, isObjectType, isInstanceElement, isField } from '@salto-io/adapter-api'
 import { staticFiles } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 import { Token } from './token'
+
+const { awu } = collections.asynciterable
 
 export interface SaltoElemLocation {
   fullname: string
@@ -32,9 +35,15 @@ export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 
 const MAX_LOCATION_SEARCH_RESULT = 20
 
-const getAllElements = async (workspace: EditorWorkspace):
-Promise<ReadonlyArray<Element>> => (await workspace.elements)
-  .flatMap(elem => (isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
+const getAllElementIDs = (elements: AsyncIterable<Element>): AsyncIterable<ElemID> => (
+  awu(elements)
+    .flatMap(
+      elem => (isObjectType(elem)
+        ? awu([elem, ...Object.values(elem.fields)]).map(e => e.elemID)
+        : awu([elem.elemID])
+      )
+    )
+)
 
 const createFileLocations = async (
   workspace: EditorWorkspace,
@@ -118,8 +127,8 @@ export const getQueryLocations = async (
   query: string,
   sensitive = true,
 ): Promise<SaltoElemFileLocation[]> => {
-  const lastIDPartContains = (element: Element, isSensitive: boolean): boolean => {
-    const fullName = element.elemID.getFullName()
+  const lastIDPartContains = (elemID: ElemID, isSensitive: boolean): boolean => {
+    const fullName = elemID.getFullName()
     const fullNameToMatch = isSensitive ? fullName : fullName.toLowerCase()
     const queryToCheck = isSensitive ? query : query.toLowerCase()
     const firstIndex = fullNameToMatch.indexOf(queryToCheck)
@@ -127,30 +136,31 @@ export const getQueryLocations = async (
       return false // If the query is nowhere to be found - this is not a match
     }
     // and we will return here to save the calculation.
-    const isPartOfLastNamePart = element.elemID.name.indexOf(queryToCheck) >= 0
+    const isPartOfLastNamePart = elemID.name.indexOf(queryToCheck) >= 0
     const isPrefix = fullNameToMatch.indexOf(queryToCheck) === 0
     const isSuffix = fullNameToMatch.lastIndexOf(queryToCheck)
       + queryToCheck.length === fullNameToMatch.length
     return isPartOfLastNamePart || isPrefix || isSuffix
   }
-
-  const topMatchingIds = (await getAllElements(workspace))
+  return awu(getAllElementIDs(await (await workspace.elements).getAll()))
     .filter(e => lastIDPartContains(e, sensitive))
-    .map(e => e.elemID)
-    .slice(0, MAX_LOCATION_SEARCH_RESULT)
-
-  return _.flatten(
-    await Promise.all(topMatchingIds.map(id => createFileLocations(workspace, id)))
-  )
+    .take(MAX_LOCATION_SEARCH_RESULT)
+    .flatMap(id => {
+      const r = createFileLocations(workspace, id)
+      return r
+    })
+    .toArray()
 }
 
 export const getQueryLocationsFuzzy = async (
   workspace: EditorWorkspace,
   query: string,
 ): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
-  const elements = await getAllElements(workspace)
+  const elementIds = await awu(getAllElementIDs(await (await workspace.elements).getAll()))
+    .map(e => e.getFullName())
+    .toArray()
   const fuse = new Fuse(
-    elements.map(e => e.elemID.getFullName()),
+    elementIds,
     {
       includeMatches: true,
       ignoreLocation: true,

@@ -311,7 +311,7 @@ const toMetadataXml = (name: string, values: Values): string =>
     tagValueProcessor: val => he.encode(String(val)),
   }).parse({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
-const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => {
+const cloneValuesWithAttributePrefixes = async (instance: InstanceElement): Promise<Values> => {
   const allAttributesPaths = new Set<string>()
   const createPathsSetCallback: TransformFunc = ({ value, field, path }) => {
     if (path && field && field.annotations[IS_ATTRIBUTE]) {
@@ -320,9 +320,9 @@ const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => 
     return value
   }
 
-  transformValues({
+  await transformValues({
     values: instance.value,
-    type: instance.getType(),
+    type: await instance.getType(),
     transformFunc: createPathsSetCallback,
     pathID: instance.elemID,
     strict: false,
@@ -339,8 +339,8 @@ const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => 
 }
 
 // Create values with the XML_ATTRIBUTE_PREFIX for xml attributes fields
-const getValuesToDeploy = (instance: InstanceElement): Values => {
-  if (!metadataTypesWithAttributes.includes(metadataType(instance))) {
+const getValuesToDeploy = async (instance: InstanceElement): Promise<Values> => {
+  if (!metadataTypesWithAttributes.includes(await metadataType(instance))) {
     return instance.value
   }
   return cloneValuesWithAttributePrefixes(instance)
@@ -354,7 +354,7 @@ const toPackageXml = (manifest: Map<string, string[]>): string => (
 )
 
 export type DeployPackage = {
-  add(instance: MetadataInstanceElement, withManifest?: boolean): void
+  add(instance: MetadataInstanceElement, withManifest?: boolean): Promise<void>
   addToManifest(type: MetadataObjectType, name: string): void
   delete(type: MetadataObjectType, name: string): void
   getZip(): Promise<Buffer>
@@ -372,14 +372,14 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
     addManifest.get(typeName).push(name)
   }
   return {
-    add: (instance, withManifest = true) => {
-      const instanceName = apiName(instance)
+    add: async (instance, withManifest = true) => {
+      const instanceName = await apiName(instance)
       if (withManifest) {
-        addToManifest(assertMetadataObjectType(instance.getType()), instanceName)
+        addToManifest(assertMetadataObjectType(await instance.getType()), instanceName)
       }
       // Add instance file(s) to zip
-      const typeName = metadataType(instance)
-      const values = getValuesToDeploy(toDeployableInstance(instance))
+      const typeName = await metadataType(instance)
+      const values = await getValuesToDeploy(await toDeployableInstance(instance))
       if (isComplexType(typeName)) {
         const complexType = complexTypesMap[typeName]
         const fieldToFileToContent = complexType.mapContentFields(instanceName, values)
@@ -400,7 +400,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           Object.entries(fileNameToContentMap)
             .forEach(([fileName, content]) => zip.file(fileName, content)))
       } else {
-        const { dirName, suffix, hasMetaFile } = instance.getType().annotations
+        const { dirName, suffix, hasMetaFile } = (await instance.getType()).annotations
         const instanceContentPath = [
           PACKAGE,
           dirName,

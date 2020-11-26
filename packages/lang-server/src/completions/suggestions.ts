@@ -15,14 +15,17 @@
 */
 import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
-  isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
-  getFieldNames, getFieldType, ElemID, Element,
+  isField, PrimitiveTypes, BuiltinTypes, Value, getField,
+  getFieldNames, getFieldType, ElemID,
   isListType, getRestriction, isMapType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { parser, InMemoryRemoteElementSource } from '@salto-io/workspace'
+import { parser, elementSource } from '@salto-io/workspace'
 import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { ContextReference } from '../context'
 
+const { awu } = collections.asynciterable
 const { dumpElemID, parseElemID } = parser
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 interface InsertText {
   label: string
@@ -30,14 +33,14 @@ interface InsertText {
   filterText?: string
 }
 type Suggestion = string|InsertText
-export type Suggestions = Suggestion[]
-type RefPartResolver = () => string[]
+export type Suggestions = ThenableIterable<Suggestion>
+type RefPartResolver = () => Promise<ThenableIterable<string>>
 interface SuggestionsParams {
-  elements: ReadonlyArray<Element>
+  elements: elementSource.ElementsSource
   ref?: ContextReference
   tokens: string[]
 }
-export type SuggestionsResolver = (params: SuggestionsParams) => Suggestions
+export type SuggestionsResolver = (params: SuggestionsParams) => Suggestions | Promise<Suggestions>
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isInsertText = (value: any): value is InsertText => (
@@ -55,33 +58,46 @@ ReadonlyArray<Value>|undefined =>
   getRestriction(annotatingElem).values ?? getRestriction(valueType).values
 
 const getAllInstances = (
-  elements: ReadonlyArray<Element>,
-  adapter?: string,
-  typeName? : string
-): string[] => elements
-  .filter(isInstanceElement)
-  .filter(e => !adapter || e.elemID.adapter === adapter)
-  .filter(e => !typeName || e.refType.elemID.getFullName() === typeName)
-  .map(e => e.elemID.name)
+  elemIDs: AsyncIterable<ElemID>,
+  refID: ElemID
+): ThenableIterable<string> => awu(elemIDs)
+  .filter(e => e.idType === 'instance')
+  .filter(e => !refID || e.adapter === refID.adapter)
+  .filter(e => !refID || e.typeName === refID.typeName)
+  .map(e => e.name)
 
 const getAllTypes = (
-  elements: ReadonlyArray<Element>,
+  elemIDs: AsyncIterable<ElemID>,
   adapter?: string
-): string[] => elements
-  .filter(isType)
-  .filter(e => !adapter || e.elemID.adapter === adapter)
-  .map(e => dumpElemID(e.elemID))
+): ThenableIterable<string> => awu(elemIDs)
+  .filter(e => (
+    e.idType === 'type' && (adapter === undefined || e.adapter === adapter)
+  ))
+  .map(dumpElemID)
+  // .filter(e => !adapter || e.elemID.adapter === adapter)
+  // .map(e => dumpElemID(e))
 
 const getAdapterNames = (
-  elements: ReadonlyArray<Element>
-): string[] => _(elements).map(e => e.elemID.adapter).uniq().value()
+  elemIDs: AsyncIterable<ElemID>
+): ThenableIterable<string> => {
+  const adapters = new Set()
+  return awu(elemIDs)
+    .filter(e => {
+      if (!adapters.has(e.adapter)) {
+        adapters.add(e.adapter)
+        return true
+      }
+      return false
+    })
+    .map(e => e.adapter)
+}
 
-const refNameSuggestions = (
-  elements: readonly Element[],
+const refNameSuggestions = async (
+  elements: elementSource.ElementsSource,
   refElemID: ElemID,
-): string[] => {
+): Promise<ThenableIterable<string>> => {
   const baseID = new ElemID(refElemID.adapter, refElemID.typeName)
-  const baseElement = elements.find(e => e.elemID.getFullName() === baseID.getFullName())
+  const baseElement = await elements.get(baseID)
   if (!baseElement) return []
 
   switch (refElemID.idType) {
@@ -92,30 +108,25 @@ const refNameSuggestions = (
     case 'field':
       return isObjectType(baseElement) ? _.keys(baseElement.fields) : []
     case 'instance':
-      return getAllInstances(elements, baseID.adapter, baseID.getFullName())
+      return getAllInstances(await elements.list(), baseID)
     default:
       return []
   }
 }
 
-const refValueSuggestions = (
-  elements: readonly Element[],
+const refValueSuggestions = async (
+  elements: elementSource.ElementsSource,
   refElemID: ElemID,
-): string[] => {
+): Promise<ThenableIterable<string>> => {
   const { parent } = refElemID.createTopLevelParentID()
-  const parentElement = elements.find(
-    e => e.elemID.getFullName() === parent.getFullName()
-  )
+  const parentElement = await elements.get(parent)
   if (_.isUndefined(parentElement)) return []
   const refValue = resolvePath(parentElement, refElemID)
   if (isField(refValue)) {
     return _.keys(refValue.annotations)
   }
   if (isInstanceElement(refValue)) {
-    return [
-      ..._.keys(refValue.value),
-      ..._.keys(refValue.annotations),
-    ]
+    return _.keys(refValue.value).concat(_.keys(refValue.annotations))
   }
   if (_.isPlainObject(refValue)) {
     return _.keys(refValue)
@@ -127,10 +138,10 @@ const refValueSuggestions = (
   return []
 }
 
-const referenceSuggestions = (
-  elements: ReadonlyArray<Element>,
+const referenceSuggestions = async (
+  elements: elementSource.ElementsSource,
   valueToken: string
-): Suggestions => {
+): Promise<Suggestions> => {
   // Reference suggestions creates a lot of 'noise' so we will avoid returning anything
   // unless the user has already started writing the reference
   if (_.isEmpty(valueToken)) return []
@@ -145,17 +156,17 @@ const referenceSuggestions = (
   try {
     const refElemID = ElemID.fromFullName(refParts.join(ElemID.NAMESPACE_SEPARATOR))
     const refPartsResolvers: (RefPartResolver)[] = [
-      () => getAdapterNames(elements),
-      () => getAllTypes(elements || [], refElemID.adapter)
+      async () => getAdapterNames(await elements.list()),
+      async () => awu(getAllTypes(await elements.list(), refElemID.adapter))
         .map(n => n.substring(refElemID.adapter.length + 1)),
-      () => ['instance', 'attr', 'field'],
-      () => refNameSuggestions(elements, refElemID),
-      () => refValueSuggestions(elements, refElemID),
+      async () => awu(['instance', 'attr', 'field']),
+      async () => refNameSuggestions(elements, refElemID),
+      async () => refValueSuggestions(elements, refElemID),
     ]
     const refPartSuggestions = refPartIndex >= refPartsResolvers.length
-      ? refPartsResolvers[refPartsResolvers.length - 1]()
-      : refPartsResolvers[refPartIndex]()
-    return refPartSuggestions.map(sug => ({
+      ? await refPartsResolvers[refPartsResolvers.length - 1]()
+      : await refPartsResolvers[refPartIndex]()
+    return awu(refPartSuggestions).map(sug => ({
       label: sug,
       insertText: [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR),
       filterText: [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR),
@@ -165,13 +176,13 @@ const referenceSuggestions = (
   }
 }
 
-export const valueSuggestions = (
+export const valueSuggestions = async (
   attrName: string,
   annotatingElem: TypeElement | Field,
   valueType: TypeElement,
   valueToken: string,
   elementsSource: ReadOnlyElementsSource,
-): Suggestions => {
+): Promise<Suggestions> => {
   // If the annotating element is a list and we are not in a list content
   // we need to created one
 
@@ -188,7 +199,9 @@ export const valueSuggestions = (
   if (restrictionValues) {
     return restrictionValues.map(v => safeJsonStringify(v))
   }
-  const realValueType = isListType(valueType) ? valueType.getInnerType(elementsSource) : valueType
+  const realValueType = isListType(valueType)
+    ? await valueType.getInnerType(elementsSource)
+    : valueType
   if (isListType(realValueType)) {
     return [{ label: '[]', insertText: '[$0]' }]
   }
@@ -204,82 +217,82 @@ export const valueSuggestions = (
   return []
 }
 
-export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
+export const fieldSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
-  const elementsSource = new InMemoryRemoteElementSource(params.elements)
-  return getFieldNames(params.ref.element.getType(elementsSource), params.ref.path, elementsSource)
+  return getFieldNames(
+    await params.ref.element.getType(params.elements),
+    params.ref.path,
+    params.elements
+  )
 }
 
-export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
+export const fieldValueSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
-  const elementsSource = new InMemoryRemoteElementSource(params.elements)
   const attrName = params.tokens[0]
   const refPathWithAttr = getRefPathWithAttr(attrName, params.ref)
-  const valueField = getField(
-    params.ref.element.getType(elementsSource),
+  const valueField = await getField(
+    await params.ref.element.getType(params.elements),
     refPathWithAttr,
-    elementsSource,
+    params.elements,
   )
-  const valueFieldType = getFieldType(
-    params.ref.element.getType(elementsSource),
+  const valueFieldType = await getFieldType(
+    await params.ref.element.getType(params.elements),
     refPathWithAttr,
-    elementsSource,
+    params.elements,
   )
   const valueToken = _.last(params.tokens) || ''
   return (valueField && valueFieldType)
-    ? [
-      ...valueSuggestions(attrName, valueField, valueFieldType, valueToken, elementsSource),
-      ...referenceSuggestions(params.elements, valueToken),
-    ]
+    ? awu(await await valueSuggestions(
+      attrName,
+      valueField,
+      valueFieldType,
+      valueToken,
+      params.elements
+    )).concat(await referenceSuggestions(params.elements, valueToken))
     : referenceSuggestions(params.elements, valueToken)
 }
 
-export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
+export const annoSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
   if (!params.ref) return []
-  const elementsSource = new InMemoryRemoteElementSource(params.elements)
   const refType = isField(params.ref.element)
-    ? params.ref.element.getType(elementsSource)
+    ? await params.ref.element.getType(params.elements)
     : params.ref.element
   if (_.isEmpty(params.ref.path)) {
     return _.keys(refType.annotationRefTypes)
   }
   const [annoName, ...annoPath] = params.ref.path
-  const annoType = params.ref.element.getAnnotationTypes(elementsSource)[annoName]
+  const annoType = (await params.ref.element.getAnnotationTypes(params.elements))[annoName]
   if (annoName && isObjectType(annoType)) {
-    return getFieldNames(annoType, annoPath, elementsSource)
+    return getFieldNames(annoType, annoPath, params.elements)
   }
   return []
 }
 
 
-export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => {
+export const annoValueSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
   if (!params.ref) return []
-  const elementsSource = new InMemoryRemoteElementSource(params.elements)
 
   const attrName = params.tokens[0]
   const refPathWithAttr = getRefPathWithAttr(attrName, params.ref)
   const [annoName, ...refPath] = refPathWithAttr
 
   const annoType = isField(params.ref.element)
-    ? params.ref.element.getType(elementsSource).getAnnotationTypes(elementsSource)[annoName]
-    : params.ref.element.getAnnotationTypes(elementsSource)[annoName]
+    ? (await (await params.ref.element.getType(params.elements))
+      .getAnnotationTypes(params.elements))[annoName]
+    : (await params.ref.element.getAnnotationTypes(params.elements))[annoName]
 
   const valueToken = _.last(params.tokens) || ''
   if (annoType && !_.isEmpty(refPath)) {
-    const attrField = getField(annoType, refPath, elementsSource)
-    const attrFieldType = getFieldType(annoType, refPath, elementsSource)
+    const attrField = await getField(annoType, refPath, params.elements)
+    const attrFieldType = await getFieldType(annoType, refPath, params.elements)
     return (attrField && attrFieldType)
-      ? [
-        ...valueSuggestions(annoName, attrField, attrFieldType, valueToken, elementsSource),
-        ...referenceSuggestions(params.elements, valueToken),
-      ]
+      ? awu(await valueSuggestions(annoName, attrField, attrFieldType, valueToken, params.elements))
+        .concat(await referenceSuggestions(params.elements, valueToken))
       : referenceSuggestions(params.elements, valueToken)
   }
   return (annoType)
-    ? [
-      ...valueSuggestions(annoName, annoType, annoType, valueToken, elementsSource),
-      ...referenceSuggestions(params.elements, valueToken),
-    ]
+    ? awu(await valueSuggestions(annoName, annoType, annoType, valueToken, params.elements))
+      .concat(await referenceSuggestions(params.elements, valueToken))
     : referenceSuggestions(params.elements, valueToken)
 }
 
@@ -287,44 +300,41 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
  * Returns a list of all of the types that were defined in the system
  * and who's adapter matches the context allowed adapters.
  */
-export const typesSuggestions = (params: SuggestionsParams): Suggestions => {
+export const typesSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
   const contextAdapter = params.ref && params.ref.element.elemID.adapter
   const elements = params.elements || [] // may be undefined
-  return [
-    ..._.values(BuiltinTypes).map(e => e.elemID.getFullName()),
-    ...getAllTypes(elements, contextAdapter),
-  ]
+  return awu(_.values(BuiltinTypes).map(e => e.elemID.getFullName()))
+    .concat(getAllTypes(await elements.list(), contextAdapter))
 }
 
-export const typeBodySuggestions = (params: SuggestionsParams): Suggestions => [
-  ...annoSuggestions(params),
-  ...typesSuggestions(params),
-]
+export const typeBodySuggestions = async (params: SuggestionsParams): Promise<Suggestions> => (
+  awu(await annoSuggestions(params))
+    .concat(await typesSuggestions(params))
+)
 /**
  * Returns a list of all possible primitives in the inheritance section
  */
-export const inheritanceSuggestions = (): Suggestions => ['string', 'number', 'boolean']
+export const inheritanceSuggestions = (): Suggestions => awu(['string', 'number', 'boolean'])
 
 /**
  * Returns all known keyword - which are 'type' for type def, and defined types
  * if we are defining an instance
  */
-export const keywordSuggestions = (params: SuggestionsParams): Suggestions => [
-  'type',
-  ...typesSuggestions(params),
-]
+export const keywordSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => (
+  awu(['type' as Suggestion]).concat(await typesSuggestions(params))
+)
+
 
 export const eqSuggestions = (): Suggestions => ['=']
 
 export const isSuggestions = (): Suggestions => ['is']
 
-export const instanceSuggestions = (
+export const instanceSuggestions = async (
   params: SuggestionsParams
-): Suggestions => {
+): Promise<Suggestions> => {
   const elemID = parseElemID(params.tokens[0])
   return getAllInstances(
-    params.elements,
-    elemID.adapter,
-    elemID.getFullName()
+    await params.elements.list(),
+    elemID
   )
 }

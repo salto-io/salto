@@ -23,6 +23,7 @@ import {
   ContainerType,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
+import { collections } from '@salto-io/lowerdash'
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
@@ -32,6 +33,8 @@ import {
   transformElement, toObjectType, getParents,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
+
+const { awu } = collections.asynciterable
 
 describe('Test utils.ts', () => {
   const mockStrType = new PrimitiveType({
@@ -1698,7 +1701,7 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('applyInstancesDefaults', () => {
+  describe('await applyInstancesDefaults', () => {
     const baseElemID = new ElemID('salto', 'base')
     const base = new ObjectType({
       elemID: baseElemID,
@@ -1740,9 +1743,9 @@ describe('Test utils.ts', () => {
       base: { field1: 'ins2', field2: 'ins2' },
     })
 
-    it('should use field defaults', () => {
+    it('should use field defaults', async () => {
       const elements = [shouldUseFieldDef.clone()]
-      applyInstancesDefaults(elements)
+      await applyInstancesDefaults(awu(elements))
       const ins = elements[0] as InstanceElement
       expect(ins.value).toEqual({
         field1: 'field1',
@@ -1754,13 +1757,13 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should use type defaults', () => {
+    it('should use type defaults', async () => {
       const shouldUseTypeDef = new InstanceElement('ins', nested, {
         field1: 'ins1',
         base: { field1: 'ins2', field2: 'ins2' },
       })
       const elements = [shouldUseTypeDef]
-      applyInstancesDefaults(elements)
+      await applyInstancesDefaults(awu(elements))
       expect(shouldUseTypeDef.value).toEqual({
         field1: 'ins1',
         field2: 'type',
@@ -1771,9 +1774,9 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should use object defaults', () => {
+    it('should use object defaults', async () => {
       const elements = [ins1.clone()]
-      applyInstancesDefaults(elements)
+      await applyInstancesDefaults(awu(elements))
       expect(elements[0].value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
@@ -1784,11 +1787,11 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should not remove values that have no corresponding field', () => {
+    it('should not remove values that have no corresponding field', async () => {
       const instanceWithAdditionalValues = ins1.clone()
       instanceWithAdditionalValues.value.hasNoCorrespondingField = 'hasNoCorrespondingField'
       const elements = [instanceWithAdditionalValues]
-      applyInstancesDefaults(elements)
+      await applyInstancesDefaults(awu(elements))
       expect(elements[0].value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
@@ -1800,11 +1803,11 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should use the existing value in case it does not match the field type', () => {
+    it('should use the existing value in case it does not match the field type', async () => {
       const instanceWithAdditionalValues = ins1.clone()
       instanceWithAdditionalValues.value.base = 'differentType'
       const elements = [instanceWithAdditionalValues]
-      applyInstancesDefaults(elements)
+      await applyInstancesDefaults(awu(elements))
       expect(elements[0].value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
@@ -1812,7 +1815,7 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should not use defaults for inner fields when its value is undefined', () => {
+    it('should not use defaults for inner fields when its value is undefined', async () => {
       const typeWithNestedDefaultsElemID = new ElemID('salto', 'typeWithNestedDefaults')
       const typeWithNestedDefaults = new ObjectType({
         elemID: typeWithNestedDefaultsElemID,
@@ -1828,7 +1831,7 @@ describe('Test utils.ts', () => {
       )
 
       const elements = [instanceWithNoValues]
-      applyInstancesDefaults(elements)
+      await applyInstancesDefaults(awu(elements))
       expect(instanceWithNoValues.value).toEqual({
         withDefault: 'default val',
       })

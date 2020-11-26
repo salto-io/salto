@@ -37,6 +37,7 @@ import { MergeResult } from '../merger'
 const log = logger(module)
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
@@ -71,7 +72,7 @@ export type Workspace = {
   uid: string
   name: string
 
-  elements: (includeHidden?: boolean, env?: string) => Promise<ReadonlyArray<Element>>
+  elements: (includeHidden?: boolean, env?: string) => Promise<AsyncIterable<Element>>
   state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
@@ -154,7 +155,10 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   const elements = async (env?: string): Promise<MergeResult> => {
     const visibleElements = await naclFilesSource.getAll(env)
     const stateElements = await state(env).getAll()
-    return mergeWithHidden(visibleElements, stateElements)
+    return mergeWithHidden(
+      await awu(visibleElements).toArray(),
+      await awu(stateElements).toArray()
+    )
   }
 
   const updateNaclFiles = async (
@@ -218,7 +222,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     return new Errors({
       ...errorsFromSource,
       merge: [...errorsFromSource.merge, ...resolvedElements.errors],
-      validation: validateElements(resolvedElements.merged),
+      validation: await validateElements(await awu(resolvedElements.merged).toArray()),
     })
   }
 
@@ -253,9 +257,9 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
     hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (
-      (await naclFilesSource.list()).some(
+      awu(await naclFilesSource.list()).find(
         elemId => serviceNames.includes(elemId.adapter)
-      )
+      ) !== undefined
     ),
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.

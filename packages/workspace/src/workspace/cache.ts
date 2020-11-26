@@ -65,7 +65,7 @@ export const parseResultCache = (
     put: async (key: Required<ParseResultKey>, value: ParseResult): Promise<void> => {
       dirStore.set({
         filename: resolveCacheFileName(key),
-        buffer: parseResultSerializer.serialize({ ...value,
+        buffer: await parseResultSerializer.serialize({ ...value,
           metadata: { md5: hash.toMD5(key.buffer) } }),
       })
     },

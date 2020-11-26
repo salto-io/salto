@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField, DetailedChange,
@@ -26,6 +26,8 @@ import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 
+
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const isHiddenValue = (element?: Element): boolean => (
@@ -204,7 +206,7 @@ const getHiddenTypeChanges = async (
 const getHiddenFieldAndAnnotationValueChanges = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<Element[]>,
+  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
 ): Promise<DetailedChange[]> => {
   // TODO hide fields marked with _hidden=true
 
@@ -252,16 +254,18 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   // newly hidden, some of these remove changes may be redundant (if the value we
   // are trying to hide was already removed manually from the workspace element)
   const workspaceElementIds = new Set(
-    (await getWorkspaceElements()).map(element => element.elemID.getFullName())
+    await awu(await getWorkspaceElements()).map(element => element.elemID.getFullName()).toArray()
   )
   const stateInstances = await state.getAll()
-  stateInstances
+  await awu(stateInstances)
     .filter(element => workspaceElementIds.has(element.elemID.getFullName()))
-    .forEach(element => transformElement({
-      element,
-      transformFunc: createHiddenValueChangeIfNeeded,
-      strict: true,
-    }))
+    .forEach(element => {
+      transformElement({
+        element,
+        transformFunc: createHiddenValueChangeIfNeeded,
+        strict: true,
+      })
+    })
 
   return hiddenValueChanges
 }
@@ -297,7 +301,7 @@ const removeDuplicateChanges = (
 const mergeWithHiddenChangeSideEffects = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<Element[]>,
+  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
 ): Promise<DetailedChange[]> => {
   const additionalChanges = [
     ...await getHiddenTypeChanges(changes, state),
@@ -412,7 +416,7 @@ const filterOutHiddenChanges = async (
 export const handleHiddenChanges = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<Element[]>,
+  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
 ): Promise<DetailedChange[]> => {
   const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
     changes, state, getWorkspaceElements,

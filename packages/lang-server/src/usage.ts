@@ -17,10 +17,12 @@ import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value, isContainerType } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 import wu from 'wu'
+import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation } from './location'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 
+const { awu } = collections.asynciterable
 
 const getElemIDUsages = async (
   element: Element,
@@ -102,9 +104,8 @@ export const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
   id: ElemID
-): Promise<ElemID[]> => _.flatten((await Promise.all(
-  (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id))
-)))
+): Promise<ElemID[]> =>
+  awu(await workspace.getElements(filename)).flatMap(e => getElemIDUsages(e, id)).toArray()
 
 export const provideWorkspaceReferences = async (
   workspace: EditorWorkspace,

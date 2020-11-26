@@ -17,10 +17,13 @@ import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors,
-  merger, configSource as cs, nacl, staticFiles, dirStore } from '@salto-io/workspace'
+  merger, configSource as cs, nacl, staticFiles, dirStore, elementSource 
+} from '@salto-io/workspace'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 
+import { collections } from '@salto-io/lowerdash'
 
+const { awu } = collections.asynciterable
 const { parse } = parser
 const { mergeElements } = merger
 const SERVICES = ['salesforce']
@@ -91,7 +94,7 @@ const buildMockWorkspace = async (
       elements: [], errors: [] as parser.ParseError[], sourceMap: new parser.SourceMap(),
     }
   }
-  const merged = mergeElements(parseResult.elements)
+  const merged = mergeElements(await awu(parseResult.elements).toArray())
   return {
     elements: () => Promise.resolve(merged.merged),
     errors: () => Promise.resolve({
@@ -128,12 +131,16 @@ const buildMockWorkspace = async (
     setNaclFiles: mockFunction<Workspace['setNaclFiles']>().mockResolvedValue(),
     removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>().mockResolvedValue(),
     listNaclFiles: mockFunction<Workspace['listNaclFiles']>().mockResolvedValue([filename]),
-    getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>().mockResolvedValue({
-      elements: merged.merged,
-      filename: '',
-      timestamp: Date.now(),
-      errors: [],
-      referenced: [],
+    getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>().mockImplementation(async () => {
+      const elements = new elementSource.RemoteElementSource('')
+      await elements.setAll(merged.merged)
+      return {
+        elements,
+        filename: '',
+        timestamp: Date.now(),
+        errors: [],
+        referenced: [],
+      }
     }),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([filename]),
     getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([filename]),

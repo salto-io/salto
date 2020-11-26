@@ -17,6 +17,7 @@ import path from 'path'
 import { ElemID, BuiltinTypes, ObjectType, DetailedChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { createElementSelectors } from '../../../src/workspace/element_selector'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { multiEnvSource, ENVS_PREFIX } from '../../../src/workspace/nacl_files/multi_env/multi_env_source'
@@ -25,6 +26,8 @@ import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
+
+const { awu } = collections.asynciterable
 
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual('@salto-io/adapter-utils'),
@@ -207,8 +210,8 @@ describe('multi env source', () => {
   })
   describe('list', () => {
     it('should list elements from all active sources and not inactive sources', async () => {
-      const elements = await source.list()
-      expect(elements).toHaveLength(3)
+      const elements = await awu(await source.list()).toArray()
+      expect(await awu(elements).toArray()).toHaveLength(3)
       expectToContainAllItems(elements, [commonElemID, envElemID, objectElemID])
       expect(elements).not.toContain(inactiveElemID)
     })
@@ -251,10 +254,10 @@ describe('multi env source', () => {
   })
   describe('getAll', () => {
     it('should return all merged elements', async () => {
-      const elements = await source.getAll()
+      const elements = await awu(await source.getAll()).toArray()
       expect(elements).toHaveLength(3)
-      expectToContainAllItems(
-        elements.map(e => e.elemID),
+      await expectToContainAllItems(
+        awu(elements).map(e => e.elemID),
         [commonElemID, envElemID, objectElemID]
       )
       expect(elements).not.toContain(inactiveObject)
@@ -266,8 +269,8 @@ describe('multi env source', () => {
     })
     it('should return all elements for not the primary env', async () => {
       const elements = await source.getAll('inactive')
-      expectToContainAllItems(
-        elements.map(e => e.elemID),
+      await expectToContainAllItems(
+        awu(elements).map(e => e.elemID),
         [commonElemID, inactiveElemID, objectElemID]
       )
       expect(elements).not.toContain(envObject)
@@ -275,7 +278,8 @@ describe('multi env source', () => {
   })
   describe('getTotalSize', () => {
     it('should return the total size of all the sources', async () => {
-      expect(await source.getTotalSize()).toEqual(5 * (await source.getAll()).length)
+      const sourceSize = (await awu(await source.getAll()).toArray()).length
+      expect(await source.getTotalSize()).toEqual(5 * sourceSize)
     })
   })
   describe('listNaclFiles', () => {
@@ -416,7 +420,7 @@ describe('multi env source', () => {
   })
   describe('demoteAll', () => {
     it('should route demote all the proper ids', async () => {
-      jest.spyOn(commonSource, 'list').mockImplementationOnce(() => Promise.resolve([envElemID, objectElemID]))
+      jest.spyOn(commonSource, 'list').mockImplementationOnce(() => Promise.resolve(awu([envElemID, objectElemID])))
       jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )

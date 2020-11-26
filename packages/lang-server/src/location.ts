@@ -18,8 +18,11 @@ import Fuse from 'fuse.js'
 
 import { Element, ElemID, isObjectType, isInstanceElement, isField } from '@salto-io/adapter-api'
 import { staticFiles } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
+
+const { awu } = collections.asynciterable
 
 export interface SaltoElemLocation {
   fullname: string
@@ -32,8 +35,9 @@ export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 const MAX_LOCATION_SEARCH_RESULT = 20
 
 const getAllElements = async (workspace: EditorWorkspace):
-Promise<ReadonlyArray<Element>> => (await workspace.elements)
+Promise<ReadonlyArray<Element>> => awu(await workspace.elements)
   .flatMap(elem => (isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
+  .toArray()
 
 const createFileLocations = async (
   workspace: EditorWorkspace,

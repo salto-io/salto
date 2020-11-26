@@ -14,16 +14,18 @@
 * limitations under the License.
 */
 import * as path from 'path'
+import { collections } from '@salto-io/lowerdash'
 import { EditorWorkspace } from '../src/workspace'
 import { mockWorkspace } from './workspace'
 
+const { awu } = collections.asynciterable
 describe('workspace', () => {
   const workspaceBaseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
   const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
-    expect(wsElements && wsElements.length).toBe(elements)
+    expect(wsElements && (await awu(wsElements).toArray()).length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))

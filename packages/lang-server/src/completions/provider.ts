@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 
+import { collections } from '@salto-io/lowerdash'
 import {
   isInsertText, Suggestions, SuggestionsResolver, keywordSuggestions, typesSuggestions,
   isSuggestions, inheritanceSuggestions, annoSuggestions, eqSuggestions,
@@ -24,6 +25,7 @@ import {
 import { PositionContext, EditorPosition } from '../context'
 import { EditorWorkspace } from '../workspace'
 
+const { awu } = collections.asynciterable
 type LineType = 'empty'|'type'|'typeBody'|'field'
   |'annotation'|'instance'|'attr'|'fieldList'|'annoList'
 export interface SaltoCompletion {
@@ -153,7 +155,7 @@ export const provideWorkspaceCompletionItems = async (
 ): Promise<SaltoCompletion[]> => {
   const tokens = getLineTokens(removeLinePrefix(line))
   const lineType = getLineType(context, tokens, position)
-  const suggestionsParams = { elements: await workspace.elements,
+  const suggestionsParams = { elements: await awu(await workspace.elements).toArray(),
     tokens,
     ref: context.ref }
   const lineSuggestions = LINE_SUGGESTIONS[lineType]

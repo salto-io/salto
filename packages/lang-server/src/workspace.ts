@@ -18,6 +18,9 @@ import path from 'path'
 import wu from 'wu'
 import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 export class EditorWorkspace {
   private workspace: Workspace
@@ -33,7 +36,7 @@ export class EditorWorkspace {
     this.workspace = workspace
   }
 
-  get elements(): Promise<readonly Element[]> {
+  get elements(): Promise<AsyncIterable<Element>> {
     return this.workspace.elements(false)
   }
 
@@ -133,10 +136,10 @@ export class EditorWorkspace {
     return (await this.workspace.listNaclFiles()).map(filename => this.editorFilename(filename))
   }
 
-  async getElements(filename: string): Promise<Element[]> {
+  async getElements(filename: string): Promise<AsyncIterable<Element>> {
     return (
       await this.workspace.getParsedNaclFile(this.workspaceFilename(filename))
-      )?.elements || []
+      )?.elements.getAll() ?? awu([])
   }
 
   async getSourceMap(filename: string): Promise<parser.SourceMap> {

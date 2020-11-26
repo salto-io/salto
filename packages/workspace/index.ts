@@ -33,6 +33,7 @@ import * as pathIndex from './src/workspace/path_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches,
   selectElementsBySelectors, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
 import * as validator from './src/validator'
+import * as elementSource from './src/workspace/elements_source'
 
 export {
   errors,
@@ -47,6 +48,7 @@ export {
   expressions,
   nacl,
   pathIndex,
+  elementSource,
   WorkspaceConfig,
   EnvConfig,
   // Workspace exports

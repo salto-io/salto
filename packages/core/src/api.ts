@@ -49,6 +49,7 @@ import { createDiffChanges } from './core/diff'
 export { cleanWorkspace } from './core/clean'
 export { listUnresolvedReferences } from './core/list'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
@@ -89,7 +90,9 @@ const filterElementsByServices = (
 const partitionElementsByServices = (
   elements: Element[] | readonly Element[],
   services: ReadonlyArray<string>
-): [Element[], Element[]] => _.partition<Element>(elements, shouldElementBeIncluded(services))
+): [Element[], Element[]] => (
+  _.partition<Element>(elements, shouldElementBeIncluded(services))
+)
 
 export const preview = async (
   workspace: Workspace,
@@ -97,8 +100,8 @@ export const preview = async (
 ): Promise<Plan> => {
   const stateElements = await workspace.state().getAll()
   return getPlan({
-    before: filterElementsByServices(stateElements, services),
-    after: filterElementsByServices(await workspace.elements(), services),
+    before: filterElementsByServices(await awu(stateElements).toArray(), services),
+    after: filterElementsByServices(await awu(await workspace.elements()).toArray(), services),
     changeValidators: getAdapterChangeValidators(),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),
@@ -152,16 +155,16 @@ export const deploy = async (
   const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
 
   const workspaceElements = await workspace.elements()
-  const relevantWorkspaceElements = workspaceElements
+  const relevantWorkspaceElements = awu(workspaceElements)
     .filter(e => changedElements.has(e.elemID.getFullName()))
 
   // Add workspace elements as an additional context for resolve so that we can resolve
   // variable expressions. Adding only variables is not enough for the case of a variable
   // with the value of a reference.
   const changes = wu(await getDetailedChanges(
-    relevantWorkspaceElements,
+    await awu(relevantWorkspaceElements).toArray(),
     [...changedElements.values()],
-    workspaceElements
+    await awu(workspaceElements).toArray()
   )).map(change => ({ change, serviceChange: change }))
     .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))
     .flatten()
@@ -196,7 +199,7 @@ export const fetch: FetchFunc = async (
   log.debug('fetch starting..')
   const fetchServices = services ?? workspace.services()
   const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
-    await workspace.state().getAll(), fetchServices
+    await awu(await workspace.state().getAll()).toArray(), fetchServices
   )
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
@@ -217,14 +220,14 @@ export const fetch: FetchFunc = async (
       changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
-      filterElementsByServices(await workspace.elements(), fetchServices),
+      filterElementsByServices(await awu(await workspace.elements()).toArray(), fetchServices),
       filteredStateElements,
       currentConfigs,
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    const state = await workspace.state()
-    await state.override(elements.concat(stateElementsNotCoveredByFetch))
+    const state = workspace.state()
+    await state.override(awu(elements).concat(stateElementsNotCoveredByFetch))
     await state.updatePathIndex(unmergedElements,
       (await state.existingServices()).filter(key => !fetchServices.includes(key)))
     log.debug(`finish to override state with ${elements.length} elements`)
@@ -257,11 +260,11 @@ export const restore = async (
   log.debug('restore starting..')
   const fetchServices = servicesFilters ?? workspace.services()
   const stateElements = filterElementsByServices(
-    await workspace.state().getAll(),
+    await awu(await workspace.state().getAll()).toArray(),
     fetchServices
   )
   const workspaceElements = filterElementsByServices(
-    await workspace.elements(),
+    await awu(await workspace.elements()).toArray(),
     fetchServices
   )
   const pathIndex = await workspace.state().getPathIndex()
@@ -290,8 +293,14 @@ export const diff = async (
   const toElements = useState
     ? await workspace.state(toEnv).getAll()
     : await workspace.elements(includeHidden, toEnv)
-  const fromServiceElements = filterElementsByServices(fromElements, diffServices)
-  const toServiceElements = filterElementsByServices(toElements, diffServices)
+  const fromServiceElements = filterElementsByServices(
+    await awu(fromElements).toArray(),
+    diffServices
+  )
+  const toServiceElements = filterElementsByServices(
+    await awu(toElements).toArray(),
+    diffServices
+  )
   const diffChanges = await createDiffChanges(toServiceElements,
     fromServiceElements, elementSelectors)
   return diffChanges.map(change => ({ change, serviceChange: change }))

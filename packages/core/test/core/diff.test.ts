@@ -13,10 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { merger, createElementSelector } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { createDiffChanges } from '../../src/core/diff'
 
+const { awu } = collections.asynciterable
 const { mergeElements } = merger
 
 describe('diff', () => {
@@ -116,11 +118,20 @@ describe('diff', () => {
     multiPathInstace1,
     multiPathInstace2,
   ]
-  const { merged: allElement } = mergeElements([singlePathObject, ...elementfragments])
-  const singlePathObjMerged = allElement[0].clone()
-  const multiPathObjMerged = allElement[1].clone()
-  const singlePathInstMerged = allElement[2].clone()
-  const multiPathInstMerged = allElement[3].clone()
+  const { merged } = mergeElements([singlePathObject, ...elementfragments])
+  let allElement: Element[]
+  let singlePathObjMerged: Element
+  let multiPathObjMerged: Element
+  let singlePathInstMerged: Element
+  let multiPathInstMerged: Element
+
+  beforeAll(async () => {
+    allElement = await awu(merged).toArray()
+    singlePathObjMerged = allElement[0].clone()
+    multiPathObjMerged = allElement[1].clone()
+    singlePathInstMerged = allElement[2].clone()
+    multiPathInstMerged = allElement[3].clone()
+  })
 
   describe('with no changes', () => {
     it('should not create changes toElements and the fromElements are the same', async () => {
@@ -130,18 +141,25 @@ describe('diff', () => {
   })
 
   describe('with changes', () => {
-    const singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
-    const toElements = [
-      singlePathObjMerged,
-      multiPathInstMerged,
-      singlePathInstMerged,
-    ]
-    singlePathInstMergedAfter.value.nested.str = 'modified'
-    const beforeElements = [
-      multiPathObjMerged,
-      singlePathInstMergedAfter,
-      multiPathInstMerged,
-    ]
+    let singlePathInstMergedAfter: InstanceElement
+    let toElements: Element[]
+    let beforeElements: Element[]
+    beforeAll(async () => {
+      singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
+      toElements = [
+        singlePathObjMerged,
+        multiPathInstMerged,
+        singlePathInstMerged,
+      ]
+      singlePathInstMergedAfter.value.nested.str = 'modified'
+      beforeElements = [
+        multiPathObjMerged,
+        singlePathInstMergedAfter,
+        multiPathInstMerged,
+      ]
+    })
+
+
     describe('without filters', () => {
       let changes: DetailedChange[]
       beforeAll(async () => {
@@ -172,10 +190,11 @@ describe('diff', () => {
     })
     describe('with filters', () => {
       let changes: DetailedChange[]
-      const nestedID = singlePathInstMerged.elemID
-        .createNestedID('nested')
-        .createNestedID('str')
+      let nestedID: ElemID
       beforeAll(async () => {
+        nestedID = singlePathInstMerged.elemID
+          .createNestedID('nested')
+          .createNestedID('str')
         const selectors = [
           createElementSelector(singlePathObjMerged.elemID.getFullName()),
           createElementSelector(nestedID.getFullName()),

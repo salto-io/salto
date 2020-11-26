@@ -14,13 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import {
   ElemID, Element, isElement, isInstanceElement, InstanceElement,
 } from '@salto-io/adapter-api'
 import { Workspace, validator } from '@salto-io/workspace'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 
+
+const { awu } = collections.asynciterable
 const { validateElements, isUnresolvedRefError } = validator
 const { isDefined } = lowerDashValues
 
@@ -57,16 +59,18 @@ export const listUnresolvedReferences = async (
   workspace: Workspace,
   completeFromEnv?: string,
 ): Promise<UnresolvedElemIDs> => {
-  const getUnresolvedElemIDs = (
+  const getUnresolvedElemIDs = async (
     elements: ReadonlyArray<Element>,
     additionalContext?: ReadonlyArray<Element>,
-  ): ElemID[] => _.uniqBy(
-    validateElements(elements, additionalContext).filter(isUnresolvedRefError).map(e => e.target),
+  ): Promise<ElemID[]> => _.uniqBy(
+    (await validateElements(elements, additionalContext))
+      .filter(isUnresolvedRefError).map(e => e.target),
     elemID => elemID.getFullName(),
   )
 
-  const initialElements = [...await workspace.elements(true, workspace.currentEnv())]
-  const unresolvedElemIDs = getUnresolvedElemIDs(initialElements)
+  const initialElements = await awu(await workspace.elements(true, workspace.currentEnv()))
+    .toArray()
+  const unresolvedElemIDs = await getUnresolvedElemIDs(initialElements)
 
   if (completeFromEnv === undefined) {
     return {
@@ -76,7 +80,7 @@ export const listUnresolvedReferences = async (
   }
 
   const elemCompletionLookup: Record<string, Element> = _.keyBy(
-    await workspace.elements(true, completeFromEnv),
+    await awu(await workspace.elements(true, completeFromEnv)).toArray(),
     e => e.elemID.getFullName(),
   )
 
@@ -116,7 +120,7 @@ export const listUnresolvedReferences = async (
       Object.keys(completionRes), id => isDefined(completionRes[id])
     )
     const resolvedElements = Object.values(completionRes).filter(isDefined)
-    const unresolvedIDs = getUnresolvedElemIDs(resolvedElements, elements)
+    const unresolvedIDs = await getUnresolvedElemIDs(resolvedElements, elements)
 
     const innerRes = await addAndValidate(unresolvedIDs, [...elements, ...resolvedElements])
     return {

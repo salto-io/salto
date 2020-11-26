@@ -16,7 +16,7 @@
 import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
-import { promises, values } from '@salto-io/lowerdash'
+import { promises, values, collections } from '@salto-io/lowerdash'
 import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 import {
@@ -25,6 +25,8 @@ import {
 import { wrapAdditions, DetailedAddition, wrapNestedValues } from '../addition_wrapper'
 import { NaclFilesSource, RoutingMode } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
+
+const { awu } = collections.asynciterable
 
 export interface RoutedChanges {
   primarySource?: DetailedChange[]
@@ -76,7 +78,9 @@ const separateChangeByFiles = async (
     (await source.getSourceRanges(change.id))
       .map(range => range.filename)
       .map(async filename => {
-        const fileElements = (await source.getParsedNaclFile(filename))?.elements || []
+        const fileElements = await awu(
+          (await source.getParsedNaclFile(filename))?.elements.getAll() ?? []
+        ).toArray()
         const filteredChange = applyFunctionToChangeData(
           change,
           changeData => filterByFile(change.id, changeData, fileElements),
@@ -328,7 +332,7 @@ const addToSource = async ({
         `Failed to add ${gids.map(id => id.getFullName())} - unmergable element fragments.`
       )
     }
-    const after = mergeResult.merged[0] as ChangeDataType
+    const after = (await awu(mergeResult.merged).toArray())[0] as ChangeDataType
     return detailedCompare(before, after, true)
   })))
   return (await Promise.all(fullChanges.map(change => separateChangeByFiles(

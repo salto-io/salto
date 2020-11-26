@@ -19,8 +19,10 @@ import { hash } from '@salto-io/lowerdash'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { stat, mkdirp, replaceContents, readFile, exists } from '@salto-io/file'
 import { parseCache, parser, staticFiles } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
+const { awu } = collections.asynciterable
 const { parseResultCache } = parseCache
 type SourceMap = parser.SourceMap
 
@@ -119,7 +121,7 @@ describe('localParseResultCache', () => {
       expect(readFile).toHaveBeenCalledWith(expectedCacheFileName, { encoding: 'utf8' })
       // hack to make compiler happy :(
       if (parseResultFromCache !== undefined) {
-        expect(parseResultFromCache.elements[0].elemID.name).toBe(
+        expect((await awu(parseResultFromCache.elements).toArray())[0].elemID.name).toBe(
           parseResult.elements[0].elemID.name
         )
         expect(parseResultFromCache.errors).toEqual([])

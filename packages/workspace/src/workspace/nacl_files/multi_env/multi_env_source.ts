@@ -18,9 +18,10 @@ import path from 'path'
 import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, isInstanceElement, Value,
-  DetailedChange } from '@salto-io/adapter-api'
+  DetailedChange,
+  InstanceElement } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
-import { promises } from '@salto-io/lowerdash'
+import { promises, collections } from '@salto-io/lowerdash'
 import { ElementSelector, selectElementIdsByTraversal, ElementIDToValue } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
@@ -29,7 +30,9 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
 import { Errors } from '../../errors'
+import { RemoteElementSource } from '../../elements_source'
 
+const { awu } = collections.asynciterable
 const { series } = promises.array
 
 export const ENVS_PREFIX = 'envs'
@@ -50,12 +53,12 @@ export class UnsupportedNewEnvChangeError extends Error {
 }
 
 type MultiEnvState = {
-  elements: Record<string, Element>
+  elements: RemoteElementSource
   mergeErrors: MergeError[]
 }
 
 type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
-  getAll: (env?: string) => Promise<Element[]>
+  getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<void>
   getElementIdsBySelectors: (selectors: ElementSelector[],
     commonOnly?: boolean) => Promise<ElemID[]>
@@ -82,13 +85,16 @@ const buildMultiEnvSource = (
   })
 
   const buildMutiEnvState = async (env?: string): Promise<MultiEnvState> => {
-    const allActiveElements = _.flatten(await Promise.all(
-      _.values(getActiveSources(env)).map(s => (s ? s.getAll() : []))
-    ))
-    const { errors, merged } = mergeElements(allActiveElements)
-    applyInstancesDefaults(merged.filter(isInstanceElement))
+    const allActiveElements = awu(_.values(getActiveSources(env)))
+      .flatMap(src => src.getAll())
+    const { errors, merged } = mergeElements(await allActiveElements.toArray())
+    const elements = new RemoteElementSource(`multi-env:${env || primarySourceName}`)
+    await elements.setAll(merged)
+    await applyInstancesDefaults(
+      awu(elements.getAll()).filter(isInstanceElement) as AsyncIterable<InstanceElement>
+    )
     return {
-      elements: _.keyBy(merged, e => e.elemID.getFullName()),
+      elements,
       mergeErrors: errors,
     }
   }
@@ -168,13 +174,15 @@ const buildMultiEnvSource = (
     return applyRoutedChanges(routedChanges)
   }
 
-  const getElementsFromSource = async (source: NaclFilesSource): Promise<ElementIDToValue[]> =>
-    (await source.getAll()).map(elem => ({ elemID: elem.elemID, element: elem }))
+  const getElementsFromSource = async (
+    source: NaclFilesSource
+  ): Promise<AsyncIterable<ElementIDToValue>> =>
+    awu((await source.getAll())).map(elem => ({ elemID: elem.elemID, element: elem }))
 
   const getElementIdsBySelectors = async (selectors: ElementSelector[],
     commonOnly = false): Promise<ElemID[]> =>
-    selectElementIdsByTraversal(selectors, await getElementsFromSource(commonOnly
-      ? commonSource() : primarySource()))
+    selectElementIdsByTraversal(selectors, await awu(await getElementsFromSource(commonOnly
+      ? commonSource() : primarySource())).toArray())
 
   const promote = async (ids: ElemID[]): Promise<void> => {
     const routedChanges = await routePromote(
@@ -211,7 +219,7 @@ const buildMultiEnvSource = (
   const demoteAll = async (): Promise<void> => {
     const commonFileSource = commonSource()
     const routedChanges = await routeDemote(
-      await commonFileSource.list(),
+      await awu(await commonFileSource.list()).toArray(),
       primarySource(),
       commonFileSource,
       secondarySources(),
@@ -242,15 +250,15 @@ const buildMultiEnvSource = (
     demote,
     demoteAll,
     copyTo,
-    list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
+    list: async (): Promise<AsyncIterable<ElemID>> => (await getState()).elements.list(),
     isEmpty,
     get: async (id: ElemID): Promise<Element | Value> => (
-      (await getState()).elements[id.getFullName()]
+      (await getState()).elements.get(id)
     ),
-    getAll: async (env?: string): Promise<Element[]> => (env === undefined
-      ? _.values((await getState()).elements)
+    getAll: async (env?: string): Promise<AsyncIterable<Element>> => (env === undefined
+      ? (await getState()).elements.getAll()
       // When we get an env override we don't want to keep that state
-      : _.values((await buildMutiEnvState(env)).elements)),
+      : (await buildMutiEnvState(env)).elements.getAll()),
     listNaclFiles: async (): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (

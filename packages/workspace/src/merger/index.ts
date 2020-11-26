@@ -19,14 +19,17 @@ import {
   isPrimitiveType, BuiltinTypes, TypeMap, ListType, isVariable, isContainerType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { mergeObjectTypes } from './internal/object_types'
 import { mergeInstances } from './internal/instances'
 import { mergeVariables } from './internal/variables'
 import { mergePrimitives } from './internal/primitives'
 import { MergeResult as InternalMergeResult } from './internal/common'
 
+const { awu } = collections.asynciterable
+
 export { MergeError, DuplicateAnnotationError } from './internal/common'
-export type MergeResult = InternalMergeResult<Element[]>
+export type MergeResult = InternalMergeResult<AsyncIterable<Element>>
 
 const log = logger(module)
 
@@ -111,7 +114,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
     log.debug(`All merge errors:\n${errors.map(err => err.message).join('\n')}`)
   }
   return {
-    merged: updated,
+    merged: awu(updated),
     errors,
   }
 }

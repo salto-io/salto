@@ -22,7 +22,7 @@ import {
   isVariable,
 } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
-import { promises, values } from '@salto-io/lowerdash'
+import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
 import {
@@ -30,7 +30,7 @@ import {
   getNestedStaticFiles,
 } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
-import { ElementsSource } from '../elements_source'
+import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { ParseResultCache, ParseResultKey } from '../cache'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
@@ -39,6 +39,7 @@ import { getStaticFilesFunctions } from '../static_files/functions'
 
 import { Functions } from '../../parser/functions'
 
+const { awu } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
@@ -83,7 +84,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
 
 export type ParsedNaclFile = {
   filename: string
-  elements: Element[]
+  elements: RemoteElementSource
   errors: ParseError[]
   timestamp: number
   buffer?: string
@@ -97,7 +98,7 @@ type ParsedNaclFileMap = {
 type NaclFilesState = {
   readonly parsedNaclFiles: ParsedNaclFileMap
   readonly elementsIndex: Record<string, string[]>
-  readonly mergedElements: Record<string, Element>
+  readonly mergedElements: RemoteElementSource
   readonly mergeErrors: MergeError[]
   readonly referencedIndex: Record<string, string[]>
 }
@@ -145,16 +146,20 @@ const getElementReferenced = (element: Element): ElemID[] => {
   return _.uniq(referenced)
 }
 
-const toParsedNaclFile = (
+const toParsedNaclFile = async (
   naclFile: NaclFile,
   parseResult: ParseResult
-): ParsedNaclFile => ({
-  timestamp: naclFile.timestamp || Date.now(),
-  filename: naclFile.filename,
-  elements: parseResult.elements,
-  errors: parseResult.errors,
-  referenced: parseResult.elements.flatMap(getElementReferenced),
-})
+): Promise<ParsedNaclFile> => {
+  const elements = new RemoteElementSource(naclFile.filename)
+  await elements.overide(parseResult.elements)
+  return {
+    timestamp: naclFile.timestamp || Date.now(),
+    filename: naclFile.filename,
+    elements,
+    errors: parseResult.errors,
+    referenced: await awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
+  }
+}
 
 const parseNaclFile = async (
   naclFile: NaclFile, cache: ParseResultCache, functions: Functions
@@ -200,8 +205,8 @@ Promise<NaclFilesState> => {
 
   const elementsIndex: Record<string, Set<string>> = {}
   const referencedIndex: Record<string, Set<string>> = {}
-  Object.values(allParsed).forEach(naclFile => {
-    naclFile.elements.forEach(element => {
+  await awu(Object.values(allParsed)).forEach(async naclFile => {
+    await awu(naclFile.elements.getAll()).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndex[elementFullName] = elementsIndex[elementFullName] ?? new Set<string>()
       elementsIndex[elementFullName].add(naclFile.filename)
@@ -213,14 +218,16 @@ Promise<NaclFilesState> => {
     })
   })
   const mergeResult = mergeElements(
-    Object.values(allParsed).flatMap(parsed => parsed.elements)
+    await awu(Object.values(allParsed)).flatMap(parsed => parsed.elements.getAll()).toArray()
   )
 
   log.info('workspace has %d elements and %d parsed NaCl files',
     _.size(elementsIndex), _.size(allParsed))
+  const mergedElements = new RemoteElementSource('nacl_file')
+  await mergedElements.setAll(mergeResult.merged)
   return {
     parsedNaclFiles: allParsed,
-    mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+    mergedElements,
     mergeErrors: mergeResult.errors,
     elementsIndex: _.mapValues(elementsIndex, val => Array.from(val)),
     referencedIndex: _.mapValues(referencedIndex, val => Array.from(val)),
@@ -260,18 +267,19 @@ const buildNaclFilesSource = (
     change: AdditionDiff<Element>,
     fileData: string,
   ): Promise<ParsedNaclFile> => {
-    const elements = [(change as AdditionDiff<Element>).data.after]
+    const elements = new RemoteElementSource(filename)
+    await elements.set((change as AdditionDiff<Element>).data.after)
     const parsed = {
       timestamp: Date.now(),
       filename,
       elements,
       errors: [],
-      referenced: elements.flatMap(getElementReferenced),
+      referenced: await awu(elements.getAll()).flatMap(getElementReferenced).toArray(),
     }
     const key = cacheResultKey({ filename: parsed.filename,
       buffer: fileData,
       timestamp: parsed.timestamp })
-    await cache.put(key, { elements, errors: [] })
+    await cache.put(key, { elements: elements.getAll(), errors: [] })
     return parsed
   }
 
@@ -301,10 +309,10 @@ const buildNaclFilesSource = (
     const topLevelID = elemID.createTopLevelParentID()
     const topLevelFiles = (await getState()).elementsIndex[topLevelID.parent.getFullName()] || []
     return (await Promise.all(topLevelFiles.map(async filename => {
-      const fragments = (await getParsedNaclFile(filename))?.elements ?? []
-      return fragments.some(fragment => resolvePath(fragment, elemID) !== undefined)
-        ? filename
-        : undefined
+      const fragments = (await getParsedNaclFile(filename))?.elements.getAll() ?? []
+      return values.isDefined(
+        await awu(fragments).find(fragment => resolvePath(fragment, elemID) !== undefined)
+      ) ? filename : undefined
     }))).filter(values.isDefined)
   }
 
@@ -391,7 +399,7 @@ const buildNaclFilesSource = (
             const parsed = shouldNotParse
               ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>,
                 buffer)
-              : toParsedNaclFile({ filename, buffer },
+              : await toParsedNaclFile({ filename, buffer },
                 await parseNaclFile({ filename, buffer }, cache, functions))
             if (parsed.errors.length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
@@ -419,17 +427,19 @@ const buildNaclFilesSource = (
   }
 
   return {
-    list: async (): Promise<ElemID[]> =>
-      Object.keys((await getState()).elementsIndex).map(name => ElemID.fromFullName(name)),
+    list: async (): Promise<AsyncIterable<ElemID>> =>
+      awu(Object.keys((await getState()).elementsIndex)).map(name => ElemID.fromFullName(name)),
 
     get: async (id: ElemID): Promise<Element | Value> => {
       const currentState = await getState()
       const { parent, path } = id.createTopLevelParentID()
-      const baseElement = currentState.mergedElements[parent.getFullName()]
+      const baseElement = await currentState.mergedElements.get(parent)
       return baseElement && !_.isEmpty(path) ? resolvePath(baseElement, id) : baseElement
     },
 
-    getAll: async (): Promise<Element[]> => _.values((await getState()).mergedElements),
+    getAll: async (): Promise<AsyncIterable<Element>> => (
+      (await getState()).mergedElements.getAll()
+    ),
 
     flush: async (): Promise<void> => {
       await naclFilesStore.flush()

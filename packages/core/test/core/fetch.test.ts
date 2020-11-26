@@ -20,6 +20,8 @@ import {
   ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -27,6 +29,7 @@ import {
 import { getPlan, Plan } from '../../src/core/plan'
 import { mockFunction } from '../common/helpers'
 
+const { awu } = collections.asynciterable
 jest.mock('pietile-eventemitter')
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual('@salto-io/adapter-utils'),
@@ -651,7 +654,12 @@ describe('fetch', () => {
           [],
           [],
         )
-        expect(utils.applyInstancesDefaults).toHaveBeenCalledWith([hiddenInstance])
+        const mockApplyInstancesDefaults = utils.applyInstancesDefaults as jest.Mock
+        const instancesPassed = await awu(
+          _.last(mockApplyInstancesDefaults.mock.calls)[0] as AsyncIterable<Element>
+        ).toArray()
+
+        expect(instancesPassed).toEqual([hiddenInstance])
       })
     })
   })

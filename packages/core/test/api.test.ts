@@ -34,6 +34,7 @@ import {
   isModificationChange,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
@@ -44,6 +45,7 @@ import * as mockPlan from './common/plan'
 import { mockFunction, MockFunction } from './common/helpers'
 import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
 
+const { awu } = collections.asynciterable
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 const mockServiceWithInstall = 'adapterWithInstallMethod'
@@ -143,7 +145,7 @@ describe('api.ts', () => {
       beforeAll(async () => {
         const stateElements = [new InstanceElement('old_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
         ws = mockWorkspace({ stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override')
+        stateOverride = jest.spyOn(ws.state(), 'override').mockResolvedValueOnce(undefined)
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, SERVICES)
       })
@@ -151,8 +153,9 @@ describe('api.ts', () => {
       it('should call fetch changes', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      it('should override state', () => {
-        expect(stateOverride).toHaveBeenCalledWith(fetchedElements)
+      it('should override state', async () => {
+        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
+        expect(await awu(overideParam).toArray()).toEqual(fetchedElements)
       })
 
       it('should not call flush', () => {
@@ -170,7 +173,7 @@ describe('api.ts', () => {
           new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
         ]
         ws = mockWorkspace({ stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override')
+        stateOverride = jest.spyOn(ws.state(), 'override').mockResolvedValue(undefined)
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, [mockService])
       })
@@ -178,11 +181,10 @@ describe('api.ts', () => {
       it('should call fetch changes with first service only', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      it('should override state but also include existing elements', () => {
+      it('should override state but also include existing elements', async () => {
         const existingElements = [stateElements[1]]
-        expect(stateOverride).toHaveBeenCalledWith(
-          expect.arrayContaining([...fetchedElements, ...existingElements])
-        )
+        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
+        expect(await awu(overideParam).toArray()).toEqual([...fetchedElements, ...existingElements])
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()

@@ -23,6 +23,7 @@ import {
 import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
@@ -32,6 +33,7 @@ import {
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
 
+const { awu } = collections.asynciterable
 const { resolve } = expressions
 
 const log = logger(module)
@@ -198,19 +200,22 @@ export const getPlan = async ({
   additionalResolveContext,
 }: GetPlanParameters): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
-  const resolvedBefore = resolve(before, additionalResolveContext)
-  const resolvedAfter = resolve(after, additionalResolveContext)
+  const resolvedBefore = await resolve(awu(before), additionalResolveContext)
+  const resolvedAfter = await resolve(awu(after), additionalResolveContext)
 
   const diffGraph = await buildDiffGraph(
-    addElements(resolvedBefore, 'remove'),
-    addElements(resolvedAfter, 'add'),
+    addElements(await awu(resolvedBefore).toArray(), 'remove'),
+    addElements(await awu(resolvedAfter).toArray(), 'add'),
     removeEqualNodes(isEqualsNode),
     addModifyNodes(addNodeDependencies(dependencyChangers)),
   )
 
   // filter invalid changes from the graph and the after elements
-  const beforeElementsMap = _.keyBy(resolvedBefore, e => e.elemID.getFullName())
-  const afterElementsMap = _.keyBy(resolvedAfter, e => e.elemID.getFullName())
+  const beforeElementsMap = _.keyBy(
+    await awu(resolvedBefore).toArray(),
+    e => e.elemID.getFullName()
+  )
+  const afterElementsMap = _.keyBy(await awu(resolvedAfter).toArray(), e => e.elemID.getFullName())
   const filterResult = await filterInvalidChanges(
     beforeElementsMap, afterElementsMap, diffGraph, changeValidators,
   )

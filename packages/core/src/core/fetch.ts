@@ -26,9 +26,11 @@ import {
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 
+const { awu } = collections.asynciterable
 const { mergeElements } = merger
 
 const log = logger(module)
@@ -251,12 +253,17 @@ const fetchAndProcessMergeErrors = async (
       .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
-    applyInstancesDefaults(elements.filter(isInstanceElement))
-    log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
-      mergeErrors.length}]`)
+    await applyInstancesDefaults(
+      awu(elements).filter(isInstanceElement) as AsyncIterable<InstanceElement>
+    )
+    // We need to think about printing the size of it :/
+    // log.debug(`got ${serviceElements.length} from merge
+    // results and elements and to ${elements.length}
+    // elements [errors=${
+    //   mergeErrors.length}]`)
 
     const processErrorsResult = processMergeErrors(
-      elements,
+      await awu(elements).toArray(),
       mergeErrors,
       stateElements.map(e => e.elemID.getFullName())
     )

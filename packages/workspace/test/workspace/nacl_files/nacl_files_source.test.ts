@@ -13,15 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, DetailedChange, StaticFile } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource, ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { ParseResultCache } from '../../../src/workspace/cache'
 
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
+import { RemoteElementSource } from '../../../src/workspace/elements_source'
+
+const { awu } = collections.asynciterable
 
 jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
   ...jest.requireActual('../../../src/workspace/nacl_files/nacl_file_update'),
@@ -39,6 +43,20 @@ jest.mock('../../../src/parser', () => ({
   ...jest.requireActual('../../../src/parser'),
   parse: jest.fn().mockResolvedValue({ elements: [], errors: [] }),
 }))
+
+const validateParsedNaclFile = async (
+  parsed: ParsedNaclFile | undefined,
+  filename: string,
+  elements: Element[],
+  errors: SaltoError[],
+): Promise<void> => {
+  if (parsed) {
+    const parsedElements = await awu(parsed.elements.getAll()).toArray()
+    expect(parsedElements).toEqual(elements)
+    expect(parsed.errors).toEqual(errors)
+    expect(parsed.filename).toEqual(filename)
+  }
+}
 
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
@@ -191,12 +209,17 @@ describe('Nacl Files Source', () => {
       const filename = 'mytest.nacl'
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = [elem]
+      const elements = new RemoteElementSource('')
+      await elements.set(elem)
       const parsedFiles = [{ filename, elements, errors: [], timestamp: 0, referenced: [], buffer: '' }]
       const naclSource = naclFilesSource(
         mockDirStore, mockCache, mockedStaticFilesSource, parsedFiles
       )
-      expect((await naclSource.getParsedNaclFile(filename))?.elements).toEqual([elem])
+      const parsed = await naclSource.getParsedNaclFile(filename)
+      expect(parsed).toBeDefined()
+      expect(
+        await awu((parsed as ParsedNaclFile).elements.getAll()).toArray()
+      ).toEqual([elem])
     })
   })
 
@@ -220,9 +243,12 @@ describe('Nacl Files Source', () => {
       (mockCache.get as jest.Mock).mockResolvedValueOnce(undefined);
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
       mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
-      expect(
-        await naclSource.getParsedNaclFile(mockFileData.filename)
-      ).toMatchObject({ elements, errors: [], filename: mockFileData.filename })
+      await validateParsedNaclFile(
+        await naclSource.getParsedNaclFile(mockFileData.filename),
+        mockFileData.filename,
+        elements,
+        [],
+      )
     })
     it('should return cached result if updated', async () => {
       mockParse.mockClear()
@@ -231,8 +257,11 @@ describe('Nacl Files Source', () => {
       const elements = [elem];
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData);
       (mockCache.get as jest.Mock).mockResolvedValue({ elements, errors: [] })
-      expect(await naclSource.getParsedNaclFile(mockFileData.filename)).toMatchObject(
-        { elements, errors: [], filename: mockFileData.filename }
+      await validateParsedNaclFile(
+        await naclSource.getParsedNaclFile(mockFileData.filename),
+        mockFileData.filename,
+        elements,
+        [],
       )
       expect(mockParse).not.toHaveBeenCalled()
     })

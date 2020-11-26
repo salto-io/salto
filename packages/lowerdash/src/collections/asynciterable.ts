@@ -15,7 +15,7 @@
 */
 
 type Thenable<T> = T | Promise<T>
-type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
+export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
 
 const isAsyncIterable = <T>(
   itr: ThenableIterable<T>
@@ -51,6 +51,17 @@ export async function *mapAsync<T, U>(
   let index = 0
   for await (const curr of itr) {
     yield mapFunc(curr, index)
+    index += 1
+  }
+}
+
+export const forEachAsync = async <T>(
+  itr: ThenableIterable<T>,
+  mapFunc: (t: T, index: number) => Thenable<unknown>,
+): Promise<void> => {
+  let index = 0
+  for await (const curr of itr) {
+    mapFunc(curr, index)
     index += 1
   }
 }
@@ -102,6 +113,16 @@ export async function *flattenAsync<T>(
   }
 }
 
+export const isEmptyAsync = async <T>(
+  itr: ThenableIterable<T>
+): Promise<boolean> => {
+  // eslint-disable-next-line
+  for await (const _item of itr) {
+    return false
+  }
+  return true
+}
+
 export type AwuIterable<T> = AsyncIterable<T> & {
   filter(filterFunc: (t: T, index: number) => Thenable<boolean>): AwuIterable<T>
   concat(...iterables: ThenableIterable<T>[]): AwuIterable<T>
@@ -109,6 +130,8 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   map<U>(mapFunc: (t: T, index: number) => Thenable<U>): AwuIterable<U>
   find(pred: (value: T, index: number) => Thenable<boolean>): Promise<T | undefined>
   flatMap<U>(mapFunc: (t: T, index: number) => Thenable<ThenableIterable<U>>): AwuIterable<U>
+  forEach(mapFunc: (t: T, index: number) => Thenable<unknown>): Promise<void>
+  isEmpty(): Promise<boolean>
 }
 
 export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => ({
@@ -121,4 +144,6 @@ export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => ({
   find: pred => findAsync(itr, pred),
   map: mapFunc => awu(mapAsync(itr, mapFunc)),
   flatMap: mapFunc => awu(flattenAsync(mapAsync(itr, mapFunc))),
+  forEach: mapFunc => forEachAsync(itr, mapFunc),
+  isEmpty: () => isEmptyAsync(itr),
 })

@@ -19,8 +19,10 @@ import uuidv4 from 'uuid/v4'
 import { parser } from '@salto-io/workspace'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { telemetrySender, Telemetry } from '@salto-io/core'
+import { collections } from '@salto-io/lowerdash'
 import { Trigger } from './trigger'
 
+const { awu } = collections.asynciterable
 const { parse } = parser
 
 export interface Config {
@@ -134,6 +136,6 @@ export const readConfigFile = async (filePath: string): Promise<Config> => {
   if (config.errors.length > 0) {
     throw new Error(`Failed to read configuration file ${filePath}`)
   }
-  const elements = config.elements[0] as InstanceElement
+  const elements = (await awu(config.elements).toArray())[0] as InstanceElement
   return elements.value as Config
 }

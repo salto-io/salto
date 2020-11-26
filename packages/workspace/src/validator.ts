@@ -27,6 +27,7 @@ import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
 
+const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 export abstract class ValidationError extends types.Bean<Readonly<{
@@ -479,11 +480,11 @@ const validateVariable = (element: Variable): ValidationError[] => validateVaria
   element.elemID, element.value
 )
 
-export const validateElements = (
+export const validateElements = async (
   elements: ReadonlyArray<Element>, additionalContext?: ReadonlyArray<Element>,
-): ValidationError[] => (
-  _(resolve(elements, additionalContext))
-    .map(e => {
+): Promise<ValidationError[]> => (
+  awu(await resolve(awu(elements), additionalContext))
+    .flatMap(e => {
       if (isInstanceElement(e)) {
         return validateInstanceElements(e)
       }
@@ -492,6 +493,5 @@ export const validateElements = (
       }
       return validateType(e as TypeElement)
     })
-    .flatten()
-    .value()
+    .toArray()
 )

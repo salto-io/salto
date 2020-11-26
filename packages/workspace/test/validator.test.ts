@@ -200,57 +200,57 @@ describe('Elements validation', () => {
       clonedType = nestedType.clone()
     })
 
-    it('should validate a correct type', () => {
-      const errors = validateElements([BuiltinTypes.STRING, simpleType, nestedType])
+    it('should validate a correct type', async () => {
+      const errors = await validateElements([BuiltinTypes.STRING, simpleType, nestedType])
       expect(errors).toHaveLength(0)
     })
 
-    it('should allow unspecified annotations', () => {
+    it('should allow unspecified annotations', async () => {
       clonedType.fields.nested.annotations.unspecstr = 'unspec'
       clonedType.fields.nested.annotations.unspecnum = 1
       clonedType.fields.nested.annotations.unspecbool = false
-      const errors = validateElements([clonedType])
+      const errors = await validateElements([clonedType])
       expect(errors).toHaveLength(0)
     })
 
-    it('should return error on bad str primitive type', () => {
+    it('should return error on bad str primitive type', async () => {
       clonedType.fields.nested.annotations.annostr = 1
-      const errors = validateElements([clonedType])
+      const errors = await validateElements([clonedType])
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annostr'))
     })
 
-    it('should return error on bad num primitive type', () => {
+    it('should return error on bad num primitive type', async () => {
       clonedType.fields.nested.annotations.annonum = 'str'
-      const errors = validateElements([clonedType])
+      const errors = await validateElements([clonedType])
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annonum'))
     })
 
-    it('should return error on bad bool primitive type', () => {
+    it('should return error on bad bool primitive type', async () => {
       clonedType.fields.nested.annotations.annoboolean = 1
-      const errors = validateElements([clonedType])
+      const errors = await validateElements([clonedType])
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annoboolean'))
     })
 
-    it('should return error on nested annotation mismatch', () => {
+    it('should return error on nested annotation mismatch', async () => {
       clonedType.annotations.nested = { str: 1 }
-      const errors = validateElements([clonedType])
+      const errors = await validateElements([clonedType])
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.elemID.createNestedID('attr', 'nested', 'str'))
     })
 
-    it('should return error object/primitive mismatch', () => {
+    it('should return error object/primitive mismatch', async () => {
       clonedType.fields.nested.annotations.annostr = {}
 
       const badObj = nestedType.clone()
       badObj.annotations.nested = 'not an object'
-      const errors = validateElements([badObj, clonedType])
+      const errors = await validateElements([badObj, clonedType])
       expect(errors).toHaveLength(2)
     })
 
-    it('should allow list of object annotation value when annotationType is object', () => {
+    it('should allow list of object annotation value when annotationType is object', async () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
@@ -264,11 +264,11 @@ describe('Elements validation', () => {
           notList: [{ simple: 'str1' }, { simple: 'str2' }],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = await validateElements([objWithListAnnotation])
       expect(errors).toHaveLength(0)
     })
 
-    it('should allow list of primitive annotation value when annotationType is primitive', () => {
+    it('should allow list of primitive annotation value when annotationType is primitive', async () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
@@ -279,11 +279,11 @@ describe('Elements validation', () => {
           notList: ['str1', 'str2'],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = await validateElements([objWithListAnnotation])
       expect(errors).toHaveLength(0)
     })
 
-    it('should return error for list of primitive annotation value when annotationType is an object', () => {
+    it('should return error for list of primitive annotation value when annotationType is an object', async () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
@@ -297,11 +297,11 @@ describe('Elements validation', () => {
           notList: ['str1', 'str2'],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = await validateElements([objWithListAnnotation])
       expect(errors).toHaveLength(2)
     })
 
-    it('should return error for list of object annotation value when annotationType is a primitive', () => {
+    it('should return error for list of object annotation value when annotationType is a primitive', async () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
@@ -314,7 +314,7 @@ describe('Elements validation', () => {
           notList: [{ simple: 'str1' }, { simple: 'str2' }],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = await validateElements([objWithListAnnotation])
       expect(errors).toHaveLength(2)
     })
   })
@@ -433,7 +433,7 @@ describe('Elements validation', () => {
         extType = nestedType.clone()
       })
       describe('required annotation', () => {
-        it('should succeed when all required fields exist with values', () => {
+        it('should succeed when all required fields exist with values', async () => {
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.type = extType
@@ -443,30 +443,30 @@ describe('Elements validation', () => {
             num: 1,
             bool: true,
           }
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(0)
         })
 
-        it('should return error when required primitive field is missing', () => {
+        it('should return error when required primitive field is missing', async () => {
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.type = extType
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch('Field reqStr is required but has no value')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqStr'))
         })
 
-        it('should return error when required object field is missing', () => {
+        it('should return error when required object field is missing', async () => {
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.type = extType
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
             .toMatch(`Field ${extType.fields.reqNested.name} is required but has no value`)
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested'))
         })
 
-        it('should return error when lists elements missing required fields', () => {
+        it('should return error when lists elements missing required fields', async () => {
           extType.fields.reqNested.type = new ListType(extType.fields.reqNested.type)
           extInst.type = extType
           extInst.value.reqNested = [
@@ -481,7 +481,7 @@ describe('Elements validation', () => {
             },
           ]
 
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
             .toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
@@ -490,11 +490,11 @@ describe('Elements validation', () => {
       })
 
       describe('values annotation', () => {
-        it('should succeed when all values corresponds to values annotation', () => {
-          expect(validateElements([extInst])).toHaveLength(0)
+        it('should succeed when all values corresponds to values annotation', async () => {
+          expect(await validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should succeed when restriction values are not enforced even if the value not in _values', () => {
+        it('should succeed when restriction values are not enforced even if the value not in _values', async () => {
           extType.fields.restrictStr
             .annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
               enforce_value: false,
@@ -502,33 +502,33 @@ describe('Elements validation', () => {
             })
           extInst.value.restrictStr = 'wrongValue'
           extInst.type = extType
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(await validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should succeed when restriction values is not a list', () => {
+        it('should succeed when restriction values is not a list', async () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = { values: 'str' }
           extInst.type = extType
           extInst.value.restrictStr = 'str'
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(await validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
+        it('should succeed when restriction values are not defined and enforce_values is undefined', async () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = {}
           extInst.type = extType
           extInst.value.restrictStr = 'str'
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(await validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should succeed when restriction values are not defined and _restriction is undefined', () => {
+        it('should succeed when restriction values are not defined and _restriction is undefined', async () => {
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION]
           extInst.type = extType
           extInst.value.restrictStr = 'str'
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(await validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should return an error when value is not inside the range', () => {
+        it('should return an error when value is not inside the range', async () => {
           extInst.value.restrictNumber = -1
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
           expect(errors[0].message).toMatch('Value "-1" is not valid')
@@ -538,9 +538,9 @@ describe('Elements validation', () => {
           )
         })
 
-        it('should return an error when value is not a number and field has min-max restriction', () => {
+        it('should return an error when value is not a number and field has min-max restriction', async () => {
           extInst.value.restrictNumber = 'Not A Number'
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(2)
           const [[typeForRangeValidation], [valueTypeValidation]] = _.partition(errors,
             error => error instanceof InvalidValueRangeValidationError)
@@ -553,11 +553,11 @@ describe('Elements validation', () => {
           expect(typeForRangeValidation.elemID).toEqual(restrictedNumberElemID)
         })
 
-        const testValuesAreNotListedButEnforced = (): void => {
+        const testValuesAreNotListedButEnforced = async (): Promise<void> => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'
 
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
@@ -571,15 +571,15 @@ describe('Elements validation', () => {
           expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
         }
 
-        it('should return an error when fields values do not match restriction values with explicit _restriction.enforce_value', () => {
+        it('should return an error when fields values do not match restriction values with explicit _restriction.enforce_value', async () => {
           getRestriction(extType.fields.restrictStr).enforce_value = true
           extInst.type = extType
-          testValuesAreNotListedButEnforced()
+          await testValuesAreNotListedButEnforced()
         })
 
-        it('should return an error when annotations values do not match restriction values', () => {
+        it('should return an error when annotations values do not match restriction values', async () => {
           extType.fields.restrictedAnnotation.annotations.temp = 'wrong'
-          const errors = validateElements([extType])
+          const errors = await validateElements([extType])
           expect(errors).toHaveLength(1)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
@@ -590,16 +590,16 @@ describe('Elements validation', () => {
           )
         })
 
-        it('should succeed when annotation value is inside the range', () => {
+        it('should succeed when annotation value is inside the range', async () => {
           extType.fields.restrictedAnnotation.annotations.range = 7
-          const errors = validateElements([extType])
+          const errors = await validateElements([extType])
           expect(errors).toHaveLength(0)
         })
 
-        it('should return an error when annotations value is bigger than max restriction', () => {
+        it('should return an error when annotations value is bigger than max restriction', async () => {
           extType.fields.restrictedAnnotation.annotations.range = 11
           extType.fields.restrictedAnnotation.annotations.rangeNoMin = 11
-          const errors = validateElements([extType])
+          const errors = await validateElements([extType])
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
@@ -617,10 +617,10 @@ describe('Elements validation', () => {
           )
         })
 
-        it('should return an error when annotations value is smaller than min restriction', () => {
+        it('should return an error when annotations value is smaller than min restriction', async () => {
           extType.fields.restrictedAnnotation.annotations.range = 0
           extType.fields.restrictedAnnotation.annotations.rangeNoMax = 0
-          const errors = validateElements([extType])
+          const errors = await validateElements([extType])
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
@@ -638,9 +638,9 @@ describe('Elements validation', () => {
           )
         })
 
-        it('should return an error when annotations value does not match regex restriction', () => {
+        it('should return an error when annotations value does not match regex restriction', async () => {
           extType.fields.restrictedAnnotation.annotations.regexOnlyLower = 'ABC'
-          const errors = validateElements([extType])
+          const errors = await validateElements([extType])
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
           expect(errors[0].message)
@@ -649,39 +649,39 @@ describe('Elements validation', () => {
             .toEqual(extType.elemID.createNestedID('field', 'restrictedAnnotation', 'regexOnlyLower'))
         })
 
-        it('should return an error when list fields values do not match restriction values', () => {
+        it('should return an error when list fields values do not match restriction values', async () => {
           extType.fields.list.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
             values: ['restriction'],
           })
           extInst.type = extType
 
-          expect(validateElements([extInst])).toHaveLength(2)
+          expect(await validateElements([extInst])).toHaveLength(2)
         })
 
-        it('should succeed when string value matches regex', () => {
+        it('should succeed when string value matches regex', async () => {
           extInst.value.restrictStringRegex = 'aaa123'
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(0)
         })
 
-        it('should return an error when string value does not match regex restriction', () => {
+        it('should return an error when string value does not match regex restriction', async () => {
           extInst.value.restrictStringRegex = 'AAA_123'
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
           expect(errors[0].message).toMatch('Value "AAA_123" is not valid for field restrictStringRegex. expected value to match "^[a-z0-9]*$" regular expression')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictStringRegex'))
         })
 
-        it('should succeed when number value matches regex', () => {
+        it('should succeed when number value matches regex', async () => {
           extInst.value.restrictNumberRegex = 111
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(0)
         })
 
-        it('should return an error when number value does not match regex restriction', () => {
+        it('should return an error when number value does not match regex restriction', async () => {
           extInst.value.restrictNumberRegex = 211
-          const errors = validateElements([extInst])
+          const errors = await validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
           expect(errors[0].message).toMatch('Value "211" is not valid for field restrictNumberRegex. expected value to match "^1[0-9]*$" regular expression')
@@ -691,12 +691,12 @@ describe('Elements validation', () => {
     })
 
     describe('validate values correctness', () => {
-      it('should validate a correct type', () => {
-        const errors = validateElements([extInst])
+      it('should validate a correct type', async () => {
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should ignore static files that are valid', () => {
+      it('should ignore static files that are valid', async () => {
         const instWithFile = new InstanceElement(
           'withFile',
           new ObjectType({
@@ -718,11 +718,11 @@ describe('Elements validation', () => {
           },
         )
 
-        const errors = validateElements([instWithFile])
+        const errors = await validateElements([instWithFile])
         expect(errors).toHaveLength(0)
       })
 
-      it('should fail for invalid static files', () => {
+      it('should fail for invalid static files', async () => {
         const instWithFile = new InstanceElement(
           'withFile',
           new ObjectType({
@@ -744,118 +744,118 @@ describe('Elements validation', () => {
           },
         )
 
-        const errors = validateElements([instWithFile])
+        const errors = await validateElements([instWithFile])
         expect(errors).toHaveLength(1)
       })
 
-      it('should allow unspecified values', () => {
+      it('should allow unspecified values', async () => {
         extInst.value.unspecstr = 'unspec'
         extInst.value.unspecnum = 1
         extInst.value.unspecbool = false
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should return error on bad str primitive type', () => {
+      it('should return error on bad str primitive type', async () => {
         extInst.value.flatstr = 1
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
-      it('should not return error on str primitive type with list', () => {
+      it('should not return error on str primitive type with list', async () => {
         extInst.value.flatstr = ['str1', 'str2']
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should return error on str primitive type with invalid list', () => {
+      it('should return error on str primitive type with invalid list', async () => {
         extInst.value.flatstr = ['str1', 57]
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr', '1'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
-      it('should return error on bad str primitive type with object', () => {
+      it('should return error on bad str primitive type with object', async () => {
         extInst.value.flatstr = { obj: 'str' }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
-      it('should return error on bad num primitive type', () => {
+      it('should return error on bad num primitive type', async () => {
         extInst.value.flatnum = 'str'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatnum'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for number$'))
       })
 
-      it('should return error on bad bool primitive type', () => {
+      it('should return error on bad bool primitive type', async () => {
         extInst.value.flatbool = 'str'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatbool'))
       })
 
-      it('should return error on nested string value mismatch', () => {
+      it('should return error on nested string value mismatch', async () => {
         extInst.value.nested.str = 1
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
       })
 
-      it('should return error on nested num value mismatch', () => {
+      it('should return error on nested num value mismatch', async () => {
         extInst.value.nested.num = 'str'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'num'))
       })
 
-      it('should return error on nested bool value mismatch', () => {
+      it('should return error on nested bool value mismatch', async () => {
         extInst.value.nested.bool = 'str'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
       })
 
-      it('should return error object/primitive mismatch', () => {
+      it('should return error object/primitive mismatch', async () => {
         extInst.value.nested = 'str'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
       })
 
-      it('should not return error on list/primitive mismatch if inner type is valid', () => {
+      it('should not return error on list/primitive mismatch if inner type is valid', async () => {
         extInst.value.list = 'not a list'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should return error on list/primitive mismatch if inner type is invalid', () => {
+      it('should return error on list/primitive mismatch if inner type is invalid', async () => {
         extInst.value.list = 75
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list'))
       })
 
-      it('should return error on inconsistent primitive map values', () => {
+      it('should return error on inconsistent primitive map values', async () => {
         extInst.value.map = { valid: 'string', invalid: 55 }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('map', 'invalid'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
-      it('should return error on inconsistent object map values', () => {
+      it('should return error on inconsistent object map values', async () => {
         extInst.value.mapOfObject.invalid1 = 'aaa'
         extInst.value.mapOfObject.invalid2 = { str: 2 }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid1'))
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid2', 'str'))
@@ -863,48 +863,48 @@ describe('Elements validation', () => {
         expect(errors[1].message).toMatch(new RegExp('Invalid value type for string$'))
       })
 
-      it('should not return error for list/object mismatch with empty array', () => {
+      it('should not return error for list/object mismatch with empty array', async () => {
         extInst.value = { nested: [] }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should return error for list/object mismatch with empty array on required field', () => {
+      it('should return error for list/object mismatch with empty array on required field', async () => {
         const nestedRequiredType = nestedType.clone()
         nestedRequiredType.fields.nested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
         extInst.type = nestedRequiredType
         extInst.value = { nested: [] }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
         expect(errors[0].error).toMatch('is required but has no value')
       })
 
-      it('should return error for list/object mismatch with empty array on required field-object', () => {
+      it('should return error for list/object mismatch with empty array on required field-object', async () => {
         const requiredType = nestedType.clone()
         requiredType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
         extInst.type = requiredType
         extInst.value = []
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID)
         expect(errors[0].toString()).toMatch('is required but has no value')
       })
 
-      it('should return inner error for list/object mismatch with non-empty invalid array', () => {
+      it('should return inner error for list/object mismatch with non-empty invalid array', async () => {
         extInst.value = { nested: [{ bool: true }, { str: 'str' }] }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', '1', 'bool'))
       })
 
-      it('should not return error list/object mismatch with non-empty valid array', () => {
+      it('should not return error list/object mismatch with non-empty valid array', async () => {
         extInst.value = { nested: [{ bool: true }] }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should not return error list/object mismatch with non-empty array with reference expressions', () => {
+      it('should not return error list/object mismatch with non-empty array with reference expressions', async () => {
         extInst.value = {
           flatnum: 32,
           nested: [{
@@ -912,99 +912,99 @@ describe('Elements validation', () => {
             num: new ReferenceExpression(extInst.elemID.createNestedID('flatnum')),
           }],
         }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
 
-      it('should not return an error when matching list item', () => {
+      it('should not return an error when matching list item', async () => {
         extInst.value.list.push('abc')
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should return error in list of list item mismatch', () => {
+      it('should return error in list of list item mismatch', async () => {
         extInst.value.listOfList[0].push(1)
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfList', '0', '2'))
       })
 
-      it('should not return an error when matching list object item', () => {
+      it('should not return an error when matching list object item', async () => {
         extInst.value.listOfObject.push({
           str: 'str',
           num: 3,
           bool: false,
         })
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should not return error when inner is not a list in list of lists', () => {
+      it('should not return error when inner is not a list in list of lists', async () => {
         extInst.value.listOfList = ['a']
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should not return error when not a list in list of lists', () => {
+      it('should not return error when not a list in list of lists', async () => {
         extInst.value.listOfList = 'a'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should not return error when not a list in list-of-lists-of-lists', () => {
+      it('should not return error when not a list in list-of-lists-of-lists', async () => {
         extInst.value.listOfListOfList = 'a'
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should not return error when item instead of list if item is of inner type', () => {
+      it('should not return error when item instead of list if item is of inner type', async () => {
         extInst.value.listOfObject = {
           str: 'str',
           num: 3,
           bool: false,
         }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
 
-      it('should return error when item instead of list if item is of incorrect type', () => {
+      it('should return error when item instead of list if item is of incorrect type', async () => {
         extInst.value.listOfObject = {
           str: 'str',
           num: 'str',
           bool: false,
         }
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', 'num'))
       })
 
-      it('should return an error when not matching list object item (missing req)', () => {
+      it('should return an error when not matching list object item (missing req)', async () => {
         extInst.value.listOfObject.push({
           abc: 'dsadas',
         })
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
       })
 
-      it('should return an error when primitive instead of list object item', () => {
+      it('should return an error when primitive instead of list object item', async () => {
         extInst.value.listOfObject.push(1)
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1'))
         // TODO: The second error is a strange UX and we should not have it
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
       })
 
-      it('should return error list item mismatch', () => {
+      it('should return error list item mismatch', async () => {
         extInst.value.list.push(1)
-        const errors = validateElements([extInst])
+        const errors = await validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list', '2'))
       })
 
-      it('should allow all value types for unknown field type', () => {
+      it('should allow all value types for unknown field type', async () => {
         const unknownObj = new ObjectType({
           elemID: new ElemID('salto', 'unknown'),
           fields: {
@@ -1017,26 +1017,26 @@ describe('Elements validation', () => {
         const booValue = new InstanceElement('numInst', unknownObj, { unknown: true })
         const arrValue = new InstanceElement('numInst', unknownObj, { unknown: [0] })
         const objValue = new InstanceElement('numInst', unknownObj, { unknown: { o: 'o' } })
-        const errors = validateElements([numValue, strValue, booValue, arrValue, objValue])
+        const errors = await validateElements([numValue, strValue, booValue, arrValue, objValue])
         expect(errors).toHaveLength(0)
       })
     })
 
     describe('reference validation', () => {
-      it('should return error when encountering an unresolved reference', () => {
-        const errors = validateElements([unresolvedRefInst])
+      it('should return error when encountering an unresolved reference', async () => {
+        const errors = await validateElements([unresolvedRefInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(unresolvedRefInst.elemID.createNestedID('bool'))
       })
 
-      it('should return error when encountering a circular reference', () => {
-        const errors = validateElements([circularRefInst, circularRefInst2])
+      it('should return error when encountering a circular reference', async () => {
+        const errors = await validateElements([circularRefInst, circularRefInst2])
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(circularRefInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
       })
 
-      it('should return error when encountering a reference to self', () => {
+      it('should return error when encountering a reference to self', async () => {
         const refToSelfInst = new InstanceElement(
           'unresolved',
           simpleType,
@@ -1048,20 +1048,20 @@ describe('Elements validation', () => {
         refToSelfInst.value.bool = new ReferenceExpression(
           refToSelfInst.elemID.createNestedID('bool')
         )
-        const errors = validateElements([refToSelfInst])
+        const errors = await validateElements([refToSelfInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(refToSelfInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
       })
 
-      it('should validate throw error on reference that points to a bad type', () => {
-        const errors = validateElements([wrongRefInst, extInst])
+      it('should validate throw error on reference that points to a bad type', async () => {
+        const errors = await validateElements([wrongRefInst, extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(wrongRefInst.elemID.createNestedID('bool'))
       })
 
-      it('should return error when encountering an illegal reference target', () => {
-        const errors = validateElements([illegalRefInst])
+      it('should return error when encountering an illegal reference target', async () => {
+        const errors = await validateElements([illegalRefInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(illegalRefInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(IllegalReferenceValidationError)
@@ -1069,24 +1069,24 @@ describe('Elements validation', () => {
     })
 
     describe('variable validation', () => {
-      it('should return error when encountering an unresolved variable expression', () => {
-        const errors = validateElements([varInst])
+      it('should return error when encountering an unresolved variable expression', async () => {
+        const errors = await validateElements([varInst])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
         expect(errors[0].elemID).toEqual(varInst.elemID.createNestedID('bool'))
       })
 
-      it('should not return error when encountering a valid variable expression', () => {
-        const errors = validateElements([varInst, variable])
+      it('should not return error when encountering a valid variable expression', async () => {
+        const errors = await validateElements([varInst, variable])
         expect(errors).toHaveLength(0)
       })
-      it('should return error when the type of a variable\'s value is incorrect', () => {
-        const errors = validateElements([illegalValueVarInst, variable])
+      it('should return error when the type of a variable\'s value is incorrect', async () => {
+        const errors = await validateElements([illegalValueVarInst, variable])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueTypeValidationError)
         expect(errors[0].elemID).toEqual(varInst.elemID.createNestedID('num'))
       })
-      it('should return error when a Variable element serves as a value', () => {
+      it('should return error when a Variable element serves as a value', async () => {
         const varElementInst = new InstanceElement(
           'withVarElement',
           noRestrictionsType,
@@ -1094,83 +1094,83 @@ describe('Elements validation', () => {
             someVal: new Variable(varElemId, 5),
           }
         )
-        const errors = validateElements([varElementInst])
+        const errors = await validateElements([varElementInst])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(varElementInst.elemID.createNestedID('someVal'))
         expect(errors[0].message).toMatch('not a variable')
       })
-      it('should return error when the value is an object (not supported for now)', () => {
+      it('should return error when the value is an object (not supported for now)', async () => {
         const objVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'objVar')
         const objVar = new Variable(objVarElemId, { key: 'val' })
-        const errors = validateElements([objVar])
+        const errors = await validateElements([objVar])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(objVarElemId)
         expect(errors[0].message).toMatch('Value is not valid for field objVar')
       })
-      it('should return error when the value is a reference to an element', () => {
+      it('should return error when the value is a reference to an element', async () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
         const objVar = new Variable(instVarElemId, new ReferenceExpression(extInst.elemID))
-        const errors = validateElements([objVar, extInst])
+        const errors = await validateElements([objVar, extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
         expect(errors[0].message).toMatch('Value is not valid for field instVar')
         expect(errors[0].message).toMatch('a primitive')
       })
-      it('should return error when the value is a reference to an object', () => {
+      it('should return error when the value is a reference to an object', async () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
         const objVar = new Variable(instVarElemId,
           new ReferenceExpression(extInst.elemID.createNestedID('nested')))
-        const errors = validateElements([objVar, extInst])
+        const errors = await validateElements([objVar, extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
         expect(errors[0].message).toMatch('Value is not valid for field instVar')
         expect(errors[0].message).toMatch('a primitive')
       })
-      it('should return error when the value is an unresolved reference', () => {
+      it('should return error when the value is an unresolved reference', async () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
         const refVar = new Variable(refVarElemId,
           new ReferenceExpression(new ElemID('salesforce', 'nonexistent')))
-        const errors = validateElements([refVar])
+        const errors = await validateElements([refVar])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
       })
-      it('should return error when there is a circular reference of variables', () => {
+      it('should return error when there is a circular reference of variables', async () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
         const refVarElemId2 = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar2')
         const refVar = new Variable(refVarElemId,
           new VariableExpression(refVarElemId2))
         const refVar2 = new Variable(refVarElemId2,
           new VariableExpression(refVarElemId))
-        const errors = validateElements([refVar, refVar2])
+        const errors = await validateElements([refVar, refVar2])
         expect(errors).toHaveLength(2)
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
       })
-      it('should return error when the value is referencing itself', () => {
+      it('should return error when the value is referencing itself', async () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
         const refVar = new Variable(refVarElemId,
           new VariableExpression(refVarElemId))
-        const errors = validateElements([refVar])
+        const errors = await validateElements([refVar])
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
       })
-      it('should not return error when the value is a number/string/boolean', () => {
+      it('should not return error when the value is a number/string/boolean', async () => {
         const numVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'), 6)
         const boolVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'boolVar'), true)
         const strVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'strVar'), 'hi')
-        const errors = validateElements([numVar, boolVar, strVar])
+        const errors = await validateElements([numVar, boolVar, strVar])
         expect(errors).toHaveLength(0)
       })
-      it('should not return error when the value is a reference to a primitive', () => {
+      it('should not return error when the value is a reference to a primitive', async () => {
         const numVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'),
           new ReferenceExpression(extInst.elemID.createNestedID('flatnum')))
-        const errors = validateElements([numVar, extInst])
+        const errors = await validateElements([numVar, extInst])
         expect(errors).toHaveLength(0)
       })
     })
@@ -1189,8 +1189,8 @@ describe('Elements validation', () => {
         }
       )
 
-      it('should return error when encountering an unresolved reference', () => {
-        const errors = validateElements([unresolvedRefInAnnoInst])
+      it('should return error when encountering an unresolved reference', async () => {
+        const errors = await validateElements([unresolvedRefInAnnoInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID)
           .toEqual(unresolvedRefInAnnoInst.elemID.createNestedID(INSTANCE_ANNOTATIONS.PARENT, '1'))
@@ -1200,12 +1200,12 @@ describe('Elements validation', () => {
 
   describe('InvalidStaticFileError', () => {
     const elemID = new ElemID('adapter', 'bla')
-    it('should have correct message for missing', () =>
+    it('should have correct message for missing', async () =>
       expect(
         new InvalidStaticFileError({ elemID, value: new MissingStaticFile('path') })
           .message
       ).toEqual('Error validating "adapter.bla": Missing static file: path'))
-    it('should have correct message for invalid', () =>
+    it('should have correct message for invalid', async () =>
       expect(
         new InvalidStaticFileError({ elemID, value: new AccessDeniedStaticFile('path') })
           .message

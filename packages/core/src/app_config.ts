@@ -24,7 +24,10 @@ import {
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
 import { parser } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { TelemetryConfig } from './telemetry'
+
+const { awu } = collections.asynciterable
 
 const { dumpElements, parse } = parser
 
@@ -134,11 +137,13 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
-  const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
+  const configInstance = (await awu((await parse(buf, filepath)).elements)
+    .toArray()
+  ).pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
   configInstance.type = saltoAppConfigType
-  applyInstancesDefaults([configInstance])
+  await applyInstancesDefaults(awu([configInstance]))
   return configInstance.value as AppConfig
 }
 

@@ -27,6 +27,7 @@ import {
   INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 
+const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
 const log = logger(module)
@@ -750,13 +751,13 @@ const createDefaultValuesFromType = (type: TypeElement): Values => {
     : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 
-export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
-  instances
-    .forEach(inst => {
-      const defaultValues = createDefaultValuesFromType(inst.type)
-      inst.value = _.merge({}, defaultValues, inst.value)
-    })
-}
+export const applyInstancesDefaults = async (
+  instances: AsyncIterable<InstanceElement>
+): Promise<void> => awu(instances)
+  .forEach(inst => {
+    const defaultValues = createDefaultValuesFromType(inst.type)
+    inst.value = _.merge({}, defaultValues, inst.value)
+  })
 
 export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
   InstanceElement => {

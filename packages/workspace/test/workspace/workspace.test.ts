@@ -26,6 +26,7 @@ import {
 import {
   METADATA_TYPE, INTERNAL_ID_ANNOTATION,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
+import { collections } from '@salto-io/lowerdash'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
@@ -45,6 +46,9 @@ import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { PathIndex } from '../../src/workspace/path_index'
 import { resolve } from '../../src/expressions'
+import { RemoteElementSource } from '../../src/workspace/elements_source'
+
+const { awu } = collections.asynciterable
 
 const changedNaclFile = {
   filename: 'file.nacl',
@@ -84,12 +88,16 @@ const mockCredentialsSource = (): ConfigSource => ({
   rename: jest.fn(),
 })
 
-const createState = (elements: Element[]): State => buildInMemState(async () => ({
-  elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
-  pathIndex: new PathIndex(),
-  servicesUpdateDate: {},
-  saltoVersion: '0.0.1',
-}))
+const createState = (elements: Element[]): State => buildInMemState(async () => {
+  const elementsSource = new RemoteElementSource('')
+  await elementsSource.setAll(elements)
+  return {
+    elements: elementsSource,
+    pathIndex: new PathIndex(),
+    servicesUpdateDate: {},
+    saltoVersion: '0.0.1',
+  }
+})
 
 const createWorkspace = async (
   dirStore?: DirectoryStore<string>, state?: State,
@@ -114,8 +122,12 @@ const createWorkspace = async (
       },
     })
 
-const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =>
-  _.keyBy(elements, elem => elem.elemID.getFullName())
+const getElemMap = async (
+  elements: AsyncIterable<Element>
+): Promise<Record<string, Element>> => _.keyBy(
+  await awu(elements).toArray(),
+  elem => elem.elemID.getFullName()
+)
 
 describe('workspace', () => {
   describe('loadWorkspace', () => {
@@ -144,7 +156,7 @@ describe('workspace', () => {
     })
     describe('with hidden values and types', () => {
       beforeAll(async () => {
-        elemMap = getElemMap(await workspace.elements())
+        elemMap = await getElemMap(await workspace.elements())
       })
       it('should contain types from all files', () => {
         expect(elemMap).toHaveProperty(['salesforce.lead'])
@@ -158,7 +170,7 @@ describe('workspace', () => {
     })
     describe('loaded elements without hidden types', () => {
       beforeAll(async () => {
-        elemMap = getElemMap(await workspace.elements(false))
+        elemMap = await getElemMap(await workspace.elements(false))
       })
       it('should contain types from all files', () => {
         expect(elemMap).toHaveProperty(['salesforce.lead'])
@@ -192,7 +204,6 @@ describe('workspace', () => {
     })
     it('should contain parse errors', async () => {
       const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl']))
-
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
       const err = 'Expected {'
@@ -245,7 +256,7 @@ describe('workspace', () => {
         }),
         state,
       )
-      state.override(resolve(await workspace.elements(false)))
+      await state.override(await resolve(await workspace.elements(false)))
 
       const wsErrors = await workspace.errors()
       expect(wsErrors.merge).toHaveLength(1)
@@ -271,7 +282,7 @@ describe('workspace', () => {
     beforeAll(async () => {
       workspace = await createWorkspace(dirStore)
       await workspace.removeNaclFiles(...removedPaths)
-      elemMap = getElemMap(await workspace.elements())
+      elemMap = await getElemMap(await workspace.elements())
     })
 
     it('should update elements to not include fields from removed Nacl files', () => {
@@ -293,7 +304,7 @@ describe('workspace', () => {
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
-      elemMap = getElemMap(await workspace.elements())
+      elemMap = await getElemMap(await workspace.elements())
     })
 
     it('should add new elements', () => {
@@ -799,7 +810,7 @@ describe('workspace', () => {
       // The call to resolve is the only safe way to clone elements while keeping all
       // the inner references between elements correct, we then apply all the changes to the copied
       // elements and set them along with the hidden types as the state elements
-      const stateElements = resolve(await workspace.elements())
+      const stateElements = await awu(await resolve(await workspace.elements())).toArray()
       const stateElementsById = _.keyBy(stateElements, elem => elem.elemID.getFullName())
       const changesByElem = _.groupBy(
         changes,
@@ -811,15 +822,15 @@ describe('workspace', () => {
           applyDetailedChanges(elem, elemChanges)
         }
       })
-      state.override([
-        ...stateElements, accountInsightsSettingsType, queueHiddenType,
-      ])
+      await state.override(
+        awu([...stateElements, accountInsightsSettingsType, queueHiddenType])
+      )
 
       clonedChanges = _.cloneDeep(changes)
       await workspace.updateNaclFiles(clonedChanges)
 
-      elemMap = getElemMap(await workspace.elements(false))
-      elemMapWithHidden = getElemMap(await workspace.elements())
+      elemMap = await getElemMap(await workspace.elements(false))
+      elemMapWithHidden = await getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
 
       // New types (first time returned from service)
@@ -1038,7 +1049,10 @@ describe('workspace', () => {
       }
 
       await workspace.updateNaclFiles([change1, change2])
-      lead = findElement(await workspace.elements(), new ElemID('salesforce', 'lead')) as ObjectType
+      lead = findElement(
+        await awu(await workspace.elements()).toArray(),
+        new ElemID('salesforce', 'lead')
+      ) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
   })
@@ -1129,6 +1143,7 @@ describe('workspace', () => {
       workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
         undefined,
         {
+          '': { naclFiles: createMockNaclFileSource([]) },
           default: { naclFiles: defNaclFiles, state },
           inactive: { naclFiles: inactiveNaclFiles, state },
         })
@@ -1154,10 +1169,14 @@ describe('workspace', () => {
     })
 
     it('should return the elements of the new current envs after set', async () => {
-      const defaultElemIDs = (await workspace.elements()).map(e => e.elemID.getFullName())
+      const defaultElemIDs = await awu(
+        await workspace.elements()
+      ).map(e => e.elemID.getFullName()).toArray()
       expect(defaultElemIDs).toHaveLength(0)
       await workspace.setCurrentEnv('inactive')
-      const inactiveElemIDs = (await workspace.elements()).map(e => e.elemID.getFullName())
+      const inactiveElemIDs = await awu(
+        await workspace.elements()
+      ).map(e => e.elemID.getFullName()).toArray()
       expect(inactiveElemIDs).toHaveLength(1)
       expect(inactiveElemIDs).toEqual(['salto.inactive'])
     })

@@ -14,12 +14,59 @@
 * limitations under the License.
 */
 import { Element, ElemID, Value } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { RemoteMap, InMemoryRemoteMap } from './remote_map'
+
+const { awu } = collections.asynciterable
+
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 export interface ElementsSource {
-  list(): Promise<ElemID[]>
+  list(): Promise<AsyncIterable<ElemID>>
   get(id: ElemID): Promise<Element | Value>
-  getAll(): Promise<Element[]>
+  getAll(): Promise<AsyncIterable<Element>>
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
+}
+
+export class RemoteElementSource {
+  private elements: RemoteMap<Element>
+
+  constructor(public name: string) {
+    this.elements = new InMemoryRemoteMap(`${name}-elements`)
+  }
+
+  list(): AsyncIterable<ElemID> {
+    return awu(this.elements.keys()).map(fullname => ElemID.fromFullName(fullname))
+  }
+
+  getAll(): AsyncIterable<Element> {
+    return this.elements.values()
+  }
+
+  async get(id: ElemID): Promise<Element | undefined> {
+    return this.elements.get(id.getFullName())
+  }
+
+  async set(element: Element): Promise<void> {
+    return this.elements.set(element.elemID.getFullName(), element)
+  }
+
+  async delete(id: ElemID): Promise<void> {
+    await this.elements.delete(id.getFullName())
+  }
+
+  async setAll(elements: ThenableIterable<Element>): Promise<void> {
+    return this.elements.setAll(awu(elements).map(e => [e.elemID.getFullName(), e]))
+  }
+
+  async has(id: ElemID): Promise<boolean> {
+    return this.elements.has(id.getFullName())
+  }
+
+  async overide(elements: ThenableIterable<Element>): Promise<void> {
+    await this.elements.clear()
+    return this.setAll(elements)
+  }
 }

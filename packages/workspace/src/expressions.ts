@@ -23,6 +23,9 @@ import {
 import {
   resolvePath,
 } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 type Resolver<T> = (
   v: T,
@@ -159,16 +162,16 @@ const resolveElement = (
   )
 }
 
-export const resolve = (
-  elements: ReadonlyArray<Element>,
+export const resolve = async (
+  elements: AsyncIterable<Element>,
   additionalContext: ReadonlyArray<Element> = [],
-): Element[] => {
+): Promise<AsyncIterable<Element>> => {
   // intentionally shallow clone because in resolve element we replace only top level properties
-  const clonedElements = elements.map(_.clone)
+  const clonedElements = await awu(elements).map(_.clone).toArray()
   const contextElements = _.keyBy(
     [...additionalContext, ...clonedElements],
     e => e.elemID.getFullName()
   )
   clonedElements.forEach(e => resolveElement(e, contextElements))
-  return clonedElements
+  return awu(clonedElements)
 }

@@ -22,8 +22,10 @@ import {
   findElement, resolvePath,
 } from '@salto-io/adapter-utils'
 import { parser } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { EditorWorkspace } from './workspace'
 
+const { awu } = collections.asynciterable
 type PositionContextType = 'global'|'instance'|'type'|'field'
 
 export interface EditorPosition {
@@ -201,12 +203,12 @@ export const getPositionContext = async (
     // TODO: check what to do if buffer is undefined
     (await workspace.getNaclFile(filename))?.buffer as string,
     await workspace.getSourceMap(filename),
-    await workspace.getElements(filename),
+    await awu(await workspace.getElements(filename)).toArray(),
   )
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)
     ? { ...partialContext.ref,
-      element: getFullElement(await workspace.elements,
+      element: getFullElement(await awu(await workspace.elements).toArray(),
         partialContext.ref.element) }
     : undefined
   return { ...partialContext, ref: fullRef }

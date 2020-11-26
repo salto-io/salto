@@ -21,8 +21,10 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { mockState } from './state'
 
+const { awu } = collections.asynciterable
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 
@@ -79,7 +81,7 @@ export const mockWorkspace = ({
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
-    elements: jest.fn().mockImplementation(async () => elements),
+    elements: jest.fn().mockImplementation(async () => awu(elements)),
     name,
     envs: () => ['default'],
     currentEnv: () => 'default',

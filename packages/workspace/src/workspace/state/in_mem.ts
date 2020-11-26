@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { Element, ElemID, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
+import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { PathIndex, createPathIndex, updatePathIndex } from '../path_index'
 import { State, StateData } from './state'
+import { RemoteElementSource } from '../elements_source'
 
-const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 export const buildInMemState = (loadData: () => Promise<StateData>): State => {
   let innerStateData: Promise<StateData>
@@ -30,27 +31,22 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     return innerStateData
   }
   return {
-    getAll: async (): Promise<Element[]> => Object.values((await stateData()).elements),
-    list: async (): Promise<ElemID[]> =>
-      Object.keys((await stateData()).elements).map(n => ElemID.fromFullName(n)),
-    get: async (id: ElemID): Promise<Element> => ((await stateData()).elements[id.getFullName()]),
-    set: async (element: Element): Promise<void> => {
-      (await stateData()).elements[element.elemID.getFullName()] = element
-    },
-    remove: async (id: ElemID): Promise<void> => {
-      delete (await stateData()).elements[id.getFullName()]
-    },
-    override: async (element: Element | Element[]): Promise<void> => {
-      const elements = makeArray(element)
-      const newServices = _(elements).map(e => e.elemID.adapter)
-        .uniq()
+    getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
+    list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
+    get: async (id: ElemID): Promise<Element | undefined> => (await stateData()).elements.get(id),
+    set: async (element: Element): Promise<void> => (await stateData()).elements.set(element),
+    remove: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
+    override: async (elements: AsyncIterable<Element>): Promise<void> => {
+      const newServices = new Set<string>()
+      await awu(elements).map(e => e.elemID.adapter)
         .filter(adapter => adapter !== GLOBAL_ADAPTER)
-        .value()
+        .forEach(adapter => newServices.add(adapter))
+
       const data = await stateData()
-      data.elements = _.keyBy(elements, e => e.elemID.getFullName())
+      await data.elements.overide(elements)
       data.servicesUpdateDate = {
         ...data.servicesUpdateDate,
-        ...newServices.reduce((acc, service) => {
+        ...wu(newServices.values()).toArray().reduce((acc, service) => {
           acc[service] = new Date(Date.now())
           return acc
         }, {} as Record<string, Date>),
@@ -75,7 +71,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     clear: async () => {
       innerStateData = Promise.resolve({
-        elements: {},
+        elements: new RemoteElementSource('state'),
         pathIndex: new PathIndex(),
         servicesUpdateDate: {},
       })

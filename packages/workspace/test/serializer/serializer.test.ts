@@ -19,6 +19,7 @@ import {
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
   VariableExpression, StaticFile, MapType,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
@@ -26,6 +27,7 @@ import { resolve } from '../../src/expressions'
 import { LazyStaticFile } from '../../src/workspace/static_files/source'
 import { SyncDirectoryStore } from '../../src/workspace/dir_store'
 
+const { awu } = collections.asynciterable
 describe('State/cache serialization', () => {
   const strType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'string'),
@@ -174,17 +176,18 @@ describe('State/cache serialization', () => {
   it('should not serialize resolved values', async () => {
     // TemplateExpressions are discarded
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
-    const serialized = serialize(resolve(elementsToSerialize), 'keepRef')
+    const resolved = await resolve(awu(elementsToSerialize))
+    const serialized = serialize(await awu(resolved).toArray(), 'keepRef')
     const deserialized = await deserialize(serialized)
     const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
-
+    expect(deserialized.length).toEqual(sortedElements.length)
     expect(deserialized).toEqual(sortedElements)
   })
 
   // Serializing our nacls to the state file should be the same as serializing the result of fetch
   it('should serialize resolved values to state', async () => {
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
-    const serialized = serialize(resolve(elementsToSerialize))
+    const serialized = serialize(await awu(await resolve(awu(elementsToSerialize))).toArray())
     const deserialized = await deserialize(serialized)
     const refInst = deserialized.find(
       e => e.elemID.getFullName() === refInstance.elemID.getFullName()

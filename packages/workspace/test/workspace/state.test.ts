@@ -14,8 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { StateData, buildInMemState } from '../../src/workspace/state'
 import { createPathIndex } from '../../src/workspace/path_index'
+import { RemoteElementSource } from '../../src/workspace/elements_source'
+
+const { awu } = collections.asynciterable
 
 describe('state', () => {
   const adapter = 'salesforce'
@@ -23,22 +27,26 @@ describe('state', () => {
   const elem = new ObjectType({ elemID, path: ['test', 'new'] })
   const pathIndex = createPathIndex([elem])
   const servicesUpdateDate = { [adapter]: new Date() }
-  const loadStateData = (): Promise<StateData> => Promise.resolve({
-    elements: { [elemID.getFullName()]: elem },
-    servicesUpdateDate,
-    pathIndex,
-    saltoVersion: '0.0.1',
-  })
+  const stateElements = new RemoteElementSource('')
+  const loadStateData = async (): Promise<StateData> => {
+    await stateElements.set(elem)
+    return {
+      elements: stateElements,
+      servicesUpdateDate,
+      pathIndex,
+      saltoVersion: '0.0.1',
+    }
+  }
   describe('build in-mem state', () => {
     let state: ReturnType<typeof buildInMemState>
     beforeEach(() => {
       state = buildInMemState(loadStateData)
     })
     it('getAll', async () => {
-      expect(await state.getAll()).toEqual([elem])
+      expect(await awu(await state.getAll()).toArray()).toEqual([elem])
     })
     it('list', async () => {
-      expect(await state.list()).toEqual([elemID])
+      expect(await awu(await state.list()).toArray()).toEqual([elemID])
     })
     it('get', async () => {
       expect(await state.get(elemID)).toEqual(elem)
@@ -60,8 +68,8 @@ describe('state', () => {
       const newAdapter = 'dummy'
       const newElemID = new ElemID(newAdapter, 'newElem')
       const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
-      await state.override(newElem)
-      expect(await state.getAll()).toEqual([newElem])
+      await state.override(awu([newElem]))
+      expect(await awu(await state.getAll()).toArray()).toEqual([newElem])
       expect(Object.keys(await state.getServicesUpdateDates())).toEqual([adapter, newAdapter])
     })
     it('getServicesUpdateDates', async () => {
@@ -93,7 +101,7 @@ describe('state', () => {
 
     it('clear should clear all data', async () => {
       await state.clear()
-      expect(await state.getAll()).toHaveLength(0)
+      expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
       expect((await state.getPathIndex()).size).toEqual(0)
       expect(await state.getServicesUpdateDates()).toEqual({})
     })

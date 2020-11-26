@@ -28,6 +28,7 @@
       { "path": "../core" },
       { "path": "../lang-server" },
       { "path": "../file" },
+      { "path": "../lowerdash"}, 
       { "path": "../workspace" },
     ]
 }

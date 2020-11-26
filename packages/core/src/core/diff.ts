@@ -14,18 +14,23 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { Element, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementsBySelectors } from '@salto-io/workspace'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { getDetailedChanges } from './fetch'
 
+
+const { awu } = collections.asynciterable
+
 const filterChangesBySelectors = async (
   changes: DetailedChange[],
   selectors: ElementSelector[]
 ): Promise<DetailedChange[]> => {
-  const changeIds = selectElementsBySelectors(changes.map(change => change.id), selectors).elements
+  const changeIds = await awu(
+    (await selectElementsBySelectors(awu(changes).map(change => change.id), selectors)).elements
+  ).toArray()
   const filterChangeByID = (change: DetailedChange): DetailedChange | undefined => {
     const filteredChange = applyFunctionToChangeData(
       change,

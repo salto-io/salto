@@ -18,12 +18,15 @@ import {
   PrimitiveTypes, TypeElement, Variable, MapType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { mergeElements, DuplicateAnnotationError } from '../src/merger'
 import { ConflictingFieldTypesError, DuplicateAnnotationFieldDefinitionError,
   DuplicateAnnotationTypeError } from '../src/merger/internal/object_types'
 import { DuplicateInstanceKeyError } from '../src/merger/internal/instances'
 import { MultiplePrimitiveTypesUnsupportedError } from '../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../src/merger/internal/variables'
+
+const { awu } = collections.asynciterable
 
 describe('merger', () => {
   const baseElemID = new ElemID('salto', 'base')
@@ -134,14 +137,14 @@ describe('merger', () => {
   })
 
   describe('updates', () => {
-    it('does not modify an element list with no updates', () => {
+    it('does not modify an element list with no updates', async () => {
       const elements = [base, unrelated]
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(2)
+      expect(await awu(merged).toArray()).toHaveLength(2)
     })
 
-    it('merges multiple field blocks', () => {
+    it('merges multiple field blocks', async () => {
       const elements = [
         base,
         unrelated,
@@ -153,11 +156,11 @@ describe('merger', () => {
       ]
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(2)
-      expect(merged[0]).toEqual(mergedObject)
+      expect(await awu(merged).toArray()).toHaveLength(2)
+      expect((await awu(merged).toArray())[0]).toEqual(mergedObject)
     })
 
-    it('returns the same result regardless of the elements order', () => {
+    it('returns the same result regardless of the elements order', async () => {
       const elements = [
         fieldUpdate,
         updateAnno,
@@ -169,8 +172,8 @@ describe('merger', () => {
       ]
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(2)
-      expect(merged[0]).toEqual(mergedObject)
+      expect(await awu(merged).toArray()).toHaveLength(2)
+      expect((await awu(merged).toArray())[0]).toEqual(mergedObject)
     })
 
     it('returns an error when the same field annotation is defined multiple times', () => {
@@ -220,7 +223,7 @@ describe('merger', () => {
   })
 
   describe('merging placeholders', () => {
-    it('update type pointers with the modified type', () => {
+    it('update type pointers with the modified type', async () => {
       const elements = [
         base,
         unrelated,
@@ -233,10 +236,10 @@ describe('merger', () => {
       ]
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(4)
+      expect(await awu(merged).toArray()).toHaveLength(4)
     })
 
-    it('update placehoder for map types', () => {
+    it('update placehoder for map types', async () => {
       const primElemID = new ElemID('salto', 'string')
       const prim = new PrimitiveType({
         elemID: primElemID,
@@ -255,9 +258,9 @@ describe('merger', () => {
 
       const { merged, errors } = mergeElements([prim, objType])
       expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(2)
-      const mergedPrim = merged[0] as PrimitiveType
-      const mergedObj = merged[1] as ObjectType
+      expect(await awu(merged).toArray()).toHaveLength(2)
+      const mergedPrim = (await awu(merged).toArray())[0] as PrimitiveType
+      const mergedObj = (await awu(merged).toArray())[1] as ObjectType
       const mapType = mergedObj.fields.prim.type as MapType
       expect(mapType.innerType).toEqual(mergedPrim)
     })
@@ -295,12 +298,12 @@ describe('merger', () => {
     const shouldUseFieldDef = new InstanceElement('ins', nested, {
       field2: 'ins1',
     })
-    it('should merge instances', () => {
+    it('should merge instances', async () => {
       const elements = [ins1, ins2]
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(1)
-      const ins = merged[0] as InstanceElement
+      expect(await awu(merged).toArray()).toHaveLength(1)
+      const ins = (await awu(merged).toArray())[0] as InstanceElement
       expect(ins.value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
@@ -358,15 +361,15 @@ describe('merger', () => {
       expect(errors[0]).toBeInstanceOf(DuplicateVariableNameError)
     })
 
-    it('should succeed when no more then one variable is defined with same elemID', () => {
+    it('should succeed when no more then one variable is defined with same elemID', async () => {
       const var1 = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 5)
       const var2 = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName2'), 8)
       const elements = [var1, var2]
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(2)
-      const merged1 = merged[0] as Variable
-      const merged2 = merged[1] as Variable
+      expect(await awu(merged).toArray()).toHaveLength(2)
+      const merged1 = (await awu(merged).toArray())[0] as Variable
+      const merged2 = (await awu(merged).toArray())[1] as Variable
       expect(merged1.value).toEqual(5)
       expect(merged2.value).toEqual(8)
       expect(merged1.elemID.getFullName()).toEqual('var.varName')
@@ -394,14 +397,14 @@ describe('merger', () => {
       },
     })
 
-    it('should replace type refs with full types', () => {
+    it('should replace type refs with full types', async () => {
       const { merged, errors } = mergeElements([
         strType,
         base,
         nested,
       ])
       expect(errors).toHaveLength(0)
-      const element = merged[2] as ObjectType
+      const element = (await awu(merged).toArray())[2] as ObjectType
       expect(element.fields.prim.type).toEqual(strType)
       expect(element.fields.base.type).toEqual(base)
     })
@@ -436,12 +439,12 @@ describe('merger', () => {
       elemID: settingElemID,
     })
 
-    it('should merge settings types', () => {
+    it('should merge settings types', async () => {
       const elements = [setting1, setting2]
       const { merged, errors } = mergeElements(elements)
       expect(_.isEmpty(errors)).toBeTruthy()
-      expect(merged).toHaveLength(1)
-      expect(merged[0]).toEqual(mergedSetting)
+      expect(await awu(merged).toArray()).toHaveLength(1)
+      expect((await awu(merged).toArray())[0]).toEqual(mergedSetting)
     })
     it('should raise an error for isSettingType mismatch', () => {
       const elements = [setting1, badSettingType]

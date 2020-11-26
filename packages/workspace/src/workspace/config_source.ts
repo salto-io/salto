@@ -16,11 +16,13 @@
 import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { parse, dumpElements } from '../parser'
 
 import { FILE_EXTENSION } from './nacl_files'
 import { DirectoryStore } from './dir_store'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export interface ConfigSource {
@@ -49,16 +51,17 @@ export const configSource = (
         return undefined
       }
       const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
+      const elements = await awu(parseResult.elements).toArray()
       if (!_.isEmpty(parseResult.errors)) {
         log.error('failed to parse %s due to %o', name, parseResult.errors)
         throw new ConfigParseError(name)
       }
-      if (parseResult.elements.length > 1) {
+      if (elements.length > 1) {
         log.warn('%s has more than a single element in the config file; returning the first element',
           name)
       }
       return naclFile
-        ? parseResult.elements.pop() as InstanceElement
+        ? elements.pop() as InstanceElement
         : undefined
     },
 

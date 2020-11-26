@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { DeployResult, Change, getChangeElement, isRemovalChange, InstanceElement, isModificationChange, isInstanceChange, ModificationChange, isRemovalOrModificationChange, RemovalChange, isContainerType } from '@salto-io/adapter-api'
+import { DeployResult, Change, getChangeElement, isRemovalChange, isModificationChange, isInstanceChange, isContainerType, isAdditionChange } from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
@@ -28,10 +29,15 @@ import { RunTestsResult } from './client/jsforce'
 const { makeArray } = collections.array
 const log = logger(module)
 
-const addNestedInstanceRemovalsToPackage = (
+// Put this marker in the value of an instance if it is just a wrapper for child instances
+// and is not meant to actually be deployed
+export const DEPLOY_WRAPPER_INSTANCE_MARKER = '_magic_constant_that_means_this_is_a_wrapper_instance'
+
+const addNestedInstancesToPackageManifest = (
   pkg: DeployPackage,
   nestedTypeInfo: NestedMetadataTypeInfo,
-  change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>
+  change: Change<MetadataInstanceElement>,
+  addNestedAfterInstances: boolean,
 ): void => {
   const changeElem = getChangeElement(change)
 
@@ -58,8 +64,10 @@ const addNestedInstanceRemovalsToPackage = (
         : makeArray(change.data.after.value[fieldName])
           .map(item => item[INSTANCE_FULL_NAME_FIELD])
     )
-    const nestedBefore = makeArray(change.data.before.value[fieldName])
-      .map(item => item[INSTANCE_FULL_NAME_FIELD])
+    const nestedBefore = isAdditionChange(change)
+      ? []
+      : makeArray(change.data.before.value[fieldName])
+        .map(item => item[INSTANCE_FULL_NAME_FIELD])
 
     const removedNestedInstances = nestedBefore.filter(instName => !nestedAfter.has(instName))
 
@@ -68,6 +76,14 @@ const addNestedInstanceRemovalsToPackage = (
       .forEach(nestedInstName => {
         pkg.delete(fieldType, nestedInstName)
       })
+
+    if (addNestedAfterInstances) {
+      wu(nestedAfter)
+        .map(getNestedInstanceApiName)
+        .forEach(nestedInstName => {
+          pkg.addToManifest(fieldType, nestedInstName)
+        })
+    }
   })
 }
 
@@ -76,16 +92,24 @@ const addChangeToPackage = (
   change: Change<MetadataInstanceElement>,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
 ): void => {
-  const changeElem = getChangeElement(change)
-  const nestedTypeInfo = nestedMetadataTypes[metadataType(changeElem)]
-  if (nestedTypeInfo !== undefined && isRemovalOrModificationChange(change)) {
-    addNestedInstanceRemovalsToPackage(pkg, nestedTypeInfo, change)
+  const instance = getChangeElement(change)
+  const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
+  const nestedTypeInfo = nestedMetadataTypes[metadataType(instance)]
+  if (nestedTypeInfo !== undefined) {
+    const addChildInstancesToManifest = isWrapperInstance
+    addNestedInstancesToPackageManifest(
+      pkg,
+      nestedTypeInfo,
+      change,
+      addChildInstancesToManifest,
+    )
   }
 
   if (isRemovalChange(change)) {
-    pkg.delete(changeElem.type, apiName(changeElem))
+    pkg.delete(instance.type, apiName(instance))
   } else {
-    pkg.add(changeElem)
+    const addInstanceToManifest = !isWrapperInstance
+    pkg.add(instance, addInstanceToManifest)
   }
 }
 

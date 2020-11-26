@@ -24,7 +24,7 @@ import { collections } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
+import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
 const { makeArray } = collections.array
@@ -43,11 +43,17 @@ type MapDef = {
 /**
  * Convert a string value into the map index keys.
  * Note: Reference expressions are not supported yet (the resolved value is not populated in fetch)
- * so this filter has to run before any filter adding references on the profile objects.
+ * so this filter has to run before any filter adding references on the objects with the specified
+ * metadata types (e.g Profile).
  */
 export const defaultMapper = (val: string): string[] => (
   val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
 )
+
+const BUSINESS_HOURS_MAP_FIELD_DEF: Record<string, MapDef> = {
+  // One-level maps
+  businessHours: { key: 'name' },
+}
 
 export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
@@ -72,19 +78,24 @@ export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   recordTypeVisibilities: { key: 'recordType', nested: true },
 }
 
+export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
+  [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
+  [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
+}
+
 /**
- * Convert the specified profile fields into maps.
+ * Convert the specified instance fields into maps.
  * Choose between unique maps and lists based on each field's conversion definition. If a field
  * should use a unique map but fails due to conflicts, convert it to a list map, and include it
  * in the returned list so that it can be converted across the board.
  *
- * @param profile             The profile to modify
- * @param profileMapFieldDef  The definitions of the fields to covert
+ * @param instance             The instance to modify
+ * @param instanceMapFieldDef  The definitions of the fields to covert
  * @returns                   The list of fields that were converted to non-unique due to duplicates
  */
 const convertArraysToMaps = (
-  profile: InstanceElement,
-  profileMapFieldDef: Record<string, MapDef>,
+  instance: InstanceElement,
+  instanceMapFieldDef: Record<string, MapDef>,
 ): string[] => {
   // fields that were intended to be unique, but have multiple values under to the same map key
   const nonUniqueMapFields: string[] = []
@@ -105,15 +116,15 @@ const convertArraysToMaps = (
     return _.groupBy(values, item => keyFunc(item))
   }
 
-  Object.entries(profileMapFieldDef).filter(
-    ([fieldName]) => profile.value[fieldName] !== undefined
+  Object.entries(instanceMapFieldDef).filter(
+    ([fieldName]) => instance.value[fieldName] !== undefined
   ).forEach(([fieldName, mapDef]) => {
     if (mapDef.nested) {
       const firstLevelGroups = _.groupBy(
-        makeArray(profile.value[fieldName]),
+        makeArray(instance.value[fieldName]),
         item => defaultMapper(item[mapDef.key])[0]
       )
-      profile.value[fieldName] = _.mapValues(
+      instance.value[fieldName] = _.mapValues(
         firstLevelGroups,
         firstLevelValues => convertField(
           firstLevelValues,
@@ -123,8 +134,8 @@ const convertArraysToMaps = (
         )
       )
     } else {
-      profile.value[fieldName] = convertField(
-        makeArray(profile.value[fieldName]),
+      instance.value[fieldName] = convertField(
+        makeArray(instance.value[fieldName]),
         item => defaultMapper(item[mapDef.key])[0],
         !!mapDef.mapToList,
         fieldName,
@@ -137,24 +148,24 @@ const convertArraysToMaps = (
 /**
  * Make sure all values in the specified non-unique fields are arrays.
  *
- * @param profile             The profile instance to update
+ * @param instance             The instance instance to update
  * @param nonUniqueMapFields  The list of fields to convert to arrays
- * @param profileMapFieldDef  The original field mapping definition
+ * @param instanceMapFieldDef  The original field mapping definition
  */
 const convertValuesToMapArrays = (
-  profile: InstanceElement,
+  instance: InstanceElement,
   nonUniqueMapFields: string[],
-  profileMapFieldDef: Record<string, MapDef>,
+  instanceMapFieldDef: Record<string, MapDef>,
 ): void => {
   nonUniqueMapFields.forEach(fieldName => {
-    if (profileMapFieldDef[fieldName]?.nested) {
-      profile.value[fieldName] = _.mapValues(
-        profile.value[fieldName],
+    if (instanceMapFieldDef[fieldName]?.nested) {
+      instance.value[fieldName] = _.mapValues(
+        instance.value[fieldName],
         val => _.mapValues(val, makeArray),
       )
     } else {
-      profile.value[fieldName] = _.mapValues(
-        profile.value[fieldName],
+      instance.value[fieldName] = _.mapValues(
+        instance.value[fieldName],
         makeArray,
       )
     }
@@ -162,21 +173,21 @@ const convertValuesToMapArrays = (
 }
 
 /**
- * Update the profile object type's fields to use maps.
+ * Update the instance object type's fields to use maps.
  *
- * @param profileObj          The profile to update
+ * @param instanceType          The instance to update
  * @param nonUniqueMapFields  The list of fields to convert to arrays
- * @param profileMapFieldDef  The original field mapping definition
+ * @param instanceMapFieldDef  The original field mapping definition
  */
 const updateFieldTypes = (
-  profileObj: ObjectType,
+  instanceType: ObjectType,
   nonUniqueMapFields: string[],
-  profileMapFieldDef: Record<string, MapDef>,
+  instanceMapFieldDef: Record<string, MapDef>,
 ): void => {
-  Object.values(profileObj.fields).filter(
-    f => profileMapFieldDef[f.name] !== undefined && !isMapType(f.type)
+  Object.values(instanceType.fields).filter(
+    f => instanceMapFieldDef[f.name] !== undefined && !isMapType(f.type)
   ).forEach(f => {
-    const mapDef = profileMapFieldDef[f.name]
+    const mapDef = instanceMapFieldDef[f.name]
     let innerType = isContainerType(f.type) ? f.type.innerType : f.type
     if (mapDef.mapToList || nonUniqueMapFields.includes(f.name)) {
       innerType = new ListType(innerType)
@@ -190,74 +201,74 @@ const updateFieldTypes = (
 }
 
 const convertInstanceFieldsToMaps = (
-  profileInstances: InstanceElement[],
-  profileMapFieldDef: Record<string, MapDef>,
+  instancesToConvert: InstanceElement[],
+  instanceMapFieldDef: Record<string, MapDef>,
 ): string[] => {
-  const nonUniqueMapFields = _.uniq(profileInstances.flatMap(
-    profile => convertArraysToMaps(profile, profileMapFieldDef)
+  const nonUniqueMapFields = _.uniq(instancesToConvert.flatMap(
+    instance => convertArraysToMaps(instance, instanceMapFieldDef)
   ))
   if (nonUniqueMapFields.length > 0) {
-    log.info(`Converting the following profile fields to non-unique maps: ${nonUniqueMapFields}`)
-    profileInstances.forEach(profile => {
-      convertValuesToMapArrays(profile, nonUniqueMapFields, profileMapFieldDef)
+    log.info(`Converting the following fields to non-unique maps: ${nonUniqueMapFields}`)
+    instancesToConvert.forEach(instance => {
+      convertValuesToMapArrays(instance, nonUniqueMapFields, instanceMapFieldDef)
     })
   }
   return nonUniqueMapFields
 }
 
 /**
- * Convert profile field values from maps back to arrays before deploy.
+ * Convert instance field values from maps back to arrays before deploy.
  *
- * @param profileInstanceChanges  The profile instance changes to deploy
- * @param profileMapFieldDef      The definitions of the fields to covert
+ * @param instanceChanges          The instance instance changes to deploy
+ * @param instanceMapFieldDef      The definitions of the fields to covert
  */
 const convertFieldsBackToLists = (
-  profileInstanceChanges: ReadonlyArray<Change<InstanceElement>>,
-  profileMapFieldDef: Record<string, MapDef>,
+  instanceChanges: ReadonlyArray<Change<InstanceElement>>,
+  instanceMapFieldDef: Record<string, MapDef>,
 ): void => {
   const toVals = (values: Values): Values[] => Object.values(values).flat()
 
-  const backToArrays = (profile: InstanceElement): InstanceElement => {
-    Object.keys(profileMapFieldDef).filter(
-      fieldName => profile.value[fieldName] !== undefined
+  const backToArrays = (instance: InstanceElement): InstanceElement => {
+    Object.keys(instanceMapFieldDef).filter(
+      fieldName => instance.value[fieldName] !== undefined
     ).forEach(fieldName => {
-      if (Array.isArray(profile.value[fieldName])) {
+      if (Array.isArray(instance.value[fieldName])) {
         // should not happen
         return
       }
 
-      if (profileMapFieldDef[fieldName].nested) {
+      if (instanceMapFieldDef[fieldName].nested) {
         // first convert the inner levels to arrays, then merge into one array
-        profile.value[fieldName] = _.mapValues(profile.value[fieldName], toVals)
+        instance.value[fieldName] = _.mapValues(instance.value[fieldName], toVals)
       }
-      profile.value[fieldName] = toVals(profile.value[fieldName])
+      instance.value[fieldName] = toVals(instance.value[fieldName])
     })
-    return profile
+    return instance
   }
 
-  profileInstanceChanges.forEach(profileChange =>
+  instanceChanges.forEach(instanceChange =>
     applyFunctionToChangeData(
-      profileChange,
+      instanceChange,
       backToArrays,
     ))
 }
 
 /**
- * Convert profile field values from arrays back to maps after deploy.
+ * Convert instance's field values from arrays back to maps after deploy.
  *
- * @param profileInstanceChanges  The profile instance changes to deploy
- * @param profileMapFieldDef      The definitions of the fields to covert
+ * @param instanceChanges  The instance changes to deploy
+ * @param instanceMapFieldDef      The definitions of the fields to covert
  */
 const convertFieldsBackToMaps = (
-  profileInstanceChanges: ReadonlyArray<Change<InstanceElement>>,
-  profileMapFieldDef: Record<string, MapDef>,
+  instanceChanges: ReadonlyArray<Change<InstanceElement>>,
+  instanceMapFieldDef: Record<string, MapDef>,
 ): void => {
-  profileInstanceChanges.forEach(profileChange =>
+  instanceChanges.forEach(instanceChange =>
     applyFunctionToChangeData(
-      profileChange,
-      profile => {
-        convertArraysToMaps(profile, profileMapFieldDef)
-        return profile
+      instanceChange,
+      instance => {
+        convertArraysToMaps(instance, instanceMapFieldDef)
+        return instance
       },
     ))
 }
@@ -265,15 +276,15 @@ const convertFieldsBackToMaps = (
 /**
  * Convert fields from maps back to lists pre-deploy.
  *
- * @param profileObj          The profile to update
- * @param profileMapFieldDef  The field mapping definition
+ * @param instanceType          The type to update
+ * @param instanceMapFieldDef  The field mapping definition
  */
 const convertFieldTypesBackToLists = (
-  profileObj: ObjectType,
-  profileMapFieldDef: Record<string, MapDef>,
+  instanceType: ObjectType,
+  instanceMapFieldDef: Record<string, MapDef>,
 ): void => {
-  Object.values(profileObj.fields).filter(
-    f => profileMapFieldDef[f.name] !== undefined && isMapType(f.type)
+  Object.values(instanceType.fields).filter(
+    f => instanceMapFieldDef[f.name] !== undefined && isMapType(f.type)
   ).forEach(f => {
     if (isMapType(f.type)) {
       f.type = f.type.innerType
@@ -286,77 +297,85 @@ const convertFieldTypesBackToLists = (
 }
 
 export const getInstanceChanges = (
-  changes: ReadonlyArray<Change>
+  changes: ReadonlyArray<Change>,
+  targetMetadataType: string,
 ): ReadonlyArray<Change<InstanceElement>> => (
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter(change => metadataType(getChangeElement(change)) === PROFILE_METADATA_TYPE)
+    .filter(change => metadataType(getChangeElement(change)) === targetMetadataType)
 )
 
-export const findProfileInstances = (
+export const findInstancesToConvert = (
   elements: Element[],
+  targetMetadataType: string,
 ): InstanceElement[] => {
   const instances = elements.filter(isInstanceElement)
-  return instances.filter(e => metadataType(e) === PROFILE_METADATA_TYPE)
+  return instances.filter(e => metadataType(e) === targetMetadataType)
 }
 
 /**
- * Convert profile fields that are known to be lists into maps, so that they are easier to view
- * and can be split across multiple files.
+ * Convert certain instances' fields into maps, so that they are easier to view,
+ * could be referenced, and can be split across multiple files.
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    if (config.useOldProfiles) {
-      return
-    }
+    Object.keys(metadataTypeToFieldToMapDef).forEach(targetMetadataType => {
+      if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
+        return
+      }
 
-    const profileInstances = findProfileInstances(elements)
-    if (profileInstances.length === 0) {
-      return
-    }
-
-    const nonUniqueMapFields = convertInstanceFieldsToMaps(profileInstances, PROFILE_MAP_FIELD_DEF)
-
-    updateFieldTypes(profileInstances[0].type, nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
+      const instancesToConvert = findInstancesToConvert(elements, targetMetadataType)
+      if (instancesToConvert.length === 0) {
+        return
+      }
+      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
+      const nonUniqueMapFields = convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
+      updateFieldTypes(instancesToConvert[0].type, nonUniqueMapFields, mapFieldDef)
+    })
   },
 
   preDeploy: async changes => {
-    if (config.useOldProfiles) {
-      return
-    }
+    Object.keys(metadataTypeToFieldToMapDef).forEach(targetMetadataType => {
+      if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
+        return
+      }
+      const instanceChanges = getInstanceChanges(changes, targetMetadataType)
+      if (instanceChanges.length === 0) {
+        return
+      }
+      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
+      // since transformElement and salesforce do not require list fields to be defined as lists,
+      // we only mark fields as lists of their map inner value is a list,
+      // so that we can convert the object back correctly in onDeploy
+      convertFieldsBackToLists(instanceChanges, mapFieldDef)
 
-    const profileInstanceChanges = getInstanceChanges(changes)
-    if (profileInstanceChanges.length === 0) {
-      return
-    }
-    // since transformElement and salesforce do not require list fields to be defined as lists,
-    // we only mark fields as lists of their map inner value is a list,
-    // so that we can convert the object back correctly in onDeploy
-    convertFieldsBackToLists(profileInstanceChanges, PROFILE_MAP_FIELD_DEF)
-
-    const profileObj = getChangeElement(profileInstanceChanges[0]).type
-    convertFieldTypesBackToLists(profileObj, PROFILE_MAP_FIELD_DEF)
+      const instanceType = getChangeElement(instanceChanges[0]).type
+      convertFieldTypesBackToLists(instanceType, mapFieldDef)
+    })
   },
 
   onDeploy: async changes => {
-    if (config.useOldProfiles) {
-      return []
-    }
+    Object.keys(metadataTypeToFieldToMapDef).forEach(targetMetadataType => {
+      if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
+        return
+      }
+      const instanceChanges = getInstanceChanges(changes, targetMetadataType)
+      if (instanceChanges.length === 0) {
+        return
+      }
 
-    const profileInstanceChanges = getInstanceChanges(changes)
-    if (profileInstanceChanges.length === 0) {
-      return []
-    }
-    convertFieldsBackToMaps(profileInstanceChanges, PROFILE_MAP_FIELD_DEF)
+      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
+      convertFieldsBackToMaps(instanceChanges, mapFieldDef)
 
-    const profileObj = getChangeElement(profileInstanceChanges[0]).type
-    // after preDeploy, the fields with lists are exactly the ones that should be converted
-    // back to lists
-    const nonUniqueMapFields = Object.keys(profileObj.fields).filter(
-      fieldName => isListType((profileObj.fields[fieldName].type))
-    )
-    updateFieldTypes(profileObj, nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
+      const instanceType = getChangeElement(instanceChanges[0]).type
+      // after preDeploy, the fields with lists are exactly the ones that should be converted
+      // back to lists
+      const nonUniqueMapFields = Object.keys(instanceType.fields).filter(
+        fieldName => isListType((instanceType.fields[fieldName].type))
+      )
+      updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
+    })
 
     return []
   },

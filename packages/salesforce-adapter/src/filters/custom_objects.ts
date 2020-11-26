@@ -58,6 +58,8 @@ import {
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
+import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
+import { CustomObject } from '../client/types'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -588,7 +590,7 @@ const getNestedCustomObjectValues = (
   changes: ReadonlyArray<Change>,
   fieldsToSkip: ReadonlyArray<string>,
   dataField: 'before' | 'after',
-): MetadataValues => ({
+): Partial<CustomObject> & Pick<MetadataValues, 'fullName'> => ({
   fullName,
   ..._.mapValues(
     NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
@@ -618,6 +620,9 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
       suffix: 'object',
     } as MetadataTypeAnnotations,
     fields: {
+      [DEPLOY_WRAPPER_INSTANCE_MARKER]: {
+        type: BuiltinTypes.BOOLEAN, annotations: { [FIELD_ANNOTATIONS.LOCAL_ONLY]: true },
+      },
       fields: { type: new ListType(customFieldType) },
       ..._.mapValues(
         NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
@@ -693,26 +698,45 @@ const createCustomObjectChange = (
     }
   }
 
-  // Some of the custom object annotations are required so we have to get the real parent
-  // for deploy even if we are not changing the annotations
-  const afterParent = objectChange?.data.after ?? getCustomObjectFromChange(changes[0])
-  const includeFieldsFromParent = objectChange?.action === 'add'
-  const after = createCustomObjectInstance({
-    ...getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'after'),
-    ...toCustomProperties(afterParent, includeFieldsFromParent, fieldsToSkip),
-  })
+  const afterParent = objectChange?.data.after
+  const getAfterInstanceValues = (): MetadataValues => {
+    const nestedValues = getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'after')
+    if (afterParent === undefined) {
+      return {
+        ...nestedValues,
+        // We are not deploying a change to the custom object itself, so we mark this instance
+        // as a "wrapper instance" to signal that we only want to deploy the nested instances
+        [DEPLOY_WRAPPER_INSTANCE_MARKER]: true,
+      }
+    }
+    // If we got a change on the custom object annotations we always include all fields because
+    // some validations on annotation values require fields to exist in the deploy request.
+    // For example, sharingModel may require master-detail fields to be in the request even if
+    // they are not changed
+    const parentValues = toCustomProperties(afterParent, true, fieldsToSkip)
+    const allFields = makeArray(nestedValues.fields)
+      .concat(makeArray(parentValues.fields))
+      // new fields in the custom object can have an undefined fullName if they are new and rely
+      // on our "addDefaults" to get an api name - in that case the field with the api name will
+      // be in our nested custom object values
+      .filter(field => field.fullName !== undefined)
+    return {
+      ...parentValues,
+      ...nestedValues,
+      fields: _.uniqBy(allFields, field => field.fullName),
+    }
+  }
+
+  const after = createCustomObjectInstance(getAfterInstanceValues())
 
   if (objectChange !== undefined && objectChange.action === 'add') {
     return { action: 'add', data: { after } }
   }
 
-  // If there was no change to the object type itself, it should be safe to use the object
-  // from one of the changes even if we get an "after" object type since we only take annotations
-  // and those have not changed
-  const beforeParent = objectChange?.data.before ?? getCustomObjectFromChange(changes[0])
+  const beforeParent = objectChange?.data.before
   const before = createCustomObjectInstance({
     ...getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'before'),
-    ...toCustomProperties(beforeParent, false),
+    ...beforeParent === undefined ? {} : toCustomProperties(beforeParent, false),
   })
 
   return { action: 'modify', data: { before, after } }

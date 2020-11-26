@@ -41,6 +41,7 @@ import filterCreator, {
 } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 import { isCustom, Types, createInstanceElement, MetadataTypeAnnotations, metadataType } from '../../src/transformers/transformer'
+import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
 
 describe('Custom Objects filter', () => {
   let connection: Connection
@@ -1521,7 +1522,6 @@ describe('Custom Objects filter', () => {
   })
 
   describe('preDeploy and onDeploy', () => {
-    let changes: Change[]
     let testObject: ObjectType
     let parentAnnotation: Record<string, Element[]>
     beforeAll(() => {
@@ -1545,11 +1545,13 @@ describe('Custom Objects filter', () => {
         annotations: {
           [METADATA_TYPE]: CUSTOM_OBJECT,
           [API_NAME]: 'Test__c',
+          [LABEL]: 'TestObject',
         },
       })
       parentAnnotation = { [CORE_ANNOTATIONS.PARENT]: [testObject] }
     })
     describe('with inner instance addition', () => {
+      let changes: Change[]
       let testFieldSet: InstanceElement
       beforeAll(async () => {
         filter = filterCreator({ client, config: {} }) as typeof filter
@@ -1577,6 +1579,11 @@ describe('Custom Objects filter', () => {
             [{ ...testFieldSet.value, fullName: 'MyFieldSet' }]
           )
         })
+        it('should mark the created custom object as a wrapper and not populate annotation values', () => {
+          const inst = getChangeElement(changes[0]) as InstanceElement
+          expect(inst.value).not.toHaveProperty(LABEL)
+          expect(inst.value).toHaveProperty(DEPLOY_WRAPPER_INSTANCE_MARKER, true)
+        })
       })
       describe('onDeploy', () => {
         beforeAll(async () => {
@@ -1589,6 +1596,7 @@ describe('Custom Objects filter', () => {
       })
     })
     describe('with removal side effects', () => {
+      let changes: Change[]
       let sideEffectInst: InstanceElement
       beforeAll(() => {
         sideEffectInst = createInstanceElement(
@@ -1623,6 +1631,38 @@ describe('Custom Objects filter', () => {
           expect(changes).toHaveLength(2)
           expect(changes).toContainEqual(toChange({ before: testObject }))
           expect(changes).toContainEqual(toChange({ before: sideEffectInst }))
+        })
+      })
+    })
+    describe('with annotation value change', () => {
+      let changes: Change[]
+      let afterObj: ObjectType
+      beforeAll(() => {
+        filter = filterCreator({ client, config: {} }) as typeof filter
+        afterObj = testObject.clone()
+        afterObj.annotations[LABEL] = 'New Label'
+        changes = [
+          toChange({ before: testObject, after: afterObj }),
+        ]
+      })
+      describe('preDeploy', () => {
+        beforeAll(async () => {
+          await filter.preDeploy(changes)
+        })
+        it('should create a custom object instance change with all fields and annotations', () => {
+          expect(changes).toHaveLength(1)
+          const { before, after } = changes[0].data as ModificationChange<InstanceElement>['data']
+          expect(after.value.fields).toHaveLength(Object.keys(testObject.fields).length)
+          expect(after.value[LABEL]).toEqual('New Label')
+          expect(before.value[LABEL]).toEqual('TestObject')
+        })
+      })
+      describe('onDeploy', () => {
+        beforeAll(async () => {
+          await filter.onDeploy(changes)
+        })
+        it('should restore the custom object change', () => {
+          expect(changes).toEqual([toChange({ before: testObject, after: afterObj })])
         })
       })
     })

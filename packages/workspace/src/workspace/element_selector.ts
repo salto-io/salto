@@ -35,9 +35,9 @@ type ElementIDContainer = {
 }
 
 const testNames = (nameArray: readonly string[], nameSelectors?: RegExp[]): boolean =>
-  !nameSelectors
-  || (nameArray.length === nameSelectors.length
+  (nameSelectors ? (nameArray.length === nameSelectors.length
     && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
+    : nameArray.length === 0)
 
 const match = (elemId: ElemID, selector: ElementSelector): boolean =>
   selector.adapterSelector.test(elemId.adapter)
@@ -154,8 +154,8 @@ const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): Ele
     elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR))
 
 const isElementPossiblyParentOfSearchedElement = (selectors: ElementSelector[],
-  testId: ElemID): boolean => _.isEmpty(selectElementsBySelectors([testId],
-  selectors.map(selector => createSameDepthSelector(selector, testId)), false))
+  testId: ElemID): boolean => !(_.isEmpty(selectElementsBySelectors([testId],
+  selectors.map(selector => createSameDepthSelector(selector, testId)), false)))
 
 export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[], elements: ElementIDToValue[],
@@ -183,24 +183,28 @@ export const selectElementIdsByTraversal = async (
     return ids
   }
   const transformFunc = (args: TransformFuncArgs): Value | undefined => {
-    if (args.path === undefined) {
-      return undefined
-    }
-    const testId = args.path
-    const { elements: found } = selectElementsBySelectors([testId], subElementSelectors, false)
-    if (!_.isEmpty(found)) {
-      ids.push(found[0])
-      if (compact) {
+    if (args.path) {
+      const testId = args.path
+      const { elements: found } = selectElementsBySelectors([testId], subElementSelectors, false)
+      if (!_.isEmpty(found)) {
+        ids.push(found[0])
+        if (compact) {
+          return undefined
+        }
+      }
+      const stillRelevantSelectors = wildcardSelectors.filter(selector => selector
+        .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
+      if (_.isEmpty(stillRelevantSelectors)) {
         return undefined
       }
-    }
-    const stillRelevantSelectors = wildcardSelectors.filter(selector => selector
-      .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
-    if (_.isEmpty(stillRelevantSelectors)) {
-      return undefined
-    }
-    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
-      return args.value
+      if (compact && selectElementsBySelectors([testId], determinedSelectors, false)) {
+        // This can occur if testId is one given as a determined id, so we don't search for it,
+        // but because we just found it while searching, in compact scenario we need to return
+        return undefined
+      }
+      if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
+        return args.value
+      }
     }
     return undefined
   }

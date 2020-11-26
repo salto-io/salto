@@ -37,7 +37,10 @@ const mockType = new ObjectType({
     bool: { type: BuiltinTypes.BOOLEAN },
     num: { type: BuiltinTypes.NUMBER },
     strArray: { type: new ListType(BuiltinTypes.STRING) },
-    strMap: { type: new MapType(BuiltinTypes.STRING) },
+    strMap: { type: new MapType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      } },
     obj: {
       type: new ListType(new ObjectType({
         elemID: mockElem,
@@ -231,7 +234,9 @@ describe('select elements recursively', () => {
   it('finds subElements one and two layers deep', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
-      '*.*.annotation.*.*']).validSelectors
+      'mockAdapter.*.field.*.*',
+      'mockAdapter.*.attr',
+      'mockAdapter.*.attr.testAnno']).validSelectors
     const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
@@ -240,9 +245,12 @@ describe('select elements recursively', () => {
     const expectedElements = [mockInstance.elemID, mockType.elemID,
       ElemID.fromFullName('mockAdapter.test.field.bool'),
       ElemID.fromFullName('mockAdapter.test.field.strMap'),
+      ElemID.fromFullName('mockAdapter.test.field.strMap._required'),
       ElemID.fromFullName('mockAdapter.test.field.obj'),
       ElemID.fromFullName('mockAdapter.test.field.num'),
-      ElemID.fromFullName('mockAdapter.test.field.strArray')].sort((el1, el2) =>
+      ElemID.fromFullName('mockAdapter.test.field.strArray'),
+      ElemID.fromFullName('mockAdapter.test.attr'),
+      ElemID.fromFullName('mockAdapter.test.attr.testAnno')].sort((el1, el2) =>
       (el1.getFullName() > el2.getFullName() ? 1 : -1))
     expect(elementIds).toEqual(expectedElements)
   })
@@ -257,7 +265,7 @@ describe('select elements recursively', () => {
   })
   it('removes fields of type from list when compact', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.field.*',
-      'mockAdapter.test.field.obj.*']).validSelectors
+      'mockAdapter.test.field.strMap.*']).validSelectors
     const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
@@ -266,16 +274,28 @@ describe('select elements recursively', () => {
     expect(elementIds).toEqual([mockType.elemID])
   })
 
-  it('removes child elements of instance from list', async () => {
-    const selectors = createElementSelectors(['mockAdapter.*.instance.*',
-      'mockAdapter.test.instance.mockInstance.*',
-      'mockAdapter.test.instance.mockInstance.strMap.*']).validSelectors
+  it('removes child elements of field from list', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.field.strMap.*',
+      'mockAdapter.test.field.strMap']).validSelectors
     const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
       })), true))
-    expect(elementIds).toEqual([mockInstance.elemID])
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
+  })
+
+  it('removes child elements of field selected by wildcard from list', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.field.strMap.*',
+      'mockAdapter.*.field.strMap']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      })), true))
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 
   it('should return only the exact match when the selector is a valid elemID', async () => {

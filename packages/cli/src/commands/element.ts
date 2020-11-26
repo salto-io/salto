@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { listUnresolvedReferences, Tags } from '@salto-io/core'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -24,6 +25,8 @@ import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTarget
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -61,10 +64,12 @@ const moveElement = async (
   try {
     if (to === 'common') {
       outputLine(Prompts.MOVE_START('common'), output)
-      await workspace.promote(await workspace.getElementIdsBySelectors(elmSelectors))
+      await workspace.promote(await awu(await workspace
+        .getElementIdsBySelectors(elmSelectors)).toArray())
     } else if (to === 'envs') {
       outputLine(Prompts.MOVE_START('environment-specific folders'), output)
-      await workspace.demote(await workspace.getElementIdsBySelectors(elmSelectors, true))
+      await workspace.demote(await awu(await workspace
+        .getElementIdsBySelectors(elmSelectors, true)).toArray())
     }
     await workspace.flush()
     cliTelemetry.success(workspaceTags)
@@ -215,7 +220,8 @@ export const cloneAction: CommandDefAction<ElementCloneArgs> = async ({
   cliTelemetry.start(workspaceTags)
   try {
     outputLine(Prompts.CLONE_TO_ENV_START(toEnvs), output)
-    await workspace.copyTo(await workspace.getElementIdsBySelectors(validSelectors), toEnvs)
+    await workspace.copyTo(await awu(await workspace
+      .getElementIdsBySelectors(validSelectors)).toArray(), toEnvs)
     await workspace.flush()
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success

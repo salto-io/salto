@@ -420,6 +420,7 @@ describe('Element command group', () => {
         flush: async () => {
           throw new Error('Oy Vey Zmir')
         },
+        getElementIdsBySelectors: async () => [],
       }
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -557,6 +558,7 @@ describe('Element command group', () => {
         flush: async () => {
           throw new Error('Oy Vey Zmir')
         },
+        getElementIdsBySelectors: async () => [],
       }
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }

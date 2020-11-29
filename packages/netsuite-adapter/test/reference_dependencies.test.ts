@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID, WORKBOOK,
-  TRANSACTION_COLUMN_CUSTOM_FIELD,
+  TRANSACTION_COLUMN_CUSTOM_FIELD, TRANSACTION_BODY_CUSTOM_FIELD,
 } from '../src/constants'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import {
@@ -114,6 +114,14 @@ describe('reference dependencies', () => {
         ),
       })
 
+    const transactionBodyCustomFieldInstance = new InstanceElement('instance',
+      customTypes[TRANSACTION_BODY_CUSTOM_FIELD], {
+        [SCRIPT_ID]: 'custbody_my_script_id',
+        sourcefrom: new ReferenceExpression(
+          instance.elemID, 'val', instance
+        ),
+      })
+
     it('should not add dependencies that are not required', async () => {
       const result = await getRequiredReferencedInstances([instanceWithManyRefs])
       expect(result).toEqual([instanceWithManyRefs])
@@ -137,6 +145,11 @@ describe('reference dependencies', () => {
     it('should add dependency of TRANSACTION_COLUMN_CUSTOM_FIELD', async () => {
       const result = await getRequiredReferencedInstances([transactionColumnCustomFieldInstance])
       expect(result).toEqual([transactionColumnCustomFieldInstance, instance])
+    })
+
+    it('should add dependency of TRANSACTION_BODY_CUSTOM_FIELD', async () => {
+      const result = await getRequiredReferencedInstances([transactionBodyCustomFieldInstance])
+      expect(result).toEqual([transactionBodyCustomFieldInstance, instance])
     })
 
     it('should not add dependencies that already exist', async () => {

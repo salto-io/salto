@@ -16,11 +16,13 @@
 import _ from 'lodash'
 import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isInstanceOfTypeChange } from '../utils'
 import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CODE_FIELD } from '../../constants'
 import { Types, apiName, isInstanceOfCustomObject, isCustomObject } from '../../transformers/transformer'
 
+const log = logger(module)
 
 const refListFieldNames = [
   CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
@@ -148,9 +150,13 @@ const filter: FilterCreator = () => ({
     }
     refListFieldsToTextLists(cpqCustomScriptObject)
     const cpqCustomScriptInstances = elements.filter(isInstanceOfCustomScript)
-    cpqCustomScriptInstances.forEach(instance => {
+    log.debug(`Transforming ${cpqCustomScriptInstances.length} instances of SBQQ__CustomScript`)
+    cpqCustomScriptInstances.forEach((instance, index) => {
       refListValuesToArray(instance)
       codeValueToFile(instance)
+      if (index % 100 === 0) {
+        log.debug(`Transformed ${index} instances of SBQQ__CustomScript`)
+      }
     })
   },
   preDeploy: async changes => {

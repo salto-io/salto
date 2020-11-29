@@ -421,6 +421,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       validChangesFetchSettings,
     )
     elements.push(...instances)
+    log.debug(`Fetched ${instances.length} instances of Custom Objects`)
     const invalidFieldSuggestions = invalidFetchSettings
       .map(setting =>
         createInvlidIdFieldConfigChange(

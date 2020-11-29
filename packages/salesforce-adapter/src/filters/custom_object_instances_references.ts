@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import {
   Element, Values, ObjectType, Field, InstanceElement,
   ReferenceExpression,
@@ -26,6 +27,8 @@ import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD } from '../constants'
 import { isLookupField, isMasterDetailField } from './utils'
 
 const { makeArray } = collections.array
+
+const log = logger(module)
 
 const replaceReferenceValues = (
   values: Values,
@@ -72,12 +75,15 @@ const replaceReferenceValues = (
 
 const replaceLookupsWithReferences = (elements: Element[]): void => {
   const customObjectInstances = elements.filter(isInstanceOfCustomObject)
-  customObjectInstances.forEach(instance => {
+  customObjectInstances.forEach((instance, index) => {
     instance.value = replaceReferenceValues(
       instance.value,
       instance.type,
       customObjectInstances,
     )
+    if (index % 500 === 0) {
+      log.debug(`Replaced lookup with references for ${index} instances`)
+    }
   })
 }
 

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import NetsuiteClient from '../../src/client/client'
+import { NetsuiteClientConfig } from '../../src/config'
 
 const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
 const DUMMY_TOKEN_ID = 'dummyTokenId'
@@ -24,10 +25,10 @@ export const DUMMY_CREDENTIALS = {
   tokenId: DUMMY_TOKEN_ID,
   tokenSecret: DUMMY_TOKEN_SECRET,
 }
-const mockClient = (): NetsuiteClient =>
+const mockClient = (config?: NetsuiteClientConfig): NetsuiteClient =>
   new NetsuiteClient({
     credentials: DUMMY_CREDENTIALS,
-    sdfConcurrencyLimit: 2,
+    config,
   })
 
 export default mockClient

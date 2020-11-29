@@ -18,8 +18,8 @@ import { logger } from '@salto-io/logging'
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import NetsuiteClient, { Credentials } from '../src/client/client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
-import { DEFAULT_SDF_CONCURRENCY, NetsuiteConfig } from '../src/config'
-import { SDF_CONCURRENCY_LIMIT } from '../src/constants'
+import { NetsuiteConfig } from '../src/config'
+import { CLIENT_CONFIG } from '../src/constants'
 import { mockGetElemIdFunc } from '../test/utils'
 import { credsSpec } from './jest_environment'
 
@@ -35,7 +35,7 @@ export const realAdapter = ({ adapterParams, credentials }: Opts, config?: Netsu
   { client: NetsuiteClient; adapter: NetsuiteAdapter } => {
   const client = (adapterParams && adapterParams.client) || new NetsuiteClient({
     credentials,
-    sdfConcurrencyLimit: config?.[SDF_CONCURRENCY_LIMIT] ?? DEFAULT_SDF_CONCURRENCY,
+    config: config?.[CLIENT_CONFIG],
   })
   const adapter = new NetsuiteAdapter({
     client,

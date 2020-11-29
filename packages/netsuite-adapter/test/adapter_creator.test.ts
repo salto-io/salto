@@ -23,10 +23,10 @@ import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
-  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES, CLIENT_CONFIG,
+  MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
-import { DEFAULT_SDF_CONCURRENCY } from '../src/config'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -48,16 +48,22 @@ describe('NetsuiteAdapter creator', () => {
 
   const sdfConcurrencyLimit = 2
   const fetchTypeTimeoutInMinutes = 1
+  const maxItemsInImportObjectsRequest = 3
+  const clientConfig = {
+    [FETCH_ALL_TYPES_AT_ONCE]: false,
+    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: fetchTypeTimeoutInMinutes,
+    [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: maxItemsInImportObjectsRequest,
+    [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
+    notExistInClient: ['not exist in client'],
+  }
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
       [TYPES_TO_SKIP]: ['test1'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
-      [FETCH_ALL_TYPES_AT_ONCE]: false,
       [DEPLOY_REFERENCED_ELEMENTS]: false,
-      [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
-      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: fetchTypeTimeoutInMinutes,
+      [CLIENT_CONFIG]: clientConfig,
       notExist: ['not exist'],
     }
   )
@@ -79,17 +85,7 @@ describe('NetsuiteAdapter creator', () => {
       adapter.operations({ credentials, config })
       expect(NetsuiteClient).toHaveBeenCalledWith({
         credentials: credentials.value,
-        sdfConcurrencyLimit,
-      })
-    })
-
-    it('should create the client with default SDF_CONCURRENCY_LIMIT', () => {
-      const configWithoutConcurrencyLimit = config.clone()
-      delete configWithoutConcurrencyLimit.value[SDF_CONCURRENCY_LIMIT]
-      adapter.operations({ credentials, config: configWithoutConcurrencyLimit })
-      expect(NetsuiteClient).toHaveBeenCalledWith({
-        credentials: credentials.value,
-        sdfConcurrencyLimit: DEFAULT_SDF_CONCURRENCY,
+        config: clientConfig,
       })
     })
   })
@@ -102,10 +98,8 @@ describe('NetsuiteAdapter creator', () => {
         config: {
           [TYPES_TO_SKIP]: ['test1'],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
-          [FETCH_ALL_TYPES_AT_ONCE]: false,
           [DEPLOY_REFERENCED_ELEMENTS]: false,
-          [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
-          [FETCH_TYPE_TIMEOUT_IN_MINUTES]: fetchTypeTimeoutInMinutes,
+          [CLIENT_CONFIG]: clientConfig,
         },
         getElemIdFunc: mockGetElemIdFunc,
       })

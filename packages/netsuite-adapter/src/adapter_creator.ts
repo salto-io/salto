@@ -25,10 +25,9 @@ import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter from './adapter'
-import { configType, DEFAULT_SDF_CONCURRENCY, NetsuiteConfig } from './config'
+import { configType, NetsuiteConfig } from './config'
 import {
-  NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
-  SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, CLIENT_CONFIG,
 } from './constants'
 
 const log = logger(module)
@@ -61,13 +60,11 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
 
   const filePathsRegexSkipList = makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
   validateRegularExpressions(filePathsRegexSkipList)
-  const netsuiteConfig = {
+  const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
     [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
-    [FETCH_ALL_TYPES_AT_ONCE]: config?.value?.[FETCH_ALL_TYPES_AT_ONCE],
     [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
-    [SDF_CONCURRENCY_LIMIT]: config?.value?.[SDF_CONCURRENCY_LIMIT],
-    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: config?.value?.[FETCH_TYPE_TIMEOUT_IN_MINUTES],
     [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
+    [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(netsuiteConfig).includes(k))
@@ -78,16 +75,11 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
 const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
   credentials.value as Credentials
 
-const createClient = (credentials: InstanceElement, sdfConcurrencyLimit?: number): NetsuiteClient =>
-  new NetsuiteClient({
-    credentials: netsuiteCredentialsFromCredentials(credentials),
-    sdfConcurrencyLimit: sdfConcurrencyLimit ?? DEFAULT_SDF_CONCURRENCY,
-  })
-
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
   const adapterConfig = netsuiteConfigFromConfig(context.config)
+  const credentials = netsuiteCredentialsFromCredentials(context.credentials)
   return new NetsuiteAdapter({
-    client: createClient(context.credentials, adapterConfig[SDF_CONCURRENCY_LIMIT]),
+    client: new NetsuiteClient({ credentials, config: adapterConfig[CLIENT_CONFIG] }),
     config: adapterConfig,
     getElemIdFunc: context.getElemIdFunc,
   })

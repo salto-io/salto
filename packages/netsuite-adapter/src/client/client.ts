@@ -33,6 +33,10 @@ import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
   FILE_CABINET_PATH_SEPARATOR, FOLDER, ENTRY_FORM, TRANSACTION_FORM, ROLE, WORKFLOW,
 } from '../constants'
+import {
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_SDF_CONCURRENCY, NetsuiteClientConfig,
+} from '../config'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -47,7 +51,7 @@ export type Credentials = {
 
 export type NetsuiteClientOpts = {
   credentials: Credentials
-  sdfConcurrencyLimit: number
+  config?: NetsuiteClientConfig
 }
 
 export const COMMANDS = {
@@ -195,26 +199,37 @@ export type ImportFileCabinetResult = {
 
 export default class NetsuiteClient {
   private readonly credentials: Credentials
+  private readonly fetchAllTypesAtOnce: boolean
+  private readonly fetchTypeTimeoutInMinutes: number
+  private readonly maxItemsInImportObjectsRequest: number
   private readonly sdfConcurrencyLimit: number
   private readonly sdfCallsLimiter: Bottleneck
   private readonly setupAccountLock: AsyncLock
   private readonly baseCommandExecutor: CommandActionExecutor
 
-  constructor({ credentials, sdfConcurrencyLimit }: NetsuiteClientOpts) {
+  constructor({
+    credentials,
+    config,
+  }: NetsuiteClientOpts) {
     this.credentials = {
       ...credentials,
       // accountId must be uppercased as decribed in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
       accountId: credentials.accountId.toUpperCase().replace('-', '_'),
     }
-    this.sdfConcurrencyLimit = sdfConcurrencyLimit
-    this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: sdfConcurrencyLimit })
+    this.fetchAllTypesAtOnce = config?.fetchAllTypesAtOnce ?? DEFAULT_FETCH_ALL_TYPES_AT_ONCE
+    this.fetchTypeTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes
+      ?? DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES
+    this.maxItemsInImportObjectsRequest = config?.maxItemsInImportObjectsRequest
+      ?? DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST
+    this.sdfConcurrencyLimit = config?.sdfConcurrencyLimit ?? DEFAULT_SDF_CONCURRENCY
+    this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: this.sdfConcurrencyLimit })
     this.setupAccountLock = new AsyncLock()
     this.baseCommandExecutor = NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
   }
 
   @NetsuiteClient.logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
-    const netsuiteClient = new NetsuiteClient({ credentials, sdfConcurrencyLimit: 1 })
+    const netsuiteClient = new NetsuiteClient({ credentials })
     const { projectName, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectName, authId)
     return Promise.resolve(netsuiteClient.credentials.accountId)
@@ -346,14 +361,9 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getCustomObjects(
-    typeNames: string[],
-    fetchAllAtOnce: boolean,
-    fetchTypeTimeoutInMinutes: number
-  ): Promise<GetCustomObjectsResult> {
+  async getCustomObjects(typeNames: string[]): Promise<GetCustomObjectsResult> {
     const { executor, projectName, authId } = await this.initProject()
-    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(executor, typeNames,
-      fetchAllAtOnce, fetchTypeTimeoutInMinutes)
+    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(executor, typeNames)
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
@@ -376,16 +386,14 @@ export default class NetsuiteClient {
 
   private async importObjects(
     executor: CommandActionExecutor,
-    typeNames: string[],
-    fetchAllAtOnce: boolean,
-    fetchTypeTimeoutInMinutes: number
+    typeNames: string[]
   ): Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
     const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
       try {
         // When fetchAllAtOnce we use the below heuristic in order to define a proper timeout,
         // instead of adding another configuration value
-        await this.runImportObjectsCommand(executor, ALL, fetchTypeTimeoutInMinutes * 4)
+        await this.runImportObjectsCommand(executor, ALL, this.fetchTypeTimeoutInMinutes * 4)
         return true
       } catch (e) {
         log.warn('Attempt to fetch all custom objects has failed')
@@ -394,19 +402,18 @@ export default class NetsuiteClient {
       }
     }
 
-    if (fetchAllAtOnce && await importAllAtOnce()) {
+    if (this.fetchAllTypesAtOnce && await importAllAtOnce()) {
       return { failedToFetchAllAtOnce: false, failedTypes: [] }
     }
     return {
-      failedToFetchAllAtOnce: fetchAllAtOnce,
-      failedTypes: await this.importObjectsByTypes(executor, typeNames, fetchTypeTimeoutInMinutes),
+      failedToFetchAllAtOnce: this.fetchAllTypesAtOnce,
+      failedTypes: await this.importObjectsByTypes(executor, typeNames),
     }
   }
 
   private async importObjectsByTypes(
     executor: CommandActionExecutor,
-    typeNames: string[],
-    fetchTypeTimeoutInMinutes: number
+    typeNames: string[]
   ): Promise<string[]> {
     const orderTypesByFetchDuration = (): string[] => {
       // Fetching the below types takes statistically much more time than the others, and sometimes
@@ -429,7 +436,7 @@ export default class NetsuiteClient {
       orderTypesByFetchDuration().map(typeName => async () => {
         try {
           log.debug('Starting to fetch objects of type: %s', typeName)
-          await this.runImportObjectsCommand(executor, typeName, fetchTypeTimeoutInMinutes)
+          await this.runImportObjectsCommand(executor, typeName, this.fetchTypeTimeoutInMinutes)
           log.debug('Fetched objects of type: %s', typeName)
         } catch (e) {
           log.warn('Failed to fetch objects of type %s failed', typeName)
@@ -453,6 +460,7 @@ export default class NetsuiteClient {
         destinationfolder: `${FILE_CABINET_PATH_SEPARATOR}${OBJECTS_DIR}`,
         type,
         scriptid: ALL,
+        maxItemsInImportObjectsRequest: this.maxItemsInImportObjectsRequest,
         excludefiles: true,
       },
       executor,

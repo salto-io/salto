@@ -17,16 +17,20 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import {
   FETCH_ALL_TYPES_AT_ONCE, FILE_PATHS_REGEX_SKIP_LIST, TYPES_TO_SKIP, SDF_CONCURRENCY_LIMIT,
-  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
+  CLIENT_CONFIG,
 } from '../src/constants'
 
 describe('config', () => {
   const currentConfig = {
     [TYPES_TO_SKIP]: ['test1'],
     [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*'],
-    [SDF_CONCURRENCY_LIMIT]: 2,
-    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
     [DEPLOY_REFERENCED_ELEMENTS]: false,
+    [CLIENT_CONFIG]: {
+      [SDF_CONCURRENCY_LIMIT]: 2,
+      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+      [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+    },
   }
   const newFailedType = 'test2'
   const newFailedFilePath = '/path/to/file.js'
@@ -56,7 +60,9 @@ describe('config', () => {
       {
         [TYPES_TO_SKIP]: [newFailedType],
         [FILE_PATHS_REGEX_SKIP_LIST]: [expectedNewFailedFileRegex],
-        [FETCH_ALL_TYPES_AT_ONCE]: false,
+        [CLIENT_CONFIG]: {
+          [FETCH_ALL_TYPES_AT_ONCE]: false,
+        },
       }
     ))).toBe(true)
   })
@@ -69,10 +75,13 @@ describe('config', () => {
         {
           [TYPES_TO_SKIP]: ['test1', newFailedType],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*', expectedNewFailedFileRegex],
-          [FETCH_ALL_TYPES_AT_ONCE]: false,
-          [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
           [DEPLOY_REFERENCED_ELEMENTS]: false,
-          [SDF_CONCURRENCY_LIMIT]: 2,
+          [CLIENT_CONFIG]: {
+            [FETCH_ALL_TYPES_AT_ONCE]: false,
+            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+            [SDF_CONCURRENCY_LIMIT]: 2,
+          },
         }
       ))
   })

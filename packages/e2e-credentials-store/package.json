@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/e2e-credentials-store",
-  "version": "0.1.39",
+  "version": "0.1.40",
   "license": "Apache-2.0",
   "description": "Salto E2E tests credentials store",
   "repository": {
@@ -30,9 +30,9 @@
   },
   "dependencies": {
     "@jest/environment": "^24.0.0",
-    "@salto-io/logging": "0.1.39",
-    "@salto-io/lowerdash": "0.1.39",
-    "@salto-io/persistent-pool": "0.1.39",
+    "@salto-io/logging": "0.1.40",
+    "@salto-io/lowerdash": "0.1.40",
+    "@salto-io/persistent-pool": "0.1.40",
     "easy-table": "^1.1.1",
     "humanize-duration": "^3.22.0",
     "jest-circus": "^24.9.0",

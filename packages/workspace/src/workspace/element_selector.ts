@@ -84,6 +84,10 @@ export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
   return { elements, matches }
 }
 
+const getIDType = (adapterSelector: string, idTypeSelector?: string): ElemIDType =>
+  (idTypeSelector ? idTypeSelector as ElemIDType : ElemID
+    .getDefaultIdType(adapterSelector))
+
 export const createElementSelector = (selector: string): ElementSelector => {
   const [adapterSelector, typeNameSelector, idTypeSelector, ...nameSelectors] = selector
     .split(ElemID.NAMESPACE_SEPARATOR)
@@ -99,8 +103,7 @@ export const createElementSelector = (selector: string): ElementSelector => {
   return {
     adapterSelector: createRegex(adapterSelector),
     typeNameSelector: createRegex(typeNameSelector),
-    idTypeSelector: idTypeSelector ? idTypeSelector as ElemIDType : ElemID
-      .getDefaultIdType(adapterSelector),
+    idTypeSelector: getIDType(adapterSelector, idTypeSelector),
     origin: selector,
     nameSelectors: nameSelectors.length > 0 ? nameSelectors.map(createRegex) : undefined,
   }
@@ -134,7 +137,9 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
         ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR),
     }
   }
-  const idType = ElemID.TOP_LEVEL_ID_TYPES.includes(selector.idTypeSelector) ? selector.idTypeSelector : 'type'
+  const idType = ElemID.isTopLevelType(selector.idTypeSelector,
+    selector.nameSelectors?.map(s => s.source)) ? selector.idTypeSelector
+    : ElemID.getDefaultIdType(selector.adapterSelector.source)
   return {
     adapterSelector: selector.adapterSelector,
     idTypeSelector: idType,
@@ -144,54 +149,55 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
   }
 }
 
-const isTopLevelSelector = (selector: ElementSelector): boolean => ElemID
-  .TOP_LEVEL_ID_TYPES.includes(selector.idTypeSelector)
-  || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(selector.idTypeSelector)
-  && selector.nameSelectors?.length === 1)
+const isTopLevelSelector = (selector: ElementSelector): boolean =>
+  ElemID.fromFullName(selector.origin).isTopLevel()
 
 const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
   createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
     elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR))
 
-const isElementPossiblyParentOfSearchedElement = (selectors: ElementSelector[],
-  testId: ElemID): boolean => !(selectElementsBySelectors([testId],
-  selectors.map(selector => createSameDepthSelector(selector, testId)),
-  false).elements.length === 0)
+const isElementPossiblyParentOfSearchedElement = (
+  selectors: ElementSelector[], testId: ElemID
+): boolean => (
+  selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
+)
 
-export const selectElementIdsByTraversal = async (
+export const selectElementIdsByTraversal = (
   selectors: ElementSelector[], elements: ElementIDToValue[],
-  compact = false): Promise<ElemID[]> => {
+  compact = false
+): ElemID[] => {
   const [wildcardSelectors, determinedSelectors] = _.partition(selectors, selector => selector.origin.includes('*'))
-  const ids = determinedSelectors.map(selector => ElemID.fromFullName(selector.origin))
+  const determinedIds = determinedSelectors.map(selector => selector.origin)
+  const ids = new Set(determinedIds)
   if (wildcardSelectors.length === 0) {
-    return ids
+    return [...ids].map(id => ElemID.fromFullName(id))
   }
   const [topLevelSelectors, subElementSelectors] = _.partition(wildcardSelectors,
     isTopLevelSelector)
   if (!(topLevelSelectors.length === 0)) {
     const { elements: topLevelElements } = selectElementsBySelectors(elements,
       topLevelSelectors, false)
-    ids.push(...topLevelElements.map(element => element.elemID))
+    topLevelElements.forEach(element => ids.add(element.elemID.getFullName()))
     if (subElementSelectors.length === 0) {
-      return ids
+      return [...ids].map(id => ElemID.fromFullName(id))
     }
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
   const possibleParentElements = selectElementsBySelectors(elements, possibleParentSelectors,
     false).elements
-  const stillRelevantElements = compact ? possibleParentElements.filter(id => !ids
-    .includes(id.elemID)) : possibleParentElements
+  const stillRelevantElements = compact ? possibleParentElements
+    .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements
   if (stillRelevantElements.length === 0) {
-    return ids
+    return [...ids].map(id => ElemID.fromFullName(id))
   }
   const selectFromSubElements = (args: TransformFuncArgs): Value | undefined => {
-    if (!args.path) {
+    if (args.path === undefined) {
       return undefined
     }
     const testId = args.path
     const { elements: found } = selectElementsBySelectors([testId], subElementSelectors, false)
     if (!(found.length === 0)) {
-      ids.push(found[0])
+      ids.add(found[0].getFullName())
       if (compact) {
         return undefined
       }
@@ -201,7 +207,7 @@ export const selectElementIdsByTraversal = async (
     if (stillRelevantSelectors.length === 0) {
       return undefined
     }
-    if (compact && selectElementsBySelectors([testId], determinedSelectors, false)) {
+    if (compact && determinedIds.includes(testId.getFullName())) {
       // This can occur if testId is one given as a determined id, so we don't search for it,
       // but because we just found it while searching, in compact scenario we need to return
       return undefined
@@ -212,8 +218,8 @@ export const selectElementIdsByTraversal = async (
     return undefined
   }
 
-  await Promise.all(stillRelevantElements.map(elemContainer => transformElement({
+  stillRelevantElements.forEach(elemContainer => transformElement({
     element: elemContainer.element, transformFunc: selectFromSubElements,
-  })))
-  return _.uniq(ids)
+  }))
+  return [...ids].map(id => ElemID.fromFullName(id))
 }

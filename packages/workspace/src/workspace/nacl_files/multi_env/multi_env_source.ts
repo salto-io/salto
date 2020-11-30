@@ -173,8 +173,8 @@ const buildMultiEnvSource = (
 
   const getElementIdsBySelectors = async (selectors: ElementSelector[],
     commonOnly = false): Promise<ElemID[]> =>
-    (selectElementIdsByTraversal(selectors, await getElementsFromSource(commonOnly
-      ? commonSource() : primarySource())))
+    selectElementIdsByTraversal(selectors, await getElementsFromSource(commonOnly
+      ? commonSource() : primarySource()))
 
   const promote = async (ids: ElemID[]): Promise<void> => {
     const routedChanges = await routePromote(

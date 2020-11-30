@@ -16,10 +16,12 @@
 import _ from 'lodash'
 import { Element, ObjectType, ReferenceExpression, Value, Change, ChangeDataType, isAdditionOrModificationChange, getChangeElement, isObjectTypeChange, Field, isAdditionChange, isFieldChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { apiName, isCustomObject, relativeApiName } from '../../transformers/transformer'
 import { FIELD_ANNOTATIONS, CPQ_PRODUCT_RULE, CPQ_PRICE_RULE, CPQ_LOOKUP_OBJECT_NAME, DEFAULT_OBJECT_TO_API_MAPPING, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, TEST_OBJECT_TO_API_MAPPING, CUSTOM_OBJECT, CUSTOM_FIELD, CPQ_PRICE_SCHEDULE, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD, CPQ_DISCOUNT_SCHEDULE, API_NAME_SEPARATOR } from '../../constants'
 
+const log = logger(module)
 
 type CustomObjectLookupDef = {
   type: 'CustomObject'
@@ -241,9 +243,11 @@ const applyFuncOnCustomObjectWithMappingLookupChange = (
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
+    log.debug('Started replacing lookupObject values with references')
     replaceLookupObjectValueSetValuesWithReferences(
       elements.filter(isCustomObject)
     )
+    log.debug('Finished replacing lookupObject values with references')
   },
   preDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)

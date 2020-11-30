@@ -31,7 +31,7 @@ export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 const MAX_LOCATION_SEARCH_RESULT = 20
 
 const getAllElements = async (workspace: EditorWorkspace):
-Promise<ReadonlyArray<Element>> => (await workspace.elements)
+Promise<ReadonlyArray<Element>> => (await workspace.getVisibleElements())
   .flatMap(elem => (isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
 
 const createFileLocations = async (

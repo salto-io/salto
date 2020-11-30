@@ -97,25 +97,57 @@ export class EditorWorkspace {
     names.forEach(n => this.pendingDeletes.add(n))
   }
 
+  private async getChangedElements(filenames: string[]): Promise<ElemID[]> {
+    return (await Promise.all(filenames
+      .map(async f => this.workspace.getParsedNaclFile(f))))
+      .filter(naclFile => naclFile !== undefined)
+      .flatMap(naclFile => naclFile?.elements)
+      .map(elem => elem?.elemID) as ElemID[]
+  }
+
+  private async updateNaclFiles(opDeletes: string[], opNaclFiles: nacl.NaclFile[]): Promise<void> {
+    // We start by running all deleted
+    if (!_.isEmpty(opDeletes) && this.workspace) {
+      await this.workspace.removeNaclFiles(...opDeletes)
+    }
+    // Now add the waiting changes
+    if (!_.isEmpty(opNaclFiles) && this.workspace) {
+      await this.workspace.setNaclFiles(..._.values(opNaclFiles))
+    }
+  }
+
   private async runAggregatedSetOperation(): Promise<void> {
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
       const opNaclFiles = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
-      this.wsElements = undefined
       this.wsErrors = undefined
-      // We start by running all deleted
-      if (!_.isEmpty(opDeletes) && this.workspace) {
-        await this.workspace.removeNaclFiles(...opDeletes)
+      const deletedNaclFiles = Array.from(opDeletes)
+      const updatedNaclFiles = _.values(opNaclFiles)
+      if (this.wsElements === undefined) {
+        await this.updateNaclFiles(deletedNaclFiles, updatedNaclFiles)
+        // We recall this method to make sure no pending were added since
+        // we started. Returning the promise will make sure the caller
+        // keeps on waiting until the queue is clear.
+        return this.runAggregatedSetOperation()
       }
-      // Now add the waiting changes
-      if (!_.isEmpty(opNaclFiles) && this.workspace) {
-        await this.workspace.setNaclFiles(..._.values(opNaclFiles))
-      }
-      // We recall this method to make sure no pending were added since
-      // we started. Returning the promise will make sure the caller
-      // keeps on waiting until the queue is clear.
+      const changedFiles = Array.from(new Set([...opDeletes, ...Object.keys(opNaclFiles)]))
+      const oldElementsInChangedFiles = await this.getChangedElements(changedFiles)
+      await this.updateNaclFiles(deletedNaclFiles, updatedNaclFiles)
+      const newElementsInChangedFiles = await this.getChangedElements(changedFiles)
+      const changedElements = _.uniqBy(
+        [...oldElementsInChangedFiles, ...newElementsInChangedFiles],
+        e => e.getFullName()
+      )
+      const newChangedElements = (await Promise.all(changedElements
+        .map(elemID => this.workspace.getElement(elemID))))
+        .filter(e => e !== undefined) as Element[]
+      this.wsElements = Promise.resolve(
+        ((await this.wsElements) ?? [])
+          .filter(e => newChangedElements.find(ce => !e.elemID.isEqual(ce.elemID)))
+          .concat(newChangedElements)
+      )
       return this.runAggregatedSetOperation()
     }
     this.runningSetOperation = undefined
@@ -190,5 +222,13 @@ export class EditorWorkspace {
 
   async awaitAllUpdates(): Promise<void> {
     if (this.runningSetOperation) await this.runningSetOperation
+  }
+
+  async getVisibleElements(): Promise<readonly Element[]> {
+    return this.workspace.elements(false)
+  }
+
+  async getElement(id: ElemID): Promise<Element | undefined> {
+    return this.workspace.getElement(id)
   }
 }

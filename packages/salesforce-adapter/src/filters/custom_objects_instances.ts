@@ -105,6 +105,7 @@ const getRecords = async (
   const records = (await Promise.all(
     recordsIterables.map(async recordsIterable => (await toArrayAsync(recordsIterable)).flat())
   )).flat()
+  log.debug(`Fetched ${records.length} records of type ${typeName}`)
   return _.keyBy(
     records,
     record => record[CUSTOM_OBJECT_ID_FIELD]

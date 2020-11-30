@@ -33,23 +33,11 @@ const log = logger(module)
 const replaceReferenceValues = (
   values: Values,
   type: ObjectType,
-  instances: InstanceElement[]
+  instancesByType: Record<string, Record<string, InstanceElement>>
 ): Values => {
   const shouldReplace = (field: Field): boolean => (
     isLookupField(field) || isMasterDetailField(field)
   )
-
-  const instancesByType = _.mapValues(
-    _.groupBy(
-      instances,
-      instance => apiName(instance.type, true)
-    ),
-    typeInstances =>
-      _.keyBy(
-        typeInstances,
-        inst => inst.value[CUSTOM_OBJECT_ID_FIELD]
-      )
-  ) as Record<string, Record<string, InstanceElement>>
 
   const transformFunc: TransformFunc = ({ value, field }) => {
     if (_.isUndefined(field) || !shouldReplace(field)) {
@@ -75,11 +63,22 @@ const replaceReferenceValues = (
 
 const replaceLookupsWithReferences = (elements: Element[]): void => {
   const customObjectInstances = elements.filter(isInstanceOfCustomObject)
+  const instancesByType = _.mapValues(
+    _.groupBy(
+      customObjectInstances,
+      instance => apiName(instance.type, true)
+    ),
+    typeInstances =>
+      _.keyBy(
+        typeInstances,
+        inst => inst.value[CUSTOM_OBJECT_ID_FIELD]
+      )
+  ) as Record<string, Record<string, InstanceElement>>
   customObjectInstances.forEach((instance, index) => {
     instance.value = replaceReferenceValues(
       instance.value,
       instance.type,
-      customObjectInstances,
+      instancesByType,
     )
     if (index % 500 === 0) {
       log.debug(`Replaced lookup with references for ${index} instances`)

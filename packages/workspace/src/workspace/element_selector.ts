@@ -154,62 +154,66 @@ const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): Ele
     elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR))
 
 const isElementPossiblyParentOfSearchedElement = (selectors: ElementSelector[],
-  testId: ElemID): boolean => !(_.isEmpty(selectElementsBySelectors([testId],
-  selectors.map(selector => createSameDepthSelector(selector, testId)), false)))
+  testId: ElemID): boolean => !(selectElementsBySelectors([testId],
+  selectors.map(selector => createSameDepthSelector(selector, testId)),
+  false).elements.length === 0)
 
 export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[], elements: ElementIDToValue[],
   compact = false): Promise<ElemID[]> => {
   const [wildcardSelectors, determinedSelectors] = _.partition(selectors, selector => selector.origin.includes('*'))
   const ids = determinedSelectors.map(selector => ElemID.fromFullName(selector.origin))
-  if (_.isEmpty(wildcardSelectors)) {
+  if (wildcardSelectors.length === 0) {
     return ids
   }
   const [topLevelSelectors, subElementSelectors] = _.partition(wildcardSelectors,
     isTopLevelSelector)
-  if (!_.isEmpty(topLevelSelectors)) {
+  if (!(topLevelSelectors.length === 0)) {
     const { elements: topLevelElements } = selectElementsBySelectors(elements,
       topLevelSelectors, false)
-    ids.push(...topLevelElements.map(element => element.elemID).concat(ids))
-    if (_.isEmpty(subElementSelectors)) {
+    ids.push(...topLevelElements.map(element => element.elemID))
+    if (subElementSelectors.length === 0) {
       return ids
     }
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const stillRelevantElements = compact ? selectElementsBySelectors(elements,
-    possibleParentSelectors, false).elements.filter(id => !ids.includes(id.elemID))
-    : selectElementsBySelectors(elements, possibleParentSelectors, false).elements
-  if (_.isEmpty(stillRelevantElements)) {
+  const possibleParentElements = selectElementsBySelectors(elements, possibleParentSelectors,
+    false).elements
+  const stillRelevantElements = compact ? possibleParentElements.filter(id => !ids
+    .includes(id.elemID)) : possibleParentElements
+  if (stillRelevantElements.length === 0) {
     return ids
   }
-  const transformFunc = (args: TransformFuncArgs): Value | undefined => {
-    if (args.path) {
-      const testId = args.path
-      const { elements: found } = selectElementsBySelectors([testId], subElementSelectors, false)
-      if (!_.isEmpty(found)) {
-        ids.push(found[0])
-        if (compact) {
-          return undefined
-        }
-      }
-      const stillRelevantSelectors = wildcardSelectors.filter(selector => selector
-        .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
-      if (_.isEmpty(stillRelevantSelectors)) {
+  const selectFromSubElements = (args: TransformFuncArgs): Value | undefined => {
+    if (!args.path) {
+      return undefined
+    }
+    const testId = args.path
+    const { elements: found } = selectElementsBySelectors([testId], subElementSelectors, false)
+    if (!(found.length === 0)) {
+      ids.push(found[0])
+      if (compact) {
         return undefined
       }
-      if (compact && selectElementsBySelectors([testId], determinedSelectors, false)) {
-        // This can occur if testId is one given as a determined id, so we don't search for it,
-        // but because we just found it while searching, in compact scenario we need to return
-        return undefined
-      }
-      if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
-        return args.value
-      }
+    }
+    const stillRelevantSelectors = wildcardSelectors.filter(selector => selector
+      .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
+    if (stillRelevantSelectors.length === 0) {
+      return undefined
+    }
+    if (compact && selectElementsBySelectors([testId], determinedSelectors, false)) {
+      // This can occur if testId is one given as a determined id, so we don't search for it,
+      // but because we just found it while searching, in compact scenario we need to return
+      return undefined
+    }
+    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
+      return args.value
     }
     return undefined
   }
+
   await Promise.all(stillRelevantElements.map(elemContainer => transformElement({
-    element: elemContainer.element, transformFunc,
+    element: elemContainer.element, transformFunc: selectFromSubElements,
   })))
   return _.uniq(ids)
 }

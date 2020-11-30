@@ -18,8 +18,9 @@ import { mockFunction } from '../multi_index.test'
 
 const { asynciterable } = collections
 const {
-  findAsync, mapAsync, toArrayAsync, filterAsync, forEachAsync, toAsyncIterable, flatMapAsync,
   handleErrorsAsync,
+  findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
+  filterAsync, flattenAsync, awu,
 } = asynciterable
 
 describe('asynciterable', () => {
@@ -153,43 +154,6 @@ describe('asynciterable', () => {
     })
   })
 
-  describe('flatMapAsync', () => {
-    let iterable: AsyncIterable<number>
-    beforeEach(() => {
-      iterable = toAsyncIterable([1, 2, 3])
-    })
-    describe('when func is sync', () => {
-      it('should return flat async iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, num => [num, num])
-        )
-        expect(result).toEqual([1, 1, 2, 2, 3, 3])
-      })
-      it('should only flatten one level of iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, num => [[num, num]])
-        )
-        expect(result).toEqual([[1, 1], [2, 2], [3, 3]])
-      })
-    })
-    describe('when func is async', () => {
-      it('should return flat async iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, async num => [num, num])
-        )
-        expect(result).toEqual([1, 1, 2, 2, 3, 3])
-      })
-    })
-    describe('when func returns async iterable', () => {
-      it('should return flat async iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, num => toAsyncIterable([num, num]))
-        )
-        expect(result).toEqual([1, 1, 2, 2, 3, 3])
-      })
-    })
-  })
-
   describe('filterAsync', () => {
     describe('when funcMap is sync', () => {
       it('should return an async iterator without the filtered elements', async () => {
@@ -209,16 +173,100 @@ describe('asynciterable', () => {
     })
   })
 
-  describe('forEachAsync', () => {
-    it('should run the callback on all elements', async () => {
-      let counter = 0
-      const itr = toAsyncIterable(
+  describe('concatAsync', () => {
+    it('should return an empty iterator if one iterator is porivded', async () => {
+      const concated = await toArrayAsync(concatAsync(
+        toAsyncIterable([])
+      ))
+      expect(concated).toEqual([])
+    })
+    it('should return the original iterator if only an iterator is provided', async () => {
+      const concated = await toArrayAsync(concatAsync(
+        toAsyncIterable([1, 2, 3])
+      ))
+      expect(concated).toEqual([1, 2, 3])
+    })
+    it('should return an async version of the original iterator if only a sync iterator is provided', async () => {
+      const concated = await toArrayAsync(concatAsync(
         [1, 2, 3]
-      )
-      await forEachAsync(itr, async n => {
-        counter += n
+      ))
+      expect(concated).toEqual([1, 2, 3])
+    })
+    it('should concat multiple iterables', async () => {
+      const concated = await toArrayAsync(concatAsync(
+        toAsyncIterable([1, 2, 3]),
+        [4, 5, 6],
+        toAsyncIterable([7, 8, 9])
+      ))
+      expect(concated).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    })
+  })
+
+  describe('flattenAsync', () => {
+    it('should flatten all iterables', async () => {
+      const flattened = await toArrayAsync(flattenAsync(
+        [[1, 2, 3]],
+        toAsyncIterable([[4], [5, 6]]),
+        [toAsyncIterable([7, 8])],
+        toAsyncIterable([[], toAsyncIterable([9])]),
+      ))
+      expect(flattened).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    })
+  })
+
+  describe('async wrapper', () => {
+    const baseIt = (): AsyncIterable<number> => toAsyncIterable([1, 2, 3])
+
+    describe('maintain original iterable functionality', () => {
+      it('should return the same values as the original iterator when no function was invoked', async () => {
+        expect(await toArrayAsync(awu(baseIt()))).toEqual([1, 2, 3])
       })
-      expect(counter).toEqual(6)
+    })
+    describe('async iterable functions', () => {
+      it('should forward the map function to asyncMap', async () => {
+        const mapped = awu(baseIt()).map(async i => i * 2)
+        expect(await toArrayAsync(mapped)).toEqual([2, 4, 6])
+      })
+      it('should forward the find function to asyncFind', async () => {
+        expect(await awu(baseIt()).find(i => i > 1)).toEqual(2)
+      })
+      it('should forward the filter function to asyncFilter', async () => {
+        const filtered = awu(baseIt()).filter(async i => i !== 2)
+        expect(await toArrayAsync(filtered)).toEqual([1, 3])
+      })
+      it('should forward the concat function to asyncConcat', async () => {
+        const concated = awu(baseIt()).concat(toAsyncIterable([4, 5, 6]))
+        expect(await toArrayAsync(concated)).toEqual([1, 2, 3, 4, 5, 6])
+      })
+      it('should forward the flatMap function to asyncFlatten', async () => {
+        const complex = awu(toAsyncIterable([1, 2, 3])).flatMap(i => [i, i])
+        expect(await toArrayAsync(complex)).toEqual([1, 1, 2, 2, 3, 3])
+      })
+      it('should forward the toArray function to asyncToArray', async () => {
+        expect(await awu(toAsyncIterable([1, 2, 3])).toArray()).toEqual([1, 2, 3])
+      })
+    })
+    describe('function chaining', () => {
+      describe('when orig is async', () => {
+        it('should chain functions', async () => {
+          const res = await awu(baseIt())
+            .flatMap(i => [i, i * 2])
+            .concat(baseIt())
+            .filter(i => i > 3)
+            .toArray()
+          expect(res).toEqual([4, 6])
+        })
+      })
+      describe('when orig is sync', () => {
+        it('should chain functions', async () => {
+          const res = await awu([1, 2, 3])
+            .flatMap(i => [i, i * 2])
+            .concat(baseIt())
+            .filter(i => i > 3)
+            .toArray()
+          expect(res).toEqual([4, 6])
+        })
+      })
     })
   })
 

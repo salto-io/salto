@@ -22,7 +22,7 @@ import { values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, NETSUITE, TRANSACTION_COLUMN_CUSTOM_FIELD,
-  WORKBOOK,
+  TRANSACTION_BODY_CUSTOM_FIELD, WORKBOOK,
 } from './constants'
 
 const { isDefined } = lowerDashValues
@@ -103,6 +103,8 @@ export const getRequiredReferencedInstances = (
       case WORKBOOK:
         return getReferencedInstance(instance.value.dependencies?.dependency, DATASET)
       case TRANSACTION_COLUMN_CUSTOM_FIELD:
+        return getReferencedInstance(instance.value.sourcefrom) // might reference a lot of types
+      case TRANSACTION_BODY_CUSTOM_FIELD:
         return getReferencedInstance(instance.value.sourcefrom) // might reference a lot of types
       default:
         return undefined

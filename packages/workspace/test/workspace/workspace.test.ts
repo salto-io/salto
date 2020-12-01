@@ -236,7 +236,7 @@ describe('workspace', () => {
         mockDirStore([], false, {
           'x.nacl': `type salto.t {
             number field {
-              ${CORE_ANNOTATIONS.HIDDEN} = true
+              ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
             }
           }
           salto.t inst {
@@ -413,7 +413,7 @@ describe('workspace', () => {
           'numHidden',
           BuiltinTypes.NUMBER,
           {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         ),
         boolNotHidden: new Field(
@@ -498,7 +498,7 @@ describe('workspace', () => {
           new ObjectType({ elemID: new ElemID('salesforce', 'ObjWithNestedHidden') }),
           'new_field',
           BuiltinTypes.NUMBER,
-          { [CORE_ANNOTATIONS.HIDDEN]: true },
+          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
         ) },
       },
       { // add complex value (nested in parent scope)
@@ -691,7 +691,7 @@ describe('workspace', () => {
         data: { before: true, after: false },
       },
       { // Visible field change to hidden
-        id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'visible', CORE_ANNOTATIONS.HIDDEN),
+        id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'visible', CORE_ANNOTATIONS.HIDDEN_VALUE),
         action: 'add',
         data: { after: true },
       },
@@ -978,10 +978,10 @@ describe('workspace', () => {
       expect(newInstance).not.toEqual(queueInstance)
 
       // Hidden fields values should be undefined
-      expect(newInstance.value.queueSobjectHidden).toBeUndefined()
       expect(newInstance.value.numHidden).toBeUndefined()
 
       // Not hidden fields values should be defined
+      expect(newInstance.value.queueSobjectHidden).toBeDefined() // field is hidden but value isn't
       expect(newInstance.value.queueSobjectWithHiddenType).toBeDefined()
       expect(newInstance.value.boolNotHidden).toEqual(false)
       expect(newInstance.value.objWithHiddenAnno).toEqual({ aaa: 23 })
@@ -1000,7 +1000,7 @@ describe('workspace', () => {
       expect(instWithNestedHidden.value).not.toHaveProperty('new_field')
     })
 
-    it('should remove values of fields that became hidden', () => {
+    it('should remove values of fields that became hidden_value', () => {
       expect(instWithHidden.value).not.toHaveProperty('visible')
       expect(instWithNestedHidden.value.nested).not.toHaveProperty('visible')
       expect(instWithDoublyNestedHidden.value.singleNest).not.toHaveProperty('visible')

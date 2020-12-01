@@ -549,7 +549,7 @@ describe('transformer', () => {
             {}
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
-          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
           expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         })
       })
@@ -564,7 +564,7 @@ describe('transformer', () => {
             {}
           )
           expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
-          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
           expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         })
       })
@@ -652,7 +652,7 @@ describe('transformer', () => {
     it('should remove internalId', () => {
       field.annotations[INTERNAL_ID_ANNOTATION] = 'internal id'
       const customField = toCustomField(field)
-      expect(_.get(customField, INTERNAL_ID_ANNOTATION)).toBeUndefined()
+      expect(customField).not.toHaveProperty(INTERNAL_ID_ANNOTATION)
     })
   })
 

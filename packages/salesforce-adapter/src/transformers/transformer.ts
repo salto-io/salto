@@ -1178,7 +1178,7 @@ export const getSObjectFieldElement = (
   // Because they differ between envs and should not be edited through salto
   // Name is an exception because it can be editable and visible to the user
   if (!field.nameField && systemFields.includes(field.name)) {
-    annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
     annotations[FIELD_ANNOTATIONS.CREATABLE] = false
     annotations[CORE_ANNOTATIONS.REQUIRED] = false
@@ -1187,7 +1187,7 @@ export const getSObjectFieldElement = (
   // An autoNumber field should be hidden because it will differ between enviorments
   // and not required to be able to add without it (ie. when moving envs)
   if (field.autoNumber) {
-    annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     annotations[CORE_ANNOTATIONS.REQUIRED] = false
   }
 
@@ -1324,8 +1324,7 @@ const createIdField = (parent: ObjectType): void => {
     BuiltinTypes.STRING,
     {
       [CORE_ANNOTATIONS.REQUIRED]: false,
-      // TODO change to HIDDEN_VALUE (need to handle upgrade remove+add)
-      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
       [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
     }
   )

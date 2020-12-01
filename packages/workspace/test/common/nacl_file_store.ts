@@ -85,7 +85,7 @@ type salesforce.VisibleObjWithHidden {
   number visible {
   }
   string hide {
-    ${CORE_ANNOTATIONS.HIDDEN} = true
+    ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
   }
 }
 
@@ -112,7 +112,7 @@ salesforce.ObjWithNestedHidden instWithNestedHidden {
 
 type salesforce.ObjWithComplexHidden {
   salesforce.ObjWithHidden nested {
-    ${CORE_ANNOTATIONS.HIDDEN} = true
+    ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
   }
   number other {
   }

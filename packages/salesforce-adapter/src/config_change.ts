@@ -128,7 +128,6 @@ export const getConfigFromConfigChanges = (
       instancesRegexSkippedList: instancesRegexSkippedList
         .concat(currentInstancesRegexSkippedList),
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
-      enableHideTypesInNacls: currentConfig.enableHideTypesInNacls,
       useOldProfiles: currentConfig.useOldProfiles,
       dataManagement: currentDataManagement === undefined ? undefined : {
         ...currentDataManagement,

@@ -29,7 +29,6 @@ import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
 import {
   INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  ENABLE_HIDE_TYPES_IN_NACLS,
 } from '../src/types'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import { MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput, mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveResult } from './connection'
@@ -43,7 +42,6 @@ describe('SalesforceAdapter fetch', () => {
   ]
 
   const testMaxItemsInRetrieveRequest = 100
-  const testEnableHideTypesInNacls = false
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
@@ -57,7 +55,6 @@ describe('SalesforceAdapter fetch', () => {
           metadataTypesSkippedList: testMetadataTypesSkippedList,
           instancesRegexSkippedList: testInstancesRegexSkippedList,
           maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
-          enableHideTypesInNacls: testEnableHideTypesInNacls,
         },
       },
     }))
@@ -894,7 +891,6 @@ public class MyClass${index} {
             [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
               .concat(testMetadataTypesSkippedList),
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
-            [ENABLE_HIDE_TYPES_IN_NACLS]: testEnableHideTypesInNacls,
           }
         )
       })

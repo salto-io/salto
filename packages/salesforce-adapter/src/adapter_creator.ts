@@ -104,7 +104,6 @@ SalesforceConfig => {
     metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
-    enableHideTypesInNacls: config?.value?.enableHideTypesInNacls,
     dataManagement: config?.value?.dataManagement,
     useOldProfiles: config?.value?.useOldProfiles,
     client: config?.value?.client,

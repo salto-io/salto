@@ -25,7 +25,6 @@ export const DATA_MANAGEMENT = 'dataManagement'
 export const CLIENT_CONFIG = 'client'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
-export const ENABLE_HIDE_TYPES_IN_NACLS = 'enableHideTypesInNacls'
 export const SYSTEM_FIELDS = 'systemFields'
 export const USE_OLD_PROFILES = 'useOldProfiles'
 
@@ -35,7 +34,6 @@ export type FilterContext = {
   [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
   [DATA_MANAGEMENT]?: DataManagementConfig
   [SYSTEM_FIELDS]?: string[]
-  [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
   [USE_OLD_PROFILES]?: boolean
 }
 
@@ -100,7 +98,6 @@ export type SalesforceConfig = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
-  [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
   [USE_OLD_PROFILES]?: boolean
   [DATA_MANAGEMENT]?: DataManagementConfig
   [CLIENT_CONFIG]?: SalesforceClientConfig
@@ -337,12 +334,6 @@ export const configType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1000, max: 10000 }),
-      },
-    },
-    [ENABLE_HIDE_TYPES_IN_NACLS]: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
       },
     },
     [USE_OLD_PROFILES]: {

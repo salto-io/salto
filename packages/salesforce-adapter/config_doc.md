@@ -18,7 +18,6 @@ salesforce {
     "^StandardValueSet.AddressStateCode",
   ]
   maxItemsInRetrieveRequest = 2500
-  enableHideTypesInNacls = false
   dataManagement = {
     includeObjects = [
       "SBQQ__CustomAction__c",
@@ -76,7 +75,6 @@ salesforce {
 | metadataTypesSkippedList                                 | [] (fetch all Metadata Types) | Specified types and their instances will not be fetched
 | instancesRegexSkippedList                                | [] (fetch all instances)      | Matching instances names will not be fetched
 | maxItemsInRetrieveRequest                                | 2500                          | Limits the max number of requested items a single retrieve request
-| enableHideTypesInNacls                                   | false                         | Control whether to generate NaCL files for salesforce types (will be placed under the Types folder)
 | [dataManagement](#data-management-configuration-options) | {} (do not manage data)       | Data management configuration 
 | [client](#client-configuration-options)                  | {} (no overrides)             | Configuration relating to the client used to interact with salesforce
 

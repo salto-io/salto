@@ -56,7 +56,6 @@ import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
-import hideTypesFilter from './filters/hide_types'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
@@ -124,8 +123,6 @@ export const DEFAULT_FILTERS = [
   foreignKeyReferencesFilter,
   // extraDependenciesFilter should run after addMissingIdsFilter
   extraDependenciesFilter,
-  // hideTypesFilter should come before customObjectsSplitFilter and profileInstanceSplitFilter
-  hideTypesFilter,
   customObjectsSplitFilter,
   profileInstanceSplitFilter,
 ]
@@ -148,9 +145,6 @@ export interface SalesforceAdapterParams {
 
   // Metadata types that are being fetched in the filters
   metadataTypesOfInstancesFetchedInFilters?: string[]
-
-  // Determine whether hide type folder
-  enableHideTypesInNacls?: boolean
 
   // Work with list-based profiles instead of map-based ones
   useOldProfiles?: boolean
@@ -245,7 +239,6 @@ export const allSystemFields = [
 ]
 
 export default class SalesforceAdapter implements AdapterOperations {
-  private enableHideTypesInNacls: boolean
   private metadataTypesSkippedList: string[]
   private instancesRegexSkippedList: RegExp[]
   private maxItemsInRetrieveRequest: number
@@ -258,7 +251,6 @@ export default class SalesforceAdapter implements AdapterOperations {
   private userConfig: SalesforceConfig
 
   public constructor({
-    enableHideTypesInNacls = constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
       SETTINGS_METADATA_TYPE,
@@ -349,7 +341,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     useOldProfiles = constants.DEFAULT_USE_OLD_PROFILES,
     config,
   }: SalesforceAdapterParams) {
-    this.enableHideTypesInNacls = config.enableHideTypesInNacls ?? enableHideTypesInNacls
     this.metadataTypesSkippedList = metadataTypesSkippedList
       .concat(makeArray(config.metadataTypesSkippedList))
     this.instancesRegexSkippedList = instancesRegexSkippedList
@@ -370,7 +361,6 @@ export default class SalesforceAdapter implements AdapterOperations {
         unsupportedSystemFields,
         dataManagement: config.dataManagement,
         systemFields,
-        enableHideTypesInNacls: this.enableHideTypesInNacls,
         useOldProfiles: config.useOldProfiles ?? useOldProfiles,
       },
       filterCreators

@@ -100,7 +100,6 @@ export type Workspace = {
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
-  getElement: (id: ElemID, includeHidden?: boolean) => Promise<Element | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
   clear: (args: Omit<WorkspaceComponents, 'serviceConfig'>) => Promise<void>
@@ -272,21 +271,6 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),
     getParsedNaclFile: (filename: string) => naclFilesSource.getParsedNaclFile(filename),
-    getElement: async (id: ElemID, includeHidden = true): Promise<Element | undefined> => {
-      const visibleElement = await naclFilesSource.get(id)
-      if (includeHidden) {
-        const stateElement = await state().get(id)
-        const mergedElement = mergeWithHidden(
-          visibleElement ? [visibleElement] : [],
-          stateElement ? [stateElement] : [],
-        )
-        if (!_.isEmpty(mergedElement.errors)) {
-          throw new Error(`Failed to merge element: ${id.getFullName()}`)
-        }
-        return mergedElement.merged[0]
-      }
-      return visibleElement
-    },
     promote: (selectors: ElementSelector[]) => naclFilesSource.promote(selectors),
     demote: (selectors: ElementSelector[]) => naclFilesSource.demote(selectors),
     demoteAll: () => naclFilesSource.demoteAll(),

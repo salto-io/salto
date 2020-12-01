@@ -186,8 +186,4 @@ export class EditorWorkspace {
   async awaitAllUpdates(): Promise<void> {
     if (this.runningSetOperation) await this.runningSetOperation
   }
-
-  async getElement(id: ElemID): Promise<Element | undefined> {
-    return this.workspace.getElement(id)
-  }
 }

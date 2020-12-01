@@ -18,7 +18,9 @@ import wu from 'wu'
 import {
   Element, isField, isType, isObjectType, ElemID,
 } from '@salto-io/adapter-api'
-import { resolvePath } from '@salto-io/adapter-utils'
+import {
+  findElement, resolvePath,
+} from '@salto-io/adapter-utils'
 import { parser } from '@salto-io/workspace'
 import { EditorWorkspace } from './workspace'
 
@@ -175,9 +177,9 @@ export const buildDefinitionsTree = (
   )
 }
 
-const getFullElement = async (workspace: EditorWorkspace, partial: Element): Promise<Element> => {
+const getFullElement = (elements: ReadonlyArray<Element>, partial: Element): Element => {
   const { parent } = partial.elemID.createTopLevelParentID()
-  const topLevelElement = await workspace.getElement(parent)
+  const topLevelElement = findElement(elements, parent)
   return (topLevelElement && resolvePath(topLevelElement, partial.elemID)) || partial
 }
 
@@ -203,9 +205,9 @@ export const getPositionContext = async (
   )
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)
-    ? {
-      ...partialContext.ref,
-      element: await getFullElement(workspace, partialContext.ref.element),
-    } : undefined
+    ? { ...partialContext.ref,
+      element: getFullElement(await workspace.elements,
+        partialContext.ref.element) }
+    : undefined
   return { ...partialContext, ref: fullRef }
 }

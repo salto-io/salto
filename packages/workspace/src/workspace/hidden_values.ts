@@ -17,19 +17,9 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  CORE_ANNOTATIONS, Element,
-  isInstanceElement, isType,
-  TypeElement,
-  getField,
-  DetailedChange,
-  isRemovalChange,
-  ElemID,
-  isObjectType,
-  ObjectType,
-  Values,
-  isRemovalOrModificationChange,
-  isAdditionOrModificationChange,
-  isElement,
+  CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField, DetailedChange,
+  isRemovalChange, ElemID, isObjectType, ObjectType, Values, isRemovalOrModificationChange,
+  isAdditionOrModificationChange, isElement, isField,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { mergeElements, MergeResult } from '../merger'
@@ -38,8 +28,13 @@ import { createAddChange, createRemoveChange } from './nacl_files/multi_env/proj
 
 const log = logger(module)
 
+const isHiddenValue = (element?: Element): boolean => (
+  element?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
+
 const isHidden = (element?: Element): boolean => (
   element?.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true
+  || ((isInstanceElement(element) || isField(element)) && isHiddenValue(element.type))
 )
 
 const splitElementHiddenParts = <T extends Element>(
@@ -78,9 +73,12 @@ const splitElementHiddenParts = <T extends Element>(
     // because then we'd never reach A.B.C
     // We also do not omit A.B.C.D because A.B.C was hidden, so by association everything inside
     // it is also hidden
-    path !== undefined && hiddenPaths.some(hiddenPath => (
-      path.isEqual(hiddenPath) || hiddenPath.isParentOf(path) || path.isParentOf(hiddenPath)
-    ))
+    path !== undefined && (
+      hiddenPaths.some(hiddenPath =>
+        (path.isEqual(hiddenPath) || hiddenPath.isParentOf(path) || path.isParentOf(hiddenPath)))
+      // workaround to enable reaching annotation values
+      || path.isEqual(path.createTopLevelParentID().parent.createNestedID('attr'))
+    )
   )
 
   const hidden = transformElement({
@@ -88,6 +86,8 @@ const splitElementHiddenParts = <T extends Element>(
     transformFunc: ({ value, path }) => (isPartOfHiddenPath(path) ? value : undefined),
     strict: true,
   })
+  // remove all annotation types from the hidden element so they don't cause merge conflicts
+  hidden.annotationTypes = {}
   return { hidden, visible }
 }
 
@@ -128,26 +128,25 @@ const removeHiddenFromValues = (
   })
 )
 
-const isChangeToHidden = (change: DetailedChange): boolean => (
-  change.id.name === CORE_ANNOTATIONS.HIDDEN
+const isChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean => (
+  change.id.name === (hiddenValue ? CORE_ANNOTATIONS.HIDDEN_VALUE : CORE_ANNOTATIONS.HIDDEN)
   && isAdditionOrModificationChange(change) && change.data.after === true
 )
 
-const isChangeToNotHidden = (change: DetailedChange): boolean => (
-  change.id.name === CORE_ANNOTATIONS.HIDDEN
+const isChangeToNotHidden = (change: DetailedChange, hiddenValue: boolean): boolean => (
+  change.id.name === (hiddenValue ? CORE_ANNOTATIONS.HIDDEN_VALUE : CORE_ANNOTATIONS.HIDDEN)
   && isRemovalOrModificationChange(change) && change.data.before === true
 )
-
-const isHiddenChangeOnElement = (change: DetailedChange): boolean => (
+const isHiddenChangeOnElement = (change: DetailedChange, hiddenValue: boolean): boolean => (
   change.id.idType === 'attr'
   && change.id.nestingLevel === 1
-  && (isChangeToHidden(change) || isChangeToNotHidden(change))
+  && (isChangeToHidden(change, hiddenValue) || isChangeToNotHidden(change, hiddenValue))
 )
 
-const isHiddenChangeOnField = (change: DetailedChange): boolean => (
+const isHiddenChangeOnField = (change: DetailedChange, hiddenValue: boolean): boolean => (
   change.id.idType === 'field'
   && change.id.nestingLevel === 2
-  && (isChangeToHidden(change) || isChangeToNotHidden(change))
+  && (isChangeToHidden(change, hiddenValue) || isChangeToNotHidden(change, hiddenValue))
 )
 
 /**
@@ -160,7 +159,7 @@ const getHiddenTypeChanges = async (
 ): Promise<DetailedChange[]> => (
   (await Promise.all(
     changes
-      .filter(isHiddenChangeOnElement)
+      .filter(c => isHiddenChangeOnElement(c, false))
       .map(async change => {
         const elemId = change.id.createTopLevelParentID().parent
         const elem = await state.get(elemId)
@@ -168,11 +167,11 @@ const getHiddenTypeChanges = async (
           // Should never happen
           log.warn(
             'Element %s was changed to hidden %s but was not found in state',
-            elemId.getFullName(), isChangeToHidden(change),
+            elemId.getFullName(), isChangeToHidden(change, false),
           )
           return change
         }
-        return isChangeToHidden(change)
+        return isChangeToHidden(change, false)
           ? createRemoveChange(elem, elemId)
           : createAddChange(elem, elemId)
       })
@@ -180,21 +179,33 @@ const getHiddenTypeChanges = async (
 )
 
 /**
- * When a field changes from/to hidden, we need to create changes that add/remove the values
- * of that field in all relevant instances / annotation values
+ * When a field or annotation changes from/to hidden, we need to create changes that add/remove
+ * the values of that field in all relevant instances / annotation values
  */
-const getHiddenFieldValueChanges = async (
+const getHiddenFieldAndAnnotationValueChanges = async (
   changes: DetailedChange[],
   state: State,
   getWorkspaceElements: () => Promise<Element[]>,
 ): Promise<DetailedChange[]> => {
-  const hiddenFieldChanges = changes.filter(isHiddenChangeOnField)
+  // TODO checking both _hidden and _hidden_value for backward compatibility in calls to
+  // isHiddenChangeOnField and isChangeToHidden - should change to
+  //  1. only hide values when _hidden_value=true
+  //  2. hide fields marked with _hidden=true
+  // once all existing usages of _hidden for hiding values are eliminated
+  // (all current scenarios of 2 are intended only to hide the value).
+  const hiddenFieldChanges = changes.filter(c =>
+    isHiddenChangeOnField(c, true) || isHiddenChangeOnField(c, false)
+    || isHiddenChangeOnElement(c, true))
   if (hiddenFieldChanges.length === 0) {
     // This should be the common case where there are no changes to the hidden annotation
     return []
   }
 
-  const [hideFieldChanges, unHideFieldChanges] = _.partition(hiddenFieldChanges, isChangeToHidden)
+  const [hideFieldChanges, unHideFieldChanges] = _.partition(
+    hiddenFieldChanges,
+    // TODO should only check _hidden_value (true)
+    c => isChangeToHidden(c, true) || isChangeToHidden(c, false),
+  )
   const hideFieldIds = new Set(
     hideFieldChanges.map(change => change.id.createParentID().getFullName())
   )
@@ -219,7 +230,7 @@ const getHiddenFieldValueChanges = async (
     return value
   }
 
-  // In order to support making a field visible we must traverse all state elements
+  // In order to support making a field/annotation visible we must traverse all state elements
   // to find all the hidden values we need to add.
   // Theoretically in order to hide values we would need to iterate the workspace elements
   // but since we assume a redundant remove change is handled gracefully, we optimize this
@@ -276,7 +287,7 @@ const mergeWithHiddenChangeSideEffects = async (
 ): Promise<DetailedChange[]> => {
   const additionalChanges = [
     ...await getHiddenTypeChanges(changes, state),
-    ...await getHiddenFieldValueChanges(changes, state, getWorkspaceElements),
+    ...await getHiddenFieldAndAnnotationValueChanges(changes, state, getWorkspaceElements),
   ]
   // Additional changes may override / be overridden by original changes, so if we add new changes
   // we have to make sure we remove duplicates
@@ -316,26 +327,55 @@ const filterOutHiddenChanges = async (
       return undefined
     }
 
-    if (isInstanceElement(baseElem) || (isObjectType(baseElem) && change.id.idType === 'attr')) {
-      // Instance values and annotation values can be hidden
-      const [changeType, valuePath] = isInstanceElement(baseElem)
-        ? [baseElem.type, path]
-        : [baseElem.annotationTypes[path[0]], path.slice(1)]
+    if (isElement(change.data.after)) {
+      // Remove nested hidden parts of instances, object types and fields
+      return applyFunctionToChangeData(change, removeHiddenFromElement)
+    }
 
+    if (isInstanceElement(baseElem)
+      || (isObjectType(baseElem) && ['field', 'attr'].includes(change.id.idType))) {
+      // Instance values and annotation values in fields and objects can be hidden
+      const getChangeTypeAndPath = (): {
+        changeType: TypeElement
+        changePath: ReadonlyArray<string>
+      } => {
+        if (isInstanceElement(baseElem)) {
+          return {
+            changeType: baseElem.type,
+            changePath: path,
+          }
+        }
+        if (change.id.idType === 'attr') {
+          return {
+            changeType: baseElem.annotationTypes[path[0]],
+            changePath: path.slice(1),
+          }
+        }
+        // idType === 'field'
+        return {
+          // changeType will be undefined if the path is too short
+          changeType: baseElem.fields[path[0]].type.annotationTypes[path[1]],
+          changePath: path.slice(2),
+        }
+      }
+
+      const { changeType, changePath } = getChangeTypeAndPath()
       if (changeType === undefined) {
         // a value without a type cannot be hidden
         return change
       }
 
-      if (isHiddenField(changeType, valuePath)) {
+      if (isHiddenValue(changeType)) {
+        // The change is in a hidden annotation, omit it
+        return undefined
+      }
+
+      if (isHiddenField(changeType, changePath)) {
         // The change is inside a hidden field value, omit the change
         return undefined
       }
-      // The change subject is not hidden, but it might contain hidden parts
-      if (isInstanceElement(change.data.after)) {
-        return applyFunctionToChangeData(change, removeHiddenFromElement)
-      }
-      const fieldType = changeType && getField(changeType, valuePath)?.type
+
+      const fieldType = changeType && getField(changeType, changePath)?.type
       if (isObjectType(fieldType)) {
         return applyFunctionToChangeData(
           change,

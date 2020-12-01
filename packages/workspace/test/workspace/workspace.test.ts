@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
 import {
-  METADATA_TYPE,
+  METADATA_TYPE, INTERNAL_ID_ANNOTATION,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
@@ -355,6 +355,19 @@ describe('workspace', () => {
       path: ['salesforce', 'Types', 'Subtypes', 'QueueSobject'],
     })
 
+    const objFieldWithHiddenAnnotationType = new ObjectType({
+      elemID: new ElemID('salesforce', 'SomeObj'),
+      fields: { aaa: { type: BuiltinTypes.NUMBER } },
+      annotations: {
+        hiddenStrAnno: 'some value',
+      },
+      annotationTypes: {
+        hiddenStrAnno: BuiltinTypes.HIDDEN_STRING,
+        visibleStrAnno: BuiltinTypes.STRING,
+      },
+      path: ['salesforce', 'Types', 'Subtypes', 'SomeObj'],
+    })
+
     queueSobjectHiddenSubType.fields.str = new Field(
       queueSobjectHiddenSubType,
       'str',
@@ -366,6 +379,10 @@ describe('workspace', () => {
       elemID: new ElemID('salesforce', 'AccountInsightsSettings'),
       annotations: {
         [METADATA_TYPE]: 'AccountInsightsSettings',
+        [INTERNAL_ID_ANNOTATION]: 'aaa',
+      },
+      annotationTypes: {
+        [INTERNAL_ID_ANNOTATION]: BuiltinTypes.HIDDEN_STRING,
       },
       path: ['salesforce', 'Types', 'AccountInsightsSettings'],
     })
@@ -385,9 +402,9 @@ describe('workspace', () => {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         ),
-        queueSobjectNotHidden: new Field(
+        queueSobjectWithHiddenType: new Field(
           queueSobjectHiddenSubType,
-          'queueSobjectNotHidden',
+          'queueSobjectWithHiddenType',
           queueSobjectHiddenSubType,
           {},
         ),
@@ -404,6 +421,14 @@ describe('workspace', () => {
           'boolNotHidden',
           BuiltinTypes.BOOLEAN,
         ),
+        objWithHiddenAnno: new Field(
+          queueSobjectHiddenSubType,
+          'objWithHiddenAnno',
+          objFieldWithHiddenAnnotationType,
+          {
+            hiddenStrAnno: 'bbb',
+          }
+        ),
       },
       path: ['salesforce', 'Types', 'Queue'],
       isSettings: false,
@@ -416,11 +441,12 @@ describe('workspace', () => {
         queueSobjectHidden: {
           str: 'text',
         },
-        queueSobjectNotHidden: {
+        queueSobjectWithHiddenType: {
           str: 'text2',
         },
         numHidden: 123,
         boolNotHidden: false,
+        objWithHiddenAnno: { aaa: 23 },
       },
       ['Records', 'Queue', 'queueInstance'],
     )
@@ -455,6 +481,25 @@ describe('workspace', () => {
         id: newElemID,
         action: 'add',
         data: { after: newElem },
+      },
+      { // add field
+        id: new ElemID('salesforce', 'lead', 'field', 'new_field'),
+        action: 'add',
+        data: { after: new Field(
+          fieldsParent,
+          'new_field',
+          BuiltinTypes.NUMBER,
+        ) },
+      },
+      { // add hidden field
+        id: new ElemID('salesforce', 'ObjWithNestedHidden', 'field', 'new_field'),
+        action: 'add',
+        data: { after: new Field(
+          new ObjectType({ elemID: new ElemID('salesforce', 'ObjWithNestedHidden') }),
+          'new_field',
+          BuiltinTypes.NUMBER,
+          { [CORE_ANNOTATIONS.HIDDEN]: true },
+        ) },
       },
       { // add complex value (nested in parent scope)
         id: new ElemID('salesforce', 'lead', 'field', 'base_field', 'complex'),
@@ -546,6 +591,12 @@ describe('workspace', () => {
         action: 'add',
         data: { after: BuiltinTypes.NUMBER },
       },
+      { // new hidden annotation type
+        path: ['file'],
+        id: new ElemID('salesforce', 'lead', 'annotation', 'newHiddenAnno'),
+        action: 'add',
+        data: { after: BuiltinTypes.HIDDEN_STRING },
+      },
       { // new annotation type to a type with annotation types block
         path: ['file'],
         id: new ElemID('salesforce', 'WithAnnotationsBlock', 'annotation', 'secondAnnotation'),
@@ -561,6 +612,16 @@ describe('workspace', () => {
         id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'annotation', 'newAnnoType2'),
         action: 'add',
         data: { after: BuiltinTypes.NUMBER },
+      },
+      { // new annotation value with new hidden annotation type
+        id: new ElemID('salesforce', 'lead', 'attr', 'newHiddenAnno'),
+        action: 'add',
+        data: { after: 'foo' },
+      },
+      { // new annotation value to existing non-hidden annotation type
+        id: new ElemID('salesforce', 'lead', 'attr', 'visibleAnno'),
+        action: 'add',
+        data: { after: 'foo' },
       },
       { // new Hidden type (should be removed)
         id: new ElemID('salesforce', 'Queue'),
@@ -595,6 +656,11 @@ describe('workspace', () => {
         action: 'add',
         data: { after: true },
       },
+      { // change in a hidden annotation
+        id: new ElemID('salesforce', 'ObjWithHidden', 'attr', 'internalId'),
+        action: 'add',
+        data: { after: 'internal ID' },
+      },
       { // new instance
         id: new ElemID('salesforce', 'Queue', 'instance', 'queueInstance'),
         action: 'add',
@@ -614,6 +680,16 @@ describe('workspace', () => {
         action: 'modify',
         data: { before: true, after: false },
       },
+      { // Hidden value field change to visible
+        id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'hide_val', CORE_ANNOTATIONS.HIDDEN_VALUE),
+        action: 'modify',
+        data: { before: true, after: false },
+      },
+      { // Hidden value annotation change to visible
+        id: new ElemID('salesforce', 'HiddenToVisibleVal', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
+        action: 'modify',
+        data: { before: true, after: false },
+      },
       { // Visible field change to hidden
         id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'visible', CORE_ANNOTATIONS.HIDDEN),
         action: 'add',
@@ -623,6 +699,16 @@ describe('workspace', () => {
         id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'hide'),
         action: 'add',
         data: { after: 'changed' },
+      },
+      { // Change to field value as it becomes visible
+        id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'hide_val'),
+        action: 'add',
+        data: { after: 'changed2' },
+      },
+      { // Change to nested field value as it becomes visible
+        id: new ElemID('salesforce', 'ObjWithDoublyNestedHidden', 'instance', 'instWithDoublyNestedHidden', 'doubleNest', 'nested', 'hide'),
+        action: 'add',
+        data: { after: 'changed d' },
       },
       { // Change to field value as it becomes hidden
         id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'visible'),
@@ -634,10 +720,41 @@ describe('workspace', () => {
         action: 'add',
         data: { after: { visible: 1, hide: 'a', other: 2 } },
       },
+      { // Change where only part of the value is visible
+        id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'new_field'),
+        action: 'add',
+        data: { after: 424 },
+      },
       { // Change inside a hidden complex field
         id: new ElemID('salesforce', 'ObjWithComplexHidden', 'instance', 'instWithComplexHidden', 'nested', 'other'),
         action: 'modify',
         data: { before: 3, after: 4 },
+      },
+      { // Change inside a complex field (visible)
+        id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'nested_visible', 'visible'),
+        action: 'modify',
+        data: { before: 111, after: 43 },
+      },
+      { // Change inside a complex field (hidden)
+        id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'nested_visible', 'hide'),
+        action: 'add',
+        data: { after: 'abc' },
+      },
+      { // Change inside an annotation with hidden value
+        id: new ElemID('salesforce', 'NestedHiddenVal', 'attr', 'hidden_val_anno'),
+        action: 'add',
+        data: { after: {
+          something: 's',
+          somethingElse: 34,
+        } },
+      },
+      { // Change inside an annotation that became visible
+        id: new ElemID('salesforce', 'NestedHiddenVal', 'attr', 'hidden_to_visible_anno'),
+        action: 'add',
+        data: { after: {
+          something: 't',
+          somethingElse: 35,
+        } },
       },
       { // Add and remove a top level element in the same file
         id: renamedTypes.before.elemID,
@@ -665,9 +782,11 @@ describe('workspace', () => {
     let instWithHidden: InstanceElement
     let instWithComplexHidden: InstanceElement
     let instWithNestedHidden: InstanceElement
+    let instWithDoublyNestedHidden: InstanceElement
 
     let lead: ObjectType
     let elemMap: Record<string, Element>
+    let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
     const dirStore = mockDirStore()
 
@@ -692,14 +811,15 @@ describe('workspace', () => {
           applyDetailedChanges(elem, elemChanges)
         }
       })
-      state.override(
-        [...stateElements, accountInsightsSettingsType, queueHiddenType]
-      )
+      state.override([
+        ...stateElements, accountInsightsSettingsType, queueHiddenType,
+      ])
 
       clonedChanges = _.cloneDeep(changes)
       await workspace.updateNaclFiles(clonedChanges)
 
       elemMap = getElemMap(await workspace.elements(false))
+      elemMapWithHidden = getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
 
       // New types (first time returned from service)
@@ -721,6 +841,9 @@ describe('workspace', () => {
       instWithNestedHidden = elemMap[
         'salesforce.ObjWithNestedHidden.instance.instWithNestedHidden'
       ] as InstanceElement
+      instWithDoublyNestedHidden = elemMap[
+        'salesforce.ObjWithDoublyNestedHidden.instance.instWithDoublyNestedHidden'
+      ] as InstanceElement
     })
 
     it('should not cause parse errors', async () => {
@@ -730,6 +853,7 @@ describe('workspace', () => {
     it('should modify existing element', () => {
       expect(lead).toBeDefined()
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
+      expect(lead.fields.new_field).toBeDefined()
     })
 
     it('should not modify the changes object', () => {
@@ -758,6 +882,32 @@ describe('workspace', () => {
       expect(lead.annotationTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
       expect(lead.annotationTypes).toHaveProperty('newAnnoType2')
       expect(lead.annotationTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
+      expect(lead.annotationTypes).toHaveProperty('newHiddenAnno')
+      expect(lead.annotationTypes.newHiddenAnno).toEqual(BuiltinTypes.HIDDEN_STRING)
+    })
+    it('should add visible values', () => {
+      expect(lead.annotations).toHaveProperty('visibleAnno')
+      expect(instWithNestedHidden.value.nested_visible.visible).toEqual(43)
+      const nestedHiddenVal = elemMap['salesforce.NestedHiddenVal'] as ObjectType
+      expect(nestedHiddenVal.annotations.hidden_to_visible_anno.something).toEqual('t')
+    })
+    it('should not add hidden annotation value on new annotation type', () => {
+      expect(lead.annotations).not.toHaveProperty('newHiddenAnno')
+    })
+    it('should not add hidden annotation value on existing annotation type', () => {
+      const objWithHidden = elemMap['salesforce.ObjWithHidden'] as ObjectType
+      expect(objWithHidden.annotations).not.toHaveProperty('internalId')
+      const nestedHiddenVal = elemMap['salesforce.NestedHiddenVal'] as ObjectType
+      expect(nestedHiddenVal.annotationTypes).toHaveProperty('hidden_val_anno')
+      expect(nestedHiddenVal.annotations).not.toHaveProperty('hidden_val_anno')
+    })
+    it('should include hidden annotation value when fetching with hidden', () => {
+      const leadWithHidden = elemMapWithHidden['salesforce.lead'] as ObjectType
+      expect(leadWithHidden.annotations).toHaveProperty('newHiddenAnno')
+      const objWithHidden = elemMapWithHidden['salesforce.ObjWithHidden'] as ObjectType
+      expect(objWithHidden.annotations).toHaveProperty('internalId')
+      const nestedHiddenVal = elemMapWithHidden['salesforce.NestedHiddenVal'] as ObjectType
+      expect(nestedHiddenVal.annotations).toHaveProperty('hidden_val_anno')
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
@@ -808,13 +958,19 @@ describe('workspace', () => {
       expect(newNotHiddenType).toBeDefined()
     })
 
-    it('should add the type that change from hidden to not hidden ', () => {
+    it('should add the type that change from hidden to not hidden, excluding hidden annotations', () => {
       expect(typeBecameNotHidden).toBeDefined()
-      expect(typeBecameNotHidden).toEqual(accountInsightsSettingsType)
+      expect(typeBecameNotHidden).toEqual(_.omit(
+        accountInsightsSettingsType, 'annotations.internalId',
+      ))
     })
 
     it('should remove the type that became to be hidden', () => {
       expect(typeBecameHidden).toBeUndefined()
+    })
+
+    it('should keep the hidden annotation hidden', () => {
+      expect(typeBecameNotHidden.annotations[INTERNAL_ID_ANNOTATION]).toBeUndefined()
     })
 
     it('should add new instance without hidden fields values', () => {
@@ -826,8 +982,9 @@ describe('workspace', () => {
       expect(newInstance.value.numHidden).toBeUndefined()
 
       // Not hidden fields values should be defined
-      expect(newInstance.value.queueSobjectNotHidden).toBeDefined()
+      expect(newInstance.value.queueSobjectWithHiddenType).toBeDefined()
       expect(newInstance.value.boolNotHidden).toEqual(false)
+      expect(newInstance.value.objWithHiddenAnno).toEqual({ aaa: 23 })
     })
 
     it('should add different cased elements to the same file', () => {
@@ -839,16 +996,22 @@ describe('workspace', () => {
 
     it('should not add changes in hidden values', () => {
       expect(instWithComplexHidden.value).not.toHaveProperty('nested')
+      expect(instWithNestedHidden.value.nested_visible).not.toHaveProperty('hide')
+      expect(instWithNestedHidden.value).not.toHaveProperty('new_field')
     })
 
     it('should remove values of fields that became hidden', () => {
       expect(instWithHidden.value).not.toHaveProperty('visible')
       expect(instWithNestedHidden.value.nested).not.toHaveProperty('visible')
+      expect(instWithDoublyNestedHidden.value.singleNest).not.toHaveProperty('visible')
+      expect(instWithDoublyNestedHidden.value.doubleNest.nested).not.toHaveProperty('visible')
     })
 
     it('should add values that became visible', () => {
       expect(instWithHidden.value.hide).toEqual('changed')
+      expect(instWithHidden.value.hide_val).toEqual('changed2')
       expect(instWithNestedHidden.value.nested.hide).toEqual('a')
+      expect(instWithDoublyNestedHidden.value.doubleNest.nested.hide).toEqual('changed d')
     })
 
     it('should update file correctly when elements are removed and added in the same file', () => {

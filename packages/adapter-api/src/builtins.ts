@@ -18,7 +18,7 @@ import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType }
 
 export const GLOBAL_ADAPTER = ''
 
-export const BuiltinTypes = {
+const StandardBuiltinTypes = {
   STRING: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'string'),
     primitive: PrimitiveTypes.STRING,
@@ -50,23 +50,24 @@ export const CORE_ANNOTATIONS = {
   REQUIRED: '_required',
   RESTRICTION: '_restriction',
   HIDDEN: '_hidden',
+  HIDDEN_VALUE: '_hidden_value',
 }
 
 export const InstanceAnnotationTypes: TypeMap = {
-  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(BuiltinTypes.STRING),
-  [INSTANCE_ANNOTATIONS.PARENT]: new ListType(BuiltinTypes.STRING),
-  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(BuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.PARENT]: new ListType(StandardBuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(StandardBuiltinTypes.STRING),
 }
 
 const restrictionType = new ObjectType({
   elemID: new ElemID('', 'restriction'),
   fields: {
     // eslint-disable-next-line @typescript-eslint/camelcase
-    enforce_value: { type: BuiltinTypes.BOOLEAN },
-    values: { type: BuiltinTypes.STRING },
-    min: { type: BuiltinTypes.NUMBER },
-    max: { type: BuiltinTypes.NUMBER },
-    regex: { type: BuiltinTypes.STRING },
+    enforce_value: { type: StandardBuiltinTypes.BOOLEAN },
+    values: { type: StandardBuiltinTypes.STRING },
+    min: { type: StandardBuiltinTypes.NUMBER },
+    max: { type: StandardBuiltinTypes.NUMBER },
+    regex: { type: StandardBuiltinTypes.STRING },
   },
 })
 
@@ -79,10 +80,23 @@ type RestrictionAnnotationType = Partial<{
 }>
 
 export const CoreAnnotationTypes: TypeMap = {
-  [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
-  [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.DEFAULT]: StandardBuiltinTypes.STRING,
+  [CORE_ANNOTATIONS.REQUIRED]: StandardBuiltinTypes.BOOLEAN,
   [CORE_ANNOTATIONS.RESTRICTION]: restrictionType,
-  [CORE_ANNOTATIONS.HIDDEN]: BuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.HIDDEN_VALUE]: StandardBuiltinTypes.BOOLEAN,
+}
+
+export const BuiltinTypes = {
+  ...StandardBuiltinTypes,
+  HIDDEN_STRING: new PrimitiveType({
+    elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_string'),
+    primitive: PrimitiveTypes.STRING,
+    annotationTypes: CoreAnnotationTypes,
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    },
+  }),
 }
 
 export const getRestriction = (

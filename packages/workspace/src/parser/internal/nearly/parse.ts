@@ -17,9 +17,10 @@ import * as nearley from 'nearley'
 import _ from 'lodash'
 
 import { logger } from '@salto-io/logging'
-import { Element, SaltoError, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { Element, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import wu from 'wu'
 import { flattenElementStr } from '@salto-io/adapter-utils'
+import { ParseResult } from '../../types'
 import { HclParseError, SourcePos, SourceRange } from '../types'
 import { WILDCARD } from './lexer'
 import { SourceMap } from '../../source_map'
@@ -35,13 +36,6 @@ const MAX_FILE_ERRORS = 20
 // This value was set for the longest minimal length of an empty non-literal
 // in the grammer.
 const MAX_ALLOWED_DYNAMIC_TOKEN = 3
-
-export type ParseError = HclParseError & SaltoError
-export type ParseResult = {
-  elements: Element[]
-  errors: ParseError[]
-  sourceMap: SourceMap
-}
 
 const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
   const symbol = state.rule.symbols[state.dot]

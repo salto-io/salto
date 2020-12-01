@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SaltoError } from '@salto-io/adapter-api'
-import { HclParseError, SourceRange } from '../types'
+import { ParseError } from '../../types'
+import { SourceRange } from '../types'
 
-export type ParseError = HclParseError & SaltoError
 
 const createError = (range: SourceRange, summary: string, message?: string): ParseError => ({
   summary,

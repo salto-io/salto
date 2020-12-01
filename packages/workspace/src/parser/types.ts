@@ -13,7 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { parse, SourceRange, parseElemID } from './parse'
-export { ParseResult, ParseError } from './types'
-export { dumpElements, dumpElemID, dumpValues } from './dump'
-export { SourceMap } from './source_map'
+
+import { SaltoError, Element } from '@salto-io/adapter-api'
+import { HclParseError } from './internal/types'
+import { SourceMap } from './source_map'
+
+
+export type ParseError = HclParseError & SaltoError
+
+export type ParseResult = {
+  elements: Element[]
+  errors: ParseError[]
+  sourceMap?: SourceMap
+}

@@ -15,12 +15,13 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { flattenElementStr } from '@salto-io/adapter-utils'
+import { ParseResult } from '../../types'
 import { Keywords } from '../../language'
 import { Functions } from '../../functions'
 import Lexer, { TOKEN_TYPES, NoSuchElementError } from './lexer'
 import { SourceMap } from '../../source_map'
 import { unexpectedEndOfFile } from './errors'
-import { ParseContext, ParseResult } from './types'
+import { ParseContext } from './types'
 import { replaceValuePromises, positionAtStart } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
 

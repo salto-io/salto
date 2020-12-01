@@ -27,7 +27,6 @@ export class EditorWorkspace {
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
-  private wsElements?: Promise<readonly Element[]>
   private wsErrors?: Promise<Readonly<errors.Errors>>
 
   constructor(public baseDir: string, workspace: Workspace) {
@@ -35,10 +34,7 @@ export class EditorWorkspace {
   }
 
   get elements(): Promise<readonly Element[]> {
-    if (_.isUndefined(this.wsElements)) {
-      this.wsElements = this.workspace.elements()
-    }
-    return this.wsElements
+    return this.workspace.elements(false)
   }
 
   errors(): Promise<errors.Errors> {
@@ -103,7 +99,6 @@ export class EditorWorkspace {
       const opNaclFiles = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
-      this.wsElements = undefined
       this.wsErrors = undefined
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {

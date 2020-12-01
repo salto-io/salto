@@ -296,17 +296,12 @@ const mergeWithHiddenChangeSideEffects = async (
     : removeDuplicateChanges(changes, additionalChanges)
 }
 
-const isHiddenField = (
-  baseType: TypeElement,
-  fieldPath: ReadonlyArray<string>,
-  hiddenValue: boolean,
-): boolean => {
-  const hiddenFunc = hiddenValue ? isHiddenValue : isHidden
-  return fieldPath.length === 0
+const isHiddenField = (baseType: TypeElement, fieldPath: ReadonlyArray<string>): boolean => (
+  fieldPath.length === 0
     ? false
-    : hiddenFunc(getField(baseType, fieldPath))
-      || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue)
-}
+    : isHidden(getField(baseType, fieldPath))
+      || isHiddenField(baseType, fieldPath.slice(0, -1))
+)
 
 const filterOutHiddenChanges = async (
   changes: DetailedChange[],
@@ -375,7 +370,7 @@ const filterOutHiddenChanges = async (
         return undefined
       }
 
-      if (isHiddenField(changeType, changePath, isInstanceElement(baseElem))) {
+      if (isHiddenField(changeType, changePath)) {
         // The change is inside a hidden field value, omit the change
         return undefined
       }

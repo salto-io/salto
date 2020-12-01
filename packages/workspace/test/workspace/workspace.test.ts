@@ -498,7 +498,7 @@ describe('workspace', () => {
           new ObjectType({ elemID: new ElemID('salesforce', 'ObjWithNestedHidden') }),
           'new_field',
           BuiltinTypes.NUMBER,
-          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          { [CORE_ANNOTATIONS.HIDDEN]: true },
         ) },
       },
       { // add complex value (nested in parent scope)

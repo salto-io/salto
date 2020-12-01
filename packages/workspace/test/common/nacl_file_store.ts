@@ -85,7 +85,7 @@ type salesforce.VisibleObjWithHidden {
   number visible {
   }
   string hide {
-    ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
+    ${CORE_ANNOTATIONS.HIDDEN} = true
   }
 }
 

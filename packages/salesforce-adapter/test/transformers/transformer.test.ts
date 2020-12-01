@@ -36,10 +36,8 @@ import {
   CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
   SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_SETTINGS_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
-  WORKFLOW_ACTION_ALERT_METADATA_TYPE,
-  LAYOUT_TYPE_ID_METADATA_TYPE,
-  CPQ_PRODUCT_RULE,
-  CPQ_LOOKUP_PRODUCT_FIELD,
+  WORKFLOW_ACTION_ALERT_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, CPQ_PRODUCT_RULE,
+  CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomProperties, CustomPicklistValue,
   SalesforceRecord } from '../../src/client/types'
@@ -649,6 +647,12 @@ describe('transformer', () => {
       field.type = Types.compoundDataTypes.Location
       const customField = toCustomField(field)
       expect(customField.type).toEqual('Location')
+    })
+
+    it('should remove internalId', () => {
+      field.annotations[INTERNAL_ID_ANNOTATION] = 'internal id'
+      const customField = toCustomField(field)
+      expect(_.get(customField, INTERNAL_ID_ANNOTATION)).toBeUndefined()
     })
   })
 

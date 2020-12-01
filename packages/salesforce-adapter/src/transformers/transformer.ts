@@ -41,7 +41,7 @@ import {
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
-  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME,
+  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -371,6 +371,7 @@ export class Types {
     [FIELD_ANNOTATIONS.CREATABLE]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.UPDATEABLE]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.QUERYABLE]: BuiltinTypes.BOOLEAN,
+    [INTERNAL_ID_ANNOTATION]: BuiltinTypes.HIDDEN_STRING,
   }
 
   // Type mapping for custom objects
@@ -869,6 +870,7 @@ export const toCustomField = (field: Field): CustomField => {
     FIELD_ANNOTATIONS.CREATABLE,
     FIELD_ANNOTATIONS.UPDATEABLE,
     FIELD_ANNOTATIONS.QUERYABLE,
+    INTERNAL_ID_ANNOTATION,
   ]
 
   const annotationsToSkip = [
@@ -922,6 +924,7 @@ export const toCustomProperties = (
     API_NAME, // we use it as fullName
     METADATA_TYPE, // internal annotation
     LABEL, // we send it in CustomObject constructor to enable default for pluralLabels
+    INTERNAL_ID_ANNOTATION, // internal annotation
   ]
 
   const isAllowed = (annotationName: string): boolean => (

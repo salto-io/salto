@@ -43,7 +43,6 @@ import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
 import addMissingIdsFilter from './filters/add_missing_ids'
-import removeMemoryOnlyAnnotationsFilter from './filters/remove_memory_only_annotations'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter, { SETTINGS_METADATA_TYPE } from './filters/settings_type'
@@ -129,8 +128,6 @@ export const DEFAULT_FILTERS = [
   hideTypesFilter,
   customObjectsSplitFilter,
   profileInstanceSplitFilter,
-  // removeMemoryOnlyAnnotationsFilter should run at the end
-  removeMemoryOnlyAnnotationsFilter,
 ]
 
 export interface SalesforceAdapterParams {

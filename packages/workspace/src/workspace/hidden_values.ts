@@ -80,12 +80,8 @@ const splitElementHiddenParts = <T extends Element>(
     // because then we'd never reach A.B.C
     // We also do not omit A.B.C.D because A.B.C was hidden, so by association everything inside
     // it is also hidden
-    path !== undefined && (
-      hiddenPaths.some(hiddenPath =>
-        (path.isEqual(hiddenPath) || hiddenPath.isParentOf(path) || path.isParentOf(hiddenPath)))
-      // workaround to enable reaching annotation values
-      || path.isEqual(path.createTopLevelParentID().parent.createNestedID('attr'))
-    )
+    path !== undefined && (hiddenPaths.some(hiddenPath =>
+      path.isEqual(hiddenPath) || hiddenPath.isParentOf(path) || path.isParentOf(hiddenPath)))
   )
 
   const hidden = transformElement({

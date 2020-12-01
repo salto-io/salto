@@ -688,6 +688,9 @@ describe('Test utils.ts', () => {
               [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
             },
           },
+          f4: {
+            type: BuiltinTypes.STRING,
+          },
         },
         annotationTypes: { a2: BuiltinTypes.STRING },
         annotations: { a2: 1 },
@@ -763,6 +766,69 @@ describe('Test utils.ts', () => {
           value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
         })
         expect(transformFunc).toHaveBeenCalledWith({
+          value: new ReferenceExpression(primType.elemID),
+          field: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          path: objType.fields.f2.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON, '0'),
+        })
+      })
+      it('should not transform fields when runOnFields is not set', () => {
+        expect(transformFunc).not.toHaveBeenCalledWith({
+          value: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          field: undefined,
+          path: objType.fields.f4.elemID,
+        })
+      })
+    })
+    describe('with ObjectType and runOnFields', () => {
+      let result: ObjectType
+      beforeEach(() => {
+        result = transformElement({
+          element: objType, transformFunc, strict: false, runOnFields: true,
+        })
+      })
+      it('should return new object type', () => {
+        expect(isObjectType(result)).toBeTruthy()
+      })
+      it('should transform type annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 1,
+          field: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          path: objType.elemID.createNestedID('attr', 'a2'),
+        })
+      })
+      it('should transform field annotations', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+        })
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: new ReferenceExpression(primType.elemID),
+          field: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          path: objType.fields.f2.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON, '0'),
+        })
+      })
+      it('should transform fields', () => {
+        expect(transformFunc).toHaveBeenCalledWith({
+          value: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          field: undefined,
+          path: objType.fields.f4.elemID,
+        })
+      })
+      it('should not run on annotations if transformFunc returned undefined on the field', () => {
+        const otherFunc = mockFunction<TransformFunc>().mockImplementation(() => undefined)
+        transformElement({
+          element: objType, transformFunc: otherFunc, strict: false, runOnFields: true,
+        })
+        expect(otherFunc).toHaveBeenCalledWith({
+          value: expect.objectContaining({ type: BuiltinTypes.STRING }),
+          field: undefined,
+          path: objType.fields.f4.elemID,
+        })
+        expect(otherFunc).toHaveBeenCalledWith({
+          value: expect.objectContaining({ type: listType }),
+          field: undefined,
+          path: objType.fields.f2.elemID,
+        })
+        expect(otherFunc).not.toHaveBeenCalledWith({
           value: new ReferenceExpression(primType.elemID),
           field: expect.objectContaining({ type: BuiltinTypes.STRING }),
           path: objType.fields.f2.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON, '0'),
@@ -1849,6 +1915,10 @@ describe('Test utils.ts', () => {
     it('should find referenced ids', () => {
       const res = getAllReferencedIds(mockInstance)
       expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
+    })
+    it('should find referenced ids only in annotations', () => {
+      const res = getAllReferencedIds(mockInstance, true)
+      expect(res).toEqual(new Set(['mockAdapter.test']))
     })
   })
 

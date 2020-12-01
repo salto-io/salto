@@ -54,12 +54,6 @@ export class ElemID {
     return ElemID.fromFullName(nameParts.join(ElemID.NAMESPACE_SEPARATOR))
   }
 
-  static isTopLevelType(idType: string, nameParts?: readonly string[]): boolean {
-    return ElemID.TOP_LEVEL_ID_TYPES.includes(idType)
-    || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(idType)
-    && nameParts !== undefined && nameParts.length === 1)
-  }
-
   readonly adapter: string
   readonly typeName: string
   readonly idType: ElemIDType
@@ -142,7 +136,9 @@ export class ElemID {
   }
 
   isTopLevel(): boolean {
-    return ElemID.isTopLevelType(this.idType, this.nameParts)
+    return ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
+    || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType)
+    && this.nameParts !== undefined && this.nameParts.length === 1)
   }
 
   isEqual(other: ElemID): boolean {

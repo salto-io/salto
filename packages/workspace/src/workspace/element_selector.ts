@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
-import { TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 
 export type ElementSelector = {
   adapterSelector: RegExp
@@ -126,6 +126,9 @@ export const createElementSelectors = (selectors: string[]):
   return { validSelectors: orderedSelectors.map(createElementSelector), invalidSelectors }
 }
 
+const isTopLevelSelector = (selector: ElementSelector): boolean =>
+  ElemID.fromFullName(selector.origin).isTopLevel()
+
 const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
   if (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(selector.idTypeSelector)) {
     return {
@@ -137,8 +140,7 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
         ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR),
     }
   }
-  const idType = ElemID.isTopLevelType(selector.idTypeSelector,
-    selector.nameSelectors?.map(s => s.source)) ? selector.idTypeSelector
+  const idType = isTopLevelSelector(selector) ? selector.idTypeSelector
     : ElemID.getDefaultIdType(selector.adapterSelector.source)
   return {
     adapterSelector: selector.adapterSelector,
@@ -148,9 +150,6 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
       .typeNameSelector.source, idType].join(ElemID.NAMESPACE_SEPARATOR),
   }
 }
-
-const isTopLevelSelector = (selector: ElementSelector): boolean =>
-  ElemID.fromFullName(selector.origin).isTopLevel()
 
 const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
   createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
@@ -174,7 +173,7 @@ export const selectElementIdsByTraversal = (
   }
   const [topLevelSelectors, subElementSelectors] = _.partition(wildcardSelectors,
     isTopLevelSelector)
-  if (!(topLevelSelectors.length === 0)) {
+  if (topLevelSelectors.length !== 0) {
     const { elements: topLevelElements } = selectElementsBySelectors(elements,
       topLevelSelectors, false)
     topLevelElements.forEach(element => ids.add(element.elemID.getFullName()))
@@ -190,14 +189,13 @@ export const selectElementIdsByTraversal = (
   if (stillRelevantElements.length === 0) {
     return [...ids].map(id => ElemID.fromFullName(id))
   }
-  const selectFromSubElements = (args: TransformFuncArgs): Value | undefined => {
-    if (args.path === undefined) {
+  const selectFromSubElements: TransformFunc = ({ path, value }) => {
+    if (path === undefined) {
       return undefined
     }
-    const testId = args.path
-    const { elements: found } = selectElementsBySelectors([testId], subElementSelectors, false)
-    if (!(found.length === 0)) {
-      ids.add(found[0].getFullName())
+    const testId = path
+    if (subElementSelectors.some(selector => match(testId, selector))) {
+      ids.add(testId.getFullName())
       if (compact) {
         return undefined
       }
@@ -213,7 +211,7 @@ export const selectElementIdsByTraversal = (
       return undefined
     }
     if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
-      return args.value
+      return value
     }
     return undefined
   }

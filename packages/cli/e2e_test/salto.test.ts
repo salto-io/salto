@@ -324,26 +324,6 @@ describe('cli e2e', () => {
     })
   })
 
-  describe('fetch with enableHideTypesInNacls true value', () => {
-    beforeAll(async () => {
-      await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
-
-      await runFetch(fetchOutputDir)
-    })
-
-
-    it('should hide Types folder', async () => {
-      expect(await exists(`${fetchOutputDir}/salesforce/Types`))
-        .toBe(false)
-    })
-
-    afterAll(async () => {
-      await runEmptyPreview(lastPlan, fetchOutputDir)
-      await rm(`${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
-      await runEmptyPreview(lastPlan, fetchOutputDir)
-    })
-  })
-
   describe('deploy after deleting the object and the instance', () => {
     beforeAll(async () => {
       await rm(fullPath(tmpNaclFileRelativePath))

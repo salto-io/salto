@@ -34,3 +34,4 @@ export {
 } from './src/telemetry'
 export { localDirectoryStore } from './src/local-workspace/dir_store'
 export { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, ADAPTERS_CONFIG_NAME, ENVS_CONFIG_NAME, workspaceConfigTypes, EnvsConfig } from './src/local-workspace/workspace_config_types'
+export { createRemoteMap } from './src/core/db/remote_map'

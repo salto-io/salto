@@ -69,6 +69,7 @@ describe('Nacl Files Source', () => {
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
       getTotalSize: () => Promise.resolve(0),
       clone: () => mockDirStore,
+      getFullPath: filename => filename,
     }
     mockedStaticFilesSource = mockStaticFilesSource()
     mockParse.mockResolvedValue({ elements: [], errors: [] })

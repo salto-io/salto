@@ -57,6 +57,7 @@ describe('Static Files', () => {
         getTotalSize: () => Promise.resolve(0),
         clone: () => mockDirStore,
         getSync: jest.fn(),
+        getFullPath: filename => filename,
       }
       staticFilesSource = buildStaticFilesSource(
         mockDirStore,

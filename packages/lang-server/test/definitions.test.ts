@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
+import each from 'jest-each'
 import { EditorWorkspace } from '../src/workspace'
 import { provideWorkspaceDefinition } from '../src/definitions'
 import { getPositionContext } from '../src/context'
@@ -71,5 +72,18 @@ describe('Test go to definitions', () => {
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)
     expect(defs[0].range.start.line).toBe(203)
+  })
+
+  describe('static files', () => {
+    each([
+      ['', { line: 240, col: 27 }, 'path/to/content'],
+      [' nested', { line: 242, col: 31 }, 'path/to/deep_content'],
+    ]).it('should give a%s static file its definition', async (_text, pos, filepath) => {
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const token = `"${filepath}"`
+      const defs = await provideWorkspaceDefinition(workspace, ctx, token)
+      expect(defs.length).toBe(1)
+      expect(defs[0].filename).toBe(`full-${filepath}`)
+    })
   })
 })

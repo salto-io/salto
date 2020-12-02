@@ -15,27 +15,34 @@
 */
 import { isInstanceElement, getField } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
-import { getLocations, SaltoElemLocation } from './location'
+import { getLocations, SaltoElemLocation, getStaticLocations } from './location'
 
 export const provideWorkspaceDefinition = async (
   workspace: EditorWorkspace,
   context: PositionContext,
   token: string
 ): Promise<SaltoElemLocation[]> => {
-  if (context.ref && isInstanceElement(context.ref.element)) {
-    const refPath = context.ref.path
-    if (!_.isEmpty(refPath) && _.last(refPath) === token) {
-      const field = getField(context.ref.element.type, refPath)
-      return field ? getLocations(workspace, field.elemID.getFullName()) : []
+  if (context.ref) {
+    const staticFileLocation = getStaticLocations(context.ref.element, context.ref.path, token)
+    if (values.isDefined<SaltoElemLocation>(staticFileLocation)) {
+      return [staticFileLocation]
     }
-  }
-  if (context.ref && context.type === 'type') {
-    return getLocations(
-      workspace,
-      context.ref?.element.elemID.createNestedID('annotation', token).getFullName()
-    )
+    if (isInstanceElement(context.ref.element)) {
+      const refPath = context.ref.path
+      if (!_.isEmpty(refPath) && _.last(refPath) === token) {
+        const field = getField(context.ref.element.type, refPath)
+        return field ? getLocations(workspace, field.elemID.getFullName()) : []
+      }
+    }
+    if (context.type === 'type') {
+      return getLocations(
+        workspace,
+        context.ref?.element.elemID.createNestedID('annotation', token).getFullName()
+      )
+    }
   }
   // We are not in instance field, so we can just look the current token
   try {

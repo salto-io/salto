@@ -264,6 +264,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       _.cloneDeep(updated),
       _.cloneDeep(deleted)
     ),
+    getFullPath: filename =>
+      getAbsFileName(filename),
   }
 }
 

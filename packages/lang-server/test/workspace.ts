@@ -17,8 +17,9 @@ import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors,
-  merger, configSource as cs } from '@salto-io/workspace'
+  merger, configSource as cs, nacl, staticFiles, dirStore } from '@salto-io/workspace'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
+
 
 const { parse } = parser
 const { mergeElements } = merger
@@ -55,7 +56,36 @@ const buildMockWorkspace = async (
   const filename = naclFile ? path.relative(baseDir, naclFile) : 'default.nacl'
   let parseResult: Required<parser.ParseResult>
   if (buffer) {
-    parseResult = await parse(Buffer.from(buffer), filename, {})
+    const mockDirStore: dirStore.SyncDirectoryStore<Buffer> = {
+      list: mockFunction<dirStore.SyncDirectoryStore<Buffer>['list']>(),
+      get: mockFunction<dirStore.SyncDirectoryStore<Buffer>['get']>().mockImplementation(async filepath => ({ filename: filepath, buffer: Buffer.from(filepath) })),
+      set: mockFunction<dirStore.SyncDirectoryStore<Buffer>['set']>(),
+      delete: mockFunction<dirStore.SyncDirectoryStore<Buffer>['delete']>(),
+      clear: mockFunction<dirStore.SyncDirectoryStore<Buffer>['clear']>(),
+      rename: mockFunction<dirStore.SyncDirectoryStore<Buffer>['rename']>(),
+      renameFile: mockFunction<dirStore.SyncDirectoryStore<Buffer>['renameFile']>(),
+      flush: mockFunction<dirStore.SyncDirectoryStore<Buffer>['flush']>(),
+      mtimestamp: mockFunction<dirStore.SyncDirectoryStore<Buffer>['mtimestamp']>().mockResolvedValue(0),
+      getFiles: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getFiles']>(),
+      getTotalSize: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getTotalSize']>(),
+      clone: mockFunction<dirStore.SyncDirectoryStore<Buffer>['clone']>(),
+      isEmpty: mockFunction<dirStore.SyncDirectoryStore<Buffer>['isEmpty']>(),
+      getFullPath: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getFullPath']>().mockImplementation(filepath => `full-${filepath}`),
+      getSync: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getSync']>(),
+    }
+
+    const mockStaticFilesCache: staticFiles.StaticFilesCache = {
+      get: mockFunction<staticFiles.StaticFilesCache['get']>(),
+      put: mockFunction<staticFiles.StaticFilesCache['put']>(),
+      flush: mockFunction<staticFiles.StaticFilesCache['flush']>(),
+      clear: mockFunction<staticFiles.StaticFilesCache['clear']>(),
+      rename: mockFunction<staticFiles.StaticFilesCache['rename']>(),
+      clone: mockFunction<staticFiles.StaticFilesCache['clone']>(),
+    }
+
+    const staticFilesSource = staticFiles.buildStaticFilesSource(mockDirStore, mockStaticFilesCache)
+
+    parseResult = await parse(Buffer.from(buffer), filename, nacl.getFunctions(staticFilesSource))
   } else {
     parseResult = {
       elements: [], errors: [] as parser.ParseError[], sourceMap: new parser.SourceMap(),

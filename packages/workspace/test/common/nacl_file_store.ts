@@ -221,6 +221,7 @@ export const mockDirStore = (
       Promise.resolve(filenames.map(f => naclFiles[f]))),
     getTotalSize: jest.fn(),
     clone: () => mockDirStore(exclude),
+    getFullPath: filename => filename,
   }
 }
 

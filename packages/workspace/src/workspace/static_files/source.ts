@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile } from '@salto-io/adapter-api'
+import { StaticFile, StaticFileParameters } from '@salto-io/adapter-api'
 
 import { SyncDirectoryStore } from '../dir_store'
 import { StaticFilesCache } from './cache'
@@ -22,17 +22,30 @@ import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from './common'
 
-export class LazyStaticFile extends StaticFile {
-  private dirStore: SyncDirectoryStore<Buffer>
+export class AbsoluteStaticFile extends StaticFile {
+  protected dirStore: SyncDirectoryStore<Buffer>
 
+  constructor(
+    params: StaticFileParameters,
+    dirStore: SyncDirectoryStore<Buffer>,
+  ) {
+    super(params)
+    this.dirStore = dirStore
+  }
+
+  get absoluteFilePath(): string {
+    return this.dirStore.getFullPath(this.filepath)
+  }
+}
+
+export class LazyStaticFile extends AbsoluteStaticFile {
   constructor(
     filepath: string,
     hash: string,
     dirStore: SyncDirectoryStore<Buffer>,
     encoding?: BufferEncoding
   ) {
-    super({ filepath, hash, encoding })
-    this.dirStore = dirStore
+    super({ filepath, hash, encoding }, dirStore)
   }
 
   get content(): Buffer | undefined {
@@ -80,11 +93,10 @@ export const buildStaticFilesSource = (
           return new MissingStaticFile(filepath)
         }
         const staticFileBuffer = file.buffer
-        const staticFileWithHashAndContent = new StaticFile({
-          filepath,
+        const staticFileWithHashAndContent = new AbsoluteStaticFile({ filepath,
           content: staticFileBuffer,
-          encoding,
-        })
+          encoding },
+        staticFilesDirStore)
         await staticFilesCache.put({
           hash: staticFileWithHashAndContent.hash,
           modified,

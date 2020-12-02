@@ -391,4 +391,14 @@ describe('localDirectoryStore', () => {
       expect(totalSize).toEqual(9)
     })
   })
+  describe('getFullPath', () => {
+    it('should return the full path of a file', () => {
+      const baseDir = '/base'
+      const name = 'name'
+      const naclFileStore = localDirectoryStore({ baseDir, name, encoding })
+
+      const filename = 'filename'
+      expect(naclFileStore.getFullPath(filename)).toBe(`${baseDir}/${name}/${filename}`)
+    })
+  })
 })

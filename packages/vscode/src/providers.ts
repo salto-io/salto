@@ -70,7 +70,9 @@ export const createDefinitionsProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Definition> => {
-    const currentToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
+    const tokenPosition = doc.getWordRangeAtPosition(position, /"[^"]+"/)
+      ?? doc.getWordRangeAtPosition(position, /[\w.]+/)
+    const currentToken = doc.getText(tokenPosition)
     const context = await ctx.getPositionContext(
       workspace,
       doc.fileName,

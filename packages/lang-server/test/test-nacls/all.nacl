@@ -225,3 +225,20 @@ type vs.annotated {
 
     attr = vs.name.attr.owner.first_name
 }
+
+type vs.typeWithFile {
+    string content {
+        _required = true
+    }
+
+    vs.typeWithFile deepObjectWithFile {
+        _required = false
+    }
+}
+
+vs.typeWithFile objectWithFile {
+    content = file("path/to/content")
+    deepObjectWithFile = {
+        content = file("path/to/deep_content")
+    }
+}

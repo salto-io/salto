@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import Fuse from 'fuse.js'
 
-import { Element, ElemID, isObjectType } from '@salto-io/adapter-api'
+import { Element, ElemID, isObjectType, isInstanceElement, isField } from '@salto-io/adapter-api'
+import { staticFiles } from '@salto-io/workspace'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 
@@ -47,6 +48,62 @@ export const getLocations = async (
 ): Promise<SaltoElemLocation[]> =>
   (await workspace.getSourceRanges(ElemID.fromFullName(fullname)))
     .map(range => ({ fullname, filename: range.filename, range }))
+
+type StaticFileAttributes = {
+  staticFile: unknown
+  fullname: string
+}
+const extractStaticFileAttributes = (
+  element: Element, refPath: string[]
+): StaticFileAttributes | undefined => {
+  if (isInstanceElement(element)) {
+    const staticFile = _.get(element.value, refPath)
+    const fullname = element.elemID.createNestedID(...refPath).getFullName()
+    return { staticFile, fullname }
+  }
+  if (isObjectType(element)) {
+    const staticFile = _.get(element.annotations, refPath)
+    const fullname = element.elemID.createNestedID('attr', ...refPath).getFullName()
+    return { staticFile, fullname }
+  }
+  if (isField(element)) {
+    const staticFile = _.get(element.annotations, refPath)
+    const fullname = element.elemID.createNestedID(...refPath).getFullName()
+    return { staticFile, fullname }
+  }
+  return undefined
+}
+
+export const getStaticLocations = (
+  element: Element,
+  refPath: string[],
+  token: string
+): SaltoElemLocation | undefined => {
+  const staticFileAttributes = extractStaticFileAttributes(element, refPath)
+
+  if (_.isUndefined(staticFileAttributes)) {
+    return undefined
+  }
+
+  if (staticFileAttributes.staticFile instanceof staticFiles.AbsoluteStaticFile
+    && `"${staticFileAttributes.staticFile.filepath}"` === token) {
+    return {
+      fullname: staticFileAttributes.fullname,
+      filename: staticFileAttributes.staticFile.absoluteFilePath,
+      range: {
+        start: {
+          line: 1,
+          col: 1,
+        },
+        end: {
+          line: 2,
+          col: 1,
+        },
+      },
+    }
+  }
+  return undefined
+}
 
 export const completeSaltoLocation = async (
   workspace: EditorWorkspace,

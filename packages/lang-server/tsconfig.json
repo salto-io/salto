@@ -17,5 +17,6 @@
       { "path": "../adapter-api" },
       { "path": "../adapter-utils" },
       { "path": "../workspace" },
+      { "path": "../lowerdash" },
     ]
 }

@@ -37,12 +37,13 @@ const isHidden = (element?: Element): boolean => (
   || ((isInstanceElement(element) || isField(element)) && isHiddenValue(element.type))
 )
 
-const splitElementHiddenParts = <T extends Element>(
-  element: T,
-): { hidden?: T; visible?: T } => {
-  if (isHidden(element)) {
+const getElementHiddenParts = <T extends Element>(
+  stateElement: T,
+  workspaceElement?: T,
+): T | undefined => {
+  if (isHidden(stateElement)) {
     // The whole element is hidden
-    return { hidden: element }
+    return stateElement
   }
 
   const hiddenPaths: ElemID[] = []
@@ -52,8 +53,8 @@ const splitElementHiddenParts = <T extends Element>(
   // the field is marked as _hidden_value.
   // Otherwise, we're looking for either a _hidden annotation on the element,
   // or a _hidden_value annotation on its type definition.
-  const hiddenFunc = isInstanceElement(element) ? isHiddenValue : isHidden
-  const removeHiddenAndStorePath: TransformFunc = ({ value, field, path }) => {
+  const hiddenFunc = isInstanceElement(stateElement) ? isHiddenValue : isHidden
+  const storeHiddenPaths: TransformFunc = ({ value, field, path }) => {
     if (hiddenFunc(field)) {
       if (path !== undefined) {
         hiddenPaths.push(path)
@@ -62,15 +63,15 @@ const splitElementHiddenParts = <T extends Element>(
     }
     return value
   }
-  const visible = transformElement({
-    element,
-    transformFunc: removeHiddenAndStorePath,
+  transformElement({
+    element: stateElement,
+    transformFunc: storeHiddenPaths,
     strict: false,
   })
 
   if (hiddenPaths.length === 0) {
     // The whole element is visible
-    return { visible: element }
+    return undefined
   }
 
   const isPartOfHiddenPath = (path?: ElemID): boolean => (
@@ -85,23 +86,30 @@ const splitElementHiddenParts = <T extends Element>(
   )
 
   const hidden = transformElement({
-    element,
+    element: stateElement,
     transformFunc: ({ value, path }) => (isPartOfHiddenPath(path) ? value : undefined),
     strict: true,
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts
   hidden.annotationTypes = {}
-  return { hidden, visible }
+  // Workaround for transformElement not being able to omit fields from an ObjectType
+  if (isObjectType(hidden) && isObjectType(workspaceElement)) {
+    // filter out fields that were deleted in the workspace
+    hidden.fields = _.pick(hidden.fields, Object.keys(workspaceElement.fields))
+  }
+  return hidden
 }
 
 export const mergeWithHidden = (
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
 ): MergeResult => {
-  const workspaceElemIds = new Set(workspaceElements.map(e => e.elemID.getFullName()))
+  const workspaceElementsMap = _.keyBy(workspaceElements, e => e.elemID.getFullName())
   const hiddenElements = stateElements
-    .filter(elem => isHidden(elem) || workspaceElemIds.has(elem.elemID.getFullName()))
-    .map(elem => splitElementHiddenParts(elem).hidden)
+    .filter(elem => isHidden(elem) || workspaceElementsMap[elem.elemID.getFullName()] !== undefined)
+    .map(elem => (
+      getElementHiddenParts(elem, workspaceElementsMap[elem.elemID.getFullName()])
+    ))
     .filter(values.isDefined)
 
   return mergeElements([...workspaceElements, ...hiddenElements])

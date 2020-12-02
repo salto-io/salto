@@ -225,6 +225,7 @@ export const transformElementAnnotations = <T extends Element>(
     transformFunc,
     strict,
     pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+    isTopLevel: false,
   }) || {}
 }
 
@@ -233,10 +234,12 @@ export const transformElement = <T extends Element>(
     element,
     transformFunc,
     strict,
+    runOnFields,
   }: {
     element: T
     transformFunc: TransformFunc
     strict?: boolean
+    runOnFields?: boolean
   }
 ): T => {
   let newElement: Element
@@ -263,15 +266,25 @@ export const transformElement = <T extends Element>(
   }
 
   if (isObjectType(element)) {
-    const clonedFields = _.mapValues(
-      element.fields,
-      field => transformElement(
-        {
-          element: field,
-          transformFunc,
-          strict,
-        }
-      )
+    const clonedFields = _.pickBy(
+      _.mapValues(
+        element.fields,
+        field => {
+          const transformedField = (runOnFields
+            ? transformFunc({ value: field, path: field.elemID })
+            : field)
+          if (transformedField !== undefined) {
+            return transformElement({
+              element: transformedField,
+              transformFunc,
+              strict,
+              runOnFields,
+            })
+          }
+          return undefined
+        },
+      ),
+      isDefined,
     )
 
     newElement = new ObjectType({
@@ -293,6 +306,7 @@ export const transformElement = <T extends Element>(
       element.type,
       transformedAnnotations,
     )
+
     return newElement as T
   }
 
@@ -310,14 +324,14 @@ export const transformElement = <T extends Element>(
 
   if (isListType(element)) {
     newElement = new ListType(
-      transformElement({ element: element.innerType, transformFunc, strict })
+      transformElement({ element: element.innerType, transformFunc, strict, runOnFields })
     )
     return newElement as T
   }
 
   if (isMapType(element)) {
     newElement = new MapType(
-      transformElement({ element: element.innerType, transformFunc, strict })
+      transformElement({ element: element.innerType, transformFunc, strict, runOnFields })
     )
     return newElement as T
   }
@@ -762,8 +776,11 @@ export const getAllReferencedIds = (element: Element, onlyAnnotations = false): 
     return value
   }
 
-  const transform = onlyAnnotations ? transformElementAnnotations : transformElement
-  transform({ element, transformFunc, strict: false })
+  if (onlyAnnotations) {
+    transformElementAnnotations({ element, transformFunc, strict: false })
+  } else {
+    transformElement({ element, transformFunc, strict: false })
+  }
 
   return allReferencedIds
 }

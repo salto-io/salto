@@ -23,19 +23,52 @@ const { serialize, deserialize } = serialization
 
 type RemoteMap = {
   get: (key: ElemID) => Promise<Element>
+  getAll: () => AsyncIterator<Element>
+  getAllByKeys: (keys: ElemID[]) => Promise<Element[]>
   set: (key: ElemID, element: Element) => Promise<void>
-  list: () => Promise<ElemID[]>
+  list: () => AsyncIterator<ElemID>
 }
 
 export const createRemoteMap = (namespace: string): RemoteMap => {
-  const db = levelup(rocksdb(`/tmp/${namespace}`))
+  const db = levelup(rocksdb(`/Users/yanaisened/${namespace}`))
   return {
     get: async (key: ElemID): Promise<Element> =>
       ((await deserialize(await db.get(key.getFullName()) as string))[0]),
+    getAll: (): AsyncIterator<Element> => {
+      const valueIter = db.createValueStream()[Symbol.asyncIterator]()
+      return {
+        next: async () => {
+          const { value, done } = await valueIter.next()
+          return {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            value: value ? (await deserialize(value.toString()))[0] : undefined as any,
+            done,
+          }
+        },
+      }
+    },
+    getAllByKeys: async (keys: ElemID[]): Promise<Element[]> => {
+      const keyStrings = keys.map(key => key.getFullName())
+      const entries = (await toArray(db
+        .createReadStream())).filter(entry => keyStrings.includes(entry.key.toString()))
+      return Promise.all(entries.map(async entry => ((await deserialize(entry
+        .value.toString()))[0])))
+    },
     set: async (key: ElemID, element: Element): Promise<void> => {
       (await db.put(key.getFullName(), serialize([element])))
     },
-    list: async () => (await toArray(db.createKeyStream())).map(buff => ElemID
-      .fromFullName(buff.toString())),
+    list: () => {
+      const keyIter = db.createKeyStream()[Symbol.asyncIterator]()
+      return {
+        next: async () => {
+          const { done, value } = await keyIter.next()
+          return {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            value: value ? ElemID.fromFullName(value.toString()) : undefined as any,
+            done,
+          }
+        },
+      }
+    },
   }
 }

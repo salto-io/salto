@@ -181,7 +181,8 @@ export const generateElements = (params: GeneratorParams): Element[] => {
 
   const getFieldType = (allowContainers = false): TypeElement => {
     const fieldTypeOptions = [
-      Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN),
+      Object.values(BuiltinTypes).filter(type =>
+        ![BuiltinTypes.UNKNOWN, BuiltinTypes.HIDDEN_STRING].includes(type)),
       weightedRandomSelect(primitiveByRank.slice(0, -1)) || [],
       weightedRandomSelect(objByRank.slice(0, -1)) || [],
     ]

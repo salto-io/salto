@@ -18,7 +18,7 @@ import {
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
   isType, isPrimitiveType, ListType,
 } from '@salto-io/adapter-api'
-// import each from 'jest-each'
+import each from 'jest-each'
 import { registerTestFunction } from '../utils'
 import {
   Functions,
@@ -28,8 +28,13 @@ import { SourceRange, parse, SourceMap } from '../../src/parser'
 const funcName = 'funcush'
 
 let functions: Functions
-describe('Salto parser', () => {
+each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
   beforeAll(() => {
+    if (useLegacyParser) {
+      process.env.SALTO_USE_LEGACY_PARSER = '1'
+    } else {
+      delete process.env.SALTO_USE_LEGACY_PARSER
+    }
     functions = registerTestFunction(funcName)
   })
   describe('primitive, model and extensions', () => {
@@ -179,20 +184,20 @@ describe('Salto parser', () => {
         str = ""
       }
 
-      type salesforce.escapedQuoates {
+      type salesforce.escapedQuotes {
         str = "Is this \\"escaped\\"?"
       }
        `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
-      elements = parsed.elements.filter(element => !isListType(element))
+      elements = parsed.elements.filter(element => !isContainerType(element))
       genericTypes = parsed.elements.filter(element => isListType(element) || isMapType(element))
       sourceMap = parsed.sourceMap
     })
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(21)
+        expect(elements.length).toBe(20)
         expect(genericTypes.length).toBe(2)
       })
     })
@@ -237,7 +242,7 @@ describe('Salto parser', () => {
 
     describe('map type', () => {
       it('should have the correct inner type', () => {
-        const mapType = elements.find(isMapType)
+        const mapType = genericTypes.find(isMapType)
         expect(mapType?.innerType.elemID).toEqual(new ElemID('salesforce', 'number'))
       })
     })
@@ -656,7 +661,9 @@ describe('Salto parser', () => {
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = 'invalid type definition'
+      const expectedErrMsg = useLegacyParser
+        ? 'expected keyword is. found string'
+        : 'invalid type definition'
       expect(result.errors[0].summary).toEqual(expectedErrMsg)
     })
 
@@ -668,7 +675,9 @@ describe('Salto parser', () => {
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = 'Invalid block item'
+      const expectedErrMsg = useLegacyParser
+        ? 'Unexpected token: :'
+        : 'Invalid block item'
       expect(result.errors[0].summary).toEqual(expectedErrMsg)
     })
   })

@@ -19,7 +19,7 @@ import nock from 'nock'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import SalesforceClient, { ApiLimitsTooLowError,
-  getConnectionDetails, validateCredentials } from '../src/client/client'
+  getConnectionDetails, validateCredentials, API_VERSION } from '../src/client/client'
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
@@ -172,7 +172,7 @@ describe('salesforce client', () => {
     })
 
     it('continue in case of error in chunk - run on each element separately', async () => {
-      const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
+      const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
         .post(/.*/)
         .times(2)
         .reply(200, workingReadReplay, headers)
@@ -191,7 +191,7 @@ describe('salesforce client', () => {
     })
 
     it('should fail in case of unhandled error', async () => {
-      const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
+      const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
         .post(/.*/)
         .times(22)
         .reply(500, 'server error')
@@ -203,7 +203,7 @@ describe('salesforce client', () => {
     })
 
     it('should return errors in case of handled error', async () => {
-      const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
+      const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
         .post(/.*/)
         .times(1)
         .reply(500, 'server error')
@@ -215,7 +215,7 @@ describe('salesforce client', () => {
 
   describe('with suppressed errors', () => {
     it('should not fail if all errors are suppressed', async () => {
-      const dodoScope = nock('http://dodo22/servies/Soap/m/47.0')
+      const dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
         .post(/.*/)
         .reply(500, 'targetObject is invalid')
 
@@ -224,7 +224,7 @@ describe('salesforce client', () => {
     })
 
     it('should return non error responses for QuickAction targetObject', async () => {
-      const dodoScope = nock('http://dodo22/servies/Soap/m/47.0')
+      const dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
         .post(/.*/)
         .times(2) // Once for the chunk and once for SendEmail
         .reply(500, 'targetObject is invalid')
@@ -238,7 +238,7 @@ describe('salesforce client', () => {
     })
 
     it('should return non error responses for insufficient access', async () => {
-      const dodoScope = nock('http://dodo22/servies/Soap/m/47.0')
+      const dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
         .post(/.*/)
         .times(2) // Once for the chunk and once for item
         .reply(
@@ -289,7 +289,7 @@ describe('salesforce client', () => {
 
     describe('when all results are in a single query', () => {
       beforeEach(async () => {
-        dodoScope = nock('http://dodo22/services/data/v47.0/query/')
+        dodoScope = nock(`http://dodo22/services/data/v${API_VERSION}/query/`)
           .get(/.*/)
           .times(1)
           .reply(200, {
@@ -313,7 +313,7 @@ describe('salesforce client', () => {
 
     describe('when all results are in a single query from tooling api', () => {
       beforeEach(async () => {
-        dodoScope = nock('http://dodo22/services/data/v47.0/tooling/query/')
+        dodoScope = nock(`http://dodo22/services/data/v${API_VERSION}/tooling/query/`)
           .get(/.*tooling.*/)
           .times(1)
           .reply(200, {
@@ -336,7 +336,7 @@ describe('salesforce client', () => {
 
     describe('when results are returned in more than one query', () => {
       beforeEach(async () => {
-        dodoScope = nock('http://dodo22/services/data/v47.0/query')
+        dodoScope = nock(`http://dodo22/services/data/v${API_VERSION}/query`)
           .persist()
           .get(/.*queryString/)
           .times(1)
@@ -370,11 +370,11 @@ describe('salesforce client', () => {
   describe('bulkLoadOperation', () => {
     let dodoScope: nock.Scope
     beforeEach(() => {
-      dodoScope = nock('http://dodo22/services/async/47.0/job')
+      dodoScope = nock(`http://dodo22/services/async/${API_VERSION}/job`)
         .post(/.*/)
         .reply(
           200,
-          '<?xml version="1.0" encoding="UTF-8"?><jobInfo\n   xmlns="http://www.force.com/2009/06/asyncapi/dataload">\n <id>7503z00000WDQ4SAAX</id>\n <operation>update</operation>\n <object>SBQQ__ProductRule__c</object>\n <createdById>0053z00000BCOCMAA5</createdById>\n <createdDate>2020-06-22T07:23:32.000Z</createdDate>\n <systemModstamp>2020-06-22T07:23:32.000Z</systemModstamp>\n <state>Open</state>\n <concurrencyMode>Parallel</concurrencyMode>\n <contentType>CSV</contentType>\n <numberBatchesQueued>0</numberBatchesQueued>\n <numberBatchesInProgress>0</numberBatchesInProgress>\n <numberBatchesCompleted>0</numberBatchesCompleted>\n <numberBatchesFailed>0</numberBatchesFailed>\n <numberBatchesTotal>0</numberBatchesTotal>\n <numberRecordsProcessed>0</numberRecordsProcessed>\n <numberRetries>0</numberRetries>\n <apiVersion>47.0</apiVersion>\n <numberRecordsFailed>0</numberRecordsFailed>\n <totalProcessingTime>0</totalProcessingTime>\n <apiActiveProcessingTime>0</apiActiveProcessingTime>\n <apexProcessingTime>0</apexProcessingTime>\n</jobInfo>',
+          '<?xml version="1.0" encoding="UTF-8"?><jobInfo\n   xmlns="http://www.force.com/2009/06/asyncapi/dataload">\n <id>7503z00000WDQ4SAAX</id>\n <operation>update</operation>\n <object>SBQQ__ProductRule__c</object>\n <createdById>0053z00000BCOCMAA5</createdById>\n <createdDate>2020-06-22T07:23:32.000Z</createdDate>\n <systemModstamp>2020-06-22T07:23:32.000Z</systemModstamp>\n <state>Open</state>\n <concurrencyMode>Parallel</concurrencyMode>\n <contentType>CSV</contentType>\n <numberBatchesQueued>0</numberBatchesQueued>\n <numberBatchesInProgress>0</numberBatchesInProgress>\n <numberBatchesCompleted>0</numberBatchesCompleted>\n <numberBatchesFailed>0</numberBatchesFailed>\n <numberBatchesTotal>0</numberBatchesTotal>\n <numberRecordsProcessed>0</numberRecordsProcessed>\n <numberRetries>0</numberRetries>\n <apiVersion>50.0</apiVersion>\n <numberRecordsFailed>0</numberRecordsFailed>\n <totalProcessingTime>0</totalProcessingTime>\n <apiActiveProcessingTime>0</apiActiveProcessingTime>\n <apexProcessingTime>0</apexProcessingTime>\n</jobInfo>',
           { 'content-type': 'application/xml' },
         )
         .post(/.*/)
@@ -573,9 +573,9 @@ describe('salesforce client', () => {
           retrieves = _.times(4, () => makeResolvablePromise())
           _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
           retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
-            apiVersion: '47.0',
+            apiVersion: API_VERSION,
             singlePackage: false,
-            unpackaged: { version: '47.0', types: [{ name: `n${i}`, members: ['x', 'y'] }] },
+            unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
           }))
           lists = _.times(2, () => makeResolvablePromise())
           _.times(lists.length, i => mockList.mockResolvedValueOnce(lists[i].promise))
@@ -633,9 +633,9 @@ describe('salesforce client', () => {
           retrieves = _.times(4, () => makeResolvablePromise())
           _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
           retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
-            apiVersion: '47.0',
+            apiVersion: API_VERSION,
             singlePackage: false,
-            unpackaged: { version: '47.0', types: [{ name: `n${i}`, members: ['x', 'y'] }] },
+            unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
           }))
 
           retrieves[0].resolve()
@@ -668,9 +668,9 @@ describe('salesforce client', () => {
           retrieves = _.times(6, () => makeResolvablePromise())
           _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
           retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
-            apiVersion: '47.0',
+            apiVersion: API_VERSION,
             singlePackage: false,
-            unpackaged: { version: '47.0', types: [{ name: `n${i}`, members: ['x', 'y'] }] },
+            unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
           }))
 
           retrieves[0].resolve()

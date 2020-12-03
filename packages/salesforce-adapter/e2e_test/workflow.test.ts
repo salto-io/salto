@@ -323,7 +323,7 @@ describe('workflow filter', () => {
           .toEqual('My Updated Workflow Field Update')
         expect(_.get(workflowFieldUpdateInfo, 'field')).toEqual('Rating')
         expect(_.get(workflowFieldUpdateInfo, 'operation')).toEqual('PreviousValue')
-        expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toBeUndefined()
+        expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toEqual('false')
       })
 
       it('should delete workflow field update', async () => {

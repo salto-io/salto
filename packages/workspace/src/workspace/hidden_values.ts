@@ -92,10 +92,14 @@ const getElementHiddenParts = <T extends Element>(
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts
   hidden.annotationTypes = {}
-  // Workaround for transformElement not being able to omit fields from an ObjectType
+
   if (isObjectType(hidden) && isObjectType(workspaceElement)) {
-    // filter out fields that were deleted in the workspace
-    hidden.fields = _.pick(hidden.fields, Object.keys(workspaceElement.fields))
+    // filter out fields that were deleted in the workspace (unless the field itself is hidden)
+    const workspaceFields = new Set(Object.keys(workspaceElement.fields))
+    hidden.fields = _.pickBy(
+      hidden.fields,
+      (field, key) => workspaceFields.has(key) || isHidden(field)
+    )
   }
   return hidden
 }

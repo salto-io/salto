@@ -16,7 +16,7 @@
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable, isMapType, isContainerType,
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
-  isType, isPrimitiveType, ListType,
+  isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression,
 } from '@salto-io/adapter-api'
 import each from 'jest-each'
 import { registerTestFunction } from '../utils'
@@ -187,7 +187,11 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       type salesforce.escapedQuotes {
         str = "Is this \\"escaped\\"?"
       }
-       `
+
+      type salesforce.references {
+        toVar = var.name3
+        toVal = salesforce.test.instance.inst.name
+      }       `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
       elements = parsed.elements.filter(element => !isContainerType(element))
@@ -197,7 +201,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(20)
+        expect(elements.length).toBe(21)
         expect(genericTypes.length).toBe(2)
       })
     })
@@ -650,6 +654,21 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         expect(isObjectType(element)).toBeTruthy()
         const obj = element as ObjectType
         expect(obj.annotations.str).toEqual('Is this "escaped"?')
+      })
+    })
+
+    describe('references', () => {
+      let refObj: ObjectType
+      beforeAll(() => {
+        refObj = elements[20] as ObjectType
+      })
+
+      it('should parse references to values as ReferenceExpressions', () => {
+        expect(refObj.annotations.toVal).toBeInstanceOf(ReferenceExpression)
+      })
+
+      it('should parse references to variables as VariableExpressions', () => {
+        expect(refObj.annotations.toVar).toBeInstanceOf(VariableExpression)
       })
     })
   })

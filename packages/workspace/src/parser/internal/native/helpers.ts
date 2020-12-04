@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, ElemID, Value, TypeElement, ListType, ObjectType, PrimitiveTypes, MapType } from '@salto-io/adapter-api'
+import { ReferenceExpression, ElemID, Value, TypeElement, ListType, ObjectType, PrimitiveTypes, MapType, VariableExpression } from '@salto-io/adapter-api'
 import isPromise from 'is-promise'
 import { LexerToken } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
@@ -43,7 +43,10 @@ export const parseElemID = (fullname: string): ElemID => {
 
 export const createReferenceExpresion = (ref: string): ReferenceExpression | IllegalReference => {
   try {
-    return new ReferenceExpression(ElemID.fromFullName(ref))
+    const elemId = ElemID.fromFullName(ref)
+    return elemId.adapter === ElemID.VARIABLES_NAMESPACE
+      ? new VariableExpression(elemId)
+      : new ReferenceExpression(elemId)
   } catch (e) {
     return new IllegalReference(ref, e.message)
   }

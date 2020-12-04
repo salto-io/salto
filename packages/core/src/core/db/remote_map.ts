@@ -20,17 +20,19 @@ import { serialization } from '@salto-io/workspace'
 import toArray from 'stream-to-array'
 
 const { serialize, deserialize } = serialization
+const BATCH_WRITE_INTERVAL = 100
 
 type RemoteMap = {
   get: (key: ElemID) => Promise<Element>
   getAll: () => AsyncIterator<Element>
   getAllByKeys: (keys: ElemID[]) => Promise<Element[]>
   set: (key: ElemID, element: Element) => Promise<void>
+  putAll: (elements: AsyncIterable<Element>) => Promise<void>
   list: () => AsyncIterator<ElemID>
 }
 
 export const createRemoteMap = (namespace: string): RemoteMap => {
-  const db = levelup(rocksdb(`/Users/yanaisened/${namespace}`))
+  const db = levelup(rocksdb(`/tmp/${namespace}`))
   return {
     get: async (key: ElemID): Promise<Element> =>
       ((await deserialize(await db.get(key.getFullName()) as string))[0]),
@@ -57,11 +59,26 @@ export const createRemoteMap = (namespace: string): RemoteMap => {
     set: async (key: ElemID, element: Element): Promise<void> => {
       (await db.put(key.getFullName(), serialize([element])))
     },
+    putAll: async (elements: AsyncIterable<Element>) => {
+      let i = 0
+      let batch = db.batch()
+      for await (const element of elements) {
+        i += 1
+        batch.put(element.elemID.getFullName(), serialize([element]))
+        if (i % BATCH_WRITE_INTERVAL === 0) {
+          await batch.write()
+          batch = db.batch()
+        }
+      }
+      if (i % BATCH_WRITE_INTERVAL !== 0) {
+        await batch.write()
+      }
+    },
     list: () => {
       const keyIter = db.createKeyStream()[Symbol.asyncIterator]()
       return {
         next: async () => {
-          const { done, value } = await keyIter.next()
+          const { value, done } = await keyIter.next()
           return {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             value: value ? ElemID.fromFullName(value.toString()) : undefined as any,

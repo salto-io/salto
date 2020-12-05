@@ -215,9 +215,8 @@ export const selectElementIdsByTraversal = (
     }
     return undefined
   }
-
   stillRelevantElements.forEach(elemContainer => transformElement({
-    element: elemContainer.element, transformFunc: selectFromSubElements,
+    element: elemContainer.element, transformFunc: selectFromSubElements, runOnFields: true,
   }))
   return [...ids].map(id => ElemID.fromFullName(id))
 }

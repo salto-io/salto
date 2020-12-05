@@ -235,7 +235,6 @@ describe('select elements recursively', () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
       'mockAdapter.*.field.*.*',
-      'mockAdapter.*.attr',
       'mockAdapter.*.attr.testAnno']).validSelectors
     const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
@@ -250,7 +249,6 @@ describe('select elements recursively', () => {
       ElemID.fromFullName('mockAdapter.test.field.obj'),
       ElemID.fromFullName('mockAdapter.test.field.num'),
       ElemID.fromFullName('mockAdapter.test.field.strArray'),
-      ElemID.fromFullName('mockAdapter.test.attr'),
       ElemID.fromFullName('mockAdapter.test.attr.testAnno')].sort((e1,
       e2) => e1.getFullName().localeCompare(e2.getFullName()))
     expect(elementIds).toEqual(expectedElements)

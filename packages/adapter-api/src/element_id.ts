@@ -138,7 +138,7 @@ export class ElemID {
   isTopLevel(): boolean {
     return ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
     || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType)
-    && this.nameParts !== undefined && this.nameParts.length === 1)
+    && this.nameParts.length === 1)
   }
 
   isEqual(other: ElemID): boolean {

@@ -20,13 +20,13 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ElementSelector } from './element_selector'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
 import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
+import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError,
   UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
@@ -99,6 +99,8 @@ export type Workspace = {
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
+  getElementIdsBySelectors: (selectors: ElementSelector[],
+    commonOnly?: boolean) => Promise<ElemID[]>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
@@ -113,10 +115,10 @@ export type Workspace = {
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
   getStateRecency(services: string): Promise<StateRecency>
-  promote(selectors: ElementSelector[]): Promise<void>
-  demote(selectors: ElementSelector[]): Promise<void>
+  promote(ids: ElemID[]): Promise<void>
+  demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
-  copyTo(selectors: ElementSelector[], targetEnvs?: string[]): Promise<void>
+  copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
 }
 
 // common source has no state
@@ -266,16 +268,18 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getSourceMap: (filename: string) => naclFilesSource.getSourceMap(filename),
     getSourceRanges: (elemID: ElemID) => naclFilesSource.getSourceRanges(elemID),
     listNaclFiles: () => naclFilesSource.listNaclFiles(),
+    getElementIdsBySelectors: async (selectors: ElementSelector[],
+      commonOnly = false) => naclFilesSource.getElementIdsBySelectors(selectors, commonOnly),
     getElementReferencedFiles: id => naclFilesSource.getElementReferencedFiles(id),
     getElementNaclFiles: id => naclFilesSource.getElementNaclFiles(id),
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),
     getParsedNaclFile: (filename: string) => naclFilesSource.getParsedNaclFile(filename),
-    promote: (selectors: ElementSelector[]) => naclFilesSource.promote(selectors),
-    demote: (selectors: ElementSelector[]) => naclFilesSource.demote(selectors),
+    promote: (ids: ElemID[]) => naclFilesSource.promote(ids),
+    demote: (ids: ElemID[]) => naclFilesSource.demote(ids),
     demoteAll: () => naclFilesSource.demoteAll(),
-    copyTo: (selectors: ElementSelector[],
-      targetEnvs: string[]) => naclFilesSource.copyTo(selectors, targetEnvs),
+    copyTo: (ids: ElemID[],
+      targetEnvs: string[]) => naclFilesSource.copyTo(ids, targetEnvs),
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

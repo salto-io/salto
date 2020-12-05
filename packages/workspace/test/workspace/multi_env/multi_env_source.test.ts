@@ -370,21 +370,21 @@ describe('multi env source', () => {
   })
   describe('copyTo', () => {
     it('should route a copy to the proper env sources when specified', async () => {
-      const ids = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*']).validSelectors
       jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.copyTo(ids, ['inactive'])
+      await source.copyTo(await source.getElementIdsBySelectors(selectors), ['inactive'])
       expect(routers.routeCopyTo).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, { inactive: inactiveSource }
       )
     })
     it('should route a copy to all env sources when not specified', async () => {
-      const ids = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*']).validSelectors
       jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.copyTo(ids)
+      await source.copyTo(await source.getElementIdsBySelectors(selectors))
       expect(routers.routeCopyTo).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, { inactive: inactiveSource }
       )
@@ -392,11 +392,11 @@ describe('multi env source', () => {
   })
   describe('promote', () => {
     it('should route promote the proper ids', async () => {
-      const ids = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*']).validSelectors
       jest.spyOn(routers, 'routePromote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.promote(ids)
+      await source.promote(await source.getElementIdsBySelectors(selectors))
       expect(routers.routePromote).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )
@@ -404,11 +404,11 @@ describe('multi env source', () => {
   })
   describe('demote', () => {
     it('should route demote the proper ids', async () => {
-      const ids = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*']).validSelectors
       jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.demote(ids)
+      await source.demote(await source.getElementIdsBySelectors(selectors, true))
       expect(routers.routeDemote).toHaveBeenCalledWith(
         [commonObject.elemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )

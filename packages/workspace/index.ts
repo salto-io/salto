@@ -31,8 +31,7 @@ import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
 import * as pathIndex from './src/workspace/path_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches,
-  selectElementsBySelectors, createElementSelectors, ElementIDToValue,
-  getElementIdsFromSelectorsRecursively } from './src/workspace/element_selector'
+  selectElementsBySelectors, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
 import * as validator from './src/validator'
 
 export {
@@ -67,5 +66,4 @@ export {
   selectElementsBySelectors,
   createElementSelectors,
   ElementIDToValue,
-  getElementIdsFromSelectorsRecursively,
 }

@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ElemIDTypes, Value, ElemIDTopLevelTypes, isType, isObjectType, isInstanceElement,
-  isElement } from '@salto-io/adapter-api'
+import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
+import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 
 export type ElementSelector = {
   adapterSelector: RegExp
   typeNameSelector: RegExp
-  idTypeSelector: string
+  idTypeSelector: ElemIDType
   nameSelectors?: RegExp[]
   origin: string
 }
@@ -30,19 +30,14 @@ export type ElementIDToValue = {
   element: Value
 }
 
-type ElementIDToValueResult = {
-  elementIdToValue: ElementIDToValue[]
-  matches: Record<string, boolean>
-}
-
 type ElementIDContainer = {
   elemID: ElemID
 }
 
 const testNames = (nameArray: readonly string[], nameSelectors?: RegExp[]): boolean =>
-  !nameSelectors
-  || (nameArray.length === nameSelectors.length
+  (nameSelectors ? (nameArray.length === nameSelectors.length
     && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
+    : nameArray.length === 0)
 
 const match = (elemId: ElemID, selector: ElementSelector): boolean =>
   selector.adapterSelector.test(elemId.adapter)
@@ -56,21 +51,6 @@ const createRegex = (selector: string): RegExp => new RegExp(`^${selector.replac
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 function isElementContainer(value: any): value is ElementIDContainer {
   return value && value.elemID && value.elemID instanceof ElemID
-}
-
-const getParentFromSelector = (selector: ElementSelector, depth: number): string => {
-  if (ElemIDTopLevelTypes.includes(selector.idTypeSelector)) {
-    return selector
-      .origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
-        ElemID.NUM_ELEM_ID_NON_NAME_PARTS + depth).join(ElemID.NAMESPACE_SEPARATOR)
-  }
-  if (depth === 1) {
-    // In this case the parent would be just the adapter and type.
-    return selector.origin.split(ElemID.NAMESPACE_SEPARATOR)
-      .slice(0, 2).join(ElemID.NAMESPACE_SEPARATOR)
-  }
-  return selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
-    ElemID.NUM_ELEM_ID_NON_NAME_PARTS + depth - 1).join(ElemID.NAMESPACE_SEPARATOR)
 }
 
 export const validateSelectorsMatches = (selectors: ElementSelector[],
@@ -104,6 +84,10 @@ export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
   return { elements, matches }
 }
 
+const getIDType = (adapterSelector: string, idTypeSelector?: string): ElemIDType =>
+  (idTypeSelector ? idTypeSelector as ElemIDType : ElemID
+    .getDefaultIdType(adapterSelector))
+
 export const createElementSelector = (selector: string): ElementSelector => {
   const [adapterSelector, typeNameSelector, idTypeSelector, ...nameSelectors] = selector
     .split(ElemID.NAMESPACE_SEPARATOR)
@@ -119,7 +103,7 @@ export const createElementSelector = (selector: string): ElementSelector => {
   return {
     adapterSelector: createRegex(adapterSelector),
     typeNameSelector: createRegex(typeNameSelector),
-    idTypeSelector: idTypeSelector ?? ElemID.getDefaultIdType(adapterSelector),
+    idTypeSelector: getIDType(adapterSelector, idTypeSelector),
     origin: selector,
     nameSelectors: nameSelectors.length > 0 ? nameSelectors.map(createRegex) : undefined,
   }
@@ -142,118 +126,97 @@ export const createElementSelectors = (selectors: string[]):
   return { validSelectors: orderedSelectors.map(createElementSelector), invalidSelectors }
 }
 
-const filterOutChildSelectors = (selectors: ElementSelector[],
-  currentLevelElementsSelected: ElementIDToValue[]): ElementSelector[] =>
-  selectors.filter(selector => _.isEmpty(selectElementsBySelectors(currentLevelElementsSelected,
-    [selector], false).elements))
+const isTopLevelSelector = (selector: ElementSelector): boolean =>
+  ElemID.fromFullName(selector.origin).isTopLevel()
 
-const createParentSelectors = (subElementSelectors: ElementSelector[],
-  currentLevelElementsSelected: ElementIDToValue[], compact: boolean,
-  depth: number): ElementSelector[] => {
-  const selectors = subElementSelectors
-    .map(selector => createElementSelector(getParentFromSelector(selector, depth)))
-  return compact ? filterOutChildSelectors(selectors, currentLevelElementsSelected) : selectors
-}
-
-const isTopLevelSelector = (selector: ElementSelector, depth: number): boolean => {
-  if (ElemIDTopLevelTypes.includes(selector.idTypeSelector)) {
-    return (!selector.nameSelectors || selector.nameSelectors.length <= depth)
+const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
+  if (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(selector.idTypeSelector)) {
+    return {
+      adapterSelector: selector.adapterSelector,
+      idTypeSelector: selector.idTypeSelector,
+      typeNameSelector: selector.typeNameSelector,
+      nameSelectors: selector.nameSelectors?.slice(0, 1),
+      origin: selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
+        ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR),
+    }
   }
-  return (!selector.nameSelectors || (selector.nameSelectors.length <= depth - 1))
-}
-
-const getPossiblePathsFromParent = (parent: Element): string[] => {
-  const paths = ['annotations']
-  if (isType(parent)) {
-    paths.push('annotationTypes')
-  }
-  if (isObjectType(parent)) {
-    paths.push('fields')
-  }
-  if (isInstanceElement(parent)) {
-    paths.push('value')
-  }
-  return paths
-}
-
-const pathNameToIdType = (path: string): string => ((path === 'annotations') ? 'annotation.' : '')
-
-const isNestedElement = (parentElement: ElementIDToValue): boolean =>
-  parentElement.elemID.getFullNameParts().length > ElemID.NUM_ELEM_ID_NON_NAME_PARTS
-
-const createPathToPropertyMapping = (parentElement: ElementIDToValue, path: string):
-[string, unknown][] => ((parentElement.element[path]) ? Object.entries(parentElement.element[path])
-  .map((entry): [string, unknown] => [`${pathNameToIdType(path)}${entry[0]}`, entry[1]]) : [])
-
-const subElementIDToValue = (subElement: [string, unknown], parentElement: ElementIDToValue):
-  { elemID: ElemID; element: unknown } => ({
-  elemID: isElement(subElement[1]) ? subElement[1].elemID
-    : parentElement.elemID.createNestedID(...subElement[0].split('.')),
-  element: subElement[1],
-})
-
-const getSubElements = async (parentElement: ElementIDToValue): Promise<ElementIDToValue[]> =>
-  getPossiblePathsFromParent(parentElement.element)
-    .flatMap(path => createPathToPropertyMapping(parentElement, path))
-    .concat(isNestedElement(parentElement) ? Object.entries(parentElement.element) : [])
-    .map(subElement => subElementIDToValue(subElement, parentElement))
-
-const removeChildElements = (currentLevelElementsSelected:
-  ElementIDToValue[]): ElementIDToValue[] =>
-  currentLevelElementsSelected.filter(element => !currentLevelElementsSelected
-    .some(possibleParent => possibleParent.elemID.isParentOf(element.elemID)))
-
-const selectElementsForDepth = (selectors: ElementSelector[], elements: ElementIDToValue[],
-  compact: boolean, depth: number): {
-    subElementSelectors: ElementSelector[]
-    matches: Record<string, boolean>
-    currentLevelElementsSelected: ElementIDToValue[]
-  } => {
-  const [topLevelSelectors, subElementSelectors] = _.partition(selectors, selector =>
-    isTopLevelSelector(selector, depth))
-  const { elements: currentLevelElementsSelected, matches } = topLevelSelectors.length > 0
-    ? selectElementsBySelectors(elements, topLevelSelectors, false)
-    : { elements: [], matches: {} }
+  const idType = isTopLevelSelector(selector) ? selector.idTypeSelector
+    : ElemID.getDefaultIdType(selector.adapterSelector.source)
   return {
-    subElementSelectors,
-    matches,
-    currentLevelElementsSelected:
-      compact ? removeChildElements(currentLevelElementsSelected) : currentLevelElementsSelected,
+    adapterSelector: selector.adapterSelector,
+    idTypeSelector: idType,
+    typeNameSelector: selector.typeNameSelector,
+    origin: [selector.adapterSelector.source, selector
+      .typeNameSelector.source, idType].join(ElemID.NAMESPACE_SEPARATOR),
   }
 }
 
-const getElementIdsFromSelectorsRecursivelyInner = async (
-  selectors: ElementSelector[], elements: ElementIDToValue[], compact = false, depth = 1
-): Promise<ElementIDToValueResult> => {
-  const { subElementSelectors, matches,
-    currentLevelElementsSelected } = selectElementsForDepth(selectors, elements, compact, depth)
-  if (_.isEmpty(subElementSelectors)) {
-    return { elementIdToValue: currentLevelElementsSelected, matches }
-  }
-  const subElementParentSelectors = createParentSelectors(subElementSelectors,
-    currentLevelElementsSelected, compact, depth)
-  if (subElementParentSelectors.length === 0) {
-    return { elementIdToValue: currentLevelElementsSelected, matches }
-  }
-  const { elements: possibleParentElements } = selectElementsBySelectors(elements,
-    subElementParentSelectors, false)
-  if (possibleParentElements.length === 0) {
-    return { elementIdToValue: currentLevelElementsSelected, matches }
-  }
-  const possibleSubElements = (await Promise.all(possibleParentElements.map(getSubElements))).flat()
-  const { elementIdToValue: lowerLevelElements,
-    matches: lowerLevelMatches } = await getElementIdsFromSelectorsRecursivelyInner(
-    subElementSelectors, possibleSubElements, compact, depth + 1
-  )
-  return { elementIdToValue: currentLevelElementsSelected.concat(lowerLevelElements),
-    matches: Object.assign(matches, lowerLevelMatches) }
-}
+const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
+  createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
+    elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR))
 
-export const getElementIdsFromSelectorsRecursively = async (
+const isElementPossiblyParentOfSearchedElement = (
+  selectors: ElementSelector[], testId: ElemID
+): boolean => (
+  selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
+)
+
+export const selectElementIdsByTraversal = (
   selectors: ElementSelector[], elements: ElementIDToValue[],
-  compact = false): Promise<ElementIDToValue[]> => {
-  const { elementIdToValue: results,
-    matches } = await getElementIdsFromSelectorsRecursivelyInner(selectors, elements, compact)
-  validateSelectorsMatches(selectors, matches)
-  return results
+  compact = false
+): ElemID[] => {
+  const [wildcardSelectors, determinedSelectors] = _.partition(selectors, selector => selector.origin.includes('*'))
+  const determinedIds = determinedSelectors.map(selector => selector.origin)
+  const ids = new Set(determinedIds)
+  if (wildcardSelectors.length === 0) {
+    return [...ids].map(id => ElemID.fromFullName(id))
+  }
+  const [topLevelSelectors, subElementSelectors] = _.partition(wildcardSelectors,
+    isTopLevelSelector)
+  if (topLevelSelectors.length !== 0) {
+    const { elements: topLevelElements } = selectElementsBySelectors(elements,
+      topLevelSelectors, false)
+    topLevelElements.forEach(element => ids.add(element.elemID.getFullName()))
+    if (subElementSelectors.length === 0) {
+      return [...ids].map(id => ElemID.fromFullName(id))
+    }
+  }
+  const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
+  const possibleParentElements = selectElementsBySelectors(elements, possibleParentSelectors,
+    false).elements
+  const stillRelevantElements = compact ? possibleParentElements
+    .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements
+  if (stillRelevantElements.length === 0) {
+    return [...ids].map(id => ElemID.fromFullName(id))
+  }
+  const selectFromSubElements: TransformFunc = ({ path, value }) => {
+    if (path === undefined) {
+      return undefined
+    }
+    const testId = path
+    if (subElementSelectors.some(selector => match(testId, selector))) {
+      ids.add(testId.getFullName())
+      if (compact) {
+        return undefined
+      }
+    }
+    const stillRelevantSelectors = wildcardSelectors.filter(selector => selector
+      .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
+    if (stillRelevantSelectors.length === 0) {
+      return undefined
+    }
+    if (compact && determinedIds.includes(testId.getFullName())) {
+      // This can occur if testId is one given as a determined id, so we don't search for it,
+      // but because we just found it while searching, in compact scenario we need to return
+      return undefined
+    }
+    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
+      return value
+    }
+    return undefined
+  }
+  stillRelevantElements.forEach(elemContainer => transformElement({
+    element: elemContainer.element, transformFunc: selectFromSubElements, runOnFields: true,
+  }))
+  return [...ids].map(id => ElemID.fromFullName(id))
 }

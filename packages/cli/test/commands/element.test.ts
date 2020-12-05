@@ -20,7 +20,6 @@ import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/ty
 import { command } from '../../src/commands/element'
 
 import * as mocks from '../mocks'
-import { expectElementSelector } from '../utils'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 import Prompts from '../../src/prompts'
@@ -450,6 +449,7 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
+      workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
       result = await command(
         '',
         cliOutput,
@@ -469,7 +469,7 @@ describe('element command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should call workspace copyTo', () => {
-      expect(workspace.copyTo).toHaveBeenCalledWith(expectElementSelector(selector.getFullName()), ['inactive'])
+      expect(workspace.copyTo).toHaveBeenCalledWith([selector], ['inactive'])
     })
 
     it('should flush workspace', () => {
@@ -617,6 +617,7 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
+      workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
       result = await command(
         '',
         cliOutput,
@@ -636,7 +637,7 @@ describe('element command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should call workspace promote', () => {
-      expect(workspace.promote).toHaveBeenCalledWith(expectElementSelector(selector.getFullName()))
+      expect(workspace.promote).toHaveBeenCalledWith([selector])
     })
 
     it('should flush workspace', () => {
@@ -666,6 +667,7 @@ describe('element command', () => {
         workspace,
         errored: false,
       })
+      workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
       result = await command(
         '',
         cliOutput,
@@ -685,7 +687,7 @@ describe('element command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should call workspace demote', () => {
-      expect(workspace.demote).toHaveBeenCalledWith(expectElementSelector(selector.getFullName()))
+      expect(workspace.demote).toHaveBeenCalledWith([selector])
     })
 
     it('should flush workspace', () => {

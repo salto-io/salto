@@ -16,7 +16,7 @@
 import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes,
   ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
 import { selectElementsBySelectors, createElementSelectors, createElementSelector,
-  getElementIdsFromSelectorsRecursively } from '../src/workspace/element_selector'
+  selectElementIdsByTraversal } from '../src/workspace/element_selector'
 
 const mockStrType = new PrimitiveType({
   elemID: new ElemID('mockAdapter', 'str'),
@@ -37,7 +37,10 @@ const mockType = new ObjectType({
     bool: { type: BuiltinTypes.BOOLEAN },
     num: { type: BuiltinTypes.NUMBER },
     strArray: { type: new ListType(BuiltinTypes.STRING) },
-    strMap: { type: new MapType(BuiltinTypes.STRING) },
+    strMap: { type: new MapType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      } },
     obj: {
       type: new ListType(new ObjectType({
         elemID: mockElem,
@@ -162,7 +165,14 @@ describe('element selector', () => {
     const selectedElements = selectElements(elements, ['salesforce.*', 'netsuite.*'])
     expect(selectedElements).toEqual([elements[0], elements[1]])
   })
-
+  it('returns all elements with no selectors', async () => {
+    const elements = [
+      new ElemID('salesforce', 'value'),
+      new ElemID('netsuite', 'value'),
+      new ElemID('hubspot', 'value'),
+    ]
+    expect(selectElements(elements, [])).toEqual(elements)
+  })
   it('should use a wildcard and a specific elment id and not throw error if the wildcard covers the element id', () => {
     const elements = [
       new ElemID('salesforce', 'value'),
@@ -224,79 +234,90 @@ describe('select elements recursively', () => {
   it('finds subElements one and two layers deep', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
-      'mockAdapter.test.instance.mockInstance.bool',
-      'mockAdapter.test.instance.mockInstance.strMap.bla',
-      'mockAdapter.test.annotation.*']).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+      'mockAdapter.*.field.*.*',
+      'mockAdapter.*.attr.testAnno']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })))).map(element => element.elemID).sort((el1, el2) =>
-      (el1.getFullName() > el2.getFullName() ? 1 : -1))
-    expect(elementIds).toEqual([mockInstance.elemID, mockType.elemID,
-      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool'),
-      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.strMap.bla'),
+      })))).sort((e1,
+      e2) => e1.getFullName().localeCompare(e2.getFullName()))
+    const expectedElements = [mockInstance.elemID, mockType.elemID,
       ElemID.fromFullName('mockAdapter.test.field.bool'),
       ElemID.fromFullName('mockAdapter.test.field.strMap'),
+      ElemID.fromFullName('mockAdapter.test.field.strMap._required'),
       ElemID.fromFullName('mockAdapter.test.field.obj'),
       ElemID.fromFullName('mockAdapter.test.field.num'),
       ElemID.fromFullName('mockAdapter.test.field.strArray'),
-      ElemID.fromFullName('mockAdapter.test.annotation.testAnno')].sort((el1, el2) =>
-      (el1.getFullName() > el2.getFullName() ? 1 : -1)))
+      ElemID.fromFullName('mockAdapter.test.attr.testAnno')].sort((e1,
+      e2) => e1.getFullName().localeCompare(e2.getFullName()))
+    expect(elementIds).toEqual(expectedElements)
+  })
+  it('returns nothing with non-matching subelements', async () => {
+    const selectors = createElementSelectors(['mockAdapter.test.instance.mockInstance.obj.NoSuchThingExists*']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      }))))
+    expect(elementIds).toEqual([])
   })
   it('removes fields of type from list when compact', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.field.*',
-      'mockAdapter.test.field.obj.*']).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+      'mockAdapter.test.field.strMap.*']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })), true)).map(element => element.elemID)
+      })), true))
     expect(elementIds).toEqual([mockType.elemID])
   })
 
-  it('removes child elements of instance from list', async () => {
-    const selectors = createElementSelectors(['mockAdapter.*.instance.*',
-      'mockAdapter.test.instance.mockInstance.*',
-      'mockAdapter.test.instance.mockInstance.strMap.*']).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+  it('removes child elements of field from list', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.field.strMap.*',
+      'mockAdapter.test.field.strMap']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })), true)).map(element => element.elemID)
-    expect(elementIds).toEqual([mockInstance.elemID])
+      })), true))
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 
-  it('fails with bad selector: element id matches nothing', async () => {
-    const selectors = createElementSelectors(['mockAdapter.*',
-      'mockAdapter.test.instance.mockInstance.strMap.noChanceThisSelectorExists']).validSelectors
-    await expect(getElementIdsFromSelectorsRecursively(selectors,
+  it('ignores multiple instances of the same', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.field.strMap.*',
+      'mockAdapter.test.field.strMap']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })))).rejects.toThrow(new Error('The following salto ids were not found: mockAdapter.test.instance.mockInstance.strMap.noChanceThisSelectorExists'))
+      })), true))
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 
-  it('fails with bad selector: selectors match nothing', async () => {
-    const selectors = createElementSelectors(['nonExistentAdapter.*', 'nonExistentAdapter2.*']).validSelectors
-    await expect(getElementIdsFromSelectorsRecursively(selectors,
+  it('removes child elements of field selected by wildcard from list', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.field.strMap.*',
+      'mockAdapter.*.field.strMap']).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })))).rejects.toThrow(new Error('No salto ids matched the provided selectors nonExistentAdapter.*,nonExistentAdapter2.*'))
+      })), true))
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 
   it('should return only the exact match when the selector is a valid elemID', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.instance.mockInstance.bool',
     ]).validSelectors
-    const elementIds = (await getElementIdsFromSelectorsRecursively(selectors,
+    const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })))).map(e => e.elemID)
-    expect(elementIds).toEqual([
-      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool'),
-    ])
+      }))))
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool')])
   })
 })

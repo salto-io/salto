@@ -74,7 +74,7 @@ const cloneElement = async (
   cliTelemetry.start(workspaceTags)
   try {
     outputLine(Prompts.CLONE_TO_ENV_START(toEnvs), output)
-    await workspace.copyTo(selectors, toEnvs)
+    await workspace.copyTo(await workspace.getElementIdsBySelectors(selectors), toEnvs)
     await workspace.flush()
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
@@ -98,11 +98,11 @@ const moveElement = async (
     switch (to) {
       case COMMON:
         outputLine(Prompts.MOVE_START('common'), output)
-        await workspace.promote(elmSelectors)
+        await workspace.promote(await workspace.getElementIdsBySelectors(elmSelectors))
         break
       case ENVS:
         outputLine(Prompts.MOVE_START('environment-specific folders'), output)
-        await workspace.demote(elmSelectors)
+        await workspace.demote(await workspace.getElementIdsBySelectors(elmSelectors, true))
         break
       default:
         errorOutputLine(formatInvalidMoveArg(to), output)

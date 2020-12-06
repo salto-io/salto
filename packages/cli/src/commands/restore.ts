@@ -176,7 +176,7 @@ const restoreDef = createPublicCommandDef({
   properties: {
     name: 'restore',
     description: 'Restore configuration element(s) from the state file',
-    positionals: [
+    positionalOptions: [
       {
         name: 'elementSelectors',
         description: 'Array of configuration element patterns',
@@ -184,7 +184,7 @@ const restoreDef = createPublicCommandDef({
         required: false,
       },
     ],
-    options: [
+    keyedOptions: [
       {
         name: 'force',
         alias: 'f',

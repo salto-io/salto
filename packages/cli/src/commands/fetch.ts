@@ -272,7 +272,7 @@ const fetchDef = createPublicCommandDef({
   properties: {
     name: 'fetch',
     description: 'Syncs this workspace with the services\' current state',
-    options: [
+    keyedOptions: [
       {
         name: 'force',
         alias: 'f',

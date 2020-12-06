@@ -126,7 +126,7 @@ const serviceAddDef = createPublicCommandDef({
   properties: {
     name: 'add',
     description: 'Add a new service to the environment',
-    options: [
+    keyedOptions: [
       {
         // Will be replaced with --no-login
         name: 'login',
@@ -146,7 +146,7 @@ const serviceAddDef = createPublicCommandDef({
       },
       ENVIORMENT_OPTION,
     ],
-    positionals: [
+    positionalOptions: [
       {
         name: 'serviceName',
         type: 'string',
@@ -175,7 +175,7 @@ const serviceListDef = createPublicCommandDef({
   properties: {
     name: 'list',
     description: 'List environment services',
-    options: [
+    keyedOptions: [
       ENVIORMENT_OPTION,
     ],
   },
@@ -220,7 +220,7 @@ const serviceLoginDef = createPublicCommandDef({
   properties: {
     name: 'login',
     description: 'Set the environment service credentials',
-    options: [
+    keyedOptions: [
       {
         name: 'authType',
         alias: 'a',
@@ -231,7 +231,7 @@ const serviceLoginDef = createPublicCommandDef({
       },
       ENVIORMENT_OPTION,
     ],
-    positionals: [
+    positionalOptions: [
       {
         name: 'serviceName',
         type: 'string',

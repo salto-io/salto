@@ -230,7 +230,7 @@ const deployDef = createPublicCommandDef({
   properties: {
     name: 'deploy',
     description: 'Update the upstream services from the workspace config elements',
-    options: [
+    keyedOptions: [
       {
         name: 'force',
         alias: 'f',

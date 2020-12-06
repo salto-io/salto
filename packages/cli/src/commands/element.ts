@@ -113,7 +113,7 @@ const moveToCommonDef = createPublicCommandDef({
   properties: {
     name: 'move-to-common',
     description: 'Move configuration element(s) to the common folder',
-    positionals: [
+    positionalOptions: [
       {
         name: 'elementSelector',
         description: 'Array of config element patterns',
@@ -121,7 +121,7 @@ const moveToCommonDef = createPublicCommandDef({
         required: true,
       },
     ],
-    options: [
+    keyedOptions: [
       ENVIORMENT_OPTION,
     ],
   },
@@ -165,7 +165,7 @@ const moveToEnvsDef = createPublicCommandDef({
   properties: {
     name: 'move-to-envs',
     description: 'Move configuration element(s) to env-specific folder(s)',
-    positionals: [
+    positionalOptions: [
       {
         name: 'elementSelector',
         description: 'Array of config element patterns',
@@ -230,7 +230,7 @@ const cloneDef = createPublicCommandDef({
   properties: {
     name: 'clone',
     description: 'Clone configuration element(s) from one env-specific folder to other(s)',
-    positionals: [
+    positionalOptions: [
       {
         name: 'elementSelector',
         description: 'Array of config element patterns',
@@ -238,7 +238,7 @@ const cloneDef = createPublicCommandDef({
         required: true,
       },
     ],
-    options: [
+    keyedOptions: [
       {
         name: 'toEnvs',
         description: 'The environment(s) to clone to',
@@ -326,7 +326,7 @@ const listUnresolvedDef = createPublicCommandDef({
   properties: {
     name: 'list-unresolved',
     description: 'Lists unresolved references to configuration elements',
-    options: [
+    keyedOptions: [
       {
         name: 'completeFrom',
         alias: 'c',

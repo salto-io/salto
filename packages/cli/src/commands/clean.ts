@@ -82,7 +82,7 @@ const cleanDef = createPublicCommandDef({
   properties: {
     name: 'clean',
     description: 'Maintenance command for cleaning workspace data. This operation cannot be undone, it\'s highly recommended to backup the workspace data before executing it.',
-    options: [
+    keyedOptions: [
       {
         name: 'force',
         alias: 'f',

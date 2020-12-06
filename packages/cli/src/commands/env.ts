@@ -139,7 +139,7 @@ const envDiffDef = createPublicCommandDef({
   properties: {
     name: 'diff',
     description: 'Compare two workspace environments',
-    positionals: [
+    positionalOptions: [
       {
         name: 'fromEnv',
         type: 'string',
@@ -159,7 +159,7 @@ const envDiffDef = createPublicCommandDef({
         description: 'Array of configuration element patterns',
       },
     ],
-    options: [
+    keyedOptions: [
       {
         name: 'detailedPlan',
         alias: 'p',
@@ -209,7 +209,7 @@ const envRenameDef = createPublicCommandDef({
   properties: {
     name: 'rename',
     description: 'Rename an environment',
-    positionals: [
+    positionalOptions: [
       {
         name: 'oldName',
         required: true,
@@ -247,7 +247,7 @@ const envDeleteDef = createPublicCommandDef({
   properties: {
     name: 'delete',
     description: 'Delete a workspace environment',
-    positionals: [
+    positionalOptions: [
       {
         name: 'envName',
         required: true,
@@ -275,7 +275,7 @@ const envSetDef = createPublicCommandDef({
   properties: {
     name: 'set',
     description: 'Set a new current workspace environment',
-    positionals: [
+    positionalOptions: [
       {
         name: 'envName',
         required: true,
@@ -355,7 +355,7 @@ const envCreateDef = createPublicCommandDef({
   properties: {
     name: 'create',
     description: 'Create a new environemnt in the workspace',
-    options: [
+    keyedOptions: [
       {
         name: 'force',
         alias: 'f',
@@ -369,7 +369,7 @@ const envCreateDef = createPublicCommandDef({
         type: 'boolean',
       },
     ],
-    positionals: [
+    positionalOptions: [
       {
         name: 'envName',
         required: true,

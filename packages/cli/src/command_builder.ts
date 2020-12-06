@@ -66,14 +66,13 @@ export type CommandInnerDef<T> = {
   action: CommandDefAction<T>
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export const isCommand = (c: CommandOrGroupDef): c is CommandDef<any> =>
-  (c !== undefined && Object.keys(c).includes('action'))
+export const isCommand = (c?: CommandOrGroupDef): c is CommandDef<unknown> =>
+  (c !== undefined && 'action' in c)
 
 type CommandOptions<T> = BasicCommandProperties & {
   aliases?: string[]
-  options?: KeyedOption<T>[]
-  positionals?: PositionalOption<T>[]
+  keyedOptions?: KeyedOption<T>[]
+  positionalOptions?: PositionalOption<T>[]
 }
 
 export type OptionType = {
@@ -93,21 +92,21 @@ type ChoicesType<T> = T extends string ? string[] : never
 
 export type PositionalOption<T, Name = PossiblePositionalArgs<T>>
   = Name extends PossiblePositionalArgs<T> ? {
-  name: Name
+  name: Name & string
   required: boolean
   description?: string
   type: Exclude<GetTypeEnumValue<T[Name]>, 'boolean'>
-  default?: GetOptionsDefaultType<T[Name]>
+  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
   choices?: ChoicesType<T[Name]>
 } : never
 
 export type KeyedOption<T, Name extends keyof T = keyof T> = Name extends keyof T ? {
-  name: Name
+  name: Name & string
   required?: boolean
   description?: string
   alias?: string
   type: GetTypeEnumValue<T[Name]>
-  default?: GetOptionsDefaultType<T[Name]>
+  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
   choices?: ChoicesType<T[Name]>
 } : never
 
@@ -122,14 +121,14 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
     })
   }
   // Add verbose to all commands
-  const options = [
-    ...makeArray(def.properties.options),
+  const keyedOptions = [
+    ...makeArray(def.properties.keyedOptions),
     VERBOSE_OPTION as KeyedOption<T>,
   ]
   return {
     properties: {
       ...def.properties,
-      options,
+      keyedOptions,
     },
     action,
   }

@@ -54,7 +54,7 @@ const initDef = createPublicCommandDef({
   properties: {
     name: 'init',
     description: 'Creates a new Salto workspace in the current directory',
-    positionals: [
+    positionalOptions: [
       {
         name: 'workspaceName',
         required: false,

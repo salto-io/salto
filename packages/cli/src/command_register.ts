@@ -18,7 +18,6 @@ import commander from 'commander'
 import { values as ldValues } from '@salto-io/lowerdash'
 import { Telemetry, CommandConfig } from '@salto-io/core'
 import { LogLevel, logger, compareLogLevels } from '@salto-io/logging'
-import commandOrGroupDefinitions from './commands/index'
 import { PositionalOption, CommandOrGroupDef, isCommand, CommandDef, CommandsGroupDef, KeyedOption } from './command_builder'
 import { CliOutput, SpinnerCreator, CliExitCode, CliError } from './types'
 import { versionString } from './version'
@@ -56,7 +55,7 @@ const wrapWithOptional = (innerStr: string): string =>
   (`[${innerStr}]`)
 
 const isNegationOptions = <T>(option: KeyedOption<T>): boolean =>
-  (String(option.type) === 'boolean' && (option.default as string | boolean | undefined) === true)
+  (option.type === 'boolean' && option.default === true)
 
 const createOptionString = (
   name: string,
@@ -74,34 +73,33 @@ const createOptionString = (
   return `${aliasAndName} ${varDef}`
 }
 
-const positionalsStr = <T>(positionals: PositionalOption<T>[]): string =>
-  (positionals.map(positional => {
+const positionalOptionsStr = <T>(positionalOptions: PositionalOption<T>[]): string =>
+  (positionalOptions.map(positional => {
     const innerStr = positional.type === 'stringsList'
-      ? `${String(positional.name)}${LIST_SUFFIX}`
-      : String(positional.name)
+      ? `${positional.name}${LIST_SUFFIX}`
+      : positional.name
     return positional.required ? wrapWithRequired(`${innerStr}`) : wrapWithOptional(`${innerStr}`)
   }).join(' '))
 
-const createPositionalsMapping = <T>(
-  positionals: PositionalOption<T>[],
+const createPositionalOptionsMapping = <T>(
+  positionalOptions: PositionalOption<T>[],
   values: (string | string[] | undefined)[]
 ): Record<string, string | string[] | undefined> => {
-  const positionalsNames = positionals.map(p => p.name)
+  const positionalOptionsNames = positionalOptions.map(p => p.name)
   return Object.fromEntries(
-    _.zip(positionalsNames, values)
+    _.zip(positionalOptionsNames, values)
   )
 }
 
 const addKeyedOption = <T>(parentCommand: commander.Command, option: KeyedOption<T>): void => {
-  const optionNameInKebabCase = _.kebabCase(String(option.name))
+  const optionNameInKebabCase = _.kebabCase(option.name)
   if (optionNameInKebabCase.startsWith(OPTION_NEGATION_PREFIX)) {
     throw new Error('Options with \'no[A-Z].*\' pattern (e.g. \'noLogin\') are illegal due to commander\'s negation feature. Use default true without the no prefix instead (e.g. \'login\' with default true)')
   }
-  const optionType = String(option.type)
   const optionDefStr = createOptionString(
     // camelCase option names are automatically changed to kebabCase in the help
     optionNameInKebabCase,
-    optionType,
+    option.type,
     option.alias,
     // We automatically replace bools with default true (negationOptions) with 'no-*' options
     isNegationOptions(option)
@@ -110,13 +108,13 @@ const addKeyedOption = <T>(parentCommand: commander.Command, option: KeyedOption
     parentCommand.requiredOption(
       optionDefStr,
       option.description,
-      (option.default as string | boolean | undefined)
+      option.default,
     )
   } else {
     // When an option is a boolean and is not required the default is false because of commander's
     // boolean behaviour (only yes/undefined is possible from user input)
-    const defaultVal = (option.default as string | boolean | undefined)
-      ?? (optionType === 'boolean' ? false : undefined)
+    const defaultVal = option.default
+      ?? (option.type === 'boolean' ? false : undefined)
     parentCommand.option(optionDefStr, option.description, defaultVal)
   }
 }
@@ -131,46 +129,48 @@ const registerCommand = <T>(
     spinnerCreator?: SpinnerCreator
   },
 ): void => {
-  const { properties: { name, description, options = [], positionals = [] }, action } = commandDef
+  const {
+    properties: { name, description, keyedOptions = [], positionalOptions = [] },
+    action,
+  } = commandDef
   const command = new commander.Command()
     .passCommandToAction(false)
-    .command(`${name} ${positionalsStr<T>(positionals)}`)
+    .command(`${name} ${positionalOptionsStr(positionalOptions)}`)
     .exitOverride()
   command.description(description)
-  positionals.forEach(positional =>
-    // Positionals are added as non-required Options because for positionals
+  positionalOptions.forEach(positionalOption =>
+    // Positional options are added as non-required Options because for positional options
     // requireness derives from <> or [] in the command and not option definition
     (command.option(
-      String(positional.name),
-      positional.description,
-      (positional.default as string | undefined)
+      positionalOption.name,
+      positionalOption.description,
+      positionalOption.default,
     )))
-  options.forEach(option => addKeyedOption(command, option))
+  keyedOptions.forEach(keyedOption => addKeyedOption(command, keyedOption))
   const optionsWithChoices = [
-    ...positionals.filter(positional => positional.choices !== undefined),
-    ...options.filter(option => option.choices !== undefined),
+    ...positionalOptions.filter(positionalOption => positionalOption.choices !== undefined),
+    ...keyedOptions.filter(keyedOption => keyedOption.choices !== undefined),
   ]
   command.action(
     async (...inputs) => {
       const indexOfKeyedOptions = inputs.findIndex(o => _.isPlainObject(o))
-      const keyedOptions = inputs[indexOfKeyedOptions]
+      const keyedOptionsObj = inputs[indexOfKeyedOptions]
 
-      // Handle the verbode option that is added automatically and is common for all commands
-      if (keyedOptions.verbose) {
+      // Handle the verbose option that is added automatically and is common for all commands
+      if (keyedOptionsObj.verbose) {
         increaseLoggingLogLevel()
       }
       const positionalValues = inputs.slice(0, indexOfKeyedOptions)
       const args = {
-        ...keyedOptions,
-        ...createPositionalsMapping<T>(positionals, positionalValues),
+        ...keyedOptionsObj,
+        ...createPositionalOptionsMapping(positionalOptions, positionalValues),
       }
 
       // Validate choices enforcement
       const choicesValidationErrors = optionsWithChoices.map(optionWithChoice => {
-        const optionName = String(optionWithChoice.name)
-        if (args[optionName] !== undefined
-          && !optionWithChoice.choices?.includes(args[optionName])) {
-          return `error: option ${optionName} must be one of - [${optionWithChoice.choices?.join(', ')}]\n`
+        if (args[optionWithChoice.name] !== undefined
+          && !optionWithChoice.choices?.includes(args[optionWithChoice.name])) {
+          return `error: option ${optionWithChoice.name} must be one of - [${optionWithChoice.choices?.join(', ')}]\n`
         }
         return undefined
       }).filter(isDefined)
@@ -235,14 +235,15 @@ const registerCommandOrGroup = (
 
 export const registerCommands = (
   commanderProgram: commander.Command,
-  allDefinitions: CommandOrGroupDef[] = commandOrGroupDefinitions,
+  allDefinitions: CommandOrGroupDef[],
   cliArgs: {
     telemetry: Telemetry
     config: CommandConfig
     output: CliOutput
     spinnerCreator?: SpinnerCreator
   },
-): void => (
-  allDefinitions.forEach(commandOrGroupDef =>
-    (registerCommandOrGroup(commanderProgram, commandOrGroupDef, cliArgs)))
-)
+): void => {
+  allDefinitions.forEach(commandOrGroupDef => {
+    registerCommandOrGroup(commanderProgram, commandOrGroupDef, cliArgs)
+  })
+}

@@ -15,9 +15,9 @@
 */
 
 import { SaltoError, Element } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { HclParseError } from './internal/types'
 import { SourceMap } from './source_map'
-import { collections } from '@salto-io/lowerdash'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 export type ParseError = HclParseError & SaltoError

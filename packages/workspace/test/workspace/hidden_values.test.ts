@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { mergeWithHidden } from '../../src/workspace/hidden_values'
 import { MergeResult } from '../../src/merger'
+
+const { awu } = collections.asynciterable
 
 describe('mergeWithHidden', () => {
   describe('when parent value is deleted in the workspace', () => {
@@ -36,8 +39,8 @@ describe('mergeWithHidden', () => {
       delete workspaceObjType.fields.f1
       result = mergeWithHidden([fieldType, workspaceObjType], [fieldType, mockObjType])
     })
-    it('should omit the hidden value', () => {
-      const mergedWorkspaceObj = result.merged[1] as ObjectType
+    it('should omit the hidden value', async () => {
+      const mergedWorkspaceObj = (await awu(result.merged).toArray())[1] as ObjectType
       expect(mergedWorkspaceObj.fields).not.toHaveProperty('f1')
     })
   })

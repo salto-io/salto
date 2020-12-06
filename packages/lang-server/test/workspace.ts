@@ -17,8 +17,7 @@ import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors,
-  merger, configSource as cs, nacl, staticFiles, dirStore, elementSource 
-} from '@salto-io/workspace'
+  merger, configSource as cs, nacl, staticFiles, dirStore, elementSource } from '@salto-io/workspace'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 
 import { collections } from '@salto-io/lowerdash'

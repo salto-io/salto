@@ -15,11 +15,11 @@
 */
 import wu from 'wu'
 import * as path from 'path'
-import { hash } from '@salto-io/lowerdash'
+import { hash, collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { stat, mkdirp, replaceContents, readFile, exists } from '@salto-io/file'
 import { parseCache, parser, staticFiles } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
+
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
 const { awu } = collections.asynciterable

@@ -15,9 +15,9 @@
 */
 import { EOL } from 'os'
 
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+
 import { ParseResult, ParseError, SourceMap } from '../parser'
 import * as elementSerializer from './elements'
 

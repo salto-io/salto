@@ -178,7 +178,7 @@ export const selectElementIdsByTraversal = async (
   const [topLevelSelectors, subElementSelectors] = _.partition(wildcardSelectors,
     isTopLevelSelector)
   if (topLevelSelectors.length !== 0) {
-    const topLevelElements  = (await selectElementsBySelectors(awu(elements),
+    const topLevelElements = (await selectElementsBySelectors(awu(elements),
       topLevelSelectors, false)).elements as AsyncIterable<ElementIDContainer>
     await awu(topLevelElements).forEach(element => ids.add(element.elemID.getFullName()))
     if (subElementSelectors.length === 0) {
@@ -186,8 +186,12 @@ export const selectElementIdsByTraversal = async (
     }
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentElements = (await selectElementsBySelectors(awu(elements), possibleParentSelectors,
-    false)).elements
+  const possibleParentElements = (await selectElementsBySelectors(
+    awu(elements),
+    possibleParentSelectors,
+    false
+  )).elements
+
   const stillRelevantElements = await awu(compact ? awu(possibleParentElements)
     .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements)
     .toArray()

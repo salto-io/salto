@@ -15,9 +15,9 @@
 */
 import wu from 'wu'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
-import { hash } from '@salto-io/lowerdash'
+import { hash, collections } from '@salto-io/lowerdash'
 import each from 'jest-each'
-import { collections } from '@salto-io/lowerdash'
+
 import { mockDirStore } from '../common/nacl_file_store'
 import { parseResultCache } from '../../src/workspace/cache'
 import * as serializer from '../../src/serializer/elements'

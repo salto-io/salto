@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, ElemID, Value, TypeElement, ListType, ObjectType, PrimitiveTypes, MapType } from '@salto-io/adapter-api'
+import { ReferenceExpression, ElemID, Value, TypeElement, ListType, ObjectType, PrimitiveTypes, MapType, VariableExpression } from '@salto-io/adapter-api'
 import isPromise from 'is-promise'
 import { LexerToken } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
@@ -43,7 +43,10 @@ export const parseElemID = (fullname: string): ElemID => {
 
 export const createReferenceExpresion = (ref: string): ReferenceExpression | IllegalReference => {
   try {
-    return new ReferenceExpression(ElemID.fromFullName(ref))
+    const elemId = ElemID.fromFullName(ref)
+    return elemId.adapter === ElemID.VARIABLES_NAMESPACE
+      ? new VariableExpression(elemId)
+      : new ReferenceExpression(elemId)
   } catch (e) {
     return new IllegalReference(ref, e.message)
   }
@@ -89,7 +92,7 @@ export const createFieldType = (context: ParseContext, blockType: string): TypeE
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
-    context.listTypes.add(listType)
+    context.listTypes[listType.elemID.getFullName()] = listType
     return listType
   }
   if (blockType.startsWith(Keywords.MAP_PREFIX) && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
@@ -100,7 +103,7 @@ export const createFieldType = (context: ParseContext, blockType: string): TypeE
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
-    context.mapTypes.add(mapType)
+    context.mapTypes[mapType.elemID.getFullName()] = mapType
     return mapType
   }
   return new ObjectType({ elemID: parseElemID(blockType) })

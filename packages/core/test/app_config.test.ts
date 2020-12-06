@@ -160,11 +160,11 @@ describe('app config', () => {
   it('should fail when config is invalid', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/invalid/home'
     const naclFileContent = `
-    salto {
+    salto 
       installationID: "1234"
       telemetry = {
         enabled = true
-      }
+      
     }`
     mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(true)

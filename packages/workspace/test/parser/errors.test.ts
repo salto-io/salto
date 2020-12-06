@@ -19,9 +19,6 @@ import { IllegalReference } from '../../src/parser/internal/types'
 import { MISSING_VALUE } from '../../src/parser/internal/native/consumers/values'
 
 describe('parsing errors', () => {
-  beforeAll(() => {
-    process.env.USE_NATIVE_PARSER = '1'
-  })
   describe('general element block structure', () => {
     describe('no labels', () => {
       const nacl = `

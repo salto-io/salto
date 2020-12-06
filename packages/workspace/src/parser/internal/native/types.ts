@@ -34,8 +34,8 @@ export type ParseContext = {
   filename: string
   lexer: Lexer
   errors: ParseError[]
-  listTypes: Set<ListType>
-  mapTypes: Set<MapType>
+  listTypes: Record<string, ListType>
+  mapTypes: Record<string, MapType>
   functions: Functions
   sourceMap: SourceMap
   calcSourceMap: boolean

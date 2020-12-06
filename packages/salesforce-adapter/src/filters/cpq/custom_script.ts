@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isInstanceOfTypeChange } from '../utils'
@@ -32,15 +32,18 @@ const refListFieldNames = [
 const listOfText = new ListType(Types.primitiveDataTypes.Text)
 
 const fieldTypeFromTextListToLongText = (field: Field): Field => {
-  if (isListType(field.type) && field.type.isEqual(listOfText)) {
-    field.type = Types.primitiveDataTypes.LongTextArea
+  const fieldType = field.getType()
+  if (isListType(fieldType) && fieldType.isEqual(listOfText)) {
+    field.refType = createRefToElmWithValue(Types.primitiveDataTypes.LongTextArea)
   }
   return field
 }
 
 const fieldTypeFromLongTextToTextList = (field: Field): Field => {
-  if (isPrimitiveType(field.type) && field.type.isEqual(Types.primitiveDataTypes.LongTextArea)) {
-    field.type = listOfText
+  const fieldType = field.getType()
+  if (isPrimitiveType(fieldType)
+    && fieldType.isEqual(Types.primitiveDataTypes.LongTextArea)) {
+    field.refType = createRefToElmWithValue(listOfText)
   }
   return field
 }
@@ -97,7 +100,7 @@ const transformInstanceToSFValues = (
 }
 
 const isInstanceOfCustomScript = (element: Element): element is InstanceElement =>
-  (isInstanceOfCustomObject(element) && apiName(element.type) === CPQ_CUSTOM_SCRIPT)
+  (isInstanceOfCustomObject(element) && apiName(element.getType()) === CPQ_CUSTOM_SCRIPT)
 
 const isCustomScriptType = (objType: ObjectType): boolean =>
   isCustomObject(objType) && apiName(objType) === CPQ_CUSTOM_SCRIPT
@@ -107,7 +110,7 @@ const getCustomScriptObjectChange = (
 ): Change<ObjectType> | undefined =>
   changes
     .filter(isObjectTypeChange)
-    .find(change => isCustomScriptType(getChangeElement(change)))
+    .find(change => isCustomScriptType(getChangeElement(change) as ObjectType))
 
 const applyFuncOnCustomScriptInstanceChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>,

@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 
 export const integrationInnerTypes: ObjectType[] = []
@@ -30,7 +31,7 @@ export const integration = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,

@@ -13,15 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes, TypeElement,
-  TypeMap,
-  Values,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, TypeElement, TypeMap, Values, ReferenceExpression } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { LeadAttribute, Field, MarketoMetadata } from '../client/types'
 import { FIELD_TYPES, MARKETO, SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } from '../constants'
@@ -106,11 +98,13 @@ export const createMarketoObjectType = (
   // TODO: use the ElemIdGetter functionality
   const elemID = new ElemID(MARKETO, name)
   const fieldsDefinition = Object.fromEntries(
-    fields.map((field: LeadAttribute | Field) =>
-      [isAttributeField(field) ? field.rest.name : field.name, {
-        type: Types.getFieldType(field.dataType),
+    fields.map((field: LeadAttribute | Field) => {
+      const fieldType = Types.getFieldType(field.dataType)
+      return [isAttributeField(field) ? field.rest.name : field.name, {
+        refType: new ReferenceExpression(fieldType.elemID, fieldType),
         annotations: field,
-      }])
+      }]
+    })
   )
   return new ObjectType({
     elemID,

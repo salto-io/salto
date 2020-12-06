@@ -75,7 +75,7 @@ const parseType = (
   const elemID = parseElemID(typeName)
   const typeObj = new ObjectType({
     elemID,
-    annotationTypes,
+    annotationRefsOrTypes: annotationTypes,
     annotations: annotations.value,
     isSettings,
   })
@@ -151,7 +151,7 @@ const parsePrimitiveType = (
     element: new PrimitiveType({
       elemID,
       primitive: primitiveType(baseType.value),
-      annotationTypes,
+      annotationRefsOrTypes: annotationTypes,
       annotations: annotations.value,
     }),
     sourceMap,
@@ -176,19 +176,20 @@ const parseInstance = (
   // which is needed in order for the promise value replacer to replace the content
   // on the proper object.
   INSTANCE_ANNOTATIONS_ATTRS.forEach(annoAttr => _.unset(values, annoAttr))
+  const typeObj = new ObjectType({
+    elemID: typeID,
+    isSettings: labels.length === 0 && !typeID.isConfig(),
+  })
   const inst = new InstanceElement(
     name,
-    new ObjectType({
-      elemID: typeID,
-      isSettings: labels.length === 0 && !typeID.isConfig(),
-    }),
+    typeObj,
     values,
     undefined,
     annotations,
   )
   const sourceMap = new SourceMap()
   if (attrs.sourceMap) {
-    const mountKey = inst.type.isSettings
+    const mountKey = typeObj.isSettings
       ? [inst.elemID.getFullName(), ElemID.CONFIG_NAME].join(ElemID.NAMESPACE_SEPARATOR)
       : inst.elemID.getFullName()
     sourceMap.mount(mountKey, attrs.sourceMap)

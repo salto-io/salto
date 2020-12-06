@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -32,19 +33,19 @@ const entryForm_actionbar_buttons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.entryform_buttonid,
+      refType: createRefToElmWithValue(enums.entryform_buttonid),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see entryform_buttonid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -62,7 +63,7 @@ const entryForm_actionbar_buttons = new ObjectType({
   },
   fields: {
     button: {
-      type: new ListType(entryForm_actionbar_buttons_button),
+      refType: createRefToElmWithValue(new ListType(entryForm_actionbar_buttons_button)),
       annotations: {
       },
     },
@@ -80,14 +81,14 @@ const entryForm_actionbar_customButtons_customButton = new ObjectType({
   },
   fields: {
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
@@ -106,7 +107,7 @@ const entryForm_actionbar_customButtons = new ObjectType({
   },
   fields: {
     customButton: {
-      type: new ListType(entryForm_actionbar_customButtons_customButton),
+      refType: createRefToElmWithValue(new ListType(entryForm_actionbar_customButtons_customButton)),
       annotations: {
       },
     },
@@ -124,14 +125,14 @@ const entryForm_actionbar_customMenu_customMenuItem = new ObjectType({
   },
   fields: {
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
@@ -150,7 +151,7 @@ const entryForm_actionbar_customMenu = new ObjectType({
   },
   fields: {
     customMenuItem: {
-      type: new ListType(entryForm_actionbar_customMenu_customMenuItem),
+      refType: createRefToElmWithValue(new ListType(entryForm_actionbar_customMenu_customMenuItem)),
       annotations: {
       },
     },
@@ -168,19 +169,19 @@ const entryForm_actionbar_menu_menuitem = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.entryform_buttonid,
+      refType: createRefToElmWithValue(enums.entryform_buttonid),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see entryform_buttonid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -198,7 +199,7 @@ const entryForm_actionbar_menu = new ObjectType({
   },
   fields: {
     menuitem: {
-      type: new ListType(entryForm_actionbar_menu_menuitem),
+      refType: createRefToElmWithValue(new ListType(entryForm_actionbar_menu_menuitem)),
       annotations: {
       },
     },
@@ -216,22 +217,22 @@ const entryForm_actionbar = new ObjectType({
   },
   fields: {
     buttons: {
-      type: entryForm_actionbar_buttons,
+      refType: createRefToElmWithValue(entryForm_actionbar_buttons),
       annotations: {
       },
     },
     customButtons: {
-      type: entryForm_actionbar_customButtons,
+      refType: createRefToElmWithValue(entryForm_actionbar_customButtons),
       annotations: {
       },
     },
     customMenu: {
-      type: entryForm_actionbar_customMenu,
+      refType: createRefToElmWithValue(entryForm_actionbar_customMenu),
       annotations: {
       },
     },
     menu: {
-      type: entryForm_actionbar_menu,
+      refType: createRefToElmWithValue(entryForm_actionbar_menu),
       annotations: {
       },
     },
@@ -249,23 +250,23 @@ const entryForm_buttons_standardButtons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.entryform_buttonid,
+      refType: createRefToElmWithValue(enums.entryform_buttonid),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see entryform_buttonid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     style: {
-      type: enums.form_buttonstyle,
+      refType: createRefToElmWithValue(enums.form_buttonstyle),
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_buttonstyle.   The default value is 'BUTTON'. */
@@ -283,7 +284,7 @@ const entryForm_buttons_standardButtons = new ObjectType({
   },
   fields: {
     button: {
-      type: new ListType(entryForm_buttons_standardButtons_button),
+      refType: createRefToElmWithValue(new ListType(entryForm_buttons_standardButtons_button)),
       annotations: {
       },
     },
@@ -301,7 +302,7 @@ const entryForm_buttons = new ObjectType({
   },
   fields: {
     standardButtons: {
-      type: entryForm_buttons_standardButtons,
+      refType: createRefToElmWithValue(entryForm_buttons_standardButtons),
       annotations: {
       },
     },
@@ -319,7 +320,7 @@ const entryForm_customCode = new ObjectType({
   },
   fields: {
     scriptFile: {
-      type: BuiltinTypes.STRING /* Original type was filereference */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
       annotations: {
       },
     }, /* Original description: This field must reference a .js file. */
@@ -337,48 +338,48 @@ const entryForm_mainFields_defaultFieldGroup_fields_field = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      type: enums.form_displaytype,
+      refType: createRefToElmWithValue(enums.form_displaytype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -396,14 +397,14 @@ const entryForm_mainFields_defaultFieldGroup_fields = new ObjectType({
   },
   fields: {
     position: {
-      type: enums.form_fieldposition,
+      refType: createRefToElmWithValue(enums.form_fieldposition),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      type: new ListType(entryForm_mainFields_defaultFieldGroup_fields_field),
+      refType: createRefToElmWithValue(new ListType(entryForm_mainFields_defaultFieldGroup_fields_field)),
       annotations: {
       },
     },
@@ -421,7 +422,7 @@ const entryForm_mainFields_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      type: new ListType(entryForm_mainFields_defaultFieldGroup_fields),
+      refType: createRefToElmWithValue(new ListType(entryForm_mainFields_defaultFieldGroup_fields)),
       annotations: {
       },
     },
@@ -439,48 +440,48 @@ const entryForm_mainFields_fieldGroup_fields_field = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      type: enums.form_displaytype,
+      refType: createRefToElmWithValue(enums.form_displaytype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -498,14 +499,14 @@ const entryForm_mainFields_fieldGroup_fields = new ObjectType({
   },
   fields: {
     position: {
-      type: enums.form_fieldposition,
+      refType: createRefToElmWithValue(enums.form_fieldposition),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      type: new ListType(entryForm_mainFields_fieldGroup_fields_field),
+      refType: createRefToElmWithValue(new ListType(entryForm_mainFields_fieldGroup_fields_field)),
       annotations: {
       },
     },
@@ -523,35 +524,35 @@ const entryForm_mainFields_fieldGroup = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showTitle: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     singleColumn: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: new ListType(entryForm_mainFields_fieldGroup_fields),
+      refType: createRefToElmWithValue(new ListType(entryForm_mainFields_fieldGroup_fields)),
       annotations: {
       },
     },
@@ -569,12 +570,12 @@ const entryForm_mainFields = new ObjectType({
   },
   fields: {
     fieldGroup: {
-      type: new ListType(entryForm_mainFields_fieldGroup),
+      refType: createRefToElmWithValue(new ListType(entryForm_mainFields_fieldGroup)),
       annotations: {
       },
     },
     defaultFieldGroup: {
-      type: entryForm_mainFields_defaultFieldGroup,
+      refType: createRefToElmWithValue(entryForm_mainFields_defaultFieldGroup),
       annotations: {
       },
     },
@@ -592,7 +593,7 @@ const entryForm_quickViewFields_field = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -611,7 +612,7 @@ const entryForm_quickViewFields = new ObjectType({
   },
   fields: {
     field: {
-      type: new ListType(entryForm_quickViewFields_field),
+      refType: createRefToElmWithValue(new ListType(entryForm_quickViewFields_field)),
       annotations: {
       },
     },
@@ -629,48 +630,48 @@ const entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field = new Object
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      type: enums.form_displaytype,
+      refType: createRefToElmWithValue(enums.form_displaytype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -688,14 +689,14 @@ const entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields = new ObjectType({
   },
   fields: {
     position: {
-      type: enums.form_fieldposition,
+      refType: createRefToElmWithValue(enums.form_fieldposition),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      type: new ListType(entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field)),
       annotations: {
       },
     },
@@ -713,7 +714,7 @@ const entryForm_tabs_tab_fieldGroups_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      type: new ListType(entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields)),
       annotations: {
       },
     },
@@ -731,48 +732,48 @@ const entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      type: enums.form_displaytype,
+      refType: createRefToElmWithValue(enums.form_displaytype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -790,14 +791,14 @@ const entryForm_tabs_tab_fieldGroups_fieldGroup_fields = new ObjectType({
   },
   fields: {
     position: {
-      type: enums.form_fieldposition,
+      refType: createRefToElmWithValue(enums.form_fieldposition),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field)),
       annotations: {
       },
     },
@@ -815,35 +816,35 @@ const entryForm_tabs_tab_fieldGroups_fieldGroup = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showTitle: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     singleColumn: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup_fields),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup_fields)),
       annotations: {
       },
     },
@@ -861,12 +862,12 @@ const entryForm_tabs_tab_fieldGroups = new ObjectType({
   },
   fields: {
     fieldGroup: {
-      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup)),
       annotations: {
       },
     },
     defaultFieldGroup: {
-      type: entryForm_tabs_tab_fieldGroups_defaultFieldGroup,
+      refType: createRefToElmWithValue(entryForm_tabs_tab_fieldGroups_defaultFieldGroup),
       annotations: {
       },
     },
@@ -884,24 +885,24 @@ const entryForm_tabs_tab_subItems_subList = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactionbodycustomfield   itemcustomfield   entitycustomfield   recordsublist   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_sublistid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     neverEmpty: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -919,24 +920,24 @@ const entryForm_tabs_tab_subItems_subLists_subList = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactionbodycustomfield   itemcustomfield   entitycustomfield   recordsublist   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_sublistid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     neverEmpty: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -954,7 +955,7 @@ const entryForm_tabs_tab_subItems_subLists = new ObjectType({
   },
   fields: {
     subList: {
-      type: new ListType(entryForm_tabs_tab_subItems_subLists_subList),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subLists_subList)),
       annotations: {
       },
     },
@@ -972,48 +973,48 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fi
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      type: enums.form_displaytype,
+      refType: createRefToElmWithValue(enums.form_displaytype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -1031,14 +1032,14 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields = 
   },
   fields: {
     position: {
-      type: enums.form_fieldposition,
+      refType: createRefToElmWithValue(enums.form_fieldposition),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field)),
       annotations: {
       },
     },
@@ -1056,7 +1057,7 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup = new Obj
   },
   fields: {
     fields: {
-      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields)),
       annotations: {
       },
     },
@@ -1074,48 +1075,48 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field = n
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      type: enums.form_displaytype,
+      refType: createRefToElmWithValue(enums.form_displaytype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -1133,14 +1134,14 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields = new Obj
   },
   fields: {
     position: {
-      type: enums.form_fieldposition,
+      refType: createRefToElmWithValue(enums.form_fieldposition),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field)),
       annotations: {
       },
     },
@@ -1158,35 +1159,35 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup = new ObjectType
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showTitle: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     singleColumn: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields)),
       annotations: {
       },
     },
@@ -1204,12 +1205,12 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups = new ObjectType({
   },
   fields: {
     fieldGroup: {
-      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup)),
       annotations: {
       },
     },
     defaultFieldGroup: {
-      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
+      refType: createRefToElmWithValue(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup),
       annotations: {
       },
     },
@@ -1227,29 +1228,29 @@ const entryForm_tabs_tab_subItems_subTab = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see entryform_subtabid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     neverEmpty: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fieldGroups: {
-      type: entryForm_tabs_tab_subItems_subTab_fieldGroups,
+      refType: createRefToElmWithValue(entryForm_tabs_tab_subItems_subTab_fieldGroups),
       annotations: {
       },
     },
@@ -1267,17 +1268,17 @@ const entryForm_tabs_tab_subItems = new ObjectType({
   },
   fields: {
     subList: {
-      type: new ListType(entryForm_tabs_tab_subItems_subList),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subList)),
       annotations: {
       },
     },
     subLists: {
-      type: new ListType(entryForm_tabs_tab_subItems_subLists),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subLists)),
       annotations: {
       },
     },
     subTab: {
-      type: new ListType(entryForm_tabs_tab_subItems_subTab),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subTab)),
       annotations: {
       },
     },
@@ -1295,29 +1296,29 @@ const entryForm_tabs_tab = new ObjectType({
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see entryform_tabid. */
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     visible: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     fieldGroups: {
-      type: entryForm_tabs_tab_fieldGroups,
+      refType: createRefToElmWithValue(entryForm_tabs_tab_fieldGroups),
       annotations: {
       },
     },
     subItems: {
-      type: entryForm_tabs_tab_subItems,
+      refType: createRefToElmWithValue(entryForm_tabs_tab_subItems),
       annotations: {
       },
     },
@@ -1335,7 +1336,7 @@ const entryForm_tabs = new ObjectType({
   },
   fields: {
     tab: {
-      type: new ListType(entryForm_tabs_tab),
+      refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab)),
       annotations: {
       },
     },
@@ -1352,7 +1353,7 @@ export const entryForm = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -1360,74 +1361,74 @@ export const entryForm = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
     standard: {
-      type: enums.entryform_standard,
+      refType: createRefToElmWithValue(enums.entryform_standard),
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see entryform_standard. */
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     recordType: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the customrecordtype custom type. */
     inactive: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     preferred: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     storedWithRecord: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     mainFields: {
-      type: entryForm_mainFields,
+      refType: createRefToElmWithValue(entryForm_mainFields),
       annotations: {
       },
     },
     tabs: {
-      type: entryForm_tabs,
+      refType: createRefToElmWithValue(entryForm_tabs),
       annotations: {
       },
     },
     customCode: {
-      type: entryForm_customCode,
+      refType: createRefToElmWithValue(entryForm_customCode),
       annotations: {
       },
     },
     quickViewFields: {
-      type: entryForm_quickViewFields,
+      refType: createRefToElmWithValue(entryForm_quickViewFields),
       annotations: {
       },
     },
     actionbar: {
-      type: entryForm_actionbar,
+      refType: createRefToElmWithValue(entryForm_actionbar),
       annotations: {
       },
     },
     useForPopup: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     editingInList: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     buttons: {
-      type: entryForm_buttons,
+      refType: createRefToElmWithValue(entryForm_buttons),
       annotations: {
       },
     },

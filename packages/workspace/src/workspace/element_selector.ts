@@ -162,7 +162,8 @@ const isElementPossiblyParentOfSearchedElement = (
 )
 
 export const selectElementIdsByTraversal = (
-  selectors: ElementSelector[], elements: ElementIDToValue[],
+  selectors: ElementSelector[],
+  elements: ElementIDToValue[],
   compact = false
 ): ElemID[] => {
   const [wildcardSelectors, determinedSelectors] = _.partition(selectors, selector => selector.origin.includes('*'))

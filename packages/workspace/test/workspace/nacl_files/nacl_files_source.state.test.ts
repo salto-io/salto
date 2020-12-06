@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { ModificationChange, InstanceElement, RemovalChange, ObjectType, PrimitiveTypes,
   ElemID, AdditionChange, DetailedChange, BuiltinTypes } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -276,7 +277,7 @@ describe('Nacl Files Source', () => {
           .find(e => e.elemID.getFullName() === 'dummy.test.instance.inst') as InstanceElement
         const objType = elements.find(e => e.elemID.getFullName() === 'dummy.test') as ObjectType
         expect(objType).toBeDefined()
-        expect(instance.type).toBe(objType)
+        expect(instance.refType).toBe(objType.elemID)
       })
       describe('splitted elements', () => {
         describe('fragmented in all files', () => {
@@ -331,20 +332,42 @@ describe('Nacl Files Source', () => {
             const objType1 = {
               before: new ObjectType({
                 elemID: objType1ElemID,
-                fields: { a: { type: BuiltinTypes.STRING }, b: { type: BuiltinTypes.NUMBER } },
+                fields: {
+                  a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+                  b: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+                },
               }),
               after: new ObjectType({
-                elemID: objType1ElemID, fields: { b: { type: BuiltinTypes.NUMBER } },
+                elemID: objType1ElemID,
+                fields: {
+                  b: {
+                    refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+                  },
+                },
               }),
             }
             const objType2 = {
               before: new ObjectType({
                 elemID: objType2ElemID,
-                fields: { a: { type: BuiltinTypes.NUMBER }, c: { type: BuiltinTypes.STRING } },
+                fields: {
+                  a: {
+                    refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+                  },
+                  c: {
+                    refType: createRefToElmWithValue(BuiltinTypes.STRING),
+                  },
+                },
               }),
               after: new ObjectType({
                 elemID: objType2ElemID,
-                fields: { d: { type: BuiltinTypes.STRING }, c: { type: BuiltinTypes.STRING } },
+                fields: {
+                  d: {
+                    refType: createRefToElmWithValue(BuiltinTypes.STRING),
+                  },
+                  c: {
+                    refType: createRefToElmWithValue(BuiltinTypes.STRING),
+                  },
+                },
               }),
             }
             expect(res).toEqual([

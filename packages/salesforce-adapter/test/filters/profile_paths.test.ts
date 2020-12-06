@@ -48,7 +48,7 @@ describe('profile paths filter', () => {
   it('should replace profile instance path', async () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
-    instance.type.annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+    instance.getType().annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.path)
       .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'System_Administrator'])
@@ -57,7 +57,7 @@ describe('profile paths filter', () => {
   it('should replace instance path for PlatformPortal Profile', async () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
     instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
-    instance.type.annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+    instance.getType().annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.path)
       .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'Authenticated_Website2'])
@@ -66,7 +66,7 @@ describe('profile paths filter', () => {
   it('should not replace instance path for other metadataTypes', async () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
-    instance.type.annotations[METADATA_TYPE] = 'some other metadataType'
+    instance.getType().annotations[METADATA_TYPE] = 'some other metadataType'
     await filter.onFetch([instance])
     expect(instance.path).toEqual(origInstance.path)
   })
@@ -74,7 +74,7 @@ describe('profile paths filter', () => {
   it('should not replace instance path if it has no path', async () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
-    instance.type.annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+    instance.getType().annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.path = undefined
     await filter.onFetch([instance])
     expect(instance.path).toBeUndefined()

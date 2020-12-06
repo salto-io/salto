@@ -14,11 +14,8 @@
 * limitations under the License.
 */
 /* eslint-disable @typescript-eslint/camelcase */
-import {
-  ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
-  ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType,
-  ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -28,6 +25,8 @@ import {
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { IllegalReference } from '../src/parser/parse'
+import { InMemoryRemoteElementSource } from '../src/workspace/elements_source'
+import { getFieldsAndAnnoTypes } from './utils'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
@@ -35,15 +34,18 @@ describe('Elements validation', () => {
     elemID: baseElemID,
     fields: {
       str: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['str'] }),
         },
       },
-      num: { type: BuiltinTypes.NUMBER },
-      bool: { type: BuiltinTypes.BOOLEAN, annotations: { _required: true } },
+      num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      bool: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: { _required: true },
+      },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       annostr: BuiltinTypes.STRING,
       annonum: BuiltinTypes.NUMBER,
       annoboolean: BuiltinTypes.BOOLEAN,
@@ -53,7 +55,7 @@ describe('Elements validation', () => {
     },
   })
   const restrictedType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedType'),
+    elemID: new ElemID('salto', 'restrictedType'),
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['val1', 'val2'] }),
@@ -61,7 +63,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRangeType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeType'),
+    elemID: new ElemID('salto', 'restrictedRangeType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -71,7 +73,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRangeNoMinType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMinType'),
+    elemID: new ElemID('salto', 'restrictedRangeNoMinType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max: 10 }),
@@ -79,7 +81,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRangeNoMaxType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMaxType'),
+    elemID: new ElemID('salto', 'restrictedRangeNoMaxType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1 }),
@@ -87,7 +89,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRegexOnlyLowerType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRegexOnlyLowerType'),
+    elemID: new ElemID('salto', 'restrictedRegexOnlyLowerType'),
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^[a-z]*$' }),
@@ -95,9 +97,9 @@ describe('Elements validation', () => {
   })
 
   const restrictedAnnotation = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedAnnotation'),
+    elemID: new ElemID('salto', 'restrictedAnnotation'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       temp: restrictedType,
       range: restrictedRangeType,
       rangeNoMin: restrictedRangeNoMinType,
@@ -111,27 +113,39 @@ describe('Elements validation', () => {
     elemID: nestedElemID,
     fields: {
       nested: {
-        type: simpleType,
+        refType: createRefToElmWithValue(simpleType),
         annotations: {
           annonum: 1,
           annoboolean: true,
         },
       },
-      flatstr: { type: BuiltinTypes.STRING },
-      flatnum: { type: BuiltinTypes.NUMBER },
-      flatbool: { type: BuiltinTypes.BOOLEAN },
-      list: { type: new ListType(BuiltinTypes.STRING) },
-      listOfList: { type: new ListType(new ListType(BuiltinTypes.STRING)) },
-      listOfListOfList: { type: new ListType(new ListType(new ListType(BuiltinTypes.STRING))) },
-      listOfObject: { type: new ListType(simpleType) },
-      map: { type: new MapType(BuiltinTypes.STRING) },
-      mapOfObject: { type: new MapType(simpleType) },
-      mapOfMaps: { type: new MapType(new MapType(BuiltinTypes.STRING)) },
-      mapOfLists: { type: new MapType(new ListType(BuiltinTypes.STRING)) },
-      listOfMaps: { type: new ListType(new MapType(BuiltinTypes.STRING)) },
-      reqStr: { type: BuiltinTypes.STRING },
+      flatstr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      flatnum: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      flatbool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      list: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+      listOfList: {
+        refType: createRefToElmWithValue(new ListType(new ListType(BuiltinTypes.STRING))),
+      },
+      listOfListOfList: {
+        refType: createRefToElmWithValue(
+          new ListType(new ListType(new ListType(BuiltinTypes.STRING)))
+        ),
+      },
+      listOfObject: { refType: createRefToElmWithValue(new ListType(simpleType)) },
+      map: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
+      mapOfObject: { refType: createRefToElmWithValue(new MapType(simpleType)) },
+      mapOfMaps: {
+        refType: createRefToElmWithValue(new MapType(new MapType(BuiltinTypes.STRING))),
+      },
+      mapOfLists: {
+        refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+      },
+      listOfMaps: {
+        refType: createRefToElmWithValue(new ListType(new MapType(BuiltinTypes.STRING))),
+      },
+      reqStr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       restrictStr: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['restriction1', 'restriction2'],
@@ -139,7 +153,7 @@ describe('Elements validation', () => {
         },
       },
       restrictNumber: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             min: 0,
@@ -148,7 +162,7 @@ describe('Elements validation', () => {
         },
       },
       restrictStringRegex: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             regex: '^[a-z0-9]*$',
@@ -156,7 +170,7 @@ describe('Elements validation', () => {
         },
       },
       restrictNumberRegex: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             regex: '^1[0-9]*$',
@@ -164,7 +178,7 @@ describe('Elements validation', () => {
         },
       },
       restrictedAnnotation: {
-        type: restrictedAnnotation,
+        refType: createRefToElmWithValue(restrictedAnnotation),
         annotations: {
           temp: 'val1',
           range: 5,
@@ -173,9 +187,11 @@ describe('Elements validation', () => {
           regexOnlyLower: 'abc',
         },
       },
-      reqNested: { type: simpleType },
+      reqNested: {
+        refType: createRefToElmWithValue(simpleType),
+      },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       nested: simpleType,
       restrictedPrimitive: restrictedType,
     },
@@ -188,7 +204,7 @@ describe('Elements validation', () => {
   const noRestrictionsType = new ObjectType({
     elemID: noResElemID,
     fields: {
-      someVal: { type: emptyType },
+      someVal: { refType: createRefToElmWithValue(emptyType) },
     },
   })
 
@@ -200,7 +216,13 @@ describe('Elements validation', () => {
     })
 
     it('should validate a correct type', () => {
-      const errors = validateElements([BuiltinTypes.STRING, simpleType, nestedType])
+      const errors = validateElements(
+        [simpleType, nestedType],
+        new InMemoryRemoteElementSource([
+          nestedType,
+          ...getFieldsAndAnnoTypes(nestedType),
+        ]),
+      )
       expect(errors).toHaveLength(0)
     })
 
@@ -208,34 +230,64 @@ describe('Elements validation', () => {
       clonedType.fields.nested.annotations.unspecstr = 'unspec'
       clonedType.fields.nested.annotations.unspecnum = 1
       clonedType.fields.nested.annotations.unspecbool = false
-      const errors = validateElements([clonedType])
+      const errors = validateElements(
+        [clonedType],
+        new InMemoryRemoteElementSource([
+          clonedType,
+          ...getFieldsAndAnnoTypes(clonedType),
+        ])
+      )
       expect(errors).toHaveLength(0)
     })
 
     it('should return error on bad str primitive type', () => {
       clonedType.fields.nested.annotations.annostr = 1
-      const errors = validateElements([clonedType])
+      const errors = validateElements(
+        [clonedType],
+        new InMemoryRemoteElementSource([
+          clonedType,
+          ...getFieldsAndAnnoTypes(clonedType),
+        ])
+      )
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annostr'))
     })
 
     it('should return error on bad num primitive type', () => {
       clonedType.fields.nested.annotations.annonum = 'str'
-      const errors = validateElements([clonedType])
+      const errors = validateElements(
+        [clonedType],
+        new InMemoryRemoteElementSource([
+          clonedType,
+          ...getFieldsAndAnnoTypes(clonedType),
+        ])
+      )
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annonum'))
     })
 
     it('should return error on bad bool primitive type', () => {
       clonedType.fields.nested.annotations.annoboolean = 1
-      const errors = validateElements([clonedType])
+      const errors = validateElements(
+        [clonedType],
+        new InMemoryRemoteElementSource([
+          clonedType,
+          ...getFieldsAndAnnoTypes(clonedType),
+        ])
+      )
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annoboolean'))
     })
 
     it('should return error on nested annotation mismatch', () => {
       clonedType.annotations.nested = { str: 1 }
-      const errors = validateElements([clonedType])
+      const errors = validateElements(
+        [clonedType],
+        new InMemoryRemoteElementSource([
+          clonedType,
+          ...getFieldsAndAnnoTypes(clonedType),
+        ]),
+      )
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.elemID.createNestedID('attr', 'nested', 'str'))
     })
@@ -245,7 +297,16 @@ describe('Elements validation', () => {
 
       const badObj = nestedType.clone()
       badObj.annotations.nested = 'not an object'
-      const errors = validateElements([badObj, clonedType])
+      const elements = [badObj, clonedType]
+      const errors = validateElements(
+        elements,
+        new InMemoryRemoteElementSource([
+          badObj,
+          clonedType,
+          ...getFieldsAndAnnoTypes(badObj),
+          ...getFieldsAndAnnoTypes(clonedType),
+        ]),
+      )
       expect(errors).toHaveLength(2)
     })
 
@@ -253,17 +314,23 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
-            fields: { simple: { type: BuiltinTypes.STRING } },
+            fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
           }),
         },
         annotations: {
           notList: [{ simple: 'str1' }, { simple: 'str2' }],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = validateElements(
+        [objWithListAnnotation],
+        new InMemoryRemoteElementSource([
+          objWithListAnnotation,
+          ...getFieldsAndAnnoTypes(objWithListAnnotation),
+        ]),
+      )
       expect(errors).toHaveLength(0)
     })
 
@@ -271,14 +338,20 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: BuiltinTypes.STRING,
         },
         annotations: {
           notList: ['str1', 'str2'],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = validateElements(
+        [objWithListAnnotation],
+        new InMemoryRemoteElementSource([
+          objWithListAnnotation,
+          ...getFieldsAndAnnoTypes(objWithListAnnotation),
+        ]),
+      )
       expect(errors).toHaveLength(0)
     })
 
@@ -286,17 +359,23 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
-            fields: { simple: { type: BuiltinTypes.STRING } },
+            fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
           }),
         },
         annotations: {
           notList: ['str1', 'str2'],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = validateElements(
+        [objWithListAnnotation],
+        new InMemoryRemoteElementSource([
+          objWithListAnnotation,
+          ...getFieldsAndAnnoTypes(objWithListAnnotation),
+        ]),
+      )
       expect(errors).toHaveLength(2)
     })
 
@@ -306,14 +385,20 @@ describe('Elements validation', () => {
         elemID,
         fields: {
         },
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: BuiltinTypes.STRING,
         },
         annotations: {
           notList: [{ simple: 'str1' }, { simple: 'str2' }],
         },
       })
-      const errors = validateElements([objWithListAnnotation])
+      const errors = validateElements(
+        [objWithListAnnotation],
+        new InMemoryRemoteElementSource([
+          objWithListAnnotation,
+          ...getFieldsAndAnnoTypes(objWithListAnnotation),
+        ]),
+      )
       expect(errors).toHaveLength(2)
     })
   })
@@ -435,30 +520,54 @@ describe('Elements validation', () => {
         it('should succeed when all required fields exist with values', () => {
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.reqStr = 'string'
           extInst.value.reqNested = {
             str: 'str',
             num: 1,
             bool: true,
           }
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(nestedType),
+            ])
+          )
           expect(errors).toHaveLength(0)
         })
 
         it('should return error when required primitive field is missing', () => {
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.type = extType
-          const errors = validateElements([extInst])
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ]),
+          )
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch('Field reqStr is required but has no value')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqStr'))
         })
 
         it('should return error when required object field is missing', () => {
-          extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.type = extType
-          const errors = validateElements([extInst])
+          extType.fields.reqNested.annotations = {
+            ...extType.fields.reqNested.annotations,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          }
+          extInst.refType = new ReferenceExpression(extType.elemID)
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ]),
+          )
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
             .toMatch(`Field ${extType.fields.reqNested.name} is required but has no value`)
@@ -466,8 +575,10 @@ describe('Elements validation', () => {
         })
 
         it('should return error when lists elements missing required fields', () => {
-          extType.fields.reqNested.type = new ListType(extType.fields.reqNested.type)
-          extInst.type = extType
+          extType.fields.reqNested.refType = createRefToElmWithValue(
+            new ListType(extType.fields.reqNested.getType())
+          )
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.reqNested = [
             {
               str: 'str',
@@ -480,7 +591,16 @@ describe('Elements validation', () => {
             },
           ]
 
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              simpleType,
+              ...getFieldsAndAnnoTypes(extType),
+              ...getFieldsAndAnnoTypes(simpleType),
+            ])
+          )
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
             .toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
@@ -490,7 +610,14 @@ describe('Elements validation', () => {
 
       describe('values annotation', () => {
         it('should succeed when all values corresponds to values annotation', () => {
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(nestedType),
+            ])
+          )).toHaveLength(0)
         })
 
         it('should succeed when restriction values are not enforced even if the value not in _values', () => {
@@ -500,34 +627,69 @@ describe('Elements validation', () => {
               values: ['val1', 'val2'],
             })
           extInst.value.restrictStr = 'wrongValue'
-          extInst.type = extType
-          expect(validateElements([extInst])).toHaveLength(0)
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          expect(validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ]),
+          )).toHaveLength(0)
         })
 
         it('should succeed when restriction values is not a list', () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = { values: 'str' }
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.restrictStr = 'str'
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ]),
+          )).toHaveLength(0)
         })
 
         it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = {}
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.restrictStr = 'str'
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ]),
+          )).toHaveLength(0)
         })
 
         it('should succeed when restriction values are not defined and _restriction is undefined', () => {
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION]
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.restrictStr = 'str'
-          expect(validateElements([extInst])).toHaveLength(0)
+          expect(validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ]),
+          )).toHaveLength(0)
         })
 
         it('should return an error when value is not inside the range', () => {
           extInst.value.restrictNumber = -1
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
           expect(errors[0].message).toMatch('Value "-1" is not valid')
@@ -539,7 +701,14 @@ describe('Elements validation', () => {
 
         it('should return an error when value is not a number and field has min-max restriction', () => {
           extInst.value.restrictNumber = 'Not A Number'
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(nestedType),
+            ])
+          )
           expect(errors).toHaveLength(2)
           const [[typeForRangeValidation], [valueTypeValidation]] = _.partition(errors,
             error => error instanceof InvalidValueRangeValidationError)
@@ -556,7 +725,14 @@ describe('Elements validation', () => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'
 
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(nestedType),
+            ])
+          )
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
@@ -572,13 +748,19 @@ describe('Elements validation', () => {
 
         it('should return an error when fields values do not match restriction values with explicit _restriction.enforce_value', () => {
           getRestriction(extType.fields.restrictStr).enforce_value = true
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           testValuesAreNotListedButEnforced()
         })
 
         it('should return an error when annotations values do not match restriction values', () => {
           extType.fields.restrictedAnnotation.annotations.temp = 'wrong'
-          const errors = validateElements([extType])
+          const errors = validateElements(
+            [extType],
+            new InMemoryRemoteElementSource([
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(1)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
@@ -591,14 +773,26 @@ describe('Elements validation', () => {
 
         it('should succeed when annotation value is inside the range', () => {
           extType.fields.restrictedAnnotation.annotations.range = 7
-          const errors = validateElements([extType])
+          const errors = validateElements(
+            [extType],
+            new InMemoryRemoteElementSource([
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(0)
         })
 
         it('should return an error when annotations value is bigger than max restriction', () => {
           extType.fields.restrictedAnnotation.annotations.range = 11
           extType.fields.restrictedAnnotation.annotations.rangeNoMin = 11
-          const errors = validateElements([extType])
+          const errors = validateElements(
+            [extType],
+            new InMemoryRemoteElementSource([
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
@@ -619,7 +813,13 @@ describe('Elements validation', () => {
         it('should return an error when annotations value is smaller than min restriction', () => {
           extType.fields.restrictedAnnotation.annotations.range = 0
           extType.fields.restrictedAnnotation.annotations.rangeNoMax = 0
-          const errors = validateElements([extType])
+          const errors = validateElements(
+            [extType],
+            new InMemoryRemoteElementSource([
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
@@ -639,7 +839,15 @@ describe('Elements validation', () => {
 
         it('should return an error when annotations value does not match regex restriction', () => {
           extType.fields.restrictedAnnotation.annotations.regexOnlyLower = 'ABC'
-          const errors = validateElements([extType])
+          const errors = validateElements(
+            [extType],
+            new InMemoryRemoteElementSource([
+              extType,
+              restrictedAnnotation,
+              restrictedRegexOnlyLowerType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
           expect(errors[0].message)
@@ -652,20 +860,41 @@ describe('Elements validation', () => {
           extType.fields.list.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
             values: ['restriction'],
           })
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
 
-          expect(validateElements([extInst])).toHaveLength(2)
+          expect(validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              extType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )).toHaveLength(2)
         })
 
         it('should succeed when string value matches regex', () => {
           extInst.value.restrictStringRegex = 'aaa123'
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(0)
         })
 
         it('should return an error when string value does not match regex restriction', () => {
           extInst.value.restrictStringRegex = 'AAA_123'
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
           expect(errors[0].message).toMatch('Value "AAA_123" is not valid for field restrictStringRegex. expected value to match "^[a-z0-9]*$" regular expression')
@@ -674,13 +903,27 @@ describe('Elements validation', () => {
 
         it('should succeed when number value matches regex', () => {
           extInst.value.restrictNumberRegex = 111
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(0)
         })
 
         it('should return an error when number value does not match regex restriction', () => {
           extInst.value.restrictNumberRegex = 211
-          const errors = validateElements([extInst])
+          const errors = validateElements(
+            [extInst],
+            new InMemoryRemoteElementSource([
+              extInst,
+              nestedType,
+              ...getFieldsAndAnnoTypes(extType),
+            ])
+          )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
           expect(errors[0].message).toMatch('Value "211" is not valid for field restrictNumberRegex. expected value to match "^1[0-9]*$" regular expression')
@@ -691,59 +934,74 @@ describe('Elements validation', () => {
 
     describe('validate values correctness', () => {
       it('should validate a correct type', () => {
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should ignore static files that are valid', () => {
+        const objWithFile = new ObjectType({
+          elemID: new ElemID('salesforce', 'test'),
+          annotationRefsOrTypes: {
+            ServiceId: BuiltinTypes.SERVICE_ID,
+          },
+          fields: {
+            someFile: {
+              refType: createRefToElmWithValue(new PrimitiveType({
+                elemID: new ElemID('salesforce', 'string'),
+                primitive: PrimitiveTypes.STRING,
+              })),
+            },
+          },
+        })
         const instWithFile = new InstanceElement(
           'withFile',
-          new ObjectType({
-            elemID: new ElemID('salesforce', 'test'),
-            annotationTypes: {
-              ServiceId: BuiltinTypes.SERVICE_ID,
-            },
-            fields: {
-              someFile: {
-                type: new PrimitiveType({
-                  elemID: new ElemID('salesforce', 'string'),
-                  primitive: PrimitiveTypes.STRING,
-                }),
-              },
-            },
-          }),
+          objWithFile,
           {
             someFile: new StaticFile({ filepath: 'path', hash: 'hash' }),
           },
         )
 
-        const errors = validateElements([instWithFile])
+        const errors = validateElements(
+          [instWithFile],
+          new InMemoryRemoteElementSource([instWithFile, objWithFile])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should fail for invalid static files', () => {
+        const withFileObj = new ObjectType({
+          elemID: new ElemID('salesforce', 'test'),
+          annotationRefsOrTypes: {
+            ServiceId: BuiltinTypes.SERVICE_ID,
+          },
+          fields: {
+            someFile: {
+              refType: createRefToElmWithValue(new PrimitiveType({
+                elemID: new ElemID('salesforce', 'string'),
+                primitive: PrimitiveTypes.STRING,
+              })),
+            },
+          },
+        })
         const instWithFile = new InstanceElement(
           'withFile',
-          new ObjectType({
-            elemID: new ElemID('salesforce', 'test'),
-            annotationTypes: {
-              ServiceId: BuiltinTypes.SERVICE_ID,
-            },
-            fields: {
-              someFile: {
-                type: new PrimitiveType({
-                  elemID: new ElemID('salesforce', 'string'),
-                  primitive: PrimitiveTypes.STRING,
-                }),
-              },
-            },
-          }),
+          withFileObj,
           {
             someFile: new MissingStaticFile('aa'),
           },
         )
 
-        const errors = validateElements([instWithFile])
+        const errors = validateElements(
+          [instWithFile],
+          new InMemoryRemoteElementSource([instWithFile, withFileObj])
+        )
         expect(errors).toHaveLength(1)
       })
 
@@ -751,13 +1009,27 @@ describe('Elements validation', () => {
         extInst.value.unspecstr = 'unspec'
         extInst.value.unspecnum = 1
         extInst.value.unspecbool = false
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should return error on bad str primitive type', () => {
         extInst.value.flatstr = 1
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
@@ -765,13 +1037,27 @@ describe('Elements validation', () => {
 
       it('should not return error on str primitive type with list', () => {
         extInst.value.flatstr = ['str1', 'str2']
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should return error on str primitive type with invalid list', () => {
         extInst.value.flatstr = ['str1', 57]
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr', '1'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
@@ -779,7 +1065,14 @@ describe('Elements validation', () => {
 
       it('should return error on bad str primitive type with object', () => {
         extInst.value.flatstr = { obj: 'str' }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatstr'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
@@ -787,7 +1080,14 @@ describe('Elements validation', () => {
 
       it('should return error on bad num primitive type', () => {
         extInst.value.flatnum = 'str'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatnum'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for number$'))
@@ -795,14 +1095,28 @@ describe('Elements validation', () => {
 
       it('should return error on bad bool primitive type', () => {
         extInst.value.flatbool = 'str'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatbool'))
       })
 
       it('should return error on nested string value mismatch', () => {
         extInst.value.nested.str = 1
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
@@ -810,21 +1124,42 @@ describe('Elements validation', () => {
 
       it('should return error on nested num value mismatch', () => {
         extInst.value.nested.num = 'str'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'num'))
       })
 
       it('should return error on nested bool value mismatch', () => {
         extInst.value.nested.bool = 'str'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
       })
 
       it('should return error object/primitive mismatch', () => {
         extInst.value.nested = 'str'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
@@ -832,20 +1167,41 @@ describe('Elements validation', () => {
 
       it('should not return error on list/primitive mismatch if inner type is valid', () => {
         extInst.value.list = 'not a list'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should return error on list/primitive mismatch if inner type is invalid', () => {
         extInst.value.list = 75
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list'))
       })
 
       it('should return error on inconsistent primitive map values', () => {
         extInst.value.map = { valid: 'string', invalid: 55 }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('map', 'invalid'))
         expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
@@ -854,7 +1210,14 @@ describe('Elements validation', () => {
       it('should return error on inconsistent object map values', () => {
         extInst.value.mapOfObject.invalid1 = 'aaa'
         extInst.value.mapOfObject.invalid2 = { str: 2 }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid1'))
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid2', 'str'))
@@ -864,16 +1227,26 @@ describe('Elements validation', () => {
 
       it('should not return error for list/object mismatch with empty array', () => {
         extInst.value = { nested: [] }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should return error for list/object mismatch with empty array on required field', () => {
         const nestedRequiredType = nestedType.clone()
         nestedRequiredType.fields.nested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.type = nestedRequiredType
+        extInst.refType = new ReferenceExpression(nestedRequiredType.elemID, nestedRequiredType)
         extInst.value = { nested: [] }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([extInst, nestedRequiredType, simpleType])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
         expect(errors[0].error).toMatch('is required but has no value')
@@ -882,9 +1255,12 @@ describe('Elements validation', () => {
       it('should return error for list/object mismatch with empty array on required field-object', () => {
         const requiredType = nestedType.clone()
         requiredType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.type = requiredType
+        extInst.refType = new ReferenceExpression(requiredType.elemID, requiredType)
         extInst.value = []
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([extInst, requiredType, simpleType])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID)
         expect(errors[0].toString()).toMatch('is required but has no value')
@@ -892,14 +1268,28 @@ describe('Elements validation', () => {
 
       it('should return inner error for list/object mismatch with non-empty invalid array', () => {
         extInst.value = { nested: [{ bool: true }, { str: 'str' }] }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', '1', 'bool'))
       })
 
       it('should not return error list/object mismatch with non-empty valid array', () => {
         extInst.value = { nested: [{ bool: true }] }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
@@ -911,20 +1301,40 @@ describe('Elements validation', () => {
             num: new ReferenceExpression(extInst.elemID.createNestedID('flatnum')),
           }],
         }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
-
       it('should not return an error when matching list item', () => {
         extInst.value.list.push('abc')
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should return error in list of list item mismatch', () => {
         extInst.value.listOfList[0].push(1)
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfList', '0', '2'))
       })
@@ -935,25 +1345,53 @@ describe('Elements validation', () => {
           num: 3,
           bool: false,
         })
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should not return error when inner is not a list in list of lists', () => {
         extInst.value.listOfList = ['a']
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should not return error when not a list in list of lists', () => {
         extInst.value.listOfList = 'a'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
       it('should not return error when not a list in list-of-lists-of-lists', () => {
         extInst.value.listOfListOfList = 'a'
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
@@ -963,7 +1401,14 @@ describe('Elements validation', () => {
           num: 3,
           bool: false,
         }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(0)
       })
 
@@ -973,7 +1418,14 @@ describe('Elements validation', () => {
           num: 'str',
           bool: false,
         }
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', 'num'))
       })
@@ -982,14 +1434,28 @@ describe('Elements validation', () => {
         extInst.value.listOfObject.push({
           abc: 'dsadas',
         })
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
       })
 
       it('should return an error when primitive instead of list object item', () => {
         extInst.value.listOfObject.push(1)
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1'))
         // TODO: The second error is a strange UX and we should not have it
@@ -998,7 +1464,14 @@ describe('Elements validation', () => {
 
       it('should return error list item mismatch', () => {
         extInst.value.list.push(1)
-        const errors = validateElements([extInst])
+        const errors = validateElements(
+          [extInst],
+          new InMemoryRemoteElementSource([
+            extInst,
+            nestedType,
+            ...getFieldsAndAnnoTypes(nestedType),
+          ])
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list', '2'))
       })
@@ -1007,7 +1480,7 @@ describe('Elements validation', () => {
         const unknownObj = new ObjectType({
           elemID: new ElemID('salto', 'unknown'),
           fields: {
-            unknown: { type: BuiltinTypes.UNKNOWN },
+            unknown: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
           },
         })
 
@@ -1016,20 +1489,33 @@ describe('Elements validation', () => {
         const booValue = new InstanceElement('numInst', unknownObj, { unknown: true })
         const arrValue = new InstanceElement('numInst', unknownObj, { unknown: [0] })
         const objValue = new InstanceElement('numInst', unknownObj, { unknown: { o: 'o' } })
-        const errors = validateElements([numValue, strValue, booValue, arrValue, objValue])
+        const elements = [numValue, strValue, booValue, arrValue, objValue, unknownObj]
+        const errors = validateElements(
+          elements,
+          new InMemoryRemoteElementSource([
+            ...elements,
+            ...getFieldsAndAnnoTypes(unknownObj),
+          ]),
+        )
         expect(errors).toHaveLength(0)
       })
     })
 
     describe('reference validation', () => {
       it('should return error when encountering an unresolved reference', () => {
-        const errors = validateElements([unresolvedRefInst])
+        const errors = validateElements(
+          [unresolvedRefInst],
+          new InMemoryRemoteElementSource([unresolvedRefInst, simpleType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(unresolvedRefInst.elemID.createNestedID('bool'))
       })
 
       it('should return error when encountering a circular reference', () => {
-        const errors = validateElements([circularRefInst, circularRefInst2])
+        const errors = validateElements(
+          [circularRefInst, circularRefInst2],
+          new InMemoryRemoteElementSource([circularRefInst, circularRefInst2, simpleType]),
+        )
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(circularRefInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
@@ -1047,20 +1533,29 @@ describe('Elements validation', () => {
         refToSelfInst.value.bool = new ReferenceExpression(
           refToSelfInst.elemID.createNestedID('bool')
         )
-        const errors = validateElements([refToSelfInst])
+        const errors = validateElements(
+          [refToSelfInst],
+          new InMemoryRemoteElementSource([refToSelfInst, simpleType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(refToSelfInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
       })
 
       it('should validate throw error on reference that points to a bad type', () => {
-        const errors = validateElements([wrongRefInst, extInst])
+        const errors = validateElements(
+          [wrongRefInst, extInst],
+          new InMemoryRemoteElementSource([wrongRefInst, extInst, nestedType, simpleType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(wrongRefInst.elemID.createNestedID('bool'))
       })
 
       it('should return error when encountering an illegal reference target', () => {
-        const errors = validateElements([illegalRefInst])
+        const errors = validateElements(
+          [illegalRefInst],
+          new InMemoryRemoteElementSource([illegalRefInst, simpleType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(illegalRefInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(IllegalReferenceValidationError)
@@ -1069,18 +1564,27 @@ describe('Elements validation', () => {
 
     describe('variable validation', () => {
       it('should return error when encountering an unresolved variable expression', () => {
-        const errors = validateElements([varInst])
+        const errors = validateElements(
+          [varInst],
+          new InMemoryRemoteElementSource([varInst, simpleType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
         expect(errors[0].elemID).toEqual(varInst.elemID.createNestedID('bool'))
       })
 
       it('should not return error when encountering a valid variable expression', () => {
-        const errors = validateElements([varInst, variable])
+        const errors = validateElements(
+          [varInst, variable],
+          new InMemoryRemoteElementSource([varInst, variable, simpleType]),
+        )
         expect(errors).toHaveLength(0)
       })
       it('should return error when the type of a variable\'s value is incorrect', () => {
-        const errors = validateElements([illegalValueVarInst, variable])
+        const errors = validateElements(
+          [illegalValueVarInst, variable],
+          new InMemoryRemoteElementSource([illegalValueVarInst, variable, simpleType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueTypeValidationError)
         expect(errors[0].elemID).toEqual(varInst.elemID.createNestedID('num'))
@@ -1093,7 +1597,10 @@ describe('Elements validation', () => {
             someVal: new Variable(varElemId, 5),
           }
         )
-        const errors = validateElements([varElementInst])
+        const errors = validateElements(
+          [varElementInst],
+          new InMemoryRemoteElementSource([varElementInst, noRestrictionsType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(varElementInst.elemID.createNestedID('someVal'))
@@ -1102,7 +1609,10 @@ describe('Elements validation', () => {
       it('should return error when the value is an object (not supported for now)', () => {
         const objVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'objVar')
         const objVar = new Variable(objVarElemId, { key: 'val' })
-        const errors = validateElements([objVar])
+        const errors = validateElements(
+          [objVar],
+          new InMemoryRemoteElementSource([objVar]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(objVarElemId)
@@ -1111,7 +1621,10 @@ describe('Elements validation', () => {
       it('should return error when the value is a reference to an element', () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
         const objVar = new Variable(instVarElemId, new ReferenceExpression(extInst.elemID))
-        const errors = validateElements([objVar, extInst])
+        const errors = validateElements(
+          [objVar, extInst],
+          new InMemoryRemoteElementSource([objVar, extInst, nestedType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
@@ -1122,7 +1635,10 @@ describe('Elements validation', () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
         const objVar = new Variable(instVarElemId,
           new ReferenceExpression(extInst.elemID.createNestedID('nested')))
-        const errors = validateElements([objVar, extInst])
+        const errors = validateElements(
+          [objVar, extInst],
+          new InMemoryRemoteElementSource([objVar, extInst, nestedType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
@@ -1133,7 +1649,10 @@ describe('Elements validation', () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
         const refVar = new Variable(refVarElemId,
           new ReferenceExpression(new ElemID('salesforce', 'nonexistent')))
-        const errors = validateElements([refVar])
+        const errors = validateElements(
+          [refVar],
+          new InMemoryRemoteElementSource([refVar]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
@@ -1145,7 +1664,10 @@ describe('Elements validation', () => {
           new VariableExpression(refVarElemId2))
         const refVar2 = new Variable(refVarElemId2,
           new VariableExpression(refVarElemId))
-        const errors = validateElements([refVar, refVar2])
+        const errors = validateElements(
+          [refVar, refVar2],
+          new InMemoryRemoteElementSource([refVar, refVar2]),
+        )
         expect(errors).toHaveLength(2)
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
@@ -1154,7 +1676,10 @@ describe('Elements validation', () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
         const refVar = new Variable(refVarElemId,
           new VariableExpression(refVarElemId))
-        const errors = validateElements([refVar])
+        const errors = validateElements(
+          [refVar],
+          new InMemoryRemoteElementSource([refVar]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
         expect(errors[0].elemID).toEqual(refVarElemId)
@@ -1163,13 +1688,19 @@ describe('Elements validation', () => {
         const numVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'), 6)
         const boolVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'boolVar'), true)
         const strVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'strVar'), 'hi')
-        const errors = validateElements([numVar, boolVar, strVar])
+        const errors = validateElements(
+          [numVar, boolVar, strVar],
+          new InMemoryRemoteElementSource([numVar, boolVar, strVar]),
+        )
         expect(errors).toHaveLength(0)
       })
       it('should not return error when the value is a reference to a primitive', () => {
         const numVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'),
           new ReferenceExpression(extInst.elemID.createNestedID('flatnum')))
-        const errors = validateElements([numVar, extInst])
+        const errors = validateElements(
+          [numVar, extInst],
+          new InMemoryRemoteElementSource([numVar, extInst, nestedType]),
+        )
         expect(errors).toHaveLength(0)
       })
     })
@@ -1189,7 +1720,10 @@ describe('Elements validation', () => {
       )
 
       it('should return error when encountering an unresolved reference', () => {
-        const errors = validateElements([unresolvedRefInAnnoInst])
+        const errors = validateElements(
+          [unresolvedRefInAnnoInst],
+          new InMemoryRemoteElementSource([unresolvedRefInAnnoInst, emptyType]),
+        )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID)
           .toEqual(unresolvedRefInAnnoInst.elemID.createNestedID(CORE_ANNOTATIONS.PARENT, '1'))

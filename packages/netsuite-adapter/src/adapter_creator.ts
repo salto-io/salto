@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult,
-  AdapterOperationsContext, AdapterOperations,
-} from '@salto-io/adapter-api'
+import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult, AdapterOperationsContext, AdapterOperations } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -38,11 +36,11 @@ const configID = new ElemID(NETSUITE)
 export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
-    accountId: { type: BuiltinTypes.STRING },
-    tokenId: { type: BuiltinTypes.STRING },
-    tokenSecret: { type: BuiltinTypes.STRING },
+    accountId: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    tokenId: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    tokenSecret: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
-  annotationTypes: {},
+  annotationRefsOrTypes: {},
   annotations: {},
 })
 

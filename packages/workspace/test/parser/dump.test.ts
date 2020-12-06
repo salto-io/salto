@@ -13,19 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType,
-} from '@salto-io/adapter-api'
+import { ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser'
-import {
-  dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
-} from '../../src/parser/dump'
-import {
-  Functions,
-} from '../../src/parser/functions'
+import { dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues } from '../../src/parser/dump'
+import { Functions } from '../../src/parser/functions'
 import { registerTestFunction, TestFuncImpl } from '../utils'
 
 const funcName = 'ZOMG'
@@ -59,7 +53,7 @@ describe('Salto Dump', () => {
   const fieldType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'field'),
     primitive: PrimitiveTypes.NUMBER,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       alice: BuiltinTypes.NUMBER,
       bob: BuiltinTypes.NUMBER,
       tom: BuiltinTypes.BOOLEAN,
@@ -70,12 +64,15 @@ describe('Salto Dump', () => {
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
     fields: {
-      name: { type: strType, annotations: { label: 'Name' } },
-      num: { type: numType },
-      list: { type: new ListType(strType) },
-      map: { type: new MapType(strType) },
+      name: {
+        refType: createRefToElmWithValue(strType),
+        annotations: { label: 'Name' },
+      },
+      num: { refType: createRefToElmWithValue(numType) },
+      list: { refType: createRefToElmWithValue(new ListType(strType)) },
+      map: { refType: createRefToElmWithValue(new MapType(strType)) },
       field: {
-        type: fieldType,
+        refType: createRefToElmWithValue(fieldType),
         annotations: {
           alice: 1,
           bob: 2,
@@ -84,7 +81,7 @@ describe('Salto Dump', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       ServiceId: BuiltinTypes.SERVICE_ID,
     },
   })
@@ -312,7 +309,7 @@ describe('Salto Dump', () => {
       expect(nonListElements[2]).toEqual(boolType)
       TestHelpers.expectTypesToMatch(nonListElements[3] as TypeElement, fieldType)
       TestHelpers.expectTypesToMatch(nonListElements[4] as TypeElement, model)
-      TestHelpers.expectTypesToMatch(listTypes[0] as ListType, model.fields.list.type)
+      TestHelpers.expectTypesToMatch(listTypes[0] as ListType, model.fields.list.getType())
       TestHelpers
         .expectInstancesToMatch(nonListElements[5] as InstanceElement, instance)
       TestHelpers
@@ -397,7 +394,7 @@ describe('Salto Dump', () => {
       let body: string
 
       beforeAll(() => {
-        body = dumpSingleAnnotationType('ServiceId', BuiltinTypes.SERVICE_ID)
+        body = dumpSingleAnnotationType('ServiceId', createRefToElmWithValue(BuiltinTypes.SERVICE_ID))
       })
 
       it('should contain only the annotation type definition', () => {
@@ -408,7 +405,7 @@ describe('Salto Dump', () => {
       let body: string
 
       beforeAll(() => {
-        body = dumpAnnotationTypes({ ServiceId: BuiltinTypes.SERVICE_ID })
+        body = dumpAnnotationTypes({ ServiceId: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) })
       })
 
       it('should contain only the annotations block definition', () => {

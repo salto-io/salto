@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -32,17 +33,17 @@ const customtransactiontype_accounting = new ObjectType({
   },
   fields: {
     specifyaccountontransaction: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F. */
     filterbyaccounttypeall: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the specifyaccountontransaction value is equal to T.   The default value is F. */
     filterbyaccounttype: {
-      type: enums.customtransactiontype_filterbyaccounttype,
+      refType: createRefToElmWithValue(enums.customtransactiontype_filterbyaccounttype),
       annotations: {
       },
     }, /* Original description: This field is available when the specifyaccountontransaction value is equal to T.   This field is available when the filterbyaccounttypeall value is equal to F.   For information about possible values, see customtransactiontype_filterbyaccounttype. */
@@ -60,18 +61,18 @@ const customtransactiontype_links_link = new ObjectType({
   },
   fields: {
     linkcategory: {
-      type: enums.generic_centercategory,
+      refType: createRefToElmWithValue(enums.generic_centercategory),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_centercategory. */
     linktasktype: {
-      type: enums.customtransactiontype_tasktype,
+      refType: createRefToElmWithValue(enums.customtransactiontype_tasktype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see customtransactiontype_tasktype. */
     linklabel: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
@@ -89,7 +90,7 @@ const customtransactiontype_links = new ObjectType({
   },
   fields: {
     link: {
-      type: new ListType(customtransactiontype_links_link),
+      refType: createRefToElmWithValue(new ListType(customtransactiontype_links_link)),
       annotations: {
       },
     },
@@ -107,13 +108,13 @@ const customtransactiontype_permissions_permission = new ObjectType({
   },
   fields: {
     permittedrole: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
     permittedlevel: {
-      type: enums.generic_permission_level,
+      refType: createRefToElmWithValue(enums.generic_permission_level),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -132,7 +133,7 @@ const customtransactiontype_permissions = new ObjectType({
   },
   fields: {
     permission: {
-      type: new ListType(customtransactiontype_permissions_permission),
+      refType: createRefToElmWithValue(new ListType(customtransactiontype_permissions_permission)),
       annotations: {
       },
     },
@@ -150,32 +151,32 @@ const customtransactiontype_segments = new ObjectType({
   },
   fields: {
     classposition: {
-      type: enums.customtransactiontype_classification_position,
+      refType: createRefToElmWithValue(enums.customtransactiontype_classification_position),
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   For information about possible values, see customtransactiontype_classification_position.   The default value is 'NONE'.   If this field appears in the project, you must reference the CLASSES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CLASSES must be enabled for this field to appear in your account. */
     isclassmandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the classposition value is not equal to NONE.   This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F.   If this field appears in the project, you must reference the CLASSES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CLASSES must be enabled for this field to appear in your account. */
     departmentposition: {
-      type: enums.customtransactiontype_classification_position,
+      refType: createRefToElmWithValue(enums.customtransactiontype_classification_position),
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   For information about possible values, see customtransactiontype_classification_position.   The default value is 'NONE'.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account. */
     isdepartmentmandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the departmentposition value is not equal to NONE.   This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account. */
     locationposition: {
-      type: enums.customtransactiontype_classification_position,
+      refType: createRefToElmWithValue(enums.customtransactiontype_classification_position),
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   For information about possible values, see customtransactiontype_classification_position.   The default value is 'NONE'.   If this field appears in the project, you must reference the LOCATIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. LOCATIONS must be enabled for this field to appear in your account. */
     islocationmandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the locationposition value is not equal to NONE.   This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F.   If this field appears in the project, you must reference the LOCATIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. LOCATIONS must be enabled for this field to appear in your account. */
@@ -193,27 +194,27 @@ const customtransactiontype_statuses_status = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     description: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 480,
       },
     }, /* Original description: This field value can be up to 480 characters long.   This field accepts references to the string custom type. */
     id: {
-      type: enums.customtransactiontype_statuses_id,
+      refType: createRefToElmWithValue(enums.customtransactiontype_statuses_id),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customtransactiontype_statuses_id. */
     isposting: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -231,7 +232,7 @@ const customtransactiontype_statuses = new ObjectType({
   },
   fields: {
     status: {
-      type: new ListType(customtransactiontype_statuses_status),
+      refType: createRefToElmWithValue(new ListType(customtransactiontype_statuses_status)),
       annotations: {
       },
     },
@@ -248,7 +249,7 @@ export const customtransactiontype = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -256,64 +257,64 @@ export const customtransactiontype = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     name: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 96,
       },
     }, /* Original description: This field value can be up to 96 characters long.   This field accepts references to the string custom type. */
     subliststyle: {
-      type: enums.customtransactiontype_subliststyle,
+      refType: createRefToElmWithValue(enums.customtransactiontype_subliststyle),
       annotations: {
       },
     }, /* Original description: This field is mandatory when the transactionstyle value is not defined.   For information about possible values, see customtransactiontype_subliststyle.   The default value is 'BASIC'. */
     transactionstyle: {
-      type: enums.customtransactiontype_subliststyle,
+      refType: createRefToElmWithValue(enums.customtransactiontype_subliststyle),
       annotations: {
       },
     }, /* Original description: For information about possible values, see customtransactiontype_subliststyle.   The default value is 'BASIC'. */
     iscredit: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is present in customtransactiontype_creditsupportstyles.   The default value is F. */
     isposting: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showstatus: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     isvoidable: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     accounting: {
-      type: customtransactiontype_accounting,
+      refType: createRefToElmWithValue(customtransactiontype_accounting),
       annotations: {
       },
     },
     links: {
-      type: customtransactiontype_links,
+      refType: createRefToElmWithValue(customtransactiontype_links),
       annotations: {
       },
     },
     permissions: {
-      type: customtransactiontype_permissions,
+      refType: createRefToElmWithValue(customtransactiontype_permissions),
       annotations: {
       },
     },
     segments: {
-      type: customtransactiontype_segments,
+      refType: createRefToElmWithValue(customtransactiontype_segments),
       annotations: {
       },
     },
     statuses: {
-      type: customtransactiontype_statuses,
+      refType: createRefToElmWithValue(customtransactiontype_statuses),
       annotations: {
       },
     },

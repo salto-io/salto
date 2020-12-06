@@ -21,6 +21,7 @@ import {
   getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
 import fs from 'fs'
@@ -101,7 +102,7 @@ export const DUMMY_ADAPTER = 'dummy'
 const defaultObj = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'DEFAULT'),
   fields: {
-    legit: { type: BuiltinTypes.STRING },
+    legit: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Default'],
 })
@@ -109,10 +110,10 @@ const defaultObj = new ObjectType({
 const permissionsType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'Permissions'),
   fields: {
-    name: { type: BuiltinTypes.STRING },
-    read: { type: BuiltinTypes.BOOLEAN },
-    write: { type: BuiltinTypes.BOOLEAN },
-    edit: { type: BuiltinTypes.BOOLEAN },
+    name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    read: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    write: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    edit: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Permissions'],
 })
@@ -120,16 +121,16 @@ const permissionsType = new ObjectType({
 const layoutAssignmentsType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'LayoutAssignments'),
   fields: {
-    layout: { type: BuiltinTypes.STRING },
-    recordType: { type: BuiltinTypes.STRING },
+    layout: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    recordType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
 })
 
 const oldProfileType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'Profile'),
   fields: {
-    ObjectLevelPermissions: { type: new ListType(permissionsType) },
-    FieldLevelPermissions: { type: new ListType(permissionsType) },
+    ObjectLevelPermissions: { refType: createRefToElmWithValue(new ListType(permissionsType)) },
+    FieldLevelPermissions: { refType: createRefToElmWithValue(new ListType(permissionsType)) },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
@@ -137,9 +138,15 @@ const oldProfileType = new ObjectType({
 const profileType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'Profile'),
   fields: {
-    ObjectLevelPermissions: { type: new MapType(permissionsType) },
-    FieldLevelPermissions: { type: new MapType(new MapType(permissionsType)) },
-    LayoutAssignments: { type: new MapType(new ListType(layoutAssignmentsType)) },
+    ObjectLevelPermissions: {
+      refType: createRefToElmWithValue(new MapType(permissionsType)),
+    },
+    FieldLevelPermissions: {
+      refType: createRefToElmWithValue(new MapType(new MapType(permissionsType))),
+    },
+    LayoutAssignments: {
+      refType: createRefToElmWithValue(new MapType(new ListType(layoutAssignmentsType))),
+    },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
@@ -233,9 +240,9 @@ export const generateElements = (
       .map(e => elementRanks[e.elemID.getFullName()] || 0)) : 0)
 
   const updateElementRank = (element: TypeElement): void => {
-    const maxAnnotationRank = getMaxRank(Object.values(element.annotationTypes))
+    const maxAnnotationRank = getMaxRank(Object.values(element.getAnnotationTypes()))
     const maxFieldsRank = isObjectType(element)
-      ? getMaxRank(Object.values(element.fields).map(field => field.type))
+      ? getMaxRank(Object.values(element.fields).map(field => field.getType()))
       : 0
     const rank = Math.max(maxAnnotationRank, maxFieldsRank)
     elementRanks[element.elemID.getFullName()] = rank + 1
@@ -291,15 +298,17 @@ export const generateElements = (
       }
     }
     if (isObjectType(ref)) {
-      return _.mapValues(ref.fields, field => generateValue(field.type))
+      return _.mapValues(ref.fields, field => generateValue(field.getType()))
     }
     if (isListType(ref)) {
-      return arrayOf(getListLength(), () => generateValue(ref.innerType))
+      return arrayOf(getListLength(), () => generateValue(ref.getInnerType()))
     }
     if (isMapType(ref)) {
-      return Object.fromEntries(arrayOf(getListLength(), () => generateValue(ref.innerType)).map(
-        (val, index) => [`k${index}`, val]
-      ))
+      return Object.fromEntries(
+        arrayOf(getListLength(), () => generateValue(ref.getInnerType())).map(
+          (val, index) => [`k${index}`, val]
+        )
+      )
     }
     // Linter token
     return undefined
@@ -320,11 +329,11 @@ export const generateElements = (
         const name = getName()
         const fieldType = getFieldType(true)
         return [name, {
-          type: fieldType,
+          refType: createRefToElmWithValue(fieldType),
           annotations: generateAnnotations(
             // don't generate random annotations for builtin types, even if they
             // support additional annotation types
-            fieldType === BuiltinTypes.HIDDEN_STRING ? {} : fieldType.annotationTypes
+            fieldType === BuiltinTypes.HIDDEN_STRING ? {} : fieldType.getAnnotationTypes()
           ),
         }]
       }
@@ -339,7 +348,7 @@ export const generateElements = (
   // Note that this has side effects tracking the static fields and reference fields
   const generatePrimitiveTypes = (): PrimitiveType[] => arrayOf(params.numOfPrimitiveTypes, () => {
     const name = getName()
-    const annotationTypes = generateAnnotationTypes(
+    const annotationRefsOrTypes = generateAnnotationTypes(
       normalRandom(defaultParams.primAnnoMean, defaultParams.primAnnoStd)
     )
     const element = new PrimitiveType({
@@ -349,8 +358,8 @@ export const generateElements = (
         PrimitiveTypes.STRING,
         PrimitiveTypes.NUMBER,
       ]),
-      annotationTypes,
-      annotations: generateAnnotations(annotationTypes, true),
+      annotationRefsOrTypes,
+      annotations: generateAnnotations(annotationRefsOrTypes, true),
       path: [DUMMY_ADAPTER, 'Types', name],
     })
     updateElementRank(element)
@@ -366,14 +375,14 @@ export const generateElements = (
 
   const generateTypes = (): ObjectType[] => arrayOf(params.numOfTypes, () => {
     const name = getName()
-    const annotationTypes = generateAnnotationTypes(
+    const annotationRefsOrTypes = generateAnnotationTypes(
       normalRandom(defaultParams.typetAnnoMean, defaultParams.typetAnnoStd)
     )
     const objType = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, name),
       fields: generateFields(),
-      annotationTypes,
-      annotations: generateAnnotations(annotationTypes, true),
+      annotationRefsOrTypes,
+      annotations: generateAnnotations(annotationRefsOrTypes, true),
       path: [DUMMY_ADAPTER, 'Types', name],
     })
     updateElementRank(objType)
@@ -383,14 +392,14 @@ export const generateElements = (
 
   const generateObjects = (): ObjectType[] => arrayOf(params.numOfObjs, () => {
     const name = getName()
-    const annotationTypes = generateAnnotationTypes(
+    const annotationRefsOrTypes = generateAnnotationTypes(
       normalRandom(defaultParams.objectAnnoMean, defaultParams.objectAnnoStd)
     )
     const fullObjType = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, name),
       fields: generateFields(),
-      annotationTypes,
-      annotations: generateAnnotations(annotationTypes),
+      annotationRefsOrTypes,
+      annotations: generateAnnotations(annotationRefsOrTypes),
     })
     const fieldsObjType = new ObjectType({
       elemID: fullObjType.elemID,
@@ -399,7 +408,7 @@ export const generateElements = (
     })
     const annoTypesObjType = new ObjectType({
       elemID: fullObjType.elemID,
-      annotationTypes: fullObjType.annotationTypes,
+      annotationRefsOrTypes: fullObjType.getAnnotationTypes(),
       annotations: fullObjType.annotations,
       path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
     })
@@ -415,7 +424,7 @@ export const generateElements = (
     const instanceType = weightedRandomSelect(objectTypes)
     const record = new InstanceElement(
       name,
-      instanceType,
+      new ReferenceExpression(instanceType.elemID, instanceType),
       generateValue(instanceType),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
@@ -474,7 +483,7 @@ export const generateElements = (
         if (useOldProfile) {
           return [new InstanceElement(
             name,
-            oldProfileType,
+            new ReferenceExpression(oldProfileType.elemID, oldProfileType),
             {
               fullName: name,
               ObjectLevelPermissions: objectPermissions,
@@ -483,10 +492,11 @@ export const generateElements = (
             [DUMMY_ADAPTER, 'Records', 'Profile', name],
           )]
         }
+        const profileTypeRef = new ReferenceExpression(profileType.elemID, profileType)
         return [
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               fullName: name,
             },
@@ -494,7 +504,7 @@ export const generateElements = (
           ),
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               ObjectLevelPermissions: toFlatMap(objectPermissions, 'name'),
             },
@@ -502,7 +512,7 @@ export const generateElements = (
           ),
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               FieldLevelPermissions: toNestedMap(fieldPermissions, 'name'),
             },
@@ -510,7 +520,7 @@ export const generateElements = (
           ),
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               LayoutAssignments: toListMap(layoutAssignments, 'layout'),
             },

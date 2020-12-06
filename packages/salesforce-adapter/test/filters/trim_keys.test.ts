@@ -38,7 +38,7 @@ describe('trim keys filter', () => {
   })
 
   it('should trim keys', async () => {
-    instance.type.annotations[METADATA_TYPE] = LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE
+    instance.getType().annotations[METADATA_TYPE] = LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.value.trimMe).toBeDefined()
     expect(instance.value[notTrimmed]).toBeUndefined()
@@ -46,7 +46,7 @@ describe('trim keys filter', () => {
   })
 
   it('should not trim keys for non listed metadata type', async () => {
-    instance.type.annotations[METADATA_TYPE] = 'NOT LightningComponentBundle'
+    instance.getType().annotations[METADATA_TYPE] = 'NOT LightningComponentBundle'
     await filter.onFetch([instance])
     expect(instance.value[notTrimmed]).toBeDefined()
     expect(instance.value.trimMe).toBeUndefined()

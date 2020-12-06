@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange,
-  DetailedChange, Value, StaticFile, isStaticFile } from '@salto-io/adapter-api'
+import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, ReferenceExpression, isReferenceExpression, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { SourceRange, SourceMap } from '../../parser'
@@ -199,8 +198,12 @@ export const updateNaclFileData = async (
       const changeKey = change.id.name
       const isListElement = changeKey.match(/^\d+$/) !== null
       if (change.id.idType === 'annotation') {
-        if (isType(elem)) {
-          newData = dumpSingleAnnotationType(changeKey, elem, indentationLevel)
+        if (isType(elem) || isReferenceExpression(elem)) {
+          newData = dumpSingleAnnotationType(
+            changeKey,
+            new ReferenceExpression(elem.elemID),
+            indentationLevel
+          )
         } else {
           newData = dumpAnnotationTypes(elem, indentationLevel)
         }
@@ -327,7 +330,14 @@ export const getNestedStaticFiles = (value: Value): StaticFile[] => {
       }
       return val
     }
-    transformElement({ element: value, transformFunc, strict: false })
+    transformElement({
+      element: value,
+      transformFunc,
+      strict: false,
+      // This transformElement does not need to types so this can be used
+      // Long term we should replace this with not using transformElement
+      elementsSource: placeholderReadonlyElementsSource,
+    })
     return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {

@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -32,7 +33,7 @@ const bundleinstallationscript_customplugintypes_plugintype = new ObjectType({
   },
   fields: {
     plugintype: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -51,7 +52,7 @@ const bundleinstallationscript_customplugintypes = new ObjectType({
   },
   fields: {
     plugintype: {
-      type: new ListType(bundleinstallationscript_customplugintypes_plugintype),
+      refType: createRefToElmWithValue(new ListType(bundleinstallationscript_customplugintypes_plugintype)),
       annotations: {
       },
     },
@@ -69,7 +70,7 @@ const bundleinstallationscript_libraries_library = new ObjectType({
   },
   fields: {
     scriptfile: {
-      type: BuiltinTypes.STRING /* Original type was filereference */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -88,7 +89,7 @@ const bundleinstallationscript_libraries = new ObjectType({
   },
   fields: {
     library: {
-      type: new ListType(bundleinstallationscript_libraries_library),
+      refType: createRefToElmWithValue(new ListType(bundleinstallationscript_libraries_library)),
       annotations: {
       },
     },
@@ -106,43 +107,43 @@ const bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldf
   },
   fields: {
     fldfilter: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     fldfilterchecked: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfiltercomparetype: {
-      type: enums.generic_customfield_fldfiltercomparetype,
+      refType: createRefToElmWithValue(enums.generic_customfield_fldfiltercomparetype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
     fldfiltersel: {
-      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     fldfilterval: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     fldfilternotnull: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfilternull: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldcomparefield: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
@@ -160,7 +161,7 @@ const bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldf
   },
   fields: {
     customfieldfilter: {
-      type: new ListType(bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
+      refType: createRefToElmWithValue(new ListType(bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter)),
       annotations: {
       },
     },
@@ -178,19 +179,19 @@ const bundleinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses
   },
   fields: {
     role: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
     accesslevel: {
-      type: enums.generic_accesslevel_searchlevel,
+      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
     searchlevel: {
-      type: enums.generic_accesslevel_searchlevel,
+      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -209,7 +210,7 @@ const bundleinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses
   },
   fields: {
     roleaccess: {
-      type: new ListType(bundleinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
+      refType: createRefToElmWithValue(new ListType(bundleinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess)),
       annotations: {
       },
     },
@@ -227,157 +228,157 @@ const bundleinstallationscript_scriptcustomfields_scriptcustomfield = new Object
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
     fieldtype: {
-      type: enums.generic_customfield_fieldtype,
+      refType: createRefToElmWithValue(enums.generic_customfield_fieldtype),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
     }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
     applyformatting: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     defaultchecked: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     defaultselection: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     defaultvalue: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     description: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     displaytype: {
-      type: enums.generic_customfield_displaytype,
+      refType: createRefToElmWithValue(enums.generic_customfield_displaytype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
     dynamicdefault: {
-      type: enums.generic_customfield_dynamicdefault,
+      refType: createRefToElmWithValue(enums.generic_customfield_dynamicdefault),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     minvalue: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     maxvalue: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     storevalue: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     accesslevel: {
-      type: enums.generic_accesslevel_searchlevel,
+      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
     checkspelling: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayheight: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
     displaywidth: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
     isformula: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     ismandatory: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     maxlength: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     onparentdelete: {
-      type: enums.generic_customfield_onparentdelete,
+      refType: createRefToElmWithValue(enums.generic_customfield_onparentdelete),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
     searchcomparefield: {
-      type: enums.generic_standard_field,
+      refType: createRefToElmWithValue(enums.generic_standard_field),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
     searchdefault: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     searchlevel: {
-      type: enums.generic_accesslevel_searchlevel,
+      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
     setting: {
-      type: enums.script_setting,
+      refType: createRefToElmWithValue(enums.script_setting),
       annotations: {
       },
     }, /* Original description: For information about possible values, see script_setting. */
     customfieldfilters: {
-      type: bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters,
+      refType: createRefToElmWithValue(bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters),
       annotations: {
       },
     },
     roleaccesses: {
-      type: bundleinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses,
+      refType: createRefToElmWithValue(bundleinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses),
       annotations: {
       },
     },
@@ -395,7 +396,7 @@ const bundleinstallationscript_scriptcustomfields = new ObjectType({
   },
   fields: {
     scriptcustomfield: {
-      type: new ListType(bundleinstallationscript_scriptcustomfields_scriptcustomfield),
+      refType: createRefToElmWithValue(new ListType(bundleinstallationscript_scriptcustomfields_scriptcustomfield)),
       annotations: {
       },
     },
@@ -413,36 +414,36 @@ const bundleinstallationscript_scriptdeployments_scriptdeployment = new ObjectTy
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
     status: {
-      type: enums.script_status,
+      refType: createRefToElmWithValue(enums.script_status),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
     title: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     isdeployed: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     loglevel: {
-      type: enums.script_loglevel,
+      refType: createRefToElmWithValue(enums.script_loglevel),
       annotations: {
       },
     }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
     runasrole: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
@@ -460,7 +461,7 @@ const bundleinstallationscript_scriptdeployments = new ObjectType({
   },
   fields: {
     scriptdeployment: {
-      type: new ListType(bundleinstallationscript_scriptdeployments_scriptdeployment),
+      refType: createRefToElmWithValue(new ListType(bundleinstallationscript_scriptdeployments_scriptdeployment)),
       annotations: {
       },
     },
@@ -477,7 +478,7 @@ export const bundleinstallationscript = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -485,87 +486,87 @@ export const bundleinstallationscript = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     scriptfile: {
-      type: BuiltinTypes.STRING /* Original type was filereference */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
     description: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     isinactive: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     notifyadmins: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     notifyemails: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     notifyowner: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     afterinstallfunction: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     afterupdatefunction: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     beforeinstallfunction: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     beforeuninstallfunction: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     beforeupdatefunction: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     customplugintypes: {
-      type: bundleinstallationscript_customplugintypes,
+      refType: createRefToElmWithValue(bundleinstallationscript_customplugintypes),
       annotations: {
       },
     },
     libraries: {
-      type: bundleinstallationscript_libraries,
+      refType: createRefToElmWithValue(bundleinstallationscript_libraries),
       annotations: {
       },
     },
     scriptcustomfields: {
-      type: bundleinstallationscript_scriptcustomfields,
+      refType: createRefToElmWithValue(bundleinstallationscript_scriptcustomfields),
       annotations: {
       },
     },
     scriptdeployments: {
-      type: bundleinstallationscript_scriptdeployments,
+      refType: createRefToElmWithValue(bundleinstallationscript_scriptdeployments),
       annotations: {
       },
     },

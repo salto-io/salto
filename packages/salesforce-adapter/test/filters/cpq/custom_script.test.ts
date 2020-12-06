@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType, Change, toChange, getChangeElement, isModificationChange, isAdditionChange, ModificationChange, isObjectTypeChange, AdditionChange, StaticFile, isFieldChange, Field } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../../src/filter'
 import { fullApiName } from '../../../src/filters/utils'
 import SalesforceClient from '../../../src/client/client'
@@ -33,25 +34,25 @@ describe('cpq custom script filter', () => {
     elemID: mockCustomScriptElemenID,
     fields: {
       [CPQ_CONSUMPTION_RATE_FIELDS]: {
-        type: Types.primitiveDataTypes.LongTextArea,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.LongTextArea),
         annotations: {
           [API_NAME]: fullApiName(CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_RATE_FIELDS),
         },
       },
       [CPQ_GROUP_FIELDS]: {
-        type: Types.primitiveDataTypes.LongTextArea,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.LongTextArea),
         annotations: {
           [API_NAME]: fullApiName(CPQ_CUSTOM_SCRIPT, CPQ_GROUP_FIELDS),
         },
       },
       [CPQ_CODE_FIELD]: {
-        type: Types.primitiveDataTypes.Text,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
         annotations: {
           [API_NAME]: fullApiName(CPQ_CUSTOM_SCRIPT, CPQ_CODE_FIELD),
         },
       },
       randomField: {
-        type: Types.primitiveDataTypes.Text,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
         annotations: {
           [API_NAME]: fullApiName(CPQ_CUSTOM_SCRIPT, 'randomField'),
         },
@@ -112,9 +113,9 @@ describe('cpq custom script filter', () => {
       const customScriptObj = elements
         .find(element => element.elemID.isEqual(mockCustomScriptObject.elemID)) as ObjectType
       expect(customScriptObj).toBeDefined()
-      expect(customScriptObj.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
+      expect(customScriptObj.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
         .toEqual(new ListType(Types.primitiveDataTypes.Text))
-      expect(customScriptObj.fields[CPQ_GROUP_FIELDS].type)
+      expect(customScriptObj.fields[CPQ_GROUP_FIELDS].getType())
         .toEqual(new ListType(Types.primitiveDataTypes.Text))
     })
 
@@ -151,9 +152,9 @@ describe('cpq custom script filter', () => {
               && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
         expect(cpqCustomScriptObjAddChange).toBeDefined()
         const object = getChangeElement(cpqCustomScriptObjAddChange as AdditionChange<ObjectType>)
-        expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
+        expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(object.fields[CPQ_GROUP_FIELDS].type)
+        expect(object.fields[CPQ_GROUP_FIELDS].getType())
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
@@ -201,18 +202,20 @@ describe('cpq custom script filter', () => {
       it('should change field type to list of text for modified fields', () => {
         const cpqFieldChange = changes.find(isFieldChange) as ModificationChange<Field>
         expect(cpqFieldChange).toBeDefined()
-        expect(cpqFieldChange.data.before.type).toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(cpqFieldChange.data.after.type).toEqual(new ListType(Types.primitiveDataTypes.Text))
+        expect(cpqFieldChange.data.before.getType())
+          .toEqual(new ListType(Types.primitiveDataTypes.Text))
+        expect(cpqFieldChange.data.after.getType())
+          .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
       it('should not change field types in object modification', () => {
         const cpqTypeChange = changes.find(isObjectTypeChange) as ModificationChange<ObjectType>
         expect(cpqTypeChange).toBeDefined()
-        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].type).toEqual(
-          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
-        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].type).toEqual(
-          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
       })
 
@@ -241,9 +244,13 @@ describe('cpq custom script filter', () => {
     let changes: Change<ChangeDataType>[]
     const mockAfterOnFetchCustomScriptObject = mockCustomScriptObject.clone()
     mockAfterOnFetchCustomScriptObject
-      .fields[CPQ_CONSUMPTION_RATE_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
+      .fields[CPQ_CONSUMPTION_RATE_FIELDS].refType = createRefToElmWithValue(
+        new ListType(Types.primitiveDataTypes.Text)
+      )
     mockAfterOnFetchCustomScriptObject
-      .fields[CPQ_GROUP_FIELDS].type = new ListType(Types.primitiveDataTypes.Text)
+      .fields[CPQ_GROUP_FIELDS].refType = createRefToElmWithValue(
+        new ListType(Types.primitiveDataTypes.Text)
+      )
     const mockAfterResolveCustomScriptInstance = mockAfterOnFetchCustomScriptInstance
       .clone()
     // Simulating resolve on the static-file
@@ -273,18 +280,18 @@ describe('cpq custom script filter', () => {
       it('Should change fieldRefList fields type to long text', () => {
         const cpqFieldChange = changes.find(isFieldChange) as ModificationChange<Field>
         expect(cpqFieldChange).toBeDefined()
-        expect(cpqFieldChange.data.before.type).toEqual(Types.primitiveDataTypes.LongTextArea)
-        expect(cpqFieldChange.data.after.type).toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(cpqFieldChange.data.before.getType()).toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(cpqFieldChange.data.after.getType()).toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 
       it('Should not change field types in the object type modification', () => {
         const cpqTypeChange = changes.find(isObjectTypeChange) as ModificationChange<ObjectType>
         expect(cpqTypeChange).toBeDefined()
-        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].type).toEqual(
-          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
-        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].type).toEqual(
-          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].type
+        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
       })
 
@@ -331,9 +338,9 @@ describe('cpq custom script filter', () => {
               && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
         expect(cpqCustomScriptObjAddChange).toBeDefined()
         const object = getChangeElement(cpqCustomScriptObjAddChange as AdditionChange<ObjectType>)
-        expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].type)
+        expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
           .toEqual(Types.primitiveDataTypes.LongTextArea)
-        expect(object.fields[CPQ_GROUP_FIELDS].type)
+        expect(object.fields[CPQ_GROUP_FIELDS].getType())
           .toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 

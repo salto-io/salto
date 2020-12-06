@@ -13,16 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { MetadataInfo } from 'jsforce'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import {
-  makeFilter, STANDARD_VALUE_SET, STANDARD_VALUE,
-} from '../../src/filters/standard_value_sets'
+import { makeFilter, STANDARD_VALUE_SET, STANDARD_VALUE } from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
 import { Types } from '../../src/transformers/transformer'
 import { extractFullNamesFromValueList } from '../../src/filters/utils'
@@ -48,9 +45,9 @@ const createPicklistObjectType = (
 ): ObjectType => new ObjectType({
   elemID: mockElemID,
   fields: { state: {
-    type: isMultiPicklist
-      ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
-      : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
+    refType: isMultiPicklist
+      ? createRefToElmWithValue(Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST])
+      : createRefToElmWithValue(Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST]),
     annotations: {
       [CORE_ANNOTATIONS.REQUIRED]: false,
       [constants.API_NAME]: apiName,
@@ -73,7 +70,7 @@ describe('Standard Value Sets filter', () => {
   type FilterType = FilterWith<'onFetch'>
   const { client } = mockClient()
   const mockSVSType = new ObjectType({
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     elemID: new ElemID(constants.SALESFORCE, 'standard_value_set'),
   })
   mockSVSType.annotations[constants.METADATA_TYPE] = STANDARD_VALUE_SET

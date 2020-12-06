@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { fieldTypes } from '../field_types'
 
@@ -32,7 +33,7 @@ export const dataset_dependencies = new ObjectType({
   },
   fields: {
     dependency: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -50,7 +51,7 @@ export const dataset = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -58,20 +59,20 @@ export const dataset = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custdataset’. */
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
     }, /* Original description: This field value can be up to 50 characters long. */
     definition: {
-      type: fieldTypes.cdata,
+      refType: createRefToElmWithValue(fieldTypes.cdata),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     dependencies: {
-      type: dataset_dependencies,
+      refType: createRefToElmWithValue(dataset_dependencies),
       annotations: {
       },
     },

@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, IS_ATTRIBUTE, METADATA_TYPE } from '../constants'
 
 const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
@@ -24,7 +23,7 @@ const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 const lightningComponentBundleObjectType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleObject'),
   fields: {
-    object: { type: BuiltinTypes.STRING },
+    object: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
   path: [...subTypesPath, 'LightningComponentBundleObject'],
 })
@@ -33,68 +32,69 @@ const lightningComponentBundlePropertyType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleProperty'),
   fields: {
     datasource: {
-      type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
+      // SALTO-861: retrieved as string delimited by ',' but is a list
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     default: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     description: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     max: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     min: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [IS_ATTRIBUTE]: true,
       },
     },
     placeholder: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     required: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     role: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     type: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [IS_ATTRIBUTE]: true,
@@ -113,7 +113,7 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactor'),
   fields: {
     type: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
@@ -127,7 +127,11 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
 const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactors'),
   fields: {
-    supportedFormFactor: { type: new ListType(lightningComponentBundleSupportedFormFactorType) },
+    supportedFormFactor: {
+      refType: createRefToElmWithValue(
+        new ListType(lightningComponentBundleSupportedFormFactorType)
+      ),
+    },
   },
   path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactors'],
 })
@@ -136,20 +140,27 @@ const lightningComponentBundleTargetConfigType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleTargetConfig'),
   fields: {
     targets: {
-      type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
+      // SALTO-861: retrieved as string delimited by ',' but is a list
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     configurationEditor: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
-    objects: { type: new ListType(lightningComponentBundleObjectType) },
-    property: { type: lightningComponentBundlePropertyType },
-    supportedFormFactors: { type: lightningComponentBundleSupportedFormFactorsType },
+    objects: {
+      refType: createRefToElmWithValue(new ListType(lightningComponentBundleObjectType)),
+    },
+    property: {
+      refType: createRefToElmWithValue(lightningComponentBundlePropertyType),
+    },
+    supportedFormFactors: {
+      refType: createRefToElmWithValue(lightningComponentBundleSupportedFormFactorsType),
+    },
   },
   path: [...subTypesPath, 'LightningComponentBundleTargetConfig'],
 })
@@ -158,23 +169,23 @@ export const allMissingSubTypes = [
   new ObjectType({
     elemID: new ElemID(SALESFORCE, 'BusinessHoursEntry'),
     fields: {
-      timeZoneId: { type: BuiltinTypes.STRING },
-      name: { type: BuiltinTypes.STRING },
-      default: { type: BuiltinTypes.STRING },
-      mondayStartTime: { type: BuiltinTypes.STRING },
-      mondayEndTime: { type: BuiltinTypes.STRING },
-      tuesdayStartTime: { type: BuiltinTypes.STRING },
-      tuesdayEndTime: { type: BuiltinTypes.STRING },
-      wednesdayStartTime: { type: BuiltinTypes.STRING },
-      wednesdayEndTime: { type: BuiltinTypes.STRING },
-      thursdayStartTime: { type: BuiltinTypes.STRING },
-      thursdayEndTime: { type: BuiltinTypes.STRING },
-      fridayStartTime: { type: BuiltinTypes.STRING },
-      fridayEndTime: { type: BuiltinTypes.STRING },
-      saturdayStartTime: { type: BuiltinTypes.STRING },
-      saturdayEndTime: { type: BuiltinTypes.STRING },
-      sundayStartTime: { type: BuiltinTypes.STRING },
-      sundayEndTime: { type: BuiltinTypes.STRING },
+      timeZoneId: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      default: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      mondayStartTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      mondayEndTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      tuesdayStartTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      tuesdayEndTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      wednesdayStartTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      wednesdayEndTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      thursdayStartTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      thursdayEndTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      fridayStartTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      fridayEndTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      saturdayStartTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      saturdayEndTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      sundayStartTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      sundayEndTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
     annotations: {
       [METADATA_TYPE]: 'BusinessHoursEntry',
@@ -184,20 +195,20 @@ export const allMissingSubTypes = [
   new ObjectType({
     elemID: new ElemID(SALESFORCE, 'Holidays'),
     fields: {
-      name: { type: BuiltinTypes.STRING },
-      description: { type: BuiltinTypes.STRING },
-      activityDate: { type: BuiltinTypes.STRING },
-      recurrenceStartDate: { type: BuiltinTypes.STRING },
-      recurrenceEndDate: { type: BuiltinTypes.STRING },
-      startTime: { type: BuiltinTypes.STRING },
-      endTime: { type: BuiltinTypes.STRING },
-      recurrenceType: { type: BuiltinTypes.STRING },
-      recurrenceInterval: { type: BuiltinTypes.STRING },
-      recurrenceDayOfWeek: { type: BuiltinTypes.STRING },
-      recurrenceDayOfMonth: { type: BuiltinTypes.STRING },
-      recurrenceInstance: { type: BuiltinTypes.STRING },
-      recurrenceMonthOfYear: { type: BuiltinTypes.STRING },
-      businessHours: { type: BuiltinTypes.STRING },
+      name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      activityDate: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceStartDate: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceEndDate: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      startTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      endTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceInterval: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceDayOfWeek: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceDayOfMonth: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceInstance: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recurrenceMonthOfYear: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      businessHours: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
     annotations: {
       [METADATA_TYPE]: 'Holidays',
@@ -207,8 +218,8 @@ export const allMissingSubTypes = [
   new ObjectType({
     elemID: new ElemID(SALESFORCE, 'OrganizationSettingsDetail'),
     fields: {
-      settingName: { type: BuiltinTypes.STRING },
-      settingValue: { type: BuiltinTypes.STRING },
+      settingName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      settingValue: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
     path: [...subTypesPath, 'OrganizationSettingsDetail'],
   }),
@@ -216,7 +227,9 @@ export const allMissingSubTypes = [
     // taken from https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_configuration_tags
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {
-      targetConfig: { type: new ListType(lightningComponentBundleTargetConfigType) },
+      targetConfig: {
+        refType: createRefToElmWithValue(new ListType(lightningComponentBundleTargetConfigType)),
+      },
     },
     path: [...subTypesPath, 'TargetConfigs'],
   }),

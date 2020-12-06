@@ -14,10 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  TypeElement, Field, isObjectType, PrimitiveTypes, TypeMap, isListType, isPrimitiveType, Element,
-  isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, isMapType,
-} from '@salto-io/adapter-api'
+import { Field, isObjectType, PrimitiveTypes, isPrimitiveType, Element, ReferenceExpression, isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, ElemID, ReferenceMap } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 
 import { dump as hclDump, dumpValue } from './internal/dump'
@@ -51,19 +48,16 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
-export const dumpElemID = (type: TypeElement): string => {
-  if (type.elemID.isConfig()) {
-    return type.elemID.adapter
+export const dumpElemID = (id: ElemID): string => {
+  if (id.isConfig()) {
+    return id.adapter
   }
-  if (isListType(type)) {
-    return `${Keywords.LIST_PREFIX}${dumpElemID(type.innerType)}${Keywords.GENERICS_SUFFIX}`
+  if (id.idType === 'instance') {
+    [id.adapter, id.name]
+      .filter(part => !_.isEmpty(part))
+      .join(Keywords.NAMESPACE_SEPARATOR)
   }
-  if (isMapType(type)) {
-    return `${Keywords.MAP_PREFIX}${dumpElemID(type.innerType)}${Keywords.GENERICS_SUFFIX}`
-  }
-  return [type.elemID.adapter, type.elemID.name]
-    .filter(part => !_.isEmpty(part))
-    .join(Keywords.NAMESPACE_SEPARATOR)
+  return id.getFullName()
 }
 
 const dumpAttributes = async (value: Value, functions: Functions): Promise<Value> => {
@@ -88,26 +82,27 @@ const dumpAttributes = async (value: Value, functions: Functions): Promise<Value
 }
 
 const dumpFieldBlock = async (field: Field, functions: Functions): Promise<DumpedHclBlock> => ({
-  type: dumpElemID(field.type),
+  type: dumpElemID(field.refType.elemID),
   labels: [field.elemID.name],
   attrs: await dumpAttributes(field.annotations, functions),
   blocks: [],
 })
 
-const dumpAnnotationTypeBlock = (key: string, type: TypeElement): DumpedHclBlock => ({
-  type: dumpElemID(type),
-  labels: [key],
-  attrs: {},
-  blocks: [],
-})
+const dumpAnnotationTypeBlock = (key: string, refType: ReferenceExpression): DumpedHclBlock =>
+  ({
+    type: dumpElemID(refType.elemID),
+    labels: [key],
+    attrs: {},
+    blocks: [],
+  })
 
-const dumpAnnotationTypesBlock = (annotationTypes: TypeMap): DumpedHclBlock[] =>
-  (_.isEmpty(annotationTypes) ? [] : [{
+const dumpAnnotationTypesBlock = (annotationRefTypes: ReferenceMap): DumpedHclBlock[] =>
+  (_.isEmpty(annotationRefTypes) ? [] : [{
     type: Keywords.ANNOTATIONS_DEFINITION,
     labels: [],
     attrs: {},
-    blocks: Object.entries(annotationTypes)
-      .map(([key, type]) => dumpAnnotationTypeBlock(key, type)),
+    blocks: Object.entries(annotationRefTypes)
+      .map(([key, ref]) => dumpAnnotationTypeBlock(key, ref)),
   }])
 
 const dumpElementBlock = async (elem: Element, functions: Functions): Promise<DumpedHclBlock> => {
@@ -117,9 +112,9 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
-      labels: [dumpElemID(elem)],
+      labels: [dumpElemID(elem.elemID)],
       attrs: await dumpAttributes(elem.annotations, functions),
-      blocks: dumpAnnotationTypesBlock(elem.annotationTypes).concat(
+      blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes).concat(
         await Promise.all(Object.values(elem.fields).map(field => dumpFieldBlock(field, functions)))
       ),
     }
@@ -128,18 +123,18 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
     return {
       type: Keywords.TYPE_DEFINITION,
       labels: [
-        dumpElemID(elem),
+        dumpElemID(elem.elemID),
         Keywords.TYPE_INHERITANCE_SEPARATOR,
         getPrimitiveTypeName(elem.primitive),
       ],
       attrs: await dumpAttributes(elem.annotations, functions),
-      blocks: dumpAnnotationTypesBlock(elem.annotationTypes),
+      blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes),
     }
   }
   if (isInstanceElement(elem)) {
     return {
-      type: dumpElemID(elem.type),
-      labels: elem.elemID.isConfig() || elem.type.isSettings
+      type: dumpElemID(elem.refType.elemID),
+      labels: elem.elemID.isConfig() || elem.refType.elemID.isConfig()
       || elem.elemID.name === '_config' // TODO: should inject the correct type
         ? []
         : [elem.elemID.name],
@@ -171,12 +166,15 @@ export const dumpElements = async (
   )
 
 export const dumpSingleAnnotationType = (
-  name: string, type: TypeElement, indentationLevel = 0
+  name: string, refType: ReferenceExpression, indentationLevel = 0
 ): string =>
-  hclDump(wrapBlocks([dumpAnnotationTypeBlock(name, type)]), indentationLevel)
+  hclDump(wrapBlocks([dumpAnnotationTypeBlock(name, refType)]), indentationLevel)
 
-export const dumpAnnotationTypes = (annotationTypes: TypeMap, indentationLevel = 0): string =>
-  hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationTypes)), indentationLevel)
+export const dumpAnnotationTypes = (
+  annotationRefTypes: ReferenceMap,
+  indentationLevel = 0
+): string =>
+  hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationRefTypes)), indentationLevel)
 
 export const dumpValues = async (
   value: Value, functions: Functions, indentationLevel = 0

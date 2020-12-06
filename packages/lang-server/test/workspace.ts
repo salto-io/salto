@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors,
@@ -28,7 +29,7 @@ const SERVICES = ['salesforce']
 const configID = new ElemID(SERVICES[0])
 const mockConfigType = new ObjectType({
   elemID: configID,
-  fields: { username: { type: BuiltinTypes.STRING } },
+  fields: { username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
 })
 const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
   username: 'test@test',

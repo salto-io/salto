@@ -62,7 +62,7 @@ const addMissingIds = async (
 const elementsWithMissingIds = (elements: Element[]): Element[] => (
   elements
     .flatMap(e => (isObjectType(e) ? Object.values(e.fields) : [e]))
-    .filter(e => (isInstanceElement(e) && !e.type.isSettings) || isField(e))
+    .filter(e => (isInstanceElement(e) && !e.getType().isSettings) || isField(e))
     .filter(e => apiName(e) !== undefined && getInternalId(e) === undefined)
 )
 

@@ -73,9 +73,9 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
   const returnOnlyAnnotationTypesDiff = (
     val: Value,
     otherVal: Value
-  ): Value => _.pickBy(val.annotationTypes,
-    (annotationType, annotationName) =>
-      !(otherVal.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
+  ): Value => _.pickBy(val.annotationRefTypes,
+    (annotationRefType, annotationName) =>
+      !(otherVal.annotationRefTypes[annotationName]?.elemID.isEqual(annotationRefType.elemID)))
 
   if (hasAnnotationTypes(before) && hasAnnotationTypes(after)) {
     const beforeUniqueAnnotationsTypes = returnOnlyAnnotationTypesDiff(before, after)
@@ -125,7 +125,7 @@ export const detailedCompare = (
   }
 
   // A special case to handle type changes in fields, we have to modify the whole field
-  if (isField(before) && isField(after) && !before.type.elemID.isEqual(after.type.elemID)) {
+  if (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) {
     return [{ action: 'modify', data: { before, after }, id: after.elemID }]
   }
 

@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  InstanceElement, DeployResult, ChangeDataType, getChangeElement,
-} from '@salto-io/adapter-api'
+import { InstanceElement, DeployResult, ChangeDataType, getChangeElement } from '@salto-io/adapter-api'
 import HubspotAdapter from '../src/adapter'
 import mockAdapter from './mock'
 import {

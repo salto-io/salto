@@ -17,7 +17,18 @@ import _ from 'lodash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value } from './values'
+import { Values, isEqualValues, Value, ReferenceExpression, isReferenceExpression } from './values'
+
+const getRefType = (typeOrRef: TypeElement | ReferenceExpression): ReferenceExpression =>
+  (isReferenceExpression(typeOrRef)
+    ? typeOrRef
+    : new ReferenceExpression(typeOrRef.elemID, typeOrRef))
+
+const getRefTypeValue = (
+  refType: ReferenceExpression,
+  elementsSource?: ReadOnlyElementsSource,
+): Value =>
+  (refType.getResolvedValue(elementsSource))
 
 /**
  * An abstract class that represent the base element.
@@ -28,35 +39,26 @@ import { Values, isEqualValues, Value } from './values'
 export abstract class Element {
   readonly elemID: ElemID
   annotations: Values
-  annotationTypes: TypeMap
+  annotationRefTypes: ReferenceMap
   path?: ReadonlyArray<string>
   constructor({
     elemID,
+    annotationRefsOrTypes,
     annotations,
-    annotationTypes,
     path,
   }: {
     elemID: ElemID
-    annotationTypes?: TypeMap
+    annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
     path?: ReadonlyArray<string>
   }) {
     this.elemID = elemID
     this.annotations = annotations || {}
-    this.annotationTypes = annotationTypes || {}
+    this.annotationRefTypes = _.mapValues(
+      (annotationRefsOrTypes ?? {}),
+      refOrType => getRefType(refOrType)
+    )
     this.path = path
-  }
-
-  /**
-   * Return a deep copy of the instance annotations by recursively
-   * cloning all annotations (by invoking their clone method)
-   */
-  protected cloneAnnotationTypes(): TypeMap {
-    const clonedAnnotationTypes: TypeMap = {}
-    Object.keys(this.annotationTypes).forEach(key => {
-      clonedAnnotationTypes[key] = this.annotationTypes[key].clone()
-    })
-    return clonedAnnotationTypes
   }
 
   /**
@@ -78,9 +80,22 @@ export abstract class Element {
 
   isAnnotationsTypesEqual(other: Element): boolean {
     return _.isEqual(
-      _.mapValues(this.annotationTypes, a => a.elemID),
-      _.mapValues(other.annotationTypes, a => a.elemID)
+      _.mapValues(this.annotationRefTypes, a => a.elemID),
+      _.mapValues(other.annotationRefTypes, a => a.elemID)
     )
+  }
+
+  getAnnotationTypes(elementsSource?: ReadOnlyElementsSource): TypeMap {
+    const annotationTypes = _.mapValues(
+      this.annotationRefTypes,
+      refType => (refType.getResolvedValue(elementsSource))
+    )
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const nonTypeVals = Object.values(annotationTypes).filter(type => !isType(type))
+    if (nonTypeVals.length) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s has annotationType that resolves as non-TypeElement`)
+    }
+    return annotationTypes
   }
 
   annotate(annotations: Values): void {
@@ -113,33 +128,73 @@ export enum PrimitiveTypes {
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
+export type TypeRefMap = Record<string, TypeElement | ReferenceExpression>
+export type ReferenceMap = Record<string, ReferenceExpression>
+
+abstract class PlaceholderTypeElement extends Element {
+  constructor(
+    elemID: ElemID,
+    public refType: ReferenceExpression,
+    annotationRefsOrTypes?: TypeRefMap,
+    annotations?: Values,
+    path?: ReadonlyArray<string>,
+  ) {
+    super({ elemID, annotationRefsOrTypes, annotations, path })
+  }
+
+  getType(elementsSource?: ReadOnlyElementsSource): TypeElement {
+    const type = getRefTypeValue(this.refType, elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+    }
+    return type
+  }
+}
 
 export class ListType extends Element {
+  public refInnerType: ReferenceExpression
   public constructor(
-   public innerType: TypeElement
+    innerTypeOrRef: TypeElement | ReferenceExpression
   ) {
     super({
-      elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
+      elemID: new ElemID('', `List<${innerTypeOrRef.elemID.getFullName()}>`),
     })
-    this.setInnerType(innerType)
+    this.refInnerType = getRefType(innerTypeOrRef)
+    this.setRefInnerType(innerTypeOrRef)
   }
 
   isEqual(other: ListType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+    return super.isEqual(other) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID)
   }
 
   clone(): ListType {
     return new ListType(
-      this.innerType.clone()
+      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
     )
   }
 
-  setInnerType(innerType: TypeElement): void {
-    if (innerType.elemID.isEqual(this.innerType.elemID)) {
-      this.innerType = innerType
-      this.annotations = innerType.annotations
-      this.annotationTypes = innerType.annotationTypes
+  getInnerType(elementsSource?: ReadOnlyElementsSource): TypeElement {
+    const refInnerTypeVal = getRefTypeValue(this.refInnerType, elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isType(refInnerTypeVal)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
+    }
+    return refInnerTypeVal
+  }
+
+  setRefInnerType(innerTypeOrRefInnerType: TypeElement | ReferenceExpression): void {
+    if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
+      this.refInnerType = getRefType(innerTypeOrRefInnerType)
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      const innerType = isType(innerTypeOrRefInnerType)
+        ? innerTypeOrRefInnerType
+        : innerTypeOrRefInnerType.value
+      if (innerType !== undefined) {
+        this.annotations = innerType.annotations
+        this.annotationRefTypes = innerType.annotationRefTypes
+      }
     } else {
       throw new Error('Inner type id does not match ListType id')
     }
@@ -150,31 +205,48 @@ export class ListType extends Element {
  * Represents a map with string keys and innerType values.
  */
 export class MapType extends Element {
+  public refInnerType: ReferenceExpression
   public constructor(
-   public innerType: TypeElement
+    innerTypeOrRef: TypeElement | ReferenceExpression
   ) {
     super({
-      elemID: new ElemID('', `map<${innerType.elemID.getFullName()}>`),
+      elemID: new ElemID('', `Map<${innerTypeOrRef.elemID.getFullName()}>`),
     })
-    this.setInnerType(innerType)
+    this.refInnerType = getRefType(innerTypeOrRef)
+    this.setRefInnerType(innerTypeOrRef)
   }
 
-  isEqual(other: MapType): boolean {
+  isEqual(other: ListType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+    return super.isEqual(other) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID)
   }
 
-  clone(): MapType {
-    return new MapType(
-      this.innerType.clone()
+  clone(): ListType {
+    return new ListType(
+      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
     )
   }
 
-  setInnerType(innerType: TypeElement): void {
-    if (innerType.elemID.isEqual(this.innerType.elemID)) {
-      this.innerType = innerType
-      this.annotations = innerType.annotations
-      this.annotationTypes = innerType.annotationTypes
+  getInnerType(elementsSource?: ReadOnlyElementsSource): TypeElement {
+    const refInnerTypeVal = getRefTypeValue(this.refInnerType, elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isType(refInnerTypeVal)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
+    }
+    return refInnerTypeVal
+  }
+
+  setRefInnerType(innerTypeOrRefInnerType: TypeElement | ReferenceExpression): void {
+    if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
+      this.refInnerType = getRefType(innerTypeOrRefInnerType)
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      const innerType = isType(innerTypeOrRefInnerType)
+        ? innerTypeOrRefInnerType
+        : innerTypeOrRefInnerType.value
+      if (innerType !== undefined) {
+        this.annotations = innerType.annotations
+        this.annotationRefTypes = innerType.annotationRefTypes
+      }
     } else {
       throw new Error('Inner type id does not match MapType id')
     }
@@ -184,18 +256,23 @@ export class MapType extends Element {
 /**
  * Represents a field inside a type
  */
-export class Field extends Element {
+export class Field extends PlaceholderTypeElement {
   public constructor(
     public parent: ObjectType,
     public name: string,
-    public type: TypeElement,
+    typeOrRefType: TypeElement | ReferenceExpression,
     annotations: Values = {},
   ) {
-    super({ elemID: parent.elemID.createNestedID('field', name), annotations })
+    super(
+      parent.elemID.createNestedID('field', name),
+      getRefType(typeOrRefType),
+      {},
+      annotations
+    )
   }
 
   isEqual(other: Field): boolean {
-    return _.isEqual(this.type.elemID, other.type.elemID)
+    return _.isEqual(this.refType.elemID, other.refType.elemID)
       && _.isEqual(this.elemID, other.elemID)
       && isEqualValues(this.annotations, other.annotations)
   }
@@ -209,7 +286,7 @@ export class Field extends Element {
     return new Field(
       this.parent,
       this.name,
-      this.type,
+      this.refType,
       annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
     )
   }
@@ -224,17 +301,17 @@ export class PrimitiveType extends Element {
   constructor({
     elemID,
     primitive,
-    annotationTypes = {},
+    annotationRefsOrTypes = {},
     annotations = {},
     path = undefined,
   }: {
     elemID: ElemID
     primitive: PrimitiveTypes
-    annotationTypes?: TypeMap
+    annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
     path?: ReadonlyArray<string>
   }) {
-    super({ elemID, annotationTypes, annotations, path })
+    super({ elemID, annotationRefsOrTypes, annotations, path })
     this.primitive = primitive
   }
 
@@ -251,7 +328,7 @@ export class PrimitiveType extends Element {
     const res: PrimitiveType = new PrimitiveType({
       elemID: this.elemID,
       primitive: this.primitive,
-      annotationTypes: this.cloneAnnotationTypes(),
+      annotationRefsOrTypes: this.annotationRefTypes,
       annotations: this.cloneAnnotations(),
     })
     res.annotate(additionalAnnotations)
@@ -260,7 +337,7 @@ export class PrimitiveType extends Element {
 }
 
 export type FieldDefinition = {
-  type: TypeElement
+  refType: ReferenceExpression
   annotations?: Values
 }
 /**
@@ -273,22 +350,22 @@ export class ObjectType extends Element {
   constructor({
     elemID,
     fields = {},
-    annotationTypes = {},
+    annotationRefsOrTypes = {},
     annotations = {},
     isSettings = false,
     path = undefined,
   }: {
     elemID: ElemID
     fields?: Record<string, FieldDefinition>
-    annotationTypes?: TypeMap
+    annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
-    super({ elemID, annotationTypes, annotations, path })
+    super({ elemID, annotationRefsOrTypes, annotations, path })
     this.fields = _.mapValues(
       fields,
-      (fieldDef, name) => new Field(this, name, fieldDef.type, fieldDef.annotations),
+      (fieldDef, name) => new Field(this, name, fieldDef.refType, fieldDef.annotations),
     )
     this.isSettings = isSettings
   }
@@ -316,7 +393,6 @@ export class ObjectType extends Element {
    * @return {ObjectType} the cloned instance
    */
   clone(additionalAnnotations: Values = {}): ObjectType {
-    const clonedAnnotationTypes = this.cloneAnnotationTypes()
     const clonedAnnotations = this.cloneAnnotations()
     const clonedFields = this.cloneFields()
     const { isSettings } = this
@@ -324,7 +400,7 @@ export class ObjectType extends Element {
     const res: ObjectType = new ObjectType({
       elemID: this.elemID,
       fields: clonedFields,
-      annotationTypes: clonedAnnotationTypes,
+      annotationRefsOrTypes: this.annotationRefTypes,
       annotations: clonedAnnotations,
       isSettings,
     })
@@ -335,17 +411,34 @@ export class ObjectType extends Element {
   }
 }
 
-export class InstanceElement extends Element {
-  constructor(name: string,
-    public type: ObjectType,
+export class InstanceElement extends PlaceholderTypeElement {
+  constructor(
+    name: string,
+    typeOrRefType: ObjectType | ReferenceExpression,
     public value: Values = {},
     path?: ReadonlyArray<string>,
-    annotations?: Values) {
-    super({ elemID: type.elemID.createNestedID('instance', name), annotations, path })
+    annotations?: Values,
+  ) {
+    super(
+      typeOrRefType.elemID.createNestedID('instance', name),
+      getRefType(typeOrRefType),
+      undefined,
+      annotations,
+      path,
+    )
+  }
+
+  getType(elementsSource?: ReadOnlyElementsSource): ObjectType {
+    const type = getRefTypeValue(this.refType, elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isObjectType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
+    }
+    return type
   }
 
   isEqual(other: InstanceElement): boolean {
-    return _.isEqual(this.type.elemID, other.type.elemID)
+    return _.isEqual(this.refType.elemID, other.refType.elemID)
       && isEqualValues(this.value, other.value)
   }
 
@@ -365,7 +458,7 @@ export class InstanceElement extends Element {
    * @return {InstanceElement} the cloned instance
    */
   clone(): InstanceElement {
-    return new InstanceElement(this.elemID.name, this.type, _.cloneDeep(this.value), this.path,
+    return new InstanceElement(this.elemID.name, this.refType, _.cloneDeep(this.value), this.path,
       _.cloneDeep(this.annotations))
   }
 }
@@ -468,4 +561,18 @@ export function isEqualElements(first?: any, second?: any): boolean {
     return first.isEqual(second)
   }
   return false
+}
+
+export type ReadOnlyElementsSource = {
+  getSync(id: ElemID): Value
+}
+
+// This is a hack for the places we don't really need types in
+// transformElement. We need to replace this with not using transformElement.
+export const placeholderReadonlyElementsSource = {
+  getSync(id: ElemID): Value {
+    return new ObjectType({
+      elemID: id,
+    })
+  },
 }

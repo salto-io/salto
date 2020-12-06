@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -32,24 +33,24 @@ const centertab_portlets_portlet = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     portlet: {
-      type: enums.generic_portlet,
+      refType: createRefToElmWithValue(enums.generic_portlet),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_portlet. */
     portletcolumn: {
-      type: enums.generic_portletcolumn,
+      refType: createRefToElmWithValue(enums.generic_portletcolumn),
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_portletcolumn. */
     isportletshown: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -67,7 +68,7 @@ const centertab_portlets = new ObjectType({
   },
   fields: {
     portlet: {
-      type: new ListType(centertab_portlets_portlet),
+      refType: createRefToElmWithValue(new ListType(centertab_portlets_portlet)),
       annotations: {
       },
     },
@@ -84,7 +85,7 @@ export const centertab = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -92,49 +93,49 @@ export const centertab = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentertab’. */
     label: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     center: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
     allvendors: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allroles: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allpartners: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
     allcustomers: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allemployees: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     audslctrole: {
-      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
     portlets: {
-      type: centertab_portlets,
+      refType: createRefToElmWithValue(centertab_portlets),
       annotations: {
       },
     },

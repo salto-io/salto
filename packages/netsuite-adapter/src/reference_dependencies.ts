@@ -30,17 +30,17 @@ const { isDefined } = lowerDashValues
 export const findDependingInstancesFromRefs = (instance: InstanceElement): InstanceElement[] => {
   const visitedIdToInstance = new Map<string, InstanceElement>()
   const isRefToServiceId = (topLevelParent: InstanceElement, elemId: ElemID): boolean => {
-    const fieldType = getFieldType(topLevelParent.type, elemId.createTopLevelParentID().path)
+    const fieldType = getFieldType(topLevelParent.getType(), elemId.createTopLevelParentID().path)
     return isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.SERVICE_ID)
   }
 
   const createDependingElementsCallback: TransformFunc = ({ value }) => {
     if (isReferenceExpression(value)) {
-      const { topLevelParent, elemId } = value
+      const { topLevelParent, elemID } = value
       if (isInstanceElement(topLevelParent)
         && !visitedIdToInstance.has(topLevelParent.elemID.getFullName())
-        && elemId.adapter === NETSUITE
-        && isRefToServiceId(topLevelParent, elemId)) {
+        && elemID.adapter === NETSUITE
+        && isRefToServiceId(topLevelParent, elemID)) {
         visitedIdToInstance.set(topLevelParent.elemID.getFullName(), topLevelParent)
       }
     }

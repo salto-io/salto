@@ -21,16 +21,15 @@ import { Element, ElemID, getChangeElement, isInstanceElement, Value,
   DetailedChange, Change, isRemovalChange } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
-import { ElementSelector, selectElementIdsByTraversal,
-  ElementIDToValue } from '../../element_selector'
+import { ElementSelector, selectElementIdsByTraversal, ElementIDToValue } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
-
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
 import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
+import { InMemoryRemoteElementSource } from '../../elements_source'
 
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
@@ -108,8 +107,11 @@ const buildMultiEnvSource = (
     const allActiveElements = _.flatten(await Promise.all(
       _.values(getActiveSources(env)).map(s => (s ? s.getAll() : []))
     ))
-    const { errors, merged } = mergeElements(allActiveElements, {})
-    applyInstancesDefaults(merged.filter(isInstanceElement))
+    const { errors, merged } = mergeElements(allActiveElements)
+    applyInstancesDefaults(
+      merged.filter(isInstanceElement),
+      new InMemoryRemoteElementSource(allActiveElements),
+    )
     return {
       elements: _.keyBy(merged, e => e.elemID.getFullName()),
       mergeErrors: errors,

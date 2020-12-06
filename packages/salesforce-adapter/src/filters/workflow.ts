@@ -17,6 +17,7 @@ import {
   Element, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
   ObjectType, getChangeElement, Change, isAdditionChange, BuiltinTypes, ElemID,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -91,7 +92,7 @@ const createPartialWorkflowInstance = (
         )
       ),
     },
-    fullInstance.type,
+    fullInstance.getType(),
     undefined,
     fullInstance.annotations,
   )
@@ -103,24 +104,26 @@ const createDummyWorkflowInstance = (
   // Unfortunately we do not have access to the real workflow type here so we create it hard coded
   // using as much known information as possible
   const realFieldTypes = _.keyBy(
-    changes.map(getChangeElement).map(inst => inst.type),
+    changes.map(getChangeElement).map(inst => inst.getType()),
     metadataType,
   )
   const dummyFieldType = (typeName: string): ObjectType => new ObjectType({
     elemID: new ElemID(SALESFORCE, typeName),
-    annotationTypes: _.clone(metadataAnnotationTypes),
+    annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
     annotations: { metadataType: typeName } as MetadataTypeAnnotations,
   })
   const workflowType = new ObjectType({
     elemID: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
     fields: {
-      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+      [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
       ..._.mapValues(
         WORKFLOW_FIELD_TO_TYPE,
-        typeName => ({ type: realFieldTypes[typeName] ?? dummyFieldType(typeName) })
+        typeName => (
+          { refType: createRefToElmWithValue(realFieldTypes[typeName] ?? dummyFieldType(typeName)) }
+        )
       ),
     },
-    annotationTypes: metadataAnnotationTypes,
+    annotationRefsOrTypes: metadataAnnotationTypes,
     annotations: {
       metadataType: 'Workflow',
       dirName: 'workflows',

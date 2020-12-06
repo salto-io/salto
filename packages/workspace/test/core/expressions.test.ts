@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ElemID, ObjectType, BuiltinTypes, InstanceElement, Element,
-  ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
-  isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes,
-} from '@salto-io/adapter-api'
-import { TestFuncImpl } from '../utils'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
+import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
 
 describe('Test Salto Expressions', () => {
   const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
@@ -37,17 +35,28 @@ describe('Test Salto Expressions', () => {
     const falsyVariable = new Variable(falsyVarElemID, false)
     const varRefElemID = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varRefName')
     const objElemID = new ElemID('salto', 'obj')
+    const objType = new ObjectType({
+      elemID: objElemID,
+      fields: {
+        value: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+    })
+    const listString = new ListType(BuiltinTypes.STRING)
     const base = new ObjectType({
       elemID: baseElemID,
       fields: {
-        simple: { type: BuiltinTypes.STRING, annotations: { anno: 'field_anno' } },
-        obj: {
-          type: new ObjectType({
-            elemID: objElemID,
-            fields: { value: { type: BuiltinTypes.STRING } },
-          }),
+        simple: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: { anno: 'field_anno' },
         },
-        arr: { type: new ListType(BuiltinTypes.STRING) },
+        obj: {
+          refType: createRefToElmWithValue(objType),
+        },
+        arr: {
+          refType: createRefToElmWithValue(listString),
+        },
       },
       annotations: {
         anno: 'base_anno',
@@ -112,7 +121,7 @@ describe('Test Salto Expressions', () => {
       elemID: objectRefID,
       fields: {
         ref: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: { anno: refTo(base, 'attr', 'anno') },
         },
       },
@@ -147,9 +156,15 @@ describe('Test Salto Expressions', () => {
       noPathInst,
       objectRef,
       instanceWithFunctions,
+      objType,
+      listString,
+      simpleRefType,
     ]
 
-    const resolved = resolve(elements)
+    const resolved = resolve(
+      elements,
+      new InMemoryRemoteElementSource(elements)
+    )
 
     const findResolved = <T extends Element>(
       target: Element): T => resolved.filter(
@@ -254,7 +269,11 @@ describe('Test Salto Expressions', () => {
       firstRef.value.test = refTo(secondRef, 'test')
       secondRef.value.test = refTo(firstRef, 'test')
       const chained = [firstRef, secondRef]
-      const inst = resolve(chained)[0] as InstanceElement
+      const inst = resolve(chained, new InMemoryRemoteElementSource([
+        ...chained,
+        simpleRefType,
+        ...getFieldsAndAnnoTypes(simpleRefType),
+      ]))[0] as InstanceElement
       expect(inst.value.test.value).toBeInstanceOf(CircularReference)
     })
 
@@ -264,7 +283,14 @@ describe('Test Salto Expressions', () => {
         test: refTo(firstRef, 'test'),
       })
       const bad = [firstRef, secondRef]
-      const res = resolve(bad)[1] as InstanceElement
+      const res = resolve(
+        bad,
+        new InMemoryRemoteElementSource([
+          ...bad,
+          simpleRefType,
+          ...getFieldsAndAnnoTypes(simpleRefType),
+        ])
+      )[1] as InstanceElement
       expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
     })
 
@@ -275,8 +301,11 @@ describe('Test Salto Expressions', () => {
         simpleRefType,
         { test: new ReferenceExpression(target) },
       )
-      const bad = [firstRef]
-      const res = resolve(bad)[0] as InstanceElement
+      const res = resolve([firstRef], new InMemoryRemoteElementSource([
+        firstRef,
+        simpleRefType,
+        ...getFieldsAndAnnoTypes(simpleRefType),
+      ]))[0] as InstanceElement
       expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
       expect(res.value.test.value.target).toEqual(target)
     })
@@ -288,9 +317,20 @@ describe('Test Salto Expressions', () => {
         simpleRefType,
         { test: refTo(context) },
       )
-      const bad = [firstRef]
-      const res = resolve(bad, [context])[0] as InstanceElement
-      const noContextRes = resolve(bad)[0] as InstanceElement
+      const res = resolve(
+        [firstRef],
+        new InMemoryRemoteElementSource([
+          firstRef,
+          simpleRefType,
+          ...getFieldsAndAnnoTypes(simpleRefType),
+          context,
+        ])
+      )[0] as InstanceElement
+      const noContextRes = resolve([firstRef], new InMemoryRemoteElementSource([
+        firstRef,
+        simpleRefType,
+        ...getFieldsAndAnnoTypes(simpleRefType),
+      ]))[0] as InstanceElement
       expect(noContextRes.value.test.value).toBeInstanceOf(UnresolvedReference)
       expect(res.value.test.value).toBeInstanceOf(InstanceElement)
       expect(res.value.test.value).toEqual(context)
@@ -306,7 +346,13 @@ describe('Test Salto Expressions', () => {
         simpleRefType,
         { test: new VariableExpression(context.elemID) },
       )
-      const res = resolve([refInst], [context, inst])
+      const contextElements = [context, inst]
+      const res = resolve([refInst], new InMemoryRemoteElementSource([
+        refInst,
+        simpleRefType,
+        ...getFieldsAndAnnoTypes(simpleRefType),
+        ...contextElements,
+      ]))
       expect(res).toHaveLength(1)
       expect((res[0] as InstanceElement).value.test.value).toEqual(inst)
     })
@@ -319,7 +365,16 @@ describe('Test Salto Expressions', () => {
         simpleRefType,
         { test: new VariableExpression(context.elemID) },
       )
-      const res = resolve([refInst, inputElem], [context])
+      const elementsToResolve = [refInst, inputElem]
+      const res = resolve(
+        elementsToResolve,
+        new InMemoryRemoteElementSource([
+          ...elementsToResolve,
+          simpleRefType,
+          ...getFieldsAndAnnoTypes(simpleRefType),
+          context,
+        ])
+      )
       expect((res[0] as InstanceElement).value.test.value).toEqual('b')
     })
 
@@ -327,19 +382,25 @@ describe('Test Salto Expressions', () => {
       const primType = new PrimitiveType(
         { elemID: new ElemID('test', 'prim'), primitive: PrimitiveTypes.NUMBER }
       )
-      const objType = new ObjectType({
+      const newObjType = new ObjectType({
         elemID: new ElemID('test', 'obj'),
-        fields: { f: { type: primType } },
-        annotationTypes: { a: primType },
+        fields: { f: { refType: createRefToElmWithValue(primType) } },
+        annotationRefsOrTypes: { a: primType },
       })
-      const inst = new InstanceElement('test', objType, { f: 1 })
-
+      const inst = new InstanceElement('test', newObjType, { f: 1 })
+      const elms = [inst, newObjType, primType]
       const [resInst, resObj, resPrim] = resolve(
-        [inst, objType, primType]
+        elms,
+        new InMemoryRemoteElementSource(
+          [
+            ...elms,
+            ...getFieldsAndAnnoTypes(newObjType),
+          ]
+        )
       ) as [InstanceElement, ObjectType, PrimitiveType]
-      expect(resObj.fields.f.type).toBe(resPrim)
-      expect(resObj.annotationTypes.a).toBe(resPrim)
-      expect(resInst.type).toBe(resObj)
+      expect(resObj.fields.f.refType.elemID).toBe(resPrim.elemID)
+      expect(resObj.annotationRefTypes.a.elemID).toBe(resPrim.elemID)
+      expect(resInst.refType.elemID).toBe(resObj.elemID)
     })
   })
 
@@ -368,7 +429,18 @@ describe('Test Salto Expressions', () => {
           }),
         }
       )
-      const element = resolve([firstRef, secondRef])[1] as InstanceElement
+      const elements = [firstRef, secondRef]
+      const element = resolve(
+        elements,
+        new InMemoryRemoteElementSource(
+          [
+            firstRef,
+            secondRef,
+            refType,
+            ...getFieldsAndAnnoTypes(refType),
+          ]
+        )
+      )[1] as InstanceElement
       expect(element.value.into).toEqual(
         'Well, you made a long journey from Milano to Minsk, Rochelle Rochelle'
       )

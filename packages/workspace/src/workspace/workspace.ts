@@ -15,10 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
-  Change, getChangeElement, isAdditionOrModificationChange, Value, isType,
-} from '@salto-io/adapter-api'
+import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change, getChangeElement, isAdditionOrModificationChange, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -35,7 +32,8 @@ import { Errors, ServiceDuplicationError, EnvDuplicationError,
 import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
-import { MergeResult, updateMergedTypes } from '../merger'
+import { MergeResult } from '../merger'
+import { InMemoryRemoteElementSource } from './elements_source'
 
 const log = logger(module)
 
@@ -132,9 +130,11 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
-export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: ConfigSource,
-  elementsSources: EnvironmentsSources):
-  Promise<Workspace> => {
+export const loadWorkspace = async (
+  config: WorkspaceConfigSource,
+  credentials: ConfigSource,
+  elementsSources: EnvironmentsSources,
+): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
 
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -150,7 +150,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     workspaceConfig.envs
   const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
   const state = (envName?: string): State => (
-    elementsSources.sources[envName || currentEnv()].state as State
+    elementsSources.sources[envName ?? currentEnv()].state as State
   )
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
     currentEnv(), elementsSources.commonSourceName)
@@ -176,9 +176,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )
     const merged = calcNewMerged(current.merged, mergeRes.merged, changedElementIDs)
     return {
-      merged: updateMergedTypes(
-        merged, _.keyBy(merged.filter(isType), e => e.elemID.getFullName())
-      ),
+      // TODO: This was important, now deleted
+      // merged: updateMergedTypes(
+      //  merged, _.keyBy(merged.filter(isType), e => e.elemID.getFullName())
+      // ),
+      merged,
       errors: calcNewMerged(current.errors, mergeRes.errors, changedElementIDs),
     }
   }
@@ -201,8 +203,9 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     changes: DetailedChange[],
     mode?: RoutingMode
   ): Promise<void> => {
+    const { merged } = await elements()
     const changesAfterHiddenRemoved = await handleHiddenChanges(
-      changes, state(), naclFilesSource.getAll,
+      changes, state(), naclFilesSource.getAll, new InMemoryRemoteElementSource(merged),
     )
     const elementChanges = await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
     workspaceState = buildWorkspaceState({ changes: elementChanges })
@@ -269,7 +272,10 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     return new Errors({
       ...errorsFromSource,
       merge: [...errorsFromSource.merge, ...resolvedElements.errors],
-      validation: validateElements(resolvedElements.merged),
+      validation: validateElements(
+        resolvedElements.merged,
+        new InMemoryRemoteElementSource(resolvedElements.merged)
+      ),
     })
   }
 

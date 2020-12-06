@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, DetailedChange, ElemID } from '@salto-io/adapter-api'
+import { Element, DetailedChange, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
@@ -44,6 +44,7 @@ const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
     return transformElement({
       element: elem,
       transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
+      // TODO: Check if elementsSource is needed
     })
   })
 }
@@ -51,6 +52,8 @@ const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
 export const createDiffChanges = async (
   toElements: readonly Element[],
   fromElements: Element[],
+  toSource: ReadOnlyElementsSource,
+  fromSource: ReadOnlyElementsSource,
   elementSelectors: ElementSelector[] = [],
 ): Promise<DetailedChange[]> => {
   if (elementSelectors.length > 0) {
@@ -67,7 +70,12 @@ export const createDiffChanges = async (
     if (selectorsToVerify.size > 0) {
       throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)
     }
-    return wu(await getDetailedChanges(toElementsFiltered, fromElementsFiltered)).toArray()
+    return wu(await getDetailedChanges(
+      toElementsFiltered,
+      fromElementsFiltered,
+      toSource,
+      fromSource
+    )).toArray()
   }
-  return wu(await getDetailedChanges(toElements, fromElements)).toArray()
+  return wu(await getDetailedChanges(toElements, fromElements, toSource, fromSource)).toArray()
 }

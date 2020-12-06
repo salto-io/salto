@@ -15,19 +15,12 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
-  isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, TypeElement,
-  getDeepInnerType, isVariable, Change,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType, isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { MergeError, mergeElements } from '../../merger'
-import {
-  getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
-  getNestedStaticFiles,
-} from './nacl_file_update'
+import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource, getNestedStaticFiles } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache, ParseResultKey } from '../cache'
@@ -108,20 +101,31 @@ const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer
   buffer: naclFile.buffer,
 })
 
-const getTypeOrContainerTypeID = (typeElem: TypeElement): ElemID => (isContainerType(typeElem)
-  ? getDeepInnerType(typeElem).elemID
-  : typeElem.elemID)
+// This assumes < and > will only be in container types' ElemID
+const getTypeOrContainerTypeID = (elemID: ElemID): ElemID => {
+  const fullName = elemID.getFullName()
+  const deepInnerTypeStart = fullName.lastIndexOf('<')
+  const deepInnerTypeEnd = fullName.indexOf('>')
+  if (deepInnerTypeStart === -1 && deepInnerTypeEnd === -1) {
+    return elemID
+  }
+  if (deepInnerTypeEnd < deepInnerTypeStart
+    || deepInnerTypeStart === -1 || deepInnerTypeEnd === -1) {
+    throw new Error(`Invalid < > structure in ElemID - ${fullName}`)
+  }
+  return ElemID.fromFullName(fullName.substr(deepInnerTypeStart, deepInnerTypeEnd))
+}
 
 const getElementReferenced = (element: Element): ElemID[] => {
   const referenced: ElemID[] = []
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {
-      referenced.push(getTypeOrContainerTypeID(field.type))
+      referenced.push(getTypeOrContainerTypeID(field.refType.elemID))
     }
     if (isReferenceExpression(value)) {
-      const { parent, path: valueIDPath } = value.elemId.createTopLevelParentID()
+      const { parent, path: valueIDPath } = value.elemID.createTopLevelParentID()
       const nestedIds = valueIDPath.map((_p, index) => parent.createNestedID(
-        value.elemId.idType,
+        value.elemID.idType,
         ...valueIDPath.slice(0, index + 1)
       ))
       referenced.push(parent, ...nestedIds)
@@ -131,13 +135,13 @@ const getElementReferenced = (element: Element): ElemID[] => {
 
   if (isObjectType(element)) {
     referenced.push(...Object.values(element.fields)
-      .map(field => getTypeOrContainerTypeID(field.type)))
+      .map(field => getTypeOrContainerTypeID(field.refType.elemID)))
   }
   if (isInstanceElement(element)) {
-    referenced.push(element.type.elemID)
+    referenced.push(element.refType.elemID)
   }
-  referenced.push(...Object.values(element.annotationTypes)
-    .map(anno => getTypeOrContainerTypeID(anno)))
+  referenced.push(...Object.values(element.annotationRefTypes)
+    .map(annoRefType => getTypeOrContainerTypeID(annoRefType.elemID)))
   if (!isContainerType(element) && !isVariable(element)) {
     transformElement({ element, transformFunc, strict: false })
   }
@@ -393,7 +397,7 @@ const buildNaclFilesSource = (
     }
 
     // This method was written with the assumption that each static file is pointed by no more
-    // then one value inthe nacls. A ticket was open to fix that (SALTO-954)
+    // then one value in the nacls. A ticket was open to fix that (SALTO-954)
 
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
       await Promise.all(fileChanges.filter(change => change.action === 'remove')

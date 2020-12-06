@@ -238,12 +238,7 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
   const value = createStringValue(
     tokens,
     true,
-    t => {
-      const endsWithNewline = t.text[t.text.length - 1] === '\n'
-      return endsWithNewline
-        ? unescapeTemplateMarker(t.text)
-        : unescapeTemplateMarker(trimToken(t).text)
-    }
+    t => unescapeTemplateMarker(t.text)
   )
   return {
     value,

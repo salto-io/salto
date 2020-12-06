@@ -94,9 +94,12 @@ type MetadataId = {
   fullName: string
 }
 
-const getUnFoundDeleteName = (message: DeployMessage): MetadataId | undefined => {
+const getUnFoundDeleteName = (
+  message: DeployMessage,
+  deletionsPackageName: string
+): MetadataId | undefined => {
   const match = (
-    message.fullName === 'destructiveChanges.xml' && message.problemType === 'Warning'
+    message.fullName === deletionsPackageName && message.problemType === 'Warning'
   )
     ? message.problem.match(/No.*named: (?<fullName>.*) found/)
     : undefined
@@ -104,12 +107,13 @@ const getUnFoundDeleteName = (message: DeployMessage): MetadataId | undefined =>
   return fullName === undefined ? undefined : { type: message.componentType, fullName }
 }
 
-const isUnFoundDelete = (message: DeployMessage): boolean => (
-  getUnFoundDeleteName(message) !== undefined
+const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean => (
+  getUnFoundDeleteName(message, deletionsPackageName) !== undefined
 )
 
 const processDeployResponse = (
-  result: SFDeployResult
+  result: SFDeployResult,
+  deletionsPackageName: string,
 ): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<Error> } => {
   const allSuccessMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentSuccesses))
@@ -124,7 +128,7 @@ const processDeployResponse = (
   // Note that if we deploy with ignoreWarnings, these might show up in the success list
   // so we have to look for these messages in both lists
   const unFoundDeleteNames = [...allSuccessMessages, ...allFailureMessages]
-    .map(getUnFoundDeleteName)
+    .map(message => getUnFoundDeleteName(message, deletionsPackageName))
     .filter(values.isDefined)
 
   const successfulFullNames = (result.rollbackOnError === false || result.success)
@@ -139,7 +143,7 @@ const processDeployResponse = (
     ))
 
   const componentErrors = allFailureMessages
-    .filter(failure => !isUnFoundDelete(failure))
+    .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(failure => new Error(
       `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
@@ -197,12 +201,14 @@ const validateChanges = (
   }
 }
 
+
 export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
-  nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
+  nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  deleteBeforeUpdate?: boolean,
 ): Promise<DeployResult> => {
-  const pkg = createDeployPackage()
+  const pkg = createDeployPackage(deleteBeforeUpdate)
 
   const { validChanges, errors: validationErrors } = validateChanges(changes)
 
@@ -221,7 +227,9 @@ export const deployMetadata = async (
 
   log.debug('deploy result: %s', JSON.stringify(deployRes, undefined, 2))
 
-  const { errors, successfulFullNames } = processDeployResponse(deployRes)
+  const { errors, successfulFullNames } = processDeployResponse(
+    deployRes, pkg.getDeletionsPackageName()
+  )
 
   const isSuccessfulChange = (change: Change): boolean => {
     const changeElem = getChangeElement(change)

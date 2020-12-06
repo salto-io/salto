@@ -73,6 +73,7 @@ type ClientDeployConfig = Partial<{
   checkOnly: boolean
   testLevel: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg'
   runTests: string[]
+  deleteBeforeUpdate: boolean
 }>
 
 export enum RetryStrategyName {
@@ -261,6 +262,7 @@ const clientDeployConfigType = new ObjectType({
       },
     },
     runTests: { type: new ListType(BuiltinTypes.STRING) },
+    deleteBeforeUpdate: { type: BuiltinTypes.BOOLEAN },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
 })
 

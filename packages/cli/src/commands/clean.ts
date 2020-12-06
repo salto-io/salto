@@ -23,24 +23,21 @@ import { getUserBooleanInput } from '../callbacks'
 import { formatCleanWorkspace, formatCancelCommand, header, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
 import Prompts from '../prompts'
 import { CliExitCode } from '../types'
-import { createPublicCommandDef, DefActionInput } from '../command_builder'
+import { createPublicCommandDef, CommandDefAction } from '../command_builder'
 
 const log = logger(module)
 
 type CleanArgs = {
-    force: boolean
+  force: boolean
 } & WorkspaceComponents
 
-const action = async (
-  {
-    input: { force, ...cleanArgs },
-    cliTelemetry,
-    output,
-    workingDir = '.',
-  }: DefActionInput<CleanArgs>
-): Promise<CliExitCode> => {
-  log.debug('running clean command on \'%s\', force=%s, args=%o', workingDir, force, cleanArgs)
-
+const action: CommandDefAction<CleanArgs> = async ({
+  input: { force, ...cleanArgs },
+  cliTelemetry,
+  output,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running clean command on \'%s\', force=%s, args=%o', workspacePath, force, cleanArgs)
   const shouldCleanAnything = Object.values(cleanArgs).some(shouldClean => shouldClean)
   if (!shouldCleanAnything) {
     outputLine(header(Prompts.EMPTY_PLAN), output)
@@ -53,7 +50,7 @@ const action = async (
     return CliExitCode.UserInputError
   }
 
-  const workspace = await loadLocalWorkspace(workingDir)
+  const workspace = await loadLocalWorkspace(workspacePath)
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
   outputLine(header(

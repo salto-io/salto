@@ -177,7 +177,7 @@ describe('deploy command', () => {
         telemetry,
         spinnerCreator,
         config,
-        workingDir: 'errorDir',
+        workspacePath: 'errorDir',
       })
       expect(result).toBe(CliExitCode.AppError)
       expect(telemetry.getEvents()).toHaveLength(1)

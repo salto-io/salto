@@ -109,8 +109,8 @@ describe('cli as a whole', () => {
       expect(fetchAction).not.toHaveBeenCalled()
     })
 
-    it('exits with code 0', () => {
-      expect(o.exitCode).toEqual(0)
+    it('exits with code 1', () => {
+      expect(o.exitCode).toEqual(1)
     })
   })
 

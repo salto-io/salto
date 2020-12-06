@@ -105,12 +105,12 @@ describe('restore command', () => {
   })
 
   describe('with valid workspace', () => {
-    const workspaceName = 'valid-ws'
+    const workspacePath = 'valid-ws'
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue({
-        workspace: mocks.mockLoadWorkspace(workspaceName),
+        workspace: mocks.mockLoadWorkspace(workspacePath),
         errored: false,
       })
       result = await action({
@@ -127,7 +127,7 @@ describe('restore command', () => {
         output,
         config,
         spinnerCreator,
-        workingDir: workspaceName,
+        workspacePath,
       })
     })
 
@@ -139,7 +139,7 @@ describe('restore command', () => {
     })
 
     it('should update changes', () => {
-      const calls = findWsUpdateCalls(workspaceName)
+      const calls = findWsUpdateCalls(workspacePath)
       expect(calls).toHaveLength(1)
     })
 
@@ -158,7 +158,7 @@ describe('restore command', () => {
     })
   })
   describe('Verify using env command', () => {
-    const workspaceDir = 'valid-ws'
+    const workspacePath = 'valid-ws'
     beforeEach(() => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
@@ -179,7 +179,7 @@ describe('restore command', () => {
         output,
         config,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
       expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
@@ -202,7 +202,7 @@ describe('restore command', () => {
         output,
         config,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
       expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
@@ -212,13 +212,13 @@ describe('restore command', () => {
   })
 
   describe('dry-run', () => {
-    const workspaceName = 'valid-ws'
+    const workspacePath = 'valid-ws'
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
       mockUpdateWorkspace.mockClear()
       mockLoadWorkspace.mockResolvedValue({
-        workspace: mocks.mockLoadWorkspace(workspaceName),
+        workspace: mocks.mockLoadWorkspace(workspacePath),
         errored: false,
       })
       result = await action({
@@ -235,7 +235,7 @@ describe('restore command', () => {
         output,
         config,
         spinnerCreator,
-        workingDir: workspaceName,
+        workspacePath,
       })
     })
 
@@ -247,7 +247,7 @@ describe('restore command', () => {
     })
 
     it('should not update changes', () => {
-      const calls = findWsUpdateCalls(workspaceName)
+      const calls = findWsUpdateCalls(workspacePath)
       expect(calls).toHaveLength(0)
     })
 
@@ -286,7 +286,7 @@ describe('restore command', () => {
         output,
         config,
         spinnerCreator,
-        workingDir: 'exist-on-error',
+        workspacePath: 'exist-on-error',
       })
     })
 
@@ -295,12 +295,12 @@ describe('restore command', () => {
     })
   })
   describe('using id filters', () => {
-    const workspaceName = 'valid-ws'
+    const workspacePath = 'valid-ws'
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue({
-        workspace: mocks.mockLoadWorkspace(workspaceName),
+        workspace: mocks.mockLoadWorkspace(workspacePath),
         errored: false,
       })
     })
@@ -320,7 +320,7 @@ describe('restore command', () => {
         output,
         config,
         spinnerCreator,
-        workingDir: workspaceName,
+        workspacePath,
       })
       expect(result).toBe(CliExitCode.UserInputError)
     })
@@ -340,7 +340,7 @@ describe('restore command', () => {
         output,
         config,
         spinnerCreator,
-        workingDir: workspaceName,
+        workspacePath,
       })
       expect(result).toBe(CliExitCode.Success)
     })

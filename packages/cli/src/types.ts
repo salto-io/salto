@@ -73,23 +73,6 @@ export interface CliInput {
   // fs abstractions
 }
 
-export type CommanderArgs<TParsedArgs = {}> = TParsedArgs & {
-  [key: string]: unknown
-}
-
-// export interface ParsedCliInput<TParsedArgs = {}> extends Omit<CliInput, 'args'> {
-//   args: CommanderArgs<TParsedArgs>
-// }
-
-export interface CliCommand {
-  execute(
-    telemetry?: Telemetry,
-    config?: CommandConfig,
-    output?: CliOutput,
-    spinnerCreator?: SpinnerCreator,
-  ): Promise<CliExitCode>
-}
-
 export type TelemetryEventNames = {
   start: string
   failure: string

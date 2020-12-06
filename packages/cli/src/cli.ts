@@ -41,12 +41,10 @@ export default async (
   const [nodeExecLoc, saltoExecLoc, ...cmdLineArgs] = process.argv
   const cmdStr = ['salto', ...cmdLineArgs].join(' ')
   const startTime = new Date()
-  log.info('CLI started. Version: %s, Node exec location: %s, '
-  + 'Salto exec location: %s, Current dir: %s',
-  versionString,
-  nodeExecLoc,
-  saltoExecLoc,
-  process.cwd())
+  log.info(
+    'CLI started. Version: %s, Node exec location: %s, Salto exec location: %s, Current dir: %s',
+    versionString, nodeExecLoc, saltoExecLoc, process.cwd(),
+  )
   log.debug('OS properties - platform: %s, release: %s, arch %s', os.platform(), os.release(), os.arch())
   log.debug('Installation ID: %s', config.installationID)
   log.info('running "%s"', cmdStr)

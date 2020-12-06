@@ -50,7 +50,7 @@ describe('clean command', () => {
       lastWorkspace = mocks.mockLoadWorkspace(baseDir)
       return Promise.resolve(lastWorkspace)
     })
-    jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementation(() => Promise.resolve(true))
+    jest.spyOn(callbacks, 'getUserBooleanInput').mockResolvedValue(true)
   })
 
   afterEach(() => {

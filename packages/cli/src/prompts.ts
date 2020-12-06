@@ -47,7 +47,6 @@ export default class Prompts {
   }
 
   public static readonly EXPLAIN_PREVIEW_RESULT = `Resources and actions are indicated with the following symbols:
-
   ${Prompts.MODIFIERS.add} create
   ${Prompts.MODIFIERS.modify} change
   ${Prompts.MODIFIERS.remove} remove`
@@ -72,7 +71,6 @@ export default class Prompts {
 
   public static initCompleted(name: string, baseDir: string): string {
     return `Initiated empty workspace ${name} at ${baseDir}
-
 ${Prompts.SERVICE_ADD_HELP}
 `
   }
@@ -202,6 +200,7 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Failed to created element ID filters for: ${invalidFilters}. Invalid Regex provided.`
 
   public static readonly MISSING_ELEMENT_SELECTORS = 'No element selectors specified'
+
   public static readonly DIFF_CALC_DIFF_START = (
     toEnv: string,
     fromEnv: string
@@ -240,13 +239,13 @@ ${Prompts.SERVICE_ADD_HELP}`
     to: string,
   ): string => `Moving the specified elements to ${to}.`
 
-  public static readonly LIST_UNRESOLVED_FAILED = (
-    error: string
-  ): string => `Failed to list unresolved references: ${error}`
-
   public static readonly MOVE_FAILED = (
     error: string
   ): string => `Failed to move the specified elements: ${error}`
+
+  public static readonly LIST_UNRESOLVED_FAILED = (
+    error: string
+  ): string => `Failed to list unresolved references: ${error}`
 
   public static readonly CLONE_TO_ENV_START = (
     targetEnvs: string[] = []

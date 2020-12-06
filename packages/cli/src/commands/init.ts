@@ -15,20 +15,24 @@
 */
 import * as path from 'path'
 import { initLocalWorkspace } from '@salto-io/core'
+import { logger } from '@salto-io/logging'
 import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
-import { createPublicCommandDef, DefActionInput } from '../command_builder'
+import { createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { CliExitCode } from '../types'
 import { getEnvName } from '../callbacks'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
+
+const log = logger(module)
 
 type InitArgs = {
     workspaceName?: string
   }
 
-const action = async (
-  { input: { workspaceName }, cliTelemetry, output }: DefActionInput<InitArgs>,
+const action: CommandDefAction<InitArgs> = async (
+  { input: { workspaceName }, cliTelemetry, output },
 ): Promise<CliExitCode> => {
+  log.debug('running env init command on \'%s\'', workspaceName)
   cliTelemetry.start()
   try {
     const defaultEnvName = await getEnvName()

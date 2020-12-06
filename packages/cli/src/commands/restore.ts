@@ -24,9 +24,9 @@ import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, f
 import Prompts from '../prompts'
 import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
-import { createPublicCommandDef, DefActionInput } from '../command_builder'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './commons/services'
-import { EnvArg, ENVIORMENT_OPTION } from './commons/env'
+import { createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { EnvArg, ENVIORMENT_OPTION } from './common/env'
 
 const log = logger(module)
 
@@ -98,29 +98,26 @@ const applyLocalChangesToWorkspace = async (
   return false
 }
 
-const action = async (
-  {
-    input: {
-      elementSelectors = [], force, interactive, dryRun,
-      detailedPlan, listPlannedChanges, services, env, mode,
-    },
-    cliTelemetry,
-    config,
-    output,
-    spinnerCreator,
-    workingDir = '.',
-  }: DefActionInput<RestoreArgs>,
-): Promise<CliExitCode> => {
-  log.debug(`running restore command on '${workingDir}' [force=${force}, interactive=${
-    interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
-    listPlannedChanges}, mode=${mode}], environment=${env}, services=${services}`)
+const action: CommandDefAction<RestoreArgs> = async ({
+  input,
+  cliTelemetry,
+  config,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running restore command on \'%s\' %o', workspacePath, input)
+  const {
+    elementSelectors = [], force, interactive, dryRun,
+    detailedPlan, listPlannedChanges, services, env, mode,
+  } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
   const { workspace, errored } = await loadWorkspace(
-    workingDir,
+    workspacePath,
     output,
     {
       force,

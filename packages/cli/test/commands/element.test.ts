@@ -112,9 +112,9 @@ describe('Element command group', () => {
     })
 
     describe('when workspace throws an error on clone', () => {
-      const workspaceName = 'unexpected-error'
+      const workspacePath = 'unexpected-error'
       const workspace = {
-        ...mocks.mockLoadWorkspace(workspaceName),
+        ...mocks.mockLoadWorkspace(workspacePath),
         flush: async () => {
           throw new Error('Oy Vey Zmir')
         },
@@ -137,7 +137,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -158,8 +158,8 @@ describe('Element command group', () => {
     })
 
     describe('with invalid element selectors', () => {
-      const workspaceName = 'invalid-input'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'invalid-input'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -178,7 +178,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -209,8 +209,8 @@ describe('Element command group', () => {
     })
 
     describe('valid clone', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -231,7 +231,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -258,8 +258,8 @@ describe('Element command group', () => {
     })
 
     describe('clone with invalid target envs', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -279,7 +279,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -298,8 +298,8 @@ describe('Element command group', () => {
     })
 
     describe('clone with invalid env', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -319,7 +319,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -337,8 +337,8 @@ describe('Element command group', () => {
       })
     })
     describe('clone with empty list as target envs', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -358,7 +358,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -376,8 +376,8 @@ describe('Element command group', () => {
       })
     })
     describe('clone with current env as target env', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -397,7 +397,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -428,9 +428,9 @@ describe('Element command group', () => {
       }
     }))
     describe('when workspace throws an error', () => {
-      const workspaceName = 'unexpected-error'
+      const workspacePath = 'unexpected-error'
       const workspace = {
-        ...mocks.mockLoadWorkspace(workspaceName),
+        ...mocks.mockLoadWorkspace(workspacePath),
         flush: async () => {
           throw new Error('Oy Vey Zmir')
         },
@@ -450,7 +450,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -471,8 +471,8 @@ describe('Element command group', () => {
     })
 
     describe('with invalid element selectors', () => {
-      const workspaceName = 'invalid-input'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'invalid-input'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -488,7 +488,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -513,8 +513,8 @@ describe('Element command group', () => {
     })
 
     describe('valid move to envs', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -532,7 +532,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -571,9 +571,9 @@ describe('Element command group', () => {
       }
     }))
     describe('when workspace throws an error on move-to-common', () => {
-      const workspaceName = 'unexpected-error'
+      const workspacePath = 'unexpected-error'
       const workspace = {
-        ...mocks.mockLoadWorkspace(workspaceName),
+        ...mocks.mockLoadWorkspace(workspacePath),
         flush: async () => {
           throw new Error('Oy Vey Zmir')
         },
@@ -593,7 +593,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -614,8 +614,8 @@ describe('Element command group', () => {
     })
 
     describe('with invalid element selectors', () => {
-      const workspaceName = 'invalid-input'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'invalid-input'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -631,7 +631,7 @@ describe('Element command group', () => {
           telemetry,
           config,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -656,8 +656,8 @@ describe('Element command group', () => {
     })
 
     describe('Without env option', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -676,7 +676,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
       it('should return success code', () => {
@@ -702,8 +702,8 @@ describe('Element command group', () => {
     })
 
     describe('With env option', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       const selector = new ElemID('salto', 'Account')
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -722,7 +722,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -764,8 +764,8 @@ describe('Element command group', () => {
             typeof core.listUnresolvedReferences>
 
     describe('success - all unresolved references are found in complete-from', () => {
-      const workspaceName = 'valid-ws'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'valid-ws'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -782,7 +782,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -792,7 +792,7 @@ describe('Element command group', () => {
 
       it('should ignore unresolved references when loading the workspace', () => {
         expect(mockLoadWorkspace).toHaveBeenCalledWith(
-          workspaceName,
+          workspacePath,
           output,
           expect.objectContaining({
             ignoreUnresolvedRefs: true,
@@ -817,8 +817,8 @@ describe('Element command group', () => {
     })
 
     describe('success - no unresolved references', () => {
-      const workspaceName = 'empty'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'empty'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -837,7 +837,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -860,8 +860,8 @@ describe('Element command group', () => {
     })
 
     describe('success - some references do not exist', () => {
-      const workspaceName = 'missing'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'missing'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -881,7 +881,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -905,8 +905,8 @@ describe('Element command group', () => {
     })
 
     describe('failure - unexpected error', () => {
-      const workspaceName = 'fail'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'fail'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -926,7 +926,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -950,8 +950,8 @@ describe('Element command group', () => {
     })
 
     describe('failure - invalid complete-from env', () => {
-      const workspaceName = 'not-called'
-      const workspace = mocks.mockLoadWorkspace(workspaceName)
+      const workspacePath = 'not-called'
+      const workspace = mocks.mockLoadWorkspace(workspacePath)
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
@@ -967,7 +967,7 @@ describe('Element command group', () => {
           config,
           telemetry,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 

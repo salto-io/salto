@@ -16,7 +16,7 @@
 import { types, collections } from '@salto-io/lowerdash'
 import { Telemetry, CommandConfig } from '@salto-io/core'
 import { CliOutput, SpinnerCreator, CliExitCode, CliTelemetry } from './types'
-import { VERBOSE_OPTION } from './commands/commons/options'
+import { VERBOSE_OPTION } from './commands/common/options'
 import { getCliTelemetry } from './telemetry'
 
 const { makeArray } = collections.array
@@ -24,32 +24,37 @@ const { makeArray } = collections.array
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
-export interface CommandsGroupDef {
+type BasicCommandProperties = {
+  name: string
+  description: string
+}
+
+export type CommandsGroupDef = {
   properties: BasicCommandProperties
   subCommands: CommandOrGroupDef[]
 }
 
-export type ActionInput<T> = {
+type ActionInput<T> = {
   input: T
   telemetry: Telemetry
   config: CommandConfig
   output: CliOutput
   spinnerCreator?: SpinnerCreator
-  workingDir?: string
+  workspacePath?: string
 }
 
 export type CommandAction<T> = (args: ActionInput<T>) => Promise<CliExitCode>
 
-export type DefActionInput<T> = {
+type DefActionInput<T> = {
   input: T
   output: CliOutput
   cliTelemetry: CliTelemetry
   config: CommandConfig
   spinnerCreator?: SpinnerCreator
-  workingDir?: string
+  workspacePath?: string
 }
 
-type CommandDefAction<T> = (args: DefActionInput<T>) => Promise<CliExitCode>
+export type CommandDefAction<T> = (args: DefActionInput<T>) => Promise<CliExitCode>
 
 export type CommandDef<T> = {
   properties: CommandOptions<T>
@@ -65,13 +70,8 @@ export type CommandInnerDef<T> = {
 export const isCommand = (c: CommandOrGroupDef): c is CommandDef<any> =>
   (c !== undefined && Object.keys(c).includes('action'))
 
-type BasicCommandProperties = {
-  name: string
-  description: string
-  aliases?: string[]
-}
-
 type CommandOptions<T> = BasicCommandProperties & {
+  aliases?: string[]
   options?: KeyedOption<T>[]
   positionals?: PositionalOption<T>[]
 }
@@ -113,12 +113,12 @@ export type KeyedOption<T, Name extends keyof T = keyof T> = Name extends keyof 
 
 export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T> => {
   const action = async (
-    { input, telemetry, config, output, spinnerCreator, workingDir }: ActionInput<T>,
+    { input, telemetry, config, output, spinnerCreator, workspacePath }: ActionInput<T>,
   ): Promise<CliExitCode> => {
     // TODO: Handle sub command full names
     const cliTelemetry = getCliTelemetry(telemetry, def.properties.name)
     return def.action({
-      input, cliTelemetry, config, output, spinnerCreator, workingDir,
+      input, cliTelemetry, config, output, spinnerCreator, workspacePath,
     })
   }
   // Add verbose to all commands

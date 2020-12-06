@@ -26,7 +26,7 @@ import { versionString } from './version'
 const { isDefined } = ldValues
 
 const LIST_SUFFIX = '...'
-const ILLEGAL_KEBAB_OPTION_PREFIX = 'no-'
+const OPTION_NEGATION_PREFIX = 'no-'
 export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 export const COMMANDER_ERROR_NAME = 'CommanderError'
 export const HELP_DISPLAYED_CODE = 'commander.helpDisplayed'
@@ -42,14 +42,12 @@ const increaseLoggingLogLevel = (): void => {
   }
 }
 
-export const createProgramCommand = ():
-  commander.Command => {
-  const program = new commander.Command('salto')
+export const createProgramCommand = (): commander.Command => (
+  new commander.Command('salto')
     .version(`${versionString}\n`)
     .passCommandToAction(false)
     .exitOverride()
-  return program
-}
+)
 
 const wrapWithRequired = (innerStr: string): string =>
   (`<${innerStr}>`)
@@ -66,13 +64,13 @@ const createOptionString = (
   alias?: string,
   isNegation = false
 ): string => {
-  const actualName = isNegation ? `no-${name}` : name
+  const actualName = isNegation ? `${OPTION_NEGATION_PREFIX}${name}` : name
   const aliasAndName = alias ? `-${alias}, --${actualName}` : `--${actualName}`
   const varDef = (type === 'boolean')
     ? ''
     // Keyed string/strinsgList options are always wrapped with <>
     // because [] is a way to define it can also be a boolean
-    : (wrapWithRequired(type === 'stringsList' ? `${name}${LIST_SUFFIX}` : `${name}`))
+    : (wrapWithRequired(type === 'stringsList' ? `${name}${LIST_SUFFIX}` : name))
   return `${aliasAndName} ${varDef}`
 }
 
@@ -96,8 +94,8 @@ const createPositionalsMapping = <T>(
 
 const addKeyedOption = <T>(parentCommand: commander.Command, option: KeyedOption<T>): void => {
   const optionNameInKebabCase = _.kebabCase(String(option.name))
-  if (optionNameInKebabCase.startsWith(ILLEGAL_KEBAB_OPTION_PREFIX)) {
-    throw new Error('Options with \'no[A-Z].*\' pattern (e.g. \'noLogin\') are destructive due to commander\'s negation feature. Use default true without the no prefix instead (e.g. \'login\' with default true)')
+  if (optionNameInKebabCase.startsWith(OPTION_NEGATION_PREFIX)) {
+    throw new Error('Options with \'no[A-Z].*\' pattern (e.g. \'noLogin\') are illegal due to commander\'s negation feature. Use default true without the no prefix instead (e.g. \'login\' with default true)')
   }
   const optionType = String(option.type)
   const optionDefStr = createOptionString(
@@ -178,7 +176,7 @@ const registerCommand = <T>(
       }).filter(isDefined)
       if (!_.isEmpty(choicesValidationErrors)) {
         choicesValidationErrors.forEach(error => (cliArgs.output.stderr.write(error)))
-        return
+        throw new CliError('', CliExitCode.UserInputError)
       }
       try {
         const actionResult = await action({
@@ -206,10 +204,10 @@ const registerGroup = (
     spinnerCreator?: SpinnerCreator
   },
 ): void => {
-  const { properties: options, subCommands } = containerDef
+  const { properties, subCommands } = containerDef
   const groupCommand = new commander.Command()
-    .command(`${options.name}`)
-    .description(options.description)
+    .command(properties.name)
+    .description(properties.description)
     .exitOverride()
   subCommands.forEach(subCommand => {
     /* eslint-disable-next-line @typescript-eslint/no-use-before-define */

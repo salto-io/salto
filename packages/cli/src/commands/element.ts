@@ -17,13 +17,13 @@ import _ from 'lodash'
 import { listUnresolvedReferences, Tags } from '@salto-io/core'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
-import { createCommandGroupDef, createPublicCommandDef, DefActionInput } from '../command_builder'
+import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
 import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { EnvArg, ENVIORMENT_OPTION } from './commons/env'
+import { EnvArg, ENVIORMENT_OPTION } from './common/env'
 
 const log = logger(module)
 
@@ -78,28 +78,25 @@ const moveElement = async (
 
 // Move to common
 type ElementMoveToCommonArgs = {
-    elementSelector: string[]
+  elementSelector: string[]
 } & EnvArg
 
-const moveToCommonAction = async (
-  {
-    input: { elementSelector, env },
-    cliTelemetry,
-    output,
-    spinnerCreator,
-    workingDir = '.',
-  }: DefActionInput<ElementMoveToCommonArgs>,
-): Promise<CliExitCode> => {
-  log.debug(
-    `running element move-to-common command on '${workingDir}' env=${env}, elmSelectors=${elementSelector}`
-  )
+const moveToCommonAction: CommandDefAction<ElementMoveToCommonArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running move-to-common command on \'%s\' %o', workspacePath, input)
+  const { elementSelector, env } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
   const { workspace, errored } = await loadWorkspace(
-    workingDir,
+    workspacePath,
     output,
     { force: false, spinnerCreator, sessionEnv: env },
   )
@@ -133,28 +130,25 @@ const moveToCommonDef = createPublicCommandDef({
 
 // Move to envs
 type ElementMoveToEnvsArgs = {
-    elementSelector: string[]
+  elementSelector: string[]
 }
 
-const moveToEnvsAction = async (
-  {
-    input: { elementSelector },
-    cliTelemetry,
-    output,
-    spinnerCreator,
-    workingDir = '.',
-  }: DefActionInput<ElementMoveToEnvsArgs>,
-): Promise<CliExitCode> => {
-  log.debug(
-    `running element move-to-envs command on '${workingDir}', elmSelectors=${elementSelector}`
-  )
+const moveToEnvsAction: CommandDefAction<ElementMoveToEnvsArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running move-to-envs command on \'%s\' %o', workspacePath, input)
+  const { elementSelector } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
   const { workspace, errored } = await loadWorkspace(
-    workingDir,
+    workspacePath,
     output,
     { force: false, spinnerCreator, sessionEnv: undefined },
   )
@@ -185,31 +179,27 @@ const moveToEnvsDef = createPublicCommandDef({
 
 // Clone
 type ElementCloneArgs = {
-    elementSelector: string[]
-    toEnvs: string[]
-    force?: boolean
+  elementSelector: string[]
+  toEnvs: string[]
+  force?: boolean
 } & EnvArg
 
-const cloneAction = async (
-  {
-    input: { toEnvs, env, elementSelector, force },
-    cliTelemetry,
-    output,
-    spinnerCreator,
-    workingDir = '.',
-  }: DefActionInput<ElementCloneArgs>,
-): Promise<CliExitCode> => {
-  log.debug(
-    `running element clone command on '${workingDir}' env=${env}, toEnvs=${toEnvs}
-        , force=${force}, elmSelectors=${elementSelector}`
-  )
+const cloneAction: CommandDefAction<ElementCloneArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running clone command on \'%s\' %o', workspacePath, input)
+  const { toEnvs, env, elementSelector, force } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
   const { workspace, errored } = await loadWorkspace(
-    workingDir,
+    workspacePath,
     output,
     { force, spinnerCreator, sessionEnv: env },
   )
@@ -271,23 +261,20 @@ const cloneDef = createPublicCommandDef({
 
 // List unresolved
 type ElementListUnresolvedArgs = {
-    completeFrom?: string
+  completeFrom?: string
 } & EnvArg
 
-const listUnresolvedAction = async (
-  {
-    input: { completeFrom, env },
-    cliTelemetry,
-    output,
-    spinnerCreator,
-    workingDir = '.',
-  }: DefActionInput<ElementListUnresolvedArgs>,
-): Promise<CliExitCode> => {
-  log.debug(
-    `running element list-unresolved command on '${workingDir}' env=${env}, completeFrom=${completeFrom}`
-  )
+const listUnresolvedAction: CommandDefAction<ElementListUnresolvedArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running element list-unresolved command on \'%s\' %o', workspacePath, input)
+  const { completeFrom, env } = input
   const { workspace, errored } = await loadWorkspace(
-    workingDir,
+    workspacePath,
     output,
     {
       force: false,

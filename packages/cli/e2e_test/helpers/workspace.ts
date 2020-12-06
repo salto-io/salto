@@ -94,7 +94,7 @@ const telemetry = telemetrySender(
 
 export const cleanup = async (): Promise<void> => telemetry.stop(0)
 
-export const runAddSalesforceService = async (workspaceDir: string): Promise<void> => {
+export const runAddSalesforceService = async (workspacePath: string): Promise<void> => {
   const addAction = serviceDef.subCommands.find(subCommand =>
     subCommand.properties.name === 'add')
   if (addAction !== undefined && isCommand(addAction)) {
@@ -107,14 +107,14 @@ export const runAddSalesforceService = async (workspaceDir: string): Promise<voi
       config,
       output: mockCliOutput(),
       telemetry,
-      workingDir: workspaceDir,
+      workspacePath,
     })
   } else {
     throw Error('service add command is not defined well')
   }
 }
 
-export const runSalesforceLogin = async (workspaceDir: string): Promise<void> => {
+export const runSalesforceLogin = async (workspacePath: string): Promise<void> => {
   const loginAction = serviceDef.subCommands.find(subCommand =>
     subCommand.properties.name === 'login')
   if (loginAction !== undefined && isCommand(loginAction)) {
@@ -126,7 +126,7 @@ export const runSalesforceLogin = async (workspaceDir: string): Promise<void> =>
       telemetry,
       config,
       output: mockCliOutput(),
-      workingDir: workspaceDir,
+      workspacePath,
     })
   } else {
     throw Error('service login command is not defined well')
@@ -149,7 +149,7 @@ export const getNaclFileElements = async (filename: string):
 }
 
 export const runInit = async (
-  workspaceName: string,
+  workspacePath: string,
   baseDir?: string
 ): Promise<void> => {
   const origDir = process.cwd()
@@ -158,12 +158,12 @@ export const runInit = async (
   }
   await initDef.action({
     input: {
-      workspaceName,
+      workspaceName: workspacePath,
     },
     telemetry,
     config,
     output: mockCliOutput(),
-    workingDir: workspaceName,
+    workspacePath,
   })
   if (baseDir) {
     process.chdir(origDir)
@@ -183,7 +183,7 @@ export const runCreateEnv = async (
     config,
     cliTelemetry,
     output: mockCliOutput(),
-    workingDir: workspaceDir,
+    workspacePath: workspaceDir,
   })
 }
 
@@ -195,7 +195,7 @@ export const runSetEnv = async (workspaceDir: string, envName: string): Promise<
     config,
     cliTelemetry,
     output: mockCliOutput(),
-    workingDir: workspaceDir,
+    workspacePath: workspaceDir,
   })
 }
 
@@ -207,7 +207,7 @@ export const runDeleteEnv = async (workspaceDir: string, envName: string): Promi
     config,
     cliTelemetry,
     output: mockCliOutput(),
-    workingDir: workspaceDir,
+    workspacePath: workspaceDir,
   })
 }
 
@@ -233,7 +233,7 @@ export const runFetch = async (
     config,
     telemetry,
     output: mockCliOutput(),
-    workingDir: fetchOutputDir,
+    workspacePath: fetchOutputDir,
   })
   expect(result).toEqual(CliExitCode.Success)
 }
@@ -268,7 +268,7 @@ export const runDeploy = async ({
     telemetry,
     output: mockCliOutput(),
     spinnerCreator: mockSpinnerCreator([]),
-    workingDir: fetchOutputDir,
+    workspacePath: fetchOutputDir,
   })
   const errs = (output.stderr as MockWriteStream).content
   // This assert is before result assert so will see the error
@@ -296,7 +296,7 @@ export const runClean = async (
     config,
     telemetry,
     output: mockCliOutput(),
-    workingDir: workspaceName,
+    workspacePath: workspaceName,
   })
 }
 

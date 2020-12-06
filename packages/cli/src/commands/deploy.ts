@@ -18,9 +18,9 @@ import { EOL } from 'os'
 import { PlanItem, Plan, preview, DeployResult, Tags, ItemStatus, deploy } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
-import { createPublicCommandDef, DefActionInput } from '../command_builder'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './commons/services'
-import { EnvArg, ENVIORMENT_OPTION } from './commons/env'
+import { createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { EnvArg, ENVIORMENT_OPTION } from './common/env'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue } from '../formatter'
@@ -33,9 +33,9 @@ const log = logger(module)
 const ACTION_INPROGRESS_INTERVAL = 5000
 
 type Action = {
-    item: PlanItem
-    startTime: Date
-    intervalId: ReturnType<typeof setTimeout>
+  item: PlanItem
+  startTime: Date
+  intervalId: ReturnType<typeof setTimeout>
 }
 
 const printPlan = async (
@@ -69,9 +69,9 @@ export const shouldDeploy = async (
 }
 
 type DeployArgs = {
-    force: boolean
-    dryRun: boolean
-    detailedPlan: boolean
+  force: boolean
+  dryRun: boolean
+  detailedPlan: boolean
 } & ServicesArg & EnvArg
 
 const deployPlan = async (
@@ -166,17 +166,16 @@ const deployPlan = async (
   return result
 }
 
-const action = async (
-  {
-    input: { force, dryRun, detailedPlan, env, services },
-    cliTelemetry,
-    output,
-    spinnerCreator,
-    workingDir = '.',
-  }: DefActionInput<DeployArgs>,
-): Promise<CliExitCode> => {
-  log.debug(`running deploy command on '${workingDir}' [force=${force}, dryRun=${dryRun}, detailedPlan=${detailedPlan}]`)
-  const { workspace, errored } = await loadWorkspace(workingDir,
+const action: CommandDefAction<DeployArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running deploy command on \'%s\' %o', workspacePath, input)
+  const { force, dryRun, detailedPlan, env, services } = input
+  const { workspace, errored } = await loadWorkspace(workspacePath,
     output,
     {
       force,

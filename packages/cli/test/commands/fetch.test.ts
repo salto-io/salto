@@ -114,11 +114,11 @@ describe('fetch command', () => {
     })
 
     describe('with valid workspace', () => {
-      const workspaceName = 'valid-ws'
+      const workspacePath = 'valid-ws'
       beforeAll(async () => {
         telemetry = mocks.getMockTelemetry()
         mockLoadWorkspace.mockResolvedValue({
-          workspace: mocks.mockLoadWorkspace(workspaceName),
+          workspace: mocks.mockLoadWorkspace(workspacePath),
           errored: false,
         })
         result = await action({
@@ -133,7 +133,7 @@ describe('fetch command', () => {
           config,
           output,
           spinnerCreator,
-          workingDir: workspaceName,
+          workspacePath,
         })
       })
 
@@ -145,7 +145,7 @@ describe('fetch command', () => {
       })
 
       it('should update changes', () => {
-        const calls = findWsUpdateCalls(workspaceName)
+        const calls = findWsUpdateCalls(workspacePath)
         expect(calls).toHaveLength(1)
         expect(_.isEmpty(calls[0][2])).toBeTruthy()
       })
@@ -710,10 +710,10 @@ describe('fetch command', () => {
   })
   describe('multienv - new service in env, with existing common elements', () => {
     const telemetry: mocks.MockTelemetry = mocks.getMockTelemetry()
-    const workspaceDir = 'valid-ws'
+    const workspacePath = 'valid-ws'
     beforeEach(() => {
       mockLoadWorkspace.mockResolvedValue({
-        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, true),
+        workspace: mocks.mockLoadWorkspace(workspacePath, undefined, false, true),
         errored: false,
         stateRecencies: [{ serviceName: 'salesforce', status: 'Nonexistent' }],
       })
@@ -744,7 +744,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
 
       expect(callbacks.getChangeToAlignAction).toHaveBeenCalledTimes(1)
@@ -768,7 +768,7 @@ describe('fetch command', () => {
         config: { shouldCalcTotalSize: true },
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
 
       expect(callbacks.getChangeToAlignAction).toHaveBeenCalledTimes(1)
@@ -791,7 +791,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
 
       expect(callbacks.getChangeToAlignAction).toHaveBeenCalledTimes(1)
@@ -813,7 +813,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
 
       expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
@@ -825,7 +825,7 @@ describe('fetch command', () => {
         () => Promise.resolve('no')
       )
       mockLoadWorkspace.mockResolvedValue({
-        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, true),
+        workspace: mocks.mockLoadWorkspace(workspacePath, undefined, false, true),
         errored: false,
         stateRecencies: [{ serviceName: 'salesforce', status: 'Valid' }],
       })
@@ -841,7 +841,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
 
       expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
@@ -864,7 +864,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
       expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
@@ -875,7 +875,7 @@ describe('fetch command', () => {
         () => Promise.resolve('no')
       )
       mockLoadWorkspace.mockResolvedValue({
-        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, false),
+        workspace: mocks.mockLoadWorkspace(workspacePath, undefined, false, false),
         errored: false,
         stateRecencies: [{ serviceName: 'salesforce', status: 'Nonexistent' }],
       })
@@ -891,7 +891,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
       expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
@@ -903,7 +903,7 @@ describe('fetch command', () => {
         () => Promise.resolve('no')
       )
       mockLoadWorkspace.mockResolvedValue({
-        workspace: mocks.mockLoadWorkspace(workspaceDir, undefined, false, false),
+        workspace: mocks.mockLoadWorkspace(workspacePath, undefined, false, false),
         errored: false,
         stateRecencies: [
           { serviceName: 'salesforce', status: 'Nonexistent' },
@@ -922,7 +922,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
       expect(callbacks.getChangeToAlignAction).not.toHaveBeenCalled()
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
@@ -932,7 +932,7 @@ describe('fetch command', () => {
 
   describe('Verify using env command', () => {
     const telemetry: mocks.MockTelemetry = mocks.getMockTelemetry()
-    const workspaceDir = 'valid-ws'
+    const workspacePath = 'valid-ws'
     beforeEach(() => {
       mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
       mockLoadWorkspace.mockClear()
@@ -950,7 +950,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
       expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
@@ -971,7 +971,7 @@ describe('fetch command', () => {
         config,
         output,
         spinnerCreator,
-        workingDir: workspaceDir,
+        workspacePath,
       })
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
       expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(

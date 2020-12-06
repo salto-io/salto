@@ -86,7 +86,7 @@ describe('diff command', () => {
         output,
         telemetry,
         config,
-        workingDir: workspaceName,
+        workspacePath: workspaceName,
       })
       expect(result).toBe(CliExitCode.UserInputError)
     })
@@ -110,7 +110,7 @@ describe('diff command', () => {
         output,
         telemetry,
         config,
-        workingDir: workspaceName,
+        workspacePath: workspaceName,
       })
       expect(result).toBe(CliExitCode.UserInputError)
     })
@@ -134,7 +134,7 @@ describe('diff command', () => {
         output,
         telemetry,
         config,
-        workingDir: workspaceName,
+        workspacePath: workspaceName,
       })
     })
 
@@ -167,7 +167,7 @@ describe('diff command', () => {
         output,
         telemetry,
         config,
-        workingDir: workspaceName,
+        workspacePath: workspaceName,
       })
     })
 
@@ -200,7 +200,7 @@ describe('diff command', () => {
         output,
         telemetry,
         config,
-        workingDir: workspaceName,
+        workspacePath: workspaceName,
       })
     })
 
@@ -235,7 +235,7 @@ describe('diff command', () => {
         output,
         telemetry,
         config,
-        workingDir: workspaceName,
+        workspacePath: workspaceName,
       })
     })
 
@@ -271,7 +271,7 @@ describe('diff command', () => {
         output,
         telemetry,
         config,
-        workingDir: workspaceName,
+        workspacePath: workspaceName,
       })
     })
 

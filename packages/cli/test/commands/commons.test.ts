@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as mocks from '../mocks'
-import { getAndValidateActiveServices } from '../../src/commands/commons/services'
+import { getAndValidateActiveServices } from '../../src/commands/common/services'
 
 describe('Commands commons tests', () => {
   describe('getAndValidateActiveServices with workspace with services', () => {

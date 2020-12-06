@@ -16,15 +16,18 @@
 import { AdapterAuthMethod, AdapterAuthentication, InstanceElement, ObjectType, OAuthMethod, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { EOL } from 'os'
+import { logger } from '@salto-io/logging'
 import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, loadLocalWorkspace, getAdaptersCredentialsTypes, installAdapter } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getCredentialsFromUser } from '../callbacks'
 import { CliOutput, CliExitCode } from '../types'
-import { createCommandGroupDef, createPublicCommandDef, DefActionInput } from '../command_builder'
+import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatConfiguredServices, formatServiceNotConfigured, formatLoginOverride } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
-import { EnvArg, ENVIORMENT_OPTION } from './commons/env'
+import { EnvArg, ENVIORMENT_OPTION } from './common/env'
+
+const log = logger(module)
 
 const getOauthConfig = async (
   oauthMethod: OAuthMethod,
@@ -90,14 +93,14 @@ type ServiceAddArgs = {
     authType: AdapterAuthMethod
 } & EnvArg
 
-const addAction = async (
-  {
-    input: { login, serviceName, authType, env },
-    output,
-    workingDir = '.',
-  }: DefActionInput<ServiceAddArgs>,
-): Promise<CliExitCode> => {
-  const workspace = await loadWorkspace(workingDir, env)
+const addAction: CommandDefAction<ServiceAddArgs> = async ({
+  input,
+  output,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running service add command on \'%s\' %o', workspacePath, input)
+  const { login, serviceName, authType, env } = input
+  const workspace = await loadWorkspace(workspacePath, env)
   if (workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceAlreadyAdded(serviceName), output)
     return CliExitCode.UserInputError
@@ -156,12 +159,14 @@ const serviceAddDef = createPublicCommandDef({
 })
 
 // List
-type SeriveListArgs = {} & EnvArg
+type ServiceListArgs = {} & EnvArg
 
-const listAction = async (
-  { input: { env }, output, workingDir = '.' }: DefActionInput<SeriveListArgs>,
+const listAction: CommandDefAction<ServiceListArgs> = async (
+  { input, output, workspacePath = '.' },
 ): Promise<CliExitCode> => {
-  const workspace = await loadWorkspace(workingDir, env)
+  log.debug('running service list command on \'%s\' %o', workspacePath, input)
+  const { env } = input
+  const workspace = await loadWorkspace(workspacePath, env)
   outputLine(formatConfiguredServices(workspace.services()), output)
   return CliExitCode.Success
 }
@@ -183,14 +188,14 @@ type ServiceLoginArgs = {
     authType: AdapterAuthMethod
 } & EnvArg
 
-const loginAction = async (
-  {
-    input: { serviceName, authType, env },
-    output,
-    workingDir = '.',
-  }: DefActionInput<ServiceLoginArgs>
-): Promise<CliExitCode> => {
-  const workspace = await loadWorkspace(workingDir, env)
+const loginAction: CommandDefAction<ServiceLoginArgs> = async ({
+  input,
+  output,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running service login command on \'%s\' %o', workspacePath, input)
+  const { serviceName, authType, env } = input
+  const workspace = await loadWorkspace(workspacePath, env)
   if (!workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceNotConfigured(serviceName), output)
     return CliExitCode.AppError

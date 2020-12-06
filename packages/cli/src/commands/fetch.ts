@@ -22,14 +22,14 @@ import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
-import { createPublicCommandDef, DefActionInput } from '../command_builder'
+import { createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { ENVIORMENT_OPTION, EnvArg } from './commons/env'
-import { SERVICES_OPTION, ServicesArg, getAndValidateActiveServices } from './commons/services'
+import { ENVIORMENT_OPTION, EnvArg } from './common/env'
+import { SERVICES_OPTION, ServicesArg, getAndValidateActiveServices } from './common/services'
 
 const log = logger(module)
 const { series } = promises.array
@@ -219,20 +219,18 @@ type FetchArgs = {
   mode: nacl.RoutingMode
 } & ServicesArg & EnvArg
 
-const action = async (
-  {
-    input: { force, interactive, stateOnly, services, env, mode },
-    cliTelemetry,
-    config,
-    output,
-    spinnerCreator,
-    workingDir = '.',
-  }: DefActionInput<FetchArgs>
-): Promise<CliExitCode> => {
-  log.debug(`running fetch command on '${workingDir}' [force=${force}, interactive=${
-    interactive}, mode=${mode}], environment=${env}, services=${services}`)
+const action: CommandDefAction<FetchArgs> = async ({
+  input,
+  cliTelemetry,
+  config,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running fetch command on \'%s\' %o', workspacePath, input)
+  const { force, interactive, stateOnly, services, env, mode } = input
   const { shouldCalcTotalSize } = config
-  const { workspace, errored, stateRecencies } = await loadWorkspace(workingDir, output,
+  const { workspace, errored, stateRecencies } = await loadWorkspace(workspacePath, output,
     { force, printStateRecency: true, spinnerCreator, sessionEnv: env })
   if (errored) {
     cliTelemetry.failure()

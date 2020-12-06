@@ -534,10 +534,12 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
+    const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete',
+      'checkOnly', 'testLevel', 'runTests']
     return flatValues(
       await this.conn.metadata.deploy(
         zip,
-        _.merge(defaultDeployOptions, this.config?.deploy),
+        _.merge(defaultDeployOptions, _.pick(this.config?.deploy, optionsToSend)),
       ).complete(true)
     )
   }

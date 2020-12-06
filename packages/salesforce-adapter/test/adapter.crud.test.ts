@@ -54,7 +54,7 @@ describe('SalesforceAdapter CRUD', () => {
     const zip = await JSZip.loadAsync(zipData)
     const files = {
       manifest: zip.files['unpackaged/package.xml'],
-      deleteManifest: zip.files['unpackaged/destructiveChanges.xml'],
+      deleteManifest: zip.files['unpackaged/destructiveChangesPost.xml'],
     }
     return {
       ...(await promises.object.mapValuesAsync(
@@ -665,7 +665,7 @@ describe('SalesforceAdapter CRUD', () => {
               // componentSuccess list
               componentSuccess: [{
                 componentType: 'Flow',
-                fullName: 'destructiveChanges.xml',
+                fullName: 'destructiveChangesPost.xml',
                 problemType: 'Warning',
                 problem: `No Flow named: ${instanceName} found`,
               }],
@@ -688,7 +688,7 @@ describe('SalesforceAdapter CRUD', () => {
               success: false,
               componentFailure: [{
                 componentType: 'Flow',
-                fullName: 'destructiveChanges.xml',
+                fullName: 'destructiveChangesPost.xml',
                 problemType: 'Warning',
                 problem: `No Flow named: ${instanceName} found`,
               }],

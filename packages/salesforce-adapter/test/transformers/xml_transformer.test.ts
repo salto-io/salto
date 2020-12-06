@@ -41,9 +41,26 @@ describe('XML Transformer', () => {
 
     const packageName = 'unpackaged'
     const addManifestPath = `${packageName}/package.xml`
-    const deleteManifestPath = `${packageName}/destructiveChanges.xml`
+    const deleteManifestPath = `${packageName}/destructiveChangesPost.xml`
     let pkg: DeployPackage
     let zipFiles: Record<string, string>
+
+    describe('getDeletionsPackageName', () => {
+      it('get the right package name when deleteBeforeUpdate is true', () => {
+        expect(createDeployPackage(true).getDeletionsPackageName())
+          .toBe('destructiveChanges.xml')
+      })
+
+      it('get the right package name when deleteBeforeUpdate is false', () => {
+        expect(createDeployPackage(false).getDeletionsPackageName())
+          .toBe('destructiveChangesPost.xml')
+      })
+
+      it('get the right package name when deleteBeforeUpdate is undefined', () => {
+        expect(createDeployPackage(undefined).getDeletionsPackageName())
+          .toBe('destructiveChangesPost.xml')
+      })
+    })
 
     beforeEach(() => {
       pkg = createDeployPackage()

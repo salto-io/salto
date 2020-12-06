@@ -427,7 +427,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       ? await deployCustomObjectInstancesGroup(
         resolvedChanges, this.client, this.userConfig.dataManagement,
       )
-      : await deployMetadata(resolvedChanges, this.client, this.nestedMetadataTypes)
+      : await deployMetadata(resolvedChanges, this.client,
+        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)
 
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...result.appliedChanges]

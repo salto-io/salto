@@ -355,12 +355,15 @@ export type DeployPackage = {
   add(instance: MetadataInstanceElement): void
   delete(type: MetadataObjectType, name: string): void
   getZip(): Promise<Buffer>
+  getDeletionsPackageName(): string
 }
 
-export const createDeployPackage = (): DeployPackage => {
+export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage => {
   const zip = new JSZip()
   const addManifest = new collections.map.DefaultMap<string, string[]>(() => [])
   const deleteManifest = new collections.map.DefaultMap<string, string[]>(() => [])
+  const deletionsPackageName = deleteBeforeUpdate ? 'destructiveChanges.xml' : 'destructiveChangesPost.xml'
+
   return {
     add: instance => {
       const instanceName = apiName(instance)
@@ -415,9 +418,10 @@ export const createDeployPackage = (): DeployPackage => {
     getZip: () => {
       zip.file(`${PACKAGE}/package.xml`, toPackageXml(addManifest))
       if (deleteManifest.size !== 0) {
-        zip.file(`${PACKAGE}/destructiveChanges.xml`, toPackageXml(deleteManifest))
+        zip.file(`${PACKAGE}/${deletionsPackageName}`, toPackageXml(deleteManifest))
       }
       return zip.generateAsync({ type: 'nodebuffer' })
     },
+    getDeletionsPackageName: () => deletionsPackageName,
   }
 }

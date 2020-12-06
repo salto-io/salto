@@ -21,13 +21,27 @@ import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, loadLocal
 import { Workspace } from '@salto-io/workspace'
 import { getCredentialsFromUser } from '../callbacks'
 import { CliOutput, CliExitCode } from '../types'
-import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { createCommandGroupDef, createPublicCommandDef, CommandDefAction, KeyedOption } from '../command_builder'
 import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatConfiguredServices, formatServiceNotConfigured, formatLoginOverride } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIORMENT_OPTION } from './common/env'
 
 const log = logger(module)
+
+type AuthTypeArgs = {
+  authType: AdapterAuthMethod
+}
+
+const AUTH_TYPE_OPTION: KeyedOption<AuthTypeArgs> = {
+  name: 'authType',
+  alias: 'a',
+  description: 'The type of authorization you would like to use for the service. Options = [basic, oauth]',
+  type: 'string',
+  required: false,
+  choices: ['basic', 'oauth'],
+  default: 'basic',
+}
 
 const getOauthConfig = async (
   oauthMethod: OAuthMethod,
@@ -90,8 +104,7 @@ Promise<Workspace> => {
 type ServiceAddArgs = {
     login: boolean
     serviceName: string
-    authType: AdapterAuthMethod
-} & EnvArg
+} & AuthTypeArgs & EnvArg
 
 const addAction: CommandDefAction<ServiceAddArgs> = async ({
   input,
@@ -136,14 +149,7 @@ const serviceAddDef = createPublicCommandDef({
         description: 'Do not login to service when adding it. Example usage: \'service add <service-name> --no-login\'.',
         required: false,
       },
-      {
-        name: 'authType',
-        alias: 'a',
-        description: 'The type of authorization you would like to use for the service',
-        type: 'string',
-        required: false,
-        default: 'basic',
-      },
+      AUTH_TYPE_OPTION,
       ENVIORMENT_OPTION,
     ],
     positionalOptions: [
@@ -185,8 +191,7 @@ const serviceListDef = createPublicCommandDef({
 // Login
 type ServiceLoginArgs = {
     serviceName: string
-    authType: AdapterAuthMethod
-} & EnvArg
+} & AuthTypeArgs & EnvArg
 
 const loginAction: CommandDefAction<ServiceLoginArgs> = async ({
   input,
@@ -221,14 +226,7 @@ const serviceLoginDef = createPublicCommandDef({
     name: 'login',
     description: 'Set the environment service credentials',
     keyedOptions: [
-      {
-        name: 'authType',
-        alias: 'a',
-        description: 'The type of authorization you would like to use for the service',
-        type: 'string',
-        required: false,
-        default: 'basic',
-      },
+      AUTH_TYPE_OPTION,
       ENVIORMENT_OPTION,
     ],
     positionalOptions: [

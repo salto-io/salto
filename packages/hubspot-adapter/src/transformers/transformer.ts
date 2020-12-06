@@ -872,7 +872,7 @@ export const transformAfterUpdateOrAdd = async (
   clonedInstance.value = transformValues(
     {
       values: mergedValues,
-      type: instance.type,
+      type: instance.getType(),
       transformFunc: transformPrimitive,
     }
   ) || {}
@@ -962,7 +962,7 @@ export const createHubspotMetadataFromInstanceElement = async (
 ):
   Promise<HubspotMetadata> => {
   let ownersMap: Map<string, number>
-  if (doesObjectIncludeUserIdentifier(instance.type)) {
+  if (doesObjectIncludeUserIdentifier(instance.getType())) {
     ownersMap = await createOwnersMap(client)
   }
   const createMetadataValueFromObject = (objectType: ObjectType, values: Values): Values =>
@@ -1013,7 +1013,7 @@ export const createHubspotMetadataFromInstanceElement = async (
       }
       return val
     }))
-  return createMetadataValueFromObject(instance.type, instance.value) as HubspotMetadata
+  return createMetadataValueFromObject(instance.getType(), instance.value) as HubspotMetadata
 }
 
 /**

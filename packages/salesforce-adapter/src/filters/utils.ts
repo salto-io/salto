@@ -137,7 +137,7 @@ export const parentApiName = (elem: Element): string =>
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
   const instanceDeps = getParents(instance)
-  if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemId.isEqual(objectID))) {
+  if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemID.isEqual(objectID))) {
     return
   }
   instanceDeps.push(new ReferenceExpression(objectID))
@@ -196,7 +196,7 @@ export const getDataFromChanges = <T extends Change<unknown>>(
 // if you want instances of all custom objects use isInstanceOfCustomObject
 export const isInstanceOfType = (type: string) => (
   (elem: Element): elem is InstanceElement => (
-    isInstanceElement(elem) && apiName(elem.type) === type
+    isInstanceElement(elem) && apiName(elem.getType()) === type
   )
 )
 

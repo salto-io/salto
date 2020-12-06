@@ -111,7 +111,7 @@ describe('Topics for objects filter', () => {
         expect(instances.map(inst => apiName(inst))).toEqual(['Test2__c', 'Test3__c'])
         expect(instances.map(inst => inst.value.enableTopics)).toEqual([true, false])
 
-        const topicsForObjectsType = instances[0].type
+        const topicsForObjectsType = instances[0].getType()
         expect(topicsForObjectsType.annotations).toMatchObject({
           metadataType: TOPICS_FOR_OBJECTS_METADATA_TYPE,
           dirName: 'topicsForObjects',

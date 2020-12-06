@@ -13,14 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  FetchResult,
-  AdapterOperations,
-  ChangeGroup,
-  DeployResult,
-  InstanceElement,
-  Element, ObjectType, ElemID, BuiltinTypes,
-} from '@salto-io/adapter-api'
+import { FetchResult, AdapterOperations, ChangeGroup, DeployResult, InstanceElement, Element, ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { deployInstance, resolveValues } from '@salto-io/adapter-utils'
 import MarketoClient from './client/client'
 import { createMarketoObjectType, getLookUpName, Types } from './transformers/transformer'
@@ -103,8 +96,8 @@ export default class MarketoAdapter implements AdapterOperations {
   // TODO(Guy): Implement
   private async add(instance: InstanceElement): Promise<InstanceElement> {
     const resolved = resolveValues(instance, getLookUpName)
-    await this.client.createInstance(OBJECTS_NAMES.LEAD, { name: resolved.type.elemID.name })
-    return new InstanceElement('guy', new ObjectType({
+    await this.client.createInstance(OBJECTS_NAMES.LEAD, { name: resolved.getType().elemID.name })
+    const dummyObj = new ObjectType({
       elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),
       fields: {
         id: {
@@ -112,7 +105,8 @@ export default class MarketoAdapter implements AdapterOperations {
         },
       },
       path: [MARKETO, TYPES_PATH, 'lead'],
-    }))
+    })
+   return new InstanceElement('guy', dummyObj)
     // const resolved = resolveValues(instance, getLookUpName)
     // const resp = await this.client.createInstance(
     //   resolved.type.elemID.name,
@@ -134,7 +128,7 @@ export default class MarketoAdapter implements AdapterOperations {
   private async remove(instance: InstanceElement): Promise<void> {
     const resolved = resolveValues(instance, getLookUpName)
     await this.client.deleteInstance(
-      resolved.type.elemID.name,
+      resolved.getType().elemID.name,
       resolved.value as MarketoMetadata
     )
   }
@@ -153,9 +147,9 @@ export default class MarketoAdapter implements AdapterOperations {
     const resolvedBefore = resolveValues(before, getLookUpName)
     const resolvedAfter = resolveValues(after, getLookUpName)
 
-    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedBefore.type.elemID.name })
-    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedAfter.type.elemID.name })
-    return new InstanceElement('tish', new ObjectType({
+    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedBefore.getType().elemID.name })
+    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedAfter.getType().elemID.name })
+    const dummyObj = new ObjectType({
       elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),
       fields: {
         id: {
@@ -163,7 +157,8 @@ export default class MarketoAdapter implements AdapterOperations {
         },
       },
       path: [MARKETO, TYPES_PATH, 'lead'],
-    }))
+    })
+    return new InstanceElement('tish', dummyObj)
     // const resolvedBefore = resolveValues(before, getLookUpName)
     // const resolvedAfter = resolveValues(after, getLookUpName)
     // validateFormGuid(resolvedBefore, resolvedAfter)

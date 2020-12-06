@@ -88,9 +88,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const ownersMap = createOwnersMap(owners)
     elements
       .filter(isInstanceElement)
-      .filter(instance => isObjectType(instance.type))
+      .filter(instance => isObjectType(instance.getType()))
       .forEach(instance => {
-        convertUserIdentifiers(instance.type, instance.value, ownersMap)
+        convertUserIdentifiers(instance.getType(), instance.value, ownersMap)
       })
   },
 })

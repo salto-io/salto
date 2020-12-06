@@ -436,7 +436,7 @@ describe('Elements validation', () => {
         it('should succeed when all required fields exist with values', () => {
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.reqStr = 'string'
           extInst.value.reqNested = {
             str: 'str',
@@ -449,7 +449,7 @@ describe('Elements validation', () => {
 
         it('should return error when required primitive field is missing', () => {
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch('Field reqStr is required but has no value')
@@ -458,7 +458,7 @@ describe('Elements validation', () => {
 
         it('should return error when required object field is missing', () => {
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
@@ -468,7 +468,7 @@ describe('Elements validation', () => {
 
         it('should return error when lists elements missing required fields', () => {
           extType.fields.reqNested.type = new ListType(extType.fields.reqNested.type)
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.reqNested = [
             {
               str: 'str',
@@ -501,27 +501,27 @@ describe('Elements validation', () => {
               values: ['val1', 'val2'],
             })
           extInst.value.restrictStr = 'wrongValue'
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
         it('should succeed when restriction values is not a list', () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = { values: 'str' }
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.restrictStr = 'str'
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
         it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = {}
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.restrictStr = 'str'
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
         it('should succeed when restriction values are not defined and _restriction is undefined', () => {
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION]
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           extInst.value.restrictStr = 'str'
           expect(validateElements([extInst])).toHaveLength(0)
         })
@@ -573,7 +573,7 @@ describe('Elements validation', () => {
 
         it('should return an error when fields values do not match restriction values with explicit _restriction.enforce_value', () => {
           getRestriction(extType.fields.restrictStr).enforce_value = true
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
           testValuesAreNotListedButEnforced()
         })
 
@@ -653,7 +653,7 @@ describe('Elements validation', () => {
           extType.fields.list.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
             values: ['restriction'],
           })
-          extInst.type = extType
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
 
           expect(validateElements([extInst])).toHaveLength(2)
         })
@@ -872,7 +872,7 @@ describe('Elements validation', () => {
       it('should return error for list/object mismatch with empty array on required field', () => {
         const nestedRequiredType = nestedType.clone()
         nestedRequiredType.fields.nested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.type = nestedRequiredType
+        extInst.refType = new ReferenceExpression(nestedRequiredType.elemID, nestedRequiredType)
         extInst.value = { nested: [] }
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
@@ -883,7 +883,7 @@ describe('Elements validation', () => {
       it('should return error for list/object mismatch with empty array on required field-object', () => {
         const requiredType = nestedType.clone()
         requiredType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.type = requiredType
+        extInst.refType = new ReferenceExpression(requiredType.elemID, requiredType)
         extInst.value = []
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
@@ -915,7 +915,6 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(0)
       })
-
 
       it('should not return an error when matching list item', () => {
         extInst.value.list.push('abc')

@@ -59,7 +59,7 @@ const removeValuesFromInstances = (
     .forEach(inst => {
       inst.value = transformValues({
         values: inst.value,
-        type: inst.type,
+        type: inst.getType(),
         transformFunc: removeValuesFunc,
         strict: false,
         pathID: inst.elemID,

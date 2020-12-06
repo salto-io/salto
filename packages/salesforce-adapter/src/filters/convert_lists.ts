@@ -185,7 +185,7 @@ export const makeFilter = (
   onFetch: async (elements: Element[]) => {
     const instances = elements
       .filter(isInstanceElement)
-      .filter(inst => isObjectType(inst.type))
+      .filter(inst => isObjectType(inst.getType()))
     const objectTypes = elements.filter(isObjectType)
 
     const mapFieldIds = getMapFieldIds(objectTypes, config.useOldProfiles)
@@ -195,8 +195,8 @@ export const makeFilter = (
     ].filter(id => !mapFieldIds.has(id)))
 
     objectTypes.forEach(t => markHardcodedLists(t, knownListIds))
-    instances.forEach(inst => markListRecursively(inst.type, inst.value))
-    instances.forEach(inst => castListRecursively(inst.type, inst.value, unorderedListFields))
+    instances.forEach(inst => markListRecursively(inst.getType(), inst.value))
+    instances.forEach(inst => castListRecursively(inst.getType(), inst.value, unorderedListFields))
     objectTypes.forEach(t => sortAnnotations(t, unorderedListAnnotations))
   },
 })

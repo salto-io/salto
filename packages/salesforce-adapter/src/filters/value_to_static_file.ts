@@ -67,7 +67,7 @@ const extractToStaticFile = (instance: InstanceElement): void => {
   instance.value = transformValues(
     {
       values,
-      type: instance.type,
+      type: instance.getType(),
       transformFunc,
       strict: false,
     }

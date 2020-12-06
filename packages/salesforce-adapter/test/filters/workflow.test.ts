@@ -40,6 +40,9 @@ const { makeArray } = collections.array
 describe('Workflow filter', () => {
   const { client } = mockClient()
   const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  const dummyElemID = new ElemID(SALESFORCE, 'dummy')
+  const dummyObj = new ObjectType({ elemID: dummyElemID })
+  const dummyRefToObj = new ReferenceExpression(dummyElemID, dummyObj)
 
   const workflowInstanceName = 'Account'
   const generateWorkFlowInstance = (): InstanceElement => (
@@ -84,7 +87,7 @@ describe('Workflow filter', () => {
     describe('should modify workflow instance', () => {
       beforeAll(async () => {
         workflowWithInnerTypes = generateWorkFlowInstance()
-        workflowType = workflowWithInnerTypes.type
+        workflowType = workflowWithInnerTypes.getType()
         const workflowSubTypes = Object.keys(WORKFLOW_FIELD_TO_TYPE)
           .map(fieldName => workflowType.fields[fieldName].type)
           .filter(isListType)
@@ -140,15 +143,15 @@ describe('Workflow filter', () => {
         expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).toHaveLength(2)
         makeArray(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).forEach(val => {
           expect(val).toBeInstanceOf(ReferenceExpression)
-          const { elemId } = val as ReferenceExpression
-          expect((findElement(elements, elemId) as InstanceElement).value.description).toBe('description')
+          const { elemID } = val as ReferenceExpression
+          expect((findElement(elements, elemID) as InstanceElement).value.description).toBe('description')
         })
       })
     })
 
     it('should not modify non workflow instances', async () => {
       const dummyInstance = generateWorkFlowInstance()
-      dummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })
+      dummyInstance.refType = dummyRefToObj
       await filter.onFetch([dummyInstance])
       expect(dummyInstance.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD])
         .toEqual('MyWorkflowAlert1')
@@ -164,7 +167,7 @@ describe('Workflow filter', () => {
 
     it('should set non workflow instances path correctly', async () => {
       const dummyInstance = generateWorkFlowInstance()
-      dummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })
+      dummyInstance.refType = dummyRefToObj
       const beforeFilterPath = dummyInstance.path
       await filter.onFetch([dummyInstance])
       expect(dummyInstance.path).toEqual(beforeFilterPath)
@@ -209,7 +212,7 @@ describe('Workflow filter', () => {
           workflowInChange = getChangeElement(workflowChange)
         })
         it('should use the original type from the workflow', () => {
-          expect(workflowInChange.type).toBe(mockTypes.Workflow)
+          expect(workflowInChange.getType()).toBe(mockTypes.Workflow)
         })
         it('should replace the field values with the inner instances with relative fullName', () => {
           expect(workflowInChange.value[WORKFLOW_RULES_FIELD]).toEqual([
@@ -264,7 +267,7 @@ describe('Workflow filter', () => {
         })
         it('should create workflow instance with a proper type', () => {
           const workflowInst = getChangeElement(changes[0])
-          const workflowType = workflowInst.type
+          const workflowType = workflowInst.getType()
           const typeAnnotations = workflowType.annotations as MetadataTypeAnnotations
           expect(typeAnnotations.metadataType).toEqual(WORKFLOW_METADATA_TYPE)
           expect(typeAnnotations.suffix).toEqual('workflow')

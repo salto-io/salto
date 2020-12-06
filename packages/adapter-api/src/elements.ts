@@ -14,10 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+// import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value } from './values'
+import { Values, isEqualValues, Value, ReferenceExpression } from './values'
+
+export type ElementsSource = {
+  getSync(id: ElemID): Value
+}
 
 /**
  * An abstract class that represent the base element.
@@ -113,6 +118,27 @@ export enum PrimitiveTypes {
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
+
+abstract class PlaceholderTypeElement extends Element {
+  constructor(
+    elemID: ElemID,
+    public refType: ReferenceExpression,
+    annotationTypes?: TypeMap,
+    annotations?: Values,
+    path?: ReadonlyArray<string>,
+  ) {
+    super({ elemID, annotationTypes, annotations, path })
+  }
+
+  getType(elementsSource?: ElementsSource): TypeElement {
+    const type = this.refType.getResolvedValue(elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+    }
+    return type
+  }
+}
 
 export class ListType extends Element {
   public constructor(
@@ -335,17 +361,41 @@ export class ObjectType extends Element {
   }
 }
 
-export class InstanceElement extends Element {
-  constructor(name: string,
-    public type: ObjectType,
+export class InstanceElement extends PlaceholderTypeElement {
+  public refType: ReferenceExpression
+  constructor(
+    name: string,
+    typeOrRefType: ObjectType | ReferenceExpression,
     public value: Values = {},
     path?: ReadonlyArray<string>,
-    annotations?: Values) {
-    super({ elemID: type.elemID.createNestedID('instance', name), annotations, path })
+    annotations?: Values,
+  ) {
+    super(
+      typeOrRefType.elemID.createNestedID('instance', name),
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      isObjectType(typeOrRefType)
+        ? new ReferenceExpression(typeOrRefType.elemID, typeOrRefType)
+        : new ReferenceExpression(typeOrRefType.elemID),
+      annotations,
+      path,
+    )
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    this.refType = isObjectType(typeOrRefType)
+      ? new ReferenceExpression(typeOrRefType.elemID, typeOrRefType)
+      : new ReferenceExpression(typeOrRefType.elemID)
+  }
+
+  getType(elementsSource?: ElementsSource): ObjectType {
+    const type = this.refType.getResolvedValue(elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isObjectType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+    }
+    return type
   }
 
   isEqual(other: InstanceElement): boolean {
-    return _.isEqual(this.type.elemID, other.type.elemID)
+    return _.isEqual(this.refType.elemID, other.refType.elemID)
       && isEqualValues(this.value, other.value)
   }
 
@@ -365,7 +415,7 @@ export class InstanceElement extends Element {
    * @return {InstanceElement} the cloned instance
    */
   clone(): InstanceElement {
-    return new InstanceElement(this.elemID.name, this.type, _.cloneDeep(this.value), this.path,
+    return new InstanceElement(this.elemID.name, this.refType, _.cloneDeep(this.value), this.path,
       _.cloneDeep(this.annotations))
   }
 }

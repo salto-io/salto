@@ -20,6 +20,7 @@ import {
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
   isVariable, isMapType, MapType, isContainerType,
 } from '../src/elements'
+import { ReferenceExpression } from '../src/values'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 
 describe('Test elements.ts', () => {
@@ -73,61 +74,62 @@ describe('Test elements.ts', () => {
   })
 
   it('Should test getValuesThatNotInPrevOrDifferent func', () => {
-    const prevInstance = new InstanceElement('diff', new ObjectType({
+    const prevObjType = new ObjectType({
       elemID: new ElemID('test', 'diff'),
       annotationTypes: {},
       annotations: {},
-    }),
-    {
-      userPermissions: [
-        {
-          enabled: false,
-          name: 'ConvertLeads',
-        },
-      ],
-      fieldPermissions: [
-        {
-          field: 'Lead.Fax',
-          readable: false,
-          editable: false,
-        },
-      ],
-      description: 'old unit test instance profile',
-    },)
-
-    const newInstance = new InstanceElement('diff', new ObjectType({
+    })
+    const prevInstance = new InstanceElement('diff', new ReferenceExpression(prevObjType.elemID, prevObjType),
+      {
+        userPermissions: [
+          {
+            enabled: false,
+            name: 'ConvertLeads',
+          },
+        ],
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: false,
+            editable: false,
+          },
+        ],
+        description: 'old unit test instance profile',
+      },)
+    const newObjType = new ObjectType({
       elemID: new ElemID('test', 'diff'),
       annotationTypes: {},
       annotations: {},
-    }),
-    {
-      userPermissions: [
-        {
-          enabled: false,
-          name: 'ConvertLeads',
-        },
-      ],
-      fieldPermissions: [
-        {
-          field: 'Lead.Fax',
-          readable: false,
-          editable: false,
-        },
-        {
-          editable: false,
-          field: 'Account.AccountNumber',
-          readable: false,
-        },
-      ],
-      applicationVisibilities: [
-        {
-          application: 'standard__ServiceConsole',
-          default: false,
-          visible: true,
-        },
-      ],
-      description: 'new unit test instance profile',
-    },)
+    })
+    const newInstance = new InstanceElement('diff', new ReferenceExpression(newObjType.elemID, newObjType),
+      {
+        userPermissions: [
+          {
+            enabled: false,
+            name: 'ConvertLeads',
+          },
+        ],
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: false,
+            editable: false,
+          },
+          {
+            editable: false,
+            field: 'Account.AccountNumber',
+            readable: false,
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: false,
+            visible: true,
+          },
+        ],
+        description: 'new unit test instance profile',
+      },)
 
     expect(newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)).toMatchObject({
       fieldPermissions: [
@@ -166,7 +168,7 @@ describe('Test elements.ts', () => {
     const strField = new Field(objT, 'str_field', primStr)
     const lstField = new Field(objT, 'list_field', new ListType(primStr))
     const mapField = new Field(objT, 'map_field', new MapType(primStr))
-    const inst = new InstanceElement('inst', objT, { str: 'test' })
+    const inst = new InstanceElement('inst', new ReferenceExpression(objT.elemID, objT), { str: 'test' })
     const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 3)
 
     it('should identify equal primitive types', () => {

@@ -34,6 +34,7 @@ import { createElementSelector, ElementSelector, validateSelectorsMatches,
   selectElementsBySelectors, createElementSelectors, ElementIDToValue,
   getElementIdsFromSelectorsRecursively } from './src/workspace/element_selector'
 import * as validator from './src/validator'
+import { ElementsSource } from './src/workspace/elements_source'
 
 export {
   errors,
@@ -68,4 +69,5 @@ export {
   createElementSelectors,
   ElementIDToValue,
   getElementIdsFromSelectorsRecursively,
+  ElementsSource,
 }

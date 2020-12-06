@@ -31,10 +31,10 @@ const getMapKeyErrors = (
 ): ChangeError[] => {
   const errors: ChangeError[] = []
   Object.entries(after.value).filter(
-    ([fieldName]) => isMapType(after.type.fields[fieldName]?.type)
+    ([fieldName]) => isMapType(after.getType().fields[fieldName]?.type)
     && PROFILE_MAP_FIELD_DEF[fieldName] !== undefined
   ).forEach(([fieldName, fieldValues]) => {
-    const fieldType = after.type.fields[fieldName].type as MapType
+    const fieldType = after.getType().fields[fieldName].type as MapType
     const mapDef = PROFILE_MAP_FIELD_DEF[fieldName]
     const findInvalidPaths: TransformFunc = ({ value, path, field }) => {
       if (isObjectType(field?.type) && path !== undefined) {

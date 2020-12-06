@@ -25,6 +25,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
   INSTANCE_ANNOTATIONS,
+  ElementsSource,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -205,6 +206,7 @@ export const transformElementAnnotations = <T extends Element>(
     element: T
     transformFunc: TransformFunc
     strict?: boolean
+    elementsSource?: ElementsSource
   }
 ): Values => {
   const elementAnnotationTypes = (): TypeMap => {
@@ -233,10 +235,12 @@ export const transformElement = <T extends Element>(
     element,
     transformFunc,
     strict,
+    elementsSource,
   }: {
     element: T
     transformFunc: TransformFunc
     strict?: boolean
+    elementsSource?: ElementsSource
   }
 ): T => {
   let newElement: Element
@@ -246,7 +250,7 @@ export const transformElement = <T extends Element>(
   if (isInstanceElement(element)) {
     const transformedValues = transformValues({
       values: element.value,
-      type: element.type,
+      type: element.getType(elementsSource),
       transformFunc,
       strict,
       pathID: element.elemID,
@@ -254,7 +258,7 @@ export const transformElement = <T extends Element>(
 
     newElement = new InstanceElement(
       element.elemID.name,
-      element.type,
+      element.refType,
       transformedValues,
       element.path,
       transformedAnnotations
@@ -451,7 +455,7 @@ export const findInstances = (
   typeID: ElemID,
 ): Iterable<InstanceElement> => {
   const instances = wu(elements).filter(isInstanceElement) as wu.WuIterable<InstanceElement>
-  return instances.filter(e => e.type.elemID.isEqual(typeID))
+  return instances.filter(e => e.refType.elemID.isEqual(typeID))
 }
 
 export const getPath = (
@@ -564,7 +568,7 @@ export const flattenElementStr = (element: Element): Element => {
 
   const flattenInstance = (inst: InstanceElement): InstanceElement => new InstanceElement(
     flatStr(inst.elemID.name),
-    inst.type,
+    inst.refType,
     flatValues(inst.value),
     inst.path?.map(flatStr),
     flatValues(inst.annotations)
@@ -646,7 +650,7 @@ export const filterByID = <T extends Element | Values>(
   if (isInstanceElement(value)) {
     return new InstanceElement(
       value.elemID.name,
-      value.type,
+      value.refType,
       filterByID(value.elemID, value.value, filterFunc),
       value.path,
       filterInstanceAnnotations(value.annotations)
@@ -736,34 +740,43 @@ const createDefaultValuesFromType = (type: TypeElement): Values => {
     : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 
-export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
+export const applyInstancesDefaults = (
+  instances: InstanceElement[],
+  elementsSrouce?: ElementsSource,
+): void => {
+  // TODO: This implementation is not ideal perfmance wise
+  // Grouping by type before using the elementsSource to get the actual type will be an improvement
   instances
     .forEach(inst => {
-      const defaultValues = createDefaultValuesFromType(inst.type)
+      const defaultValues = createDefaultValuesFromType(inst.getType(elementsSrouce))
       inst.value = _.merge({}, defaultValues, inst.value)
     })
 }
 
 export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
   InstanceElement => {
-  const instance = new InstanceElement(name, objectType)
-  instance.value = createDefaultValuesFromType(instance.type)
+  const instance = new InstanceElement(name, new ReferenceExpression(objectType.elemID, objectType))
+  instance.value = createDefaultValuesFromType(objectType)
   return instance
 }
 
 export const safeJsonStringify = (value: Value): string => safeStringify(value)
 
-export const getAllReferencedIds = (element: Element, onlyAnnotations = false): Set<string> => {
+export const getAllReferencedIds = (
+  element: Element,
+  onlyAnnotations = false,
+  elementsSource?: ElementsSource,
+): Set<string> => {
   const allReferencedIds = new Set<string>()
   const transformFunc: TransformFunc = ({ value }) => {
     if (isReferenceExpression(value)) {
-      allReferencedIds.add(value.elemId.getFullName())
+      allReferencedIds.add(value.elemID.getFullName())
     }
     return value
   }
 
   const transform = onlyAnnotations ? transformElementAnnotations : transformElement
-  transform({ element, transformFunc, strict: false })
+  transform({ element, transformFunc, strict: false, elementsSource })
 
   return allReferencedIds
 }

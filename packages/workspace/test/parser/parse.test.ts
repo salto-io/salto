@@ -352,14 +352,14 @@ let functions: Functions
         expect(inst.elemID).toEqual(instType.elemID.createNestedID('instance', 'inst'))
       })
       it('should have the right type', () => {
-        expect(inst.type.elemID).toEqual(instType.elemID)
+        expect(inst.getType().elemID).toEqual(instType.elemID)
       })
       it('should have values', () => {
         expect(inst.value).toHaveProperty('name')
         expect(inst.value.name).toEqual('me')
       })
       it('should not be setting', () => {
-        expect(inst.type.isSettings).toBeFalsy()
+        expect(inst.getType().isSettings).toBeFalsy()
       })
 
       it('should have annotations', () => {
@@ -381,14 +381,14 @@ let functions: Functions
         )
       })
       it('should have the right type', () => {
-        expect(config.type.elemID).toEqual(configTypeId)
+        expect(config.getType().elemID).toEqual(configTypeId)
       })
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')
         expect(config.value.username).toEqual('foo')
       })
       it('should not be setting', () => {
-        expect(config.type.isSettings).toBeFalsy()
+        expect(config.getType().isSettings).toBeFalsy()
       })
     })
 
@@ -447,8 +447,8 @@ let functions: Functions
         )
       })
       it('should have to correct type ID', () => {
-        expect(settingsInstance.type.elemID).toEqual(settingsType.elemID)
-        expect(settingsInstance.type.isSettings).toBeTruthy()
+        expect(settingsInstance.getType().elemID).toEqual(settingsType.elemID)
+        expect(settingsInstance.getType().isSettings).toBeTruthy()
       })
     })
 

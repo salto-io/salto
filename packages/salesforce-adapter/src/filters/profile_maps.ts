@@ -318,7 +318,7 @@ const filter: FilterCreator = ({ config }) => ({
 
     const nonUniqueMapFields = convertInstanceFieldsToMaps(profileInstances, PROFILE_MAP_FIELD_DEF)
 
-    updateFieldTypes(profileInstances[0].type, nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
+    updateFieldTypes(profileInstances[0].getType(), nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
   },
 
   preDeploy: async changes => {
@@ -335,7 +335,7 @@ const filter: FilterCreator = ({ config }) => ({
     // so that we can convert the object back correctly in onDeploy
     convertFieldsBackToLists(profileInstanceChanges, PROFILE_MAP_FIELD_DEF)
 
-    const profileObj = getChangeElement(profileInstanceChanges[0]).type
+    const profileObj = getChangeElement(profileInstanceChanges[0]).getType()
     convertFieldTypesBackToLists(profileObj, PROFILE_MAP_FIELD_DEF)
   },
 
@@ -350,7 +350,7 @@ const filter: FilterCreator = ({ config }) => ({
     }
     convertFieldsBackToMaps(profileInstanceChanges, PROFILE_MAP_FIELD_DEF)
 
-    const profileObj = getChangeElement(profileInstanceChanges[0]).type
+    const profileObj = getChangeElement(profileInstanceChanges[0]).getType()
     // after preDeploy, the fields with lists are exactly the ones that should be converted
     // back to lists
     const nonUniqueMapFields = Object.keys(profileObj.fields).filter(

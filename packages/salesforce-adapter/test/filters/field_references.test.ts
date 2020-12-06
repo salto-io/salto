@@ -266,7 +266,7 @@ describe('FieldReferences filter', () => {
 
     it('should resolve field with relative value array using parent target', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_CUSTOM_SCRIPT
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_CUSTOM_SCRIPT
       ) as InstanceElement
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toBeDefined()
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toHaveLength(1)
@@ -276,7 +276,7 @@ describe('FieldReferences filter', () => {
 
     it('should resolve object with configurationAttributeMapping strategy', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_CONFIGURATION_ATTRIBUTE
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_CONFIGURATION_ATTRIBUTE
       ) as InstanceElement
       expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]).toBeDefined()
       expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]).toBeInstanceOf(ReferenceExpression)
@@ -285,7 +285,7 @@ describe('FieldReferences filter', () => {
 
     it('should resolve object with lookupQueryMapping strategy', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_LOOKUP_QUERY
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_LOOKUP_QUERY
       ) as InstanceElement
       expect(inst.value[CPQ_TESTED_OBJECT]).toBeDefined()
       expect(inst.value[CPQ_TESTED_OBJECT]).toBeInstanceOf(ReferenceExpression)
@@ -294,7 +294,7 @@ describe('FieldReferences filter', () => {
 
     it('should resolve field with scheduleConstraintFieldMapping strategy', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_DISCOUNT_SCHEDULE
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_DISCOUNT_SCHEDULE
       ) as InstanceElement
       expect(inst.value[CPQ_CONSTRAINT_FIELD]).toBeDefined()
       expect(inst.value[CPQ_CONSTRAINT_FIELD]).toBeInstanceOf(ReferenceExpression)
@@ -522,7 +522,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       instanceUnknownActionName = generateWorkFlowRuleInstance('unknownActionName', { name: 'unknown', type: 'Alert' })
       instanceMissingActionForType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'Task' })
       instanceInvalidActionType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'InvalidType' })
-      const workflowRuleType = instanceSingleAction.type
+      const workflowRuleType = instanceSingleAction.getType()
 
       instanceFlowRecordLookup = generateFlowRecordLookupInstance('single', {
         object: 'User',
@@ -540,7 +540,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         instanceSingleAction, instanceMultiAction,
         instanceUnknownActionName, instanceMissingActionForType, instanceInvalidActionType,
         ...actionTypeObjects, ...actionInstances,
-        instanceFlowRecordLookup, instanceFlowRecordLookup.type,
+        instanceFlowRecordLookup, instanceFlowRecordLookup.getType(),
       ]
       await filter.onFetch(elements)
     })
@@ -548,7 +548,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     it('should have references to the right actions', () => {
       const getFullName = (action: WorkflowActionReference): string => {
         expect(action.name).toBeInstanceOf(ReferenceExpression)
-        return (action.name as ReferenceExpression).elemId.getFullName()
+        return (action.name as ReferenceExpression).elemID.getFullName()
       }
       expect(getFullName(instanceSingleAction.value.actions)).toEqual(
         actionInstances[0].elemID.getFullName()
@@ -567,7 +567,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     it('should have references if referencing field is an array', () => {
       const getFullName = (val: string | ReferenceExpression): string => {
         expect(val).toBeInstanceOf(ReferenceExpression)
-        return (val as ReferenceExpression).elemId.getFullName()
+        return (val as ReferenceExpression).elemID.getFullName()
       }
       expect(getFullName(instanceFlowRecordLookup.value.queriedFields[0])).toEqual('salesforce.User.field.name')
     })
@@ -575,7 +575,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     it('should have reference for parent\'s neighbor in an array', () => {
       const getFullName = (val: string | ReferenceExpression): string => {
         expect(val).toBeInstanceOf(ReferenceExpression)
-        return (val as ReferenceExpression).elemId.getFullName()
+        return (val as ReferenceExpression).elemID.getFullName()
       }
       expect(getFullName(instanceFlowRecordLookup.value.filters[0].field)).toEqual('salesforce.User.field.name')
       expect(getFullName(instanceFlowRecordLookup.value.filters[2].field)).toEqual('salesforce.User.field.name')

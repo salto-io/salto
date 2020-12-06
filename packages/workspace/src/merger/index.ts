@@ -33,42 +33,42 @@ const log = logger(module)
 /**
  * Replace the pointers to all the merged elements to the merged version.
  */
-export const updateMergedTypes = (
-  elements: Element[],
-  mergedTypes: TypeMap
-): Element[] => elements.map(elem => {
-  if (isType(elem)) {
-    elem.annotationTypes = _.mapValues(
-      elem.annotationTypes,
-      anno => mergedTypes[anno.elemID.getFullName()] || anno,
-    )
-  }
-  if (isObjectType(elem)) {
-    elem.fields = _.mapValues(
-      elem.fields,
-      field => {
-        field.type = mergedTypes[field.type.elemID.getFullName()] || field.type
-        const fieldType = field.type
-        if (isContainerType(fieldType)) {
-          const resolveGenericType = (containerType: ContainerType): void => {
-            if (isContainerType(containerType.innerType)) {
-              resolveGenericType(containerType.innerType)
-            } else {
-              containerType.setInnerType(mergedTypes[containerType.innerType.elemID.getFullName()]
-              || containerType.innerType)
-            }
-          }
-          resolveGenericType(fieldType)
-        }
-        return field
-      }
-    )
-  }
-  if (isInstanceElement(elem)) {
-    elem.type = mergedTypes[elem.type.elemID.getFullName()] as ObjectType || elem.type
-  }
-  return elem
-})
+// export const updateMergedTypes = (
+//   elements: Element[],
+//   mergedTypes: TypeMap
+// ): Element[] => elements.map(elem => {
+//   if (isType(elem)) {
+//     elem.annotationTypes = _.mapValues(
+//       elem.annotationTypes,
+//       anno => mergedTypes[anno.elemID.getFullName()] || anno,
+//     )
+//   }
+//   if (isObjectType(elem)) {
+//     elem.fields = _.mapValues(
+//       elem.fields,
+//       field => {
+//         field.type = mergedTypes[field.type.elemID.getFullName()] || field.type
+//         const fieldType = field.type
+//         if (isContainerType(fieldType)) {
+//           const resolveGenericType = (containerType: ContainerType): void => {
+//             if (isContainerType(containerType.innerType)) {
+//               resolveGenericType(containerType.innerType)
+//             } else {
+//               containerType.setInnerType(mergedTypes[containerType.innerType.elemID.getFullName()]
+//               || containerType.innerType)
+//             }
+//           }
+//           resolveGenericType(fieldType)
+//         }
+//         return field
+//       }
+//     )
+//   }
+//   if (isInstanceElement(elem)) {
+//     elem.type = mergedTypes[elem.type.elemID.getFullName()] as ObjectType || elem.type
+//   }
+//   return elem
+// })
 
 const getContainerTypes = (containerTypes: ContainerType[]): Record<string, ListType> =>
   _.keyBy(containerTypes, type => type.elemID.getFullName())
@@ -83,20 +83,20 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
   const instances = mergeInstances(elements.filter(isInstanceElement))
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]
   const primitives = mergePrimitives(primitiveElements)
-  const containerTypes = getContainerTypes(elements.filter(isContainerType))
+  // const containerTypes = getContainerTypes(elements.filter(isContainerType))
   const variables = mergeVariables(elements.filter(isVariable))
 
-  const mergedElements = [
+  const merged = [
     ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e) && !isVariable(e)),
     ...Object.values(objects.merged),
     ...instances.merged,
     ...variables.merged,
   ]
 
-  const updated = updateMergedTypes(
-    mergedElements,
-    _.merge({}, objects.merged, primitives.merged, containerTypes)
-  )
+  // const updated = updateMergedTypes(
+  //   mergedElements,
+  //   _.merge({}, objects.merged, primitives.merged, containerTypes)
+  // )
 
   const errors = [
     ...objects.errors,
@@ -105,13 +105,13 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
     ...variables.errors,
   ]
 
-  log.debug(`merged ${elements.length} elements to ${updated.length} elements [errors=${
+  log.debug(`merged ${elements.length} elements to ${merged.length} elements [errors=${
     errors.length}]`)
   if (errors.length > 0) {
     log.debug(`All merge errors:\n${errors.map(err => err.message).join('\n')}`)
   }
   return {
-    merged: updated,
+    merged,
     errors,
   }
 }

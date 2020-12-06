@@ -51,7 +51,7 @@ const { isDefined } = lowerDashValues
 
 export const metadataType = (element: Element): string => {
   if (isInstanceElement(element)) {
-    return metadataType(element.type)
+    return metadataType(element.getType())
   }
   if (isField(element)) {
     // We expect to reach to this place only with field of CustomObject
@@ -77,7 +77,7 @@ export const isFieldOfCustomObject = (field: Field): boolean =>
 // (before the custom objects filter turns it into a type).
 // To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
 export const isInstanceOfCustomObject = (element: Element): element is InstanceElement =>
-  isInstanceElement(element) && isCustomObject(element.type)
+  isInstanceElement(element) && isCustomObject(element.getType())
 
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
@@ -97,7 +97,7 @@ export const defaultApiName = (element: Element): string => {
 
 const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
-    return isCustomObject(elem.type)
+    return isCustomObject(elem.getType())
       ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
@@ -774,7 +774,7 @@ const transformCompoundValues = (
   instance: InstanceElement
 ): SalesforceRecord => {
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
-  const relevantCompoundFields = _.pickBy(instance.type.fields,
+  const relevantCompoundFields = _.pickBy(instance.getType().fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
     && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.type.elemID.isEqual(e))))
   if (_.isEmpty(relevantCompoundFields)) {
@@ -809,7 +809,7 @@ const toRecord = (
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
       instance.value,
-      (_v, k) => instance.type.fields[k]?.annotations[fieldAnnotationToFilterBy]
+      (_v, k) => instance.getType().fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
   return transformCompoundValues(filteredRecordValues, instance)
@@ -1275,7 +1275,7 @@ export const isMetadataInstanceElement = (
   elem?: Element
 ): elem is MetadataInstanceElement => (
   isInstanceElement(elem)
-  && isMetadataObjectType(elem.type)
+  && isMetadataObjectType(elem.getType())
   && elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
 )
 

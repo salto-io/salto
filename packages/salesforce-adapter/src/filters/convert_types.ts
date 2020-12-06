@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Element, isObjectType, ObjectType, isInstanceElement,
+  Element, isObjectType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
   transformValues,
@@ -37,12 +37,12 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => isObjectType(instance.type))
+      .filter(instance => isObjectType(instance.getType()))
       .forEach(instance => {
         instance.value = transformValues(
           {
             values: instance.value,
-            type: instance.type as ObjectType,
+            type: instance.getType(),
             transformFunc: transformPrimitive,
             strict: false,
           }

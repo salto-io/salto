@@ -24,7 +24,7 @@ import { CUSTOM_LIST } from '../constants'
 const { makeArray } = collections.array
 
 const isCustomListChange = (change: ModificationChange<InstanceElement>): boolean =>
-  getChangeElement(change).type.elemID.isEqual(customTypes[CUSTOM_LIST].elemID)
+  getChangeElement(change).refType.elemID.isEqual(customTypes[CUSTOM_LIST].elemID)
 
 const hasItemRemoval = (change: ModificationChange<InstanceElement>): boolean => {
   const beforeCustomList = change.data.before

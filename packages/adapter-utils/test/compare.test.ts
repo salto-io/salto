@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, PrimitiveTypes, Field } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, PrimitiveTypes, Field, ReferenceExpression } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '../src/compare'
 
 describe('detailedCompare', () => {
@@ -28,7 +28,7 @@ describe('detailedCompare', () => {
     })
     const before = new InstanceElement(
       'inst',
-      instType,
+      new ReferenceExpression(instType.elemID, instType),
       {
         before: 'Before',
         modify: 'Before',
@@ -36,7 +36,7 @@ describe('detailedCompare', () => {
     )
     const after = new InstanceElement(
       'inst',
-      instType,
+      new ReferenceExpression(instType.elemID, instType),
       {
         after: 'Before',
         modify: 'After',
@@ -278,9 +278,10 @@ describe('detailedCompare', () => {
 describe('applyDetailedChanges', () => {
   let inst: InstanceElement
   beforeAll(() => {
+    const instType = new ObjectType({ elemID: new ElemID('test', 'test') })
     inst = new InstanceElement(
       'test',
-      new ObjectType({ elemID: new ElemID('test', 'test') }),
+      new ReferenceExpression(instType.elemID, instType),
       { val: 1, rem: 0, nested: { mod: 1 } },
     )
     const changes: DetailedChange[] = [

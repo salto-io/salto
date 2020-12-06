@@ -401,7 +401,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     const instanceType = weightedRandomSelect(objectTypes)
     const record = new InstanceElement(
       name,
-      instanceType,
+      new ReferenceExpression(instanceType.elemID, instanceType),
       generateValue(instanceType),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
@@ -460,7 +460,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
         if (useOldProfile) {
           return [new InstanceElement(
             name,
-            oldProfileType,
+            new ReferenceExpression(oldProfileType.elemID, oldProfileType),
             {
               fullName: name,
               ObjectLevelPermissions: objectPermissions,
@@ -469,10 +469,11 @@ export const generateElements = (params: GeneratorParams): Element[] => {
             [DUMMY_ADAPTER, 'Records', 'Profile', name],
           )]
         }
+        const profileTypeRef = new ReferenceExpression(profileType.elemID, profileType)
         return [
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               fullName: name,
             },
@@ -480,7 +481,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
           ),
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               ObjectLevelPermissions: toFlatMap(objectPermissions, 'name'),
             },
@@ -488,7 +489,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
           ),
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               FieldLevelPermissions: toNestedMap(fieldPermissions, 'name'),
             },
@@ -496,7 +497,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
           ),
           new InstanceElement(
             name,
-            profileType,
+            profileTypeRef,
             {
               LayoutAssignments: toListMap(layoutAssignments, 'layout'),
             },

@@ -15,10 +15,11 @@
 */
 import _ from 'lodash'
 import { hash as hashUtils, types } from '@salto-io/lowerdash'
+// import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Element } from './elements'
+import { Element, ElementsSource } from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -79,7 +80,7 @@ export class StaticFile {
 
 export class ReferenceExpression {
   constructor(
-    public readonly elemId: ElemID,
+    public readonly elemID: ElemID,
     private resValue?: Value,
     public readonly topLevelParent?: Element
   ) {}
@@ -92,11 +93,11 @@ export class ReferenceExpression {
    */
   public createWithValue(resValue: Value, resTopLevelParent?: Element): ReferenceExpression {
     const ExpressionCtor = this.constructor as typeof ReferenceExpression
-    return new ExpressionCtor(this.elemId, resValue, resTopLevelParent)
+    return new ExpressionCtor(this.elemID, resValue, resTopLevelParent)
   }
 
   get traversalParts(): string[] {
-    return this.elemId.getFullNameParts()
+    return this.elemID.getFullNameParts()
   }
 
   get value(): Value {
@@ -104,20 +105,27 @@ export class ReferenceExpression {
       ? this.resValue.value
       : this.resValue
   }
+
+  getResolvedValue(elementsSource?: ElementsSource): Value {
+    if (this.resValue === undefined && elementsSource === undefined) {
+      throw new Error(`Can not resolve value of reference with ElemID ${this.elemID.getFullName()} without elementsSource cause value does not exist`)
+    }
+    return elementsSource?.getSync(this.elemID)
+  }
 }
 
 export class VariableExpression extends ReferenceExpression {
   constructor(
-    public readonly elemId: ElemID,
+    public readonly elemID: ElemID,
     resValue?: Value,
     public readonly topLevelParent?: Element
   ) {
-    super(elemId, resValue, topLevelParent)
+    super(elemID, resValue, topLevelParent)
     // This is to prevent programing errors since the parser will always create
     // VariableExpressions with idType === 'var'
-    if (elemId.idType !== 'var') {
-      throw new Error(`A variable expression must point to a variable, but ${elemId.getFullName()
-      } is a ${elemId.idType}`)
+    if (elemID.idType !== 'var') {
+      throw new Error(`A variable expression must point to a variable, but ${elemID.getFullName()
+      } is a ${elemID.idType}`)
     }
   }
 }
@@ -148,7 +156,7 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
       const fValue = f instanceof ReferenceExpression ? f.value : f
       const sValue = s instanceof ReferenceExpression ? s.value : s
       return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
-        ? f.elemId.isEqual(s.elemId)
+        ? f.elemID.isEqual(s.elemID)
         : isEqualValues(fValue, sValue)
     }
     if (typeof f === 'string' && typeof s === 'string') {

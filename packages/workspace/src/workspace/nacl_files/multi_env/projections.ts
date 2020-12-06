@@ -77,7 +77,7 @@ const projectInstance = (
     ? undefined
     : new InstanceElement(
       src.elemID.name,
-      src.type,
+      src.refType,
       projectedValue,
       src.path,
       projectedAnnotations

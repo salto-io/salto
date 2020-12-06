@@ -339,7 +339,7 @@ describe('Test Salto Expressions', () => {
       ) as [InstanceElement, ObjectType, PrimitiveType]
       expect(resObj.fields.f.type).toBe(resPrim)
       expect(resObj.annotationTypes.a).toBe(resPrim)
-      expect(resInst.type).toBe(resObj)
+      expect(resInst.getType()).toBe(resObj)
     })
   })
 

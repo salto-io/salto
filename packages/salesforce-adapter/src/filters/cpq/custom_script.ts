@@ -95,7 +95,7 @@ const transformInstanceToSFValues = (
 }
 
 const isInstanceOfCustomScript = (element: Element): element is InstanceElement =>
-  (isInstanceOfCustomObject(element) && apiName(element.type) === CPQ_CUSTOM_SCRIPT)
+  (isInstanceOfCustomObject(element) && apiName(element.getType()) === CPQ_CUSTOM_SCRIPT)
 
 const isCustomScriptType = (objType: ObjectType): boolean =>
   isCustomObject(objType) && apiName(objType) === CPQ_CUSTOM_SCRIPT
@@ -105,7 +105,7 @@ const getCustomScriptObjectChange = (
 ): Change<ObjectType> | undefined =>
   changes
     .filter(isObjectTypeChange)
-    .find(change => isCustomScriptType(getChangeElement(change)))
+    .find(change => isCustomScriptType(getChangeElement(change) as ObjectType))
 
 const applyFuncOnCustomScriptInstanceChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>,

@@ -60,7 +60,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .forEach(inst => castAndOrderListsRecursively(inst.type, inst.value))
+      .forEach(inst => castAndOrderListsRecursively(inst.getType(), inst.value))
   },
 })
 

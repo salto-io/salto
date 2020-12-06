@@ -13,10 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  InstanceElement, ElemID, Values, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, Values, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression } from '@salto-io/adapter-api'
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
 import mockClient from '../client'

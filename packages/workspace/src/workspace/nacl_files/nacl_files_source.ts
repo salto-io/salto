@@ -120,9 +120,9 @@ const getElementReferenced = (element: Element): ElemID[] => {
       referenced.push(getTypeOrContainerTypeID(field.type))
     }
     if (isReferenceExpression(value)) {
-      const { parent, path: valueIDPath } = value.elemId.createTopLevelParentID()
+      const { parent, path: valueIDPath } = value.elemID.createTopLevelParentID()
       const nestedIds = valueIDPath.map((_p, index) => parent.createNestedID(
-        value.elemId.idType,
+        value.elemID.idType,
         ...valueIDPath.slice(0, index + 1)
       ))
       referenced.push(parent, ...nestedIds)
@@ -135,7 +135,7 @@ const getElementReferenced = (element: Element): ElemID[] => {
       .map(field => getTypeOrContainerTypeID(field.type)))
   }
   if (isInstanceElement(element)) {
-    referenced.push(element.type.elemID)
+    referenced.push(element.refType.elemID)
   }
   referenced.push(...Object.values(element.annotationTypes)
     .map(anno => getTypeOrContainerTypeID(anno)))
@@ -428,6 +428,8 @@ const buildNaclFilesSource = (
       const baseElement = currentState.mergedElements[parent.getFullName()]
       return baseElement && !_.isEmpty(path) ? resolvePath(baseElement, id) : baseElement
     },
+
+    getSync: (_id: ElemID): Value => (''),
 
     getAll: async (): Promise<Element[]> => _.values((await getState()).mergedElements),
 

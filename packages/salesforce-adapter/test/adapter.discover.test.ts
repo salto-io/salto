@@ -305,7 +305,7 @@ describe('SalesforceAdapter fetch', () => {
         mockFlowType()
         const { elements: result } = await adapter.fetch()
         const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
-        expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
+        expect(flow.getType().elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
         expect(flow.value.bla.bla).toBe(55)
         expect(flow.value.bla.bla2).toBe(false)
         expect(flow.value.bla.bla3).toBe(true)
@@ -325,7 +325,7 @@ describe('SalesforceAdapter fetch', () => {
 
         const { elements: result } = await adapter.fetch()
         const flow = findElements(result, 'Flow', 'my_FlowInstance').pop() as InstanceElement
-        expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
+        expect(flow.getType().elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
         expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('FlowInstance')
       })
     })
@@ -420,7 +420,7 @@ describe('SalesforceAdapter fetch', () => {
         const { elements: result } = await adapter.fetch()
         const layout = findElements(result, 'Layout', 'Order_Order_Layout@bs').pop() as InstanceElement
         expect(layout).toBeDefined()
-        expect(layout.type.elemID).toEqual(LAYOUT_TYPE_ID)
+        expect(layout.getType().elemID).toEqual(LAYOUT_TYPE_ID)
         expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
         expect(layout.value.layoutSections.length).toBe(3)
         expect(layout.value.layoutSections[0].label).toBe('Description Information')
@@ -430,7 +430,7 @@ describe('SalesforceAdapter fetch', () => {
         expect(layout.value.layoutSections[1].label).toBe('Additional Information')
         expect(layout.value.layoutSections[2].style).toBe('CustomLinks')
         expect(
-          ((layout.type.fields.processMetadataValues.type as ListType)
+          ((layout.getType().fields.processMetadataValues.type as ListType)
             .innerType as ObjectType).fields.name.type.elemID.name
         ).toBe('string')
         expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
@@ -484,8 +484,8 @@ describe('SalesforceAdapter fetch', () => {
 
       const { elements: result } = await adapter.fetch()
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
-      expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
-      expect(isListType((flow.type as ObjectType).fields.listTest.type)).toBeTruthy()
+      expect(flow.getType().elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
+      expect(isListType((flow.getType()).fields.listTest.type)).toBeTruthy()
 
       expect(flow.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow', 'instance', 'FlowInstance'))
       expect(flow.value.listTest[0].field).toEqual('Field1')

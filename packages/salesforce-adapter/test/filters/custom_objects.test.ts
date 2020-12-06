@@ -1412,7 +1412,7 @@ describe('Custom Objects filter', () => {
           const instanceName = 'Lead_DoSomething'
           const quickActionInstance = createQuickActionInstance(instanceName, 'Lead.DoSomething')
           beforeEach(async () => {
-            await filter.onFetch([quickActionInstance, quickActionInstance.type, leadType])
+            await filter.onFetch([quickActionInstance, quickActionInstance.getType(), leadType])
           })
 
           it('should set quickAction instance path correctly', async () => {
@@ -1430,7 +1430,7 @@ describe('Custom Objects filter', () => {
           const instanceName = 'DoSomething'
           const quickActionInstance = createQuickActionInstance(instanceName, 'DoSomething')
           beforeEach(async () => {
-            await filter.onFetch([quickActionInstance, quickActionInstance.type, leadType])
+            await filter.onFetch([quickActionInstance, quickActionInstance.getType(), leadType])
           })
 
           it('should not edit quickAction instance path', async () => {

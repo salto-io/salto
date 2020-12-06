@@ -64,7 +64,7 @@ export const expectInstancesToMatch = (
 ): void => {
   expect(expected.elemID).toEqual(actual.elemID)
   expect(expected.value).toEqual(actual.value)
-  expect(expected.type.elemID).toEqual(actual.type.elemID)
+  expect(expected.refType.elemID).toEqual(actual.refType.elemID)
   expect(expected.annotations).toEqual(actual.annotations)
 }
 

@@ -70,7 +70,7 @@ const extractReferenceTo = (annotations: Values): (string | undefined)[] => (
   makeArray(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).map(
     (ref: ReferenceExpression | string): string | undefined => (
       isReferenceExpression(ref)
-        ? ref.elemId.typeName
+        ? ref.elemID.typeName
         : ref
     )
   )
@@ -1452,7 +1452,7 @@ describe('Salesforce adapter E2E with real account', () => {
             ref: ReferenceExpression | string | undefined
           ): string | undefined => {
             if (isReferenceExpression(ref)) {
-              const elem = findElement(result, ref.elemId)
+              const elem = findElement(result, ref.elemID)
               return elem
                 // adding fallback for partially-resolved elements
                 ? apiName(elem) || elem.elemID.typeName

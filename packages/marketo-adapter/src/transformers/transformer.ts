@@ -13,15 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes, TypeElement,
-  TypeMap,
-  Values,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, TypeElement, TypeMap, Values } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { LeadAttribute, Field, MarketoMetadata } from '../client/types'
 import { FIELD_TYPES, MARKETO, SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } from '../constants'

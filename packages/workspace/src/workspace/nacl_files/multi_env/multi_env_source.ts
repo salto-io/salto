@@ -245,6 +245,7 @@ const buildMultiEnvSource = (
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]
     ),
+    getSync: (_id: ElemID): Value => (''),
     getAll: async (env?: string): Promise<Element[]> => (env === undefined
       ? _.values((await getState()).elements)
       // When we get an env override we don't want to keep that state

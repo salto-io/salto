@@ -87,7 +87,7 @@ const createPartialWorkflowInstance = (
         )
       ),
     },
-    fullInstance.type,
+    fullInstance.getType(),
     undefined,
     fullInstance.annotations,
   )
@@ -99,7 +99,7 @@ const createDummyWorkflowInstance = (
   // Unfortunately we do not have access to the real workflow type here so we create it hard coded
   // using as much known information as possible
   const realFieldTypes = _.keyBy(
-    changes.map(getChangeElement).map(inst => inst.type),
+    changes.map(getChangeElement).map(inst => inst.getType()),
     metadataType,
   )
   const dummyFieldType = (typeName: string): ObjectType => new ObjectType({

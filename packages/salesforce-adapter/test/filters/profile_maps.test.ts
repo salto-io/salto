@@ -362,7 +362,7 @@ describe('ProfileMaps filter', () => {
       })
 
       await filter.onDeploy([{ action: 'add', data: { after: inst } }])
-      expect(inst.type).toEqual(generateProfileType())
+      expect(inst.getType()).toEqual(generateProfileType())
       expect(profileObj).toEqual(generateProfileType())
       expect(Array.isArray(inst.value.fieldPermissions)).toBeTruthy()
     })

@@ -100,7 +100,7 @@ const createInstanceElementFromNestedAdditions = (
   })
   return new InstanceElement(
     commonInstance.elemID.name,
-    commonInstance.type,
+    commonInstance.refType,
     value,
     path
   )

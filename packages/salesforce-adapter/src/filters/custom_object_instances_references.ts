@@ -39,7 +39,7 @@ const replaceReferenceValues = (
   const instancesByType = _.mapValues(
     _.groupBy(
       instances,
-      instance => apiName(instance.type, true)
+      instance => apiName(instance.getType(), true)
     ),
     typeInstances =>
       _.keyBy(
@@ -75,7 +75,7 @@ const replaceLookupsWithReferences = (elements: Element[]): void => {
   customObjectInstances.forEach(instance => {
     instance.value = replaceReferenceValues(
       instance.value,
-      instance.type,
+      instance.getType(),
       customObjectInstances,
     )
   })

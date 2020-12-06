@@ -71,10 +71,10 @@ const neighborContextFunc = ({
   }
 
   const resolveReference = (context: ReferenceExpression, path?: ElemID): string | undefined => {
-    const contextField = getField(instance.type, fieldPath.createTopLevelParentID().path)
+    const contextField = getField(instance.getType(), fieldPath.createTopLevelParentID().path)
     const refWithValue = new ReferenceExpression(
-      context.elemId,
-      context.value ?? elemByElemID[context.elemId.getFullName()],
+      context.elemID,
+      context.value ?? elemByElemID[context.elemID.getFullName()],
     )
     return getLookUpName({ ref: refWithValue, field: contextField, path })
   }
@@ -132,7 +132,7 @@ const ContextStrategyLookup: Record<
   instanceParent: ({ instance, elemByElemID }) => {
     const parent = getParents(instance)[0]
     return (isReferenceExpression(parent)
-      ? apiName(elemByElemID[parent.elemId.getFullName()])
+      ? apiName(elemByElemID[parent.elemID.getFullName()])
       : undefined)
   },
   neighborTypeLookup: neighborContextFunc({ contextFieldName: 'type' }),
@@ -217,7 +217,7 @@ const replaceReferenceValues = (
   return transformValues(
     {
       values: instance.value,
-      type: instance.type,
+      type: instance.getType(),
       transformFunc: transformPrimitive,
       strict: false,
       pathID: instance.elemID,

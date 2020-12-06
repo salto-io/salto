@@ -17,6 +17,7 @@ import { Element, ElemID, Value } from '@salto-io/adapter-api'
 
 export interface ElementsSource {
   list(): Promise<ElemID[]>
+  getSync(id: ElemID): Value
   get(id: ElemID): Promise<Element | Value>
   getAll(): Promise<Element[]>
   flush(): Promise<void>

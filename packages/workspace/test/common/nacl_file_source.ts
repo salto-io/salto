@@ -34,6 +34,11 @@ export const createMockNaclFileSource = (
     const element = elements.find(e => e.elemID.getFullName() === parent.getFullName())
     return element && !_.isEmpty(idPath) ? resolvePath(element, id) : element
   },
+  getSync: (id: ElemID) => {
+    const { parent, path: idPath } = id.createTopLevelParentID()
+    const element = elements.find(e => e.elemID.getFullName() === parent.getFullName())
+    return element && !_.isEmpty(idPath) ? resolvePath(element, id) : element
+  },
   getAll: async () => elements,
   clear: jest.fn().mockImplementation(() => Promise.resolve()),
   rename: jest.fn().mockImplementation(() => Promise.resolve()),

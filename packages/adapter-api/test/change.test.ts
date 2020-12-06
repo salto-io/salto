@@ -17,6 +17,7 @@ import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } fro
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeElements } from '../src/change'
+import { ReferenceExpression } from '../src/values'
 
 describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
@@ -24,7 +25,7 @@ describe('change.ts', () => {
     elemID: objElemID,
     fields: { field: { type: BuiltinTypes.STRING } },
   })
-  const inst = new InstanceElement('inst', obj, { field: 'val' })
+  const inst = new InstanceElement('inst', new ReferenceExpression(obj.elemID, obj), { field: 'val' })
 
   it('should getChangeElement for removal change', () => {
     const elem = getChangeElement({
@@ -78,7 +79,6 @@ describe('change.ts', () => {
     expect(elems).toEqual([field, otherField])
   })
 
-
   describe('isChange Functions', () => {
     let instChange: Change<InstanceElement>
     let objChange: Change<ObjectType>
@@ -94,7 +94,7 @@ describe('change.ts', () => {
         elemID: new ElemID('test', 'type'),
         fields: { field: { type: primType } },
       })
-      const instance = new InstanceElement('inst', objType)
+      const instance = new InstanceElement('inst', new ReferenceExpression(objType.elemID, objType))
       const createChange = <T>(elem: T): Change<T> => ({ action: 'add', data: { after: elem } })
 
       instChange = createChange(instance)

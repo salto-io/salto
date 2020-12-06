@@ -110,7 +110,7 @@ export default class HubspotAdapter implements AdapterOperations {
   private async add(instance: InstanceElement): Promise<InstanceElement> {
     const resolved = resolveValues(instance, getLookUpName)
     const resp = await this.client.createInstance(
-      resolved.type.elemID.name,
+      resolved.refType.elemID.name,
       await createHubspotMetadataFromInstanceElement(resolved.clone(), this.client)
     )
     return restoreValues(
@@ -128,7 +128,7 @@ export default class HubspotAdapter implements AdapterOperations {
   private async remove(instance: InstanceElement): Promise<void> {
     const resolved = resolveValues(instance, getLookUpName)
     await this.client.deleteInstance(
-      resolved.type.elemID.name,
+      resolved.refType.elemID.name,
       resolved.value as HubspotMetadata
     )
   }
@@ -147,7 +147,7 @@ export default class HubspotAdapter implements AdapterOperations {
     const resolvedAfter = resolveValues(after, getLookUpName)
     validateFormGuid(resolvedBefore, resolvedAfter)
     const resp = await this.client.updateInstance(
-      resolvedAfter.type.elemID.name,
+      resolvedAfter.refType.elemID.name,
       await createHubspotMetadataFromInstanceElement(resolvedAfter.clone(), this.client)
     )
     return restoreValues(

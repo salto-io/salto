@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { Keywords } from '../../../language'
 import { ParseContext, ConsumerReturnType } from '../types'
@@ -110,10 +110,7 @@ const consumeInstanceElement = (
   }
   const instance = new InstanceElement(
     instanceName,
-    new ObjectType({
-      elemID: typeID,
-      isSettings: instanceName === ElemID.CONFIG_NAME && !typeID.isConfig(),
-    })
+    new ReferenceExpression(typeID)
   )
   const consumedBlockBody = consumeBlockBody(context, instance.elemID)
 

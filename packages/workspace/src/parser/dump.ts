@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   TypeElement, Field, isObjectType, PrimitiveTypes, TypeMap, isListType, isPrimitiveType, Element,
-  isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, isMapType,
+  isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, isMapType, ElemID,
 } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 
@@ -51,6 +51,10 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
+const strFromElemID = (elemID: ElemID): string => ([elemID.adapter, elemID.name]
+  .filter(part => !_.isEmpty(part))
+  .join(Keywords.NAMESPACE_SEPARATOR))
+
 export const dumpElemID = (type: TypeElement): string => {
   if (type.elemID.isConfig()) {
     return type.elemID.adapter
@@ -61,9 +65,7 @@ export const dumpElemID = (type: TypeElement): string => {
   if (isMapType(type)) {
     return `${Keywords.MAP_PREFIX}${dumpElemID(type.innerType)}${Keywords.GENERICS_SUFFIX}`
   }
-  return [type.elemID.adapter, type.elemID.name]
-    .filter(part => !_.isEmpty(part))
-    .join(Keywords.NAMESPACE_SEPARATOR)
+  return strFromElemID(type.elemID)
 }
 
 const dumpAttributes = async (value: Value, functions: Functions): Promise<Value> => {
@@ -138,8 +140,8 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
   }
   if (isInstanceElement(elem)) {
     return {
-      type: dumpElemID(elem.type),
-      labels: elem.elemID.isConfig() || elem.type.isSettings
+      type: strFromElemID(elem.refType.elemID),
+      labels: elem.elemID.isConfig() || elem.refType.elemID.isConfig()
       || elem.elemID.name === '_config' // TODO: should inject the correct type
         ? []
         : [elem.elemID.name],

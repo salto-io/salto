@@ -43,10 +43,10 @@ const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType,
   getElemIdFunc?: ElemIdGetter): InstanceElement => {
   const getInstanceName = (transformedValues: Values): string => {
-    if (!isCustomType(type) && !isFileCabinetType(type)) {
+    if (!isCustomType(type.elemID) && !isFileCabinetType(type.elemID)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    const serviceIdFieldName = isCustomType(type) ? SCRIPT_ID : PATH
+    const serviceIdFieldName = isCustomType(type.elemID) ? SCRIPT_ID : PATH
     const serviceIds: ServiceIds = {
       [ADAPTER]: NETSUITE,
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
@@ -201,28 +201,28 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     }
     return String(value)
   }
-
+  const instanceType = instance.getType()
   const transformedValues = transformValues({
     values: instance.value,
-    type: instance.type,
+    type: instanceType,
     transformFunc: transformPrimitive,
   }) || {}
 
-  const typeName = instance.type.elemID.name
+  const typeName = instance.refType.elemID.name
 
   const sortedValues = shouldSortValues(typeName)
     ? sortValuesBasedOnType(typeName, transformedValues, instance.elemID)
     : transformedValues
 
-  const values = restoreAttributes(sortedValues, instance.type, instance.elemID)
+  const values = restoreAttributes(sortedValues, instanceType, instance.elemID)
 
-  const fileContentField = Object.values(instance.type.fields)
+  const fileContentField = Object.values(instanceType.fields)
     .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
 
-  if (isFileCabinetType(instance.type)) {
+  if (isFileCabinetType(instance.refType.elemID)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
-    if (instance.type.elemID.isEqual(fileCabinetTypes[FILE].elemID)) {
+    if (instanceType.elemID.isEqual(fileCabinetTypes[FILE].elemID)) {
       const contentFieldName = (fileContentField as Field).name
       const fileContent = values[contentFieldName]
       delete values[contentFieldName]
@@ -234,7 +234,7 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
-    && isCustomType(instance.type)) {
+    && isCustomType(instance.refType.elemID)) {
     const fileContent = values[fileContentField.name]
     delete values[fileContentField.name]
     return {
@@ -249,7 +249,7 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
 }
 
 export const serviceId = (instance: InstanceElement): string =>
-  instance.value[isCustomType(instance.type) ? SCRIPT_ID : PATH]
+  instance.value[isCustomType(instance.refType.elemID) ? SCRIPT_ID : PATH]
 
 const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {
   if (elemId.isTopLevel()) {
@@ -264,15 +264,15 @@ const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): stri
 }
 
 export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
-  const { elemId, value, topLevelParent } = ref
+  const { elemID, value, topLevelParent } = ref
   if (!isInstanceElement(topLevelParent)) {
     return value
   }
-  if (isFileCabinetType(topLevelParent.type) && elemId.name === PATH) {
+  if (isFileCabinetType(topLevelParent.refType.elemID) && elemID.name === PATH) {
     return `[${value}]`
   }
-  if (isCustomType(topLevelParent.type) && elemId.name === SCRIPT_ID) {
-    return `[${SCRIPT_ID}=${getScriptIdParts(topLevelParent, elemId).join('.')}]`
+  if (isCustomType(topLevelParent.refType.elemID) && elemID.name === SCRIPT_ID) {
+    return `[${SCRIPT_ID}=${getScriptIdParts(topLevelParent, elemID).join('.')}]`
   }
   return value
 }

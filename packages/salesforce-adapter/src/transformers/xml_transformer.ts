@@ -320,7 +320,7 @@ const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => 
 
   transformValues({
     values: instance.value,
-    type: instance.type,
+    type: instance.getType(),
     transformFunc: createPathsSetCallback,
     pathID: instance.elemID,
     strict: false,

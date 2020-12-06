@@ -42,7 +42,7 @@ const addNestedInstanceRemovalsToPackage = (
   )
 
   nestedTypeInfo.nestedInstanceFields.forEach(fieldName => {
-    const rawFieldType = changeElem.type.fields[fieldName]?.type
+    const rawFieldType = changeElem.getType().fields[fieldName]?.type
     // We generally expect these to be lists, handling non list types just in case of a bug
     const fieldType = isContainerType(rawFieldType) ? rawFieldType.innerType : rawFieldType
     if (!isMetadataObjectType(fieldType)) {

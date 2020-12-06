@@ -104,7 +104,7 @@ describe('Test utils.ts', () => {
 
   const mockInstance = new InstanceElement(
     'mockInstance',
-    mockType,
+    new ReferenceExpression(mockType.elemID, mockType),
     {
       ref: valueRef,
       str: 'val',
@@ -387,7 +387,7 @@ describe('Test utils.ts', () => {
               const field = getField(mockType, path, mockInstance.value)
               const calls = transformFunc.mock.calls.map(c => c[0]).filter(
                 c => c.field && c.field.name === field.name
-                && c.value === _.get(mockInstance.value, path)
+                  && c.value === _.get(mockInstance.value, path)
               )
               expect(calls).toHaveLength(1)
               expect(calls[0].path).toBeUndefined()
@@ -498,7 +498,7 @@ describe('Test utils.ts', () => {
               )
               const calls = transformFunc.mock.calls.map(c => c[0]).filter(
                 c => c.field && c.field.name === field.name
-                && c.value === value
+                  && c.value === value
               )
               expect(calls).toHaveLength(1)
               expect(calls[0].path).toBeUndefined()
@@ -694,7 +694,7 @@ describe('Test utils.ts', () => {
       })
       inst = new InstanceElement(
         'test',
-        objType,
+        new ReferenceExpression(objType.elemID, objType),
         { f1: 'a', f2: [1, 2, 3], f3: false },
         undefined,
         { [INSTANCE_ANNOTATIONS.PARENT]: ['me'] },
@@ -833,38 +833,42 @@ describe('Test utils.ts', () => {
 
     const firstRef = new InstanceElement(
       'first',
-      refType,
+      new ReferenceExpression(refType.elemID, refType),
       { from: 'Milano', to: 'Minsk', obj: { a: 1 } }
     )
-    const instance = new InstanceElement('instance', element, {
-      name: instanceName,
-      fileValue: valueFile,
-      refValue: valueRef,
-      objValue: new ReferenceExpression(
-        firstRef.elemID.createNestedID('obj'), firstRef.value.obj, firstRef,
-      ),
-      into: new TemplateExpression({
-        parts: [
-          'Well, you made a long journey from ',
-          refTo(firstRef, 'from'),
-          ' to ',
-          refTo(firstRef, 'to'),
-          ', Rochelle Rochelle',
+    const instance = new InstanceElement(
+      'instance',
+      new ReferenceExpression(element.elemID, element),
+      {
+        name: instanceName,
+        fileValue: valueFile,
+        refValue: valueRef,
+        objValue: new ReferenceExpression(
+          firstRef.elemID.createNestedID('obj'), firstRef.value.obj, firstRef,
+        ),
+        into: new TemplateExpression({
+          parts: [
+            'Well, you made a long journey from ',
+            refTo(firstRef, 'from'),
+            ' to ',
+            refTo(firstRef, 'to'),
+            ', Rochelle Rochelle',
+          ],
+        }),
+        arrayValues: [
+          regValue,
+          valueRef,
         ],
-      }),
-      arrayValues: [
-        regValue,
-        valueRef,
-      ],
-      mapValues: {
-        regValue,
-        valueRef,
+        mapValues: {
+          regValue,
+          valueRef,
+        },
       },
-    },
-    [],
-    {
-      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
-    },)
+      [],
+      {
+        [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
+      }
+    )
     const elementRef = new ReferenceExpression(element.elemID, element, element)
 
     const sourceElement = new ObjectType({
@@ -1195,7 +1199,7 @@ describe('Test utils.ts', () => {
     })
 
     it('should set annotation type path', () => {
-      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno',), BuiltinTypes.NUMBER)
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno'), BuiltinTypes.NUMBER)
       expect(clonedMockType.annotationTypes.testAnno).toEqual(BuiltinTypes.NUMBER)
     })
 
@@ -1222,7 +1226,7 @@ describe('Test utils.ts', () => {
     })
 
     it('should unset annotation type path', () => {
-      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno',), undefined)
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno'), undefined)
       expect('testAnno' in clonedMockType.annotationTypes).toBeFalsy()
     })
 
@@ -1311,10 +1315,10 @@ describe('Test utils.ts', () => {
       annotationTypes: {},
       annotations: {},
     })
-
+    const otRef = new ReferenceExpression(ot.elemID, ot)
     const instances = [
-      new InstanceElement('1', ot, {}),
-      new InstanceElement('2', ot, {}),
+      new InstanceElement('1', otRef, {}),
+      new InstanceElement('2', otRef, {}),
     ]
     const elements = [primStr, primStr, ot, ...instances]
     describe('findElements', () => {
@@ -1450,13 +1454,19 @@ describe('Test utils.ts', () => {
         map: { type: new MapType(BuiltinTypes.STRING) },
       },
     })
-    const inst = new InstanceElement('inst', obj, {
-      obj: { str: 'Well I do', num: 42 },
-      list: ['Do', 'you', 'get', 'it', '?'],
-      map: { Do: 'you?' },
-    }, [], {
-      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ObjectType({ elemID: new ElemID('salto', 'dep') })],
-    })
+    const inst = new InstanceElement(
+      'inst',
+      new ReferenceExpression(obj.elemID, obj),
+      {
+        obj: { str: 'Well I do', num: 42 },
+        list: ['Do', 'you', 'get', 'it', '?'],
+        map: { Do: 'you?' },
+      },
+      [],
+      {
+        [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ObjectType({ elemID: new ElemID('salto', 'dep') })],
+      }
+    )
     const prim = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
       annotationTypes: {
@@ -1662,17 +1672,22 @@ describe('Test utils.ts', () => {
         base: { type: base },
       },
     })
+    const nestedTypeRef = new ReferenceExpression(nested.elemID, nested)
     const ins1 = new InstanceElement(
       'ins',
-      nested,
+      nestedTypeRef,
       { field1: 'ins1', field2: 'ins1' },
       undefined,
       { anno: 1 },
     )
-    const shouldUseFieldDef = new InstanceElement('ins', nested, {
-      field2: 'ins1',
-      base: { field1: 'ins2', field2: 'ins2' },
-    })
+    const shouldUseFieldDef = new InstanceElement(
+      'ins',
+      nestedTypeRef,
+      {
+        field2: 'ins1',
+        base: { field1: 'ins2', field2: 'ins2' },
+      }
+    )
 
     it('should use field defaults', () => {
       const elements = [shouldUseFieldDef.clone()]
@@ -1689,10 +1704,14 @@ describe('Test utils.ts', () => {
     })
 
     it('should use type defaults', () => {
-      const shouldUseTypeDef = new InstanceElement('ins', nested, {
-        field1: 'ins1',
-        base: { field1: 'ins2', field2: 'ins2' },
-      })
+      const shouldUseTypeDef = new InstanceElement(
+        'ins',
+        nestedTypeRef,
+        {
+          field1: 'ins1',
+          base: { field1: 'ins2', field2: 'ins2' },
+        }
+      )
       const elements = [shouldUseTypeDef]
       applyInstancesDefaults(elements)
       expect(shouldUseTypeDef.value).toEqual({
@@ -1758,7 +1777,7 @@ describe('Test utils.ts', () => {
 
       const instanceWithNoValues = new InstanceElement(
         'instance',
-        typeWithNestedDefaults,
+        new ReferenceExpression(typeWithNestedDefaults.elemID, typeWithNestedDefaults),
       )
 
       const elements = [instanceWithNoValues]
@@ -1783,7 +1802,11 @@ describe('Test utils.ts', () => {
         },
       })
       expect(createDefaultInstanceFromType('test', configType))
-        .toEqual(new InstanceElement('test', configType, { val1: 'test' }))
+        .toEqual(new InstanceElement(
+          'test',
+          new ReferenceExpression(configType.elemID, configType),
+          { val1: 'test' }
+        ))
     })
   })
 
@@ -1854,11 +1877,13 @@ describe('Test utils.ts', () => {
 
   describe('getParents', () => {
     let result: ReturnType<typeof getParents>
+    const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
+    const objRef = new ReferenceExpression(obj.elemID, obj)
     describe('for an element with parents', () => {
       beforeEach(() => {
         const inst = new InstanceElement(
           'test',
-          new ObjectType({ elemID: new ElemID('test', 'test') }),
+          objRef,
           {},
           undefined,
           { [INSTANCE_ANNOTATIONS.PARENT]: ['a', 'b'] },
@@ -1873,7 +1898,7 @@ describe('Test utils.ts', () => {
       beforeEach(() => {
         const inst = new InstanceElement(
           'test',
-          new ObjectType({ elemID: new ElemID('test', 'test') }),
+          objRef,
           {},
         )
         result = getParents(inst)

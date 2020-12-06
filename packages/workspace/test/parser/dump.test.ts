@@ -99,7 +99,7 @@ describe('Salto Dump', () => {
       ],
     },
     // eslint-disable-next-line no-template-curly-in-string
-    multiLineString: 'This\nis\nmultilinestring\n${foo} needs Escaping',
+    multiLineString: 'This\nis\nmultilinestring\n${foo} "needs" Escaping',
     // eslint-disable-next-line no-template-curly-in-string
     stringNeedsEscaping: 'This string ${needs} escaping',
   })
@@ -225,7 +225,7 @@ describe('Salto Dump', () => {
       })
       it('has multiline string', () => {
         expect(body).toMatch(
-          /multiLineString = '''\n\s*This\s*\nis\s*\nmultilinestring\s*\n\s*\\\$\{foo\} needs Escaping\s*\n'''/m,
+          /multiLineString = '''\n\s*This\s*\nis\s*\nmultilinestring\s*\n\s*\\\$\{foo\} "needs" Escaping\s*\n'''/m,
         )
       })
       it('Has escaped string', () => {

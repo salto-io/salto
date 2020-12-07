@@ -171,6 +171,13 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         is
         Multiline
         '''
+        withSpaces = '''
+        Give me some 
+        OK?
+        '''
+        withQuotes = '''
+          "I can see Russia from my house!"
+        '''
       }
 
       type salesforce.stringAttr {
@@ -616,6 +623,14 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       it('should have a multiline string field', () => {
         expect(multilineObject.annotations).toHaveProperty('data')
         expect(multilineObject.annotations.data).toEqual('        This\n        is\n        Multiline')
+      })
+      it('should preserve end of line spaces', () => {
+        expect(multilineObject.annotations).toHaveProperty('withSpaces')
+        expect(multilineObject.annotations.withSpaces).toEqual('        Give me some \n        OK?')
+      })
+      it('should handle qoutation marks inside the multiline string', () => {
+        expect(multilineObject.annotations).toHaveProperty('withQuotes')
+        expect(multilineObject.annotations.withQuotes).toEqual('          "I can see Russia from my house!"')
       })
     })
 

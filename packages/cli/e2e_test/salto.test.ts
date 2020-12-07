@@ -71,8 +71,8 @@ describe('cli e2e', () => {
     jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
       () => Promise.resolve('default')
     )
-    jest.spyOn(callbacksImpl, 'getCredentialsFromUser')
-      .mockResolvedValue(getSalesforceCredsInstance(credsLease.value))
+    jest.spyOn(callbacksImpl, 'getCredentialsFromUser').mockImplementation(() =>
+      Promise.resolve(getSalesforceCredsInstance(credsLease.value)))
   })
 
   afterAll(workspaceHelpersCleanup)

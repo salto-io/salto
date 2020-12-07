@@ -181,8 +181,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
 
   const getFieldType = (allowContainers = false): TypeElement => {
     const fieldTypeOptions = [
-      Object.values(BuiltinTypes).filter(type =>
-        ![BuiltinTypes.UNKNOWN, BuiltinTypes.HIDDEN_STRING].includes(type)),
+      Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN),
       weightedRandomSelect(primitiveByRank.slice(0, -1)) || [],
       weightedRandomSelect(objByRank.slice(0, -1)) || [],
     ]
@@ -311,9 +310,14 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       () => {
         const name = getName()
         const fieldType = getFieldType(true)
-        return [name, { type: fieldType,
-          annotations:
-          generateAnnotations(fieldType.annotationTypes) }]
+        return [name, {
+          type: fieldType,
+          annotations: generateAnnotations(
+            // don't generate random annotations for builtin types, even if they
+            // support additional annotation types
+            fieldType === BuiltinTypes.HIDDEN_STRING ? {} : fieldType.annotationTypes
+          ),
+        }]
       }
     )
   )

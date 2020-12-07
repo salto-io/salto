@@ -17,18 +17,14 @@ import * as core from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import envDef from '../../src/commands/env'
-import { CliExitCode } from '../../src/types'
-import { getSubCommandAction } from '../utils'
-import { CommandAction } from '../../src/command_builder'
-
-const { subCommands } = envDef
+import { createAction, setAction, currentAction, listAction, deleteAction, renameAction } from '../../src/commands/env'
+import { CliExitCode, CliTelemetry } from '../../src/types'
 
 jest.mock('@salto-io/core')
 describe('env command group', () => {
   let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const config = { shouldCalcTotalSize: true }
-  let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
 
   beforeEach(async () => {
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -38,16 +34,6 @@ describe('env command group', () => {
   })
 
   describe('create command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let createAction: CommandAction<any>
-    beforeAll((() => {
-      const createSubCommandAction = getSubCommandAction(subCommands, 'create')
-      expect(createSubCommandAction).toBeDefined()
-      if (createSubCommandAction !== undefined) {
-        createAction = createSubCommandAction
-      }
-    }))
-
     it('should create a new environment', async () => {
       await createAction({
         input: {
@@ -55,7 +41,7 @@ describe('env command group', () => {
         },
         output,
         config,
-        telemetry,
+        cliTelemetry,
       })
       expect(output.stdout.content.search('new-env')).toBeGreaterThan(0)
     })
@@ -84,7 +70,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
@@ -103,7 +89,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
@@ -120,7 +106,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -135,7 +121,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -150,7 +136,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -169,7 +155,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -185,7 +171,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -204,7 +190,7 @@ describe('env command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
         })
         expect(output.stdout.content.search('me3')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -214,22 +200,13 @@ describe('env command group', () => {
   })
 
   describe('set command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let setAction: CommandAction<any>
-    beforeAll((() => {
-      const setSubCommandAction = getSubCommandAction(subCommands, 'set')
-      expect(setSubCommandAction).toBeDefined()
-      if (setSubCommandAction !== undefined) {
-        setAction = setSubCommandAction
-      }
-    }))
     it('should set an environment', async () => {
       await setAction({
         input: {
           envName: 'active',
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
@@ -237,20 +214,11 @@ describe('env command group', () => {
   })
 
   describe('current command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let currentAction: CommandAction<any>
-    beforeAll((() => {
-      const currentSubCommandAction = getSubCommandAction(subCommands, 'current')
-      expect(currentSubCommandAction).toBeDefined()
-      if (currentSubCommandAction !== undefined) {
-        currentAction = currentSubCommandAction
-      }
-    }))
     it('should display the current environment', async () => {
       await currentAction({
         input: {},
         output,
-        telemetry,
+        cliTelemetry,
         config,
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
@@ -258,20 +226,11 @@ describe('env command group', () => {
   })
 
   describe('list command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let listAction: CommandAction<any>
-    beforeAll((() => {
-      const listSubCommandAction = getSubCommandAction(subCommands, 'list')
-      expect(listSubCommandAction).toBeDefined()
-      if (listSubCommandAction !== undefined) {
-        listAction = listSubCommandAction
-      }
-    }))
     it('should list all environments', async () => {
       await listAction({
         input: {},
         output,
-        telemetry,
+        cliTelemetry,
         config,
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
@@ -280,22 +239,13 @@ describe('env command group', () => {
   })
 
   describe('delete command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let deleteAction: CommandAction<any>
-    beforeAll((() => {
-      const deleteSubCommandAction = getSubCommandAction(subCommands, 'delete')
-      expect(deleteSubCommandAction).toBeDefined()
-      if (deleteSubCommandAction !== undefined) {
-        deleteAction = deleteSubCommandAction
-      }
-    }))
     it('should display the deleted environment', async () => {
       await deleteAction({
         input: {
           envName: 'inactive',
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
       })
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
@@ -303,16 +253,6 @@ describe('env command group', () => {
   })
 
   describe('rename command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let renameAction: CommandAction<any>
-    beforeAll((() => {
-      const renameSubCommandAction = getSubCommandAction(subCommands, 'rename')
-      expect(renameSubCommandAction).toBeDefined()
-      if (renameSubCommandAction !== undefined) {
-        renameAction = renameSubCommandAction
-      }
-    }))
-
     it('should display renamed environment', async () => {
       const result = await renameAction({
         input: {
@@ -320,7 +260,7 @@ describe('env command group', () => {
           newName: 'new-inactive',
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
       })
       expect(result).toBe(CliExitCode.Success)

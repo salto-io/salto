@@ -32,12 +32,21 @@ export enum CliExitCode {
 }
 
 export class CliError extends Error {
+  // The constructor of CliError does not have message as a param becuase
+  // the message would not written to stderr at any time in the flow
+  // When using it handle the writing yourself
   constructor(
-    message: string,
     readonly exitCode: CliExitCode,
   ) {
-    super(message)
+    super('')
   }
+}
+
+export type CliArgs = {
+  telemetry: Telemetry
+  config: CommandConfig
+  output: CliOutput
+  spinnerCreator?: SpinnerCreator
 }
 
 export interface Spinner {

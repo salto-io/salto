@@ -16,18 +16,13 @@
 import { Workspace } from '@salto-io/workspace'
 import * as core from '@salto-io/core'
 import { ElemID } from '@salto-io/adapter-api'
-import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
-import elementDef from '../../src/commands/element'
+import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
+import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
-import { getSubCommandAction } from '../utils'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
-import { buildEventName } from '../../src/telemetry'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 import Prompts from '../../src/prompts'
 import { formatTargetEnvRequired } from '../../src/formatter'
-
-import { CommandAction } from '../../src/command_builder'
-
-const { subCommands } = elementDef
 
 const eventsNames = (cmdName: string): Record<string, string> => ({
   success: buildEventName(cmdName, 'success'),
@@ -67,22 +62,15 @@ describe('Element command group', () => {
 
   let result: number
   let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
 
   describe('Clone command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let cloneAction: CommandAction<any>
     const cloneName = 'clone'
-    beforeAll((() => {
-      const cloneSubCommandAction = getSubCommandAction(subCommands, cloneName)
-      expect(cloneSubCommandAction).toBeDefined()
-      if (cloneSubCommandAction !== undefined) {
-        cloneAction = cloneSubCommandAction
-      }
-    }))
     describe('with errored workspace', () => {
       beforeEach(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         const erroredWorkspace = {
           hasErrors: () => true,
           errors: { strings: () => ['some error'] },
@@ -97,7 +85,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
         })
@@ -122,6 +110,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -134,7 +123,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -163,6 +152,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -175,7 +165,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -215,6 +205,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -228,7 +219,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -264,6 +255,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -276,7 +268,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -304,6 +296,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -316,7 +309,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -343,6 +336,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -355,7 +349,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -382,6 +376,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, cloneName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -394,7 +389,7 @@ describe('Element command group', () => {
             force: false,
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -417,16 +412,7 @@ describe('Element command group', () => {
   })
 
   describe('move-to-envs command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let moveToEnvsAction: CommandAction<any>
     const moveToEnvsName = 'move-to-envs'
-    beforeAll((() => {
-      const moveToEnvSubCommandAction = getSubCommandAction(subCommands, moveToEnvsName)
-      expect(moveToEnvSubCommandAction).toBeDefined()
-      if (moveToEnvSubCommandAction !== undefined) {
-        moveToEnvsAction = moveToEnvSubCommandAction
-      }
-    }))
     describe('when workspace throws an error', () => {
       const workspacePath = 'unexpected-error'
       const workspace = {
@@ -438,6 +424,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, moveToEnvsName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -448,7 +435,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -476,6 +463,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, moveToEnvsName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -485,7 +473,7 @@ describe('Element command group', () => {
             elementSelector: ['a.b.c.d'],
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -519,6 +507,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, moveToEnvsName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -530,7 +519,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -560,16 +549,7 @@ describe('Element command group', () => {
   })
 
   describe('move-to-common command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let moveToCommonAction: CommandAction<any>
     const moveToCommonName = 'move-to-common'
-    beforeAll((() => {
-      const moveToCommonSubCommandAction = getSubCommandAction(subCommands, moveToCommonName)
-      expect(moveToCommonSubCommandAction).toBeDefined()
-      if (moveToCommonSubCommandAction !== undefined) {
-        moveToCommonAction = moveToCommonSubCommandAction
-      }
-    }))
     describe('when workspace throws an error on move-to-common', () => {
       const workspacePath = 'unexpected-error'
       const workspace = {
@@ -581,6 +561,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, moveToCommonName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -591,7 +572,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -619,6 +600,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, moveToCommonName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -628,7 +610,7 @@ describe('Element command group', () => {
             elementSelector: ['a.b.c.d', 'e.f.g.h'],
           },
           output,
-          telemetry,
+          cliTelemetry,
           config,
           spinnerCreator,
           workspacePath,
@@ -662,6 +644,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, moveToCommonName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -674,7 +657,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -708,6 +691,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, moveToCommonName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -720,7 +704,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -750,16 +734,7 @@ describe('Element command group', () => {
   })
 
   describe('list-unresolved command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let listUnresolvedAction: CommandAction<any>
     const listUnresolvedName = 'list-unresolved'
-    beforeAll((() => {
-      const listUnresolvedSubCommandAction = getSubCommandAction(subCommands, listUnresolvedName)
-      expect(listUnresolvedSubCommandAction).toBeDefined()
-      if (listUnresolvedSubCommandAction !== undefined) {
-        listUnresolvedAction = listUnresolvedSubCommandAction
-      }
-    }))
     const mockListUnresolved = core.listUnresolvedReferences as jest.MockedFunction<
             typeof core.listUnresolvedReferences>
 
@@ -769,6 +744,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, listUnresolvedName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -780,7 +756,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -822,6 +798,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, listUnresolvedName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -835,7 +812,7 @@ describe('Element command group', () => {
           input: {},
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -865,6 +842,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, listUnresolvedName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -879,7 +857,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -910,6 +888,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, listUnresolvedName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -924,7 +903,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })
@@ -955,6 +934,7 @@ describe('Element command group', () => {
       beforeAll(async () => {
         output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, listUnresolvedName)
         mockLoadWorkspace.mockResolvedValue({
           workspace,
           errored: false,
@@ -965,7 +945,7 @@ describe('Element command group', () => {
           },
           output,
           config,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           workspacePath,
         })

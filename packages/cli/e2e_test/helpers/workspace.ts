@@ -25,16 +25,15 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
-import fetchDef from '../../src/commands/fetch'
+import { action as fetchAction } from '../../src/commands/fetch'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace/workspace'
-import deployDef from '../../src/commands/deploy'
-import serviceDef from '../../src/commands/service'
-import initDef from '../../src/commands/init'
+import { action as deployAction } from '../../src/commands/deploy'
+import { addAction, loginAction } from '../../src/commands/service'
+import { action as initAction } from '../../src/commands/init'
 import { createAction, setAction, deleteAction } from '../../src/commands/env'
-import cleanDef from '../../src/commands/clean'
-import { isCommand } from '../../src/command_builder'
+import { action as cleanAction } from '../../src/commands/clean'
 
 declare global {
   // eslint-disable-next-line
@@ -95,42 +94,30 @@ const telemetry = telemetrySender(
 export const cleanup = async (): Promise<void> => telemetry.stop(0)
 
 export const runAddSalesforceService = async (workspacePath: string): Promise<void> => {
-  const addAction = serviceDef.subCommands.find(subCommand =>
-    subCommand.properties.name === 'add')
-  if (addAction !== undefined && isCommand(addAction)) {
-    await addAction.action({
-      input: {
-        login: true,
-        serviceName: 'salesforce',
-        authType: 'basic',
-      },
-      config,
-      output: mockCliOutput(),
-      telemetry,
-      workspacePath,
-    })
-  } else {
-    throw Error('service add command is not defined well')
-  }
+  await addAction({
+    input: {
+      login: true,
+      serviceName: 'salesforce',
+      authType: 'basic',
+    },
+    config,
+    output: mockCliOutput(),
+    cliTelemetry,
+    workspacePath,
+  })
 }
 
 export const runSalesforceLogin = async (workspacePath: string): Promise<void> => {
-  const loginAction = serviceDef.subCommands.find(subCommand =>
-    subCommand.properties.name === 'login')
-  if (loginAction !== undefined && isCommand(loginAction)) {
-    await loginAction.action({
-      input: {
-        serviceName: 'salesforce',
-        authType: 'basic',
-      },
-      telemetry,
-      config,
-      output: mockCliOutput(),
-      workspacePath,
-    })
-  } else {
-    throw Error('service login command is not defined well')
-  }
+  await loginAction({
+    input: {
+      serviceName: 'salesforce',
+      authType: 'basic',
+    },
+    cliTelemetry,
+    config,
+    output: mockCliOutput(),
+    workspacePath,
+  })
 }
 
 export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
@@ -156,11 +143,11 @@ export const runInit = async (
   if (baseDir) {
     process.chdir(baseDir)
   }
-  await initDef.action({
+  await initAction({
     input: {
       workspaceName: workspacePath,
     },
-    telemetry,
+    cliTelemetry,
     config,
     output: mockCliOutput(),
     workspacePath,
@@ -171,7 +158,7 @@ export const runInit = async (
 }
 
 export const runCreateEnv = async (
-  workspaceDir: string,
+  workspacePath: string,
   envName: string,
   force?: boolean,
 ): Promise<void> => {
@@ -183,11 +170,11 @@ export const runCreateEnv = async (
     config,
     cliTelemetry,
     output: mockCliOutput(),
-    workspacePath: workspaceDir,
+    workspacePath,
   })
 }
 
-export const runSetEnv = async (workspaceDir: string, envName: string): Promise<void> => {
+export const runSetEnv = async (workspacePath: string, envName: string): Promise<void> => {
   await setAction({
     input: {
       envName,
@@ -195,11 +182,11 @@ export const runSetEnv = async (workspaceDir: string, envName: string): Promise<
     config,
     cliTelemetry,
     output: mockCliOutput(),
-    workspacePath: workspaceDir,
+    workspacePath,
   })
 }
 
-export const runDeleteEnv = async (workspaceDir: string, envName: string): Promise<void> => {
+export const runDeleteEnv = async (workspacePath: string, envName: string): Promise<void> => {
   await deleteAction({
     input: {
       envName,
@@ -207,12 +194,12 @@ export const runDeleteEnv = async (workspaceDir: string, envName: string): Promi
     config,
     cliTelemetry,
     output: mockCliOutput(),
-    workspacePath: workspaceDir,
+    workspacePath,
   })
 }
 
-export const getCurrentEnv = async (workspaceDir: string): Promise<string> => {
-  const workspace = await loadLocalWorkspace(workspaceDir)
+export const getCurrentEnv = async (workspacePath: string): Promise<string> => {
+  const workspace = await loadLocalWorkspace(workspacePath)
   return workspace.currentEnv()
 }
 
@@ -221,7 +208,7 @@ export const runFetch = async (
   isolated = false,
   inputEnvironment?: string,
 ): Promise<void> => {
-  const result = await fetchDef.action({
+  const result = await fetchAction({
     input: {
       services,
       env: inputEnvironment,
@@ -231,7 +218,7 @@ export const runFetch = async (
       stateOnly: false,
     },
     config,
-    telemetry,
+    cliTelemetry,
     output: mockCliOutput(),
     workspacePath: fetchOutputDir,
   })
@@ -257,7 +244,7 @@ export const runDeploy = async ({
     lastPlan.clear()
   }
   const output = mockCliOutput()
-  const result = await deployDef.action({
+  const result = await deployAction({
     input: {
       force,
       dryRun,
@@ -265,7 +252,7 @@ export const runDeploy = async ({
       services,
     },
     config,
-    telemetry,
+    cliTelemetry,
     output: mockCliOutput(),
     spinnerCreator: mockSpinnerCreator([]),
     workspacePath: fetchOutputDir,
@@ -288,13 +275,13 @@ export const runClean = async (
   workspaceName: string,
   cleanArgs: WorkspaceComponents,
 ): Promise<void> => {
-  await cleanDef.action({
+  await cleanAction({
     input: {
       ...cleanArgs,
       force: true,
     },
     config,
-    telemetry,
+    cliTelemetry,
     output: mockCliOutput(),
     workspacePath: workspaceName,
   })

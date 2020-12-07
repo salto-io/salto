@@ -15,14 +15,12 @@
 */
 import { Plan, PlanItem } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
+import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import deployDef from '../../src/commands/deploy'
+import { action } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace/workspace'
-import { buildEventName } from '../../src/telemetry'
-
-const { action } = deployDef
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -55,6 +53,7 @@ const eventsNames = {
 
 describe('deploy command', () => {
   let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
   const config = { shouldCalcTotalSize: true }
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
@@ -75,6 +74,7 @@ describe('deploy command', () => {
     const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
     beforeEach(() => {
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
     })
 
     it('should continue with deploy when user input is y', async () => {
@@ -87,7 +87,7 @@ describe('deploy command', () => {
           services,
         },
         output,
-        telemetry,
+        cliTelemetry,
         spinnerCreator,
         config,
       })
@@ -106,7 +106,7 @@ describe('deploy command', () => {
           services,
         },
         output,
-        telemetry,
+        cliTelemetry,
         spinnerCreator,
         config,
       })
@@ -128,7 +128,7 @@ describe('deploy command', () => {
           services,
         },
         output,
-        telemetry,
+        cliTelemetry,
         spinnerCreator,
         config,
       })
@@ -153,7 +153,7 @@ describe('deploy command', () => {
           services,
         },
         output,
-        telemetry,
+        cliTelemetry,
         spinnerCreator,
         config,
       })
@@ -165,6 +165,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     it('should fail gracefully', async () => {
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       // Running with base dir 'errorDir' will cause the mock to throw an error
       const result = await action({
         input: {
@@ -174,7 +175,7 @@ describe('deploy command', () => {
           services,
         },
         output,
-        telemetry,
+        cliTelemetry,
         spinnerCreator,
         config,
         workspacePath: 'errorDir',
@@ -187,6 +188,7 @@ describe('deploy command', () => {
   describe('when deploy result makes the workspace invalid', () => {
     beforeEach(() => {
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       const mockWs = mocks.mockLoadWorkspaceEnvironment('', output, {})
       mockLoadWorkspace.mockResolvedValueOnce(mockWs)
       const mockUpdateNacls = mockWs.workspace.updateNaclFiles as jest.Mock
@@ -210,7 +212,7 @@ describe('deploy command', () => {
             services,
           },
           output,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           config,
         })
@@ -228,7 +230,7 @@ describe('deploy command', () => {
             services,
           },
           output,
-          telemetry,
+          cliTelemetry,
           spinnerCreator,
           config,
         })
@@ -250,7 +252,7 @@ describe('deploy command', () => {
           env,
         },
         output,
-        telemetry,
+        cliTelemetry,
         spinnerCreator,
         config,
       })

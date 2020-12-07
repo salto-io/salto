@@ -15,14 +15,12 @@
 */
 import { restore } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
-import restoreDef from '../../src/commands/restore'
+import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
+import { action } from '../../src/commands/restore'
 
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
-import { buildEventName } from '../../src/telemetry'
-
-const { action } = restoreDef
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 const commandName = 'restore'
 const eventsNames = {
@@ -67,10 +65,12 @@ describe('restore command', () => {
 
   let result: number
   let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
   describe('with errored workspace', () => {
     beforeEach(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       const erroredWorkspace = {
         hasErrors: () => true,
         errors: { strings: () => ['some error'] },
@@ -88,7 +88,7 @@ describe('restore command', () => {
           mode: 'default',
           services,
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,
@@ -109,6 +109,7 @@ describe('restore command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace(workspacePath),
         errored: false,
@@ -123,7 +124,7 @@ describe('restore command', () => {
           mode: 'default',
           services,
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,
@@ -175,7 +176,7 @@ describe('restore command', () => {
           mode: 'default',
           services,
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,
@@ -198,7 +199,7 @@ describe('restore command', () => {
           services,
           env: mocks.withEnvironmentParam,
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,
@@ -216,6 +217,7 @@ describe('restore command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockUpdateWorkspace.mockClear()
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace(workspacePath),
@@ -231,7 +233,7 @@ describe('restore command', () => {
           mode: 'default',
           services,
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,
@@ -268,6 +270,7 @@ describe('restore command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace('exist-on-error'),
         errored: false,
@@ -282,7 +285,7 @@ describe('restore command', () => {
           mode: 'default',
           services,
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,
@@ -299,6 +302,7 @@ describe('restore command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace(workspacePath),
         errored: false,
@@ -316,7 +320,7 @@ describe('restore command', () => {
           services,
           elementSelectors: ['++'],
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,
@@ -336,7 +340,7 @@ describe('restore command', () => {
           services,
           elementSelectors: ['salto.*'],
         },
-        telemetry,
+        cliTelemetry,
         output,
         config,
         spinnerCreator,

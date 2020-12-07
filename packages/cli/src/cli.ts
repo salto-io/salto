@@ -17,7 +17,7 @@ import os from 'os'
 import chalk from 'chalk'
 import { logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'
-import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
+import { CliInput, CliOutput, CliExitCode, SpinnerCreator, CliError } from './types'
 import { CommandOrGroupDef } from './command_builder'
 import { versionString } from './version'
 import { AppConfig } from '../../core/src/app_config'
@@ -66,6 +66,9 @@ export default async (
         return CliExitCode.Success
       }
       return CliExitCode.UserInputError
+    }
+    if (err instanceof CliError) {
+      return err.exitCode
     }
     log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(os.EOL)}`)
     input.telemetry.sendStackEvent(exceptionEvent, err, {})

@@ -81,7 +81,7 @@ type ElementMoveToCommonArgs = {
   elementSelector: string[]
 } & EnvArg
 
-const moveToCommonAction: CommandDefAction<ElementMoveToCommonArgs> = async ({
+export const moveToCommonAction: CommandDefAction<ElementMoveToCommonArgs> = async ({
   input,
   cliTelemetry,
   output,
@@ -133,7 +133,7 @@ type ElementMoveToEnvsArgs = {
   elementSelector: string[]
 }
 
-const moveToEnvsAction: CommandDefAction<ElementMoveToEnvsArgs> = async ({
+export const moveToEnvsAction: CommandDefAction<ElementMoveToEnvsArgs> = async ({
   input,
   cliTelemetry,
   output,
@@ -184,7 +184,7 @@ type ElementCloneArgs = {
   force?: boolean
 } & EnvArg
 
-const cloneAction: CommandDefAction<ElementCloneArgs> = async ({
+export const cloneAction: CommandDefAction<ElementCloneArgs> = async ({
   input,
   cliTelemetry,
   output,
@@ -264,7 +264,7 @@ type ElementListUnresolvedArgs = {
   completeFrom?: string
 } & EnvArg
 
-const listUnresolvedAction: CommandDefAction<ElementListUnresolvedArgs> = async ({
+export const listUnresolvedAction: CommandDefAction<ElementListUnresolvedArgs> = async ({
   input,
   cliTelemetry,
   output,

@@ -13,13 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { types, collections } from '@salto-io/lowerdash'
-import { Telemetry, CommandConfig } from '@salto-io/core'
-import { CliOutput, SpinnerCreator, CliExitCode, CliTelemetry } from './types'
+import _ from 'lodash'
+import { types, collections, values } from '@salto-io/lowerdash'
+import { logger, compareLogLevels, LogLevel } from '@salto-io/logging'
+import { CommandConfig } from '@salto-io/core'
+import { CliOutput, SpinnerCreator, CliExitCode, CliTelemetry, CliError, CliArgs } from './types'
 import { VERBOSE_OPTION } from './commands/common/options'
 import { getCliTelemetry } from './telemetry'
 
 const { makeArray } = collections.array
+const { isDefined } = values
+
+const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
@@ -34,18 +39,15 @@ export type CommandsGroupDef = {
   subCommands: CommandOrGroupDef[]
 }
 
-type ActionInput<T> = {
-  input: T
-  telemetry: Telemetry
-  config: CommandConfig
-  output: CliOutput
-  spinnerCreator?: SpinnerCreator
-  workspacePath?: string
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+type CommandAction = (args: CliArgs & { commanderInput: any[] }) => Promise<void>
+
+export type CommandDef<T> = {
+  properties: CommandOptions<T>
+  action: CommandAction
 }
 
-export type CommandAction<T> = (args: ActionInput<T>) => Promise<CliExitCode>
-
-type DefActionInput<T> = {
+export type DefActionInput<T> = {
   input: T
   output: CliOutput
   cliTelemetry: CliTelemetry
@@ -55,11 +57,6 @@ type DefActionInput<T> = {
 }
 
 export type CommandDefAction<T> = (args: DefActionInput<T>) => Promise<CliExitCode>
-
-export type CommandDef<T> = {
-  properties: CommandOptions<T>
-  action: CommandAction<T>
-}
 
 export type CommandInnerDef<T> = {
   properties: CommandOptions<T>
@@ -110,27 +107,94 @@ export type KeyedOption<T, Name extends keyof T = keyof T> = Name extends keyof 
   choices?: ChoicesType<T[Name]>
 } : never
 
-export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T> => {
-  const action = async (
-    { input, telemetry, config, output, spinnerCreator, workspacePath }: ActionInput<T>,
-  ): Promise<CliExitCode> => {
-    // TODO: Handle sub command full names
-    const cliTelemetry = getCliTelemetry(telemetry, def.properties.name)
-    return def.action({
-      input, cliTelemetry, config, output, spinnerCreator, workspacePath,
-    })
+const createPositionalOptionsMapping = <T>(
+  positionalOptions: PositionalOption<T>[],
+  vals: (string | string[] | undefined)[]
+): Record<string, string | string[] | undefined> => {
+  const positionalOptionsNames = positionalOptions.map(p => p.name)
+  return Object.fromEntries(
+    _.zip(positionalOptionsNames, vals)
+  )
+}
+
+const increaseLoggingLogLevel = (): void => {
+  const currentLogLevel = logger.config.minLevel
+  const isCurrentLogLevelLower = currentLogLevel === 'none'
+    || compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
+
+  if (isCurrentLogLevelLower) {
+    logger.setMinLevel(VERBOSE_LOG_LEVEL)
   }
+}
+
+const validateChoices = <T>(
+  positionalOptions: PositionalOption<T>[],
+  keyedOptions: KeyedOption<T>[],
+  output: CliOutput,
+  args: T,
+): void => {
+  const optionsWithChoices = [
+    ...positionalOptions.filter(positionalOption => positionalOption.choices !== undefined),
+    ...keyedOptions.filter(keyedOption => keyedOption.choices !== undefined),
+  ]
+  const choicesValidationErrors = optionsWithChoices.map(optionWithChoice => {
+    if (args[optionWithChoice.name] !== undefined
+      && !optionWithChoice.choices?.includes(String(args[optionWithChoice.name]))) {
+      return `error: option ${optionWithChoice.name} must be one of - [${optionWithChoice.choices?.join(', ')}]\n`
+    }
+    return undefined
+  }).filter(isDefined)
+  if (!_.isEmpty(choicesValidationErrors)) {
+    choicesValidationErrors.forEach(error => (output.stderr.write(error)))
+    throw new CliError(CliExitCode.UserInputError)
+  }
+}
+
+export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T> => {
+  const {
+    properties: { name, description, keyedOptions = [], positionalOptions = [] },
+    action,
+  } = def
+  const commanderAction: CommandAction = async ({
+    commanderInput,
+    config,
+    output,
+    spinnerCreator,
+    telemetry,
+  }): Promise<void> => {
+    const indexOfKeyedOptions = commanderInput.findIndex(o => _.isPlainObject(o))
+    const keyedOptionsObj = commanderInput[indexOfKeyedOptions]
+
+    // Handle the verbose option that is added automatically and is common for all commands
+    if (keyedOptionsObj.verbose) {
+      increaseLoggingLogLevel()
+    }
+    const positionalValues = commanderInput.slice(0, indexOfKeyedOptions)
+    const input = {
+      ...keyedOptionsObj,
+      ...createPositionalOptionsMapping(positionalOptions, positionalValues),
+    }
+    validateChoices(positionalOptions, keyedOptions, output, input)
+    const cliTelemetry = getCliTelemetry(telemetry, def.properties.name)
+    const actionResult = await action({
+      input, cliTelemetry, config, output, spinnerCreator,
+    })
+    if (actionResult !== CliExitCode.Success) {
+      throw new CliError(actionResult)
+    }
+  }
+
   // Add verbose to all commands
-  const keyedOptions = [
-    ...makeArray(def.properties.keyedOptions),
+  const newKeyedOptions = [
+    ...makeArray(keyedOptions),
     VERBOSE_OPTION as KeyedOption<T>,
   ]
   return {
     properties: {
-      ...def.properties,
-      keyedOptions,
+      ...{ name, description, positionalOptions },
+      keyedOptions: newKeyedOptions,
     },
-    action,
+    action: commanderAction,
   }
 }
 

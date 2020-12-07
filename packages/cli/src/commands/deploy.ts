@@ -166,7 +166,7 @@ const deployPlan = async (
   return result
 }
 
-const action: CommandDefAction<DeployArgs> = async ({
+export const action: CommandDefAction<DeployArgs> = async ({
   input,
   cliTelemetry,
   output,

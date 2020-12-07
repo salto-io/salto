@@ -15,13 +15,11 @@
 */
 import * as core from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { CliExitCode } from '../../src/types'
+import { CliExitCode, CliTelemetry } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
-import { buildEventName } from '../../src/telemetry'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 import * as mocks from '../mocks'
-import cleanDef from '../../src/commands/clean'
-
-const { action } = cleanDef
+import { action } from '../../src/commands/clean'
 
 const commandName = 'clean'
 const eventsNames = {
@@ -40,12 +38,14 @@ jest.mock('@salto-io/core', () => ({
 describe('clean command', () => {
   let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
   const config = { shouldCalcTotalSize: false }
   let lastWorkspace: Workspace
 
   beforeEach(async () => {
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
+    cliTelemetry = getCliTelemetry(telemetry, commandName)
     jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(baseDir => {
       lastWorkspace = mocks.mockLoadWorkspace(baseDir)
       return Promise.resolve(lastWorkspace)
@@ -70,7 +70,7 @@ describe('clean command', () => {
           serviceConfig: false,
         },
         config,
-        telemetry,
+        cliTelemetry,
         output,
       })).toBe(CliExitCode.UserInputError)
       expect(output.stdout.content.search('Nothing to do.')).toBeGreaterThan(0)
@@ -92,7 +92,7 @@ describe('clean command', () => {
           serviceConfig: true,
         },
         config,
-        telemetry,
+        cliTelemetry,
         output,
       })).toBe(CliExitCode.Success)
       expect(core.loadLocalWorkspace).toHaveBeenCalled()
@@ -112,7 +112,7 @@ describe('clean command', () => {
           serviceConfig: true,
         },
         config,
-        telemetry,
+        cliTelemetry,
         output,
       })).toBe(CliExitCode.UserInputError)
       expect(core.loadLocalWorkspace).not.toHaveBeenCalled()
@@ -132,7 +132,7 @@ describe('clean command', () => {
           serviceConfig: true,
         },
         config,
-        telemetry,
+        cliTelemetry,
         output,
       })).toBe(CliExitCode.Success)
       expect(core.loadLocalWorkspace).toHaveBeenCalled()
@@ -170,7 +170,7 @@ describe('clean command', () => {
           serviceConfig: true,
         },
         config,
-        telemetry,
+        cliTelemetry,
         output,
       })).toBe(CliExitCode.AppError)
       expect(telemetry.getEvents()).toHaveLength(2)
@@ -198,7 +198,7 @@ describe('clean command', () => {
           serviceConfig: true,
         },
         config,
-        telemetry,
+        cliTelemetry,
         output,
       })).toBe(CliExitCode.Success)
       expect(core.loadLocalWorkspace).toHaveBeenCalled()

@@ -106,7 +106,7 @@ type ServiceAddArgs = {
     serviceName: string
 } & AuthTypeArgs & EnvArg
 
-const addAction: CommandDefAction<ServiceAddArgs> = async ({
+export const addAction: CommandDefAction<ServiceAddArgs> = async ({
   input,
   output,
   workspacePath = '.',
@@ -167,7 +167,7 @@ const serviceAddDef = createPublicCommandDef({
 // List
 type ServiceListArgs = {} & EnvArg
 
-const listAction: CommandDefAction<ServiceListArgs> = async (
+export const listAction: CommandDefAction<ServiceListArgs> = async (
   { input, output, workspacePath = '.' },
 ): Promise<CliExitCode> => {
   log.debug('running service list command on \'%s\' %o', workspacePath, input)
@@ -193,7 +193,7 @@ type ServiceLoginArgs = {
     serviceName: string
 } & AuthTypeArgs & EnvArg
 
-const loginAction: CommandDefAction<ServiceLoginArgs> = async ({
+export const loginAction: CommandDefAction<ServiceLoginArgs> = async ({
   input,
   output,
   workspacePath = '.',

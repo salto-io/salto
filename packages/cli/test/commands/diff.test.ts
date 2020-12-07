@@ -14,15 +14,12 @@
 * limitations under the License.
 */
 import { diff, loadLocalWorkspace } from '@salto-io/core'
-import { CliExitCode } from '../../src/types'
-import envDef from '../../src/commands/env'
-import { expectElementSelector, getSubCommandAction } from '../utils'
+import { CliExitCode, CliTelemetry } from '../../src/types'
+import { diffAction } from '../../src/commands/env'
+import { expectElementSelector } from '../utils'
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
-import { buildEventName } from '../../src/telemetry'
-import { CommandAction } from '../../src/command_builder'
-
-const { subCommands } = envDef
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 const commandName = 'diff'
 const eventsNames = {
@@ -58,21 +55,14 @@ describe('diff command', () => {
 
   let result: number
   let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
 
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  let diffAction: CommandAction<any>
-  beforeAll((() => {
-    const diffSubCommandAction = getSubCommandAction(subCommands, commandName)
-    expect(diffSubCommandAction).toBeDefined()
-    if (diffSubCommandAction !== undefined) {
-      diffAction = diffSubCommandAction
-    }
-  }))
   describe('with invalid source environment', () => {
     const workspaceName = 'valid-workspace'
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
+    cliTelemetry = getCliTelemetry(telemetry, commandName)
     mockLoadWorkspace.mockResolvedValue(workspace)
     it('should throw Error', async () => {
       result = await diffAction({
@@ -84,7 +74,7 @@ describe('diff command', () => {
           state: false,
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
         workspacePath: workspaceName,
       })
@@ -97,6 +87,7 @@ describe('diff command', () => {
     const workspace = mocks.mockLoadWorkspace(workspaceName)
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
+    cliTelemetry = getCliTelemetry(telemetry, commandName)
     mockLoadWorkspace.mockResolvedValue(workspace)
     it('should throw Error', async () => {
       result = await diffAction({
@@ -108,7 +99,7 @@ describe('diff command', () => {
           state: false,
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
         workspacePath: workspaceName,
       })
@@ -122,6 +113,7 @@ describe('diff command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue(workspace)
       result = await diffAction({
         input: {
@@ -132,7 +124,7 @@ describe('diff command', () => {
           state: false,
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
         workspacePath: workspaceName,
       })
@@ -155,6 +147,7 @@ describe('diff command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue(workspace)
       await diffAction({
         input: {
@@ -165,7 +158,7 @@ describe('diff command', () => {
           state: false,
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
         workspacePath: workspaceName,
       })
@@ -188,6 +181,7 @@ describe('diff command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue(workspace)
       result = await diffAction({
         input: {
@@ -198,7 +192,7 @@ describe('diff command', () => {
           state: true,
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
         workspacePath: workspaceName,
       })
@@ -222,6 +216,7 @@ describe('diff command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue(workspace)
       result = await diffAction({
         input: {
@@ -233,7 +228,7 @@ describe('diff command', () => {
           elementSelector: [regex],
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
         workspacePath: workspaceName,
       })
@@ -258,6 +253,7 @@ describe('diff command', () => {
     beforeAll(async () => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, commandName)
       mockLoadWorkspace.mockResolvedValue(workspace)
       result = await diffAction({
         input: {
@@ -269,7 +265,7 @@ describe('diff command', () => {
           elementSelector: [regex],
         },
         output,
-        telemetry,
+        cliTelemetry,
         config,
         workspacePath: workspaceName,
       })

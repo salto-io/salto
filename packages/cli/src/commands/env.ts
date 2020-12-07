@@ -310,7 +310,7 @@ const envCurrentDef = createPublicCommandDef({
 // List
 type EnvListArgs = {}
 
-const listAction: CommandDefAction<EnvListArgs> = async (
+export const listAction: CommandDefAction<EnvListArgs> = async (
   { output, workspacePath = '.' },
 ): Promise<CliExitCode> => {
   log.debug('running env list command on \'%s\'', workspacePath)

@@ -98,7 +98,7 @@ const applyLocalChangesToWorkspace = async (
   return false
 }
 
-const action: CommandDefAction<RestoreArgs> = async ({
+export const action: CommandDefAction<RestoreArgs> = async ({
   input,
   cliTelemetry,
   config,

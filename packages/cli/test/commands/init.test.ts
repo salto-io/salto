@@ -15,11 +15,9 @@
 */
 import { Workspace } from '@salto-io/workspace'
 import * as mocks from '../mocks'
-// import { action } from '../../src/commands/init'
-import initDef from '../../src/commands/init'
-import { buildEventName } from '../../src/telemetry'
-
-const { action } = initDef
+import { action } from '../../src/commands/init'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import { CliTelemetry } from '../../src/types'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -53,11 +51,13 @@ const eventsNames = {
 describe('init command', () => {
   let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
   const config = { shouldCalcTotalSize: false }
 
   beforeEach(async () => {
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
+    cliTelemetry = getCliTelemetry(telemetry, 'init')
   })
 
   it('should invoke api\'s init', async () => {
@@ -66,7 +66,7 @@ describe('init command', () => {
         workspaceName: 'test',
       },
       config,
-      telemetry,
+      cliTelemetry,
       output,
     })
     expect(output.stdout.content.search('test')).toBeGreaterThan(0)
@@ -82,7 +82,7 @@ describe('init command', () => {
         workspaceName: 'error',
       },
       config,
-      telemetry,
+      cliTelemetry,
       output,
     })
     expect(output.stderr.content.search('failed')).toBeGreaterThan(0)

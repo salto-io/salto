@@ -18,14 +18,12 @@ import {
   LoginStatus, updateCredentials, loadLocalWorkspace, addAdapter, installAdapter,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import serviceDef from '../../src/commands/service'
+import { getCliTelemetry } from '../../src/telemetry'
+import { loginAction, addAction, listAction } from '../../src/commands/service'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
-import { getSubCommandAction } from '../utils'
-import { CommandAction } from '../../src/command_builder'
-
-const { subCommands } = serviceDef
+import { CliTelemetry } from '../../src/types'
 
 jest.mock('../../src/cli_oauth_authenticator', () => ({
   processOauthCredentials: jest.fn().mockResolvedValue({
@@ -90,6 +88,7 @@ describe('service command group', () => {
   let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const config = { shouldCalcTotalSize: true }
   let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
   const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
     username: 'test@test',
     password: 'test',
@@ -119,18 +118,10 @@ describe('service command group', () => {
   beforeEach(() => {
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
+    cliTelemetry = getCliTelemetry(telemetry, 'service')
   })
 
   describe('list command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let listAction: CommandAction<any>
-    beforeAll((() => {
-      const listSubCommandAction = getSubCommandAction(subCommands, 'list')
-      expect(listSubCommandAction).toBeDefined()
-      if (listSubCommandAction !== undefined) {
-        listAction = listSubCommandAction
-      }
-    }))
     beforeEach(async () => {
       mockLoadWorkspace.mockClear()
     })
@@ -142,7 +133,7 @@ describe('service command group', () => {
               input: {},
               output,
               config,
-              telemetry,
+              cliTelemetry,
             }
           )
         })
@@ -172,7 +163,7 @@ describe('service command group', () => {
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             }
           )
           expect(output.stdout.content).toContain('netsuite')
@@ -182,14 +173,7 @@ describe('service command group', () => {
   })
 
   describe('add command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let addAction: CommandAction<any>
     beforeAll((() => {
-      const addSubCommandAction = getSubCommandAction(subCommands, 'add')
-      expect(addSubCommandAction).toBeDefined()
-      if (addSubCommandAction !== undefined) {
-        addAction = addSubCommandAction
-      }
       jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
@@ -204,7 +188,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
         })
 
@@ -224,7 +208,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
         })
 
@@ -249,7 +233,7 @@ describe('service command group', () => {
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })
           ).rejects.toThrow()
         })
@@ -264,7 +248,7 @@ describe('service command group', () => {
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })
           })
           it('should print login information updated', async () => {
@@ -286,7 +270,7 @@ describe('service command group', () => {
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })
           })
 
@@ -310,7 +294,7 @@ describe('service command group', () => {
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })
           })
           afterEach(() => {
@@ -348,7 +332,7 @@ describe('service command group', () => {
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })
           })
           it('should add without login', async () => {
@@ -371,12 +355,13 @@ describe('service command group', () => {
           it('should use current env when env is not provided', async () => {
             await addAction({
               input: {
+                login: true,
                 serviceName: 'hubspot',
                 authType: 'basic',
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
             expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual(currentEnv)
@@ -384,13 +369,14 @@ describe('service command group', () => {
           it('should use provided env', async () => {
             await addAction({
               input: {
+                login: true,
                 serviceName: 'hubspot',
                 authType: 'basic',
                 env: 'injected',
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
             expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual('injected')
@@ -403,12 +389,13 @@ describe('service command group', () => {
           it('should throw an error', async () => {
             await expect(addAction({
               input: {
+                login: true,
                 serviceName: 'noAdapter',
                 authType: 'basic',
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })).rejects.toThrow()
           })
         })
@@ -422,7 +409,7 @@ describe('service command group', () => {
               },
               output,
               config,
-              telemetry,
+              cliTelemetry,
             })).rejects.toThrow()
           })
         })
@@ -431,14 +418,7 @@ describe('service command group', () => {
   })
 
   describe('login command', () => {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    let loginAction: CommandAction<any>
     beforeAll((() => {
-      const loginSubCommandAction = getSubCommandAction(subCommands, 'login')
-      expect(loginSubCommandAction).toBeDefined()
-      if (loginSubCommandAction !== undefined) {
-        loginAction = loginSubCommandAction
-      }
       jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
@@ -452,7 +432,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
         })
         it('should print login override', () => {
@@ -481,7 +461,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
         })
 
@@ -501,7 +481,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
         })
 
@@ -521,7 +501,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
         })
         it('should process oauth credentials', () => {
@@ -548,7 +528,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
         })
         it('should get config from user', () => {
@@ -577,7 +557,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
           expect((mockupdateCredentials.mock.calls[0][0] as Workspace).currentEnv())
@@ -592,7 +572,7 @@ describe('service command group', () => {
             },
             output,
             config,
-            telemetry,
+            cliTelemetry,
           })
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
           expect((mockupdateCredentials.mock.calls[0][0] as Workspace).currentEnv())

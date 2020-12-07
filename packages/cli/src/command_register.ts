@@ -15,31 +15,15 @@
 */
 import _ from 'lodash'
 import commander from 'commander'
-import { values as ldValues } from '@salto-io/lowerdash'
-import { Telemetry, CommandConfig } from '@salto-io/core'
-import { LogLevel, logger, compareLogLevels } from '@salto-io/logging'
 import { PositionalOption, CommandOrGroupDef, isCommand, CommandDef, CommandsGroupDef, KeyedOption } from './command_builder'
-import { CliOutput, SpinnerCreator, CliExitCode, CliError } from './types'
+import { CliArgs } from './types'
 import { versionString } from './version'
-
-const { isDefined } = ldValues
 
 const LIST_SUFFIX = '...'
 const OPTION_NEGATION_PREFIX = 'no-'
-export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 export const COMMANDER_ERROR_NAME = 'CommanderError'
 export const HELP_DISPLAYED_CODE = 'commander.helpDisplayed'
 export const VERSION_CODE = 'commander.version'
-
-const increaseLoggingLogLevel = (): void => {
-  const currentLogLevel = logger.config.minLevel
-  const isCurrentLogLevelLower = currentLogLevel === 'none'
-    || compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
-
-  if (isCurrentLogLevelLower) {
-    logger.setMinLevel(VERBOSE_LOG_LEVEL)
-  }
-}
 
 export const createProgramCommand = (): commander.Command => (
   new commander.Command('salto')
@@ -81,16 +65,6 @@ const positionalOptionsStr = <T>(positionalOptions: PositionalOption<T>[]): stri
     return positional.required ? wrapWithRequired(`${innerStr}`) : wrapWithOptional(`${innerStr}`)
   }).join(' '))
 
-const createPositionalOptionsMapping = <T>(
-  positionalOptions: PositionalOption<T>[],
-  values: (string | string[] | undefined)[]
-): Record<string, string | string[] | undefined> => {
-  const positionalOptionsNames = positionalOptions.map(p => p.name)
-  return Object.fromEntries(
-    _.zip(positionalOptionsNames, values)
-  )
-}
-
 const addKeyedOption = <T>(parentCommand: commander.Command, option: KeyedOption<T>): void => {
   const optionNameInKebabCase = _.kebabCase(option.name)
   if (optionNameInKebabCase.startsWith(OPTION_NEGATION_PREFIX)) {
@@ -122,12 +96,7 @@ const addKeyedOption = <T>(parentCommand: commander.Command, option: KeyedOption
 const registerCommand = <T>(
   parentCommand: commander.Command,
   commandDef: CommandDef<T>,
-  cliArgs: {
-    telemetry: Telemetry
-    config: CommandConfig
-    output: CliOutput
-    spinnerCreator?: SpinnerCreator
-  },
+  cliArgs: CliArgs,
 ): void => {
   const {
     properties: { name, description, keyedOptions = [], positionalOptions = [] },
@@ -147,48 +116,12 @@ const registerCommand = <T>(
       positionalOption.default,
     )))
   keyedOptions.forEach(keyedOption => addKeyedOption(command, keyedOption))
-  const optionsWithChoices = [
-    ...positionalOptions.filter(positionalOption => positionalOption.choices !== undefined),
-    ...keyedOptions.filter(keyedOption => keyedOption.choices !== undefined),
-  ]
   command.action(
-    async (...inputs) => {
-      const indexOfKeyedOptions = inputs.findIndex(o => _.isPlainObject(o))
-      const keyedOptionsObj = inputs[indexOfKeyedOptions]
-
-      // Handle the verbose option that is added automatically and is common for all commands
-      if (keyedOptionsObj.verbose) {
-        increaseLoggingLogLevel()
-      }
-      const positionalValues = inputs.slice(0, indexOfKeyedOptions)
-      const args = {
-        ...keyedOptionsObj,
-        ...createPositionalOptionsMapping(positionalOptions, positionalValues),
-      }
-
-      // Validate choices enforcement
-      const choicesValidationErrors = optionsWithChoices.map(optionWithChoice => {
-        if (args[optionWithChoice.name] !== undefined
-          && !optionWithChoice.choices?.includes(args[optionWithChoice.name])) {
-          return `error: option ${optionWithChoice.name} must be one of - [${optionWithChoice.choices?.join(', ')}]\n`
-        }
-        return undefined
-      }).filter(isDefined)
-      if (!_.isEmpty(choicesValidationErrors)) {
-        choicesValidationErrors.forEach(error => (cliArgs.output.stderr.write(error)))
-        throw new CliError('', CliExitCode.UserInputError)
-      }
-      try {
-        const actionResult = await action({
-          ...cliArgs,
-          input: args,
-        })
-        if (actionResult !== CliExitCode.Success) {
-          throw new CliError('', actionResult)
-        }
-      } catch (error) {
-        throw new CliError(error.message, CliExitCode.AppError)
-      }
+    async (...commanderInput) => {
+      await action({
+        ...cliArgs,
+        commanderInput,
+      })
     }
   )
   parentCommand.addCommand(command)
@@ -197,12 +130,7 @@ const registerCommand = <T>(
 const registerGroup = (
   parentCommand: commander.Command,
   containerDef: CommandsGroupDef,
-  cliArgs: {
-    telemetry: Telemetry
-    config: CommandConfig
-    output: CliOutput
-    spinnerCreator?: SpinnerCreator
-  },
+  cliArgs: CliArgs,
 ): void => {
   const { properties, subCommands } = containerDef
   const groupCommand = new commander.Command()
@@ -219,12 +147,7 @@ const registerGroup = (
 const registerCommandOrGroup = (
   parentCommand: commander.Command,
   commandOrGroupDef: CommandOrGroupDef,
-  cliArgs: {
-    telemetry: Telemetry
-    config: CommandConfig
-    output: CliOutput
-    spinnerCreator?: SpinnerCreator
-  },
+  cliArgs: CliArgs,
 ): void => {
   if (isCommand(commandOrGroupDef)) {
     registerCommand(parentCommand, commandOrGroupDef, cliArgs)
@@ -236,12 +159,7 @@ const registerCommandOrGroup = (
 export const registerCommands = (
   commanderProgram: commander.Command,
   allDefinitions: CommandOrGroupDef[],
-  cliArgs: {
-    telemetry: Telemetry
-    config: CommandConfig
-    output: CliOutput
-    spinnerCreator?: SpinnerCreator
-  },
+  cliArgs: CliArgs,
 ): void => {
   allDefinitions.forEach(commandOrGroupDef => {
     registerCommandOrGroup(commanderProgram, commandOrGroupDef, cliArgs)

@@ -29,7 +29,7 @@ type InitArgs = {
     workspaceName?: string
   }
 
-const action: CommandDefAction<InitArgs> = async (
+export const action: CommandDefAction<InitArgs> = async (
   { input: { workspaceName }, cliTelemetry, output },
 ): Promise<CliExitCode> => {
   log.debug('running env init command on \'%s\'', workspaceName)

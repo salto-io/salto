@@ -219,7 +219,7 @@ type FetchArgs = {
   mode: nacl.RoutingMode
 } & ServicesArg & EnvArg
 
-const action: CommandDefAction<FetchArgs> = async ({
+export const action: CommandDefAction<FetchArgs> = async ({
   input,
   cliTelemetry,
   config,

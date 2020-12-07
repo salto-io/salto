@@ -31,7 +31,7 @@ type CleanArgs = {
   force: boolean
 } & WorkspaceComponents
 
-const action: CommandDefAction<CleanArgs> = async ({
+export const action: CommandDefAction<CleanArgs> = async ({
   input: { force, ...cleanArgs },
   cliTelemetry,
   output,

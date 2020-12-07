@@ -21,14 +21,12 @@ import { fetch, FetchChange, FetchProgressEvents, StepEmitter, FetchFunc } from 
 import { Workspace } from '@salto-io/workspace'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import * as fetchCmd from '../../src/commands/fetch'
-import fetchDef, { fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
+import { action, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
-
-const { action } = fetchDef
 
 const commandName = 'fetch'
 const eventsNames = {
@@ -83,6 +81,7 @@ describe('fetch command', () => {
     describe('with errored workspace', () => {
       beforeEach(async () => {
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, commandName)
         const erroredWorkspace = {
           hasErrors: () => true,
           errors: { strings: () => ['some error'] },
@@ -97,7 +96,7 @@ describe('fetch command', () => {
             services,
             stateOnly: false,
           },
-          telemetry,
+          cliTelemetry,
           config,
           output,
           spinnerCreator,
@@ -117,6 +116,7 @@ describe('fetch command', () => {
       const workspacePath = 'valid-ws'
       beforeAll(async () => {
         telemetry = mocks.getMockTelemetry()
+        cliTelemetry = getCliTelemetry(telemetry, commandName)
         mockLoadWorkspace.mockResolvedValue({
           workspace: mocks.mockLoadWorkspace(workspacePath),
           errored: false,
@@ -129,7 +129,7 @@ describe('fetch command', () => {
             services,
             stateOnly: false,
           },
-          telemetry,
+          cliTelemetry,
           config,
           output,
           spinnerCreator,
@@ -710,6 +710,7 @@ describe('fetch command', () => {
   })
   describe('multienv - new service in env, with existing common elements', () => {
     const telemetry: mocks.MockTelemetry = mocks.getMockTelemetry()
+    const cliTelemetry = getCliTelemetry(telemetry, commandName)
     const workspacePath = 'valid-ws'
     beforeEach(() => {
       mockLoadWorkspace.mockResolvedValue({
@@ -740,7 +741,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -764,7 +765,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config: { shouldCalcTotalSize: true },
         output,
         spinnerCreator,
@@ -787,7 +788,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -809,7 +810,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -837,7 +838,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -860,7 +861,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -887,7 +888,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -918,7 +919,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -932,6 +933,7 @@ describe('fetch command', () => {
 
   describe('Verify using env command', () => {
     const telemetry: mocks.MockTelemetry = mocks.getMockTelemetry()
+    const cliTelemetry = getCliTelemetry(telemetry, commandName)
     const workspacePath = 'valid-ws'
     beforeEach(() => {
       mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
@@ -946,7 +948,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,
@@ -967,7 +969,7 @@ describe('fetch command', () => {
           stateOnly: false,
           env: mocks.withEnvironmentParam,
         },
-        telemetry,
+        cliTelemetry,
         config,
         output,
         spinnerCreator,

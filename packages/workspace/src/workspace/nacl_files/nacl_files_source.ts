@@ -20,6 +20,8 @@ import {
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, TypeElement,
   getDeepInnerType,
   isVariable,
+  Change,
+  isEqualElements,
 } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
@@ -59,15 +61,15 @@ export type NaclFile = {
 }
 
 export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
+  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Change<Element>[]>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<void>
-  removeNaclFiles: (...names: string[]) => Promise<void>
+  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change<Element>[]>
+  removeNaclFiles: (...names: string[]) => Promise<Change<Element>[]>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
@@ -191,8 +193,9 @@ export const getParsedNaclFiles = async (
   return parseNaclFiles(naclFiles, cache, functions)
 }
 
-const buildNaclFilesState = async (newNaclFiles: ParsedNaclFile[], current?: ParsedNaclFileMap):
-Promise<NaclFilesState> => {
+const buildNaclFilesState = (
+  newNaclFiles: ParsedNaclFile[], current?: ParsedNaclFileMap, currentState?: NaclFilesState
+): { state: NaclFilesState; changes: Change<Element>[] } => {
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
   const allParsed = _.omitBy({ ...current, ...newParsed },
@@ -212,18 +215,54 @@ Promise<NaclFilesState> => {
       referencedIndex[elementFullName].add(naclFile.filename)
     })
   })
-  const mergeResult = mergeElements(
-    Object.values(allParsed).flatMap(parsed => parsed.elements)
-  )
+  const newNaclFilesElements = newNaclFiles.flatMap(naclFile => naclFile.elements)
+  const currentElementsOfNewFiles = newNaclFiles
+    .map(naclFile => naclFile.filename)
+    .flatMap(filename => (current ?? {})[filename].elements)
+  const relevantElementsIDs = [...newNaclFilesElements, ...currentElementsOfNewFiles]
+    .map(e => e.elemID.getFullName())
+  const newElementsToMerge = relevantElementsIDs
+    .flatMap(fullName => Array.from(elementsIndex[fullName])
+      .flatMap(name => allParsed[name].elements.filter(e => e.elemID.getFullName() === fullName)))
+  const newMergedElementsResult = mergeElements(newElementsToMerge)
+  const mergeErrors = (currentState?.mergeErrors ?? [])
+    .filter(e => !relevantElementsIDs.includes(e.elemID.getFullName()))
+    .concat(newMergedElementsResult.errors)
+  const newMergedElements = _.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName())
+  const currentMergedElements = currentState?.mergedElements ?? {}
+  const mergedElements = {
+    ...currentMergedElements,
+    ...newMergedElements,
+  }
+  const changes = relevantElementsIDs.map(fullName => {
+    const before = currentMergedElements[fullName]
+    const after = mergedElements[fullName]
+    // Addition
+    if (_.isUndefined(before) && !_.isUndefined(after)) {
+      return { action: 'add', data: { after } }
+    }
+    // Removal
+    if (!_.isUndefined(before) && _.isUndefined(after)) {
+      return { action: 'remove', data: { before } }
+    }
+    // Modification
+    if ((!_.isUndefined(before) && !_.isUndefined(after)) && !isEqualElements(before, after)) {
+      return { action: 'modify', data: { before, after } }
+    }
+    return undefined
+  }).filter(c => !_.isUndefined(c)) as Change[]
 
   log.info('workspace has %d elements and %d parsed NaCl files',
     _.size(elementsIndex), _.size(allParsed))
   return {
-    parsedNaclFiles: allParsed,
-    mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
-    mergeErrors: mergeResult.errors,
-    elementsIndex: _.mapValues(elementsIndex, val => Array.from(val)),
-    referencedIndex: _.mapValues(referencedIndex, val => Array.from(val)),
+    state: {
+      parsedNaclFiles: allParsed,
+      mergedElements,
+      mergeErrors,
+      elementsIndex: _.mapValues(elementsIndex, val => Array.from(val)),
+      referencedIndex: _.mapValues(referencedIndex, val => Array.from(val)),
+    },
+    changes,
   }
 }
 
@@ -280,6 +319,7 @@ const buildNaclFilesSource = (
     if (_.isUndefined(state)) {
       state = getParsedNaclFiles(naclFilesStore, cache, staticFileSource)
         .then(parsedFiles => buildNaclFilesState(parsedFiles, {}))
+        .then(res => res.state)
     }
     return state
   }
@@ -339,7 +379,7 @@ const buildNaclFilesSource = (
     await Promise.all(emptyNaclFiles.map(naclFile => naclFilesStore.delete(naclFile.filename)))
   }
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
+  const updateNaclFiles = async (changes: DetailedChange[]): Promise<Change<Element>[]> => {
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
       return naclFile ? naclFile.buffer : ''
@@ -411,11 +451,15 @@ const buildNaclFilesSource = (
     if (updatedNaclFiles.length > 0) {
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       await setNaclFiles(...updatedNaclFiles)
-      state = buildNaclFilesState(
+      const res = buildNaclFilesState(
         updatedNaclFiles,
         (await getState()).parsedNaclFiles
       )
+      // TODO: that hack looks bad - fix it
+      state = Promise.resolve(res.state)
+      return res.changes
     }
+    return []
   }
 
   return {
@@ -466,10 +510,12 @@ const buildNaclFilesSource = (
 
     removeNaclFiles: async (...names: string[]) => {
       await Promise.all(names.map(name => naclFilesStore.delete(name)))
-      state = buildNaclFilesState(
+      const res = buildNaclFilesState(
         await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), cache, functions),
         (await getState()).parsedNaclFiles
       )
+      state = Promise.resolve(res.state)
+      return res.changes
     },
 
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
@@ -504,10 +550,12 @@ const buildNaclFilesSource = (
     updateNaclFiles,
     setNaclFiles: async (...naclFiles) => {
       await setNaclFiles(...naclFiles)
-      state = buildNaclFilesState(
+      const res = buildNaclFilesState(
         await parseNaclFiles(naclFiles, cache, functions),
         (await getState()).parsedNaclFiles
       )
+      state = Promise.resolve(res.state)
+      return res.changes
     },
     getSourceMap,
     getElementNaclFiles,
@@ -522,6 +570,10 @@ export const naclFilesSource = (
   staticFileSource: StaticFilesSource,
   parsedFiles?: ParsedNaclFile[],
 ): NaclFilesSource => {
-  const state = (parsedFiles !== undefined) ? buildNaclFilesState(parsedFiles, {}) : undefined
-  return buildNaclFilesSource(naclFilesStore, cache, staticFileSource, state)
+  const state = (parsedFiles !== undefined)
+    ? buildNaclFilesState(parsedFiles, {}).state
+    : undefined
+  return buildNaclFilesSource(
+    naclFilesStore, cache, staticFileSource, state ? Promise.resolve(state) : undefined
+  )
 }

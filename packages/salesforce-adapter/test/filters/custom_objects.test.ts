@@ -621,7 +621,9 @@ describe('Custom Objects filter', () => {
         expect(lead.fields.NameSystemField.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeTruthy()
         expect(lead.fields.NameSystemField.annotations[FIELD_ANNOTATIONS.CREATABLE]).toBeTruthy()
         expect(lead.fields.NameSystemField.annotations[FIELD_ANNOTATIONS.UPDATEABLE]).toBeTruthy()
-        expect(lead.fields.NameSystemField.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
+        expect(
+          lead.fields.NameSystemField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+        ).toBeUndefined()
       })
 
       it('should filter (inner) SObjects that are not custom objects', async () => {

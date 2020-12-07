@@ -332,7 +332,7 @@ export class Types {
         [FORM_FIELDS.GUID]: {
           type: BuiltinTypes.STRING,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [FORM_FIELDS.NAME]: {
@@ -355,7 +355,7 @@ export class Types {
         [FORM_FIELDS.CREATEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [FORM_FIELDS.CLONEABLE]: { type: BuiltinTypes.BOOLEAN },
@@ -371,7 +371,7 @@ export class Types {
         [WORKFLOWS_FIELDS.ID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [WORKFLOWS_FIELDS.NAME]: {
@@ -399,13 +399,13 @@ export class Types {
         [WORKFLOWS_FIELDS.INSERTEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [WORKFLOWS_FIELDS.UPDATEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [WORKFLOWS_FIELDS.CONTACTLISTIDS]: { type: Types.contactListIdsType },
@@ -464,31 +464,31 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.AUTHOR]: {
           type: BuiltinTypes.STRING,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHORAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: {
           type: BuiltinTypes.STRING,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHORNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: {
@@ -508,7 +508,7 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.CREATED]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: {
@@ -552,7 +552,7 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.FREEZEDATE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.FROMNAME]: { type: BuiltinTypes.STRING },
@@ -560,7 +560,7 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.ID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED]: { type: BuiltinTypes.BOOLEAN },
@@ -573,7 +573,7 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.LIVEDOMAIN]: {
           type: BuiltinTypes.STRING,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: {
@@ -588,13 +588,13 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID]: {
           type: BuiltinTypes.STRING,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: { type: BuiltinTypes.BOOLEAN },
@@ -612,25 +612,25 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY]: { type: BuiltinTypes.BOOLEAN },
@@ -673,19 +673,19 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.UPDATED]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: {
           type: Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER],
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.URL]: { type: BuiltinTypes.STRING },
@@ -777,7 +777,7 @@ export class Types {
         [CONTACT_PROPERTY_FIELDS.CREATEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: {

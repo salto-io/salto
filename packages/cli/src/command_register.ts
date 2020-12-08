@@ -13,22 +13,155 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import yargs from 'yargs'
-import { promises } from '@salto-io/lowerdash'
-import builders from './commands/index'
-import { CommandBuilder, YargsCommandBuilder } from './command_builder'
+import _ from 'lodash'
+import commander from 'commander'
+import { PositionalOption, CommandOrGroupDef, isCommand, CommandDef, CommandsGroupDef, KeyedOption } from './command_builder'
+import { CliArgs } from './types'
+import { versionString } from './version'
 
-const { promiseWithState } = promises.state
+const LIST_SUFFIX = '...'
+const OPTION_NEGATION_PREFIX = 'no-'
+export const COMMANDER_ERROR_NAME = 'CommanderError'
+export const HELP_DISPLAYED_CODE = 'commander.helpDisplayed'
+export const VERSION_CODE = 'commander.version'
 
-const registerBuilder = (
-  yargsParser: yargs.Argv, { yargsModule, build }: YargsCommandBuilder
-): Promise<CommandBuilder> =>
-  new Promise<CommandBuilder>(resolved => yargsParser.command({
-    ...yargsModule,
-    handler: () => resolved(build),
-  }))
+export const createProgramCommand = (): commander.Command => (
+  new commander.Command('salto')
+    .version(`${versionString}\n`)
+    .passCommandToAction(false)
+    .exitOverride()
+)
 
-export const registerBuilders = (
-  parser: yargs.Argv, allBuilders: YargsCommandBuilder[] = builders
-): promises.state.PromiseWithState<CommandBuilder> =>
-  promiseWithState(Promise.race(allBuilders.map(builder => registerBuilder(parser, builder))))
+const wrapWithRequired = (innerStr: string): string =>
+  (`<${innerStr}>`)
+
+const wrapWithOptional = (innerStr: string): string =>
+  (`[${innerStr}]`)
+
+const isNegationOption = <T>(option: KeyedOption<T>): boolean =>
+  (option.type === 'boolean' && option.default === true)
+
+const createOptionString = (
+  name: string,
+  type: string,
+  alias?: string,
+  isNegation = false
+): string => {
+  const actualName = isNegation ? `${OPTION_NEGATION_PREFIX}${name}` : name
+  const aliasAndName = alias ? `-${alias}, --${actualName}` : `--${actualName}`
+  const varDef = (type === 'boolean')
+    ? ''
+    // Keyed string/stringsList options are always wrapped with <>
+    // because [] is a way to define it can also be a boolean
+    : (wrapWithRequired(type === 'stringsList' ? `${name}${LIST_SUFFIX}` : name))
+  return `${aliasAndName} ${varDef}`
+}
+
+const positionalOptionsStr = <T>(positionalOptions: PositionalOption<T>[]): string =>
+  (positionalOptions.map(positional => {
+    const innerStr = positional.type === 'stringsList'
+      ? `${positional.name}${LIST_SUFFIX}`
+      : positional.name
+    return positional.required ? wrapWithRequired(`${innerStr}`) : wrapWithOptional(`${innerStr}`)
+  }).join(' '))
+
+const addKeyedOption = <T>(parentCommand: commander.Command, option: KeyedOption<T>): void => {
+  const optionNameInKebabCase = _.kebabCase(option.name)
+  if (optionNameInKebabCase.startsWith(OPTION_NEGATION_PREFIX)) {
+    throw new Error('Options with \'no[A-Z].*\' pattern (e.g. \'noLogin\') are illegal due to commander\'s negation feature. Use default true without the no prefix instead (e.g. \'login\' with default true)')
+  }
+  const optionDefStr = createOptionString(
+    // camelCase option names are automatically changed to kebabCase in the help
+    optionNameInKebabCase,
+    option.type,
+    option.alias,
+    // We automatically replace bools with default true (negationOptions) with 'no-*' options
+    isNegationOption(option)
+  )
+  if (option.required) {
+    parentCommand.requiredOption(
+      optionDefStr,
+      option.description,
+      option.default,
+    )
+  } else {
+    // When an option is a boolean and is not required the default is false because of commander's
+    // boolean behaviour (only yes/undefined is possible from user input)
+    const defaultVal = option.default
+      ?? (option.type === 'boolean' ? false : undefined)
+    parentCommand.option(optionDefStr, option.description, defaultVal)
+  }
+}
+
+const registerCommand = <T>(
+  parentCommand: commander.Command,
+  commandDef: CommandDef<T>,
+  cliArgs: CliArgs,
+): void => {
+  const {
+    properties: { name, description, keyedOptions = [], positionalOptions = [] },
+    action,
+  } = commandDef
+  const command = new commander.Command()
+    .passCommandToAction(false)
+    .command(`${name} ${positionalOptionsStr(positionalOptions)}`)
+    .exitOverride()
+  command.description(description)
+  positionalOptions.forEach(positionalOption =>
+    // Positional options are added as non-required Options because for positional options
+    // requireness derives from <> or [] in the command and not option definition
+    (command.option(
+      positionalOption.name,
+      positionalOption.description,
+      positionalOption.default,
+    )))
+  keyedOptions.forEach(keyedOption => addKeyedOption(command, keyedOption))
+  command.action(
+    async (...commanderInput) => {
+      await action({
+        ...cliArgs,
+        commanderInput,
+      })
+    }
+  )
+  parentCommand.addCommand(command)
+}
+
+const registerGroup = (
+  parentCommand: commander.Command,
+  containerDef: CommandsGroupDef,
+  cliArgs: CliArgs,
+): void => {
+  const { properties, subCommands } = containerDef
+  const groupCommand = new commander.Command()
+    .command(properties.name)
+    .description(properties.description)
+    .exitOverride()
+  subCommands.forEach(subCommand => {
+    /* eslint-disable-next-line @typescript-eslint/no-use-before-define */
+    registerCommandOrGroup(groupCommand, subCommand, cliArgs)
+  })
+  parentCommand.addCommand(groupCommand)
+}
+
+const registerCommandOrGroup = (
+  parentCommand: commander.Command,
+  commandOrGroupDef: CommandOrGroupDef,
+  cliArgs: CliArgs,
+): void => {
+  if (isCommand(commandOrGroupDef)) {
+    registerCommand(parentCommand, commandOrGroupDef, cliArgs)
+  } else {
+    registerGroup(parentCommand, commandOrGroupDef, cliArgs)
+  }
+}
+
+export const registerCommands = (
+  commanderProgram: commander.Command,
+  allDefinitions: CommandOrGroupDef[],
+  cliArgs: CliArgs,
+): void => {
+  allDefinitions.forEach(commandOrGroupDef => {
+    registerCommandOrGroup(commanderProgram, commandOrGroupDef, cliArgs)
+  })
+}

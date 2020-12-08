@@ -14,30 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { deploy, preview, DeployResult, Plan, PlanItem, ItemStatus, Tags } from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
-import { setInterval } from 'timers'
-import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
+import { PlanItem, Plan, preview, DeployResult, Tags, ItemStatus, deploy } from '@salto-io/core'
+import { logger } from '@salto-io/logging'
+import { Workspace } from '@salto-io/workspace'
+import { createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { EnvArg, ENVIORMENT_OPTION } from './common/env'
+import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
-import { environmentFilter } from '../filters/env'
-import { createCommandBuilder } from '../command_builder'
-import { getUserBooleanInput } from '../callbacks'
-import {
-  CliCommand, CliOutput, ParsedCliInput,
-  CliExitCode, SpinnerCreator, CliTelemetry,
-} from '../types'
-import {
-  formatActionStart, formatItemDone,
-  formatCancelAction, formatActionInProgress,
-  formatItemError, deployPhaseEpilogue,
-  header, formatExecutionPlan, deployPhaseHeader,
-  cancelDeployOutput,
-} from '../formatter'
+import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue } from '../formatter'
 import Prompts from '../prompts'
-import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
-import { servicesFilter, ServicesArgs } from '../filters/service'
-import { getCliTelemetry } from '../telemetry'
+import { getUserBooleanInput } from '../callbacks'
+import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../workspace/workspace'
 
 const log = logger(module)
 
@@ -79,34 +68,27 @@ export const shouldDeploy = async (
   return getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN)
 }
 
-export class DeployCommand implements CliCommand {
-  readonly output: CliOutput
-  private actions: Map<string, Action>
-  private cliTelemetry: CliTelemetry
+type DeployArgs = {
+  force: boolean
+  dryRun: boolean
+  detailedPlan: boolean
+} & ServicesArg & EnvArg
 
-  constructor(
-    private readonly workspaceDir: string,
-    readonly force: boolean,
-    readonly dryRun: boolean,
-    readonly detailedPlan: boolean,
-    cliTelemetry: CliTelemetry,
-    output: CliOutput,
-    private readonly spinnerCreator: SpinnerCreator,
-    readonly inputServices?: string[],
-    readonly inputEnv?: string,
-  ) {
-    this.output = output
-    this.actions = new Map<string, Action>()
-    this.cliTelemetry = cliTelemetry
-    this.inputServices = inputServices
-    this.inputEnv = inputEnv
-  }
-
-  private endAction(itemName: string): void {
-    const action = this.actions.get(itemName)
-    if (action) {
+const deployPlan = async (
+  actionPlan: Plan,
+  workspace: Workspace,
+  workspaceTags: Tags,
+  cliTelemetry: CliTelemetry,
+  output: CliOutput,
+  force: boolean,
+  services?: string[],
+): Promise<DeployResult> => {
+  const actions: Record<string, Action> = {}
+  const endAction = (itemName: string): void => {
+    const action = actions[itemName]
+    if (action !== undefined) {
       if (action.startTime && action.item) {
-        outputLine(formatItemDone(action.item, action.startTime), this.output)
+        outputLine(formatItemDone(action.item, action.startTime), output)
       }
       if (action.intervalId) {
         clearInterval(action.intervalId)
@@ -114,189 +96,164 @@ export class DeployCommand implements CliCommand {
     }
   }
 
-  private errorAction(itemName: string, details: string): void {
-    const action = this.actions.get(itemName)
-    if (action) {
-      errorOutputLine(formatItemError(itemName, details), this.output)
+  const errorAction = (itemName: string, details: string): void => {
+    const action = actions[itemName]
+    if (action !== undefined) {
+      errorOutputLine(formatItemError(itemName, details), output)
       if (action.intervalId) {
         clearInterval(action.intervalId)
       }
     }
   }
 
-  private cancelAction(itemName: string, parentItemName: string): void {
-    outputLine(formatCancelAction(itemName, parentItemName), this.output)
+  const cancelAction = (itemName: string, parentItemName: string): void => {
+    outputLine(formatCancelAction(itemName, parentItemName), output)
   }
 
-  private startAction(itemName: string, item: PlanItem): void {
+  const startAction = (itemName: string, item: PlanItem): void => {
     const startTime = new Date()
     const intervalId = setInterval(() => {
-      outputLine(formatActionInProgress(itemName, item.action, startTime), this.output)
+      outputLine(formatActionInProgress(itemName, item.action, startTime), output)
     }, ACTION_INPROGRESS_INTERVAL)
     const action = {
       item,
       startTime,
       intervalId,
     }
-    this.actions.set(itemName, action)
-    outputLine(formatActionStart(item), this.output)
+    actions[itemName] = action
+    outputLine(formatActionStart(item), output)
   }
 
-  updateAction(item: PlanItem, status: ItemStatus, details?: string): void {
+  const updateAction = (item: PlanItem, status: ItemStatus, details?: string): void => {
     const itemName = item.groupKey
     if (itemName) {
       if (status === 'started') {
-        this.startAction(itemName, item)
-      } else if (this.actions.has(itemName) && status === 'finished') {
-        this.endAction(itemName)
-      } else if (this.actions.has(itemName) && status === 'error' && details) {
-        this.errorAction(itemName, details)
+        startAction(itemName, item)
+      } else if (actions[itemName] !== undefined && status === 'finished') {
+        endAction(itemName)
+      } else if (actions[itemName] !== undefined && status === 'error' && details) {
+        errorAction(itemName, details)
       } else if (status === 'cancelled' && details) {
-        this.cancelAction(itemName, details)
+        cancelAction(itemName, details)
       }
     }
   }
+  const executingDeploy = (force || await shouldDeploy(actionPlan))
+  await printStartDeploy(output, executingDeploy)
+  const result = executingDeploy
+    ? await deploy(
+      workspace,
+      actionPlan,
+      (item: PlanItem, step: ItemStatus, details?: string) =>
+        updateAction(item, step, details),
+      services,
+    ) : { success: true, errors: [] }
+  const nonErroredActions = Object.keys(actions)
+    .filter(action =>
+      !result.errors.map(error => error !== undefined && error.elementId).includes(action))
+  outputLine(deployPhaseEpilogue(
+    nonErroredActions.length,
+    result.errors.length,
+  ), output)
+  output.stdout.write(EOL)
+  log.debug(`${result.errors.length} errors occured:\n${result.errors.map(err => err.message).join('\n')}`)
 
-  private async deployPlan(
-    actionPlan: Plan,
-    workspace: Workspace,
-    workspaceTags: Tags,
-  ): Promise<DeployResult> {
-    if (this.dryRun) {
-      return { success: true, errors: [] }
-    }
-    const executingDeploy = (this.force || await shouldDeploy(actionPlan))
-    await printStartDeploy(this.output, executingDeploy)
-    const result = executingDeploy
-      ? await deploy(
-        workspace,
-        actionPlan,
-        (item: PlanItem, step: ItemStatus, details?: string) =>
-          this.updateAction(item, step, details),
-        this.inputServices,
-      )
-      : { success: true, errors: [] }
-
-    const nonErroredActions = [...this.actions.keys()]
-      .filter(action => !result.errors.map(error => error.elementId).includes(action))
-    outputLine(deployPhaseEpilogue(
-      nonErroredActions.length,
-      result.errors.length,
-    ), this.output)
-    this.output.stdout.write(EOL)
-    log.debug(`${result.errors.length} errors occured:\n${result.errors.map(err => err.message).join('\n')}`)
-
-    if (executingDeploy) {
-      this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
-      this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
-    }
-
-    return result
+  if (executingDeploy) {
+    cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
+    cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
   }
 
-  async execute(): Promise<CliExitCode> {
-    log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}, dryRun=${this.dryRun}, detailedPlan=${this.detailedPlan}]`)
-    const { workspace, errored } = await loadWorkspace(this.workspaceDir,
-      this.output,
-      {
-        force: this.force,
-        printStateRecency: true,
-        recommendStateStatus: true,
-        spinnerCreator: this.spinnerCreator,
-        sessionEnv: this.inputEnv,
-      })
-    if (errored) {
-      this.cliTelemetry.failure()
-      return CliExitCode.AppError
-    }
-
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-
-    this.cliTelemetry.start(workspaceTags)
-    const actionPlan = await preview(workspace, this.inputServices)
-    await printPlan(actionPlan, this.output, workspace, this.detailedPlan)
-
-    const result = await this.deployPlan(actionPlan, workspace, workspaceTags)
-    let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
-    if (!_.isUndefined(result.changes)) {
-      const changes = [...result.changes]
-      if (!await updateWorkspace({
-        workspace,
-        output: this.output,
-        changes,
-        force: this.force,
-      })) {
-        cliExitCode = CliExitCode.AppError
-      }
-    }
-
-    if (cliExitCode === CliExitCode.Success) {
-      this.cliTelemetry.success(workspaceTags)
-    } else {
-      this.cliTelemetry.failure(workspaceTags)
-    }
-
-    return cliExitCode
-  }
+  return result
 }
 
-type DeployArgs = {
-  force: boolean
-  dryRun: boolean
-  detailedPlan: boolean
-} & ServicesArgs
-type DeployParsedCliInput = ParsedCliInput<DeployArgs>
-
-const deployBuilder = createCommandBuilder({
-  options: {
-    command: 'deploy',
-    description: 'Deploys the current NaCl files config to the target services',
-    keyed: {
-      force: {
-        alias: ['f'],
-        describe: 'Do not ask for approval before deploying the changes',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      // will also be available as dryRun because of camel-case-expansion
-      'dry-run': {
-        alias: ['d'],
-        describe: 'Preview the execution plan without deploying the changes',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      // will also be available as detailedPlan because of camel-case-expansion
-      'detailed-plan': {
-        alias: ['p'],
-        describe: 'Print detailed plan including value changes',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-    },
-  },
-
-  filters: [servicesFilter, environmentFilter],
-
-  async build(
-    input: DeployParsedCliInput,
-    output: CliOutput,
-    spinnerCreator: SpinnerCreator
-  ): Promise<CliCommand> {
-    return new DeployCommand(
-      '.',
-      input.args.force,
-      input.args.dryRun,
-      input.args.detailedPlan,
-      getCliTelemetry(input.telemetry, 'deploy'),
-      output,
+export const action: CommandDefAction<DeployArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running deploy command on \'%s\' %o', workspacePath, input)
+  const { force, dryRun, detailedPlan, env, services } = input
+  const { workspace, errored } = await loadWorkspace(workspacePath,
+    output,
+    {
+      force,
+      printStateRecency: true,
+      recommendStateStatus: true,
       spinnerCreator,
-      input.args.services,
-      input.args.env,
-    )
+      sessionEnv: env,
+    })
+  if (errored) {
+    cliTelemetry.failure()
+    return CliExitCode.AppError
+  }
+  const actualServices = getAndValidateActiveServices(workspace, services)
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  cliTelemetry.start(workspaceTags)
+
+  const actionPlan = await preview(workspace, actualServices)
+  await printPlan(actionPlan, output, workspace, detailedPlan)
+
+  const result = dryRun ? { success: true, errors: [] } : await deployPlan(
+    actionPlan,
+    workspace,
+    workspaceTags,
+    cliTelemetry,
+    output,
+    force,
+    actualServices,
+  )
+  let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
+  if (!_.isUndefined(result.changes)) {
+    const changes = [...result.changes]
+    if (!await updateWorkspace({
+      workspace,
+      output,
+      changes,
+      force,
+    })) {
+      cliExitCode = CliExitCode.AppError
+    }
+  }
+
+  if (cliExitCode === CliExitCode.Success) {
+    cliTelemetry.success(workspaceTags)
+  } else {
+    cliTelemetry.failure(workspaceTags)
+  }
+
+  return cliExitCode
+}
+
+const deployDef = createPublicCommandDef({
+  properties: {
+    name: 'deploy',
+    description: 'Update the upstream services from the workspace config elements',
+    keyedOptions: [
+      {
+        name: 'force',
+        alias: 'f',
+        description: 'Do not ask for approval before deploying the changes',
+        type: 'boolean',
+      },
+      {
+        name: 'dryRun',
+        alias: 'd',
+        description: 'Review the execution plan without deploying the changes',
+        type: 'boolean',
+      },
+      {
+        name: 'detailedPlan',
+        alias: 'p',
+        description: 'Print detailed plan including value changes',
+        type: 'boolean',
+      },
+      SERVICES_OPTION,
+      ENVIORMENT_OPTION,
+    ],
   },
+  action,
 })
 
-export default deployBuilder
+export default deployDef

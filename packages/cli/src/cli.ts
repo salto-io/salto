@@ -15,35 +15,25 @@
 */
 import os from 'os'
 import chalk from 'chalk'
-import { compareLogLevels, LogLevel, logger } from '@salto-io/logging'
+import { logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'
-import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
-import { YargsCommandBuilder } from './command_builder'
-import parse, { ERROR_STYLE } from './argparser'
+import { CliInput, CliOutput, CliExitCode, SpinnerCreator, CliError } from './types'
+import { CommandOrGroupDef } from './command_builder'
 import { versionString } from './version'
 import { AppConfig } from '../../core/src/app_config'
+import { registerCommands, createProgramCommand, COMMANDER_ERROR_NAME, VERSION_CODE, HELP_DISPLAYED_CODE } from './command_register'
 
-export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 const EVENTS_FLUSH_WAIT_TIME = 1000
 
 const log = logger(module)
 const exceptionEvent = 'workspace.error'
-
-const increaseLoggingLogLevel = (): void => {
-  const currentLogLevel = logger.config.minLevel
-  const isCurrentLogLevelLower = currentLogLevel === 'none'
-    || compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
-
-  if (isCurrentLogLevelLower) {
-    logger.setMinLevel(VERBOSE_LOG_LEVEL)
-  }
-}
+const ERROR_STYLE = 'red'
 
 export default async (
-  { input, output, commandBuilders, spinnerCreator, config }: {
+  { input, output, commandDefs, spinnerCreator, config }: {
     input: CliInput
     output: CliOutput
-    commandBuilders: YargsCommandBuilder[]
+    commandDefs: CommandOrGroupDef[]
     spinnerCreator: SpinnerCreator
     config: AppConfig
   }
@@ -51,37 +41,35 @@ export default async (
   const [nodeExecLoc, saltoExecLoc, ...cmdLineArgs] = process.argv
   const cmdStr = ['salto', ...cmdLineArgs].join(' ')
   const startTime = new Date()
+  log.info(
+    'CLI started. Version: %s, Node exec location: %s, Salto exec location: %s, Current dir: %s',
+    versionString, nodeExecLoc, saltoExecLoc, process.cwd(),
+  )
+  log.debug('OS properties - platform: %s, release: %s, arch %s', os.platform(), os.release(), os.arch())
+  log.debug('Installation ID: %s', config.installationID)
+  log.info('running "%s"', cmdStr)
   try {
-    const parseResult = await parse(commandBuilders, input, output)
-
-    if (parseResult.status === 'error') {
-      return CliExitCode.UserInputError
-    }
-
-    if (parseResult.status === 'command') {
-      const { parsedArgs, builder: commandBuilder } = parseResult
-
-      if (parsedArgs.verbose) {
-        increaseLoggingLogLevel()
-      }
-
-      log.info('CLI started. Version: %s, Node exec location: %s, '
-              + 'Salto exec location: %s, Current dir: %s',
-      versionString,
-      nodeExecLoc,
-      saltoExecLoc,
-      process.cwd())
-      log.debug('OS properties - platform: %s, release: %s, arch %s', os.platform(), os.release(), os.arch())
-      log.debug('Installation ID: %s', config.installationID)
-      log.info('running "%s"', cmdStr)
-
-      const parsedInput = { ...input, args: parsedArgs }
-      const command = await commandBuilder(parsedInput, output, spinnerCreator)
-      return await command.execute()
-    }
-
+    const program = createProgramCommand()
+    registerCommands(program, commandDefs, {
+      telemetry: input.telemetry,
+      config: input.config,
+      output,
+      spinnerCreator,
+    })
+    await program.parseAsync(input.args, { from: 'user' })
     return CliExitCode.Success
   } catch (err) {
+    // Our commander configuration is to not exit after exiting (throwing an error)
+    // This handles the proper exit code if the commander had an error/help/version print
+    if (err.name && err.name === COMMANDER_ERROR_NAME) {
+      if (err.code === HELP_DISPLAYED_CODE || err.code === VERSION_CODE) {
+        return CliExitCode.Success
+      }
+      return CliExitCode.UserInputError
+    }
+    if (err instanceof CliError) {
+      return err.exitCode
+    }
     log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(os.EOL)}`)
     input.telemetry.sendStackEvent(exceptionEvent, err, {})
 

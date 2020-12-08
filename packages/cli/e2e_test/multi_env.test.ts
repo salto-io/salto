@@ -23,6 +23,7 @@ import { writeFile, rm } from '@salto-io/file'
 import { isObjectType, ObjectType, Element, isInstanceElement } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
+import * as callbacks from '../src/callbacks'
 import {
   runInit,
   runSetEnv,
@@ -148,21 +149,25 @@ describe('multi env tests', () => {
     alphaLabel: 'alpha',
     betaLabel: 'beta',
   })
+
   const env1Obj = templates.customObject({
     objName: env1ObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
   })
+
   const env2Obj = templates.customObject({
     objName: env2ObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
   })
+
   const diffObjEnv1 = templates.customObject({
     objName: commonWithDiffName,
     alphaLabel: 'alpha1',
     betaLabel: 'beta1',
   })
+
   const diffObjEnv2 = templates.customObject({
     objName: commonWithDiffName,
     alphaLabel: 'alpha2',
@@ -213,13 +218,19 @@ describe('multi env tests', () => {
   describe('init envs', () => {
     beforeAll(async () => {
       // run salto init with env1
-      await runInit(WS_NAME, ENV1_NAME, baseDir)
+      jest.spyOn(callbacks, 'getEnvName').mockResolvedValue(ENV1_NAME)
+      await runInit(WS_NAME, baseDir)
       // run add salesforce service
-      await runAddSalesforceService(baseDir, getSalesforceCredsInstance(env1Creds))
+      const mockGetCreds = jest.spyOn(callbacks, 'getCredentialsFromUser')
+      mockGetCreds.mockImplementation(() =>
+        Promise.resolve(getSalesforceCredsInstance(env1Creds)))
+      await runAddSalesforceService(baseDir)
       // run create env with env2
       await runCreateEnv(baseDir, ENV2_NAME)
       // run add salesforce service
-      await runAddSalesforceService(baseDir, getSalesforceCredsInstance(env2Creds))
+      mockGetCreds.mockImplementation(() =>
+        Promise.resolve(getSalesforceCredsInstance(env2Creds)))
+      await runAddSalesforceService(baseDir)
     })
 
     it('should create proper env structure', () => {
@@ -551,7 +562,6 @@ describe('multi env tests', () => {
         expect(await instanceExists(env1Client, 'Role', env2NaclFileInstName)).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', env1NaclFileInstName)).toBeFalsy()
       })
-
 
       it('should update the attributes added in the deploy in the proper env file', async () => {
         await Promise.all([

@@ -13,85 +13,188 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import yargs from 'yargs'
-import { ParsedCliInput, CliOutput, CliCommand, SpinnerCreator } from './types'
-import { Filter } from './filter'
+import _ from 'lodash'
+import { types, values } from '@salto-io/lowerdash'
+import { logger, compareLogLevels, LogLevel } from '@salto-io/logging'
+import { CommandConfig } from '@salto-io/core'
+import { CliOutput, SpinnerCreator, CliExitCode, CliTelemetry, CliError, CliArgs } from './types'
+import { VERBOSE_OPTION } from './commands/common/options'
+import { getCliTelemetry } from './telemetry'
 
-export type CommandBuilder<
-  TArgs = {},
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
-  > =
-  // Create a CliCommand given a parsed CLI input (output of yargs parser) and output interface
-  (input: TParsedCliInput, output: CliOutput, spinner: SpinnerCreator) => Promise<CliCommand>
+const { isDefined } = values
 
-export interface KeyedOptions { [key: string]: yargs.Options }
-export interface PositionalOptions { [key: string]: yargs.PositionalOptions }
+const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 
-export interface YargsModuleOpts {
-  // Name of this command in the CLI, e.g., 'deploy'
-  // If positional arguments are included, they also need to be specified here
-  // See: https://github.com/yargs/yargs/blob/master/docs/advanced.md#positional-arguments
-  command: string
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
-  // Additional or shorthand names, e.g, 'a'
-  aliases?: string[]
-
-  // Description to be shown in help
+type BasicCommandProperties = {
+  name: string
   description: string
-
-  // Positional arguments
-  positional?: PositionalOptions
-
-  // Keyed arguments
-  keyed?: KeyedOptions
 }
 
-export interface YargsCommandBuilder<
-  TArgs = {},
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
-  > {
-  // Yargs CommandModule for this command
-  // See https://github.com/yargs/yargs/blob/master/docs/advanced.md#providing-a-command-module
-  yargsModule: Omit<yargs.CommandModule, 'handler'>
-
-  // Creates the actual command
-  build: CommandBuilder<TArgs, TParsedCliInput>
+export type CommandsGroupDef = {
+  properties: BasicCommandProperties
+  subCommands: CommandOrGroupDef[]
 }
 
-export const createCommandBuilder = <
-  TArgs = {},
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
->(
-    { options, filters = [], build }:
-    {
-      options: YargsModuleOpts
-      filters?: Filter[]
-      build: CommandBuilder<TArgs, TParsedCliInput>
-    }): YargsCommandBuilder<TArgs, TParsedCliInput> => ({
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+type CommandAction = (args: CliArgs & { commanderInput: any[] }) => Promise<void>
 
-    yargsModule: {
-      command: options.command,
-      aliases: options.aliases,
-      describe: options.description,
-      builder: (parser: yargs.Argv) => {
-        // deploy positional arguments
-        Object.entries(options.positional || {})
-          .reduce((res, [key, opt]) => res.positional(key, opt), parser)
+export type CommandDef<T> = {
+  properties: CommandOptions<T>
+  action: CommandAction
+}
 
-        // apply keyed arguments
-        parser.options(options.keyed || {})
-        parser.version(false)
+type DefActionInput<T> = {
+  input: T
+  output: CliOutput
+  cliTelemetry: CliTelemetry
+  config: CommandConfig
+  spinnerCreator?: SpinnerCreator
+  workspacePath?: string
+}
 
-        // apply filters
-        return Filter.applyParser(filters, parser)
-      },
+export type CommandDefAction<T> = (args: DefActionInput<T>) => Promise<CliExitCode>
+
+type CommandInnerDef<T> = {
+  properties: CommandOptions<T>
+  action: CommandDefAction<T>
+}
+
+export const isCommand = (c?: CommandOrGroupDef): c is CommandDef<unknown> =>
+  (c !== undefined && 'action' in c)
+
+type CommandOptions<T> = BasicCommandProperties & {
+  aliases?: string[]
+  keyedOptions?: KeyedOption<T>[]
+  positionalOptions?: PositionalOption<T>[]
+}
+
+type OptionType = {
+  boolean: boolean
+  string: string
+  stringsList: string[]
+}
+
+type GetTypeEnumValue<T> = types.KeysOfExtendingType<OptionType, T>
+
+// TODO: Remove this when default string[] is allowed in Commander
+type GetOptionsDefaultType<T> = T extends string[] ? never : T
+
+type PossiblePositionalArgs<T> = types.KeysOfExtendingType<T, string | string[] | undefined>
+
+type ChoicesType<T> = T extends string ? string[] : never
+
+export type PositionalOption<T, Name = PossiblePositionalArgs<T>>
+  = Name extends PossiblePositionalArgs<T> ? {
+  name: Name & string
+  required: boolean
+  description?: string
+  type: Exclude<GetTypeEnumValue<T[Name]>, 'boolean'>
+  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
+  choices?: ChoicesType<T[Name]>
+} : never
+
+export type KeyedOption<T, Name extends keyof T = keyof T> = Name extends keyof T ? {
+  name: Name & string
+  required?: boolean
+  description?: string
+  alias?: string
+  type: GetTypeEnumValue<T[Name]>
+  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
+  choices?: ChoicesType<T[Name]>
+} : never
+
+const createPositionalOptionsMapping = <T>(
+  positionalOptions: PositionalOption<T>[],
+  vals: (string | string[] | undefined)[]
+): Record<string, string | string[] | undefined> => {
+  const positionalOptionsNames = positionalOptions.map(p => p.name)
+  return Object.fromEntries(
+    _.zip(positionalOptionsNames, vals)
+  )
+}
+
+const increaseLoggingLogLevel = (): void => {
+  const currentLogLevel = logger.config.minLevel
+  const isCurrentLogLevelLower = currentLogLevel === 'none'
+    || compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
+
+  if (isCurrentLogLevelLower) {
+    logger.setMinLevel(VERBOSE_LOG_LEVEL)
+  }
+}
+
+const validateChoices = <T>(
+  positionalOptions: PositionalOption<T>[],
+  keyedOptions: KeyedOption<T>[],
+  output: CliOutput,
+  args: T,
+): void => {
+  const optionsWithChoices = [
+    ...positionalOptions,
+    ...keyedOptions,
+  ].filter(option => option.choices !== undefined)
+  const choicesValidationErrors = optionsWithChoices.map(optionWithChoice => {
+    if (args[optionWithChoice.name] !== undefined
+      && !optionWithChoice.choices?.includes(String(args[optionWithChoice.name]))) {
+      return `error: option ${optionWithChoice.name} must be one of - [${optionWithChoice.choices?.join(', ')}]\n`
+    }
+    return undefined
+  }).filter(isDefined)
+  if (!_.isEmpty(choicesValidationErrors)) {
+    choicesValidationErrors.forEach(error => (output.stderr.write(error)))
+    throw new CliError(CliExitCode.UserInputError)
+  }
+}
+
+export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T> => {
+  const {
+    properties: { name, description, keyedOptions = [], positionalOptions = [] },
+    action,
+  } = def
+  const commanderAction: CommandAction = async ({
+    commanderInput,
+    config,
+    output,
+    spinnerCreator,
+    telemetry,
+  }): Promise<void> => {
+    const indexOfKeyedOptions = commanderInput.findIndex(o => _.isPlainObject(o))
+    const keyedOptionsObj = commanderInput[indexOfKeyedOptions]
+
+    // Handle the verbose option that is added automatically and is common for all commands
+    if (keyedOptionsObj.verbose) {
+      increaseLoggingLogLevel()
+    }
+    const positionalValues = commanderInput.slice(0, indexOfKeyedOptions)
+    const input = {
+      ...keyedOptionsObj,
+      ...createPositionalOptionsMapping(positionalOptions, positionalValues),
+    }
+    validateChoices(positionalOptions, keyedOptions, output, input)
+    const cliTelemetry = getCliTelemetry(telemetry, def.properties.name)
+    const actionResult = await action({
+      input, cliTelemetry, config, output, spinnerCreator,
+    })
+    if (actionResult !== CliExitCode.Success) {
+      throw new CliError(actionResult)
+    }
+  }
+
+  // Add verbose to all commands
+  const newKeyedOptions = [
+    ...keyedOptions,
+    VERBOSE_OPTION as KeyedOption<T>,
+  ]
+  return {
+    properties: {
+      ...{ name, description, positionalOptions },
+      keyedOptions: newKeyedOptions,
     },
-    async build(
-      input: TParsedCliInput,
-      output: CliOutput,
-      spinnerCreator: SpinnerCreator
-    ): Promise<CliCommand> {
-      const transformedInput = await Filter.applyParsedCliInput(filters, input) as TParsedCliInput
-      return build(transformedInput, output, spinnerCreator)
-    },
-  })
+    action: commanderAction,
+  }
+}
+
+export const createCommandGroupDef = (def: CommandsGroupDef): CommandsGroupDef => def

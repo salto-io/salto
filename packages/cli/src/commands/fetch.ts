@@ -16,43 +16,20 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
-import {
-  fetch as apiFetch,
-  FetchFunc,
-  FetchChange,
-  FetchProgressEvents,
-  StepEmitter,
-  Telemetry,
-  PlanItem,
-} from '@salto-io/core'
+import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter, PlanItem } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
-import { FetchModeArgs, fetchModeFilter } from '../filters/fetch_mode'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
-import { environmentFilter } from '../filters/env'
-import { createCommandBuilder } from '../command_builder'
-import {
-  ParsedCliInput, CliCommand, CliOutput,
-  CliExitCode, SpinnerCreator, CliTelemetry,
-} from '../types'
-import {
-  formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader,
-  formatFetchFinish, formatStateChanges,
-} from '../formatter'
-import {
-  getApprovedChanges as cliGetApprovedChanges,
-  shouldUpdateConfig as cliShouldUpdateConfig,
-  getChangeToAlignAction,
-} from '../callbacks'
-import {
-  loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace,
-} from '../workspace/workspace'
+import { createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { CliOutput, CliExitCode, CliTelemetry } from '../types'
+import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges } from '../formatter'
+import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
+import { loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { servicesFilter, ServicesArgs } from '../filters/service'
-import { getCliTelemetry } from '../telemetry'
-import { EnvironmentArgs } from './env'
+import { ENVIORMENT_OPTION, EnvArg } from './common/env'
+import { SERVICES_OPTION, ServicesArg, getAndValidateActiveServices } from './common/services'
 
 const log = logger(module)
 const { series } = promises.array
@@ -68,7 +45,6 @@ type ShouldUpdateConfigFunc = (
   change: PlanItem
 ) => Promise<boolean>
 
-
 export type FetchCommandArgs = {
   workspace: Workspace
   force: boolean
@@ -81,13 +57,13 @@ export type FetchCommandArgs = {
   shouldUpdateConfig: ShouldUpdateConfigFunc
   shouldCalcTotalSize: boolean
   stateOnly: boolean
-  inputServices?: string[]
+  services: string[]
 }
 
 export const fetchCommand = async (
   {
     workspace, force, interactive, mode,
-    getApprovedChanges, shouldUpdateConfig, inputServices,
+    getApprovedChanges, shouldUpdateConfig, services,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
     stateOnly,
   }: FetchCommandArgs): Promise<CliExitCode> => {
@@ -147,7 +123,7 @@ export const fetchCommand = async (
   const fetchResult = await fetch(
     workspace,
     fetchProgress,
-    inputServices,
+    services,
   )
   if (fetchResult.success === false) {
     errorOutputLine(formatFatalFetchError(fetchResult.mergeErrors), output)
@@ -222,7 +198,7 @@ export const fetchCommand = async (
 const shouldRecommendAlignMode = async (
   workspace: Workspace,
   stateRecencies: StateRecency[],
-  inputServices?: string[],
+  inputServices?: ReadonlyArray<string>,
 ): Promise<boolean> => {
   const newlyAddedServices = stateRecencies
     .filter(recency => (
@@ -236,115 +212,102 @@ const shouldRecommendAlignMode = async (
   )
 }
 
-export const command = (
-  workspaceDir: string,
-  force: boolean,
-  interactive: boolean,
-  telemetry: Telemetry,
-  output: CliOutput,
-  spinnerCreator: SpinnerCreator,
-  mode: nacl.RoutingMode,
-  shouldCalcTotalSize: boolean,
-  inputServices?: string[],
-  inputEnvironment?: string,
-  stateOnly = false,
-): CliCommand => ({
-  async execute(): Promise<CliExitCode> {
-    log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, mode=${mode}], environment=${inputEnvironment}, services=${inputServices}`)
-
-    const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
-    const { workspace, errored, stateRecencies } = await loadWorkspace(workspaceDir, output,
-      { force, printStateRecency: true, spinnerCreator, sessionEnv: inputEnvironment })
-    if (errored) {
-      cliTelemetry.failure()
-      return CliExitCode.AppError
-    }
-
-    let useAlignMode = false
-    if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, inputServices)) {
-      const userChoice = await getChangeToAlignAction(mode, output)
-      if (userChoice === 'cancel operation') {
-        log.info('Canceling operation based on user input')
-        return CliExitCode.UserInputError
-      }
-      if (userChoice === 'yes') {
-        log.info(`Changing fetch mode from '${mode}' to 'align' based on user input`)
-        useAlignMode = true
-      }
-      log.info('Not changing fetch mode based on user input')
-    }
-
-    return fetchCommand({
-      workspace,
-      force,
-      interactive,
-      cliTelemetry,
-      output,
-      fetch: apiFetch,
-      getApprovedChanges: cliGetApprovedChanges,
-      shouldUpdateConfig: cliShouldUpdateConfig,
-      inputServices,
-      mode: useAlignMode ? 'align' : mode,
-      shouldCalcTotalSize,
-      stateOnly,
-    })
-  },
-})
-
 type FetchArgs = {
   force: boolean
   interactive: boolean
   stateOnly: boolean
-} & FetchModeArgs & ServicesArgs & EnvironmentArgs
-type FetchParsedCliInput = ParsedCliInput<FetchArgs>
+  mode: nacl.RoutingMode
+} & ServicesArg & EnvArg
 
-const fetchBuilder = createCommandBuilder({
-  options: {
-    command: 'fetch',
+export const action: CommandDefAction<FetchArgs> = async ({
+  input,
+  cliTelemetry,
+  config,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running fetch command on \'%s\' %o', workspacePath, input)
+  const { force, interactive, stateOnly, services, env, mode } = input
+  const { shouldCalcTotalSize } = config
+  const { workspace, errored, stateRecencies } = await loadWorkspace(workspacePath, output,
+    { force, printStateRecency: true, spinnerCreator, sessionEnv: env })
+  if (errored) {
+    cliTelemetry.failure()
+    return CliExitCode.AppError
+  }
+  const activeServices = getAndValidateActiveServices(workspace, services)
+
+  let useAlignMode = false
+  if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, activeServices)) {
+    const userChoice = await getChangeToAlignAction(mode, output)
+    if (userChoice === 'cancel operation') {
+      log.info('Canceling operation based on user input')
+      return CliExitCode.UserInputError
+    }
+    if (userChoice === 'yes') {
+      log.info(`Changing fetch mode from '${mode}' to 'align' based on user input`)
+      useAlignMode = true
+    }
+    log.info('Not changing fetch mode based on user input')
+  }
+
+  return fetchCommand({
+    workspace,
+    force,
+    interactive,
+    cliTelemetry,
+    output,
+    fetch: apiFetch,
+    getApprovedChanges: cliGetApprovedChanges,
+    shouldUpdateConfig: cliShouldUpdateConfig,
+    services: activeServices,
+    mode: useAlignMode ? 'align' : mode,
+    shouldCalcTotalSize,
+    stateOnly,
+  })
+}
+
+const fetchDef = createPublicCommandDef({
+  properties: {
+    name: 'fetch',
     description: 'Syncs this workspace with the services\' current state',
-    keyed: {
-      force: {
-        alias: ['f'],
-        describe: 'Accept all incoming changes, even if there\'s a conflict with local changes',
-        boolean: true,
-        default: false,
-        demandOption: false,
+    keyedOptions: [
+      {
+        name: 'force',
+        alias: 'f',
+        required: false,
+        description: 'Accept all incoming changes, even if there\'s a conflict with local changes',
+        type: 'boolean',
       },
-      interactive: {
-        alias: ['i'],
-        describe: 'Interactively approve every incoming change',
-        boolean: true,
-        default: false,
-        demandOption: false,
+      {
+        name: 'interactive',
+        alias: 'i',
+        required: false,
+        description: 'Interactively approve every incoming change',
+        type: 'boolean',
       },
-      'state-only': {
-        alias: ['st'],
-        describe: 'Fetch remote changes to the state file without mofifying the NaCL files. ',
-        boolean: true,
-        default: false,
-        demandOption: false,
+      {
+        name: 'stateOnly',
+        alias: 'st',
+        required: false,
+        description: 'Fetch remote changes to the state file without mofifying the NaCL files',
+        type: 'boolean',
       },
-    },
+      SERVICES_OPTION,
+      ENVIORMENT_OPTION,
+      {
+        name: 'mode',
+        alias: 'm',
+        required: false,
+        description: 'Choose a fetch mode. Options - [align, override, isolated]',
+        type: 'string',
+        choices: ['isolated', 'default', 'align', 'override'],
+        default: 'default',
+      },
+    ],
   },
-
-  filters: [servicesFilter, environmentFilter, fetchModeFilter],
-
-  async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command(
-      '.',
-      input.args.force,
-      input.args.interactive,
-      input.telemetry,
-      output,
-      spinnerCreator,
-      input.args.mode,
-      input.config.shouldCalcTotalSize,
-      input.args.services,
-      input.args.env,
-      input.args.stateOnly,
-    )
-  },
+  action,
 })
 
-export default fetchBuilder
+export default fetchDef

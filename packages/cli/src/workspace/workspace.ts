@@ -63,7 +63,6 @@ export type LoadWorkspaceOptions = {
   ignoreUnresolvedRefs?: boolean
 }
 
-
 type ApplyProgressEvents = {
   workspaceWillBeUpdated: (stepProgress: StepEmitter, changes: number, approved: number) => void
 }
@@ -145,7 +144,6 @@ const logWorkspaceUpdates = async (
   }
 }
 
-
 const shouldRecommendFetch = async (
   stateSaltoVersion: string | undefined,
   invalidRecencies: StateRecency[],
@@ -191,6 +189,10 @@ export const loadWorkspace = async (
 
   const workspace = await loadLocalWorkspace(workingDir)
   if (!_.isUndefined(sessionEnv)) {
+    if (!(workspace.envs().includes(sessionEnv))) {
+      spinner.fail(`Environment ${sessionEnv} isn't configured. Use salto env create.`)
+      return { workspace, errored: true, stateRecencies: [] }
+    }
     await workspace.setCurrentEnv(sessionEnv, false)
   }
 
@@ -211,7 +213,6 @@ export const loadWorkspace = async (
       : Prompts.STATE_RECENCY(recency.serviceName, recency.date as Date))).join(EOL)
     cliOutput.stdout.write(prompt + EOL)
   }
-
 
   // Offer to cancel because of stale status (stale or version)
   const stateSaltoVersion = await workspace.state().getStateSaltoVersion()

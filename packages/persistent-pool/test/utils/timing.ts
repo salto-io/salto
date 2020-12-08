@@ -13,16 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-type Func<TArgs extends unknown[], TReturn> = (...args: TArgs) => TReturn
+import { types } from '@salto-io/lowerdash'
 
-type FunctionPropertyNames<T> = {
-  [K in keyof T]: T[K] extends Function ? K : never
-}[keyof T]
+type Func<TArgs extends unknown[], TReturn> = (...args: TArgs) => TReturn
 
 export type InvocationsMeasurements = number[]
 
 export type Timings = {
-  setup: <T extends {}, M extends FunctionPropertyNames<T>>(
+  setup: <T extends {}, M extends types.KeysOfType<T, Function>>(
     objectName: string,
     object: T,
     method: M,
@@ -54,7 +52,7 @@ const timings = (): Timings => {
         : after()
     }
 
-  const setup = <T extends {}, M extends FunctionPropertyNames<T>>(
+  const setup = <T extends {}, M extends types.KeysOfType<T, Function>>(
     objectName: string, object: T, method: M
   ): void => {
     const original = object[method]

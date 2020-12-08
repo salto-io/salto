@@ -15,7 +15,7 @@
 */
 import { Workspace } from '@salto-io/workspace'
 import * as mocks from '../mocks'
-import { command } from '../../src/commands/init'
+import { action } from '../../src/commands/init'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 import { CliTelemetry } from '../../src/types'
 
@@ -34,6 +34,13 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
+const mockGetEnv = mocks.createMockEnvNameGetter()
+
+jest.mock('../../src/callbacks', () => ({
+  ...jest.requireActual('../../src/callbacks'),
+  getEnvName: () => mockGetEnv(),
+}))
+
 const commandName = 'init'
 const eventsNames = {
   success: buildEventName(commandName, 'success'),
@@ -42,41 +49,46 @@ const eventsNames = {
 }
 
 describe('init command', () => {
-  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  let mockTelemetry: mocks.MockTelemetry
-  let mockCliTelemetry: CliTelemetry
+  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  let telemetry: mocks.MockTelemetry
+  let cliTelemetry: CliTelemetry
+  const config = { shouldCalcTotalSize: false }
 
   beforeEach(async () => {
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    mockTelemetry = mocks.getMockTelemetry()
-    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'init')
+    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    telemetry = mocks.getMockTelemetry()
+    cliTelemetry = getCliTelemetry(telemetry, 'init')
   })
 
   it('should invoke api\'s init', async () => {
-    await command(
-      'test',
-      mockCliTelemetry,
-      cliOutput,
-      mocks.createMockEnvNameGetter(),
-    ).execute()
-    expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
-    expect(mockTelemetry.getEvents()).toHaveLength(2)
-    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
-    expect(mockTelemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
-    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+    await action({
+      input: {
+        workspaceName: 'test',
+      },
+      config,
+      cliTelemetry,
+      output,
+    })
+    expect(output.stdout.content.search('test')).toBeGreaterThan(0)
+    expect(telemetry.getEvents()).toHaveLength(2)
+    expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
+    expect(telemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
+    expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
   })
 
   it('should print errors', async () => {
-    await command(
-      'error',
-      mockCliTelemetry,
-      cliOutput,
-      mocks.createMockEnvNameGetter(),
-    ).execute()
-    expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
-    expect(mockTelemetry.getEvents()).toHaveLength(2)
-    expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
-    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
-    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+    await action({
+      input: {
+        workspaceName: 'error',
+      },
+      config,
+      cliTelemetry,
+      output,
+    })
+    expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
+    expect(telemetry.getEvents()).toHaveLength(2)
+    expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+    expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+    expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
   })
 })

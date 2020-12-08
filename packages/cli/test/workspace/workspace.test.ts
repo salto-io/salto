@@ -163,6 +163,11 @@ describe('workspace', () => {
       expect(cliOutput.stdout.content).toBe('')
     })
 
+    it('Should fail when sessionEnv does not exist in workspace', async () => {
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true, sessionEnv: 'badEnv' })
+      expect(spinner.fail).toHaveBeenCalled()
+    })
+
     it('prompts user when the state is too old and recommend recency is enabled', async () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now), status: 'Old', serviceName: 'salesforce' }

@@ -18,7 +18,7 @@ import { configFromDisk, telemetrySender } from '@salto-io/core'
 import { versionString, versionDetails } from './version'
 import cli from './cli'
 import { CliExitCode } from './types'
-import commandBuilders from './commands'
+import commandDefs from './commands'
 import oraSpinner from './ora_spinner'
 
 sourceMapSupport.install()
@@ -44,7 +44,7 @@ const main = async (): Promise<CliExitCode> => {
   return cli({
     input: { args, stdin, telemetry, config: config.command },
     output: { stdout, stderr },
-    commandBuilders,
+    commandDefs,
     spinnerCreator: oraSpinnerCreator,
     config,
   })

@@ -18,7 +18,6 @@ import { errors as wsErrors } from '@salto-io/workspace'
 import { SaltoError, ElemID } from '@salto-io/adapter-api'
 import { groupRelatedErrors, UnresolvedReferenceGroupError } from '../../src/workspace/errors'
 
-
 describe('groupRelatedErrors', () => {
   let nonGroupedError: SaltoError
   let originalErrors: ReadonlyArray<SaltoError>

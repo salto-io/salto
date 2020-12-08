@@ -1,4 +1,3 @@
-
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -14,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { Telemetry, Tags } from '@salto-io/core'
 import { TelemetryEventNames, CliTelemetry } from './types'
 
@@ -59,10 +57,6 @@ export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetr
     sendCount(buildEventName(command, 'errors'), numErrors, tags)
   }
 
-  const failedRows = (numFailedRows: number, tags = {}): void => {
-    sendCount(buildEventName(command, 'failedRows'), numFailedRows, tags)
-  }
-
   const actionsSuccess = (numActions: number, tags = {}): void => {
     sendCount(buildEventName(command, 'actionsSuccess'), numActions, tags)
   }
@@ -87,7 +81,6 @@ export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetr
     changes,
     changesToApply,
     errors,
-    failedRows,
     actionsSuccess,
     actionsFailure,
     workspaceSize,

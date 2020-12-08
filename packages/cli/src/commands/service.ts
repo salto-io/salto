@@ -13,27 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { AdapterAuthMethod, AdapterAuthentication, InstanceElement, ObjectType, OAuthMethod, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { EOL } from 'os'
-import {
-  addAdapter, getLoginStatuses, LoginStatus, updateCredentials, loadLocalWorkspace,
-  getAdaptersCredentialsTypes, installAdapter,
-} from '@salto-io/core'
+import { logger } from '@salto-io/logging'
+import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, loadLocalWorkspace, getAdaptersCredentialsTypes, installAdapter } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { InstanceElement, ObjectType, AdapterAuthentication, ElemID, OAuthMethod, AdapterAuthMethod } from '@salto-io/adapter-api'
-import { outputLine, errorOutputLine } from '../outputer'
-import { environmentFilter } from '../filters/env'
-import { processOauthCredentials } from '../cli_oauth_authenticator'
-import { createCommandBuilder } from '../command_builder'
-import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
 import { getCredentialsFromUser } from '../callbacks'
-import { serviceCmdFilter, ServiceCmdArgs } from '../filters/service'
-import {
-  formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
-  formatLoginUpdated, formatLoginOverride, formatServiceAdded, formatServiceAlreadyAdded,
-  formatCredentialsHeader, formatLoginToServiceFailed,
-} from '../formatter'
-import { EnvironmentArgs } from './env'
+import { CliOutput, CliExitCode } from '../types'
+import { createCommandGroupDef, createPublicCommandDef, CommandDefAction, KeyedOption } from '../command_builder'
+import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatConfiguredServices, formatServiceNotConfigured, formatLoginOverride } from '../formatter'
+import { errorOutputLine, outputLine } from '../outputer'
+import { processOauthCredentials } from '../cli_oauth_authenticator'
+import { EnvArg, ENVIORMENT_OPTION } from './common/env'
+
+const log = logger(module)
+
+type AuthTypeArgs = {
+  authType: AdapterAuthMethod
+}
+
+const AUTH_TYPE_OPTION: KeyedOption<AuthTypeArgs> = {
+  name: 'authType',
+  alias: 'a',
+  description: 'The type of authorization you would like to use for the service. Options = [basic, oauth]',
+  type: 'string',
+  required: false,
+  choices: ['basic', 'oauth'],
+  default: 'basic',
+}
 
 const getOauthConfig = async (
   oauthMethod: OAuthMethod,
@@ -74,11 +82,10 @@ const getConfigFromInput = async (
 const getLoginInputFlow = async (
   workspace: Workspace,
   authMethods: AdapterAuthentication,
-  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   output: CliOutput,
   authType: AdapterAuthMethod,
 ): Promise<void> => {
-  const newConfig = await getConfigFromInput(authType, authMethods, output, getLoginInput)
+  const newConfig = await getConfigFromInput(authType, authMethods, output, getCredentialsFromUser)
   await updateCredentials(workspace, newConfig)
   output.stdout.write(EOL)
   outputLine(formatLoginUpdated, output)
@@ -93,27 +100,30 @@ Promise<Workspace> => {
   return workspace
 }
 
-const addService = async (
-  workspaceDir: string,
-  output: CliOutput,
-  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
-  serviceName: string,
-  authType: AdapterAuthMethod,
-  inputEnvironment?: string,
-  nologin?: boolean,
-): Promise<CliExitCode> => {
-  const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
+// Add
+type ServiceAddArgs = {
+    login: boolean
+    serviceName: string
+} & AuthTypeArgs & EnvArg
+
+export const addAction: CommandDefAction<ServiceAddArgs> = async ({
+  input,
+  output,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running service add command on \'%s\' %o', workspacePath, input)
+  const { login, serviceName, authType, env } = input
+  const workspace = await loadWorkspace(workspacePath, env)
   if (workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceAlreadyAdded(serviceName), output)
     return CliExitCode.UserInputError
   }
 
   await installAdapter(serviceName)
-  if (!nologin) {
+  if (login) {
     const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceName])[serviceName]
     try {
-      await getLoginInputFlow(workspace, adapterCredentialsTypes,
-        getLoginInput, output, authType)
+      await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType)
     } catch (e) {
       errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
       return CliExitCode.AppError
@@ -125,32 +135,72 @@ const addService = async (
   return CliExitCode.Success
 }
 
-const listServices = async (
-  workspaceDir: string,
-  cliOutput: CliOutput,
-  serviceName: string,
-  inputEnvironment?: string,
+const serviceAddDef = createPublicCommandDef({
+  properties: {
+    name: 'add',
+    description: 'Add a new service to the environment',
+    keyedOptions: [
+      {
+        // Will be replaced with --no-login
+        name: 'login',
+        default: true,
+        alias: 'n',
+        type: 'boolean',
+        description: 'Do not login to service when adding it. Example usage: \'service add <service-name> --no-login\'.',
+        required: false,
+      },
+      AUTH_TYPE_OPTION,
+      ENVIORMENT_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'serviceName',
+        type: 'string',
+        description: 'The name of the service',
+        required: true,
+      },
+    ],
+  },
+  action: addAction,
+})
+
+// List
+type ServiceListArgs = {} & EnvArg
+
+export const listAction: CommandDefAction<ServiceListArgs> = async (
+  { input, output, workspacePath = '.' },
 ): Promise<CliExitCode> => {
-  const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
-  if (_.isEmpty(serviceName)) {
-    outputLine(formatConfiguredServices(workspace.services()), cliOutput)
-  } else if (workspace.services().includes(serviceName)) {
-    outputLine(formatServiceConfigured(serviceName), cliOutput)
-  } else {
-    outputLine(formatServiceNotConfigured(serviceName), cliOutput)
-  }
+  log.debug('running service list command on \'%s\' %o', workspacePath, input)
+  const { env } = input
+  const workspace = await loadWorkspace(workspacePath, env)
+  outputLine(formatConfiguredServices(workspace.services()), output)
   return CliExitCode.Success
 }
 
-const loginService = async (
-  workspaceDir: string,
-  output: CliOutput,
-  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
-  serviceName: string,
-  authType: AdapterAuthMethod,
-  inputEnvironment?: string,
-): Promise<CliExitCode> => {
-  const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
+const serviceListDef = createPublicCommandDef({
+  properties: {
+    name: 'list',
+    description: 'List environment services',
+    keyedOptions: [
+      ENVIORMENT_OPTION,
+    ],
+  },
+  action: listAction,
+})
+
+// Login
+type ServiceLoginArgs = {
+    serviceName: string
+} & AuthTypeArgs & EnvArg
+
+export const loginAction: CommandDefAction<ServiceLoginArgs> = async ({
+  input,
+  output,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running service login command on \'%s\' %o', workspacePath, input)
+  const { serviceName, authType, env } = input
+  const workspace = await loadWorkspace(workspacePath, env)
   if (!workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceNotConfigured(serviceName), output)
     return CliExitCode.AppError
@@ -163,8 +213,7 @@ const loginService = async (
     outputLine(formatLoginOverride, output)
   }
   try {
-    await getLoginInputFlow(workspace, serviceLoginStatus.configTypeOptions,
-      getLoginInput, output, authType)
+    await getLoginInputFlow(workspace, serviceLoginStatus.configTypeOptions, output, authType)
   } catch (e) {
     errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
     return CliExitCode.AppError
@@ -172,77 +221,36 @@ const loginService = async (
   return CliExitCode.Success
 }
 
-export const command = (
-  workspaceDir: string,
-  commandName: string,
-  { stdout, stderr }: CliOutput,
-  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
-  authType: AdapterAuthMethod,
-  serviceName = '',
-  inputEnvironment?: string,
-  nologin?: boolean,
-): CliCommand => ({
-  async execute(): Promise<CliExitCode> {
-    switch (commandName) {
-      case 'add':
-        return addService(
-          workspaceDir,
-          { stdout, stderr },
-          getLoginInput,
-          serviceName,
-          authType,
-          inputEnvironment,
-          nologin,
-        )
-      case 'list':
-        return listServices(workspaceDir, { stdout, stderr }, serviceName, inputEnvironment)
-      case 'login':
-        return loginService(
-          workspaceDir,
-          { stdout, stderr },
-          getLoginInput,
-          serviceName,
-          authType,
-          inputEnvironment,
-        )
-      default:
-        throw new Error('Unknown service management command')
-    }
-  },
-})
-
-type ServiceArgs = {} & ServiceCmdArgs & EnvironmentArgs
-
-type ServiceParsedCliInput = ParsedCliInput<ServiceArgs>
-
-const servicesBuilder = createCommandBuilder({
-  options: {
-    command: 'service <command> [name]',
-    description: 'Manage your environment services',
-    keyed: {
-      nologin: {
-        alias: ['n'],
-        describe: 'Do not login to service when adding it. Example usage: \'service add <service-name> --nologin\'.',
-        boolean: true,
-        default: false,
-        demandOption: false,
+const serviceLoginDef = createPublicCommandDef({
+  properties: {
+    name: 'login',
+    description: 'Set the environment service credentials',
+    keyedOptions: [
+      AUTH_TYPE_OPTION,
+      ENVIORMENT_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'serviceName',
+        type: 'string',
+        description: 'The name of the service',
+        required: true,
       },
-    },
+    ],
   },
-
-  filters: [serviceCmdFilter, environmentFilter],
-  async build(input: ServiceParsedCliInput, output: CliOutput) {
-    return command(
-      '.',
-      input.args.command,
-      output,
-      getCredentialsFromUser,
-      input.args.authType as AdapterAuthMethod,
-      input.args.name,
-      input.args.env,
-      input.args.nologin,
-    )
-  },
+  action: loginAction,
 })
 
-export default servicesBuilder
+const serviceGroupDef = createCommandGroupDef({
+  properties: {
+    name: 'service',
+    description: 'Manage the environment services',
+  },
+  subCommands: [
+    serviceAddDef,
+    serviceListDef,
+    serviceLoginDef,
+  ],
+})
+
+export default serviceGroupDef

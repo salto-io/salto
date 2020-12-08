@@ -13,15 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import path from 'path'
-
-export enum Font { 'Standard' }
-
-const fontsDir = path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'figlet', 'fonts')
-
-// @ts-ignore
-const fontValues = Object.keys(Font).map(k => Font[k]).filter(k => typeof k === 'number')
-
-export const fontFiles = new Map<Font, string>(
-  fontValues.map(f => [f, path.join(fontsDir, `${Font[f]}.flf`)])
-)
+export const VERBOSE_OPTION = {
+  name: 'verbose',
+  alias: 'v',
+  required: false,
+  description: 'Output extra logs',
+  type: 'boolean',
+}

@@ -45,7 +45,6 @@ import {
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
-
 let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>
 
@@ -56,23 +55,6 @@ const apiNameAnno = (
 
 describe('cli e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
-
-  beforeAll(() => {
-    jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan, _planErrors): string => {
-      lastPlan = p
-      return 'plan'
-    })
-    jest.spyOn(DeployCommandImpl, 'shouldDeploy').mockImplementation(
-      (p: Plan): Promise<boolean> => {
-        lastPlan = p
-        const { length } = [...wu(p.itemsByEvalOrder())]
-        return Promise.resolve(length < 100) // Safety to avoid breaking the SF instance
-      }
-    )
-    jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
-      () => Promise.resolve('default')
-    )
-  })
 
   afterAll(workspaceHelpersCleanup)
 
@@ -131,6 +113,21 @@ describe('cli e2e', () => {
     client = new SalesforceClient({
       credentials: new UsernamePasswordCredentials(credsLease.value),
     })
+    jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan, _planErrors): string => {
+      lastPlan = p
+      return 'plan'
+    })
+    jest.spyOn(DeployCommandImpl, 'shouldDeploy').mockImplementation(
+      (p: Plan): Promise<boolean> => {
+        lastPlan = p
+        const { length } = [...wu(p.itemsByEvalOrder())]
+        return Promise.resolve(length < 100) // Safety to avoid breaking the SF instance
+      }
+    )
+    jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
+      () => Promise.resolve('default')
+    )
+    jest.spyOn(callbacksImpl, 'getCredentialsFromUser').mockResolvedValue(getSalesforceCredsInstance(credsLease.value))
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(`${fetchOutputDir}/salto.config/adapters`)
     await mkdirp(localStorageDir)
@@ -148,7 +145,7 @@ describe('cli e2e', () => {
     if (await instanceExists(client, ROLE, newInstance2FullName)) {
       await client.delete(ROLE, newInstance2FullName)
     }
-    await runSalesforceLogin(fetchOutputDir, getSalesforceCredsInstance(credsLease.value))
+    await runSalesforceLogin(fetchOutputDir)
     await runFetch(fetchOutputDir)
   })
 

@@ -13,15 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import path from 'path'
+import { KeyedOption } from '../../command_builder'
 
-export enum Font { 'Standard' }
+export type EnvArg = {
+    env?: string
+}
 
-const fontsDir = path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'figlet', 'fonts')
-
-// @ts-ignore
-const fontValues = Object.keys(Font).map(k => Font[k]).filter(k => typeof k === 'number')
-
-export const fontFiles = new Map<Font, string>(
-  fontValues.map(f => [f, path.join(fontsDir, `${Font[f]}.flf`)])
-)
+export const ENVIORMENT_OPTION: KeyedOption<EnvArg> = {
+  name: 'env',
+  alias: 'e',
+  required: false,
+  description: 'The name of the environment to use (default=current env)',
+  type: 'string',
+}

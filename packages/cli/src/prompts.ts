@@ -47,7 +47,6 @@ export default class Prompts {
   }
 
   public static readonly EXPLAIN_PREVIEW_RESULT = `Resources and actions are indicated with the following symbols:
-
   ${Prompts.MODIFIERS.add} create
   ${Prompts.MODIFIERS.modify} change
   ${Prompts.MODIFIERS.remove} remove`
@@ -72,7 +71,6 @@ export default class Prompts {
 
   public static initCompleted(name: string, baseDir: string): string {
     return `Initiated empty workspace ${name} at ${baseDir}
-
 ${Prompts.SERVICE_ADD_HELP}
 `
   }
@@ -102,7 +100,6 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly LOADING_WORKSPACE = 'Loading workspace...'
   public static readonly FINISHED_LOADING = 'Finished loading workspace'
   public static readonly FINISHED_LOADING_FOR_ENV = `${Prompts.FINISHED_LOADING} for environment`
-
 
   public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`}.`

@@ -14,27 +14,20 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, createElementSelectors, ElementSelector } from '@salto-io/workspace'
+import { listUnresolvedReferences, Tags } from '@salto-io/core'
+import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
-import { listUnresolvedReferences } from '@salto-io/core'
-import { getCliTelemetry } from '../telemetry'
-import { EnvironmentArgs } from './env'
-import { outputLine, errorOutputLine } from '../outputer'
-import { environmentFilter } from '../filters/env'
-import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, CliTelemetry, SpinnerCreator } from '../types'
-import { createCommandBuilder } from '../command_builder'
+import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { CliOutput, CliExitCode, CliTelemetry } from '../types'
+import { errorOutputLine, outputLine } from '../outputer'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import {
-  formatTargetEnvRequired, formatInvalidFilters, formatUnknownTargetEnv, formatCloneToEnvFailed,
-  formatMissingCloneArg, formatInvalidEnvTargetCurrent, formatMoveFailed,
-  formatInvalidMoveArg, formatInvalidElementCommand, formatElementListUnresolvedFailed,
-  formatMissingElementSelectors, formatListUnresolvedFound, formatListUnresolvedMissing, emptyLine,
-} from '../formatter'
+import { EnvArg, ENVIORMENT_OPTION } from './common/env'
 
 const log = logger(module)
-const COMMON = 'common'
-const ENVS = 'envs'
+
+type CommonOrEnvs = 'common' | 'envs'
 
 const validateEnvs = (
   output: CliOutput,
@@ -57,57 +50,21 @@ const validateEnvs = (
   return true
 }
 
-const cloneElement = async (
-  workspace: Workspace,
-  output: CliOutput,
-  cliTelemetry: CliTelemetry,
-  toEnvs: string[],
-  selectors: ElementSelector[],
-): Promise<CliExitCode> => {
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-
-  if (!validateEnvs(output, workspace, toEnvs)) {
-    cliTelemetry.failure(workspaceTags)
-    return CliExitCode.UserInputError
-  }
-
-  cliTelemetry.start(workspaceTags)
-  try {
-    outputLine(Prompts.CLONE_TO_ENV_START(toEnvs), output)
-    await workspace.copyTo(await workspace.getElementIdsBySelectors(selectors), toEnvs)
-    await workspace.flush()
-    cliTelemetry.success(workspaceTags)
-    return CliExitCode.Success
-  } catch (e) {
-    cliTelemetry.failure(workspaceTags)
-    errorOutputLine(formatCloneToEnvFailed(e.message), output)
-    return CliExitCode.AppError
-  }
-}
-
 const moveElement = async (
   workspace: Workspace,
+  workspaceTags: Tags,
   output: CliOutput,
   cliTelemetry: CliTelemetry,
-  to: string,
+  to: CommonOrEnvs,
   elmSelectors: ElementSelector[],
 ): Promise<CliExitCode> => {
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-  cliTelemetry.start(workspaceTags)
   try {
-    switch (to) {
-      case COMMON:
-        outputLine(Prompts.MOVE_START('common'), output)
-        await workspace.promote(await workspace.getElementIdsBySelectors(elmSelectors))
-        break
-      case ENVS:
-        outputLine(Prompts.MOVE_START('environment-specific folders'), output)
-        await workspace.demote(await workspace.getElementIdsBySelectors(elmSelectors, true))
-        break
-      default:
-        errorOutputLine(formatInvalidMoveArg(to), output)
-        cliTelemetry.failure(workspaceTags)
-        return CliExitCode.UserInputError
+    if (to === 'common') {
+      outputLine(Prompts.MOVE_START('common'), output)
+      await workspace.promote(await workspace.getElementIdsBySelectors(elmSelectors))
+    } else if (to === 'envs') {
+      outputLine(Prompts.MOVE_START('environment-specific folders'), output)
+      await workspace.demote(await workspace.getElementIdsBySelectors(elmSelectors, true))
     }
     await workspace.flush()
     cliTelemetry.success(workspaceTags)
@@ -119,12 +76,217 @@ const moveElement = async (
   }
 }
 
-const listUnresolved = async (
-  workspace: Workspace,
-  output: CliOutput,
-  cliTelemetry: CliTelemetry,
-  completeFrom?: string,
-): Promise<CliExitCode> => {
+// Move to common
+type ElementMoveToCommonArgs = {
+  elementSelector: string[]
+} & EnvArg
+
+export const moveToCommonAction: CommandDefAction<ElementMoveToCommonArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running move-to-common command on \'%s\' %o', workspacePath, input)
+  const { elementSelector, env } = input
+  const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
+  if (!_.isEmpty(invalidSelectors)) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
+  const { workspace, errored } = await loadWorkspace(
+    workspacePath,
+    output,
+    { force: false, spinnerCreator, sessionEnv: env },
+  )
+  if (errored) {
+    cliTelemetry.failure()
+    return CliExitCode.AppError
+  }
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  cliTelemetry.start(workspaceTags)
+  return moveElement(workspace, workspaceTags, output, cliTelemetry, 'common', validSelectors)
+}
+
+const moveToCommonDef = createPublicCommandDef({
+  properties: {
+    name: 'move-to-common',
+    description: 'Move configuration element(s) to the common folder',
+    positionalOptions: [
+      {
+        name: 'elementSelector',
+        description: 'Array of config element patterns',
+        type: 'stringsList',
+        required: true,
+      },
+    ],
+    keyedOptions: [
+      ENVIORMENT_OPTION,
+    ],
+  },
+  action: moveToCommonAction,
+})
+
+// Move to envs
+type ElementMoveToEnvsArgs = {
+  elementSelector: string[]
+}
+
+export const moveToEnvsAction: CommandDefAction<ElementMoveToEnvsArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running move-to-envs command on \'%s\' %o', workspacePath, input)
+  const { elementSelector } = input
+  const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
+  if (!_.isEmpty(invalidSelectors)) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
+  const { workspace, errored } = await loadWorkspace(
+    workspacePath,
+    output,
+    { force: false, spinnerCreator, sessionEnv: undefined },
+  )
+  if (errored) {
+    cliTelemetry.failure()
+    return CliExitCode.AppError
+  }
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  cliTelemetry.start(workspaceTags)
+  return moveElement(workspace, workspaceTags, output, cliTelemetry, 'envs', validSelectors)
+}
+
+const moveToEnvsDef = createPublicCommandDef({
+  properties: {
+    name: 'move-to-envs',
+    description: 'Move configuration element(s) to env-specific folder(s)',
+    positionalOptions: [
+      {
+        name: 'elementSelector',
+        description: 'Array of config element patterns',
+        type: 'stringsList',
+        required: true,
+      },
+    ],
+  },
+  action: moveToEnvsAction,
+})
+
+// Clone
+type ElementCloneArgs = {
+  elementSelector: string[]
+  toEnvs: string[]
+  force?: boolean
+} & EnvArg
+
+export const cloneAction: CommandDefAction<ElementCloneArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running clone command on \'%s\' %o', workspacePath, input)
+  const { toEnvs, env, elementSelector, force } = input
+  const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
+  if (!_.isEmpty(invalidSelectors)) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
+  const { workspace, errored } = await loadWorkspace(
+    workspacePath,
+    output,
+    { force, spinnerCreator, sessionEnv: env },
+  )
+  if (errored) {
+    cliTelemetry.failure()
+    return CliExitCode.AppError
+  }
+  if (!validateEnvs(output, workspace, toEnvs)) {
+    cliTelemetry.failure()
+    return CliExitCode.UserInputError
+  }
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  cliTelemetry.start(workspaceTags)
+  try {
+    outputLine(Prompts.CLONE_TO_ENV_START(toEnvs), output)
+    await workspace.copyTo(await workspace.getElementIdsBySelectors(validSelectors), toEnvs)
+    await workspace.flush()
+    cliTelemetry.success(workspaceTags)
+    return CliExitCode.Success
+  } catch (e) {
+    cliTelemetry.failure()
+    errorOutputLine(formatCloneToEnvFailed(e.message), output)
+    return CliExitCode.AppError
+  }
+}
+
+const cloneDef = createPublicCommandDef({
+  properties: {
+    name: 'clone',
+    description: 'Clone configuration element(s) from one env-specific folder to other(s)',
+    positionalOptions: [
+      {
+        name: 'elementSelector',
+        description: 'Array of config element patterns',
+        type: 'stringsList',
+        required: true,
+      },
+    ],
+    keyedOptions: [
+      {
+        name: 'toEnvs',
+        description: 'The environment(s) to clone to',
+        type: 'stringsList',
+        required: true,
+      },
+      ENVIORMENT_OPTION,
+      // TODO: Check if needed
+      {
+        name: 'force',
+        alias: 'f',
+        required: false,
+        description: 'Apply even if workspace has issues',
+        type: 'boolean',
+      },
+    ],
+  },
+  action: cloneAction,
+})
+
+// List unresolved
+type ElementListUnresolvedArgs = {
+  completeFrom?: string
+} & EnvArg
+
+export const listUnresolvedAction: CommandDefAction<ElementListUnresolvedArgs> = async ({
+  input,
+  cliTelemetry,
+  output,
+  spinnerCreator,
+  workspacePath = '.',
+}): Promise<CliExitCode> => {
+  log.debug('running element list-unresolved command on \'%s\' %o', workspacePath, input)
+  const { completeFrom, env } = input
+  const { workspace, errored } = await loadWorkspace(
+    workspacePath,
+    output,
+    {
+      force: false,
+      spinnerCreator,
+      sessionEnv: env,
+      ignoreUnresolvedRefs: true,
+    }
+  )
+  if (errored) {
+    cliTelemetry.failure()
+    return CliExitCode.AppError
+  }
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
   if (completeFrom !== undefined && !validateEnvs(output, workspace, [completeFrom])) {
@@ -160,160 +322,35 @@ const listUnresolved = async (
   }
 }
 
-export const command = (
-  workspaceDir: string,
-  output: CliOutput,
-  cliTelemetry: CliTelemetry,
-  spinnerCreator: SpinnerCreator,
-  commandName: string,
-  force: boolean,
-  inputElmSelectors: string[],
-  inputFromEnv?: string,
-  inputToEnvs?: string[],
-  env?: string,
-  completeFrom?: string,
-): CliCommand => ({
-  async execute(): Promise<CliExitCode> {
-    log.debug(
-      `running element ${commandName} command on '${workspaceDir}' env=${env}, fromEnv=${inputFromEnv}, toEnvs=${inputToEnvs}
-      completeFrom=${completeFrom}, force=${force}, elmSelectors=${inputElmSelectors}`
-    )
-
-    if (inputElmSelectors.length === 0 && commandName !== 'list-unresolved') {
-      errorOutputLine(formatMissingElementSelectors(), output)
-      return CliExitCode.UserInputError
-    }
-
-    if ((commandName === 'clone')
-    && ((inputFromEnv === undefined) || (inputToEnvs === undefined))) {
-      errorOutputLine(formatMissingCloneArg(), output)
-      errorOutputLine(Prompts.ELEMENT_CLONE_USAGE, output)
-      return CliExitCode.UserInputError
-    }
-    const sessionEnv = env ?? inputFromEnv ?? undefined
-    const toEnvs = inputToEnvs ?? []
-
-    const { validSelectors, invalidSelectors } = createElementSelectors(inputElmSelectors)
-    if (!_.isEmpty(invalidSelectors)) {
-      errorOutputLine(formatInvalidFilters(invalidSelectors), output)
-      return CliExitCode.UserInputError
-    }
-    const { workspace, errored } = await loadWorkspace(
-      workspaceDir,
-      output,
+const listUnresolvedDef = createPublicCommandDef({
+  properties: {
+    name: 'list-unresolved',
+    description: 'Lists unresolved references to configuration elements',
+    keyedOptions: [
       {
-        force,
-        spinnerCreator,
-        sessionEnv,
-        ignoreUnresolvedRefs: (commandName === 'list-unresolved'),
-      }
-    )
-    if (errored) {
-      const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-      cliTelemetry.failure(workspaceTags)
-      return CliExitCode.AppError
-    }
-
-    switch (commandName) {
-      case 'clone':
-        return cloneElement(
-          workspace,
-          output,
-          cliTelemetry,
-          toEnvs,
-          validSelectors,
-        )
-      case 'move-to-common':
-        return moveElement(workspace, output, cliTelemetry, COMMON, validSelectors)
-      case 'move-to-envs':
-        return moveElement(workspace, output, cliTelemetry, ENVS, validSelectors)
-      case 'list-unresolved':
-        return listUnresolved(workspace, output, cliTelemetry, completeFrom)
-      default:
-        errorOutputLine(formatInvalidElementCommand(commandName), output)
-        return CliExitCode.UserInputError
-    }
+        name: 'completeFrom',
+        alias: 'c',
+        description: 'The environment to use for finding unresolved references in list-unresolved',
+        type: 'string',
+        required: false,
+      },
+      ENVIORMENT_OPTION,
+    ],
   },
+  action: listUnresolvedAction,
 })
 
-type CloneArgs = {
-  fromEnv: string
-  toEnvs: string[]
-}
-
-type MoveArgs = {
-  to: string
-} & EnvironmentArgs
-
-type ListUnresolvedArgs = {
-  completeFrom: string
-} & EnvironmentArgs
-
-export type ElementArgs = {
-  command: string
-  force: boolean
-  elementSelector: string[]
-} & CloneArgs & MoveArgs & ListUnresolvedArgs
-
-type ElementParsedCliInput = ParsedCliInput<ElementArgs>
-
-const elementBuilder = createCommandBuilder({
-  filters: [environmentFilter],
-  options: {
-    command: 'element <command> [element-selector..]',
-    description: 'Manage configuration elements',
-    positional: {
-      command: {
-        type: 'string',
-        choices: ['clone', 'move-to-common', 'move-to-envs', 'list-unresolved'],
-        description: 'The element management command',
-      },
-      'element-selector': {
-        description: 'Array of configuration elements',
-      },
-    },
-    keyed: {
-      'from-env': {
-        type: 'string',
-        desc: 'The environment to clone from (Required for clone)',
-        conflicts: ['to', 'env'],
-      },
-      'to-envs': {
-        type: 'array',
-        desc: 'The environment to clone to (Required for clone)',
-        conflicts: ['to', 'env'],
-      },
-      force: {
-        alias: ['f'],
-        describe: 'Clone the elements even if the workspace is invalid.',
-        boolean: true,
-        default: false,
-        demandOption: false,
-      },
-      // will also be available as completeFrom because of camel-case-expansion
-      'complete-from': {
-        type: 'string',
-        desc: 'The environment to use for finding unresolved references in list-unresolved',
-      },
-    },
+const elementGroupDef = createCommandGroupDef({
+  properties: {
+    name: 'element',
+    description: 'Manage the workspace config elements',
   },
-  async build(input: ElementParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command(
-      '.',
-      output,
-      getCliTelemetry(input.telemetry, 'element'),
-      spinnerCreator,
-      input.args.command,
-      input.args.force,
-      input.args.elementSelector,
-      input.args.fromEnv,
-      input.args.toEnvs,
-      input.args.env,
-      input.args.completeFrom,
-    )
-  },
+  subCommands: [
+    moveToCommonDef,
+    moveToEnvsDef,
+    cloneDef,
+    listUnresolvedDef,
+  ],
 })
 
-export type EnvironmentParsedCliInput = ParsedCliInput<ElementParsedCliInput>
-
-export default elementBuilder
+export default elementGroupDef

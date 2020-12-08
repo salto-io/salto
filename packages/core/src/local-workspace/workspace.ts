@@ -208,7 +208,7 @@ Promise<Workspace> => {
 
 export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):
 Promise<Workspace> => {
-  const workspaceName = name || path.basename(path.resolve(baseDir))
+  const workspaceName = name ?? path.basename(path.resolve(baseDir))
   const uid = uuidv4()
   const localStorage = path.join(getSaltoHome(), `${workspaceName}-${uid}`)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {

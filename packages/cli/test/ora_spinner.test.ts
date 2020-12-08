@@ -17,7 +17,6 @@ import streams from 'memory-streams'
 import { SpinnerCreator, Spinner } from '../src/types'
 import oraSpinner from '../src/ora_spinner'
 
-
 describe('use ora spinner', () => {
   let writableStream: NodeJS.WritableStream
   let oraSpinnerCreator: SpinnerCreator

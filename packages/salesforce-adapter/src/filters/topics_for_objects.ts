@@ -103,7 +103,7 @@ const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => (
     const changedObjectTopics = customObjectChanges
       .filter(isModificationChange)
       .filter(change => (
-        getTopicsForObjects(change.data.before) !== getTopicsForObjects(change.data.after)
+        !_.isEqual(getTopicsForObjects(change.data.before), getTopicsForObjects(change.data.after))
       ))
       .map(getChangeElement)
 

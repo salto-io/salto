@@ -94,18 +94,24 @@ describe('Topics for objects filter', () => {
           toChange({ after: mockObject('Test1__c') }),
           toChange({ after: mockObject('Test2__c', true) }),
           toChange({ before: mockObject('Test3__c', true), after: mockObject('Test3__c', false) }),
+          toChange({ before: mockObject('Test4__c'), after: mockObject('Test4__c') }),
         ]
         await filter.preDeploy(changes)
       })
-      it('should add topics annotation to types that do not have it', () => {
+      it('should add topics annotation to new types that do not have it', () => {
         expect(getChangeElement(changes[0]).annotations).toHaveProperty(
           TOPICS_FOR_OBJECTS_ANNOTATION,
           { [ENABLE_TOPICS]: false },
         )
       })
+      it('should not add topics to existing types that do not have it', () => {
+        expect(getChangeElement(changes[3]).annotations).not.toHaveProperty(
+          TOPICS_FOR_OBJECTS_ANNOTATION
+        )
+      })
       it('should add instance change to types that have changed topics enabled value', () => {
-        expect(changes).toHaveLength(5)
-        const topicsInstanceChanges = changes.slice(3)
+        expect(changes).toHaveLength(6)
+        const topicsInstanceChanges = changes.slice(4)
         expect(topicsInstanceChanges.map(change => change.action)).toEqual(['add', 'add'])
         const instances = topicsInstanceChanges.map(getChangeElement) as InstanceElement[]
         expect(instances.map(inst => apiName(inst))).toEqual(['Test2__c', 'Test3__c'])
@@ -125,7 +131,7 @@ describe('Topics for objects filter', () => {
         await filter.onDeploy(changes)
       })
       it('should remove topics instance changes', () => {
-        expect(changes).toHaveLength(3)
+        expect(changes).toHaveLength(4)
         expect(changes.filter(isInstanceChange)).toHaveLength(0)
       })
     })

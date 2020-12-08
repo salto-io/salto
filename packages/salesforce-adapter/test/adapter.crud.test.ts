@@ -1176,7 +1176,7 @@ describe('SalesforceAdapter CRUD', () => {
         it('should deploy changes to the object and fields', async () => {
           expect(mockDeploy).toHaveBeenCalledTimes(1)
           const deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
-          expect(deployedPackage.manifest?.types).toContainEqual(
+          expect(deployedPackage.manifest?.types).toEqual(
             { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
           )
           const deployedValues = await deployedPackage.getData('objects/Test__c.object')

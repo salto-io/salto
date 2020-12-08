@@ -18,7 +18,6 @@ import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
-  INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
@@ -1182,7 +1181,7 @@ describe('Elements validation', () => {
         {},
         undefined,
         {
-          [INSTANCE_ANNOTATIONS.PARENT]: [
+          [CORE_ANNOTATIONS.PARENT]: [
             'valid value',
             new ReferenceExpression(nestedInstance.elemID.createNestedID('unresolvedParent')),
           ],
@@ -1193,7 +1192,7 @@ describe('Elements validation', () => {
         const errors = validateElements([unresolvedRefInAnnoInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID)
-          .toEqual(unresolvedRefInAnnoInst.elemID.createNestedID(INSTANCE_ANNOTATIONS.PARENT, '1'))
+          .toEqual(unresolvedRefInAnnoInst.elemID.createNestedID(CORE_ANNOTATIONS.PARENT, '1'))
       })
     })
   })

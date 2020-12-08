@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType, FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement, Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values, CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression, INSTANCE_ANNOTATIONS, getDeepInnerType, isContainerType, MapType, isMapType } from '@salto-io/adapter-api'
+import { PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType, FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement, Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values, CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression, getDeepInnerType, isContainerType, MapType, isMapType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
@@ -407,7 +407,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
     if (Math.random() < defaultParams.parentFreq) {
-      record.annotations[INSTANCE_ANNOTATIONS.PARENT] = new ReferenceExpression(
+      record.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
         chooseObjIgnoreRank().elemID
       )
     }

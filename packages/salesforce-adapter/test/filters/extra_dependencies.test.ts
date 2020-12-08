@@ -15,7 +15,7 @@
 */
 import {
   Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression,
-  INSTANCE_ANNOTATIONS,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -181,14 +181,14 @@ describe('Internal IDs filter', () => {
 
     it('should add _generated_dependencies when reference does not already exist', () => {
       expect(elements[2]).toBeInstanceOf(InstanceElement)
-      const inst1Deps = elements[2].annotations[INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+      const inst1Deps = elements[2].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
       // "custom" is already referenced using a reference expression on a field
       expect(inst1Deps).toHaveLength(1)
       expect(inst1Deps[0]).toBeInstanceOf(ReferenceExpression)
       expect(inst1Deps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.special')
 
       expect(elements[3]).toBeInstanceOf(InstanceElement)
-      const inst2Deps = elements[3].annotations[INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+      const inst2Deps = elements[3].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
       // "moreSpecial" is not referenced from an instance so it is included
       // "unknown" is not a real field so it's not included
       expect(inst2Deps).toHaveLength(2)

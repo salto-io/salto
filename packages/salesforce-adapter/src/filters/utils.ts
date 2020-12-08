@@ -17,9 +17,9 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
-  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, INSTANCE_ANNOTATIONS,
+  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap,
   isReferenceExpression, ReferenceExpression, AdditionChange, ChangeDataType, Change, ChangeData,
-  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement,
+  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
@@ -141,7 +141,7 @@ export const addObjectParentReference = (instance: InstanceElement,
     return
   }
   instanceDeps.push(new ReferenceExpression(objectID))
-  instance.annotations[INSTANCE_ANNOTATIONS.PARENT] = instanceDeps
+  instance.annotations[CORE_ANNOTATIONS.PARENT] = instanceDeps
 }
 
 export const fullApiName = (parent: string, child: string): string =>

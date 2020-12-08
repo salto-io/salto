@@ -19,4 +19,7 @@ export const CORE_ANNOTATIONS = {
   RESTRICTION: '_restriction',
   HIDDEN: '_hidden',
   HIDDEN_VALUE: '_hidden_value',
+  DEPENDS_ON: '_depends_on',
+  PARENT: '_parent',
+  GENERATED_DEPENDENCIES: '_generated_dependencies',
 }

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
   ReferenceExpression, Values, TemplateExpression, Value, ElemID, InstanceAnnotationTypes,
-  isListType, ListType, BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile, isPrimitiveType,
+  isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
   ContainerType,
@@ -174,7 +174,7 @@ describe('Test utils.ts', () => {
     },
     ['yes', 'this', 'is', 'path'],
     {
-      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
+      [CORE_ANNOTATIONS.DEPENDS_ON]: valueRef,
     },
   )
 
@@ -433,7 +433,7 @@ describe('Test utils.ts', () => {
 
 
         it('should call transform on instance annotation references values', () => {
-          const referenceAnnotationNames = [INSTANCE_ANNOTATIONS.DEPENDS_ON]
+          const referenceAnnotationNames = [CORE_ANNOTATIONS.DEPENDS_ON]
           referenceAnnotationNames.forEach(annotation => {
             expect(transformFunc).toHaveBeenCalledWith({
               value: mockInstance.annotations[annotation],
@@ -678,14 +678,14 @@ describe('Test utils.ts', () => {
             type: listType,
             annotations: {
               a1: 'foo',
-              [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
+              [CORE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
             },
           },
           f3: {
             type: mapType,
             annotations: {
               a2: 'foo',
-              [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
+              [CORE_ANNOTATIONS.DEPENDS_ON]: [new ReferenceExpression(primType.elemID)],
             },
           },
           f4: {
@@ -700,7 +700,7 @@ describe('Test utils.ts', () => {
         objType,
         { f1: 'a', f2: [1, 2, 3], f3: false },
         undefined,
-        { [INSTANCE_ANNOTATIONS.PARENT]: ['me'] },
+        { [CORE_ANNOTATIONS.PARENT]: ['me'] },
       )
       transformFunc = mockFunction<TransformFunc>().mockImplementation(({ value }) => value)
     })
@@ -768,7 +768,7 @@ describe('Test utils.ts', () => {
         expect(transformFunc).toHaveBeenCalledWith({
           value: new ReferenceExpression(primType.elemID),
           field: expect.objectContaining({ type: BuiltinTypes.STRING }),
-          path: objType.fields.f2.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON, '0'),
+          path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
         })
       })
       it('should not transform fields when runOnFields is not set', () => {
@@ -803,7 +803,7 @@ describe('Test utils.ts', () => {
         expect(transformFunc).toHaveBeenCalledWith({
           value: new ReferenceExpression(primType.elemID),
           field: expect.objectContaining({ type: BuiltinTypes.STRING }),
-          path: objType.fields.f2.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON, '0'),
+          path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
         })
       })
       it('should transform fields', () => {
@@ -831,7 +831,7 @@ describe('Test utils.ts', () => {
         expect(otherFunc).not.toHaveBeenCalledWith({
           value: new ReferenceExpression(primType.elemID),
           field: expect.objectContaining({ type: BuiltinTypes.STRING }),
-          path: objType.fields.f2.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON, '0'),
+          path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
         })
       })
     })
@@ -852,7 +852,7 @@ describe('Test utils.ts', () => {
         expect(transformFunc).toHaveBeenCalledWith({
           value: 'me',
           field: expect.any(Field),
-          path: inst.elemID.createNestedID(INSTANCE_ANNOTATIONS.PARENT, '0'),
+          path: inst.elemID.createNestedID(CORE_ANNOTATIONS.PARENT, '0'),
         })
       })
     })
@@ -929,7 +929,7 @@ describe('Test utils.ts', () => {
     },
     [],
     {
-      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
+      [CORE_ANNOTATIONS.DEPENDS_ON]: valueRef,
     },)
     const elementRef = new ReferenceExpression(element.elemID, element, element)
 
@@ -1023,7 +1023,7 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.fileValue).toEqual(Buffer.from(fileContent))
         expect(resolvedInstance.value.objValue).toEqual(firstRef.value.obj)
 
-        expect(resolvedInstance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
+        expect(resolvedInstance.annotations[CORE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
       })
 
       it('should transform back to instance', () => {
@@ -1340,7 +1340,7 @@ describe('Test utils.ts', () => {
     it('should resolve an instance annotation value path', () => {
       expect(resolvePath(
         mockInstance,
-        mockInstance.elemID.createNestedID(INSTANCE_ANNOTATIONS.DEPENDS_ON)
+        mockInstance.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON)
       )).toBe(valueRef)
     })
   })
@@ -1521,7 +1521,7 @@ describe('Test utils.ts', () => {
       list: ['Do', 'you', 'get', 'it', '?'],
       map: { Do: 'you?' },
     }, [], {
-      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: [new ObjectType({ elemID: new ElemID('salto', 'dep') })],
+      [CORE_ANNOTATIONS.DEPENDS_ON]: [new ObjectType({ elemID: new ElemID('salto', 'dep') })],
     })
     const prim = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
@@ -1931,7 +1931,7 @@ describe('Test utils.ts', () => {
           new ObjectType({ elemID: new ElemID('test', 'test') }),
           {},
           undefined,
-          { [INSTANCE_ANNOTATIONS.PARENT]: ['a', 'b'] },
+          { [CORE_ANNOTATIONS.PARENT]: ['a', 'b'] },
         )
         result = getParents(inst)
       })

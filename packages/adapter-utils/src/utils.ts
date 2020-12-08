@@ -24,7 +24,6 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -786,5 +785,5 @@ export const getAllReferencedIds = (element: Element, onlyAnnotations = false): 
 }
 
 export const getParents = (instance: Element): Array<Value> => (
-  collections.array.makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+  collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])
 )

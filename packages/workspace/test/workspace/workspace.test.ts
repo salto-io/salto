@@ -17,7 +17,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, INSTANCE_ANNOTATIONS,
+  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType,
 } from '@salto-io/adapter-api'
 import {
   findElement, applyDetailedChanges,
@@ -467,7 +467,7 @@ describe('workspace', () => {
       },
       ['Records', 'Queue', 'queueInstance'],
       {
-        [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       }
     )
 

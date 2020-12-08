@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType,
-  CORE_ANNOTATIONS, Value, isInstanceElement, INSTANCE_ANNOTATIONS,
+  CORE_ANNOTATIONS, Value, isInstanceElement,
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeElement,
 } from '@salto-io/adapter-api'
@@ -1342,7 +1342,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should add PARENT annotation to workflow instance', async () => {
-          expect(workflowInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          expect(workflowInstance.annotations[CORE_ANNOTATIONS.PARENT])
             .toContainEqual(new ReferenceExpression(leadType.elemID))
         })
       })
@@ -1365,7 +1365,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should add PARENT annotation to assignmentRules instance', async () => {
-          expect(assignmentRulesInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          expect(assignmentRulesInstance.annotations[CORE_ANNOTATIONS.PARENT])
             .toContainEqual(new ReferenceExpression(leadType.elemID))
         })
       })
@@ -1389,7 +1389,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should add PARENT annotation to leadConvertSettings instance', async () => {
-          expect(leadConvertSettingsInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          expect(leadConvertSettingsInstance.annotations[CORE_ANNOTATIONS.PARENT])
             .toContainEqual(new ReferenceExpression(leadType.elemID))
         })
       })
@@ -1421,7 +1421,7 @@ describe('Custom Objects filter', () => {
           })
 
           it('should add PARENT annotation to quickAction instance', async () => {
-            expect(quickActionInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+            expect(quickActionInstance.annotations[CORE_ANNOTATIONS.PARENT])
               .toContainEqual(new ReferenceExpression(leadType.elemID))
           })
         })
@@ -1439,7 +1439,7 @@ describe('Custom Objects filter', () => {
           })
 
           it('should not add PARENT annotation to quickAction instance', async () => {
-            expect(quickActionInstance.annotations).not.toHaveProperty(INSTANCE_ANNOTATIONS.PARENT)
+            expect(quickActionInstance.annotations).not.toHaveProperty(CORE_ANNOTATIONS.PARENT)
           })
         })
       })
@@ -1462,7 +1462,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should add PARENT annotation to customTab instance', async () => {
-          expect(customTabInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          expect(customTabInstance.annotations[CORE_ANNOTATIONS.PARENT])
             .toContainEqual(new ReferenceExpression(leadType.elemID))
         })
       })
@@ -1488,7 +1488,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should add PARENT annotation to customObjectTranslation instance', async () => {
-          expect(customObjectTranslationInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          expect(customObjectTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT])
             .toContainEqual(new ReferenceExpression(leadType.elemID))
         })
       })
@@ -1511,7 +1511,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should add PARENT annotation to instance', () => {
-          expect(sharingRulesInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.PARENT])
             .toContainEqual(new ReferenceExpression(leadType.elemID))
         })
       })
@@ -1545,7 +1545,7 @@ describe('Custom Objects filter', () => {
           [API_NAME]: 'Test__c',
         },
       })
-      parentAnnotation = { [INSTANCE_ANNOTATIONS.PARENT]: [testObject] }
+      parentAnnotation = { [CORE_ANNOTATIONS.PARENT]: [testObject] }
     })
     describe('with inner instance addition', () => {
       let testFieldSet: InstanceElement

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType,
+  BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
@@ -109,7 +109,7 @@ describe('Salto Dump', () => {
     model,
     { name: 'me', num: 7 },
     undefined,
-    { [INSTANCE_ANNOTATIONS.DEPENDS_ON]: 'test' },
+    { [CORE_ANNOTATIONS.DEPENDS_ON]: 'test' },
   )
 
   const config = new InstanceElement(
@@ -202,7 +202,7 @@ describe('Salto Dump', () => {
         expect(body).toMatch(/salesforce.test me {/)
       })
       it('has annotation values', () => {
-        expect(body).toMatch(new RegExp(`${INSTANCE_ANNOTATIONS.DEPENDS_ON}\\s+=\\s+"test"`))
+        expect(body).toMatch(new RegExp(`${CORE_ANNOTATIONS.DEPENDS_ON}\\s+=\\s+"test"`))
       })
     })
 

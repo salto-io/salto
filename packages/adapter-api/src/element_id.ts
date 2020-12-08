@@ -21,9 +21,9 @@ export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', '
 export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
 
 export const INSTANCE_ANNOTATIONS = {
-  DEPENDS_ON: '_depends_on',
-  PARENT: '_parent',
-  GENERATED_DEPENDENCIES: '_generated_dependencies',
+  DEPENDS_ON: CORE_ANNOTATIONS.DEPENDS_ON,
+  PARENT: CORE_ANNOTATIONS.PARENT,
+  GENERATED_DEPENDENCIES: CORE_ANNOTATIONS.GENERATED_DEPENDENCIES,
   HIDDEN: CORE_ANNOTATIONS.HIDDEN,
 }
 

@@ -15,50 +15,55 @@
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
 import rocksdb from 'rocksdb'
-import levelup from 'levelup'
 import { serialization } from '@salto-io/workspace'
-import toArray from 'stream-to-array'
+import { promisify } from 'util'
 
 const { serialize, deserialize } = serialization
-const BATCH_WRITE_INTERVAL = 100
+const BATCH_WRITE_INTERVAL = 1000
 
 type RemoteMap = {
   get: (key: ElemID) => Promise<Element>
   getAll: () => AsyncIterator<Element>
-  getAllByKeys: (keys: ElemID[]) => Promise<Element[]>
   set: (key: ElemID, element: Element) => Promise<void>
   putAll: (elements: AsyncIterable<Element>) => Promise<void>
   list: () => AsyncIterator<ElemID>
 }
 
-export const createRemoteMap = (namespace: string): RemoteMap => {
-  const db = levelup(rocksdb(`/tmp/${namespace}`))
+type RocksDBValue = string | Buffer | undefined
+
+export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => {
+  const db = rocksdb(`/tmp/${namespace}`)
+  await promisify(db.open.bind(db))()
   return {
-    get: async (key: ElemID): Promise<Element> =>
-      ((await deserialize(await db.get(key.getFullName()) as string))[0]),
+    get: async (key: ElemID): Promise<Element> => new Promise(resolve => {
+      db.get(key.getFullName(), async (_error, value) => {
+        resolve((await deserialize(value.toString()))[0])
+      })
+    }),
     getAll: (): AsyncIterator<Element> => {
-      const valueIter = db.createValueStream()[Symbol.asyncIterator]()
+      const valueIter = db.iterator({ keys: false })
       return {
         next: async () => {
-          const { value, done } = await valueIter.next()
+          let done = false
+          let curVal: RocksDBValue
+          await new Promise<void>(resolve => {
+            valueIter.next((_err, _key, value) => {
+              done = value === undefined
+              curVal = value
+              resolve()
+            })
+          })
           return {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            value: value ? (await deserialize(value.toString()))[0] : undefined as any,
+            value: curVal ? (await deserialize(curVal.toString()))[0] : undefined as any,
             done,
           }
         },
       }
     },
-    getAllByKeys: async (keys: ElemID[]): Promise<Element[]> => {
-      const keyStrings = keys.map(key => key.getFullName())
-      const entries = (await toArray(db
-        .createReadStream())).filter(entry => keyStrings.includes(entry.key.toString()))
-      return Promise.all(entries.map(async entry => ((await deserialize(entry
-        .value.toString()))[0])))
-    },
-    set: async (key: ElemID, element: Element): Promise<void> => {
-      (await db.put(key.getFullName(), serialize([element])))
-    },
+    set: async (key: ElemID, element: Element): Promise<void> => new Promise(resolve => {
+      db.put(key.getFullName(), serialize([element]), () => { resolve() })
+    }),
     putAll: async (elements: AsyncIterable<Element>) => {
       let i = 0
       let batch = db.batch()
@@ -66,19 +71,27 @@ export const createRemoteMap = (namespace: string): RemoteMap => {
         i += 1
         batch.put(element.elemID.getFullName(), serialize([element]))
         if (i % BATCH_WRITE_INTERVAL === 0) {
-          await batch.write()
+          await promisify(batch.write.bind(batch))()
           batch = db.batch()
         }
       }
       if (i % BATCH_WRITE_INTERVAL !== 0) {
-        await batch.write()
+        await promisify(batch.write.bind(batch))()
       }
     },
     list: () => {
-      const keyIter = db.createKeyStream()[Symbol.asyncIterator]()
+      const keyIter = db.iterator({ values: false })
       return {
         next: async () => {
-          const { value, done } = await keyIter.next()
+          let done = false
+          let value: RocksDBValue
+          await new Promise<void>(resolve => {
+            keyIter.next((_err, next) => {
+              done = next === undefined
+              value = next
+              resolve()
+            })
+          })
           return {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             value: value ? ElemID.fromFullName(value.toString()) : undefined as any,

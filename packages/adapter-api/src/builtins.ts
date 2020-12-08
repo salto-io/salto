@@ -15,6 +15,9 @@
 */
 import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
+import { CORE_ANNOTATIONS } from './core_annotations'
+
+export { CORE_ANNOTATIONS }
 
 export const GLOBAL_ADAPTER = ''
 
@@ -45,13 +48,6 @@ const StandardBuiltinTypes = {
   }),
 }
 
-export const CORE_ANNOTATIONS = {
-  DEFAULT: '_default',
-  REQUIRED: '_required',
-  RESTRICTION: '_restriction',
-  HIDDEN: '_hidden',
-  HIDDEN_VALUE: '_hidden_value',
-}
 
 export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),

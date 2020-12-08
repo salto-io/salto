@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { CORE_ANNOTATIONS } from './core_annotations'
 
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
@@ -23,7 +24,7 @@ export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: '_depends_on',
   PARENT: '_parent',
   GENERATED_DEPENDENCIES: '_generated_dependencies',
-  HIDDEN: '_hidden',
+  HIDDEN: CORE_ANNOTATIONS.HIDDEN,
 }
 
 export class ElemID {

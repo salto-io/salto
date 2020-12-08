@@ -38,7 +38,7 @@ const wrapWithRequired = (innerStr: string): string =>
 const wrapWithOptional = (innerStr: string): string =>
   (`[${innerStr}]`)
 
-const isNegationOptions = <T>(option: KeyedOption<T>): boolean =>
+const isNegationOption = <T>(option: KeyedOption<T>): boolean =>
   (option.type === 'boolean' && option.default === true)
 
 const createOptionString = (
@@ -51,7 +51,7 @@ const createOptionString = (
   const aliasAndName = alias ? `-${alias}, --${actualName}` : `--${actualName}`
   const varDef = (type === 'boolean')
     ? ''
-    // Keyed string/strinsgList options are always wrapped with <>
+    // Keyed string/stringsList options are always wrapped with <>
     // because [] is a way to define it can also be a boolean
     : (wrapWithRequired(type === 'stringsList' ? `${name}${LIST_SUFFIX}` : name))
   return `${aliasAndName} ${varDef}`
@@ -76,9 +76,9 @@ const addKeyedOption = <T>(parentCommand: commander.Command, option: KeyedOption
     option.type,
     option.alias,
     // We automatically replace bools with default true (negationOptions) with 'no-*' options
-    isNegationOptions(option)
+    isNegationOption(option)
   )
-  if (option.required ?? false) {
+  if (option.required) {
     parentCommand.requiredOption(
       optionDefStr,
       option.description,

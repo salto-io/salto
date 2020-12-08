@@ -79,7 +79,7 @@ export default async (
       ? chalk`{${ERROR_STYLE} ${unstyledErrorString}}` : unstyledErrorString
     errorStream.write(errorString)
     errorStream.write(os.EOL)
-    return err.exitCode ?? CliExitCode.AppError
+    return CliExitCode.AppError
   } finally {
     await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)
     log.info('ran "%s" in %d ms', cmdStr, (new Date().getTime()) - startTime.getTime())

@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import * as mocks from './mocks'
-import { createPublicCommandDef, DefActionInput } from '../src/command_builder'
+import { createPublicCommandDef, CommandDefAction } from '../src/command_builder'
 import { SpinnerCreator, CliExitCode, CliError } from '../src/types'
 
 describe('Command builder', () => {
@@ -27,20 +27,18 @@ describe('Command builder', () => {
       stringsList: string[]
     }
 
-    const action: jest.Mock<
-      Promise<CliExitCode>,
-      [DefActionInput<DummyCommandArgs>]
-    > = jest.fn().mockImplementation(async ({
-      input: { bool, string, choices, stringsList },
-    }): Promise<CliExitCode> => {
-      if (bool && string && choices && stringsList) {
-        if (string === 'error') {
-          throw new Error('error')
+    const action = mocks.mockFunction<CommandDefAction<DummyCommandArgs>>()
+      .mockImplementation(async ({
+        input: { bool, string, choices, stringsList },
+      }): Promise<CliExitCode> => {
+        if (bool && string && choices && stringsList) {
+          if (string === 'error') {
+            throw new Error('error')
+          }
+          return CliExitCode.Success
         }
-        return CliExitCode.Success
-      }
-      return CliExitCode.UserInputError
-    })
+        return CliExitCode.UserInputError
+      })
 
     const createdCommandDef = createPublicCommandDef({
       properties: {

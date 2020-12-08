@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types, collections, values } from '@salto-io/lowerdash'
+import { types, values } from '@salto-io/lowerdash'
 import { logger, compareLogLevels, LogLevel } from '@salto-io/logging'
 import { CommandConfig } from '@salto-io/core'
 import { CliOutput, SpinnerCreator, CliExitCode, CliTelemetry, CliError, CliArgs } from './types'
 import { VERBOSE_OPTION } from './commands/common/options'
 import { getCliTelemetry } from './telemetry'
 
-const { makeArray } = collections.array
 const { isDefined } = values
 
 const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
@@ -47,7 +46,7 @@ export type CommandDef<T> = {
   action: CommandAction
 }
 
-export type DefActionInput<T> = {
+type DefActionInput<T> = {
   input: T
   output: CliOutput
   cliTelemetry: CliTelemetry
@@ -58,7 +57,7 @@ export type DefActionInput<T> = {
 
 export type CommandDefAction<T> = (args: DefActionInput<T>) => Promise<CliExitCode>
 
-export type CommandInnerDef<T> = {
+type CommandInnerDef<T> = {
   properties: CommandOptions<T>
   action: CommandDefAction<T>
 }
@@ -72,7 +71,7 @@ type CommandOptions<T> = BasicCommandProperties & {
   positionalOptions?: PositionalOption<T>[]
 }
 
-export type OptionType = {
+type OptionType = {
   boolean: boolean
   string: string
   stringsList: string[]
@@ -134,9 +133,9 @@ const validateChoices = <T>(
   args: T,
 ): void => {
   const optionsWithChoices = [
-    ...positionalOptions.filter(positionalOption => positionalOption.choices !== undefined),
-    ...keyedOptions.filter(keyedOption => keyedOption.choices !== undefined),
-  ]
+    ...positionalOptions,
+    ...keyedOptions,
+  ].filter(option => option.choices !== undefined)
   const choicesValidationErrors = optionsWithChoices.map(optionWithChoice => {
     if (args[optionWithChoice.name] !== undefined
       && !optionWithChoice.choices?.includes(String(args[optionWithChoice.name]))) {
@@ -186,7 +185,7 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
 
   // Add verbose to all commands
   const newKeyedOptions = [
-    ...makeArray(keyedOptions),
+    ...keyedOptions,
     VERBOSE_OPTION as KeyedOption<T>,
   ]
   return {

@@ -87,6 +87,7 @@ export default interface Connection {
   queryMore(locator: string): Promise<QueryResult<Value>>
   limits(): Promise<Limits>
   identity(): Promise<IdentityInfo>
+  instanceUrl: string
 }
 
 type ArrayOrSingle<T> = T|T[]

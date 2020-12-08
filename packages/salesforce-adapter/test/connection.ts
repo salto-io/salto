@@ -21,6 +21,8 @@ import { MetadataObject, DescribeMetadataResult, ValueTypeField, DescribeValueTy
 import Connection, { Metadata, Soap, Bulk, Tooling, RunTestsResult, RunTestFailure } from '../src/client/jsforce'
 import { createEncodedZipContent, MockInterface, mockFunction, ZipFile } from './utils'
 
+export const MOCK_INSTANCE_URL = 'https://url.com/'
+
 export type MockDescribeResultInput = Pick<MetadataObject, 'xmlName'> & Partial<MetadataObject>
 export const mockDescribeResult = (
   ...objects: MockDescribeResultInput[]
@@ -321,4 +323,5 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     queryMore: mockFunction<Tooling['queryMore']>().mockResolvedValue(mockQueryResult({})),
   },
   identity: mockFunction<Connection['identity']>().mockImplementation(async () => mockIdentity('')),
+  instanceUrl: MOCK_INSTANCE_URL,
 })

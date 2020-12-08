@@ -433,6 +433,16 @@ export default class SalesforceClient {
     })
   }
 
+  @SalesforceClient.requiresLogin
+  public getUrl(): URL | undefined {
+    try {
+      return new URL(this.conn.instanceUrl)
+    } catch (e) {
+      log.error(`Caught exception when tried to parse salesforce url: ${e.stack}`)
+      return undefined
+    }
+  }
+
   /**
    * Read metadata for salesforce object of specific type and name
    */

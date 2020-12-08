@@ -105,7 +105,7 @@ const addChangeToPackage = (
     ? [{ fullName: apiName(instance), type: metadataType(instance) }]
     : []
 
-  if (isRemovalChange(change) && addInstanceToManifest) {
+  if (isRemovalChange(change)) {
     pkg.delete(instance.type, apiName(instance))
   } else {
     pkg.add(instance, addInstanceToManifest)
@@ -174,7 +174,7 @@ const processDeployResponse = (
   const errors = [...testErrors, ...componentErrors]
 
   if (result.checkOnly || (result.rollbackOnError && !result.success)) {
-    // In checkOnly non of the changes are actually applied
+    // In checkOnly none of the changes are actually applied
     // if rollbackOnError and we did not succeed, nothing was applied as well
     return { successfulFullNames: [], errors }
   }

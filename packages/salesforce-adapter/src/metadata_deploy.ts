@@ -175,7 +175,7 @@ const processDeployResponse = (
 
   if (result.checkOnly || (result.rollbackOnError && !result.success)) {
     // In checkOnly non of the changes are actually applied
-    // if rollbackOnError and we did not succeed, nothing as applied as well
+    // if rollbackOnError and we did not succeed, nothing was applied as well
     return { successfulFullNames: [], errors }
   }
 

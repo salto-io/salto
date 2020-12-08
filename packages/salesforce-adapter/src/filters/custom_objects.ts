@@ -698,9 +698,9 @@ const createCustomObjectChange = (
     }
   }
 
-  const afterParent = objectChange?.data.after
   const getAfterInstanceValues = (): MetadataValues => {
     const nestedValues = getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'after')
+    const afterParent = objectChange?.data.after
     if (afterParent === undefined) {
       return {
         ...nestedValues,

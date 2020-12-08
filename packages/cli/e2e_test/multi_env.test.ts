@@ -218,7 +218,7 @@ describe('multi env tests', () => {
   describe('init envs', () => {
     beforeAll(async () => {
       // run salto init with env1
-      jest.spyOn(callbacks, 'getEnvName').mockImplementation(() => Promise.resolve(ENV1_NAME))
+      jest.spyOn(callbacks, 'getEnvName').mockResolvedValue(ENV1_NAME)
       await runInit(WS_NAME, baseDir)
       // run add salesforce service
       const mockGetCreds = jest.spyOn(callbacks, 'getCredentialsFromUser')

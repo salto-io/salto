@@ -56,25 +56,6 @@ const apiNameAnno = (
 describe('cli e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
 
-  beforeAll(() => {
-    jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan, _planErrors): string => {
-      lastPlan = p
-      return 'plan'
-    })
-    jest.spyOn(DeployCommandImpl, 'shouldDeploy').mockImplementation(
-      (p: Plan): Promise<boolean> => {
-        lastPlan = p
-        const { length } = [...wu(p.itemsByEvalOrder())]
-        return Promise.resolve(length < 100) // Safety to avoid breaking the SF instance
-      }
-    )
-    jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
-      () => Promise.resolve('default')
-    )
-    jest.spyOn(callbacksImpl, 'getCredentialsFromUser').mockImplementation(() =>
-      Promise.resolve(getSalesforceCredsInstance(credsLease.value)))
-  })
-
   afterAll(workspaceHelpersCleanup)
 
   const addModelNaclFile = `${__dirname}/../../e2e_test/NACL/add.nacl`
@@ -132,6 +113,21 @@ describe('cli e2e', () => {
     client = new SalesforceClient({
       credentials: new UsernamePasswordCredentials(credsLease.value),
     })
+    jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan, _planErrors): string => {
+      lastPlan = p
+      return 'plan'
+    })
+    jest.spyOn(DeployCommandImpl, 'shouldDeploy').mockImplementation(
+      (p: Plan): Promise<boolean> => {
+        lastPlan = p
+        const { length } = [...wu(p.itemsByEvalOrder())]
+        return Promise.resolve(length < 100) // Safety to avoid breaking the SF instance
+      }
+    )
+    jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
+      () => Promise.resolve('default')
+    )
+    jest.spyOn(callbacksImpl, 'getCredentialsFromUser').mockResolvedValue(getSalesforceCredsInstance(credsLease.value))
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(`${fetchOutputDir}/salto.config/adapters`)
     await mkdirp(localStorageDir)

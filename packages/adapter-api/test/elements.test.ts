@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { BuiltinTypes } from '../src/builtins'
+import { BuiltinTypes, CORE_ANNOTATIONS } from '../src/builtins'
 import {
   Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
   isVariable, isMapType, MapType, isContainerType,
 } from '../src/elements'
-import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
+import { ElemID } from '../src/element_id'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -704,7 +704,7 @@ describe('Test elements.ts', () => {
           'obj',
           'instance',
           'inst',
-          INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES
+          CORE_ANNOTATIONS.GENERATED_DEPENDENCIES
         )
 
         const nonAnno = new ElemID(

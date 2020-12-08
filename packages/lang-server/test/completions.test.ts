@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { INSTANCE_ANNOTATIONS, ElemID } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID } from '@salto-io/adapter-api'
 import path from 'path'
 import { EditorWorkspace } from '../src/workspace'
 import { getPositionContext } from '../src/context'
@@ -713,7 +713,7 @@ describe('Test auto complete', () => {
       const line = (await getLine(workspace, naclFileName, pos)).replace('vs_weekend_car', 'nothing')
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = [INSTANCE_ANNOTATIONS.PARENT]
+      const include = [CORE_ANNOTATIONS.PARENT]
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, INSTANCE_ANNOTATIONS, ReferenceExpression, ElementMap, ElemID,
+  Element, isObjectType, CORE_ANNOTATIONS, ReferenceExpression, ElementMap, ElemID,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -126,8 +126,8 @@ const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => 
     .map(elemId => new ReferenceExpression(elemId))
 
   if (newDependencies.length !== 0) {
-    elem.annotations[INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES] = [
-      ...collections.array.makeArray(elem.annotations[INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
+    elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = [
+      ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
       ...newDependencies,
     ]
   }

@@ -451,6 +451,26 @@ describe('workspace', () => {
       ['Records', 'Queue', 'queueInstance'],
     )
 
+    const queueHiddenInstance = new InstanceElement(
+      'queueHiddenInstance',
+      queueHiddenType,
+      {
+        queueSobjectHidden: {
+          str: 'hidden',
+        },
+        queueSobjectWithHiddenType: {
+          str: 'hidden2',
+        },
+        numHidden: 123,
+        boolNotHidden: false,
+        objWithHiddenAnno: { aaa: 23 },
+      },
+      ['Records', 'Queue', 'queueInstance'],
+      {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      }
+    )
+
     const differentCaseQueue = new InstanceElement(
       'QueueInstance',
       queueHiddenType,
@@ -628,6 +648,13 @@ describe('workspace', () => {
         action: 'add',
         data: {
           after: queueHiddenType,
+        },
+      },
+      { // new Hidden instance
+        id: new ElemID('salesforce', 'Queue', 'instance', 'queueHiddenInstance'),
+        action: 'add',
+        data: {
+          after: queueHiddenInstance,
         },
       },
       { // new Hidden (sub) type (should be removed)
@@ -1040,6 +1067,10 @@ describe('workspace', () => {
       await workspace.updateNaclFiles([change1, change2])
       lead = findElement(await workspace.elements(), new ElemID('salesforce', 'lead')) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
+    })
+
+    it('should hide hidden instance elements', () => {
+      expect(elemMap['salesforce.Queue.instance.queueHiddenInstance']).toBeUndefined()
     })
   })
 

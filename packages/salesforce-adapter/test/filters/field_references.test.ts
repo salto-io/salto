@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, INSTANCE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, CORE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
@@ -97,7 +97,7 @@ const generateObjectAndInstance = ({
     },
     [SALESFORCE, OBJECTS_PATH, ...(parentType ? [parentType] : []), realInstanceName],
     { ...(parentType
-      ? { [INSTANCE_ANNOTATIONS.PARENT]: [
+      ? { [CORE_ANNOTATIONS.PARENT]: [
         new ReferenceExpression(new ElemID(SALESFORCE, parentType)),
       ] }
       : {}) },
@@ -413,7 +413,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         actions,
       },
       [SALESFORCE, OBJECTS_PATH, WORKFLOW_RULE_METADATA_TYPE, instanceName],
-      { [INSTANCE_ANNOTATIONS.PARENT]: [
+      { [CORE_ANNOTATIONS.PARENT]: [
         new ReferenceExpression(new ElemID(SALESFORCE, parentName)),
       ] },
     )
@@ -506,7 +506,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
             [INSTANCE_FULL_NAME_FIELD]: `${parentName}${API_NAME_SEPARATOR}${actionName}`,
           },
           [SALESFORCE, OBJECTS_PATH, actionTypeObj.elemID.typeName, instanceName],
-          { [INSTANCE_ANNOTATIONS.PARENT]: [
+          { [CORE_ANNOTATIONS.PARENT]: [
             new ReferenceExpression(new ElemID(SALESFORCE, parentName)),
           ] },
         )

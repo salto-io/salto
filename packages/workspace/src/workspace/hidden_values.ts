@@ -341,8 +341,8 @@ const filterOutHiddenChanges = async (
       return change
     }
 
-    if (isType(baseElem) && isHidden(baseElem)) {
-      // A change of a hidden type should be omitted completely
+    if ((isType(baseElem) || isInstanceElement(baseElem)) && isHidden(baseElem)) {
+      // A change of a hidden type or instance should be omitted completely
       return undefined
     }
 

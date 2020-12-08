@@ -17,7 +17,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
-  BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, INSTANCE_ANNOTATIONS,
+  BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values,
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
@@ -368,7 +368,7 @@ const createNestedMetadataInstances = (instance: InstanceElement,
           instanceFileName,
         ]
         return new InstanceElement(instanceName, type, nestedInstanceValues,
-          path, { [INSTANCE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
+          path, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
       })
     }))
 

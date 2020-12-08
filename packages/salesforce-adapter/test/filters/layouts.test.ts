@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression,
   BuiltinTypes,
 } from '@salto-io/adapter-api'
 import {
@@ -101,7 +101,7 @@ describe('Test layout filter', () => {
       expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)))
       expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', pathNaclCase(instance.elemID.name)])
 
-      expect(instance.annotations[INSTANCE_ANNOTATIONS.PARENT]).toContainEqual(
+      expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
       )
     }

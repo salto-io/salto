@@ -23,6 +23,7 @@ export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: '_depends_on',
   PARENT: '_parent',
   GENERATED_DEPENDENCIES: '_generated_dependencies',
+  HIDDEN: '_hidden',
 }
 
 export class ElemID {

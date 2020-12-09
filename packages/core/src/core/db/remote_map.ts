@@ -20,6 +20,8 @@ import { promisify } from 'util'
 import LRU from 'lru-cache'
 
 const LRU_OPTIONS = { max: 500 }
+const DB_LOCATION = '/tmp/salto_db'
+const NAMESPACE_SEPARATOR = '_'
 
 const { serialize, deserialize } = serialization
 const BATCH_WRITE_INTERVAL = 1000
@@ -33,17 +35,27 @@ type RemoteMap = {
 }
 
 type RocksDBValue = string | Buffer | undefined
+let dbCreated = false
+let db: rocksdb
+const createDBIfNotCreated = async (): Promise<void> => {
+  if (!dbCreated) {
+    dbCreated = true
+    db = rocksdb(DB_LOCATION)
+    await promisify(db.open.bind(db))()
+  }
+}
 
 export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => {
+  await createDBIfNotCreated()
   const cache = new LRU<ElemID, Element>(LRU_OPTIONS)
-  const db = rocksdb(`/tmp/${namespace}`)
-  await promisify(db.open.bind(db))()
+  const keyToDBKey = (key: ElemID): string =>
+    namespace.concat(NAMESPACE_SEPARATOR).concat(key.getFullName())
   return {
     get: async (key: ElemID): Promise<Element> => new Promise(resolve => {
       if (cache.has(key)) {
         resolve(cache.get(key) as Element)
       } else {
-        db.get(key.getFullName(), async (_error, value) => {
+        db.get(keyToDBKey(key), async (_error, value) => {
           const ret = (await deserialize(value.toString()))[0]
           cache.set(key, ret)
           resolve(ret)
@@ -51,7 +63,11 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
       }
     }),
     getAll: (): AsyncIterator<Element> => {
-      const valueIter = db.iterator({ keys: false })
+      const valueIter = db.iterator({
+        keys: false,
+        gte: namespace.concat(NAMESPACE_SEPARATOR),
+        lte: namespace.concat(String.fromCharCode(NAMESPACE_SEPARATOR.charCodeAt(0) + 1)),
+      })
       return {
         next: async () => {
           let done = false
@@ -73,7 +89,7 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
     },
     set: async (key: ElemID, element: Element): Promise<void> => new Promise(resolve => {
       cache.set(key, element)
-      db.put(key.getFullName(), serialize([element]), () => { resolve() })
+      db.put(keyToDBKey(key), serialize([element]), () => { resolve() })
     }),
     putAll: async (elements: AsyncIterable<Element>) => {
       let i = 0
@@ -81,7 +97,7 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
       for await (const element of elements) {
         i += 1
         cache.set(element.elemID, element)
-        batch.put(element.elemID.getFullName(), serialize([element]))
+        batch.put(keyToDBKey(element.elemID), serialize([element]))
         if (i % BATCH_WRITE_INTERVAL === 0) {
           await promisify(batch.write.bind(batch))()
           batch = db.batch()
@@ -92,7 +108,11 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
       }
     },
     list: () => {
-      const keyIter = db.iterator({ values: false })
+      const keyIter = db.iterator({
+        values: false,
+        gte: namespace.concat(NAMESPACE_SEPARATOR),
+        lte: namespace.concat(String.fromCharCode(NAMESPACE_SEPARATOR.charCodeAt(0) + 1)),
+      })
       return {
         next: async () => {
           let done = false
@@ -106,7 +126,7 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
           })
           return {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            value: value ? ElemID.fromFullName(value.toString()) : undefined as any,
+            value: value ? ElemID.fromFullName(value.toString().replace(namespace.concat(NAMESPACE_SEPARATOR), '')) : undefined as any,
             done,
           }
         },

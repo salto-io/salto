@@ -46,7 +46,8 @@ const getElementHiddenParts = <T extends Element>(
     return stateElement
   }
 
-  const hiddenPaths: ElemID[] = []
+  const hiddenPaths = new Set<string>()
+  const ancestorsOfHiddenPaths = new Set<string>()
 
   // There are two "hidden" annotations - _hidden, and _hidden_value.
   // If this is an instance, the field belongs to the type so we want to check if
@@ -57,7 +58,12 @@ const getElementHiddenParts = <T extends Element>(
   const storeHiddenPaths: TransformFunc = ({ value, field, path }) => {
     if (hiddenFunc(field)) {
       if (path !== undefined) {
-        hiddenPaths.push(path)
+        hiddenPaths.add(path.getFullName())
+        let ancestor = path.createParentID()
+        while (!ancestorsOfHiddenPaths.has(ancestor.getFullName())) {
+          ancestorsOfHiddenPaths.add(ancestor.getFullName())
+          ancestor = ancestor.createParentID()
+        }
       }
       return undefined
     }
@@ -69,25 +75,38 @@ const getElementHiddenParts = <T extends Element>(
     strict: false,
   })
 
-  if (hiddenPaths.length === 0) {
+  if (hiddenPaths.size === 0) {
     // The whole element is visible
     return undefined
   }
 
-  const isPartOfHiddenPath = (path?: ElemID): boolean => (
-    // Something is considered a part of a hidden path if it is a prefix of a hidden path
-    // or if it is nested inside a hidden path.
-    // Assume A.B.C is a hidden path, when we transform the element we must not omit A.B
-    // because then we'd never reach A.B.C
-    // We also do not omit A.B.C.D because A.B.C was hidden, so by association everything inside
-    // it is also hidden
-    path !== undefined && (hiddenPaths.some(hiddenPath =>
-      path.isEqual(hiddenPath) || hiddenPath.isParentOf(path) || path.isParentOf(hiddenPath)))
+  const isAncestorOfHiddenPath = (path: ElemID): boolean => (
+    ancestorsOfHiddenPaths.has(path.getFullName())
   )
+
+  let lastHiddenPath: ElemID | undefined
+  const isNestedHiddenPath = (path: ElemID): boolean => {
+    if (lastHiddenPath?.isParentOf(path)) {
+      return true
+    }
+    if (hiddenPaths.has(path.getFullName())) {
+      lastHiddenPath = path
+      return true
+    }
+    lastHiddenPath = undefined
+    return false
+  }
 
   const hidden = transformElement({
     element: stateElement,
-    transformFunc: ({ value, path }) => (isPartOfHiddenPath(path) ? value : undefined),
+    transformFunc: ({ value, path }) => (
+      // Keep traversing as long as we might reach nested hidden parts.
+      // Note: it is ok to check isAncestorOfHiddenPath before isNestedHiddenPath, because there is
+      // no overlap between ancestorsOfHiddenPaths and hiddenPaths
+      path !== undefined && (isAncestorOfHiddenPath(path) || isNestedHiddenPath(path))
+        ? value
+        : undefined
+    ),
     strict: true,
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts

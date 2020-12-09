@@ -134,7 +134,7 @@ const resolveElement = (
   const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
-    element.type = getResolvedElement(element.type, contextElements)
+    // element.type = getResolvedElement(element.refType, contextElements)
   }
 
   if (isObjectType(element)) {

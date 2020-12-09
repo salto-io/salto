@@ -48,9 +48,9 @@ describe('Test elements.ts', () => {
     elemID: otID,
     fields: {
       // eslint-disable-next-line @typescript-eslint/camelcase
-      num_field: { type: primNum },
+      num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
       // eslint-disable-next-line @typescript-eslint/camelcase
-      str_field: { type: primStr },
+      str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
     },
     annotationTypes: {},
     annotations: {},
@@ -69,8 +69,8 @@ describe('Test elements.ts', () => {
 
   it('should create a basic object type with all params passed to the constructor', () => {
     expect(ot.elemID).toEqual(otID)
-    expect(ot.fields.num_field.type).toBeInstanceOf(PrimitiveType)
-    expect(ot.fields.str_field.type).toBeInstanceOf(PrimitiveType)
+    expect(ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)
+    expect(ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
   })
 
   it('Should test getValuesThatNotInPrevOrDifferent func', () => {
@@ -158,7 +158,7 @@ describe('Test elements.ts', () => {
   describe('isEqualElements and type guards', () => {
     const objT = new ObjectType({
       elemID: new ElemID('test', 'obj'),
-      fields: { str: { type: primStr } },
+      fields: { str: { refType: new ReferenceExpression(primStr.elemID, primStr) } },
       annotationTypes: {
         anno: primStr,
       },
@@ -196,7 +196,7 @@ describe('Test elements.ts', () => {
     })
 
     it('should identify equal list types', () => {
-      expect(isEqualElements(lstField.type, _.cloneDeep(lstField.type))).toBeTruthy()
+      expect(isEqualElements(lstField.getType(), _.cloneDeep(lstField.getType()))).toBeTruthy()
     })
 
     it('should identify not equal for diff list types', () => {
@@ -216,7 +216,7 @@ describe('Test elements.ts', () => {
     })
 
     it('should identify equal map types', () => {
-      expect(isEqualElements(mapField.type, _.cloneDeep(mapField.type))).toBeTruthy()
+      expect(isEqualElements(mapField.getType(), _.cloneDeep(mapField.getType()))).toBeTruthy()
     })
 
     it('should identify not equal for diff map types', () => {

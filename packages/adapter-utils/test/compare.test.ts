@@ -136,14 +136,14 @@ describe('detailedCompare', () => {
       },
       fields: {
         before: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             before: 'Before',
             modify: 'Before',
           },
         },
         modify: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             before: 'Before',
             modify: 'Before',
@@ -163,14 +163,14 @@ describe('detailedCompare', () => {
       },
       fields: {
         after: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             before: 'After',
             modify: 'After',
           },
         },
         modify: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             after: 'After',
             modify: 'After',

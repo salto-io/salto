@@ -33,7 +33,7 @@ const readOnlyTypeToFields = {
 */
 const getReadonlyValidationError = async (before: InstanceElement, after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
-    const afterType = after.getType()
+  const afterType = after.getType()
   const readonlyFieldNames = readOnlyTypeToFields[afterType.elemID.name]
   if (_.isUndefined(readonlyFieldNames)) {
     return []
@@ -63,7 +63,7 @@ const changeValidator: ChangeValidator = async changes => (
       .map(change => getReadonlyValidationError(
         change.data.before as InstanceElement,
         change.data.after as InstanceElement,
-        ))
+      ))
   ))
 )
 

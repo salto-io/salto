@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FetchResult, AdapterOperations, ChangeGroup, DeployResult, InstanceElement, Element, ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { FetchResult, AdapterOperations, ChangeGroup, DeployResult, InstanceElement, Element, ObjectType, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { deployInstance, resolveValues } from '@salto-io/adapter-utils'
 import MarketoClient from './client/client'
 import { createMarketoObjectType, getLookUpName, Types } from './transformers/transformer'
@@ -101,12 +101,12 @@ export default class MarketoAdapter implements AdapterOperations {
       elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),
       fields: {
         id: {
-          type: BuiltinTypes.NUMBER,
+          refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER),
         },
       },
       path: [MARKETO, TYPES_PATH, 'lead'],
     })
-   return new InstanceElement('guy', dummyObj)
+    return new InstanceElement('guy', dummyObj)
     // const resolved = resolveValues(instance, getLookUpName)
     // const resp = await this.client.createInstance(
     //   resolved.type.elemID.name,
@@ -147,13 +147,19 @@ export default class MarketoAdapter implements AdapterOperations {
     const resolvedBefore = resolveValues(before, getLookUpName)
     const resolvedAfter = resolveValues(after, getLookUpName)
 
-    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedBefore.getType().elemID.name })
-    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedAfter.getType().elemID.name })
+    await this.client.updateInstance(
+      OBJECTS_NAMES.LEAD,
+      { name: resolvedBefore.getType().elemID.name }
+    )
+    await this.client.updateInstance(
+      OBJECTS_NAMES.LEAD,
+      { name: resolvedAfter.getType().elemID.name }
+    )
     const dummyObj = new ObjectType({
       elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),
       fields: {
         id: {
-          type: BuiltinTypes.NUMBER,
+          refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER),
         },
       },
       path: [MARKETO, TYPES_PATH, 'lead'],

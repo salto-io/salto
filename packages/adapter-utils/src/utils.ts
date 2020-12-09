@@ -53,6 +53,9 @@ export const applyFunctionToChangeData = <T extends Change<unknown>>(
   return change
 }
 
+export const createRefToElmWithValue = (element: Element): ReferenceExpression =>
+  (new ReferenceExpression(element.elemID, element))
+
 /**
  * Generate synthetic object types for validating / transforming map type values.
  *
@@ -64,7 +67,12 @@ export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectT
     ? type
     : new ObjectType({
       elemID: type.elemID,
-      fields: Object.fromEntries(Object.keys(value).map(key => [key, { type: type.innerType }])),
+      fields: Object.fromEntries(Object.keys(value).map(key =>
+        [
+          key,
+          // TODO: Change this to the type's refType later
+          { refType: createRefToElmWithValue(type.innerType) },
+        ])),
       annotationTypes: type.annotationTypes,
       annotations: type.annotations,
       path: type.path,
@@ -127,7 +135,7 @@ export const transformValues = (
       return newVal
     }
 
-    const fieldType = field?.type
+    const fieldType = field?.getType() // TODO: Add elementsSource
 
     if (field && isListType(fieldType)) {
       const transformListInnerValue = (item: Value, index?: number): Value =>
@@ -202,6 +210,7 @@ export const transformElementAnnotations = <T extends Element>(
     element,
     transformFunc,
     strict,
+    elementsSource,
   }: {
     element: T
     transformFunc: TransformFunc
@@ -217,7 +226,9 @@ export const transformElementAnnotations = <T extends Element>(
     return {
       ...InstanceAnnotationTypes,
       ...CoreAnnotationTypes,
-      ...(isField(element) ? element.type.annotationTypes : element.annotationTypes),
+      ...(isField(element)
+        ? element.getType(elementsSource).annotationTypes
+        : element.annotationTypes),
     }
   }
 
@@ -294,7 +305,7 @@ export const transformElement = <T extends Element>(
     newElement = new Field(
       element.parent,
       element.name,
-      element.type,
+      element.getType(elementsSource),
       transformedAnnotations,
     )
     return newElement as T
@@ -545,7 +556,7 @@ export const flattenElementStr = (element: Element): Element => {
   const flattenField = (field: Field): Field => new Field(
     field.parent,
     flatStr(field.name),
-    field.type,
+    field.refType,
     flatValues(field.annotations),
   )
 
@@ -643,7 +654,7 @@ export const filterByID = <T extends Element | Values>(
     return new Field(
       value.parent,
       value.name,
-      value.type,
+      value.refType,
       filterByID(value.elemID, value.annotations, filterFunc)
     ) as Value as T
   }
@@ -681,7 +692,7 @@ export const filterByID = <T extends Element | Values>(
 // on every "node".
 // This method DOESN'T SUPPORT list of lists!
 export const applyRecursive = (type: ObjectType | MapType, value: Values,
-  innerChange: (field: Field, value: Value) => Value): void => {
+  innerChange: (field: Field, value: Value) => Value, elementsSource?: ElementsSource): void => {
   if (!value) return
 
   const objType = toObjectType(type, value)
@@ -689,14 +700,15 @@ export const applyRecursive = (type: ObjectType | MapType, value: Values,
   Object.keys(objType.fields).forEach(key => {
     if (value[key] === undefined) return
     value[key] = innerChange(objType.fields[key], value[key])
-    const fieldType = objType.fields[key].type
+    const fieldType = objType.fields[key].getType(elementsSource)
     if (!isContainerType(fieldType) && !isObjectType(fieldType)) return
     const actualFieldType = isContainerType(fieldType) ? fieldType.innerType : fieldType
     if (isObjectType(actualFieldType)) {
       if (_.isArray(value[key])) {
-        value[key].forEach((val: Values) => applyRecursive(actualFieldType, val, innerChange))
+        value[key].forEach((val: Values) =>
+          applyRecursive(actualFieldType, val, innerChange, elementsSource))
       } else {
-        applyRecursive(actualFieldType, value[key], innerChange)
+        applyRecursive(actualFieldType, value[key], innerChange, elementsSource)
       }
     }
   })
@@ -722,15 +734,18 @@ export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID)
   return obj
 }
 
-const createDefaultValuesFromType = (type: TypeElement): Values => {
+const createDefaultValuesFromType = (
+  type: TypeElement,
+  elementsSrouce?: ElementsSource,
+): Values => {
   const createDefaultValuesFromObjectType = (object: ObjectType): Values =>
     _(object.fields).mapValues((field, _name) => {
       if (field.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined) {
         return field.annotations[CORE_ANNOTATIONS.DEFAULT]
       }
-      if (field.type.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
-        && !isContainerType(field.type)) {
-        return createDefaultValuesFromType(field.type)
+      if (field.getType(elementsSrouce).annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
+        && !isContainerType(field.getType(elementsSrouce))) {
+        return createDefaultValuesFromType(field.getType(elementsSrouce))
       }
       return undefined
     }).pickBy(v => v !== undefined).value()
@@ -781,6 +796,6 @@ export const getAllReferencedIds = (
   return allReferencedIds
 }
 
-export const getParents = (instance: Element): Array<Value> => (
-  collections.array.makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+export const getParents = (element: Element): Array<Value> => (
+  collections.array.makeArray(element.annotations[INSTANCE_ANNOTATIONS.PARENT])
 )

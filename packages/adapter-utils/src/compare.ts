@@ -125,7 +125,7 @@ export const detailedCompare = (
   }
 
   // A special case to handle type changes in fields, we have to modify the whole field
-  if (isField(before) && isField(after) && !before.type.elemID.isEqual(after.type.elemID)) {
+  if (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) {
     return [{ action: 'modify', data: { before, after }, id: after.elemID }]
   }
 

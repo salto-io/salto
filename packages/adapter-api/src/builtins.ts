@@ -15,6 +15,7 @@
 */
 import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
+import { ReferenceExpression } from './values'
 
 export const GLOBAL_ADAPTER = ''
 
@@ -62,11 +63,21 @@ const restrictionType = new ObjectType({
   elemID: new ElemID('', 'restriction'),
   fields: {
     // eslint-disable-next-line @typescript-eslint/camelcase
-    enforce_value: { type: BuiltinTypes.BOOLEAN },
-    values: { type: BuiltinTypes.STRING },
-    min: { type: BuiltinTypes.NUMBER },
-    max: { type: BuiltinTypes.NUMBER },
-    regex: { type: BuiltinTypes.STRING },
+    enforce_value: {
+      refType: new ReferenceExpression(BuiltinTypes.BOOLEAN.elemID, BuiltinTypes.BOOLEAN),
+    },
+    values: {
+      refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+    },
+    min: {
+      refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER),
+    },
+    max: {
+      refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER),
+    },
+    regex: {
+      refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+    },
   },
 })
 

@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType,
-} from '@salto-io/adapter-api'
+import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams } from './generator'
@@ -23,7 +22,9 @@ import { GeneratorParams, DUMMY_ADAPTER, defaultParams } from './generator'
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
   fields: _.mapValues(defaultParams, defValue => ({
-    type: _.isBoolean(defValue) ? BuiltinTypes.BOOLEAN : BuiltinTypes.NUMBER,
+    refType: _.isBoolean(defValue)
+      ? createRefToElmWithValue(BuiltinTypes.BOOLEAN)
+      : createRefToElmWithValue(BuiltinTypes.NUMBER),
     annotations: {
       [CORE_ANNOTATIONS.DEFAULT]: defValue,
     },

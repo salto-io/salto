@@ -210,18 +210,26 @@ export class MapType extends Element {
 /**
  * Represents a field inside a type
  */
-export class Field extends Element {
+export class Field extends PlaceholderTypeElement {
   public constructor(
     public parent: ObjectType,
     public name: string,
-    public type: TypeElement,
+    typeOrRefType: TypeElement | ReferenceExpression,
     annotations: Values = {},
   ) {
-    super({ elemID: parent.elemID.createNestedID('field', name), annotations })
+    super(
+      parent.elemID.createNestedID('field', name),
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      isType(typeOrRefType)
+        ? new ReferenceExpression(typeOrRefType.elemID, typeOrRefType)
+        : typeOrRefType,
+      {},
+      annotations
+    )
   }
 
   isEqual(other: Field): boolean {
-    return _.isEqual(this.type.elemID, other.type.elemID)
+    return _.isEqual(this.refType.elemID, other.refType.elemID)
       && _.isEqual(this.elemID, other.elemID)
       && isEqualValues(this.annotations, other.annotations)
   }
@@ -235,7 +243,7 @@ export class Field extends Element {
     return new Field(
       this.parent,
       this.name,
-      this.type,
+      this.refType,
       annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
     )
   }
@@ -286,7 +294,7 @@ export class PrimitiveType extends Element {
 }
 
 export type FieldDefinition = {
-  type: TypeElement
+  refType: ReferenceExpression
   annotations?: Values
 }
 /**
@@ -314,7 +322,7 @@ export class ObjectType extends Element {
     super({ elemID, annotationTypes, annotations, path })
     this.fields = _.mapValues(
       fields,
-      (fieldDef, name) => new Field(this, name, fieldDef.type, fieldDef.annotations),
+      (fieldDef, name) => new Field(this, name, fieldDef.refType, fieldDef.annotations),
     )
     this.isSettings = isSettings
   }
@@ -375,14 +383,15 @@ export class InstanceElement extends PlaceholderTypeElement {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       isObjectType(typeOrRefType)
         ? new ReferenceExpression(typeOrRefType.elemID, typeOrRefType)
-        : new ReferenceExpression(typeOrRefType.elemID),
+        : typeOrRefType,
+      undefined,
       annotations,
       path,
     )
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     this.refType = isObjectType(typeOrRefType)
       ? new ReferenceExpression(typeOrRefType.elemID, typeOrRefType)
-      : new ReferenceExpression(typeOrRefType.elemID)
+      : typeOrRefType
   }
 
   getType(elementsSource?: ElementsSource): ObjectType {

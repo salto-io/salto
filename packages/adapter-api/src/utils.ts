@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+// import _ from 'lodash'
 import {
-  TypeElement, Field, ObjectType, Element, PrimitiveType, isListType, isMapType,
-  isObjectType, isField, ContainerType, isContainerType,
+  TypeElement, ObjectType, Element, PrimitiveType, ContainerType, isContainerType,
+  // Field, isObjectType, isField, isListType, isMapType,
 } from './elements'
 import { Values } from './values'
 
@@ -25,10 +25,10 @@ interface AnnoRef {
   annoName?: string
 }
 
-type SubElementSearchResult = {
-  field?: Field
-  path: ReadonlyArray<string>
-}
+// type SubElementSearchResult = {
+//   field?: Field
+//   path: ReadonlyArray<string>
+// }
 
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
 
@@ -40,6 +40,9 @@ export const getDeepInnerType = (containerType: ContainerType): ObjectType | Pri
   return getDeepInnerType(innerType)
 }
 
+
+/*
+TODO: Solve this for the lang-server
 export const getSubElement = (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>
@@ -98,7 +101,8 @@ export const getField = (
   getFieldAndPath(baseType, pathParts)?.field
 )
 
-export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
+
+const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
   TypeElement | undefined => {
   const getFieldInternalType = (
     fieldType: TypeElement,
@@ -127,6 +131,7 @@ export const getFieldNames = (refType: ObjectType, path: string[]): string[] => 
   }
   return []
 }
+*/
 
 export const getAnnotationKey = (annotations: {[key: string]: TypeElement}, path: string[]):
   AnnoRef => {

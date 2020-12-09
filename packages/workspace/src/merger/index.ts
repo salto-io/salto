@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+// import _ from 'lodash'
 import {
-  ObjectType, isType, isObjectType, isInstanceElement, Element, ContainerType,
-  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isVariable, isContainerType,
+  isObjectType, isInstanceElement, Element,
+  isPrimitiveType, BuiltinTypes, isVariable,
+  // ObjectType, isType, TypeMap, isContainerType, ContainerType, ListType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mergeObjectTypes } from './internal/object_types'
@@ -54,7 +55,7 @@ const log = logger(module)
 //             if (isContainerType(containerType.innerType)) {
 //               resolveGenericType(containerType.innerType)
 //             } else {
-//               containerType.setInnerType(mergedTypes[containerType.innerType.elemID.getFullName()]
+// containerType.setInnerType(mergedTypes[containerType.innerType.elemID.getFullName()]
 //               || containerType.innerType)
 //             }
 //           }
@@ -70,8 +71,8 @@ const log = logger(module)
 //   return elem
 // })
 
-const getContainerTypes = (containerTypes: ContainerType[]): Record<string, ListType> =>
-  _.keyBy(containerTypes, type => type.elemID.getFullName())
+// const getContainerTypes = (containerTypes: ContainerType[]): Record<string, ListType> =>
+//   _.keyBy(containerTypes, type => type.elemID.getFullName())
 
 /**
  * Merge a list of elements by applying all updates, and replacing the pointers

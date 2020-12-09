@@ -53,7 +53,7 @@ const convertUserIdentifiers = (
       if (_.isUndefined(currentValue)) {
         return
       }
-      const fieldType = field.type
+      const fieldType = field.getType()
       if (isUserIdentifierType(fieldType)) {
         const numVal = Number(currentValue)
         if (!Number.isNaN(numVal)) {

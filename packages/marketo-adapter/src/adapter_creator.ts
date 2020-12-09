@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType,
+  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import MarketoClient from './client/client'
 import MarketoAdapter from './adapter'
@@ -26,9 +26,15 @@ const configID = new ElemID('marketo')
 const credentialsType = new ObjectType({
   elemID: configID,
   fields: {
-    endpoint: { type: BuiltinTypes.STRING },
-    clientId: { type: BuiltinTypes.STRING },
-    clientSecret: { type: BuiltinTypes.STRING },
+    endpoint: {
+      refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+    },
+    clientId: {
+      refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+    },
+    clientSecret: {
+      refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+    },
   },
   annotationTypes: {},
   annotations: {},

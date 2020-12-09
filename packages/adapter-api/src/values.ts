@@ -110,7 +110,8 @@ export class ReferenceExpression {
     if (this.resValue === undefined && elementsSource === undefined) {
       throw new Error(`Can not resolve value of reference with ElemID ${this.elemID.getFullName()} without elementsSource cause value does not exist`)
     }
-    return elementsSource?.getSync(this.elemID)
+    // TODO: What should we do if elementsSource exists but has no value for this elemID?
+    return elementsSource?.getSync(this.elemID) ?? this.value
   }
 }
 

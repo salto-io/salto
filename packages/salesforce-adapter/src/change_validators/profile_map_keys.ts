@@ -18,7 +18,7 @@ import {
   ChangeValidator, getChangeElement, InstanceElement, ChangeError, isMapType, MapType, isObjectType,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
-import { getInstanceChanges as getProfileInstanceChanges, PROFILE_MAP_FIELD_DEF, defaultMapper } from '../filters/profile_maps'
+import { getInstanceChanges as getProfileInstanceChanges, PROFILE_MAP_FIELD_DEF, defaultMapper } from '../filters/convert_maps'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 

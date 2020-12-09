@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator, FilterWith } from '../filter'
 import { apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { findInstancesToConvert } from './profile_maps'
+import { findInstancesToConvert } from './convert_maps'
 import { getInternalId } from './utils'
 import { PROFILE_METADATA_TYPE } from '../constants'
 

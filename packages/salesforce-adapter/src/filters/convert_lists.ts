@@ -23,7 +23,7 @@ import { FilterCreator } from '../filter'
 import { SALESFORCE, PROFILE_METADATA_TYPE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
 import { metadataType } from '../transformers/transformer'
-import { metadataTypeToFieldToMapDef } from './profile_maps'
+import { metadataTypeToFieldToMapDef } from './convert_maps'
 
 type OrderFunc = (value: Value) => number
 export type UnorderedList = {

@@ -17,7 +17,8 @@ import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { apiName } from './transformer'
+import { metadataTypeToFieldToMapDef } from '../filters/convert_maps'
+import { apiName, metadataType } from './transformer'
 import {
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_OBJECT, API_NAME_SEPARATOR,
   WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_QUERY, CPQ_PRICE_RULE,
@@ -42,6 +43,7 @@ export type ReferenceSerializationStrategy = {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
+ | 'map'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -81,6 +83,23 @@ const ReferenceSerializationStrategyLookup: Record<
         : mappedValue
       )
     },
+  },
+  map: {
+    serialize: ({ ref, field }) => {
+      // ref.value is a value in a map
+      if (ref.topLevelParent !== undefined) {
+        const type = metadataType(ref.topLevelParent)
+        if (metadataTypeToFieldToMapDef[type] !== undefined
+           && field !== undefined
+           && metadataTypeToFieldToMapDef[type][field?.name] !== undefined) {
+          const { key } = metadataTypeToFieldToMapDef[type][field.name]
+          // key is a field of ref.value which is also the key of ref.value in the map
+          return ref.value[key] ?? ref.value
+        }
+      }
+      return ref.value
+    },
+    lookup: val => val,
   },
 }
 
@@ -301,10 +320,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'businessHours', parentTypes: ['EntitlementProcessMilestoneItem'] },
-    target: { name: 'BusinessHoursEntry', type: CUSTOM_FIELD },
-  },
-  {
     src: { field: CPQ_LOOKUP_OBJECT_NAME, parentTypes: [CPQ_PRICE_RULE, CPQ_PRODUCT_RULE] },
     target: { type: CUSTOM_OBJECT },
   },
@@ -513,25 +528,26 @@ export const generateReferenceResolverFinder = (
 const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
-  const determineLookupStrategy = (args: GetLookupNameFuncArgs): ReferenceSerializationStrategy => {
+  const determineLookupStrategy = (args: GetLookupNameFuncArgs):
+    ReferenceSerializationStrategy | undefined => {
     if (args.field === undefined) {
       log.debug('could not determine field for path %s', args.path?.getFullName())
-      return ReferenceSerializationStrategyLookup.absoluteApiName
+      return undefined
     }
     const strategies = resolverFinder(args.field)
       .map(def => def.serializationStrategy)
 
-    if (strategies.length > 1) {
+    if (strategies.length >= 1) {
       log.debug(
         'found %d matching strategies for field %s - using the first one',
         strategies.length,
         args.field.elemID.getFullName(),
       )
+      return strategies[0]
     }
-    if (strategies.length === 0) {
-      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
-    }
-    return strategies[0] ?? ReferenceSerializationStrategyLookup.absoluteApiName
+
+    log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
+    return undefined
   }
 
   return ({ ref, path, field }) => {
@@ -539,9 +555,15 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
     // and we need the full element context in those
     const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
 
-    if (isElement(ref.value) && !isInstanceAnnotation) {
-      const lookupFunc = determineLookupStrategy({ ref, path, field }).serialize
-      return lookupFunc({ ref })
+    if (!isInstanceAnnotation) {
+      const strategy = determineLookupStrategy({ ref, path, field })
+      if (strategy !== undefined) {
+        return strategy.serialize({ ref, field })
+      }
+      if (isElement(ref.value)) {
+        const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
+        return defaultStrategy.serialize({ ref })
+      }
     }
     return ref.value
   }

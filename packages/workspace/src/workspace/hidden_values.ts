@@ -21,7 +21,7 @@ import {
   isRemovalChange, ElemID, isObjectType, ObjectType, Values, isRemovalOrModificationChange,
   isAdditionOrModificationChange, isElement, isField,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, setPath } from '@salto-io/adapter-utils'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -47,6 +47,8 @@ const getElementHiddenParts = <T extends Element>(
   }
 
   const hiddenPaths: ElemID[] = []
+  const ancestorsOfHiddenPaths = new Set()
+  const hiddenSubElements = new Map<ElemID, Values>()
 
   // There are two "hidden" annotations - _hidden, and _hidden_value.
   // If this is an instance, the field belongs to the type so we want to check if
@@ -58,6 +60,12 @@ const getElementHiddenParts = <T extends Element>(
     if (hiddenFunc(field)) {
       if (path !== undefined) {
         hiddenPaths.push(path)
+        hiddenSubElements.set(path, value)
+        let ancestor = path
+        while (!ancestorsOfHiddenPaths.has(ancestor.getFullName())) {
+          ancestorsOfHiddenPaths.add(ancestor.getFullName())
+          ancestor = ancestor.createParentID()
+        }
       }
       return undefined
     }
@@ -74,22 +82,19 @@ const getElementHiddenParts = <T extends Element>(
     return undefined
   }
 
-  const isPartOfHiddenPath = (path?: ElemID): boolean => (
-    // Something is considered a part of a hidden path if it is a prefix of a hidden path
-    // or if it is nested inside a hidden path.
-    // Assume A.B.C is a hidden path, when we transform the element we must not omit A.B
-    // because then we'd never reach A.B.C
-    // We also do not omit A.B.C.D because A.B.C was hidden, so by association everything inside
-    // it is also hidden
-    path !== undefined && (hiddenPaths.some(hiddenPath =>
-      path.isEqual(hiddenPath) || hiddenPath.isParentOf(path) || path.isParentOf(hiddenPath)))
+  const isAncestorOfHiddenPath = (path?: ElemID): boolean => (
+    path !== undefined && ancestorsOfHiddenPaths.has(path.getFullName())
   )
 
   const hidden = transformElement({
     element: stateElement,
-    transformFunc: ({ value, path }) => (isPartOfHiddenPath(path) ? value : undefined),
+    // instead of recursing into sub-elements of hidden paths that we know we'll need to assign,
+    // we stop when we reach them and instead assign them using setPath (right below)
+    transformFunc: ({ value, path }) => (isAncestorOfHiddenPath(path) ? value : undefined),
     strict: true,
   })
+  // add the hidden parts
+  hiddenSubElements.forEach((value, path) => setPath(hidden, path, value))
   // remove all annotation types from the hidden element so they don't cause merge conflicts
   hidden.annotationTypes = {}
 

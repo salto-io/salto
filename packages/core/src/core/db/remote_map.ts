@@ -17,6 +17,9 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import rocksdb from 'rocksdb'
 import { serialization } from '@salto-io/workspace'
 import { promisify } from 'util'
+import LRU from 'lru-cache'
+
+const LRU_OPTIONS = { max: 500 }
 
 const { serialize, deserialize } = serialization
 const BATCH_WRITE_INTERVAL = 1000
@@ -32,13 +35,20 @@ type RemoteMap = {
 type RocksDBValue = string | Buffer | undefined
 
 export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => {
+  const cache = new LRU<ElemID, Element>(LRU_OPTIONS)
   const db = rocksdb(`/tmp/${namespace}`)
   await promisify(db.open.bind(db))()
   return {
     get: async (key: ElemID): Promise<Element> => new Promise(resolve => {
-      db.get(key.getFullName(), async (_error, value) => {
-        resolve((await deserialize(value.toString()))[0])
-      })
+      if (cache.has(key)) {
+        resolve(cache.get(key) as Element)
+      } else {
+        db.get(key.getFullName(), async (_error, value) => {
+          const ret = (await deserialize(value.toString()))[0]
+          cache.set(key, ret)
+          resolve(ret)
+        })
+      }
     }),
     getAll: (): AsyncIterator<Element> => {
       const valueIter = db.iterator({ keys: false })
@@ -62,6 +72,7 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
       }
     },
     set: async (key: ElemID, element: Element): Promise<void> => new Promise(resolve => {
+      cache.set(key, element)
       db.put(key.getFullName(), serialize([element]), () => { resolve() })
     }),
     putAll: async (elements: AsyncIterable<Element>) => {
@@ -69,6 +80,7 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
       let batch = db.batch()
       for await (const element of elements) {
         i += 1
+        cache.set(element.elemID, element)
         batch.put(element.elemID.getFullName(), serialize([element]))
         if (i % BATCH_WRITE_INTERVAL === 0) {
           await promisify(batch.write.bind(batch))()

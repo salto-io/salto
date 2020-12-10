@@ -352,7 +352,8 @@ const toPackageXml = (manifest: Map<string, string[]>): string => (
 )
 
 export type DeployPackage = {
-  add(instance: MetadataInstanceElement): void
+  add(instance: MetadataInstanceElement, withManifest?: boolean): void
+  addToManifest(type: MetadataObjectType, name: string): void
   delete(type: MetadataObjectType, name: string): void
   getZip(): Promise<Buffer>
   getDeletionsPackageName(): string
@@ -364,11 +365,16 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
   const deleteManifest = new collections.map.DefaultMap<string, string[]>(() => [])
   const deletionsPackageName = deleteBeforeUpdate ? 'destructiveChanges.xml' : 'destructiveChangesPost.xml'
 
+  const addToManifest: DeployPackage['addToManifest'] = (type, name) => {
+    const typeName = getManifestTypeName(type)
+    addManifest.get(typeName).push(name)
+  }
   return {
-    add: instance => {
+    add: (instance, withManifest = true) => {
       const instanceName = apiName(instance)
-      const manifestTypeName = getManifestTypeName(instance.type)
-      addManifest.get(manifestTypeName).push(instanceName)
+      if (withManifest) {
+        addToManifest(instance.type, instanceName)
+      }
       // Add instance file(s) to zip
       const typeName = metadataType(instance)
       const values = getValuesToDeploy(toDeployableInstance(instance))
@@ -411,6 +417,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         }
       }
     },
+    addToManifest,
     delete: (type, name) => {
       const typeName = getManifestTypeName(type)
       deleteManifest.get(typeName).push(name)

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { DeployResult, Change, getChangeElement, isRemovalChange, InstanceElement, isModificationChange, isInstanceChange, ModificationChange, isRemovalOrModificationChange, RemovalChange, isContainerType } from '@salto-io/adapter-api'
+import { DeployResult, Change, getChangeElement, isRemovalChange, isModificationChange, isInstanceChange, isContainerType, isAdditionChange } from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
@@ -28,11 +28,19 @@ import { RunTestsResult } from './client/jsforce'
 const { makeArray } = collections.array
 const log = logger(module)
 
-const addNestedInstanceRemovalsToPackage = (
+// Put this marker in the value of an instance if it is just a wrapper for child instances
+// and is not meant to actually be deployed
+export const DEPLOY_WRAPPER_INSTANCE_MARKER = '_magic_constant_that_means_this_is_a_wrapper_instance'
+
+// Mapping of metadata type to fullNames
+type MetadataIdsMap = Record<string, Set<string>>
+
+const addNestedInstancesToPackageManifest = (
   pkg: DeployPackage,
   nestedTypeInfo: NestedMetadataTypeInfo,
-  change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>
-): void => {
+  change: Change<MetadataInstanceElement>,
+  addNestedAfterInstances: boolean,
+): MetadataIdsMap => {
   const changeElem = getChangeElement(change)
 
   const getNestedInstanceApiName = (name: string): string => (
@@ -41,7 +49,7 @@ const addNestedInstanceRemovalsToPackage = (
       : name
   )
 
-  nestedTypeInfo.nestedInstanceFields.forEach(fieldName => {
+  const addNestedInstancesFromField = (fieldName: string): MetadataIdsMap => {
     const rawFieldType = changeElem.type.fields[fieldName]?.type
     // We generally expect these to be lists, handling non list types just in case of a bug
     const fieldType = isContainerType(rawFieldType) ? rawFieldType.innerType : rawFieldType
@@ -50,7 +58,7 @@ const addNestedInstanceRemovalsToPackage = (
         'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',
         changeElem.elemID.getFullName(), fieldName, fieldType?.elemID.getFullName(),
       )
-      return
+      return {}
     }
     const nestedAfter = new Set(
       isRemovalChange(change)
@@ -58,35 +66,70 @@ const addNestedInstanceRemovalsToPackage = (
         : makeArray(change.data.after.value[fieldName])
           .map(item => item[INSTANCE_FULL_NAME_FIELD])
     )
-    const nestedBefore = makeArray(change.data.before.value[fieldName])
-      .map(item => item[INSTANCE_FULL_NAME_FIELD])
+    const nestedBefore = isAdditionChange(change)
+      ? []
+      : makeArray(change.data.before.value[fieldName])
+        .map(item => item[INSTANCE_FULL_NAME_FIELD])
 
     const removedNestedInstances = nestedBefore.filter(instName => !nestedAfter.has(instName))
 
-    removedNestedInstances
+    const idsToDelete = removedNestedInstances
       .map(getNestedInstanceApiName)
-      .forEach(nestedInstName => {
-        pkg.delete(fieldType, nestedInstName)
-      })
-  })
+
+    idsToDelete.forEach(nestedInstName => {
+      pkg.delete(fieldType, nestedInstName)
+    })
+
+    const idsToAdd = addNestedAfterInstances
+      ? [...nestedAfter].map(getNestedInstanceApiName)
+      : []
+
+    idsToAdd.forEach(nestedInstName => {
+      pkg.addToManifest(fieldType, nestedInstName)
+    })
+
+    return { [metadataType(fieldType)]: new Set([...idsToDelete, ...idsToAdd]) }
+  }
+
+  return Object.assign(
+    {},
+    ...nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField)
+  )
 }
 
 const addChangeToPackage = (
   pkg: DeployPackage,
   change: Change<MetadataInstanceElement>,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-): void => {
-  const changeElem = getChangeElement(change)
-  const nestedTypeInfo = nestedMetadataTypes[metadataType(changeElem)]
-  if (nestedTypeInfo !== undefined && isRemovalOrModificationChange(change)) {
-    addNestedInstanceRemovalsToPackage(pkg, nestedTypeInfo, change)
-  }
+): MetadataIdsMap => {
+  const instance = getChangeElement(change)
+  const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
+
+  const addInstanceToManifest = !isWrapperInstance
+  const addedIds = addInstanceToManifest
+    ? { [metadataType(instance)]: new Set([apiName(instance)]) }
+    : {}
 
   if (isRemovalChange(change)) {
-    pkg.delete(changeElem.type, apiName(changeElem))
+    pkg.delete(instance.type, apiName(instance))
   } else {
-    pkg.add(changeElem)
+    pkg.add(instance, addInstanceToManifest)
   }
+
+  // Handle child xml instances
+  const nestedTypeInfo = nestedMetadataTypes[metadataType(instance)]
+  if (nestedTypeInfo !== undefined) {
+    const addChildInstancesToManifest = isWrapperInstance
+    const nestedInstanceIds = addNestedInstancesToPackageManifest(
+      pkg,
+      nestedTypeInfo,
+      change,
+      addChildInstancesToManifest,
+    )
+    Object.assign(addedIds, nestedInstanceIds)
+  }
+
+  return addedIds
 }
 
 type MetadataId = {
@@ -115,27 +158,11 @@ const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
 ): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<Error> } => {
-  const allSuccessMessages = makeArray(result.details)
-    .flatMap(detail => makeArray(detail.componentSuccesses))
-
   const allFailureMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentFailures))
 
   const testFailures = makeArray(result.details)
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
-
-  // We want to treat deletes for things we haven't found as success
-  // Note that if we deploy with ignoreWarnings, these might show up in the success list
-  // so we have to look for these messages in both lists
-  const unFoundDeleteNames = [...allSuccessMessages, ...allFailureMessages]
-    .map(message => getUnFoundDeleteName(message, deletionsPackageName))
-    .filter(values.isDefined)
-
-  const successfulFullNames = (result.rollbackOnError === false || result.success)
-    ? allSuccessMessages
-      .map(success => ({ type: success.componentType, fullName: success.fullName }))
-      .concat(unFoundDeleteNames)
-    : []
 
   const testErrors = testFailures
     .map(failure => new Error(
@@ -148,11 +175,29 @@ const processDeployResponse = (
       `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
 
-  return {
-    // When running as "checkOnly" non of the changes are actually applied
-    successfulFullNames: result.checkOnly ? [] : successfulFullNames,
-    errors: [...testErrors, ...componentErrors],
+  const errors = [...testErrors, ...componentErrors]
+
+  if (result.checkOnly || (result.rollbackOnError && !result.success)) {
+    // In checkOnly none of the changes are actually applied
+    // if rollbackOnError and we did not succeed, nothing was applied as well
+    return { successfulFullNames: [], errors }
   }
+
+  const allSuccessMessages = makeArray(result.details)
+    .flatMap(detail => makeArray(detail.componentSuccesses))
+
+  // We want to treat deletes for things we haven't found as success
+  // Note that if we deploy with ignoreWarnings, these might show up in the success list
+  // so we have to look for these messages in both lists
+  const unFoundDeleteNames = [...allSuccessMessages, ...allFailureMessages]
+    .map(message => getUnFoundDeleteName(message, deletionsPackageName))
+    .filter(values.isDefined)
+
+  const successfulFullNames = allSuccessMessages
+    .map(success => ({ type: success.componentType, fullName: success.fullName }))
+    .concat(unFoundDeleteNames)
+
+  return { successfulFullNames, errors }
 }
 
 export type NestedMetadataTypeInfo = {
@@ -217,9 +262,11 @@ export const deployMetadata = async (
     return { appliedChanges: [], errors: validationErrors }
   }
 
-  validChanges.forEach(
-    change => addChangeToPackage(pkg, change, nestedMetadataTypes)
-  )
+  const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
+  validChanges.forEach(change => {
+    const deployedIds = addChangeToPackage(pkg, change, nestedMetadataTypes)
+    changeToDeployedIds[getChangeElement(change).elemID.getFullName()] = deployedIds
+  })
 
   const pkgData = await pkg.getZip()
 
@@ -231,13 +278,14 @@ export const deployMetadata = async (
     deployRes, pkg.getDeletionsPackageName()
   )
 
-  const isSuccessfulChange = (change: Change): boolean => {
+  const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeElement(change)
+    const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)
-    return successfulFullNames.some(({ type, fullName }) => (
-      type === metadataType(changeElem) && fullName === apiName(changeElem)
-    ))
+    return successfulFullNames.some(
+      successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName)
+    )
   }
 
   return {

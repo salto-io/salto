@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { MetadataInfo, SaveResult, Package } from 'jsforce'
 import JSZip from 'jszip'
 import xmlParser from 'fast-xml-parser'
@@ -940,6 +940,7 @@ describe('SalesforceAdapter CRUD', () => {
             description: {
               type: stringType, annotations: { [constants.API_NAME]: 'Test__c.description__c' },
             },
+            unchanged: { type: stringType, annotations: { [constants.API_NAME]: 'Test__c.unchanged__c' } },
           },
           annotations: {
             label: 'test label',
@@ -958,6 +959,7 @@ describe('SalesforceAdapter CRUD', () => {
                 [constants.API_NAME]: 'Test__c.address__c',
               },
             },
+            unchanged: oldElement.fields.unchanged,
           },
           annotations: {
             label: 'test2 label',
@@ -999,7 +1001,9 @@ describe('SalesforceAdapter CRUD', () => {
           expect(deployedValues).toBeDefined()
           const updatedObj = deployedValues.CustomObject
           expect(updatedObj.label).toEqual('test2 label')
-          const newField = updatedObj.fields
+          // It should deploy all fields when there is an annotation change
+          expect(updatedObj.fields).toHaveLength(2)
+          const [newField] = updatedObj.fields
           expect(newField.fullName).toEqual('address__c')
           expect(newField.type).toEqual('Text')
           expect(newField.label).toEqual('test2 label')
@@ -1070,7 +1074,11 @@ describe('SalesforceAdapter CRUD', () => {
         beforeEach(async () => {
           mockDeploy.mockReturnValue(mockDeployResult({
             success: true,
-            componentSuccess: [{ fullName: 'Test__c', componentType: constants.CUSTOM_OBJECT }],
+            componentSuccess: [
+              { fullName: 'Test__c.Address__c', componentType: constants.CUSTOM_FIELD },
+              { fullName: 'Test__c.Banana__c', componentType: constants.CUSTOM_FIELD },
+              { fullName: 'Test__c.Description__c', componentType: constants.CUSTOM_FIELD },
+            ],
           }))
 
           changes = [
@@ -1094,27 +1102,55 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.appliedChanges).toEqual(changes)
         })
 
-        it('should call the connection methods correctly', async () => {
-          expect(mockDeploy).toHaveBeenCalledTimes(1)
-          const deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
-          expect(deployedPackage.manifest?.types).toContainEqual(
-            { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
-          )
-          const deployedValues = await deployedPackage.getData('objects/Test__c.object')
-          expect(deployedValues).toBeDefined()
-          const changedObject = deployedValues.CustomObject
-          expect(changedObject.fields).toHaveLength(2)
-          const [bananaField, descField] = changedObject.fields
-          expect(descField.fullName).toBe('Description__c')
-          expect(descField.type).toBe('Text')
-          expect(descField.length).toBe(80)
-          expect(descField.required).toBe(false)
-          // Verify the custom field label change
-          expect(bananaField.label).toBe('Banana Split')
-          // Verify the custom fields deletion
-          expect(deployedPackage.deleteManifest?.types).toEqual(
-            { name: constants.CUSTOM_FIELD, members: 'Test__c.Address__c' }
-          )
+        describe('deploy request', () => {
+          let deployedPackage: DeployedPackage
+          beforeAll(async () => {
+            expect(mockDeploy).toHaveBeenCalledTimes(1)
+            deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+          })
+          describe('package manifest', () => {
+            it('should contain the new and modified fields', () => {
+              expect(deployedPackage.manifest?.types).toContainEqual({
+                name: constants.CUSTOM_FIELD,
+                members: changes
+                  .filter(isAdditionOrModificationChange)
+                  .map(getChangeElement)
+                  .map(field => apiName(field)),
+              })
+            })
+            it('should contain the deleted field in the delete manifest', () => {
+              expect(deployedPackage.deleteManifest?.types).toEqual(
+                { name: constants.CUSTOM_FIELD, members: 'Test__c.Address__c' }
+              )
+            })
+            it('should not contain the custom object', () => {
+              expect(deployedPackage.manifest?.types).not.toContainEqual({
+                name: constants.CUSTOM_OBJECT,
+                members: 'Test__c',
+              })
+            })
+          })
+          describe('custom object values', () => {
+            let deployedObject: Values
+            beforeAll(async () => {
+              const deployedValues = await deployedPackage.getData('objects/Test__c.object')
+              deployedObject = deployedValues?.CustomObject
+              expect(deployedObject).toBeDefined()
+            })
+            it('should contain added and modified fields', () => {
+              expect(deployedObject.fields).toHaveLength(2)
+              const [bananaField, descField] = deployedObject.fields
+              expect(descField.fullName).toBe('Description__c')
+              expect(descField.type).toBe('Text')
+              expect(descField.length).toBe(80)
+              expect(descField.required).toBe(false)
+              // Verify the custom field label change
+              expect(bananaField.label).toBe('Banana Split')
+            })
+            it('should not contain object annotations', () => {
+              expect(deployedObject).not.toHaveProperty('label')
+            })
+          })
         })
       })
 

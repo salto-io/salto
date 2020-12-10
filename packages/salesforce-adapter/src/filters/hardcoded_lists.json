@@ -51,6 +51,7 @@
   "salesforce.DelegateGroup.field.roles",
   "salesforce.DuplicateRule.field.duplicateRuleMatchRules",
   "salesforce.DuplicateRuleMatchRule.field.objectMapping",
+  "salesforce.EntitlementProcess.field.milestones",
   "salesforce.FieldDependency.field.valueSettings",
   "salesforce.FieldMapping.field.fieldMappingRows",
   "salesforce.FieldMappingRow.field.fieldMappingFields",

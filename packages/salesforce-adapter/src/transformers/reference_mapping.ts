@@ -312,14 +312,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'entryStartDateField', parentTypes: ['EntitlementProcess'] },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'SObjectType', parentTypes: ['EntitlementProcess'] },
-    target: { type: CUSTOM_OBJECT },
-  },
-  {
     src: { field: CPQ_LOOKUP_OBJECT_NAME, parentTypes: [CPQ_PRICE_RULE, CPQ_PRODUCT_RULE] },
     target: { type: CUSTOM_OBJECT },
   },

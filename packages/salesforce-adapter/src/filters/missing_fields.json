@@ -2315,14 +2315,5 @@
         "type": "STRING"
       }
     ]
-  }, 
-  {
-    "id": "EntitlementProcess", 
-    "fields": [
-      {
-        "name": "milestones",
-        "type": "EntitlementProcessMilestoneItem"
-      }
-    ]
   }
 ]

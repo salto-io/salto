@@ -208,7 +208,8 @@ const convertInstanceFieldsToMaps = (
     instance => convertArraysToMaps(instance, instanceMapFieldDef)
   ))
   if (nonUniqueMapFields.length > 0) {
-    log.info(`Converting the following fields to non-unique maps: ${nonUniqueMapFields}`)
+    log.info(`Converting the following fields to non-unique maps: ${nonUniqueMapFields},
+     instances types are: ${instancesToConvert.map(inst => metadataType(inst))}`)
     instancesToConvert.forEach(instance => {
       convertValuesToMapArrays(instance, nonUniqueMapFields, instanceMapFieldDef)
     })
@@ -219,7 +220,7 @@ const convertInstanceFieldsToMaps = (
 /**
  * Convert instance field values from maps back to arrays before deploy.
  *
- * @param instanceChanges          The instance instance changes to deploy
+ * @param instanceChanges          The instance changes to deploy
  * @param instanceMapFieldDef      The definitions of the fields to covert
  */
 const convertFieldsBackToLists = (

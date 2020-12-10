@@ -91,7 +91,7 @@ const ReferenceSerializationStrategyLookup: Record<
         const type = metadataType(ref.topLevelParent)
         if (metadataTypeToFieldToMapDef[type] !== undefined
            && field !== undefined
-           && metadataTypeToFieldToMapDef[type][field?.name] !== undefined) {
+           && metadataTypeToFieldToMapDef[type][field.name] !== undefined) {
           const { key } = metadataTypeToFieldToMapDef[type][field.name]
           // key is a field of ref.value which is also the key of ref.value in the map
           return ref.value[key] ?? ref.value
@@ -529,17 +529,20 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
     const strategies = resolverFinder(args.field)
       .map(def => def.serializationStrategy)
 
-    if (strategies.length >= 1) {
+    if (strategies.length === 0) {
+      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
+      return undefined
+    }
+
+    if (strategies.length > 1) {
       log.debug(
         'found %d matching strategies for field %s - using the first one',
         strategies.length,
         args.field.elemID.getFullName(),
       )
-      return strategies[0]
     }
 
-    log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
-    return undefined
+    return strategies[0]
   }
 
   return ({ ref, path, field }) => {

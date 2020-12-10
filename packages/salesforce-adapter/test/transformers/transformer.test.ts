@@ -37,7 +37,7 @@ import {
   SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_SETTINGS_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, CPQ_PRODUCT_RULE,
-  CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION,
+  CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION, BUSINESS_HOURS_METADATA_TYPE,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
   SalesforceRecord } from '../../src/client/types'
@@ -47,6 +47,7 @@ import mockClient from '../client'
 import { createValueSetEntry, MockInterface } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import { mockValueTypeField, mockDescribeValueResult } from '../connection'
+import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 
 
 const { makeArray } = collections.array
@@ -1568,6 +1569,35 @@ describe('transformer', () => {
         },
       } },
     })
+    describe('with references to map values', () => {
+      const mockResolvedValue = { name: 'Default', fridayEndTime: '00:00:00.000Z' }
+      const mockBusinessHoursSettingsType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, BUSINESS_HOURS_METADATA_TYPE),
+        annotations: {
+          [METADATA_TYPE]: BUSINESS_HOURS_METADATA_TYPE,
+        },
+      })
+      const mockEntitlementProcessType = new ObjectType({ elemID: new ElemID(SALESFORCE, 'EntitlementProcess'),
+        fields: { businessHours: { type: allMissingSubTypes[0] } },
+        annotations: {
+          [METADATA_TYPE]: 'EntitlementProcess',
+        } })
+      const mockBusinessHoursInstance = new InstanceElement('BusinessHours', mockBusinessHoursSettingsType)
+      const testField = new Field(mockEntitlementProcessType, 'businessHours', BuiltinTypes.STRING)
+
+      it('should resolve with map strategy', () => {
+        expect(getLookUpName({
+          ref: new ReferenceExpression(
+            mockBusinessHoursInstance.elemID,
+            mockResolvedValue,
+            mockBusinessHoursInstance
+          ),
+          field: testField,
+          path: new ElemID(SALESFORCE, 'EntitlementProcess'),
+        })).toEqual('Default')
+      })
+    })
+
     describe('with fields in layout instance', () => {
       const mockLayoutItem = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutItem'),

@@ -193,6 +193,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'QuickAction' },
   },
   {
+    src: { field: 'businessHours', parentTypes: ['EntitlementProcess'] },
+    target: { type: 'BusinessHoursEntry' },
+    serializationStrategy: 'map',
+  },
+  {
     src: { field: 'businessProcess', parentTypes: [RECORD_TYPE_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: BUSINESS_PROCESS_METADATA_TYPE },

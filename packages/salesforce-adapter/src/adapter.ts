@@ -240,7 +240,7 @@ export const allSystemFields = [
 ]
 
 // The random suffix is to avoid collisions with salesforce elements
-export const INTERNAL_SETTINGS = 'SaltoSettings5a2ca8777a7743c3814ec83e3c4f0147'
+export const INTERNAL_ACCOUNT_INFO = 'AccountInfo5a2ca8777a7743c3814ec83e3c4f0147'
 
 export default class SalesforceAdapter implements AdapterOperations {
   private metadataTypesSkippedList: string[]
@@ -397,7 +397,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         metadataTypes]) as Element[][]
     )
 
-    elements.push(...await this.createInternalSettingsElements())
+    elements.push(...await this.createInternalAccountInfoElements())
 
     const {
       elements: metadataInstancesElements,
@@ -422,7 +422,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  private async createInternalSettingsElements(): Promise<Element[]> {
+  private async createInternalAccountInfoElements(): Promise<Element[]> {
     const instanceUrl = await this.client.getUrl()
 
     if (_.isUndefined(instanceUrl)) {
@@ -430,7 +430,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
 
     const type = new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, INTERNAL_SETTINGS),
+      elemID: new ElemID(constants.SALESFORCE, INTERNAL_ACCOUNT_INFO),
       isSettings: true,
       fields: {
         instanceUrl: { type: BuiltinTypes.STRING },
@@ -438,14 +438,15 @@ export default class SalesforceAdapter implements AdapterOperations {
       annotations: {
         [CORE_ANNOTATIONS.HIDDEN]: true,
       },
-      path: [constants.SALESFORCE, constants.TYPES_PATH, INTERNAL_SETTINGS],
+      path: [constants.SALESFORCE, constants.TYPES_PATH, INTERNAL_ACCOUNT_INFO],
     })
 
     const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       type,
       { instanceUrl: instanceUrl.href },
-      [constants.SALESFORCE, constants.RECORDS_PATH, constants.SETTINGS_PATH, INTERNAL_SETTINGS],
+      [constants.SALESFORCE, constants.RECORDS_PATH, constants.SETTINGS_PATH,
+        INTERNAL_ACCOUNT_INFO],
       { [CORE_ANNOTATIONS.HIDDEN]: true },
     )
 

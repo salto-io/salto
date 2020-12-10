@@ -32,12 +32,15 @@ const log = logger(module)
 // and is not meant to actually be deployed
 export const DEPLOY_WRAPPER_INSTANCE_MARKER = '_magic_constant_that_means_this_is_a_wrapper_instance'
 
+// Mapping of metadata type to fullNames
+type MetadataIdsMap = Record<string, Set<string>>
+
 const addNestedInstancesToPackageManifest = (
   pkg: DeployPackage,
   nestedTypeInfo: NestedMetadataTypeInfo,
   change: Change<MetadataInstanceElement>,
   addNestedAfterInstances: boolean,
-): ReadonlyArray<MetadataId> => {
+): MetadataIdsMap => {
   const changeElem = getChangeElement(change)
 
   const getNestedInstanceApiName = (name: string): string => (
@@ -46,7 +49,7 @@ const addNestedInstancesToPackageManifest = (
       : name
   )
 
-  const addNestedInstancesFromField = (fieldName: string): ReadonlyArray<MetadataId> => {
+  const addNestedInstancesFromField = (fieldName: string): MetadataIdsMap => {
     const rawFieldType = changeElem.type.fields[fieldName]?.type
     // We generally expect these to be lists, handling non list types just in case of a bug
     const fieldType = isContainerType(rawFieldType) ? rawFieldType.innerType : rawFieldType
@@ -55,7 +58,7 @@ const addNestedInstancesToPackageManifest = (
         'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',
         changeElem.elemID.getFullName(), fieldName, fieldType?.elemID.getFullName(),
       )
-      return []
+      return {}
     }
     const nestedAfter = new Set(
       isRemovalChange(change)
@@ -85,25 +88,27 @@ const addNestedInstancesToPackageManifest = (
       pkg.addToManifest(fieldType, nestedInstName)
     })
 
-    return [...idsToDelete, ...idsToAdd]
-      .map(fullName => ({ fullName, type: metadataType(fieldType) }))
+    return { [metadataType(fieldType)]: new Set([...idsToDelete, ...idsToAdd]) }
   }
 
-  return nestedTypeInfo.nestedInstanceFields.flatMap(addNestedInstancesFromField)
+  return Object.assign(
+    {},
+    ...nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField)
+  )
 }
 
 const addChangeToPackage = (
   pkg: DeployPackage,
   change: Change<MetadataInstanceElement>,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-): ReadonlyArray<MetadataId> => {
+): MetadataIdsMap => {
   const instance = getChangeElement(change)
   const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
 
   const addInstanceToManifest = !isWrapperInstance
   const addedIds = addInstanceToManifest
-    ? [{ fullName: apiName(instance), type: metadataType(instance) }]
-    : []
+    ? { [metadataType(instance)]: new Set([apiName(instance)]) }
+    : {}
 
   if (isRemovalChange(change)) {
     pkg.delete(instance.type, apiName(instance))
@@ -115,14 +120,13 @@ const addChangeToPackage = (
   const nestedTypeInfo = nestedMetadataTypes[metadataType(instance)]
   if (nestedTypeInfo !== undefined) {
     const addChildInstancesToManifest = isWrapperInstance
-    addedIds.push(
-      ...addNestedInstancesToPackageManifest(
-        pkg,
-        nestedTypeInfo,
-        change,
-        addChildInstancesToManifest,
-      )
+    const nestedInstanceIds = addNestedInstancesToPackageManifest(
+      pkg,
+      nestedTypeInfo,
+      change,
+      addChildInstancesToManifest,
     )
+    Object.assign(addedIds, nestedInstanceIds)
   }
 
   return addedIds
@@ -258,7 +262,7 @@ export const deployMetadata = async (
     return { appliedChanges: [], errors: validationErrors }
   }
 
-  const changeToDeployedIds: Record<string, ReadonlyArray<MetadataId>> = {}
+  const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
   validChanges.forEach(change => {
     const deployedIds = addChangeToPackage(pkg, change, nestedMetadataTypes)
     changeToDeployedIds[getChangeElement(change).elemID.getFullName()] = deployedIds
@@ -279,9 +283,9 @@ export const deployMetadata = async (
     const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)
-    return successfulFullNames.some(successfulId => (
-      changeDeployedIds.some(deployedId => _.isEqual(deployedId, successfulId))
-    ))
+    return successfulFullNames.some(
+      successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName)
+    )
   }
 
   return {

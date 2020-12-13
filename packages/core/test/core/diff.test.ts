@@ -192,5 +192,20 @@ describe('diff', () => {
         expect(changes.find(c => c.id.isEqual(nestedID))).toBeTruthy()
       })
     })
+    describe('check diff handling of selectors', () => {
+      it('returns empty diff when element id exists but is not in diff', async () => {
+        const selectors = [
+          createElementSelector('salto.multiPathObj.attr.simple'),
+        ]
+        const changes = await createDiffChanges(toElements, beforeElements, selectors)
+        expect(changes).toHaveLength(0)
+      })
+      it('throws error when selector catches nothing', async () => {
+        const selectors = [
+          createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname'),
+        ]
+        await expect(createDiffChanges(toElements, beforeElements, selectors)).rejects.toThrow()
+      })
+    })
   })
 })

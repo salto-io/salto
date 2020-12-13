@@ -16,35 +16,68 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { Element, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
-import { ElementSelector, selectElementsBySelectors } from '@salto-io/workspace'
-import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { ElementSelector, selectElementIdsByTraversal } from '@salto-io/workspace'
+import { filterByID, applyFunctionToChangeData, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { getDetailedChanges } from './fetch'
 
-const filterChangesBySelectors = async (
+const filterChangesByIds = async (
   changes: DetailedChange[],
-  selectors: ElementSelector[]
+  ids: string[],
 ): Promise<DetailedChange[]> => {
-  const changeIds = selectElementsBySelectors(changes.map(change => change.id), selectors).elements
   const filterChangeByID = (change: DetailedChange): DetailedChange | undefined => {
     const filteredChange = applyFunctionToChangeData(
       change,
-      changeData => filterByID(change.id, changeData, id => changeIds.includes(id)),
+      changeData => filterByID(change.id, changeData, id => ids.includes(id.getFullName())),
     )
     return getChangeElement(filteredChange) === undefined
       ? undefined
       : filteredChange
   }
-  return _.isEmpty(selectors)
-    ? changes
-    : changes.map(filterChangeByID).filter(values.isDefined)
+  return changes.map(filterChangeByID).filter(values.isDefined)
 }
 
 export const createDiffChanges = async (
   toElements: readonly Element[],
   fromElements: Element[],
   elementSelectors: ElementSelector[] = [],
-): Promise<DetailedChange[]> => filterChangesBySelectors(
-  wu(await getDetailedChanges(toElements, fromElements)).toArray(),
-  elementSelectors
-)
+): Promise<DetailedChange[]> => {
+  if (elementSelectors.length > 0) {
+    const toElementIdsFiltered = selectElementIdsByTraversal(elementSelectors,
+      toElements.map(element => ({ elemID: element.elemID, element })), true)
+    const fromElementIdsFiltered = selectElementIdsByTraversal(elementSelectors,
+      fromElements.map(element => ({ elemID: element.elemID, element })), true)
+    const allRelevantIds = _.uniq(toElementIdsFiltered
+      .concat(fromElementIdsFiltered).map(id => id.getFullName()))
+    const selectorsToVerify = new Set<string>(elementSelectors
+      .map(sel => sel.origin).filter(sel => !sel.includes('*')))
+    const verifySelectors: TransformFunc = ({ path, value }) => {
+      if (path !== undefined) {
+        const id = path.getFullName()
+        if (selectorsToVerify.has(id)) {
+          selectorsToVerify.delete(id)
+        }
+        return value
+      }
+      return undefined
+    }
+    toElements.forEach(elem => {
+      if (selectorsToVerify.has(elem.elemID.getFullName())) {
+        selectorsToVerify.delete(elem.elemID.getFullName())
+      }
+      transformElement({ element: elem, transformFunc: verifySelectors })
+    })
+    fromElements.forEach(elem => {
+      if (selectorsToVerify.has(elem.elemID.getFullName())) {
+        selectorsToVerify.delete(elem.elemID.getFullName())
+      }
+      transformElement({ element: elem, transformFunc: verifySelectors })
+    })
+    if (selectorsToVerify.size > 0) {
+      throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)
+    }
+    return filterChangesByIds(wu(await getDetailedChanges(toElements, fromElements))
+      .toArray(), allRelevantIds)
+  }
+  return wu(await getDetailedChanges(toElements, fromElements)).toArray()
+}

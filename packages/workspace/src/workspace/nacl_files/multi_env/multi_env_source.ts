@@ -92,12 +92,13 @@ const buildMultiEnvSource = (
   }
 
   const getMergedRelevantElements = async ({
-    primaryEnv, commonElemIDsToElems, primaryElemIDsToElems, relevantElemIDs,
+    primaryEnv, commonElemIDsToElems, primaryElemIDsToElems, relevantElemIDs, context,
   }: {
     primaryEnv: string
     commonElemIDsToElems: Record<string, Element[]>
     primaryElemIDsToElems: Record<string, Element[]>
     relevantElemIDs: string[]
+    context: Record<string, Element>
   }): Promise<MergeResult<Element[]>> => {
     const elements = (await Promise.all(relevantElemIDs.map(async id =>
       [
@@ -108,14 +109,14 @@ const buildMultiEnvSource = (
           ? primaryElemIDsToElems[id]
           : (await sources[primaryEnv].get(ElemID.fromFullName(id)) ?? [])),
       ]))).flat()
-    return mergeElements(elements)
+    return mergeElements(elements, context)
   }
 
   const buildState = async (env?: string): Promise<MultiEnvState> => {
     const allActiveElements = _.flatten(await Promise.all(
       _.values(getActiveSources(env)).map(s => (s ? s.getAll() : []))
     ))
-    const { errors, merged } = mergeElements(allActiveElements)
+    const { errors, merged } = mergeElements(allActiveElements, {})
     applyInstancesDefaults(merged.filter(isInstanceElement))
     return {
       elements: _.keyBy(merged, e => e.elemID.getFullName()),
@@ -142,7 +143,11 @@ const buildMultiEnvSource = (
       new Set(Object.keys(commonElemIDsToElems).concat(Object.keys(primaryElemIDsToElems)))
     )
     const relevantElements = await getMergedRelevantElements({
-      primaryEnv, commonElemIDsToElems, primaryElemIDsToElems, relevantElemIDs,
+      primaryEnv,
+      commonElemIDsToElems,
+      primaryElemIDsToElems,
+      relevantElemIDs,
+      context: currentState?.elements ?? {},
     })
 
     const relevantElementsByID = _.keyBy(relevantElements.merged, e => e.elemID.getFullName())

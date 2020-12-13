@@ -147,7 +147,7 @@ const getElementReferenced = (element: Element): ElemID[] => {
   return _.uniq(referenced)
 }
 
-const toParsedNaclFile = (
+export const toParsedNaclFile = (
   naclFile: NaclFile,
   parseResult: ParseResult
 ): ParsedNaclFile => ({
@@ -247,7 +247,10 @@ const buildNaclFilesState = (
   const newElementsToMerge = relevantElementsIDs
     .flatMap(fullName => Array.from(elementsIndex[fullName] ?? [])
       .flatMap(name => allParsed[name].elements.filter(e => e.elemID.getFullName() === fullName)))
-  const newMergedElementsResult = mergeElements(newElementsToMerge)
+
+  const newMergedElementsResult = mergeElements(
+    newElementsToMerge, currentState?.mergedElements ?? {}
+  )
   const mergeErrors = (currentState?.mergeErrors ?? [])
     .filter(e => !relevantElementsIDs.includes(e.elemID.getFullName()))
     .concat(newMergedElementsResult.errors)

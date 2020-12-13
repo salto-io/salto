@@ -38,14 +38,14 @@ export const createMockNaclFileSource = (
   clear: jest.fn().mockImplementation(() => Promise.resolve()),
   rename: jest.fn().mockImplementation(() => Promise.resolve()),
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
-  updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
+  updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([])),
   listNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(_.keys(naclFiles))),
   getTotalSize: jest.fn().mockImplementation(() => Promise.resolve(5)),
   getNaclFile: jest.fn().mockImplementation(
     (filename: string) => Promise.resolve(naclFiles[filename] ? { filename, buffer: '' } : undefined)
   ),
-  setNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
-  removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
+  setNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([])),
+  removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([])),
   getSourceMap: jest.fn().mockImplementation(() => Promise.resolve(new Map())),
   getSourceRanges: jest.fn().mockImplementation(async elemID => sourceRanges
     || _.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(

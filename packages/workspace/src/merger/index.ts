@@ -77,7 +77,9 @@ const getContainerTypes = (containerTypes: ContainerType[]): Record<string, List
  * Merge a list of elements by applying all updates, and replacing the pointers
  * to the updated elements.
  */
-export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => {
+export const mergeElements = (
+  elements: ReadonlyArray<Element>, context: Record<string, Element> = {}
+): MergeResult => {
   log.debug('starting to merge %d elements', elements.length)
   const objects = mergeObjectTypes(elements.filter(isObjectType))
   const instances = mergeInstances(elements.filter(isInstanceElement))
@@ -95,7 +97,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
 
   const updated = updateMergedTypes(
     mergedElements,
-    _.merge({}, objects.merged, primitives.merged, containerTypes)
+    _.merge({}, context, objects.merged, primitives.merged, containerTypes)
   )
 
   const errors = [

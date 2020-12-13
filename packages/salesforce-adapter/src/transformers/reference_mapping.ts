@@ -94,10 +94,12 @@ const ReferenceSerializationStrategyLookup: Record<
            && metadataTypeToFieldToMapDef[type][field.name] !== undefined) {
           const { key } = metadataTypeToFieldToMapDef[type][field.name]
           // key is a field of ref.value which is also the key of ref.value in the map
-          return ref.value[key] ?? ref.value
+          if (ref.value[key] !== undefined) {
+            return ref.value
+          }
         }
       }
-      return ref.value
+      throw new Error(`Failed serializing a reference to a map value in field: ${field?.name}`)
     },
     lookup: val => val,
   },

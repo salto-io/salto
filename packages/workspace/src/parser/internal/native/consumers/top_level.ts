@@ -222,7 +222,6 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
   const [elementType, ...elementLabels] = consumedLabels.value
   let consumedElement: ConsumerReturnType<Element | undefined>
   const isSettings = elementType === Keywords.SETTINGS_DEFINITION
-
   // Primitive type def actually needs 3 labels, but we assume that 2 labels
   // is a primitive type def with no inheritance operator
   if (isPrimitiveTypeDef(elementType, elementLabels)) {

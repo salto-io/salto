@@ -15,7 +15,8 @@
 */
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement,
-  ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
+  ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult, ElemID,
+  BuiltinTypes, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   resolveChangeElement, restoreChangeElement,
@@ -238,6 +239,9 @@ export const allSystemFields = [
   'SetupOwnerId',
 ]
 
+// The random suffix is to avoid collisions with salesforce elements
+export const INTERNAL_ACCOUNT_INFO = 'AccountInfo5a2ca8777a7743c3814ec83e3c4f0147'
+
 export default class SalesforceAdapter implements AdapterOperations {
   private metadataTypesSkippedList: string[]
   private instancesRegexSkippedList: RegExp[]
@@ -393,6 +397,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       await Promise.all([annotationTypes, fieldTypes, missingTypes,
         metadataTypes]) as Element[][]
     )
+
+    elements.push(...await this.createInternalAccountInfoElements())
+
     const {
       elements: metadataInstancesElements,
       configChanges: metadataInstancesConfigInstances,
@@ -414,6 +421,37 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements,
       updatedConfig: { config, message: getConfigChangeMessage(configChangeSuggestions) },
     }
+  }
+
+  private async createInternalAccountInfoElements(): Promise<Element[]> {
+    const instanceUrl = await this.client.getUrl()
+
+    if (_.isUndefined(instanceUrl)) {
+      return []
+    }
+
+    const type = new ObjectType({
+      elemID: new ElemID(constants.SALESFORCE, INTERNAL_ACCOUNT_INFO),
+      isSettings: true,
+      fields: {
+        instanceUrl: { type: BuiltinTypes.STRING },
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+      path: [constants.SALESFORCE, constants.TYPES_PATH, INTERNAL_ACCOUNT_INFO],
+    })
+
+    const instance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      type,
+      { instanceUrl: instanceUrl.href },
+      [constants.SALESFORCE, constants.RECORDS_PATH, constants.SETTINGS_PATH,
+        INTERNAL_ACCOUNT_INFO],
+      { [CORE_ANNOTATIONS.HIDDEN]: true },
+    )
+
+    return [type, instance]
   }
 
   async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {

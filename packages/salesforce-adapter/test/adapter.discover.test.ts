@@ -20,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import { values, collections } from '@salto-io/lowerdash'
-import SalesforceAdapter from '../src/adapter'
+import SalesforceAdapter, { INTERNAL_ACCOUNT_INFO } from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
 import { findElements, ZipFile, MockInterface } from './utils'
@@ -31,7 +31,7 @@ import {
   INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, MAX_ITEMS_IN_RETRIEVE_REQUEST,
 } from '../src/types'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
-import { MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput, mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveResult } from './connection'
+import { MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput, mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveResult, MOCK_INSTANCE_URL } from './connection'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
@@ -236,12 +236,13 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* treat blank as */
         + 1 /* value set */
         + 2 /* field dependency & value settings */
-        + 7 /* range restrictions */)
+        + 7 /* range restrictions */
+        + 2 /* internal account information */)
 
-      const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
-      const nestingType = types['salesforce.NestingType']
-      const nestedType = types['salesforce.NestedType']
-      const singleField = types['salesforce.SingleFieldType']
+      const elementsMap = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
+      const nestingType = elementsMap['salesforce.NestingType']
+      const nestedType = elementsMap['salesforce.NestedType']
+      const singleField = elementsMap['salesforce.SingleFieldType']
       expect(nestingType).toBeDefined()
       expect(nestingType.fields.field.type.elemID).toEqual(nestedType.elemID)
       expect(nestingType.fields.otherField.type.elemID).toEqual(singleField.elemID)
@@ -251,6 +252,17 @@ describe('SalesforceAdapter fetch', () => {
       expect(nestedType.fields.doubleNested.type.elemID).toEqual(singleField.elemID)
       expect(singleField).toBeDefined()
       expect(singleField.fields.str.type.elemID).toEqual(BuiltinTypes.STRING.elemID)
+      expect(elementsMap[`salesforce.${INTERNAL_ACCOUNT_INFO}`]).toBeDefined()
+      expect(elementsMap[`salesforce.${INTERNAL_ACCOUNT_INFO}.instance`]?.value?.instanceUrl).toBe(MOCK_INSTANCE_URL)
+    })
+
+    it('should not fetch internal account info when url is invalid', async () => {
+      connection.instanceUrl = 'invalidurl'
+      const { elements: result } = await adapter.fetch()
+
+      const elementsMap = _.keyBy(result, id)
+      expect(elementsMap[`salesforce.${INTERNAL_ACCOUNT_INFO}`]).toBeUndefined()
+      expect(elementsMap[`salesforce.${INTERNAL_ACCOUNT_INFO}.instance`]).toBeUndefined()
     })
 
     describe('with metadata instance', () => {

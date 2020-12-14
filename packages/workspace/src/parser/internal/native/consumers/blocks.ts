@@ -54,7 +54,10 @@ export const recoverInvalidItemDefinition = (context: ParseContext): void => {
     consumeValue(context)
   } else if (context.lexer.peek()?.type === TOKEN_TYPES.OCURLY) {
     consumeValue(context)
+  } else if (context.lexer.peek(false)?.type === TOKEN_TYPES.NEWLINE) {
+    context.lexer.next(false)
   }
+  // No need to consume if this is a CCURLY as it will be handled by the caller
 }
 
 export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): ConsumerReturnType<{

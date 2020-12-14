@@ -53,6 +53,35 @@ describe('parsing errors', () => {
         expect(res.elements[0]).toEqual(new ObjectType({ elemID: new ElemID('nowhere', 'man') }))
       })
     })
+    describe('no wrapper block', () => {
+      const nacl = `
+      this = [
+        "is annoying"
+      ]
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+
+      it('should raise an error', () => {
+        expect(res.errors).toHaveLength(4)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 12, col: 12, line: 2 },
+          end: { byte: 13, col: 13, line: 2 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].summary)
+          .toBe('Expected {')
+        expect(res.errors[0].message).toBe('Expected {')
+        expect(res.errors[1].summary)
+          .toBe('Invalid block item')
+        expect(res.errors[2].summary)
+          .toBe('Invalid block item')
+        expect(res.errors[3].summary)
+          .toBe('Invalid block item')
+      })
+    })
   })
   describe('primitive type definition errors', () => {
     describe('invalid primitive type error', () => {

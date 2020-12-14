@@ -714,17 +714,24 @@ const createCustomObjectChange = (
         [DEPLOY_WRAPPER_INSTANCE_MARKER]: true,
       }
     }
-    // If we got a change on the custom object annotations we always include all fields because
-    // some validations on annotation values require fields to exist in the deploy request.
-    // For example, sharingModel may require master-detail fields to be in the request even if
-    // they are not changed
-    const parentValues = toCustomProperties(afterParent, true, fieldsToSkip)
-    const allFields = makeArray(nestedValues.fields)
-      .concat(makeArray(parentValues.fields))
-      // new fields in the custom object can have an undefined fullName if they are new and rely
-      // on our "addDefaults" to get an api name - in that case the field with the api name will
-      // be in our nested custom object values
-      .filter(field => field.fullName !== undefined)
+    // This means there is a change on one of the custom object annotations.
+    const includeFieldsFromParent = objectChange?.action === 'add'
+    const parentValues = toCustomProperties(afterParent, includeFieldsFromParent, fieldsToSkip)
+    if (parentValues.sharingModel === 'ControlledByParent' && !includeFieldsFromParent) {
+      // If we have to deploy the custom object and it is controlled by parent we must include
+      // master-detail fields in the deployment, otherwise the deploy request will fail validation
+      parentValues.fields = Object.values(afterParent.fields)
+        .filter(isMasterDetailField)
+        .map(toCustomField)
+        // new fields in the custom object can have an undefined fullName if they are new and rely
+        // on our "addDefaults" to get an api name - in that case the field with the api name will
+        // be in nestedValues so it is safe to filter it out here
+        .filter(field => field.fullName !== undefined)
+    }
+    const allFields = [
+      ...makeArray(nestedValues.fields),
+      ...makeArray(parentValues.fields),
+    ]
     return {
       ...parentValues,
       ...nestedValues,

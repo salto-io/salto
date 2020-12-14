@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change } from '@salto-io/adapter-api'
 import { getChangeGroupIds, SDF_CHANGE_GROUP_ID } from '../src/group_changes'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
@@ -29,7 +29,7 @@ describe('Group Changes', () => {
   let changeGroupIds: Map<ChangeId, ChangeGroupId>
 
   beforeAll(async () => {
-    changeGroupIds = await getChangeGroupIds(new Map([
+    changeGroupIds = await getChangeGroupIds(new Map<string, Change>([
       [fileInstance.elemID.getFullName(), toChange({ after: fileInstance })],
       [customFieldInstance.elemID.getFullName(), toChange({ after: customFieldInstance })],
       [nonSdfInstance.elemID.getFullName(), toChange({ after: nonSdfInstance })],

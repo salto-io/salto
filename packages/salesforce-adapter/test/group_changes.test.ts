@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, BuiltinTypes, CORE_ANNOTATIONS, Change } from '@salto-io/adapter-api'
 import { SALESFORCE, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, LABEL, OBJECTS_PATH } from '../src/constants'
 import { getChangeGroupIds } from '../src/group_changes'
 import { createInstanceElement } from '../src/transformers/transformer'
@@ -95,7 +95,7 @@ describe('Group changes function', () => {
   const differentModifyInstance = new InstanceElement('differentModifyInstance', differentCustomObject)
 
   beforeAll(async () => {
-    changeGroupIds = await getChangeGroupIds(new Map([
+    changeGroupIds = await getChangeGroupIds(new Map<string, Change>([
       [customObject.elemID.getFullName(), toChange({ after: customObject })],
       [metadataInstance.elemID.getFullName(), toChange({ before: metadataInstance })],
       [addInstance.elemID.getFullName(), toChange({ after: addInstance })],

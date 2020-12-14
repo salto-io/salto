@@ -92,9 +92,14 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
     path?: ReadonlyArray<string>
   }
 
-export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
+export type ChangeParams<T> = { before?: T; after?: T }
 
-export const toChange = ({ before, after }: ChangeParams): Change => {
+type ChangeParamType<T> = T extends ChangeParams<infer U> ? U : never
+
+export const toChange = <T extends ChangeParams<unknown>>(
+  params: T
+): Change<ChangeParamType<T>> => {
+  const { before, after } = params as ChangeParams<ChangeParamType<T>>
   if (before !== undefined && after !== undefined) {
     return { action: 'modify', data: { before, after } }
   }

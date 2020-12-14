@@ -18,7 +18,7 @@ import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
   isListType, ListType, isElement, isContainerType,
 } from '@salto-io/adapter-api'
-import { applyRecursive, resolvePath } from '@salto-io/adapter-utils'
+import { applyRecursive, resolvePath, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, PROFILE_METADATA_TYPE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
@@ -91,9 +91,9 @@ const markListRecursively = (
 ): void => {
   // Mark all lists as ListType
   const markList = (field: Field, value: Value): Value => {
-    if (_.isArray(value) && !isListType(field.type)) {
+    if (_.isArray(value) && !isListType(field.getType())) {
       // This assumes Salesforce does not have list of lists fields
-      field.type = new ListType(field.type)
+      field.refType = createRefToElmWithValue(new ListType(field.getType()))
     }
     return value
   }
@@ -110,11 +110,12 @@ const castListRecursively = (
   )
   // Cast all lists to list
   const castLists = (field: Field, value: Value): Value => {
-    if (isListType(field.type) && !_.isArray(value)) {
+    if (isListType(field.getType()) && !_.isArray(value)) {
       return [value]
     }
     // We get from sfdc api list with empty strings for empty object (possibly jsforce issue)
-    if (isListType(field.type) && _.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
+    if (isListType(field.getType()) && _.isArray(value)
+      && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
       return []
     }
 
@@ -129,9 +130,10 @@ const markHardcodedLists = (
   knownListIds: Set<string>,
 ): void => _.values(type.fields).filter(f => knownListIds.has(f.elemID.getFullName())).forEach(
   f => {
+    const fieldType = f.getType()
     // maps are created synthetically and should not be converted here
-    if (!isContainerType(f.type)) {
-      f.type = new ListType(f.type)
+    if (!isContainerType(fieldType)) {
+      f.refType = createRefToElmWithValue(new ListType(fieldType))
     }
   }
 )

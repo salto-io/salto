@@ -88,7 +88,7 @@ describe('ProfileMaps filter', () => {
 
       it('should convert object field types to maps', () => {
         expect(profileObj).toEqual(generateProfileType(true))
-        const fieldType = profileObj.fields.applicationVisibilities.type
+        const fieldType = profileObj.fields.applicationVisibilities.getType()
         expect(isMapType(fieldType)).toBeTruthy()
         expect(isListType((fieldType as MapType).innerType)).toBeFalsy()
       })
@@ -174,7 +174,7 @@ describe('ProfileMaps filter', () => {
       })
 
       it('should convert all fields with duplicates into (maps of) lists', () => {
-        const fieldType = profileObj.fields.applicationVisibilities.type
+        const fieldType = profileObj.fields.applicationVisibilities.getType()
         expect(isMapType(fieldType)).toBeTruthy()
         expect(isListType((fieldType as MapType).innerType)).toBeTruthy()
         expect(Array.isArray(

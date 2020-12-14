@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { isInstanceOfTypeChange } from '../utils'
 import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CODE_FIELD } from '../../constants'
@@ -30,15 +30,18 @@ const refListFieldNames = [
 const listOfText = new ListType(Types.primitiveDataTypes.Text)
 
 const fieldTypeFromTextListToLongText = (field: Field): Field => {
-  if (isListType(field.type) && field.type.isEqual(listOfText)) {
-    field.type = Types.primitiveDataTypes.LongTextArea
+  const fieldType = field.getType()
+  if (isListType(fieldType) && fieldType.isEqual(listOfText)) {
+    field.refType = createRefToElmWithValue(Types.primitiveDataTypes.LongTextArea)
   }
   return field
 }
 
 const fieldTypeFromLongTextToTextList = (field: Field): Field => {
-  if (isPrimitiveType(field.type) && field.type.isEqual(Types.primitiveDataTypes.LongTextArea)) {
-    field.type = listOfText
+  const fieldType = field.getType()
+  if (isPrimitiveType(fieldType)
+    && fieldType.isEqual(Types.primitiveDataTypes.LongTextArea)) {
+    field.refType = createRefToElmWithValue(listOfText)
   }
   return field
 }

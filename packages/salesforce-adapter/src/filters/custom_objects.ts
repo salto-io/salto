@@ -21,7 +21,7 @@ import {
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
-import { findObjectType, transformValues, getParents, pathNaclCase } from '@salto-io/adapter-utils'
+import { findObjectType, transformValues, getParents, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
@@ -618,14 +618,16 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
       suffix: 'object',
     } as MetadataTypeAnnotations,
     fields: {
-      fields: { type: new ListType(customFieldType) },
+      fields: {
+        refType: createRefToElmWithValue(new ListType(customFieldType)),
+      },
       ..._.mapValues(
         NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
         fieldType => ({
-          type: new ListType(new ObjectType({
+          refType: createRefToElmWithValue(new ListType(new ObjectType({
             elemID: new ElemID(SALESFORCE, fieldType),
             annotations: { [METADATA_TYPE]: fieldType },
-          })),
+          }))),
         })
       ),
     },
@@ -752,19 +754,25 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
           const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as
             ObjectType
-          listViewType.fields.columns.type = new ListType(listViewType.fields.columns.type)
-          listViewType.fields.filters.type = new ListType(listViewType.fields.filters.type)
+          listViewType.fields.columns.refType = createRefToElmWithValue(
+            new ListType(listViewType.fields.columns.getType())
+          )
+          listViewType.fields.filters.refType = createRefToElmWithValue(
+            new ListType(listViewType.fields.filters.getType())
+          )
           const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS] as
             ObjectType
-          fieldSetType.fields.availableFields.type = new ListType(
-            fieldSetType.fields.availableFields.type
-          )
-          fieldSetType.fields.displayedFields.type = new ListType(
-            fieldSetType.fields.displayedFields.type
-          )
+          fieldSetType.fields.availableFields.refType = createRefToElmWithValue(new ListType(
+            fieldSetType.fields.availableFields.getType()
+          ))
+          fieldSetType.fields.displayedFields.refType = createRefToElmWithValue(new ListType(
+            fieldSetType.fields.displayedFields.getType()
+          ))
           const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
             ObjectType
-          compactLayoutType.fields.fields.type = new ListType(compactLayoutType.fields.fields.type)
+          compactLayoutType.fields.fields.refType = createRefToElmWithValue(
+            new ListType(compactLayoutType.fields.fields.getType())
+          )
         }
 
         const getAllTypesFromInstance = (): TypeMap => {
@@ -775,7 +783,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
           const typesFromInstance: TypeMap = _(customObjectType.fields)
             .entries()
             .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
-            .map(([name, field]) => [name, field.type])
+            .map(([name, field]) => [name, field.getType()])
             .fromPairs()
             .value()
 

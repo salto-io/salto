@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression,
-  INSTANCE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/extra_dependencies'
@@ -39,13 +37,15 @@ describe('Internal IDs filter', () => {
       annotations: { [METADATA_TYPE]: 'obj' },
       elemID: objTypeID,
       fields: {
-        standard: { type: BuiltinTypes.STRING },
+        standard: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
         custom: {
           annotations: {
             [API_NAME]: 'Obj.custom__c',
             [INTERNAL_ID_ANNOTATION]: 'custom id',
           },
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
         },
         special: {
           annotations: {
@@ -55,7 +55,7 @@ describe('Internal IDs filter', () => {
             ],
             [INTERNAL_ID_ANNOTATION]: 'special id',
           },
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
         },
       },
     })
@@ -68,7 +68,7 @@ describe('Internal IDs filter', () => {
             [API_NAME]: 'OtherO.moreSpecial__c',
             [INTERNAL_ID_ANNOTATION]: 'more special id',
           },
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
         },
       },
     })
@@ -185,7 +185,7 @@ describe('Internal IDs filter', () => {
       // "custom" is already referenced using a reference expression on a field
       expect(inst1Deps).toHaveLength(1)
       expect(inst1Deps[0]).toBeInstanceOf(ReferenceExpression)
-      expect(inst1Deps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.special')
+      expect(inst1Deps[0].elemID.getFullName()).toEqual('salesforce.Obj.field.special')
 
       expect(elements[3]).toBeInstanceOf(InstanceElement)
       const inst2Deps = elements[3].annotations[INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]
@@ -193,8 +193,8 @@ describe('Internal IDs filter', () => {
       // "unknown" is not a real field so it's not included
       expect(inst2Deps).toHaveLength(2)
       expect(inst2Deps[0]).toBeInstanceOf(ReferenceExpression)
-      expect(inst2Deps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
-      expect(inst2Deps[1].elemId.getFullName()).toEqual('salesforce.OtherO.field.moreSpecial')
+      expect(inst2Deps[0].elemID.getFullName()).toEqual('salesforce.Obj.field.custom')
+      expect(inst2Deps[1].elemID.getFullName()).toEqual('salesforce.OtherO.field.moreSpecial')
     })
   })
 })

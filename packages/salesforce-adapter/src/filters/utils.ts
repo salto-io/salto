@@ -21,7 +21,7 @@ import {
   isReferenceExpression, ReferenceExpression, AdditionChange, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement,
 } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
@@ -122,7 +122,7 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
   return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(annotationTypes)
       .concat(Object.entries(CoreAnnotationTypes))
-      .map(([name, type]) => ({ [name]: { type } }))) })
+      .map(([name, type]) => ({ [name]: { refType: createRefToElmWithValue(type) } }))) })
 }
 
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
@@ -207,9 +207,9 @@ export const isInstanceOfTypeChange = (type: string) => (
 )
 
 export const isMasterDetailField = (field: Field): boolean => (
-  field.type.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
+  field.refType.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
 )
 
 export const isLookupField = (field: Field): boolean => (
-  field.type.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
+  field.refType.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
 )

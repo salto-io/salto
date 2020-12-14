@@ -23,7 +23,7 @@ import { PROFILE_METADATA_TYPE } from '../constants'
 const DEFAULT_NACL_FILENAME = 'Attributes'
 
 const toNaclFilename = (fieldName: string, objType: ObjectType): string => (
-  (fieldName !== undefined && isMapType(objType.fields[fieldName]?.type))
+  (fieldName !== undefined && isMapType(objType.fields[fieldName]?.getType()))
     ? strings.capitalizeFirstLetter(fieldName)
     : DEFAULT_NACL_FILENAME
 )

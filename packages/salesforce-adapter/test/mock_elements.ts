@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../src/constants'
 import { MetadataTypeAnnotations, MetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -32,7 +33,9 @@ const createMetadataObjectType = (
   elemID: new ElemID(SALESFORCE, params.annotations.metadataType),
   ...params,
   fields: {
-    [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+    [INSTANCE_FULL_NAME_FIELD]: {
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+    },
     ...params.fields,
   },
 }) as MetadataObjectType
@@ -88,7 +91,9 @@ export const mockTypes = {
     annotations: { metadataType: LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, dirName: 'lwc' },
     fields: {
       targetConfigs: {
-        type: allMissingSubTypes.find(t => t.elemID.typeName === 'TargetConfigs') as TypeElement,
+        refType: createRefToElmWithValue(
+          allMissingSubTypes.find(t => t.elemID.typeName === 'TargetConfigs') as TypeElement
+        ),
       },
     },
   }),
@@ -114,9 +119,9 @@ export const mockTypes = {
     },
     fields: {
       assignmentRule: {
-        type: new ListType(createMetadataObjectType(
+        refType: createRefToElmWithValue(new ListType(createMetadataObjectType(
           { annotations: { metadataType: 'AssignmentRule' } }
-        )),
+        ))),
       },
     },
   }),
@@ -129,7 +134,9 @@ export const mockTypes = {
     fields: _.mapValues(
       WORKFLOW_FIELD_TO_TYPE,
       typeName => ({
-        type: new ListType(createMetadataObjectType({ annotations: { metadataType: typeName } })),
+        refType: createRefToElmWithValue(
+          new ListType(createMetadataObjectType({ annotations: { metadataType: typeName } }))
+        ),
       }),
     ),
   }),

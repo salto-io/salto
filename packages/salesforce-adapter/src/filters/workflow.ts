@@ -17,6 +17,7 @@ import {
   Element, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
   ObjectType, getChangeElement, Change, isAdditionChange, BuiltinTypes, ElemID,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -110,10 +111,12 @@ const createDummyWorkflowInstance = (
   const workflowType = new ObjectType({
     elemID: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
     fields: {
-      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+      [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
       ..._.mapValues(
         WORKFLOW_FIELD_TO_TYPE,
-        typeName => ({ type: realFieldTypes[typeName] ?? dummyFieldType(typeName) })
+        typeName => (
+          { refType: createRefToElmWithValue(realFieldTypes[typeName] ?? dummyFieldType(typeName)) }
+        )
       ),
     },
     annotationTypes: metadataAnnotationTypes,

@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/value_set'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
@@ -94,7 +93,7 @@ describe('value set filter', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: { [fieldName]: {
-            type: Types.primitiveDataTypes.Picklist,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
             annotations: {
               [constants.API_NAME]: `${customObjectName}.${fieldName}`,
               [constants.LABEL]: 'label',

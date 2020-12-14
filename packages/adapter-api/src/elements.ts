@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value, ReferenceExpression } from './values'
+import { Values, isEqualValues, Value, ReferenceExpression, isReferenceExpression } from './values'
 
 export type ElementsSource = {
   getSync(id: ElemID): Value
@@ -226,6 +226,10 @@ export class Field extends PlaceholderTypeElement {
       {},
       annotations
     )
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isType(typeOrRefType) && !isReferenceExpression(typeOrRefType)) {
+      throw new Error(`How the hell did I get here with this ${typeOrRefType}`)
+    }
   }
 
   isEqual(other: Field): boolean {
@@ -370,7 +374,6 @@ export class ObjectType extends Element {
 }
 
 export class InstanceElement extends PlaceholderTypeElement {
-  public refType: ReferenceExpression
   constructor(
     name: string,
     typeOrRefType: ObjectType | ReferenceExpression,
@@ -388,17 +391,13 @@ export class InstanceElement extends PlaceholderTypeElement {
       annotations,
       path,
     )
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    this.refType = isObjectType(typeOrRefType)
-      ? new ReferenceExpression(typeOrRefType.elemID, typeOrRefType)
-      : typeOrRefType
   }
 
   getType(elementsSource?: ElementsSource): ObjectType {
     const type = this.refType.getResolvedValue(elementsSource)
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     if (!isObjectType(type)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
     }
     return type
   }

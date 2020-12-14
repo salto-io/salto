@@ -21,7 +21,7 @@ import {
   isListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { naclCase, applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
@@ -174,17 +174,18 @@ const updateFieldTypes = (
   profileMapFieldDef: Record<string, MapDef>,
 ): void => {
   Object.values(profileObj.fields).filter(
-    f => profileMapFieldDef[f.name] !== undefined && !isMapType(f.type)
+    f => profileMapFieldDef[f.name] !== undefined && !isMapType(f.getType())
   ).forEach(f => {
     const mapDef = profileMapFieldDef[f.name]
-    let innerType = isContainerType(f.type) ? f.type.innerType : f.type
+    const fieldType = f.getType()
+    let innerType = isContainerType(fieldType) ? fieldType.innerType : fieldType
     if (mapDef.mapToList || nonUniqueMapFields.includes(f.name)) {
       innerType = new ListType(innerType)
     }
     if (mapDef.nested) {
-      f.type = new MapType(new MapType(innerType))
+      f.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
     } else {
-      f.type = new MapType(innerType)
+      f.refType = createRefToElmWithValue(new MapType(innerType))
     }
   })
 }
@@ -273,14 +274,16 @@ const convertFieldTypesBackToLists = (
   profileMapFieldDef: Record<string, MapDef>,
 ): void => {
   Object.values(profileObj.fields).filter(
-    f => profileMapFieldDef[f.name] !== undefined && isMapType(f.type)
+    f => profileMapFieldDef[f.name] !== undefined && isMapType(f.getType())
   ).forEach(f => {
-    if (isMapType(f.type)) {
-      f.type = f.type.innerType
+    const fieldType = f.getType()
+    if (isMapType(fieldType)) {
+      f.refType = createRefToElmWithValue(fieldType.innerType)
     }
     // for nested fields (not using while to avoid edge cases)
-    if (isMapType(f.type)) {
-      f.type = f.type.innerType
+    const newFieldType = f.getType()
+    if (isMapType(newFieldType)) {
+      f.refType = createRefToElmWithValue(newFieldType.innerType)
     }
   })
 }
@@ -354,7 +357,7 @@ const filter: FilterCreator = ({ config }) => ({
     // after preDeploy, the fields with lists are exactly the ones that should be converted
     // back to lists
     const nonUniqueMapFields = Object.keys(profileObj.fields).filter(
-      fieldName => isListType((profileObj.fields[fieldName].type))
+      fieldName => isListType((profileObj.fields[fieldName].getType()))
     )
     updateFieldTypes(profileObj, nonUniqueMapFields, PROFILE_MAP_FIELD_DEF)
 

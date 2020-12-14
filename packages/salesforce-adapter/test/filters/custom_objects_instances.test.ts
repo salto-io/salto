@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
@@ -100,7 +101,7 @@ describe('Custom Object Instances filter', () => {
     const namespace = getNamespaceFromString(name)
     const basicFields = {
       Id: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -108,7 +109,7 @@ describe('Custom Object Instances filter', () => {
         },
       },
       Name: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'description label',
@@ -116,7 +117,7 @@ describe('Custom Object Instances filter', () => {
         },
       },
       TestField: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [LABEL]: 'Test field',
           [API_NAME]: 'TestField',
@@ -348,7 +349,7 @@ describe('Custom Object Instances filter', () => {
         elemID: new ElemID(SALESFORCE, noFieldsName),
         fields: {
           Id: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [API_NAME]: 'Id',
               queryable: false,
@@ -363,12 +364,12 @@ describe('Custom Object Instances filter', () => {
 
       const withNameName = `${testNamespace}__withCompoundName__c`
       const objWithNameField = createCustomObject(withNameName)
-      objWithNameField.fields.Name.type = Types.compoundDataTypes.Name
+      objWithNameField.fields.Name.refType = createRefToElmWithValue(Types.compoundDataTypes.Name)
 
       const withAddressName = `${testNamespace}__withAddress__c`
       const objWithAddressField = createCustomObject(withAddressName, {
         OtherAddress: {
-          type: Types.compoundDataTypes.Address,
+          refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
           annotations: {
             [LABEL]: 'Address',
             [API_NAME]: 'OtherAddress',
@@ -549,7 +550,7 @@ describe('Custom Object Instances filter', () => {
         refFromAndToObjectName,
         {
           Parent: {
-            type: Types.primitiveDataTypes.MasterDetail,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
             annotations: {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
@@ -557,7 +558,7 @@ describe('Custom Object Instances filter', () => {
             },
           },
           Pricebook2Id: {
-            type: Types.primitiveDataTypes.Lookup,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
             annotations: {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
@@ -572,7 +573,7 @@ describe('Custom Object Instances filter', () => {
         namespacedRefFromName,
         {
           Parent: {
-            type: Types.primitiveDataTypes.MasterDetail,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
             annotations: {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
@@ -580,7 +581,7 @@ describe('Custom Object Instances filter', () => {
             },
           },
           Pricebook2Id: {
-            type: Types.primitiveDataTypes.Lookup,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
             annotations: {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
@@ -630,7 +631,7 @@ describe('Custom Object Instances filter', () => {
       refFromObjectName,
       {
         Parent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -648,7 +649,7 @@ describe('Custom Object Instances filter', () => {
       parentObjectName,
       {
         Grandparent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -663,7 +664,7 @@ describe('Custom Object Instances filter', () => {
       pricebookEntryName,
       {
         Pricebook2Id: {
-          type: Types.primitiveDataTypes.Lookup,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
           annotations: {
             [LABEL]: 'Pricebook2Id field',
             [API_NAME]: 'Pricebook2Id',
@@ -678,7 +679,7 @@ describe('Custom Object Instances filter', () => {
       productName,
       {
         ProductCode: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             [LABEL]: 'ProductCode field',
             [API_NAME]: 'ProductCode',
@@ -692,7 +693,7 @@ describe('Custom Object Instances filter', () => {
       SBQQCustomActionName,
       {
         SBQQ__Location__c: {
-          type: Types.primitiveDataTypes.Checkbox,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Checkbox),
           annotations: {
             [LABEL]: 'Location checkbox field',
             [API_NAME]: 'SBQQ__Location__c',
@@ -706,7 +707,7 @@ describe('Custom Object Instances filter', () => {
           },
         },
         SBQQ__DisplayOrder__c: {
-          type: Types.primitiveDataTypes.Number,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
           annotations: {
             [LABEL]: 'Display order',
             [API_NAME]: 'SBQQ__DisplayOrder__c',
@@ -720,7 +721,7 @@ describe('Custom Object Instances filter', () => {
       grandsonObjectName,
       {
         Parent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -735,7 +736,7 @@ describe('Custom Object Instances filter', () => {
       orphanObjectName,
       {
         Parent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -753,7 +754,7 @@ describe('Custom Object Instances filter', () => {
       notQueryableIdFieldsName,
       {
         NotQueryable: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             [LABEL]: 'not queryable',
             [API_NAME]: 'NotQueryable',

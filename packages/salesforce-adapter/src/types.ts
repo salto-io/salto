@@ -17,6 +17,7 @@ import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   FieldDefinition,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
@@ -121,22 +122,22 @@ const configID = new ElemID('salesforce')
 export const usernamePasswordCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
-    username: { type: BuiltinTypes.STRING },
-    password: { type: BuiltinTypes.STRING },
+    username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    password: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     token: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: { message: 'Token (empty if your org uses IP whitelisting)' },
     },
-    sandbox: { type: BuiltinTypes.BOOLEAN },
+    sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
   },
 })
 
 export const accessTokenCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
-    accessToken: { type: BuiltinTypes.STRING },
-    instanceUrl: { type: BuiltinTypes.STRING },
-    isSandbox: { type: BuiltinTypes.BOOLEAN },
+    accessToken: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    instanceUrl: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    isSandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
   },
 })
 
@@ -144,15 +145,15 @@ export const oauthRequestParameters = new ObjectType({
   elemID: configID,
   fields: {
     consumerKey: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: { message: 'Consumer key for a connected app, whose redirect URI is http://localhost:port' },
     },
     port: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: { message: 'Port provided in the redirect URI' },
     },
     isSandbox: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: { message: 'Is connection to a sandbox?' },
     },
   },
@@ -198,13 +199,13 @@ const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
   fields: {
     objectsRegex: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     idFields: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -216,23 +217,31 @@ const saltoIDSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoIDSettings'),
   fields: {
     defaultIdFields: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    overrides: { type: new ListType(objectIdSettings) },
+    overrides: {
+      refType: createRefToElmWithValue(new ListType(objectIdSettings)),
+    },
   } as Record<keyof SaltoIDSettings, FieldDefinition>,
 })
 
 const dataManagementType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, DATA_MANAGEMENT),
   fields: {
-    includeObjects: { type: new ListType(BuiltinTypes.STRING) },
-    excludeObjects: { type: new ListType(BuiltinTypes.STRING) },
-    allowReferenceTo: { type: new ListType(BuiltinTypes.STRING) },
+    includeObjects: {
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+    },
+    excludeObjects: {
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+    },
+    allowReferenceTo: {
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+    },
     saltoIDSettings: {
-      type: saltoIDSettingsType,
+      refType: createRefToElmWithValue(saltoIDSettingsType),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -243,47 +252,47 @@ const dataManagementType = new ObjectType({
 const clientPollingConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientPollingConfig'),
   fields: {
-    interval: { type: BuiltinTypes.NUMBER },
-    timeout: { type: BuiltinTypes.NUMBER },
+    interval: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    timeout: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
   } as Record<keyof ClientPollingConfig, FieldDefinition>,
 })
 
 const clientDeployConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientDeployConfig'),
   fields: {
-    rollbackOnError: { type: BuiltinTypes.BOOLEAN },
-    ignoreWarnings: { type: BuiltinTypes.BOOLEAN },
-    purgeOnDelete: { type: BuiltinTypes.BOOLEAN },
-    checkOnly: { type: BuiltinTypes.BOOLEAN },
+    rollbackOnError: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    ignoreWarnings: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    purgeOnDelete: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    checkOnly: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
     testLevel: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           values: ['NoTestRun', 'RunSpecifiedTests', 'RunLocalTests', 'RunAllTestsInOrg'],
         }),
       },
     },
-    runTests: { type: new ListType(BuiltinTypes.STRING) },
+    runTests: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
 })
 
 const clientRateLimitConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientRateLimitConfig'),
   fields: {
-    total: { type: BuiltinTypes.NUMBER },
-    retrieve: { type: BuiltinTypes.NUMBER },
-    read: { type: BuiltinTypes.NUMBER },
-    list: { type: BuiltinTypes.NUMBER },
+    total: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    retrieve: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    read: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    list: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
   } as Record<keyof ClientRateLimitConfig, FieldDefinition>,
 })
 
 const clientRetryConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientRetryConfig'),
   fields: {
-    maxAttempts: { type: BuiltinTypes.NUMBER },
-    retryDelay: { type: BuiltinTypes.NUMBER },
+    maxAttempts: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    retryDelay: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     retryStrategy: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           values: Object.keys(RetryStrategyName),
@@ -296,10 +305,10 @@ const clientRetryConfigType = new ObjectType({
 const clientConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientConfig'),
   fields: {
-    polling: { type: clientPollingConfigType },
-    deploy: { type: clientDeployConfigType },
-    retry: { type: clientRetryConfigType },
-    maxConcurrentApiRequests: { type: clientRateLimitConfigType },
+    polling: { refType: createRefToElmWithValue(clientPollingConfigType) },
+    deploy: { refType: createRefToElmWithValue(clientDeployConfigType) },
+    retry: { refType: createRefToElmWithValue(clientRetryConfigType) },
+    maxConcurrentApiRequests: { refType: createRefToElmWithValue(clientRateLimitConfigType) },
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
 })
 
@@ -307,7 +316,7 @@ export const configType = new ObjectType({
   elemID: configID,
   fields: {
     [METADATA_TYPES_SKIPPED_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           'Report',
@@ -321,7 +330,7 @@ export const configType = new ObjectType({
       },
     },
     [INSTANCES_REGEX_SKIPPED_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           '^EmailTemplate.MarketoEmailTemplates',
@@ -333,26 +342,26 @@ export const configType = new ObjectType({
       },
     },
     [MAX_ITEMS_IN_RETRIEVE_REQUEST]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1000, max: 10000 }),
       },
     },
     [ENABLE_HIDE_TYPES_IN_NACLS]: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
       },
     },
     [USE_OLD_PROFILES]: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
     },
     [DATA_MANAGEMENT]: {
-      type: dataManagementType,
+      refType: createRefToElmWithValue(dataManagementType),
     },
     [CLIENT_CONFIG]: {
-      type: clientConfigType,
+      refType: createRefToElmWithValue(clientConfigType),
     },
   },
 })

@@ -13,47 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  BuiltinTypes,
-  CORE_ANNOTATIONS,
-  Element,
-  ElemID,
-  InstanceElement,
-  isEqualElements,
-  isType,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, isEqualElements, isType, ObjectType, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import mockClient from '../client'
 import {
   FilterWith,
 } from '../../src/filter'
 import filterCreator from '../../src/filters/hide_types'
-import {
-  RECORDS_PATH,
-  CUSTOM_OBJECT,
-  INSTANCE_FULL_NAME_FIELD,
-  METADATA_TYPE,
-  SALESFORCE,
-  FIELD_ANNOTATIONS,
-  DEFAULT_VALUE_FORMULA,
-  API_NAME,
-} from '../../src/constants'
-import {
-  isCustomObject,
-} from '../../src/transformers/transformer'
+import { RECORDS_PATH, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE, FIELD_ANNOTATIONS, DEFAULT_VALUE_FORMULA, API_NAME } from '../../src/constants'
+import { isCustomObject } from '../../src/transformers/transformer'
 
 describe('hide_types filter', () => {
   const { client } = mockClient()
 
-
   const mockCustomObj = new ObjectType({
     elemID: new ElemID(SALESFORCE, 'Test'),
     fields: {
-      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
-      pluralLabel: { type: BuiltinTypes.STRING },
-      enableFeeds: { type: BuiltinTypes.BOOLEAN },
+      [INSTANCE_FULL_NAME_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      pluralLabel: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      enableFeeds: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      },
     },
     annotations: {
       [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -64,7 +48,9 @@ describe('hide_types filter', () => {
   const mockType = new ObjectType({
     elemID: new ElemID(SALESFORCE, 'mockType'),
     fields: {
-      [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+      [INSTANCE_FULL_NAME_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      },
     },
     annotationTypes: {},
     annotations: {

@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, BuiltinTypes, Element } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/custom_object_split'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
@@ -28,15 +29,15 @@ describe('Custom Object Split filter', () => {
     elemID: CUSTOM_OBJECT_TYPE_ID,
     fields: {
       standard: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       // eslint-disable-next-line @typescript-eslint/camelcase
       custom__c: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       // eslint-disable-next-line @typescript-eslint/camelcase
       custom_namespace__c: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [API_NAME]: 'objectRandom__c.namespace__random__c',
         },
@@ -51,15 +52,15 @@ describe('Custom Object Split filter', () => {
     elemID: CUSTOM_OBJECT_TYPE_ID,
     fields: {
       standard: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       // eslint-disable-next-line @typescript-eslint/camelcase
       custom__c: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       // eslint-disable-next-line @typescript-eslint/camelcase
       custom_namespace__c: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [API_NAME]: 'namespace__objectRandom__c.namespace__api_name',
         },

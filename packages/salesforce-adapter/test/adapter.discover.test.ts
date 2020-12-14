@@ -139,17 +139,18 @@ describe('SalesforceAdapter fetch', () => {
       expect(describeMock).toHaveBeenCalled()
       expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Flow')
       const flow = findElements(result, 'Flow').pop() as ObjectType
-      expect(flow.fields.description.type.elemID.name).toBe('string')
+      expect(flow.fields.description.refType.elemID.name).toBe('string')
       // TODO: remove comment when SALTO-45 will be resolved
       // expect(flow.fields.description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
-      expect(flow.fields.isTemplate.type.elemID.name).toBe('boolean')
+      expect(flow.fields.isTemplate.refType.elemID.name).toBe('boolean')
       expect(flow.fields.isTemplate.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
-      expect(flow.fields.enum.type.elemID.name).toBe('string')
+      expect(flow.fields.enum.refType.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
       expect(getRestriction(flow.fields.enum).values).toEqual(['no', 'yes'])
       expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
-      expect(flow.fields[constants.INSTANCE_FULL_NAME_FIELD].type).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType())
+        .toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
@@ -246,14 +247,14 @@ describe('SalesforceAdapter fetch', () => {
       const nestedType = types['salesforce.NestedType']
       const singleField = types['salesforce.SingleFieldType']
       expect(nestingType).toBeDefined()
-      expect(nestingType.fields.field.type.elemID).toEqual(nestedType.elemID)
-      expect(nestingType.fields.otherField.type.elemID).toEqual(singleField.elemID)
+      expect(nestingType.fields.field.refType.elemID).toEqual(nestedType.elemID)
+      expect(nestingType.fields.otherField.refType.elemID).toEqual(singleField.elemID)
       expect(nestedType).toBeDefined()
-      expect(nestedType.fields.nestedStr.type.elemID).toEqual(BuiltinTypes.STRING.elemID)
-      expect(nestedType.fields.nestedNum.type.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
-      expect(nestedType.fields.doubleNested.type.elemID).toEqual(singleField.elemID)
+      expect(nestedType.fields.nestedStr.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
+      expect(nestedType.fields.nestedNum.refType.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+      expect(nestedType.fields.doubleNested.refType.elemID).toEqual(singleField.elemID)
       expect(singleField).toBeDefined()
-      expect(singleField.fields.str.type.elemID).toEqual(BuiltinTypes.STRING.elemID)
+      expect(singleField.fields.str.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
     })
 
     describe('with metadata instance', () => {
@@ -430,8 +431,8 @@ describe('SalesforceAdapter fetch', () => {
         expect(layout.value.layoutSections[1].label).toBe('Additional Information')
         expect(layout.value.layoutSections[2].style).toBe('CustomLinks')
         expect(
-          ((layout.getType().fields.processMetadataValues.type as ListType)
-            .innerType as ObjectType).fields.name.type.elemID.name
+          ((layout.getType().fields.processMetadataValues.getType() as ListType)
+            .innerType as ObjectType).fields.name.refType.elemID.name
         ).toBe('string')
         expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
         // empty objects should be omitted
@@ -485,7 +486,7 @@ describe('SalesforceAdapter fetch', () => {
       const { elements: result } = await adapter.fetch()
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
       expect(flow.getType().elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
-      expect(isListType((flow.getType()).fields.listTest.type)).toBeTruthy()
+      expect(isListType((flow.getType()).fields.listTest.getType())).toBeTruthy()
 
       expect(flow.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow', 'instance', 'FlowInstance'))
       expect(flow.value.listTest[0].field).toEqual('Field1')

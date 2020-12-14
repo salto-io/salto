@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, ChangeError, toChange } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import customObjectInstancesValidator from '../../src/change_validators/custom_object_instances'
 import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
 
@@ -22,14 +23,14 @@ describe('custom object instances change validator', () => {
     elemID: new ElemID('salesforce', 'obj'),
     fields: {
       nonUpdateable: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [FIELD_ANNOTATIONS.UPDATEABLE]: false,
           [FIELD_ANNOTATIONS.CREATABLE]: true,
         },
       },
       nonCreatable: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: false,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, isInstanceElement, Change,
-  getChangeElement, ModificationChange, isModificationChange, Value, isListType,
+  getChangeElement, ModificationChange, isModificationChange, Value, isListType, ListType,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -76,7 +76,10 @@ describe('Workflow filter', () => {
   )
 
   const generateInnerInstance = (values: MetadataValues, fieldName: string): InstanceElement => (
-    createInstanceElement(values, mockTypes.Workflow.fields[fieldName].type as ObjectType)
+    createInstanceElement(
+      values,
+      (mockTypes.Workflow.fields[fieldName].getType() as ListType).innerType as ObjectType,
+    )
   )
 
   describe('on fetch', () => {
@@ -89,7 +92,7 @@ describe('Workflow filter', () => {
         workflowWithInnerTypes = generateWorkFlowInstance()
         workflowType = workflowWithInnerTypes.getType()
         const workflowSubTypes = Object.keys(WORKFLOW_FIELD_TO_TYPE)
-          .map(fieldName => workflowType.fields[fieldName].type)
+          .map(fieldName => workflowType.fields[fieldName].getType())
           .filter(isListType)
           .map(fieldType => fieldType.innerType)
         elements = [workflowType, workflowWithInnerTypes, ...workflowSubTypes]
@@ -195,7 +198,6 @@ describe('Workflow filter', () => {
           { action: 'add', data: { after: workflow } },
           { action: 'add', data: { after: innerInstance } },
         ]
-
         // Re-create the filter because it is stateful
         testFilter = filterCreator({ client, config: {} }) as typeof filter
       })
@@ -273,7 +275,7 @@ describe('Workflow filter', () => {
           expect(typeAnnotations.suffix).toEqual('workflow')
           expect(typeAnnotations.dirName).toEqual('workflows')
           expect(workflowType.fields).toHaveProperty(WORKFLOW_RULES_FIELD)
-          const rulesFieldType = workflowType.fields[WORKFLOW_RULES_FIELD].type
+          const rulesFieldType = workflowType.fields[WORKFLOW_RULES_FIELD].getType()
           expect(metadataType(rulesFieldType)).toEqual(WORKFLOW_FIELD_TO_TYPE[WORKFLOW_RULES_FIELD])
         })
         it('should create workflow instance with proper values', () => {

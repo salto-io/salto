@@ -62,8 +62,9 @@ const formatValueForWhere = (field: Field, value: Value): string => {
   if (value === undefined) {
     return 'null'
   }
-  if (isPrimitiveType(field.type)) {
-    if (field.type.primitive === PrimitiveTypes.STRING) {
+  const fieldType = field.getType()
+  if (isPrimitiveType(fieldType)) {
+    if (fieldType.primitive === PrimitiveTypes.STRING) {
       return `'${escapeWhereStr(value)}'`
     }
     return value.toString()
@@ -80,7 +81,7 @@ const getRecordsBySaltoIds = async (
   // The use of IN can lead to querying uneeded records (cross values between instances)
   // and can be optimized
   const computeWhereConditions = (field: Field): string | string[] => {
-    const fieldType = field.type
+    const fieldType = field.getType()
     if (isObjectType(fieldType)) {
       const compoundFieldType = Object.values(Types.compoundDataTypes)
         .find(compoundType => compoundType.isEqual(fieldType))

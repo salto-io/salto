@@ -28,10 +28,7 @@ import {
   RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
 } from '../constants'
-import {
-  apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType,
-  toDeployableInstance,
-} from './transformer'
+import { apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType, toDeployableInstance, assertMetadataObjectType } from './transformer'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -364,7 +361,7 @@ export const createDeployPackage = (): DeployPackage => {
   return {
     add: instance => {
       const instanceName = apiName(instance)
-      const manifestTypeName = getManifestTypeName(instance.type)
+      const manifestTypeName = getManifestTypeName(assertMetadataObjectType(instance.getType()))
       addManifest.get(manifestTypeName).push(instanceName)
       // Add instance file(s) to zip
       const typeName = metadataType(instance)
@@ -389,7 +386,7 @@ export const createDeployPackage = (): DeployPackage => {
           Object.entries(fileNameToContentMap)
             .forEach(([fileName, content]) => zip.file(fileName, content)))
       } else {
-        const { dirName, suffix, hasMetaFile } = instance.type.annotations
+        const { dirName, suffix, hasMetaFile } = instance.getType().annotations
         const instanceContentPath = [
           PACKAGE,
           dirName,

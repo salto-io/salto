@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-// import _ from 'lodash'
+import _ from 'lodash'
 import {
   TypeElement, ObjectType, Element, PrimitiveType, ContainerType, isContainerType,
-  // Field, isObjectType, isField, isListType, isMapType,
+  Field, isObjectType, isField, isListType, isMapType,
 } from './elements'
 import { Values } from './values'
 
@@ -25,10 +25,10 @@ interface AnnoRef {
   annoName?: string
 }
 
-// type SubElementSearchResult = {
-//   field?: Field
-//   path: ReadonlyArray<string>
-// }
+type SubElementSearchResult = {
+  field?: Field
+  path: ReadonlyArray<string>
+}
 
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
 
@@ -40,9 +40,6 @@ export const getDeepInnerType = (containerType: ContainerType): ObjectType | Pri
   return getDeepInnerType(innerType)
 }
 
-
-/*
-TODO: Solve this for the lang-server
 export const getSubElement = (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>
@@ -67,7 +64,8 @@ export const getSubElement = (
   }
 
   const fieldData = isField(nextBase)
-    ? getSubElement(nextBase.type, restOfParts)
+    // This will fail if not called from the adapters
+    ? getSubElement(nextBase.getType(), restOfParts)
     : getSubElement(nextBase, restOfParts)
 
   if (_.isUndefined(fieldData)) return undefined
@@ -101,7 +99,6 @@ export const getField = (
   getFieldAndPath(baseType, pathParts)?.field
 )
 
-
 const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
   TypeElement | undefined => {
   const getFieldInternalType = (
@@ -118,7 +115,8 @@ const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
     return undefined
   }
   const fieldData = getFieldAndPath(baseType, path)
-  return fieldData?.field && getFieldInternalType(fieldData.field.type, fieldData.path)
+  // This will fail if not called from the adapters
+  return fieldData?.field && getFieldInternalType(fieldData.field.getType(), fieldData.path)
 }
 
 export const getFieldNames = (refType: ObjectType, path: string[]): string[] => {
@@ -131,7 +129,6 @@ export const getFieldNames = (refType: ObjectType, path: string[]): string[] => 
   }
   return []
 }
-*/
 
 export const getAnnotationKey = (annotations: {[key: string]: TypeElement}, path: string[]):
   AnnoRef => {

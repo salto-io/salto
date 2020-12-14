@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Element, ReferenceExpression, isObjectType, ChangeDataType, Change, toChange, AdditionChange, ModificationChange, getChangeElement, Field } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../../src/filter'
 import SalesforceClient from '../../../src/client/client'
 import mockAdapter from '../../adapter'
@@ -41,13 +42,13 @@ describe('lookup_object filter', () => {
     elemID: mockQuoteElemID,
     fields: {
       [CPQ_ACCOUNT]: {
-        type: Types.primitiveDataTypes.Text,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
         annotations: {
           [API_NAME]: `${CPQ_QUOTE}.${CPQ_ACCOUNT}`,
         },
       },
       [existingFieldName]: {
-        type: Types.primitiveDataTypes.Text,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
         annotations: {
           [API_NAME]: `${CPQ_QUOTE}.${existingFieldName}`,
         },
@@ -63,7 +64,7 @@ describe('lookup_object filter', () => {
     elemID: mockProductRuleElemID,
     fields: {
       [CPQ_LOOKUP_OBJECT_NAME]: {
-        type: Types.primitiveDataTypes.Picklist,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
         annotations: {
           [API_NAME]: `${CPQ_PRODUCT_RULE}.${CPQ_LOOKUP_OBJECT_NAME}`,
           valueSet: [{
@@ -85,7 +86,7 @@ describe('lookup_object filter', () => {
     elemID: mockConfigurationAttributeElemID,
     fields: {
       [CPQ_DEFAULT_OBJECT_FIELD]: {
-        type: Types.primitiveDataTypes.Picklist,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
         annotations: {
           [API_NAME]: `${CPQ_CONFIGURATION_ATTRIBUTE}.${CPQ_DEFAULT_OBJECT_FIELD}`,
           valueSet: [{
@@ -112,7 +113,7 @@ describe('lookup_object filter', () => {
     elemID: mockPriceScheduleElemID,
     fields: {
       [CPQ_CONSTRAINT_FIELD]: {
-        type: Types.primitiveDataTypes.Picklist,
+        refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
         annotations: {
           [API_NAME]: `${CPQ_PRICE_SCHEDULE}.${CPQ_CONSTRAINT_FIELD}`,
           valueSet: [{
@@ -230,7 +231,7 @@ describe('lookup_object filter', () => {
       elemID: mockConfigurationAttributeElemID,
       fields: {
         [CPQ_DEFAULT_OBJECT_FIELD]: {
-          type: Types.primitiveDataTypes.Picklist,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
           annotations: {
             [API_NAME]: `${CPQ_CONFIGURATION_ATTRIBUTE}.${CPQ_DEFAULT_OBJECT_FIELD}`,
             valueSet: [{
@@ -255,7 +256,7 @@ describe('lookup_object filter', () => {
       elemID: mockPriceScheduleElemID,
       fields: {
         [CPQ_CONSTRAINT_FIELD]: {
-          type: Types.primitiveDataTypes.Picklist,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
           annotations: {
             [API_NAME]: `${CPQ_PRICE_SCHEDULE}.${CPQ_CONSTRAINT_FIELD}`,
             valueSet: [{

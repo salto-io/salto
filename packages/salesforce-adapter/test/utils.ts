@@ -18,9 +18,7 @@ import {
   Element, ElemID, Values, ObjectType, Field, TypeElement, BuiltinTypes, ListType, MapType,
   CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
-import {
-  findElements as findElementsByID,
-} from '@salto-io/adapter-utils'
+import { findElements as findElementsByID, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
 import {
@@ -130,9 +128,9 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
-      application: { type: BuiltinTypes.STRING },
-      default: { type: BuiltinTypes.BOOLEAN },
-      visible: { type: BuiltinTypes.BOOLEAN },
+      application: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      visible: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'ProfileApplicationVisibility',
@@ -141,8 +139,8 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   const ProfileLayoutAssignment = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileLayoutAssignment'),
     fields: {
-      layout: { type: BuiltinTypes.STRING },
-      recordType: { type: BuiltinTypes.STRING },
+      layout: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      recordType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'ProfileLayoutAssignment',
@@ -151,9 +149,9 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   const ProfileFieldLevelSecurity = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileFieldLevelSecurity'),
     fields: {
-      field: { type: BuiltinTypes.STRING },
-      editable: { type: BuiltinTypes.BOOLEAN },
-      readable: { type: BuiltinTypes.BOOLEAN },
+      field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      editable: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      readable: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity',
@@ -169,16 +167,18 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   return new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, constants.PROFILE_METADATA_TYPE),
     fields: {
-      [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
-      applicationVisibilities: { type: useMaps
-        ? new MapType(ProfileApplicationVisibility)
-        : ProfileApplicationVisibility },
-      layoutAssignments: { type: useMaps
-        ? new MapType(new ListType(ProfileLayoutAssignment))
-        : new ListType(ProfileLayoutAssignment) },
-      fieldPermissions: { type: useMaps
-        ? new MapType(new MapType(ProfileFieldLevelSecurity))
-        : fieldPermissionsNonMapType },
+      [constants.INSTANCE_FULL_NAME_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      applicationVisibilities: { refType: useMaps
+        ? createRefToElmWithValue(new MapType(ProfileApplicationVisibility))
+        : createRefToElmWithValue(ProfileApplicationVisibility) },
+      layoutAssignments: { refType: useMaps
+        ? createRefToElmWithValue(new MapType(new ListType(ProfileLayoutAssignment)))
+        : createRefToElmWithValue(new ListType(ProfileLayoutAssignment)) },
+      fieldPermissions: { refType: useMaps
+        ? createRefToElmWithValue(new MapType(new MapType(ProfileFieldLevelSecurity)))
+        : createRefToElmWithValue(fieldPermissionsNonMapType) },
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
@@ -205,7 +205,7 @@ export const createCustomSettingsObject = (
   const namespace = getNamespaceFromString(name)
   const basicFields = {
     Id: {
-      type: idType,
+      refType: createRefToElmWithValue(idType),
       label: 'id',
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -214,7 +214,7 @@ export const createCustomSettingsObject = (
       },
     },
     Name: {
-      type: stringType,
+      refType: createRefToElmWithValue(stringType),
       label: 'Name',
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -226,7 +226,7 @@ export const createCustomSettingsObject = (
     // eslint-disable-next-line @typescript-eslint/camelcase
     TestField__c: {
       label: 'TestField',
-      type: stringType,
+      refType: createRefToElmWithValue(stringType),
       annotations: {
         [constants.LABEL]: 'TestField',
         [constants.API_NAME]: `${name}.TestField__c`,

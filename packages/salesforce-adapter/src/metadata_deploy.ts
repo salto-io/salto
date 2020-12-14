@@ -20,7 +20,7 @@ import { DeployResult, Change, getChangeElement, isRemovalChange, InstanceElemen
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
-import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement } from './transformers/transformer'
+import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement, assertMetadataObjectType } from './transformers/transformer'
 import { fullApiName } from './filters/utils'
 import { INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
@@ -42,7 +42,7 @@ const addNestedInstanceRemovalsToPackage = (
   )
 
   nestedTypeInfo.nestedInstanceFields.forEach(fieldName => {
-    const rawFieldType = changeElem.getType().fields[fieldName]?.type
+    const rawFieldType = changeElem.getType().fields[fieldName]?.getType()
     // We generally expect these to be lists, handling non list types just in case of a bug
     const fieldType = isContainerType(rawFieldType) ? rawFieldType.innerType : rawFieldType
     if (!isMetadataObjectType(fieldType)) {
@@ -83,7 +83,7 @@ const addChangeToPackage = (
   }
 
   if (isRemovalChange(change)) {
-    pkg.delete(changeElem.type, apiName(changeElem))
+    pkg.delete(assertMetadataObjectType(changeElem.getType()), apiName(changeElem))
   } else {
     pkg.add(changeElem)
   }

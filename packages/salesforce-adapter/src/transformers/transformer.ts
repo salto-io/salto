@@ -26,7 +26,7 @@ import {
   Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord, CustomProperties } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
@@ -188,10 +188,10 @@ export class Types {
   private static filterItemType = new ObjectType({
     elemID: Types.filterItemElemID,
     fields: {
-      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.OPERATION]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [FILTER_ITEM_FIELDS.OPERATION]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [FILTER_ITEM_FIELDS.VALUE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
     annotations: {
       [API_NAME]: 'FilterItem',
@@ -202,12 +202,22 @@ export class Types {
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
     fields: {
-      [LOOKUP_FILTER_FIELDS.ACTIVE]: { type: BuiltinTypes.BOOLEAN },
-      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: { type: BuiltinTypes.STRING },
-      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: { type: BuiltinTypes.STRING },
-      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: { type: BuiltinTypes.STRING },
-      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: { type: BuiltinTypes.BOOLEAN },
-      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: { type: new ListType(Types.filterItemType) },
+      [LOOKUP_FILTER_FIELDS.ACTIVE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      },
+      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: {
+        refType: createRefToElmWithValue(new ListType(Types.filterItemType)),
+      },
     },
     annotations: {
       [API_NAME]: 'LookupFilter',
@@ -220,9 +230,9 @@ export class Types {
     fields: {
       // todo: currently this field is populated with the referenced field's API name,
       //  should be modified to elemID reference once we'll use HIL
-      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { type: BuiltinTypes.STRING },
+      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: {
-        type: new ListType(BuiltinTypes.STRING),
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       },
     },
     annotations: {
@@ -234,11 +244,11 @@ export class Types {
   private static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
     fields: {
-      [CUSTOM_VALUE.FULL_NAME]: { type: BuiltinTypes.STRING },
-      [CUSTOM_VALUE.LABEL]: { type: BuiltinTypes.STRING },
-      [CUSTOM_VALUE.DEFAULT]: { type: BuiltinTypes.BOOLEAN },
-      [CUSTOM_VALUE.IS_ACTIVE]: { type: BuiltinTypes.BOOLEAN },
-      [CUSTOM_VALUE.COLOR]: { type: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.FULL_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [CUSTOM_VALUE.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [CUSTOM_VALUE.DEFAULT]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [CUSTOM_VALUE.IS_ACTIVE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [CUSTOM_VALUE.COLOR]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
 
@@ -249,8 +259,12 @@ export class Types {
   private static fieldDependencyType = new ObjectType({
     elemID: Types.fieldDependencyElemID,
     fields: {
-      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: { type: BuiltinTypes.STRING },
-      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: { type: new ListType(Types.valueSettingsType) },
+      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: {
+        refType: createRefToElmWithValue(new ListType(Types.valueSettingsType)),
+      },
     },
   })
 
@@ -290,10 +304,18 @@ export class Types {
   private static rollupSummaryFilterItemsType = new ObjectType({
     elemID: Types.rollupSummaryFilterItemsElemID,
     fields: {
-      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.OPERATION]: { type: Types.rollupSummaryFilterOperationTypeType },
-      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [FILTER_ITEM_FIELDS.OPERATION]: {
+        refType: createRefToElmWithValue(Types.rollupSummaryFilterOperationTypeType),
+      },
+      [FILTER_ITEM_FIELDS.VALUE]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
     },
   })
 
@@ -630,11 +652,21 @@ export class Types {
   )
 
   private static nameInnerFields = {
-    [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
-    [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
-    [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
-    [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
-    [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.FIRST_NAME]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    [NAME_FIELDS.LAST_NAME]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    [NAME_FIELDS.SALUTATION]: {
+      refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+    },
+    [NAME_FIELDS.MIDDLE_NAME]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    [NAME_FIELDS.SUFFIX]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
   }
 
   // Type mapping for compound fields
@@ -642,14 +674,30 @@ export class Types {
     Address: new ObjectType({
       elemID: addressElemID,
       fields: {
-        [ADDRESS_FIELDS.CITY]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.COUNTRY]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: { type: Types.primitiveDataTypes.Picklist },
-        [ADDRESS_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
-        [ADDRESS_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
-        [ADDRESS_FIELDS.POSTAL_CODE]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.STATE]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.STREET]: { type: Types.primitiveDataTypes.TextArea },
+        [ADDRESS_FIELDS.CITY]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.COUNTRY]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: {
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+        },
+        [ADDRESS_FIELDS.LATITUDE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        },
+        [ADDRESS_FIELDS.LONGITUDE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        },
+        [ADDRESS_FIELDS.POSTAL_CODE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.STATE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.STREET]: {
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.TextArea),
+        },
       },
       annotationTypes: {
         ...Types.commonAnnotationTypes,
@@ -673,8 +721,12 @@ export class Types {
     Location: new ObjectType({
       elemID: geoLocationElemID,
       fields: {
-        [GEOLOCATION_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
-        [GEOLOCATION_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
+        [GEOLOCATION_FIELDS.LATITUDE]: {
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+        },
+        [GEOLOCATION_FIELDS.LONGITUDE]: {
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+        },
       },
       annotationTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
@@ -765,9 +817,9 @@ export class Types {
 }
 
 export const isNameField = (field: Field): boolean =>
-  (isObjectType(field.type)
-    && (field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-    || field.type.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
+  (isObjectType(field.getType())
+    && (field.refType.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
+    || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
 
 const transformCompoundValues = (
   record: SalesforceRecord,
@@ -776,7 +828,7 @@ const transformCompoundValues = (
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
   const relevantCompoundFields = _.pickBy(instance.getType().fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
-    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.type.elemID.isEqual(e))))
+    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
   if (_.isEmpty(relevantCompoundFields)) {
     return record
   }
@@ -789,7 +841,8 @@ const transformCompoundValues = (
       }
       // Other compound fields are added a prefix according to the field name
       // ie. LocalAddrress -> LocalCity, LocalState etc.
-      const typeName = compoundField.type.elemID.isEqual(Types.compoundDataTypes.Address.elemID)
+      const typeName = compoundField.refType.elemID
+        .isEqual(Types.compoundDataTypes.Address.elemID)
         ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.LOCATION
       const fieldPrefix = compoundFieldKey.slice(0, -typeName.length)
       return _.mapKeys(record[compoundFieldKey], (_vv, key) => fieldPrefix.concat(key))
@@ -828,7 +881,7 @@ export const toCustomField = (field: Field): CustomField => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
     apiName(field, true),
-    fieldTypeName(field.type.elemID.name),
+    fieldTypeName(field.refType.elemID.name),
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
     field.annotations[DEFAULT_VALUE_FORMULA],
@@ -876,7 +929,7 @@ export const toCustomField = (field: Field): CustomField => {
     ...internalUseAnnotations,
   ]
   const isAllowed = (annotationName: string): boolean => (
-    Object.keys(field.type.annotationTypes).includes(annotationName)
+    Object.keys(field.getType().annotationTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
   // Convert the annotations' names to the required API name
@@ -1001,7 +1054,7 @@ export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
     const convertFunc = convertXsdTypeFuncMap[_.get(value, ['$', 'xsi:type'])] || (v => v)
     return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
   }
-  const fieldType = field?.type
+  const fieldType = field?.getType()
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
@@ -1267,8 +1320,16 @@ export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType
 export type MetadataValues = MetadataInfo & Values
 
 export type MetadataInstanceElement = InstanceElement & {
-  type: MetadataObjectType
-  value: MetadataValues
+  getType: (() => MetadataObjectType)
+  // type: MetadataObjectType
+  value: InstanceElement['value'] & MetadataValues
+}
+
+export const assertMetadataObjectType = (type: ObjectType): MetadataObjectType => {
+  if (!isMetadataObjectType(type)) {
+    throw new Error(`This type (${type.elemID.getFullName()}) must be MetadataObjectType`)
+  }
+  return type
 }
 
 export const isMetadataInstanceElement = (

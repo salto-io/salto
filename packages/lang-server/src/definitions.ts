@@ -30,6 +30,19 @@ export const provideWorkspaceDefinition = async (
     if (values.isDefined<SaltoElemLocation>(staticFileLocation)) {
       return [staticFileLocation]
     }
+  }
+
+  try {
+    const locations = await getLocations(workspace, token)
+    if (locations.length !== 0) {
+      return locations
+    }
+  // eslint-disable-next-line no-empty
+  } catch (e) {
+    // token is not a valid element id
+  }
+
+  if (context.ref) {
     if (isInstanceElement(context.ref.element)) {
       const refPath = context.ref.path
       if (!_.isEmpty(refPath) && _.last(refPath) === token) {
@@ -44,10 +57,6 @@ export const provideWorkspaceDefinition = async (
       )
     }
   }
-  // We are not in instance field, so we can just look the current token
-  try {
-    return getLocations(workspace, token)
-  } catch (e) {
-    return []
-  }
+
+  return []
 }

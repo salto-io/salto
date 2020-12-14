@@ -86,4 +86,14 @@ describe('Test go to definitions', () => {
       expect(defs[0].filename).toBe(`full-${filepath}`)
     })
   })
+
+  it('should give annotation type definition', async () => {
+    const pos = { line: 172, col: 15 }
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
+    const token = 'vs.person'
+    const defs = await provideWorkspaceDefinition(workspace, ctx, token)
+    expect(defs.length).toBe(2)
+    expect(defs[0].range.start.line).toBe(32)
+    expect(defs[1].range.start.line).toBe(127)
+  })
 })

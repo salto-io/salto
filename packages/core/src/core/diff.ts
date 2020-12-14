@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { Element, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { Element, DetailedChange, getChangeElement, ElemID } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal } from '@salto-io/workspace'
 import { filterByID, applyFunctionToChangeData, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
@@ -28,7 +28,9 @@ const filterChangesByIds = async (
   const filterChangeByID = (change: DetailedChange): DetailedChange | undefined => {
     const filteredChange = applyFunctionToChangeData(
       change,
-      changeData => filterByID(change.id, changeData, id => ids.includes(id.getFullName())),
+      changeData => filterByID(change.id, changeData,
+        id => ids.some(relevantId => (relevantId === id.getFullName()
+          || ElemID.fromFullName(relevantId).isParentOf(id)))),
     )
     return getChangeElement(filteredChange) === undefined
       ? undefined

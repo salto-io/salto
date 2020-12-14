@@ -23,6 +23,7 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types, createInstanceElement, apiName, metadataType } from '../src/transformers/transformer'
 import Connection from '../src/client/jsforce'
+import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
 import { createValueSetEntry } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
@@ -202,7 +203,6 @@ describe('SalesforceAdapter CRUD', () => {
             type: stringType,
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.LABEL]: 'test label',
             },
           },
           formula: {
@@ -229,10 +229,26 @@ describe('SalesforceAdapter CRUD', () => {
         // Verify object creation
         expect(result).toBeInstanceOf(ObjectType)
         expect(result.annotations[constants.API_NAME]).toBe('Test__c')
+        expect(result.annotationTypes[constants.API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
+        expect(result.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+        const objAnnotations = result.annotations as CustomObject
+        expect(objAnnotations.label).toEqual('Test')
+        expect(result.annotationTypes.label).toEqual(BuiltinTypes.STRING)
+        expect(objAnnotations.deploymentStatus).toEqual('Deployed')
+        expect(result.annotationTypes.deploymentStatus).toEqual(BuiltinTypes.STRING)
+        expect(objAnnotations.nameField).toEqual({ type: 'Text', label: 'Name' })
+        expect(result.annotationTypes.nameField.elemID).toEqual(
+          new ElemID(constants.SALESFORCE, constants.CUSTOM_FIELD)
+        )
+        expect(objAnnotations.pluralLabel).toEqual('Tests')
+        expect(result.annotationTypes.pluralLabel).toEqual(BuiltinTypes.STRING)
+        expect(objAnnotations.sharingModel).toEqual('ReadWrite')
+        expect(result.annotationTypes.sharingModel).toEqual(BuiltinTypes.STRING)
         expect(
           result.fields.description.annotations[constants.API_NAME]
         ).toBe('Test__c.description__c')
-        expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
+        expect(result.fields.description.annotations[constants.LABEL]).toEqual('description')
 
         expect(mockDeploy).toHaveBeenCalledTimes(1)
         const deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])

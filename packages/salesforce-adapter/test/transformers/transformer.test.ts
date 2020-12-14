@@ -39,7 +39,7 @@ import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, CPQ_PRODUCT_RULE,
   CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION,
 } from '../../src/constants'
-import { CustomField, FilterItem, CustomObject, CustomProperties, CustomPicklistValue,
+import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
   SalesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -676,7 +676,7 @@ describe('transformer', () => {
         },
       })
 
-      let customObj: CustomProperties
+      let customObj: CustomObject
       beforeEach(() => {
         customObj = toCustomProperties(objType, false)
       })
@@ -717,7 +717,7 @@ describe('transformer', () => {
       })
 
       describe('with fields', () => {
-        let customObj: CustomProperties
+        let customObj: CustomObject
         beforeEach(() => {
           customObj = toCustomProperties(
             objType, true, [objType.fields[ignoredField].annotations[API_NAME]],
@@ -740,7 +740,7 @@ describe('transformer', () => {
       })
 
       describe('without fields', () => {
-        let customObj: CustomProperties
+        let customObj: CustomObject
         beforeEach(() => {
           customObj = toCustomProperties(objType, false)
         })
@@ -750,7 +750,7 @@ describe('transformer', () => {
       })
 
       describe('create a custom settings object', () => {
-        let customObj: CustomProperties
+        let customObj: CustomObject
         beforeEach(() => {
           const customSettingsObj = new ObjectType({
             elemID,
@@ -832,25 +832,6 @@ describe('transformer', () => {
           FIELD_TYPE_NAMES.MASTER_DETAIL, relationshipName, undefined, relatedTo)
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
         expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
-      })
-
-      it('should have ControlledByParent sharing model when having masterdetail field', async () => {
-        objectType.fields[fieldName].type = Types.primitiveDataTypes.MasterDetail
-        const customObjectWithMasterDetailField = toCustomProperties(objectType, true)
-        expect(customObjectWithMasterDetailField).toHaveProperty('sharingModel')
-        expect((customObjectWithMasterDetailField as CustomObject).sharingModel).toEqual('ControlledByParent')
-      })
-
-      it('should have ReadWrite sharing model when not having masterdetail field', async () => {
-        const customObjectWithMasterDetailField = toCustomProperties(objectType, true)
-        expect(customObjectWithMasterDetailField).toHaveProperty('sharingModel')
-        expect((customObjectWithMasterDetailField as CustomObject).sharingModel).toEqual('ReadWrite')
-      })
-
-      it('should have ReadWrite sharing model when not including fields', async () => {
-        const customObjectWithMasterDetailField = toCustomProperties(objectType, false)
-        expect(customObjectWithMasterDetailField).toHaveProperty('sharingModel')
-        expect((customObjectWithMasterDetailField as CustomObject).sharingModel).toEqual('ReadWrite')
       })
     })
 

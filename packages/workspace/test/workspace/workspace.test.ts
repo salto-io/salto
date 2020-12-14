@@ -17,7 +17,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType,
+  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField,
 } from '@salto-io/adapter-api'
 import {
   findElement, applyDetailedChanges,
@@ -133,11 +133,21 @@ describe('workspace', () => {
   describe('elements', () => {
     let workspace: Workspace
     let elemMap: Record<string, Element>
+    let state: State
     beforeAll(async () => {
-      const state = createState([
+      state = createState([
         new ObjectType({
           elemID: new ElemID('salesforce', 'hidden'),
           annotations: { _hidden: true },
+        }),
+        new ObjectType({
+          elemID: new ElemID('salesforce', 'AccountIntelligenceSettings'),
+          annotations: {
+            hiddenStrAnno: 'some value',
+          },
+          annotationTypes: {
+            hiddenStrAnno: BuiltinTypes.HIDDEN_STRING,
+          },
         }),
       ])
       workspace = await createWorkspace(undefined, state)
@@ -168,6 +178,43 @@ describe('workspace', () => {
       it('should be merged', () => {
         const lead = elemMap['salesforce.lead'] as ObjectType
         expect(_.keys(lead.fields)).toHaveLength(5)
+      })
+    })
+    describe('resolveElement', () => {
+      it('unknown elemId should return undefined', async () => {
+        expect(await workspace.resolveElement(new ElemID('notExists'))).toBeUndefined()
+      })
+
+      it('workspace element should return the element', async () => {
+        expect(await workspace.resolveElement(new ElemID('salesforce', 'lead'))).toBeDefined()
+      })
+
+      it('state element should return the element', async () => {
+        expect(await workspace.resolveElement(new ElemID('salesforce', 'hidden'))).toBeDefined()
+      })
+
+      it('element with hidden annotation should return the element', async () => {
+        const element = await workspace.resolveElement(new ElemID('salesforce', 'AccountIntelligenceSettings'))
+        expect(element?.annotations['hiddenStrAnno']).toBe('some value')
+      })
+
+      it('element field should return the element', async () => {
+        expect(isField(await workspace.resolveElement(new ElemID('salesforce', 'lead', 'field', 'base_field')))).toBeTruthy()
+      })
+
+      it('when merge error should return undefined', async () => {
+        const instanceElement = new InstanceElement(
+          'instWithHidden',
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'ObjWithHidden'),
+          }),
+          { other: 2 },
+          [],
+          { [CORE_ANNOTATIONS.HIDDEN]: true },
+        )
+        await state.set(instanceElement)
+
+        expect(await workspace.resolveElement(instanceElement.elemID)).toBeUndefined()
       })
     })
   })

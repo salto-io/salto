@@ -32,6 +32,7 @@ import {
   AdditionChange,
   isInstanceElement,
   isModificationChange,
+  ElementResolver,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import * as api from '../src/api'
@@ -76,10 +77,15 @@ describe('api.ts', () => {
       changeGroup => Promise.resolve({ errors: [], appliedChanges: changeGroup.changes })
     ),
   }
+
+  const mockURL = new URL('https://google.com')
+
   const mockAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    getElementUrl: mockFunction<(id: ElemID, elementResolver: ElementResolver)
+      => Promise<URL | undefined>>().mockResolvedValue(mockURL),
   }
 
   const mockEmptyAdapter = {
@@ -463,6 +469,18 @@ describe('api.ts', () => {
       expect(changes).toHaveLength(1)
       expect(ws.elements).toHaveBeenCalledWith(false, 'active')
       expect(ws.elements).toHaveBeenCalledWith(false, 'other')
+    })
+  })
+
+  describe('getElementUrl', () => {
+    const ws = mockWorkspace({})
+
+    it('when adapter exists should get the url from the adater', async () => {
+      expect(await api.getElementUrl(ws, new ElemID(mockService))).toBe(mockURL)
+    })
+
+    it('when adapter does not exist should return undefined', async () => {
+      expect(await api.getElementUrl(ws, new ElemID('notExists'))).toBeUndefined()
     })
   })
 })

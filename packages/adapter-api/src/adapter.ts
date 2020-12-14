@@ -69,6 +69,8 @@ export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureI
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
   result is AdapterSuccessInstallResult => result.success
 
+export type ElementResolver = (id: ElemID) => Promise<Element | undefined>
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
@@ -80,6 +82,7 @@ export type Adapter = {
     getChangeGroupIds?: ChangeGroupIdFunction
   }
   install?: () => Promise<AdapterInstallResult>
+  getElementUrl?: (id: ElemID, elementResolver: ElementResolver) => Promise<URL | undefined>
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

@@ -356,3 +356,12 @@ export const getLoginStatuses = async (
 
   return promises.object.resolveValues(logins)
 }
+
+export const getElementUrl = async (workspace: Workspace, id: ElemID): Promise<URL | undefined> => {
+  const adapter = adapterCreators[id.adapter]
+  if (_.isUndefined(adapter?.getElementUrl)) {
+    log.warn(`Adapter ${id.adapter} does not support converting elements to urls`)
+    return undefined
+  }
+  return adapter.getElementUrl(id, workspace.resolveElement)
+}

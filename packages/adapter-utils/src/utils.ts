@@ -471,6 +471,7 @@ export const getPath = (
   rootElement: Element,
   fullElemID: ElemID
 ): string[] | undefined => {
+  if (rootElement.elemID.isEqual(fullElemID)) return []
   const { parent, path } = fullElemID.createTopLevelParentID()
   if (!_.isEqual(parent, rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []

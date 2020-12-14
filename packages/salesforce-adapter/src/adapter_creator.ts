@@ -16,17 +16,20 @@
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse, Values,
+  InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
+  Values, ElementResolver, ElemID, isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import SalesforceClient, { validateCredentials } from './client/client'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
-import SalesforceAdapter from './adapter'
+import SalesforceAdapter, { INTERNAL_ACCOUNT_INFO } from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
   Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName } from './types'
+import { SALESFORCE } from './constants'
+import { lightiningElementsUrlRetreiver } from './elements_url_retreiver/elements_url_retreiver'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -123,6 +126,27 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
   }
 }
 
+const getInstanceUrl = async (elementResolver: ElementResolver): Promise<URL | undefined> => {
+  const internalAccountInfoElement = await elementResolver(new ElemID(SALESFORCE, INTERNAL_ACCOUNT_INFO, 'instance'))
+
+  if (_.isUndefined(internalAccountInfoElement) || !isInstanceElement(internalAccountInfoElement)) {
+    log.error('Could not found internalAccountInfo element')
+    return undefined
+  }
+  const url = internalAccountInfoElement.value.instanceUrl
+  if (_.isUndefined(url)) {
+    log.error('internalAccountInfo does not contain instanceUrl')
+    return undefined
+  }
+
+  try {
+    return new URL(url)
+  } catch (e) {
+    log.error(`Failed to parse url: ${e}`)
+    return undefined
+  }
+}
+
 export const adapter: Adapter = {
   operations: context => {
     const config = adapterConfigFromConfig(context.config)
@@ -153,5 +177,31 @@ export const adapter: Adapter = {
   deployModifiers: {
     changeValidator,
     getChangeGroupIds,
+  },
+  getElementUrl: async (id, elementResolver) => {
+    const instanceUrl = await getInstanceUrl(elementResolver)
+    if (_.isUndefined(instanceUrl)) {
+      log.error('Failed to find instanceUrl')
+      return undefined
+    }
+
+    const urlRetreiver = lightiningElementsUrlRetreiver(instanceUrl, elementResolver)
+    if (_.isUndefined(urlRetreiver)) {
+      log.error('Failed to create url retreiver')
+      return undefined
+    }
+
+    const element = await elementResolver(id)
+    if (_.isUndefined(element)) {
+      log.error(`Failed to resolve element: ${id.getFullName()}`)
+      return urlRetreiver.retreiveBaseUrl()
+    }
+
+    const url = await urlRetreiver.retreiveUrl(element)
+    if (_.isUndefined(url)) {
+      log.error(`Failed to retreive url for id ${id.getFullName()}`)
+      return urlRetreiver.retreiveBaseUrl()
+    }
+    return url
   },
 }

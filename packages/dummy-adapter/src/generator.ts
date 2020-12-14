@@ -520,8 +520,8 @@ export const generateElements = (
       }
     ).flat()
   }
-  const reportProgress = (details: string, percents: number): void => {
-    if (progressReporter) progressReporter.reportProgress({ details, percents })
+  const reportProgress = (details: string, completedPercents: number): void => {
+    if (progressReporter) progressReporter.reportProgress({ details, completedPercents })
   }
   const defaultTypes = [defaultObj, permissionsType, profileType]
   reportProgress('Generating primitive types', 10)

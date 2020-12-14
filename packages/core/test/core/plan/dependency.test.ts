@@ -153,7 +153,7 @@ describe('dependency changers', () => {
     })
     describe('when different elements are added and removed', () => {
       beforeEach(async () => {
-        const inputChanges = new Map([
+        const inputChanges = new Map<number, Change>([
           [0, toChange({ before: saltoEmployee })],
           [1, toChange({ after: saltoEmployeeInstance })],
         ])
@@ -180,7 +180,7 @@ describe('dependency changers', () => {
       changeType: 'before' | 'after',
       obj: ObjectType,
     ): [ChangeId, Change][] => ([
-      [0, toChange({ [changeType]: obj })],
+      [0, toChange({ [changeType]: obj }) as Change],
       ...fieldChanges(changeType, obj),
     ])
 
@@ -222,7 +222,7 @@ describe('dependency changers', () => {
   describe('addTypeDependency', () => {
     describe('when instance and type are added', () => {
       beforeEach(async () => {
-        const inputChanges = new Map([
+        const inputChanges = new Map<number, Change>([
           [0, toChange({ after: saltoEmployee })],
           [1, toChange({ after: saltoEmployeeInstance })],
         ])
@@ -237,7 +237,7 @@ describe('dependency changers', () => {
     })
     describe('when field and type are added', () => {
       beforeEach(async () => {
-        const inputChanges = new Map([
+        const inputChanges = new Map<number, Change>([
           [0, toChange({ after: saltoEmployee.fields.office })],
           [1, toChange({ after: saltoOffice })],
         ])
@@ -297,7 +297,7 @@ describe('dependency changers', () => {
 
     describe('when reference and target are added', () => {
       beforeEach(async () => {
-        const inputChanges = new Map([
+        const inputChanges = new Map<number, Change>([
           [0, toChange({ after: testType })],
           [1, toChange({ after: testInstance })],
           [2, toChange({ after: testAnnoType })],
@@ -323,7 +323,7 @@ describe('dependency changers', () => {
     })
     describe('when reference and target are removed', () => {
       beforeEach(async () => {
-        const inputChanges = new Map([
+        const inputChanges = new Map<number, Change>([
           [0, toChange({ before: testType })],
           [1, toChange({ before: testInstance })],
           [2, toChange({ before: testParent })],
@@ -345,7 +345,7 @@ describe('dependency changers', () => {
       beforeEach(async () => {
         testType.annotations.annoRef = 'value'
         testInstance.value.ref = new ReferenceExpression(testTypeId.createNestedID('attr', 'bla'))
-        const inputChanges = new Map([
+        const inputChanges = new Map<number, Change>([
           [0, toChange({ after: testType })],
           [1, toChange({ after: testInstance })],
         ])
@@ -357,7 +357,7 @@ describe('dependency changers', () => {
     })
     describe('when reference source is a type', () => {
       beforeEach(async () => {
-        const inputChanges = new Map([
+        const inputChanges = new Map<number, Change>([
           [0, toChange({ after: testType })],
           [1, toChange({ after: testType.fields.ref })],
           [2, toChange({ after: testType.fields.fieldWithRef })],

@@ -20,6 +20,7 @@ import wu from 'wu'
 import { getLocations, SaltoElemLocation } from './location'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
+import { Token } from './token'
 
 
 const getElemIDUsages = async (
@@ -108,10 +109,10 @@ export const getUsageInFile = async (
 
 export const provideWorkspaceReferences = async (
   workspace: EditorWorkspace,
-  token: string,
+  token: Token,
   context: PositionContext
 ): Promise<SaltoElemLocation[]> => {
-  const id = getSearchElementFullName(context, token)
+  const id = getSearchElementFullName(context, token.value)
   if (id === undefined) {
     return []
   }

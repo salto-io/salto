@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import * as context from './src/context'
+import * as token from './src/token'
 import * as definitions from './src/definitions'
 import * as diagnostics from './src/diagnostics'
 import * as location from './src/location'
@@ -25,6 +26,7 @@ import * as suggestions from './src/completions/suggestions'
 
 export {
   context,
+  token,
   definitions,
   diagnostics,
   location,

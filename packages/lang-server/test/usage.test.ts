@@ -33,7 +33,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should give all fields usages of a type', async () => {
-    const token = 'vs.str'
+    const token = { value: 'vs.str', type: 'word' }
     const pos = {
       line: 1,
       col: 8,
@@ -46,7 +46,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should give all instance usages of a type', async () => {
-    const token = 'vs.loan'
+    const token = { value: 'vs.loan', type: 'word' }
     const pos = {
       line: 60,
       col: 10,
@@ -57,7 +57,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should give all instance AND field usages of a type', async () => {
-    const token = 'vs.person'
+    const token = { value: 'vs.person', type: 'word' }
     const pos = {
       line: 32,
       col: 11,
@@ -68,7 +68,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should work on tokens which have no context element', async () => {
-    const token = 'vs.person'
+    const token = { value: 'vs.person', type: 'word' }
     const context: PositionContext = {
       range: GLOBAL_RANGE.range,
       type: 'global',
@@ -78,7 +78,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should give annotation attr usage for annotation def', async () => {
-    const token = 'loan'
+    const token = { value: 'loan', type: 'word' }
     const pos = {
       line: 203,
       col: 19,
@@ -89,7 +89,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should find (goto) refrences of a nested (salto) references', async () => {
-    const token = 'reason'
+    const token = { value: 'reason', type: 'word' }
     const pos = {
       line: 67,
       col: 14,
@@ -105,7 +105,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should find (salto) references to nested type annotations', async () => {
-    const token = 'first_name'
+    const token = { value: 'first_name', type: 'word' }
     const pos = {
       line: 178,
       col: 13,
@@ -119,7 +119,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should find (salto) references to nested field annotations', async () => {
-    const token = 'first_name'
+    const token = { value: 'first_name', type: 'word' }
     const pos = {
       line: 187,
       col: 23,

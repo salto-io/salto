@@ -77,7 +77,7 @@ describe.skip('extension e2e', () => {
       const pos = { line: 6, col: 9 }
       const filename = 'extra.nacl'
       const ctx = await context.getPositionContext(workspace, filename, pos)
-      const defs = await definitions.provideWorkspaceDefinition(workspace, ctx, '@salto-io/core_complex')
+      const defs = await definitions.provideWorkspaceDefinition(workspace, ctx, { value: '@salto-io/core_complex', type: 'word' })
       expect(defs.length).toBe(2)
       expect(defs[0].fullname).toBe('@salto-io/core.complex')
       expect(defs[0].filename).toBe('complex_type.nacl')

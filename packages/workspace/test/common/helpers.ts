@@ -48,7 +48,7 @@ export const expectTypesToMatch = (actual: TypeElement, expected: TypeElement): 
       expect(actualField.elemID).toEqual(expectedField.elemID)
       expect(actualField.name).toEqual(expectedField.name)
       expect(actualField.annotations).toEqual(expectedField.annotations)
-      expect(actualField.type.elemID).toEqual(expectedField.type.elemID)
+      expect(actualField.refType.elemID).toEqual(expectedField.refType.elemID)
     })
   }
 }

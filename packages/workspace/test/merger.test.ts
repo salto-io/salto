@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, Variable, MapType,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType, PrimitiveTypes, TypeElement, Variable, MapType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { mergeElements, DuplicateAnnotationError } from '../src/merger'
 import { ConflictingFieldTypesError, DuplicateAnnotationFieldDefinitionError,
@@ -30,8 +28,14 @@ describe('merger', () => {
   const base = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-      field2: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
+      field2: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
     },
     annotations: {
       _default: {
@@ -44,42 +48,54 @@ describe('merger', () => {
   const unrelated = new ObjectType({
     elemID: new ElemID('salto', 'unrelated'),
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
     },
   })
 
   const fieldAnnotationConflict = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'update1' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'update1' },
+      },
     },
   })
 
   const fieldTypeConflict = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field2: { type: BuiltinTypes.NUMBER },
+      field2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
 
   const fieldUpdate = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { a: 'update' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { a: 'update' },
+      },
     },
   })
 
   const fieldUpdate2 = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { b: 'update' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { a: 'update' },
+      },
     },
   })
 
   const newField = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field3: { type: BuiltinTypes.STRING },
+      field3: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
 
@@ -117,9 +133,17 @@ describe('merger', () => {
   const mergedObject = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base', a: 'update', b: 'update' } },
-      field2: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-      field3: { type: BuiltinTypes.STRING },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base', a: 'update', b: 'update' },
+      },
+      field2: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
+      field3: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
     },
     annotations: {
       anno1: 'updated',
@@ -246,9 +270,9 @@ describe('merger', () => {
         elemID: new ElemID('salto', 'obj'),
         fields: {
           prim: {
-            type: new MapType(new ObjectType({
+            refType: createRefToElmWithValue(new MapType(new ObjectType({
               elemID: primElemID,
-            })),
+            }))),
           },
         },
       })
@@ -273,9 +297,16 @@ describe('merger', () => {
     const nested = new ObjectType({
       elemID: nestedElemID,
       fields: {
-        field1: { type: strType, annotations: { _default: 'field1' } },
-        field2: { type: strType },
-        base: { type: base },
+        field1: {
+          refType: createRefToElmWithValue(strType),
+          annotations: { _default: 'field1' },
+        },
+        field2: {
+          refType: createRefToElmWithValue(strType),
+        },
+        base: {
+          refType: createRefToElmWithValue(base),
+        },
       },
     })
     const ins1 = new InstanceElement(
@@ -389,8 +420,12 @@ describe('merger', () => {
     const nested = new ObjectType({
       elemID: nestedElemID,
       fields: {
-        prim: { type: typeRef(strType) },
-        base: { type: typeRef(base) },
+        prim: {
+          refType: createRefToElmWithValue(typeRef(strType)),
+        },
+        base: {
+          refType: createRefToElmWithValue(typeRef(base)),
+        },
       },
     })
 
@@ -413,22 +448,30 @@ describe('merger', () => {
       isSettings: true,
       elemID: settingElemID,
       fields: {
-        setting1: { type: BuiltinTypes.STRING },
+        setting1: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
     const setting2 = new ObjectType({
       isSettings: true,
       elemID: settingElemID,
       fields: {
-        setting2: { type: BuiltinTypes.STRING },
+        setting2: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
     const mergedSetting = new ObjectType({
       isSettings: true,
       elemID: settingElemID,
       fields: {
-        setting1: { type: BuiltinTypes.STRING },
-        setting2: { type: BuiltinTypes.STRING },
+        setting1: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        setting2: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
     const badSettingType = new ObjectType({

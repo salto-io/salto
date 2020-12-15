@@ -14,11 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ElemID, ObjectType, BuiltinTypes, InstanceElement, Element,
-  ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
-  isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes,
-} from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { TestFuncImpl } from '../utils'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
 
@@ -40,14 +37,23 @@ describe('Test Salto Expressions', () => {
     const base = new ObjectType({
       elemID: baseElemID,
       fields: {
-        simple: { type: BuiltinTypes.STRING, annotations: { anno: 'field_anno' } },
-        obj: {
-          type: new ObjectType({
-            elemID: objElemID,
-            fields: { value: { type: BuiltinTypes.STRING } },
-          }),
+        simple: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: { anno: 'field_anno' },
         },
-        arr: { type: new ListType(BuiltinTypes.STRING) },
+        obj: {
+          refType: createRefToElmWithValue(new ObjectType({
+            elemID: objElemID,
+            fields: {
+              value: {
+                refType: createRefToElmWithValue(BuiltinTypes.STRING),
+              },
+            },
+          })),
+        },
+        arr: {
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        },
       },
       annotations: {
         anno: 'base_anno',
@@ -112,7 +118,7 @@ describe('Test Salto Expressions', () => {
       elemID: objectRefID,
       fields: {
         ref: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: { anno: refTo(base, 'attr', 'anno') },
         },
       },
@@ -329,7 +335,7 @@ describe('Test Salto Expressions', () => {
       )
       const objType = new ObjectType({
         elemID: new ElemID('test', 'obj'),
-        fields: { f: { type: primType } },
+        fields: { f: { refType: createRefToElmWithValue(primType) } },
         annotationTypes: { a: primType },
       })
       const inst = new InstanceElement('test', objType, { f: 1 })

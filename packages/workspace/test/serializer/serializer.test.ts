@@ -19,6 +19,7 @@ import {
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
   VariableExpression, StaticFile, MapType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { TestFuncImpl } from '../utils'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
@@ -51,11 +52,23 @@ describe('State/cache serialization', () => {
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
     fields: {
-      name: { type: strType, annotations: { label: 'Name' } },
-      file: { type: strType, annotations: { label: 'File' } },
-      num: { type: numType },
-      list: { type: strListType },
-      map: { type: strMapType },
+      name: {
+        refType: createRefToElmWithValue(strType),
+        annotations: { label: 'Name' },
+      },
+      file: {
+        refType: createRefToElmWithValue(strType),
+        annotations: { label: 'File' },
+      },
+      num: {
+        refType: createRefToElmWithValue(numType),
+      },
+      list: {
+        refType: createRefToElmWithValue(strListType),
+      },
+      map: {
+        refType: createRefToElmWithValue(strMapType),
+      },
     },
   })
 
@@ -297,7 +310,12 @@ describe('State/cache serialization', () => {
     beforeEach(async () => {
       const typeWithLazyStaticFile = new ObjectType({
         elemID: new ElemID('salesforce', 'test'),
-        fields: { lazyFile: { type: strType, annotations: { label: 'Lazy File' } } },
+        fields: {
+          lazyFile: {
+            refType: createRefToElmWithValue(strType),
+            annotations: { label: 'Lazy File' },
+          },
+        },
       })
       const classNameInst = new InstanceElement(
         'ClsName',

@@ -13,11 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType,
-  DetailedChange,
-  getChangeElement,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -28,8 +25,8 @@ describe('projections', () => {
   const nestedObj = new ObjectType({
     elemID: nestedElemID,
     fields: {
-      simple1: { type: BuiltinTypes.STRING },
-      simple2: { type: BuiltinTypes.STRING },
+      simple1: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      simple2: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
   const annotationsObject = {
@@ -77,29 +74,33 @@ describe('projections', () => {
         simple2: 'OBJECT_NESTED_2',
       },
     },
-    fields: _.mapValues(annotationsObject, (type, name) => (
-      { type: name.includes('list') ? new ListType(type) : type }
-    )),
+    fields: _.mapValues(annotationsObject, (type, name) => ({
+      refType: name.includes('list')
+        ? createRefToElmWithValue(new ListType(type))
+        : createRefToElmWithValue(type),
+    })),
   })
   const fieldParent = new ObjectType({
     elemID: new ElemID('salto', 'parent'),
-    fields: { field: {
-      type: objectType,
-      annotations: {
-        simple1: 'FIELD_1',
-        list1: ['FIELD_LIST_1'],
-        nested1: {
-          simple1: 'FIELD_NESTED_1',
-          simple2: 'FIELD_NESTED_2',
-        },
-        simple2: 'FIELD_1',
-        list2: ['FIELD_LIST_1'],
-        nested2: {
-          simple1: 'FIELD_NESTED_1',
-          simple2: 'FIELD_NESTED_2',
+    fields: {
+      field: {
+        refType: createRefToElmWithValue(objectType),
+        annotations: {
+          simple1: 'FIELD_1',
+          list1: ['FIELD_LIST_1'],
+          nested1: {
+            simple1: 'FIELD_NESTED_1',
+            simple2: 'FIELD_NESTED_2',
+          },
+          simple2: 'FIELD_1',
+          list2: ['FIELD_LIST_1'],
+          nested2: {
+            simple1: 'FIELD_NESTED_1',
+            simple2: 'FIELD_NESTED_2',
+          },
         },
       },
-    } },
+    },
   })
   const { field } = fieldParent.fields
   const instance = new InstanceElement(
@@ -143,15 +144,17 @@ describe('projections', () => {
         simple1: 'OBJECT_NESTED_1',
       },
     },
-    fields: _.mapValues(annotationsObject, (type, name) => (
-      { type: name.includes('list') ? new ListType(type) : type }
-    )),
+    fields: _.mapValues(annotationsObject, (type, name) => ({
+      refType: name.includes('list')
+        ? createRefToElmWithValue(new ListType(type))
+        : createRefToElmWithValue(type),
+    })),
   })
   const partialFieldObject = new ObjectType({
     elemID: new ElemID('salto', 'parent'),
     fields: {
       field: {
-        type: objectType,
+        refType: createRefToElmWithValue(objectType),
         annotations: {
           simple1: 'FIELD_1',
           list1: ['FIELD_LIST_1'],

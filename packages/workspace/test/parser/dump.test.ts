@@ -13,19 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression, isListType, MapType,
-} from '@salto-io/adapter-api'
+import { ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement, BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression, isListType, MapType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser'
-import {
-  dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
-} from '../../src/parser/dump'
-import {
-  Functions,
-} from '../../src/parser/functions'
+import { dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues } from '../../src/parser/dump'
+import { Functions } from '../../src/parser/functions'
 import { registerTestFunction, TestFuncImpl } from '../utils'
 
 const funcName = 'ZOMG'
@@ -70,12 +64,15 @@ describe('Salto Dump', () => {
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
     fields: {
-      name: { type: strType, annotations: { label: 'Name' } },
-      num: { type: numType },
-      list: { type: new ListType(strType) },
-      map: { type: new MapType(strType) },
+      name: {
+        refType: createRefToElmWithValue(strType),
+        annotations: { label: 'Name' },
+      },
+      num: { refType: createRefToElmWithValue(numType) },
+      list: { refType: createRefToElmWithValue(new ListType(strType)) },
+      map: { refType: createRefToElmWithValue(new MapType(strType)) },
       field: {
-        type: fieldType,
+        refType: createRefToElmWithValue(fieldType),
         annotations: {
           alice: 1,
           bob: 2,

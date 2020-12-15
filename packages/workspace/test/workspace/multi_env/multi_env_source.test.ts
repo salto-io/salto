@@ -34,20 +34,36 @@ jest.mock('@salto-io/adapter-utils', () => ({
 const objectElemID = new ElemID('salto', 'object')
 const commonFragment = new ObjectType({
   elemID: objectElemID,
-  fields: { commonField: { type: BuiltinTypes.STRING } },
+  fields: {
+    commonField: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const envFragment = new ObjectType({
   elemID: objectElemID,
-  fields: { envField: { type: BuiltinTypes.STRING } },
+  fields: {
+    envField: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const inactiveFragment = new ObjectType({
   elemID: objectElemID,
-  fields: { inactiveField: { type: BuiltinTypes.STRING } },
+  fields: {
+    inactiveField: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const commonElemID = new ElemID('salto', 'common')
 const commonObject = new ObjectType({
   elemID: commonElemID,
-  fields: { field: { type: BuiltinTypes.STRING } },
+  fields: {
+    field: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const commonNaclFiles = {
   'common.nacl': [commonObject],
@@ -73,7 +89,11 @@ const commonErrors = new Errors({
 const envElemID = new ElemID('salto', 'env')
 const envObject = new ObjectType({
   elemID: envElemID,
-  fields: { field: { type: BuiltinTypes.STRING } },
+  fields: {
+    field: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const envSourceRange = {
   start: { col: 0, line: 0, byte: 0 },
@@ -98,7 +118,11 @@ const envNaclFiles = {
 const inactiveElemID = new ElemID('salto', 'inactive')
 const inactiveObject = new ObjectType({
   elemID: inactiveElemID,
-  fields: { field: { type: BuiltinTypes.STRING } },
+  fields: {
+    field: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const inactiveNaclFiles = {
   'inenv.nacl': [inactiveObject],

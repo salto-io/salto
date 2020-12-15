@@ -54,7 +54,7 @@ export type MergeResult<T> = {
 
 export const mergeNoDuplicates = <T>(
   sources: T[],
-  errorCreator: (key: string) => MergeError,
+  errorCreator: (key: string, existingValue?: unknown, newValue?: unknown) => MergeError,
 ): MergeResult<T> => {
   const errors: MergeError[] = []
   const merged: unknown = _.mergeWith(
@@ -64,7 +64,7 @@ export const mergeNoDuplicates = <T>(
       if (!_.isUndefined(existingValue)
         && !_.isUndefined(newValue)
         && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))) {
-        errors.push(errorCreator(key))
+        errors.push(errorCreator(key, existingValue, newValue))
         return existingValue
       }
       return undefined

@@ -17,7 +17,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType,
 } from '@salto-io/adapter-api'
-import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, IS_ATTRIBUTE } from '../constants'
+import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, IS_ATTRIBUTE, METADATA_TYPE } from '../constants'
 
 const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 
@@ -176,6 +176,9 @@ export const allMissingSubTypes = [
       sundayStartTime: { type: BuiltinTypes.STRING },
       sundayEndTime: { type: BuiltinTypes.STRING },
     },
+    annotations: {
+      [METADATA_TYPE]: 'BusinessHoursEntry',
+    },
     path: [...subTypesPath, 'BusinessHoursEntry'],
   }),
   new ObjectType({
@@ -195,6 +198,9 @@ export const allMissingSubTypes = [
       recurrenceInstance: { type: BuiltinTypes.STRING },
       recurrenceMonthOfYear: { type: BuiltinTypes.STRING },
       businessHours: { type: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [METADATA_TYPE]: 'Holidays',
     },
     path: [...subTypesPath, 'Holidays'],
   }),

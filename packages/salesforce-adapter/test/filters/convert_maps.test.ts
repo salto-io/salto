@@ -15,7 +15,7 @@
 */
 import { InstanceElement, ObjectType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
-import filterCreator from '../../src/filters/profile_maps'
+import filterCreator from '../../src/filters/convert_maps'
 import mockClient from '../client'
 import { generateProfileType } from '../utils'
 

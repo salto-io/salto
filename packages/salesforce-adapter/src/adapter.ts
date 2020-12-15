@@ -64,7 +64,7 @@ import xmlAttributesFilter from './filters/xml_attributes'
 import profilePathsFilter from './filters/profile_paths'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import valueToStaticFileFilter from './filters/value_to_static_file'
-import profileMapsFilter from './filters/profile_maps'
+import convertMapsFilter from './filters/convert_maps'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -98,7 +98,7 @@ export const DEFAULT_FILTERS = [
   // changes ElemIDs that the profile references
   profilePermissionsFilter,
   // profileMapsFilter should run before profile fieldReferencesFilter
-  profileMapsFilter,
+  convertMapsFilter,
   standardValueSetFilter,
   flowFilter,
   customObjectInstanceReferencesFilter,

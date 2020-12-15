@@ -23,7 +23,7 @@ import { FilterCreator } from '../filter'
 import { SALESFORCE, PROFILE_METADATA_TYPE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
 import { metadataType } from '../transformers/transformer'
-import { PROFILE_MAP_FIELD_DEF } from './profile_maps'
+import { metadataTypeToFieldToMapDef } from './convert_maps'
 
 type OrderFunc = (value: Value) => number
 export type UnorderedList = {
@@ -155,13 +155,24 @@ export const convertList = (type: ObjectType, values: Values): void => {
 }
 
 const getMapFieldIds = (types: ObjectType[], useOldProfiles?: boolean): Set<string> => {
-  const profileObj = types.find(obj => metadataType(obj) === PROFILE_METADATA_TYPE)
-  if (!profileObj || useOldProfiles) {
-    return new Set()
+  let objectsWithMapFields = types.filter(obj => Object.keys(metadataTypeToFieldToMapDef)
+    .includes(metadataType(obj)))
+
+  if (useOldProfiles) { // profile instance is irrelevant
+    objectsWithMapFields = objectsWithMapFields.filter(
+      obj => metadataType(obj) !== PROFILE_METADATA_TYPE
+    )
   }
-  return new Set(Object.values(profileObj.fields)
-    .filter(f => PROFILE_MAP_FIELD_DEF[f.name] !== undefined)
-    .map(f => f.elemID.getFullName()))
+
+  if (objectsWithMapFields.length > 0) {
+    const allObjectsFields = objectsWithMapFields.flatMap(obj => Object.values(obj.fields))
+
+    return new Set(allObjectsFields
+      .filter(f => metadataTypeToFieldToMapDef[metadataType(f.parent)] !== undefined)
+      .filter(f => metadataTypeToFieldToMapDef[metadataType(f.parent)][f.name] !== undefined)
+      .map(f => f.elemID.getFullName()))
+  }
+  return new Set()
 }
 
 /**

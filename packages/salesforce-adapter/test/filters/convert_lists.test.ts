@@ -98,6 +98,15 @@ describe('convert lists filter', () => {
   })
 
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
+  const mockProfileType = new ObjectType({
+    elemID: mockObjId,
+    fields: {
+      applicationVisibilities: { type: new MapType(mockFieldType) },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
+    },
+  })
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
@@ -218,6 +227,7 @@ describe('convert lists filter', () => {
       typeNoInstancesClone,
       _.assign(_.clone(mockInstanceLst), { type: typeClone }),
       _.assign(_.clone(mockInstanceNonLst), { type: typeClone }),
+      mockProfileType,
     ]
   })
 

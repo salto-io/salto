@@ -19,8 +19,9 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator, FilterWith } from '../filter'
 import { apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { findProfileInstances } from './profile_maps'
+import { findInstancesToConvert } from './convert_maps'
 import { getInternalId } from './utils'
+import { PROFILE_METADATA_TYPE } from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
 
@@ -59,7 +60,7 @@ const replacePath = (
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     const profileInternalIdToName = await generateProfileInternalIdToName(client)
-    const profiles = findProfileInstances(elements)
+    const profiles = findInstancesToConvert(elements, PROFILE_METADATA_TYPE)
     profiles.forEach(inst => replacePath(inst, profileInternalIdToName))
   },
 })

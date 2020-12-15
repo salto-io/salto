@@ -42,6 +42,7 @@ export type ReferenceSerializationStrategy = {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
+ | 'mapKey'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -81,6 +82,10 @@ const ReferenceSerializationStrategyLookup: Record<
         : mappedValue
       )
     },
+  },
+  mapKey: {
+    serialize: ({ ref }) => ref.elemId.name,
+    lookup: val => val,
   },
 }
 
@@ -172,6 +177,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'name', parentTypes: ['GlobalQuickActionTranslation'] },
     target: { type: 'QuickAction' },
+  },
+  {
+    src: { field: 'businessHours', parentTypes: ['EntitlementProcess', 'EntitlementProcessMilestoneItem'] },
+    target: { type: 'BusinessHoursEntry' },
+    serializationStrategy: 'mapKey',
   },
   {
     src: { field: 'businessProcess', parentTypes: [RECORD_TYPE_METADATA_TYPE] },
@@ -509,13 +519,19 @@ export const generateReferenceResolverFinder = (
 const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
-  const determineLookupStrategy = (args: GetLookupNameFuncArgs): ReferenceSerializationStrategy => {
+  const determineLookupStrategy = (args: GetLookupNameFuncArgs):
+    ReferenceSerializationStrategy | undefined => {
     if (args.field === undefined) {
       log.debug('could not determine field for path %s', args.path?.getFullName())
-      return ReferenceSerializationStrategyLookup.absoluteApiName
+      return undefined
     }
     const strategies = resolverFinder(args.field)
       .map(def => def.serializationStrategy)
+
+    if (strategies.length === 0) {
+      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
+      return undefined
+    }
 
     if (strategies.length > 1) {
       log.debug(
@@ -524,10 +540,8 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
         args.field.elemID.getFullName(),
       )
     }
-    if (strategies.length === 0) {
-      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
-    }
-    return strategies[0] ?? ReferenceSerializationStrategyLookup.absoluteApiName
+
+    return strategies[0]
   }
 
   return ({ ref, path, field }) => {
@@ -535,9 +549,15 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
     // and we need the full element context in those
     const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
 
-    if (isElement(ref.value) && !isInstanceAnnotation) {
-      const lookupFunc = determineLookupStrategy({ ref, path, field }).serialize
-      return lookupFunc({ ref })
+    if (!isInstanceAnnotation) {
+      const strategy = determineLookupStrategy({ ref, path, field })
+      if (strategy !== undefined) {
+        return strategy.serialize({ ref, field })
+      }
+      if (isElement(ref.value)) {
+        const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
+        return defaultStrategy.serialize({ ref })
+      }
     }
     return ref.value
   }

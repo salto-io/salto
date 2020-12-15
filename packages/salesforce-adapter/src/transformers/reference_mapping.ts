@@ -95,7 +95,7 @@ const ReferenceSerializationStrategyLookup: Record<
           const { key } = metadataTypeToFieldToMapDef[type][field.name]
           // key is a field of ref.value which is also the key of ref.value in the map
           if (ref.value[key] !== undefined) {
-            return ref.value
+            return ref.value[key]
           }
         }
       }

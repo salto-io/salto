@@ -179,7 +179,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'QuickAction' },
   },
   {
-    src: { field: 'businessHours', parentTypes: ['EntitlementProcess'] },
+    src: { field: 'businessHours', parentTypes: ['EntitlementProcess', 'EntitlementProcessMilestoneItem'] },
     target: { type: 'BusinessHoursEntry' },
     serializationStrategy: 'mapKey',
   },

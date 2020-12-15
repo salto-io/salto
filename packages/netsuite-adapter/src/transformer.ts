@@ -66,7 +66,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
       : [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 
   const transformPrimitive: TransformFunc = ({ value, field }) => {
-    const fieldType = field?.type
+    const fieldType = field?.getType()
     if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
       return value
     }
@@ -95,7 +95,10 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     transformAttributeKey)
 
   const fileContentField = Object.values(type.fields)
-    .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
+    .find(f => {
+      const fType = f.getType()
+      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+    })
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] = FILE_CABINET_PATH_SEPARATOR
@@ -163,7 +166,7 @@ const sortValuesBasedOnType = (typeName: string, values: Values, instancePath: E
   const topLevelType = customTypes[typeName]
 
   const sortValues: TransformFunc = ({ field, value, path }) => {
-    const type = field?.type
+    const type = field?.getType()
       ?? (path && path.isEqual(instancePath) ? topLevelType : undefined)
     if (isObjectType(type) && _.isPlainObject(value)) {
       const fieldsOrder = Object.keys(type.fields)
@@ -186,7 +189,7 @@ const shouldSortValues = (typeName: string): boolean =>
 
 export const toCustomizationInfo = (instance: InstanceElement): CustomizationInfo => {
   const transformPrimitive: TransformFunc = ({ value, field }) => {
-    const fieldType = field?.type
+    const fieldType = field?.getType()
     if (!isPrimitiveType(fieldType)) {
       return value
     }
@@ -217,7 +220,10 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
   const values = restoreAttributes(sortedValues, instanceType, instance.elemID)
 
   const fileContentField = Object.values(instanceType.fields)
-    .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
+    .find(f => {
+      const fType = f.getType()
+      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+    })
 
   if (isFileCabinetType(instance.refType.elemID)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)

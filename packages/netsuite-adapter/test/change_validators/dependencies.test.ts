@@ -41,7 +41,7 @@ describe('Change Validator', () => {
     'anotherAdapterInstance',
     new ObjectType({ elemID: new ElemID('another', 'type'),
       fields: {
-        id: { type: BuiltinTypes.SERVICE_ID },
+        id: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
       } }),
     { id: 'serviceIdValue' },
   )

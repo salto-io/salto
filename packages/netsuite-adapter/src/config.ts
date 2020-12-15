@@ -37,7 +37,7 @@ export const configType = new ObjectType({
   elemID: configID,
   fields: {
     [TYPES_TO_SKIP]: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
@@ -47,19 +47,19 @@ export const configType = new ObjectType({
       },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
     },
     [FETCH_ALL_TYPES_AT_ONCE]: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
       },
     },
     [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -68,13 +68,13 @@ export const configType = new ObjectType({
       },
     },
     [DEPLOY_REFERENCED_ELEMENTS]: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       },
     },
     [SDF_CONCURRENCY_LIMIT]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_SDF_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({

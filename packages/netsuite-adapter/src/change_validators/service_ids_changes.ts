@@ -32,7 +32,7 @@ const changeValidator: ChangeValidator = async changes => (
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
       const modifiedServiceIdsFields = Object.values(after.getType().fields)
-        .filter(field => field.type === BuiltinTypes.SERVICE_ID)
+        .filter(field => field.getType() === BuiltinTypes.SERVICE_ID)
         .filter(field => before.value[field.name] !== after.value[field.name])
       return modifiedServiceIdsFields.map(modifiedServiceIdsField => ({
         elemID: after.elemID,

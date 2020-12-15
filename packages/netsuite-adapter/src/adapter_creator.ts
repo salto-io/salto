@@ -39,9 +39,9 @@ const configID = new ElemID(NETSUITE)
 export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
-    accountId: { type: BuiltinTypes.STRING },
-    tokenId: { type: BuiltinTypes.STRING },
-    tokenSecret: { type: BuiltinTypes.STRING },
+    accountId: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    tokenId: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    tokenSecret: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
   annotationTypes: {},
   annotations: {},

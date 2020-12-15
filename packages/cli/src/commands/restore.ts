@@ -175,7 +175,7 @@ export const action: CommandDefAction<RestoreArgs> = async ({
 const restoreDef = createPublicCommandDef({
   properties: {
     name: 'restore',
-    description: 'Restore configuration element(s) from the state file',
+    description: 'Update the workspace configuration elements from the state file',
     positionalOptions: [
       {
         name: 'elementSelectors',
@@ -189,7 +189,7 @@ const restoreDef = createPublicCommandDef({
         name: 'force',
         alias: 'f',
         required: false,
-        description: 'Accept all incoming changes, even if there\'s a conflict with local changes',
+        description: 'Do not warn on conflicts with local changes',
         type: 'boolean',
       },
       {
@@ -202,7 +202,7 @@ const restoreDef = createPublicCommandDef({
       {
         name: 'dryRun',
         alias: 'd',
-        description: 'Review the execution plan without deploying the changes',
+        description: 'Preview the changes without updating NaCLs',
         type: 'boolean',
       },
       {
@@ -223,9 +223,9 @@ const restoreDef = createPublicCommandDef({
         name: 'mode',
         alias: 'm',
         required: false,
-        description: 'Choose a restore mode. Options - [align, override, isolated]',
+        description: 'Choose a restore mode. Options - [default, align, override, isolated]',
         type: 'string',
-        choices: ['isolated', 'default', 'align', 'override'],
+        choices: ['default', 'align', 'override', 'isolated'],
         default: 'default',
       },
     ],

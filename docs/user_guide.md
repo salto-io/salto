@@ -306,114 +306,95 @@ Good luck! You've just pushed your first feature from dev to prod using Salto!
 
 ## Salto CLI commands
 
-### **salto init [workspace-name]**
+### **salto init [workspaceName]**
 
-Creates a new Salto workspace in the current directory
+Initialize a new Salto workspace in the current directory
 
 **Arguments**:
 
-`workspace-name` The name of the workspace [string]
+`workspaceName` : The name of the workspace [string]
 
 ### **salto fetch**
 
-Syncs this workspace's NaCl files with the services' current state
+Update the workspace configuration elements from the upstream services
 
 **Options:**
-* `--force, -f` : Accept all incoming changes, even if there's a conflict with local changes [boolean] [default: false]
-* `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
-* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
-* `--services, -s` : Specific services to perform this action for (default=all) [array]
-* `--env, -e` : The name of the environment to use
-* `--state-only, --st` : Fetch remote changes to the state file without modifying the NaCL files. [boolean] [default: false]
+* `--force, -f` :        Do not warn on conflicts with local changes [boolean] [default: false]
+* `--interactive, -i` :  Interactively approve every incoming change [boolean] [default: false]
+* `--state-only, --st` : Update just the state file and not the NaCLs [boolean] [default: false]
+* `--services, -s` :     Specific services to perform this action for (default=all) [array]
+* `--env, -e` :          The name of the environment to use
+* `--mode, -m <mode>` :  Choose a fetch mode. Options - [default, align, override, isolated]
 
 ### **salto deploy**
 
-Deploys the current NaCl files config to the target services
+Update the upstream services from the workspace configuration elements
 
 **Options:**
-* `--force, -f` : Do not ask for approval before deploying the changes [boolean] [default: false]
-* `--dry-run, -d` : Preview the execution plan without deploying the changes [boolean] [default: false]
+* `--force, -f` :         Do not ask for approval before deploying the changes [boolean] [default: false]
+* `--dry-run, -d` :       Print the execution plan without deploying [boolean] [default: false]
 * `--detailed-plan, -p` : Print detailed plan including value changes [boolean] [default: false]
-* `--services, -s` : Specific services to perform this action for (default=all) [array]
-* `--env, -e` : The name of the environment to use
+* `--services, -s` :      Specific services to perform this action for (default=all) [array]
+* `--env, -e` :           The name of the environment to use
 
 
 ### **salto restore [element-selector..]**
 
-Restore configuration element(s) from the state file
+Update the workspace configuration elements from the state file
 
 **Arguments**:
 
-`element-selector` Array of configuration element patterns [array]
+`elementSelectors` : Array of configuration element patterns [array]
 
 **Options:**
-* `--force, -f ` : Accept all incoming changes [boolean] [default: false]
-* `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
-* `--align, -a` : Ignore modifications to common configuration [boolean] [default: false]
-* `--dry-run, -d` : Preview the restore plan without making changes [boolean] [default: false]
-* `--detailed-plan, -p` : Print detailed changes including values [boolean] [default: false]
+* `--force, -f` :                Do not warn on conflicts with local changes [boolean] [default: false]
+* `--interactive, -i` :          Interactively approve every incoming change [boolean] [default: false]
+* `--dry-run, -d` :              Preview the restore plan without making changes [boolean] [default: false]
+* `--detailed-plan, -p` :        Print detailed changes including values [boolean] [default: false]
 * `--list-planned-changes, -l` : Print a summary of the expected changes [boolean] [default: false]
-* `--services, -s` : Specific services to perform this action for (default=all) [array]
-* `--env, -e` : The name of the environment to use [string]
+* `--services, -s` :             Specific services to perform this action for (default=all) [array]
+* `--env, -e` :                  The name of the environment to use [string]
+* `--mode, -m <mode>` :          Choose a restore mode. Options - [default, align, override, isolated]
 
-### **salto service \<command> [name]**
+### **salto service \<command>**
 
-Manage your environment services
+Manage the environment services
 
-**Arguments:**
-* `command` : The services management command [string] [required] [choices: "add", "login", "list"]
-* `name` : The name of the service [required for add & login] [string]
+**Commands:**
+* `add <serviceName>` :    Add a new service to the environment
+* `list`:                 List all environment services
+* `login <serviceName>` :  Set the environment service credentials
 
-**Options:**
+### **salto env \<command>**
 
-* `--env, -e` : The name of the environment to use
-* `--nologin, -n` : Do not login to service when adding it. Example usage: `service add <service-name> --nologin`) [boolean] [default: false]
-* `--auth-type, -a` : The type of authorization you would like to use for the service. Options are 'basic' for username/password login, and 'oauth'.
+Manage the workspace environments
 
-### **salto env \<command> [\<name>] [\<new-name>]**
-
-Manage your workspace environments
-
-**Arguments:**
-* `command` : The environment management command [string] [required] [choices: "create", "set", "list", "current", "delete", "rename"]
-* `name` : The name of the environment (required for create, set, delete & rename) [string]
-* `new-name` : The new name of the environment (required for rename) [string]
+**Commands:**
+* `create <envName>` :                            Create a new environemnt in the workspace
+* `list` :                                        List all workspace environments
+* `current` :                                     Print the name of the current workspace environment
+* `set <envName>` :                               Set a new current workspace environment
+* `delete <envName>` :                            Delete a workspace environment
+* `rename <oldName> <newName>` :                  Rename a workspace environment
+* `diff <fromEnv> <toEnv> [elementSelector...]` : Compare two workspace environments
 
 ### **salto element \<command> \<element-selector..>**
 
-Manage your workspace environments
+Manage the workspace configuration elements
 
-**Arguments:**
-* `command` : The element management command [string] [required] [choices: "move-to-common", "move-to-envs", "clone"]
-* `element-selector` : Array of configuration element patterns [array]
-
-**Options:**
-* `—-from-env` : Source env name for the clone command [string] [required]
-* `—-to-env` : Target env names for the clone command [array] [required] 
-
-
-### **salto diff \<from-env> \<to-env> [element-selector..]**
-
-Compare two workspace environments
-
-**Arguments:**
-* `from-env` : The environment that serves as a baseline for the comparison [string] [required]
-* `to-env` : The environment that is compared to the baseline provided by from-env
-* `element-selector` : Array of configuration element patterns [array]
-
-**Options:**
-* `--detailed-plan, -p` : Print detailed changes between envs [boolean] [default: false]
-* `—-hidden` : Display changes in hidden values [boolean] [default: false]
-*  `—-state` : Use the latest state files to compare the environments [boolean] [default: false]
-* `--services, -s` : Specific services to perform this action for (default=all) [array]
+**Commands:**
+* `move-to-common <elementSelector...>` :  Move configuration elements to the common configuration
+* `move-to-envs <elementSelector...>` :    Move configuration elements to the env-specific configuration
+* `clone <elementSelector...>` :           Clone elements from one env-specific configuration to others
+* `list-unresolved` :                      Lists unresolved references to configuration elements
 
 
 ### Generic Flags
 
 The following flags are available for all commands:
 
-* `--version` : Show version number 
-* `--help, -h` : Show help 
+* `--version -V` :  Show version number
+* `--help, -h` :    Show help
 * `--verbose, -v` : Output extra logs 
 
 ## Workspace directory structure

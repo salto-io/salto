@@ -208,7 +208,7 @@ export const renameAction: CommandDefAction<EnvRenameArgs> = async ({
 const envRenameDef = createPublicCommandDef({
   properties: {
     name: 'rename',
-    description: 'Rename an environment',
+    description: 'Rename a workspace environment',
     positionalOptions: [
       {
         name: 'oldName',

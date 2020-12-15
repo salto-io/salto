@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { inspect } from 'util'
 import {
   InstanceElement, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
@@ -27,8 +28,12 @@ const log = logger(module)
 export class DuplicateInstanceKeyError extends MergeError {
   readonly key: string
 
-  constructor({ elemID, key }: { elemID: ElemID; key: string }) {
-    super({ elemID, error: `duplicate key ${key}` })
+  constructor({ elemID, key, existingValue, newValue }:
+    { elemID: ElemID; key: string; existingValue: unknown; newValue: unknown}) {
+    super({
+      elemID,
+      error: `duplicate key ${key} (values - ${inspect(existingValue)} & ${inspect(newValue)})`,
+    })
     this.key = key
   }
 }
@@ -39,7 +44,8 @@ const mergeInstanceDefinitions = (
 ): MergeResult<InstanceElement> => {
   const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates(
     instanceDefs.map(i => i.value),
-    key => new DuplicateInstanceKeyError({ elemID, key }),
+    (key, existingValue, newValue) =>
+      new DuplicateInstanceKeyError({ elemID, key, existingValue, newValue }),
   ) : {
     merged: instanceDefs[0].value,
     errors: [],
@@ -47,7 +53,8 @@ const mergeInstanceDefinitions = (
 
   const annotationsMergeResults = mergeNoDuplicates(
     instanceDefs.map(o => o.annotations),
-    key => new DuplicateAnnotationError({ elemID, key }),
+    (key, existingValue, newValue) =>
+      new DuplicateAnnotationError({ elemID, key, existingValue, newValue }),
   )
 
   return {

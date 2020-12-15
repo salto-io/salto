@@ -133,7 +133,8 @@ const mergeObjectDefinitions = (
   // annotations values so we simply merge without allowing duplicates
   const annotationsMergeResults = mergeNoDuplicates(
     objects.map(o => o.annotations),
-    key => new DuplicateAnnotationError({ elemID, key }),
+    (key, existingValue, newValue) =>
+      new DuplicateAnnotationError({ elemID, key, existingValue, newValue }),
   )
 
   const refIsSettings = objects[0].isSettings

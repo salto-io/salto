@@ -324,7 +324,7 @@ Update the workspace configuration elements from the upstream services
 * `--state-only, --st` : Update just the state file and not the NaCLs [boolean] [default: false]
 * `--services, -s` :     Specific services to perform this action for (default=all) [array]
 * `--env, -e` :          The name of the environment to use
-* `--mode, -m <mode>` :  Choose a fetch mode. Options - [align, override, isolated]
+* `--mode, -m <mode>` :  Choose a fetch mode. Options - [default, align, override, isolated]
 
 ### **salto deploy**
 

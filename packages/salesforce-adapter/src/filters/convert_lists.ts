@@ -168,6 +168,7 @@ const getMapFieldIds = (types: ObjectType[], useOldProfiles?: boolean): Set<stri
     const allObjectsFields = objectsWithMapFields.flatMap(obj => Object.values(obj.fields))
 
     return new Set(allObjectsFields
+      .filter(f => metadataTypeToFieldToMapDef[metadataType(f.parent)] !== undefined)
       .filter(f => metadataTypeToFieldToMapDef[metadataType(f.parent)][f.name] !== undefined)
       .map(f => f.elemID.getFullName()))
   }

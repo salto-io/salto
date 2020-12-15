@@ -112,7 +112,7 @@ export const moveToCommonAction: CommandDefAction<ElementMoveToCommonArgs> = asy
 const moveToCommonDef = createPublicCommandDef({
   properties: {
     name: 'move-to-common',
-    description: 'Move configuration element(s) to the common folder',
+    description: 'Move configuration elements to the common configuration',
     positionalOptions: [
       {
         name: 'elementSelector',
@@ -164,7 +164,7 @@ export const moveToEnvsAction: CommandDefAction<ElementMoveToEnvsArgs> = async (
 const moveToEnvsDef = createPublicCommandDef({
   properties: {
     name: 'move-to-envs',
-    description: 'Move configuration element(s) to env-specific folder(s)',
+    description: 'Move configuration elements to the env-specific configuration',
     positionalOptions: [
       {
         name: 'elementSelector',
@@ -229,7 +229,7 @@ export const cloneAction: CommandDefAction<ElementCloneArgs> = async ({
 const cloneDef = createPublicCommandDef({
   properties: {
     name: 'clone',
-    description: 'Clone configuration element(s) from one env-specific folder to other(s)',
+    description: 'Clone elements from one env-specific configuration to others',
     positionalOptions: [
       {
         name: 'elementSelector',
@@ -330,7 +330,7 @@ const listUnresolvedDef = createPublicCommandDef({
       {
         name: 'completeFrom',
         alias: 'c',
-        description: 'The environment to use for finding unresolved references in list-unresolved',
+        description: 'environment for completing missing references from (recursively)',
         type: 'string',
         required: false,
       },
@@ -343,7 +343,7 @@ const listUnresolvedDef = createPublicCommandDef({
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
-    description: 'Manage the workspace config elements',
+    description: 'Manage the workspace configuration elements',
   },
   subCommands: [
     moveToCommonDef,

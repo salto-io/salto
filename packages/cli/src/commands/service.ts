@@ -180,7 +180,7 @@ export const listAction: CommandDefAction<ServiceListArgs> = async (
 const serviceListDef = createPublicCommandDef({
   properties: {
     name: 'list',
-    description: 'List environment services',
+    description: 'List all environment services',
     keyedOptions: [
       ENVIORMENT_OPTION,
     ],

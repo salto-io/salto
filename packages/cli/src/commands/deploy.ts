@@ -229,7 +229,7 @@ export const action: CommandDefAction<DeployArgs> = async ({
 const deployDef = createPublicCommandDef({
   properties: {
     name: 'deploy',
-    description: 'Update the upstream services from the workspace config elements',
+    description: 'Update the upstream services from the workspace configuration elements',
     keyedOptions: [
       {
         name: 'force',
@@ -240,7 +240,7 @@ const deployDef = createPublicCommandDef({
       {
         name: 'dryRun',
         alias: 'd',
-        description: 'Review the execution plan without deploying the changes',
+        description: 'Print the execution plan without deploying',
         type: 'boolean',
       },
       {

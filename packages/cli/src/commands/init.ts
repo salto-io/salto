@@ -53,7 +53,7 @@ export const action: CommandDefAction<InitArgs> = async (
 const initDef = createPublicCommandDef({
   properties: {
     name: 'init',
-    description: 'Creates a new Salto workspace in the current directory',
+    description: 'Initialize a new Salto workspace in the current directory',
     positionalOptions: [
       {
         name: 'workspaceName',

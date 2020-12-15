@@ -271,13 +271,13 @@ export const action: CommandDefAction<FetchArgs> = async ({
 const fetchDef = createPublicCommandDef({
   properties: {
     name: 'fetch',
-    description: 'Syncs this workspace with the services\' current state',
+    description: 'Update the workspace configuration elements from the upstream services',
     keyedOptions: [
       {
         name: 'force',
         alias: 'f',
         required: false,
-        description: 'Accept all incoming changes, even if there\'s a conflict with local changes',
+        description: 'Do not warn on conflicts with local changes',
         type: 'boolean',
       },
       {
@@ -291,7 +291,7 @@ const fetchDef = createPublicCommandDef({
         name: 'stateOnly',
         alias: 'st',
         required: false,
-        description: 'Fetch remote changes to the state file without mofifying the NaCL files',
+        description: 'Update just the state file and not the NaCLs',
         type: 'boolean',
       },
       SERVICES_OPTION,
@@ -300,9 +300,9 @@ const fetchDef = createPublicCommandDef({
         name: 'mode',
         alias: 'm',
         required: false,
-        description: 'Choose a fetch mode. Options - [align, override, isolated]',
+        description: 'Choose a fetch mode. Options - [default, align, override, isolated]',
         type: 'string',
-        choices: ['isolated', 'default', 'align', 'override'],
+        choices: ['default', 'align', 'override', 'isolated'],
         default: 'default',
       },
     ],

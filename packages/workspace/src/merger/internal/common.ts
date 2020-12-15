@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { inspect } from 'util'
 import { types } from '@salto-io/lowerdash'
 
 import {
@@ -41,8 +42,12 @@ export abstract class MergeError extends types.Bean<Readonly<{
 export class DuplicateAnnotationError extends MergeError {
   readonly key: string
 
-  constructor({ elemID, key }: { elemID: ElemID; key: string }) {
-    super({ elemID, error: `duplicate annotation '${key}'` })
+  constructor({ elemID, key, existingValue, newValue }:
+    { elemID: ElemID; key: string; existingValue: unknown; newValue: unknown}) {
+    super({
+      elemID,
+      error: `duplicate annotation key ${key} (values - ${inspect(existingValue)} & ${inspect(newValue)})`,
+    })
     this.key = key
   }
 }

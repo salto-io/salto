@@ -32,7 +32,7 @@ export class DuplicateInstanceKeyError extends MergeError {
     { elemID: ElemID; key: string; existingValue: unknown; newValue: unknown}) {
     super({
       elemID,
-      error: `duplicate key ${key} (${inspect(existingValue)} & ${inspect(newValue)})`,
+      error: `duplicate key ${key} (values - ${inspect(existingValue)} & ${inspect(newValue)})`,
     })
     this.key = key
   }
@@ -53,7 +53,8 @@ const mergeInstanceDefinitions = (
 
   const annotationsMergeResults = mergeNoDuplicates(
     instanceDefs.map(o => o.annotations),
-    key => new DuplicateAnnotationError({ elemID, key }),
+    (key, existingValue, newValue) =>
+      new DuplicateAnnotationError({ elemID, key, existingValue, newValue }),
   )
 
   return {

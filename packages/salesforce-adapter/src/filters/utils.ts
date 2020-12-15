@@ -17,18 +17,18 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
-  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap,
-  isReferenceExpression, ReferenceExpression, AdditionChange, ChangeDataType, Change, ChangeData,
+  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value,
+  isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
 } from '../constants'
-import { JSONBool } from '../client/types'
-import { isCustomObject, metadataType, apiName, defaultApiName, Types } from '../transformers/transformer'
+import { JSONBool, CustomObject } from '../client/types'
+import { isCustomObject, metadataType, apiName, defaultApiName, Types, isCustomSettingsObject } from '../transformers/transformer'
 
 const log = logger(module)
 
@@ -37,18 +37,38 @@ export const id = (elem: Element): string => elem.elemID.getFullName()
 export const boolValue = (val: JSONBool):
  boolean => val === 'true' || val === true
 
+export const isMasterDetailField = (field: Field): boolean => (
+  field.type.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
+)
+
+export const isLookupField = (field: Field): boolean => (
+  field.type.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
+)
+
 export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
  InstanceElement[] =>
   elements.filter(isInstanceElement)
     .filter(element => metadataType(element) === metadataTypeName)
 
+const setAnnotationDefault = (
+  elem: Element,
+  key: string,
+  defaultValue: Value,
+  type: TypeElement,
+): void => {
+  if (elem.annotations[key] === undefined) {
+    log.debug('setting default value on %s: %s=%s', elem.elemID.getFullName(), key, defaultValue)
+    elem.annotations[key] = defaultValue
+  }
+  if (elem.annotationTypes[key] === undefined) {
+    log.debug('adding annotation type %s on %s', key, elem.elemID.getFullName())
+    elem.annotationTypes[key] = type
+  }
+}
+
 export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   const { name } = elem.elemID
-  const { annotations } = elem
-  if (!annotations[LABEL]) {
-    annotations[LABEL] = label ?? name
-    log.debug(`added LABEL=${annotations[LABEL]} to ${name}`)
-  }
+  setAnnotationDefault(elem, LABEL, label ?? name, BuiltinTypes.STRING)
 }
 
 export const addApiName = (elem: TypeElement | Field, name?: string, parentName?: string):
@@ -65,17 +85,10 @@ void => {
 }
 
 export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJECT): void => {
-  const { annotations, annotationTypes } = elem
-  if (!annotationTypes[METADATA_TYPE]) {
-    annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
-  }
-  if (!annotations[METADATA_TYPE]) {
-    annotations[METADATA_TYPE] = metadataTypeValue
-    log.debug(`added METADATA_TYPE=${metadataTypeValue} to ${id(elem)}`)
-  }
+  setAnnotationDefault(elem, METADATA_TYPE, metadataTypeValue, BuiltinTypes.SERVICE_ID)
 }
 
-export const addDefaults = (change: AdditionChange<ChangeDataType>): void => {
+export const addDefaults = (element: ChangeDataType): void => {
   const addInstanceDefaults = (elem: InstanceElement): void => {
     if (elem.value[INSTANCE_FULL_NAME_FIELD] === undefined) {
       elem.value[INSTANCE_FULL_NAME_FIELD] = defaultApiName(elem)
@@ -87,20 +100,35 @@ export const addDefaults = (change: AdditionChange<ChangeDataType>): void => {
     addLabel(field)
   }
 
-  const addCustomObjectDefaults = (element: ObjectType): void => {
-    addApiName(element)
-    addMetadataType(element)
-    addLabel(element)
-    Object.values(element.fields).forEach(addFieldDefaults)
+  const addCustomObjectDefaults = (elem: ObjectType): void => {
+    addApiName(elem)
+    addMetadataType(elem)
+    addLabel(elem)
+    Object.values(elem.fields).forEach(addFieldDefaults)
+    if (!isCustomSettingsObject(elem)) {
+      const defaults: Partial<CustomObject> = {
+        deploymentStatus: 'Deployed',
+        pluralLabel: `${elem.annotations.label}s`,
+        sharingModel: Object.values(elem.fields).some(isMasterDetailField)
+          ? 'ControlledByParent'
+          : 'ReadWrite',
+        nameField: { type: 'Text', label: 'Name' },
+      }
+      const nameFieldType = new ObjectType({ elemID: new ElemID(SALESFORCE, CUSTOM_FIELD) })
+      Object.entries(defaults).forEach(([name, value]) => {
+        setAnnotationDefault(
+          elem, name, value, name === 'nameField' ? nameFieldType : BuiltinTypes.STRING
+        )
+      })
+    }
   }
 
-  const elem = change.data.after
-  if (isInstanceElement(elem)) {
-    addInstanceDefaults(elem)
-  } else if (isObjectType(elem)) {
-    addCustomObjectDefaults(elem)
-  } else if (isField(elem)) {
-    addFieldDefaults(elem)
+  if (isInstanceElement(element)) {
+    addInstanceDefaults(element)
+  } else if (isObjectType(element)) {
+    addCustomObjectDefaults(element)
+  } else if (isField(element)) {
+    addFieldDefaults(element)
   }
 }
 
@@ -205,12 +233,4 @@ export const isInstanceOfTypeChange = (type: string) => (
   (change: Change): change is Change<InstanceElement> => (
     isInstanceOfType(type)(getChangeElement(change))
   )
-)
-
-export const isMasterDetailField = (field: Field): boolean => (
-  field.type.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
-)
-
-export const isLookupField = (field: Field): boolean => (
-  field.type.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
 )

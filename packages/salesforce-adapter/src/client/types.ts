@@ -248,46 +248,13 @@ export class CustomField implements MetadataInfo {
   }
 }
 
-export class CustomProperties implements MetadataInfo {
-  readonly fields?: CustomField[] | CustomField
-
-  constructor(
-    readonly fullName: string,
-    readonly label: string,
-    fields?: CustomField[]
-  ) {
-    if (fields) {
-      this.fields = fields
-    }
-  }
-}
-
-export class CustomObject extends CustomProperties {
-  readonly pluralLabel: string
-  readonly deploymentStatus = 'Deployed'
-  readonly sharingModel: string
-  readonly nameField = {
-    type: 'Text',
-    label: 'Name',
-  }
-
-  constructor(
-    readonly fullName: string,
-    readonly label: string,
-    fields?: CustomField[]
-  ) {
-    super(fullName, label, fields)
-    this.pluralLabel = `${this.label}s`
-
-    const hasMasterDetailField = (): boolean|undefined => fields
-      && fields.some(field => field.type === FIELD_TYPE_NAMES.MASTER_DETAIL)
-
-    if (hasMasterDetailField()) {
-      this.sharingModel = 'ControlledByParent'
-    } else {
-      this.sharingModel = 'ReadWrite'
-    }
-  }
+export type CustomObject = MetadataInfo & {
+  label: string
+  fields?: CustomField | CustomField[]
+  pluralLabel?: string
+  deploymentStatus?: string
+  sharingModel?: string
+  nameField?: Partial<CustomField>
 }
 
 export interface SfError {

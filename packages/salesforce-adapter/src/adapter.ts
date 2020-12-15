@@ -458,7 +458,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const resolvedChanges = changeGroup.changes
       .map(change => resolveChangeElement(change, getLookUpName))
 
-    resolvedChanges.filter(isAdditionChange).forEach(addDefaults)
+    resolvedChanges.filter(isAdditionChange).map(getChangeElement).forEach(addDefaults)
 
     await this.filtersRunner.preDeploy(resolvedChanges)
 

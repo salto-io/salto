@@ -50,6 +50,7 @@ import {
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, createDeployPackage } from '../src/transformers/xml_transformer'
+import { addDefaults } from '../src/filters/utils'
 import { mockTypes, lwcJsResourceContent, lwcHtmlResourceContent, mockDefaultValues } from '../test/mock_elements'
 import {
   objectExists, getMetadata, getMetadataFromElement, createInstance, removeElementAndVerify,
@@ -778,7 +779,7 @@ describe('Salesforce adapter E2E with real account', () => {
           startingNumber: { type: BuiltinTypes.NUMBER },
         },
       })
-      const oldElement = new ObjectType({
+      const testElement = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'test modify annotations'),
         fields: {
           address: {
@@ -818,8 +819,8 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      await removeElementIfAlreadyExists(client, oldElement)
-      await createElementAndVerify(adapter, client, oldElement)
+      await removeElementIfAlreadyExists(client, testElement)
+      const oldElement = await createElementAndVerify(adapter, client, testElement)
 
       const newElement = oldElement.clone()
       // Change field annotations
@@ -887,7 +888,7 @@ describe('Salesforce adapter E2E with real account', () => {
     it('should modify field and object annotation', async () => {
       const customObjectName = 'TestModifyFieldAndAnnotation__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify field and annotation')
-      const oldElement = new ObjectType({
+      const testElement = new ObjectType({
         elemID: mockElemID,
         fields: {
           address: {
@@ -905,8 +906,8 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      await removeElementIfAlreadyExists(client, oldElement)
-      await createElementAndVerify(adapter, client, oldElement)
+      await removeElementIfAlreadyExists(client, testElement)
+      const oldElement = await createElementAndVerify(adapter, client, testElement)
 
       const newElement = oldElement.clone()
       newElement.annotations.label = 'Object Updated Label'
@@ -1442,9 +1443,11 @@ describe('Salesforce adapter E2E with real account', () => {
               })
               .value(),
             annotations: {
+              ...customFieldsObject.annotations,
               [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
             },
+            annotationTypes: { ...customFieldsObject.annotationTypes },
           })
 
           // Resolve reference expression before deploy
@@ -2290,34 +2293,17 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName,
         [lookupFieldApiName])).toBe(true)
 
-      const newElement = new ObjectType({
-        elemID: mockElemID,
-        fields: { [fieldName]: {
-          type: Types.primitiveDataTypes.Lookup,
-          annotations: {
-            [constants.API_NAME]: lookupFieldApiFullName,
-            [constants.LABEL]: fieldName,
-            [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
-            [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
-              [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
-              [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',
-              [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: true,
-              [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [
-                { [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
-                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-                  [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
-              ],
-            },
-            [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: fieldName,
-          },
-        } },
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-        },
-      })
+      const newElement = oldElement.clone()
+      newElement.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER] = {
+        [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
+        [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',
+        [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: true,
+        [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [
+          { [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+            [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+            [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
+        ],
+      }
 
       // Test
       const changes: Change[] = [{
@@ -2329,7 +2315,8 @@ describe('Salesforce adapter E2E with real account', () => {
         changes,
       })
       expect(modificationResult.errors).toHaveLength(0)
-      expect(modificationResult.appliedChanges).toEqual(changes)
+      expect(modificationResult.appliedChanges).toHaveLength(1)
+      expect(modificationResult.appliedChanges[0]).toMatchObject(changes[0])
 
       // Verify the lookup filter was created
       const customObject = await client.describeSObjects([customObjectName])
@@ -2356,6 +2343,8 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
+      addDefaults(element)
+
       await removeElementIfAlreadyExists(client, element)
       const addResult = await createElement(adapter, element)
       expect(addResult).toBeInstanceOf(ObjectType)
@@ -2377,6 +2366,8 @@ describe('Salesforce adapter E2E with real account', () => {
             .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]: true },
         },
       })
+
+      addDefaults(element)
 
       await removeElementIfAlreadyExists(client, element)
       const addResult = await createElement(adapter, element)
@@ -2404,6 +2395,8 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
+      addDefaults(oldElement)
+
       await removeElementIfAlreadyExists(client, oldElement)
       const addResult = await createElement(adapter, oldElement)
       // Verify setup was performed properly
@@ -2412,17 +2405,10 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(addResult.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION][constants
         .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]).toBe(false)
 
-      const newElement = new ObjectType({
-        elemID: mockElemID,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-          [constants.TOPICS_FOR_OBJECTS_ANNOTATION]:
-          { [constants.TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]: true },
-        },
-      })
+      const newElement = oldElement.clone()
+      newElement.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION] = {
+        [constants.TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]: true,
+      }
 
       // Test
       const modificationResult = await adapter.deploy({

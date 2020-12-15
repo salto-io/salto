@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { CustomObject, CustomField, SalesforceRecord, CustomProperties } from '../client/types'
+import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
@@ -876,6 +876,8 @@ export const toCustomField = (field: Field): CustomField => {
   const annotationsToSkip = [
     ...annotationsHandledInCtor,
     ...internalUseAnnotations,
+    // We cannot deploy labels on standard fields
+    ...isCustom(apiName(field)) ? [] : [LABEL],
   ]
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
@@ -893,38 +895,22 @@ export const isLocalOnly = (field?: Field): boolean => (
   field !== undefined && field.annotations[FIELD_ANNOTATIONS.LOCAL_ONLY] === true
 )
 
-const getFieldsIfIncluded = (
-  includeFields: boolean, element: ObjectType, skipFields: string[]
-): CustomField[] | undefined =>
-  (includeFields ? Object.values(element.fields)
+const getCustomFields = (
+  element: ObjectType, skipFields: string[]
+): CustomField[] =>
+  Object.values(element.fields)
     .filter(field => !isLocalOnly(field))
     .map(field => toCustomField(field))
     .filter(field => !skipFields.includes(field.fullName))
     .filter(field => CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(field.type))
-    : undefined)
 
 export const toCustomProperties = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
-): CustomProperties => {
-  let newCustomObject: CustomProperties
-  if (isCustomSettingsObject(element)) {
-    newCustomObject = new CustomProperties(
-      apiName(element),
-      element.annotations[LABEL],
-      getFieldsIfIncluded(includeFields, element, skipFields)
-    )
-  } else {
-    newCustomObject = new CustomObject(
-      apiName(element),
-      element.annotations[LABEL],
-      getFieldsIfIncluded(includeFields, element, skipFields)
-    )
-  }
+): CustomObject => {
   // Skip the assignment of the following annotations that are defined as annotationType
-  const annotationsToSkip: string[] = [
+  const annotationsToSkip = [
     API_NAME, // we use it as fullName
     METADATA_TYPE, // internal annotation
-    LABEL, // we send it in CustomObject constructor to enable default for pluralLabels
     INTERNAL_ID_ANNOTATION, // internal annotation
   ]
 
@@ -932,11 +918,12 @@ export const toCustomProperties = (
     Object.keys(element.annotationTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
-  _.assign(
-    newCustomObject,
-    _.pickBy(element.annotations, (_val, annotationName) => isAllowed(annotationName)),
-  )
-  return newCustomObject
+  return {
+    fullName: apiName(element),
+    label: element.annotations[LABEL],
+    ...includeFields ? { fields: getCustomFields(element, skipFields) } : {},
+    ..._.pickBy(element.annotations, (_val, name) => isAllowed(name)),
+  }
 }
 
 export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeField,

@@ -14,21 +14,20 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
 import { lightiningElementsUrlRetreiver } from '../src/elements_url_retreiver/elements_url_retreiver'
 
 
 describe('lightiningElementsUrlRetreiver', () => {
   it('when base url is invalid undefined returned', () => {
-    expect(lightiningElementsUrlRetreiver(new URL('https://google.com'), _id => Promise.resolve(undefined))).toBeUndefined()
+    expect(lightiningElementsUrlRetreiver(new URL('https://google.com'), _id => (Promise.resolve(undefined)))).toBeUndefined()
   })
 
   describe('base url is valid', () => {
     const baseUrl = new URL('https://salto5-dev-ed.my.salesforce.com')
 
-    const standardObject = new ObjectType({ elemID: new ElemID('salesforce', 'Account'), annotations: { apiName: 'Account' } })
-    const customObject = new ObjectType({ elemID: new ElemID('salesforce', 'custom__c'), annotations: { internalId: 'someId' } })
-    const flowType = new ObjectType({ elemID: new ElemID('salesforce', 'Flow') })
+    const standardObject = new ObjectType({ elemID: new ElemID('salesforce', 'Account'), annotations: { apiName: 'Account', metadataType: 'CustomObject' } })
+    const customObject = new ObjectType({ elemID: new ElemID('salesforce', 'custom__c'), annotations: { internalId: 'someId', metadataType: 'CustomObject' } })
+    const flowType = new ObjectType({ elemID: new ElemID('salesforce', 'Flow'), annotations: { metadataType: 'Flow' } })
 
     const elementUrlRetreiver = lightiningElementsUrlRetreiver(
       baseUrl,
@@ -49,18 +48,23 @@ describe('lightiningElementsUrlRetreiver', () => {
     })
     describe('retreiveUrl', () => {
       it('genernalConstantsResolver', async () => {
-        const element = new ObjectType({ elemID: new ElemID('salesforce', 'PermissionSetGroup') })
+        const element = new ObjectType({ elemID: new ElemID('salesforce', 'PermissionSetGroup'), annotations: { metadataType: 'PermissionSetGroup' } })
         expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/PermSetGroups/home'))
       })
 
       it('settingsConstantsResolver type', async () => {
-        const element = new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings') })
+        const element = new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings'), annotations: { metadataType: 'BusinessHoursSettings' } })
         expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home'))
       })
 
       it('settingsConstantsResolver instance', async () => {
-        const element = new InstanceElement(ElemID.CONFIG_NAME, new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings') }))
+        const element = new InstanceElement(ElemID.CONFIG_NAME, new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings'), annotations: { metadataType: 'BusinessHoursSettings' } }))
         expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home'))
+      })
+
+      it('AssignmentRulesResolver', async () => {
+        const element = new InstanceElement('Lead', new ObjectType({ elemID: new ElemID('salesforce', 'AssignmentRules'), annotations: { metadataType: 'AssignmentRules' } }), { fullName: 'Lead' })
+        expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/LeadRules/home'))
       })
 
       it('standard object', async () => {
@@ -97,7 +101,7 @@ describe('lightiningElementsUrlRetreiver', () => {
       })
 
       it('custom metadata type', async () => {
-        const element = new ObjectType({ elemID: new ElemID('salesforce', 'custom__mdt'), annotations: { internalId: 'someId' } })
+        const element = new ObjectType({ elemID: new ElemID('salesforce', 'custom__mdt'), annotations: { internalId: 'someId', apiName: 'custom__mdt' } })
         expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/CustomMetadata/page?address=%2FsomeId%3Fsetupid%3DCustomMetadata'))
       })
 
@@ -114,7 +118,7 @@ describe('lightiningElementsUrlRetreiver', () => {
       it('Queue', async () => {
         const element = new InstanceElement(
           'testQueue',
-          new ObjectType({ elemID: new ElemID('salesforce', 'Queue') }),
+          new ObjectType({ elemID: new ElemID('salesforce', 'Queue'), annotations: { metadataType: 'Queue' } }),
           { internalId: 'someId' }
         )
         expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3DsomeId'))
@@ -123,7 +127,7 @@ describe('lightiningElementsUrlRetreiver', () => {
       it('Layout', async () => {
         const element = new InstanceElement(
           'testLayout',
-          new ObjectType({ elemID: new ElemID('salesforce', 'Layout') }),
+          new ObjectType({ elemID: new ElemID('salesforce', 'Layout'), annotations: { metadataType: 'Layout' } }),
           { internalId: 'someId' },
           [],
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Account'))] }
@@ -150,7 +154,7 @@ describe('lightiningElementsUrlRetreiver', () => {
       it('unkown element', async () => {
         const element = new ObjectType({ elemID: new ElemID('salesforce', 'someType') })
         expect(elementUrlRetreiver).toBeDefined()
-        if (values.isDefined(elementUrlRetreiver)) {
+        if (elementUrlRetreiver !== undefined) {
           expect(await elementUrlRetreiver.retreiveUrl(element)).toBeUndefined()
         }
       })

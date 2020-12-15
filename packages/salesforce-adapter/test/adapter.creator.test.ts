@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType, OAuthMethod, ElementResolver } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { InstanceElement, ElemID, ObjectType, OAuthMethod, ElementIDResolver } from '@salto-io/adapter-api'
+import { INTERNAL_ACCOUNT_INFO } from '../src/instance_url'
 import { adapter } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
-import SalesforceAdapter, { INTERNAL_ACCOUNT_INFO } from '../src/adapter'
+import SalesforceAdapter from '../src/adapter'
 import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType } from '../src/types'
 import { INTERNAL_ID_FIELD, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
@@ -367,7 +367,7 @@ describe('SalesforceAdapter creator', () => {
     const requestedElementID = new ElemID('salesforce', 'testObj__c')
 
     describe('when there is no internal account info element', () => {
-      const mockElementResolver: ElementResolver = async id => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
         if (id.isEqual(expectedInternalAccountInfoID)) {
           return undefined
         }
@@ -377,8 +377,8 @@ describe('SalesforceAdapter creator', () => {
 
       it('should return undefined', async () => {
         expect(adapter.getElementUrl).toBeDefined()
-        if (values.isDefined(adapter.getElementUrl)) {
-          expect(await adapter.getElementUrl(requestedElementID, mockElementResolver))
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
             .toBeUndefined()
         }
       })
@@ -388,7 +388,7 @@ describe('SalesforceAdapter creator', () => {
       const invalidSettingsElement = internalAccountInfoElement.clone()
       invalidSettingsElement.value = {}
 
-      const mockElementResolver: ElementResolver = async id => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
         if (id.isEqual(expectedInternalAccountInfoID)) {
           return invalidSettingsElement
         }
@@ -398,8 +398,8 @@ describe('SalesforceAdapter creator', () => {
 
       it('should return undefined', async () => {
         expect(adapter.getElementUrl).toBeDefined()
-        if (values.isDefined(adapter.getElementUrl)) {
-          expect(await adapter.getElementUrl(requestedElementID, mockElementResolver))
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
             .toBeUndefined()
         }
       })
@@ -409,7 +409,7 @@ describe('SalesforceAdapter creator', () => {
       const invalidSettingsElement = internalAccountInfoElement.clone()
       invalidSettingsElement.value.instanceUrl = 'invalidUrl'
 
-      const mockElementResolver: ElementResolver = async id => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
         if (id.isEqual(expectedInternalAccountInfoID)) {
           return invalidSettingsElement
         }
@@ -419,8 +419,8 @@ describe('SalesforceAdapter creator', () => {
 
       it('should return undefined', async () => {
         expect(adapter.getElementUrl).toBeDefined()
-        if (values.isDefined(adapter.getElementUrl)) {
-          expect(await adapter.getElementUrl(requestedElementID, mockElementResolver))
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
             .toBeUndefined()
         }
       })
@@ -430,7 +430,7 @@ describe('SalesforceAdapter creator', () => {
       const invalidSettingsElement = internalAccountInfoElement.clone()
       invalidSettingsElement.value.instanceUrl = 'https://google.com'
 
-      const mockElementResolver: ElementResolver = async id => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
         if (id.isEqual(expectedInternalAccountInfoID)) {
           return invalidSettingsElement
         }
@@ -440,15 +440,15 @@ describe('SalesforceAdapter creator', () => {
 
       it('should return undefined', async () => {
         expect(adapter.getElementUrl).toBeDefined()
-        if (values.isDefined(adapter.getElementUrl)) {
-          expect(await adapter.getElementUrl(requestedElementID, mockElementResolver))
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
             .toBeUndefined()
         }
       })
     })
 
     describe('when requested element does not exists', () => {
-      const mockElementResolver: ElementResolver = async id => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
         if (id.isEqual(expectedInternalAccountInfoID)) {
           return internalAccountInfoElement
         }
@@ -462,15 +462,15 @@ describe('SalesforceAdapter creator', () => {
 
       it('should return base lightining url', async () => {
         expect(adapter.getElementUrl).toBeDefined()
-        if (values.isDefined(adapter.getElementUrl)) {
-          expect(await adapter.getElementUrl(requestedElementID, mockElementResolver))
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
             .toEqual(lightiningUrl)
         }
       })
     })
 
     describe('when urlRetreiver failed to convert element', () => {
-      const mockElementResolver: ElementResolver = async id => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
         if (id.isEqual(expectedInternalAccountInfoID)) {
           return internalAccountInfoElement
         }
@@ -484,15 +484,15 @@ describe('SalesforceAdapter creator', () => {
 
       it('should return base lightining url', async () => {
         expect(adapter.getElementUrl).toBeDefined()
-        if (values.isDefined(adapter.getElementUrl)) {
-          expect(await adapter.getElementUrl(requestedElementID, mockElementResolver))
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
             .toEqual(lightiningUrl)
         }
       })
     })
 
     describe('when a valid element id is received', () => {
-      const mockElementResolver: ElementResolver = async id => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
         if (id.isEqual(expectedInternalAccountInfoID)) {
           return internalAccountInfoElement
         }
@@ -511,8 +511,8 @@ describe('SalesforceAdapter creator', () => {
 
       it('should return the correct url', async () => {
         expect(adapter.getElementUrl).toBeDefined()
-        if (values.isDefined(adapter.getElementUrl)) {
-          const url = await adapter.getElementUrl(requestedElementID, mockElementResolver)
+        if (adapter.getElementUrl !== undefined) {
+          const url = await adapter.getElementUrl(requestedElementID, mockElementIDResolver)
           expect(url).toBeDefined()
           expect(url).not.toBe(lightiningUrl)
         }

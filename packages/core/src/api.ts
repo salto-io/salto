@@ -359,9 +359,9 @@ export const getLoginStatuses = async (
 
 export const getElementUrl = async (workspace: Workspace, id: ElemID): Promise<URL | undefined> => {
   const adapter = adapterCreators[id.adapter]
-  if (_.isUndefined(adapter?.getElementUrl)) {
+  if (adapter?.getElementUrl === undefined) {
     log.warn(`Adapter ${id.adapter} does not support converting elements to urls`)
     return undefined
   }
-  return adapter.getElementUrl(id, workspace.resolveElement)
+  return adapter.getElementUrl(id, workspace.getValue)
 }

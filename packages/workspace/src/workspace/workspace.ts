@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -120,7 +120,7 @@ export type Workspace = {
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
-  resolveElement(id: ElemID): Promise<Element | undefined>
+  getValue(id: ElemID): Promise<Value | undefined>
 }
 
 // common source has no state
@@ -410,34 +410,25 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       })()
       return { serviceName, status, date }
     },
-    resolveElement: async (id: ElemID): Promise<Element | undefined> => {
-      let topLevelID: ElemID
-      if (id.idType === 'field') {
-        topLevelID = id.createTopLevelParentID().parent
-      } else {
-        topLevelID = id
-      }
+    getValue: async (id: ElemID): Promise<Value | undefined> => {
+      const topLevelID = id.createTopLevelParentID().parent
 
       const workspaceElement = await naclFilesSource.get(topLevelID)
       const stateElement = await state().get(topLevelID)
 
-      if (_.isUndefined(workspaceElement) && _.isUndefined(stateElement)) {
+      if (workspaceElement === undefined && stateElement === undefined) {
         log.error(`ElemID not found ${id}`)
         return undefined
       }
 
-      if (_.isUndefined(workspaceElement)) {
-        return resolvePath(stateElement, id)
-      }
-
-      if (_.isUndefined(stateElement)) {
-        return resolvePath(workspaceElement, id)
-      }
-
-      const mergeResults = mergeWithHidden([workspaceElement], [stateElement])
+      const mergeResults = mergeWithHidden([workspaceElement].filter(values.isDefined),
+        [stateElement].filter(values.isDefined))
 
       if (mergeResults.errors.length !== 0) {
         log.error(`Failed to merge elements ${mergeResults.errors}`)
+        return undefined
+      }
+      if (mergeResults.merged.length !== 1) {
         return undefined
       }
       return resolvePath(mergeResults.merged[0], id)

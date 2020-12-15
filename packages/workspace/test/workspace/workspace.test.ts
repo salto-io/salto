@@ -17,7 +17,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField,
+  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField, isObjectType,
 } from '@salto-io/adapter-api'
 import {
   findElement, applyDetailedChanges,
@@ -149,6 +149,9 @@ describe('workspace', () => {
             hiddenStrAnno: BuiltinTypes.HIDDEN_STRING,
           },
         }),
+        new ObjectType({
+          elemID: new ElemID('salesforce', 'NotExistsInWorkspace'),
+        }),
       ])
       workspace = await createWorkspace(undefined, state)
     })
@@ -180,26 +183,34 @@ describe('workspace', () => {
         expect(_.keys(lead.fields)).toHaveLength(5)
       })
     })
-    describe('resolveElement', () => {
+    describe('getValue', () => {
       it('unknown elemId should return undefined', async () => {
-        expect(await workspace.resolveElement(new ElemID('notExists'))).toBeUndefined()
+        expect(await workspace.getValue(new ElemID('notExists'))).toBeUndefined()
       })
 
       it('workspace element should return the element', async () => {
-        expect(await workspace.resolveElement(new ElemID('salesforce', 'lead'))).toBeDefined()
+        expect(isObjectType(await workspace.getValue(new ElemID('salesforce', 'lead')))).toBeTruthy()
       })
 
       it('state element should return the element', async () => {
-        expect(await workspace.resolveElement(new ElemID('salesforce', 'hidden'))).toBeDefined()
+        expect(isObjectType(await workspace.getValue(new ElemID('salesforce', 'hidden')))).toBeTruthy()
       })
 
       it('element with hidden annotation should return the element', async () => {
-        const element = await workspace.resolveElement(new ElemID('salesforce', 'AccountIntelligenceSettings'))
-        expect(element?.annotations['hiddenStrAnno']).toBe('some value')
+        const element = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings'))
+        expect(element?.annotations?.hiddenStrAnno).toBe('some value')
+      })
+
+      it('deleted workspace element should return undefined', async () => {
+        expect(await workspace.getValue(new ElemID('salesforce', 'NotExistsInWorkspace'))).toBeUndefined()
+      })
+
+      it('should return annotation value', async () => {
+        expect(await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings', 'attr', 'hiddenStrAnno'))).toBe('some value')
       })
 
       it('element field should return the element', async () => {
-        expect(isField(await workspace.resolveElement(new ElemID('salesforce', 'lead', 'field', 'base_field')))).toBeTruthy()
+        expect(isField(await workspace.getValue(new ElemID('salesforce', 'lead', 'field', 'base_field')))).toBeTruthy()
       })
 
       it('when merge error should return undefined', async () => {
@@ -214,7 +225,7 @@ describe('workspace', () => {
         )
         await state.set(instanceElement)
 
-        expect(await workspace.resolveElement(instanceElement.elemID)).toBeUndefined()
+        expect(await workspace.getValue(instanceElement.elemID)).toBeUndefined()
       })
     })
   })

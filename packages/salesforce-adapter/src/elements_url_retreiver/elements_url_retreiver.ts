@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { Element, ElementResolver } from '@salto-io/adapter-api'
+import { Element, ElementIDResolver } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { resolversCreators } from './lightining_url_resolvers'
+import { resolvers } from './lightining_url_resolvers'
 
 const log = logger(module)
 
@@ -26,7 +25,7 @@ export type ElementsUrlRetreiver = {
 }
 
 
-export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementResolver: ElementResolver):
+export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementIDResolver: ElementIDResolver):
   ElementsUrlRetreiver | undefined => {
   const suffix = baseUrl.origin.match(/my.salesforce.com$/)
   if (suffix === null) {
@@ -36,11 +35,11 @@ export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementResolver: El
   const lightiningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
 
   const retreiveUrl = async (element: Element): Promise<URL | undefined> => {
-    for (const resolverCreator of resolversCreators) {
-      const resolver = resolverCreator(element, elementResolver)
+    for (const resolver of resolvers) {
       // eslint-disable-next-line no-await-in-loop
-      if (await resolver.shouldResolve()) {
-        return resolver.resolve(lightiningUrl)
+      const url = await resolver(element, lightiningUrl, elementIDResolver)
+      if (url !== undefined) {
+        return url
       }
     }
     return undefined

@@ -59,6 +59,13 @@ type salesforce.WithAnnotationsBlock {
 type salesforce.WithoutAnnotationsBlock {
 }
 
+salesforce.WithoutAnnotationsBlock instWithoutAnnotationsBlock {
+}
+
+type salesforce.WithoutAnnotationsBlockListNested {
+  "List<salesforce.WithoutAnnotationsBlock>" noAnno {
+  }
+}
 
 type salesforce.ObjWithHidden {
   annotations {

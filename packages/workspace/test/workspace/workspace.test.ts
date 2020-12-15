@@ -17,7 +17,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField, isObjectType,
+  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField, isObjectType, ContainerType,
 } from '@salto-io/adapter-api'
 import {
   findElement, applyDetailedChanges,
@@ -871,6 +871,11 @@ describe('workspace', () => {
         action: 'add',
         data: { after: renamedTypes.after },
       },
+      {
+        id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'attr', 'bla'),
+        action: 'add',
+        data: { after: 5 },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1013,6 +1018,18 @@ describe('workspace', () => {
       expect(objWithHidden.annotations).toHaveProperty('internalId')
       const nestedHiddenVal = elemMapWithHidden['salesforce.NestedHiddenVal'] as ObjectType
       expect(nestedHiddenVal.annotations).toHaveProperty('hidden_val_anno')
+    })
+
+    it('should change instance type if type was modified', () => {
+      const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
+      const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlock.instance.instWithoutAnnotationsBlock'] as InstanceElement
+      expect(changedInstance.type).toBe(changedType)
+    })
+
+    it('should change inner type inside containers types if type was changed', () => {
+      const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
+      const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlockListNested'] as ObjectType
+      expect((changedInstance.fields.noAnno.type as ContainerType).innerType).toBe(changedType)
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
-  Change, getChangeElement, isAdditionOrModificationChange, Value,
+  Change, getChangeElement, isAdditionOrModificationChange, Value, isType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -34,7 +34,7 @@ import { Errors, ServiceDuplicationError, EnvDuplicationError,
 import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
-import { MergeResult } from '../merger'
+import { MergeResult, updateMergedTypes } from '../merger'
 
 const log = logger(module)
 
@@ -174,8 +174,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       newElements,
       (await Promise.all(newElements.map(e => state().get(e.elemID)))).filter(values.isDefined)
     )
+    const merged = calcNewMerged(currentState.merged, mergeRes.merged, changedElementIDs)
     return {
-      merged: calcNewMerged(currentState.merged, mergeRes.merged, changedElementIDs),
+      merged: updateMergedTypes(
+        merged, _.keyBy(merged.filter(isType), e => e.elemID.getFullName())
+      ),
       errors: calcNewMerged(currentState.errors, mergeRes.errors, changedElementIDs),
     }
   }

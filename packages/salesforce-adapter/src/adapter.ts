@@ -295,6 +295,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       'PermissionSetTabSetting',
       'PermissionSetUserPermission',
       'KnowledgeSitesSettings',
+      'EntitlementProcessMilestoneItem',
     ],
     nestedMetadataTypes = {
       CustomLabels: {

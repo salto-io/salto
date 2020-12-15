@@ -42,6 +42,7 @@ import filterCreator, {
 import { FilterWith } from '../../src/filter'
 import { isCustom, Types, createInstanceElement, MetadataTypeAnnotations, metadataType } from '../../src/transformers/transformer'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
+import { WORKFLOW_DIR_NAME } from '../../src/filters/workflow'
 
 describe('Custom Objects filter', () => {
   let connection: Connection
@@ -1341,7 +1342,7 @@ describe('Custom Objects filter', () => {
 
         it('should set workflow instance path correctly', async () => {
           expect(workflowInstance.path)
-            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'Workflow', 'Workflow'])
+            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', WORKFLOW_DIR_NAME, WORKFLOW_METADATA_TYPE])
         })
 
         it('should add PARENT annotation to workflow instance', async () => {

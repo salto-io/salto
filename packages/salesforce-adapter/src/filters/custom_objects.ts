@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, strings } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values,
@@ -59,7 +59,7 @@ import {
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
-import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
+import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -537,7 +537,12 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
       instance.path = [
         ...customObject.path.slice(0, -1),
         ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
-          ? [WORKFLOW_METADATA_TYPE, pathNaclCase(instance.elemID.typeName)]
+          ? [WORKFLOW_DIR_NAME,
+            pathNaclCase(
+              strings.capitalizeFirstLetter(
+                WORKFLOW_TYPE_TO_FIELD[instance.elemID.typeName] ?? instance.elemID.typeName
+              )
+            )]
           : [pathNaclCase(instance.elemID.typeName)]),
         ...(apiNameParts(instance).length > 1
           ? [pathNaclCase(instance.elemID.name)] : []),

@@ -47,6 +47,8 @@ export const WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD = 'knowledgePublishes'
 export const WORKFLOW_TASKS_FIELD = 'tasks'
 export const WORKFLOW_RULES_FIELD = 'rules'
 
+export const WORKFLOW_DIR_NAME = 'WorkflowActions'
+
 export const WORKFLOW_FIELD_TO_TYPE: Record<string, string> = {
   [WORKFLOW_ALERTS_FIELD]: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
   [WORKFLOW_FIELD_UPDATES_FIELD]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -56,6 +58,8 @@ export const WORKFLOW_FIELD_TO_TYPE: Record<string, string> = {
   [WORKFLOW_TASKS_FIELD]: WORKFLOW_TASK_METADATA_TYPE,
   [WORKFLOW_RULES_FIELD]: WORKFLOW_RULE_METADATA_TYPE,
 }
+
+export const WORKFLOW_TYPE_TO_FIELD: Record<string, string> = _.invert(WORKFLOW_FIELD_TO_TYPE)
 
 const isWorkflowInstance = isInstanceOfType(WORKFLOW_METADATA_TYPE)
 

@@ -321,23 +321,34 @@ describe('workspace', () => {
   })
 
   describe('removeNaclFiles', () => {
-    const dirStore = mockDirStore()
+    let dirStore: DirectoryStore<string>
     let workspace: Workspace
     const removedPaths = ['file.nacl', 'willbempty.nacl']
-    let elemMap: Record<string, Element>
 
-    beforeAll(async () => {
+    beforeEach(async () => {
+      dirStore = mockDirStore()
       workspace = await createWorkspace(dirStore)
+      await workspace.elements()
+    })
+
+    it('should update elements to not include fields from removed Nacl files', async () => {
       await workspace.removeNaclFiles(...removedPaths)
-      elemMap = getElemMap(await workspace.elements())
-    })
-
-    it('should update elements to not include fields from removed Nacl files', () => {
+      const elemMap = getElemMap(await workspace.elements())
+      expect(Object.keys(elemMap).sort())
+        .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
       const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(_.keys(lead.fields)).toHaveLength(1)
+      expect(Object.keys(lead.fields)).toContain('ext_field')
     })
 
-    it('should remove from store', () => {
+    it('should modify element to not include fields from removed Nacl files', async () => {
+      await workspace.removeNaclFiles('subdir/file.nacl')
+      const elemMap = getElemMap(await workspace.elements())
+      const lead = elemMap['salesforce.lead'] as ObjectType
+      expect(Object.keys(lead.fields)).not.toContain('ext_field')
+    })
+
+    it('should remove from store', async () => {
+      await workspace.removeNaclFiles(...removedPaths)
       const mockStoreDelete = dirStore.delete as jest.Mock
       expect(mockStoreDelete.mock.calls.map(c => c[0])).toEqual(removedPaths)
     })
@@ -354,13 +365,22 @@ describe('workspace', () => {
       elemMap = getElemMap(await workspace.elements())
     })
 
-    it('should add new elements', () => {
-      expect(elemMap).toHaveProperty(['salesforce.new'])
-    })
     it('should update elements', () => {
-      const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(lead.fields.new_base).toBeDefined()
-      expect(lead.fields.base_field).not.toBeDefined()
+      const salesforceLeadElemID = new ElemID('salesforce', 'lead')
+      const salesforceLeadObject = new ObjectType({ elemID: salesforceLeadElemID })
+      const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      salesforceLeadObject.fields.new_base = new Field(salesforceLeadObject, 'new_base', salesforceText)
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      salesforceLeadObject.fields.ext_field = new Field(
+        salesforceLeadObject, 'ext_field', salesforceText, { [CORE_ANNOTATIONS.DEFAULT]: 'foo' }
+      )
+      expect(elemMap).toEqual({
+        'multi.loc': new ObjectType({ elemID: new ElemID('multi', 'loc'), annotations: { b: 1 } }),
+        'salesforce.lead': salesforceLeadObject,
+        'salesforce.new': new ObjectType({ elemID: new ElemID('salesforce', 'new') }),
+        'salesforce.RenamedType1': new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
+      })
     })
 
     it('should create Nacl files that were added', async () => {

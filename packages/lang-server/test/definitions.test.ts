@@ -109,4 +109,12 @@ describe('Test go to definitions', () => {
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs[0].range.start.line).toBe(1)
   })
+
+  it('should give list of lists element type definition', async () => {
+    const pos = { line: 128, col: 15 }
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
+    const token = { value: 'List<List<vs.str>>', type: 'content' }
+    const defs = await provideWorkspaceDefinition(workspace, ctx, token)
+    expect(defs[0].range.start.line).toBe(1)
+  })
 })

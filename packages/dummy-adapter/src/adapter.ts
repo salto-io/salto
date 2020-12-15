@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, ChangeGroup, DeployResult,
+  FetchResult, AdapterOperations, ChangeGroup, DeployResult, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { generateElements, GeneratorParams } from './generator'
 
@@ -27,9 +27,9 @@ export default class DummyAdapter implements AdapterOperations {
    * Fetch configuration elements: objects, types and instances for the given HubSpot account.
    * Account credentials were given in the constructor.
    */
-  public async fetch(): Promise<FetchResult> {
+  public async fetch(progressReporter?: ProgressReporter): Promise<FetchResult> {
     return {
-      elements: generateElements(this.genParams),
+      elements: generateElements(this.genParams, progressReporter),
     }
   }
 

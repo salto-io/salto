@@ -33,10 +33,21 @@ export type DeployResult = {
   errors: ReadonlyArray<Error>
 }
 
+export type Progress = {
+  details: string
+  completedPercents: number
+}
+
+export type ProgressReporter = {
+  reportProgress: (progress: Progress) => void
+}
+
 export type AdapterOperations = {
-  fetch: () => Promise<FetchResult>
+  fetch: (progressReporter?: ProgressReporter) => Promise<FetchResult>
   deploy: (changeGroup: ChangeGroup) => Promise<DeployResult>
 }
+
+export type AdapterOperationName = keyof AdapterOperations
 
 export type AdapterOperationsContext = {
   credentials: InstanceElement

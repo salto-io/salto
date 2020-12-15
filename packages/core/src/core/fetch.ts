@@ -28,6 +28,10 @@ import { logger } from '@salto-io/logging'
 import { merger } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
+import {
+  AdapterEvents,
+  createAdapterProgressReporter,
+} from './adapters/progress'
 
 const { mergeElements } = merger
 
@@ -60,7 +64,8 @@ export type FetchProgressEvents = {
   diffWillBeCalculated: (stepProgress: StepEmitter) => void
   workspaceWillBeUpdated: (stepProgress: StepEmitter, changes: number, approved: number) => void
   stateWillBeUpdated: (stepProgress: StepEmitter, changes: number) => void
-}
+  adapterFetch: (adapterName: string, phase: string) => void
+} & AdapterEvents
 
 export type MergeErrorWithElements = {
   error: merger.MergeError
@@ -223,7 +228,9 @@ type UpdatedConfig = {
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
   stateElements: ReadonlyArray<Element>,
-  getChangesEmitter: StepEmitter):
+  getChangesEmitter: StepEmitter,
+  progressEmitter?: EventEmitter<FetchProgressEvents>
+):
   Promise<{
     serviceElements: Element[]
     processErrorsResult: ProcessMergeErrorsResult
@@ -231,9 +238,11 @@ const fetchAndProcessMergeErrors = async (
   }> => {
   try {
     const fetchResults = await Promise.all(
-      Object.values(adapters)
-        .map(async adapter => {
-          const fetchResult = await adapter.fetch()
+      Object.entries(adapters)
+        .map(async ([adapterName, adapter]) => {
+          const fetchResult = await adapter.fetch(
+            createAdapterProgressReporter(adapterName, 'fetch', progressEmitter)
+          )
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
           const { updatedConfig } = fetchResult
@@ -328,7 +337,8 @@ export const fetchChanges = async (
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
-    getChangesEmitter
+    getChangesEmitter,
+    progressEmitter
   )
   const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {

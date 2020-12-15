@@ -13,7 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType, FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement, Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values, CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression, getDeepInnerType, isContainerType, MapType, isMapType } from '@salto-io/adapter-api'
+import {
+  PrimitiveType, ElemID, PrimitiveTypes, Element, ObjectType,
+  FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement,
+  Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values,
+  CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
+  getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
@@ -138,7 +144,10 @@ const profileType = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
 
-export const generateElements = (params: GeneratorParams): Element[] => {
+export const generateElements = (
+  params: GeneratorParams,
+  progressReporter?: ProgressReporter
+): Element[] => {
   seedrandom(params.seed.toString(), { global: true })
   const elementRanks: Record<string, number> = {}
   const primitiveByRank: PrimitiveType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
@@ -511,13 +520,21 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       }
     ).flat()
   }
-
+  const reportProgress = (details: string, completedPercents: number): void => {
+    if (progressReporter) progressReporter.reportProgress({ details, completedPercents })
+  }
   const defaultTypes = [defaultObj, permissionsType, profileType]
+  reportProgress('Generating primitive types', 10)
   const primtiveTypes = generatePrimitiveTypes()
+  reportProgress('Generating types', 30)
   const types = generateTypes()
+  reportProgress('Generating objects', 50)
   const objects = generateObjects()
+  reportProgress('Generating records', 70)
   const records = generateRecords()
+  reportProgress('Generating profile likes', 90)
   const profiles = generateProfileLike(params.useOldProfiles)
+  reportProgress('Generation done', 100)
   return [
     ...defaultTypes,
     ...primtiveTypes,

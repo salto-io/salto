@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -32,27 +33,27 @@ const centercategory_links_link = new ObjectType({
   },
   fields: {
     linkid: {
-      type: enums.generic_task,
+      refType: createRefToElmWithValue(enums.generic_task),
       annotations: {
       },
     }, /* Original description: This field is mandatory when the linkobject value is not defined.   For information about possible values, see generic_task. */
     linkobject: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field is mandatory when the linkid value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customtransactiontype   customrecordtype   clientscript   centertab   bundleinstallationscript */
     linktasktype: {
-      type: enums.centercategory_tasktype,
+      refType: createRefToElmWithValue(enums.centercategory_tasktype),
       annotations: {
       },
     }, /* Original description: This field is mandatory when the linkobject value is defined.   For information about possible values, see centercategory_tasktype. */
     linklabel: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     shortlist: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -70,7 +71,7 @@ const centercategory_links = new ObjectType({
   },
   fields: {
     link: {
-      type: new ListType(centercategory_links_link),
+      refType: createRefToElmWithValue(new ListType(centercategory_links_link)),
       annotations: {
       },
     },
@@ -87,7 +88,7 @@ export const centercategory = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -95,26 +96,26 @@ export const centercategory = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentercategory’. */
     center: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
     centertab: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the centertab custom type.   For information about other possible values, see generic_centertab. */
     label: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
     }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
     links: {
-      type: centercategory_links,
+      refType: createRefToElmWithValue(centercategory_links),
       annotations: {
       },
     },

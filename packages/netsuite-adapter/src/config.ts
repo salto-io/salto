@@ -15,10 +15,8 @@
 */
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
-import {
-  InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, SAVED_SEARCH, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,

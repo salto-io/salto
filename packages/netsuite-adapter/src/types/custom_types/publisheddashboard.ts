@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -32,35 +33,35 @@ const publisheddashboard_dashboards_dashboard_centercolumn_analytics = new Objec
   },
   fields: {
     portlettype: {
-      type: enums.portlet_analytics_portlettype,
+      refType: createRefToElmWithValue(enums.portlet_analytics_portlettype),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see portlet_analytics_portlettype. */
     visualization: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   table   pivot   chart */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
     }, /* Original description: This field value can be up to 50 characters long. */
     height: {
-      type: enums.portlet_analytics_height,
+      refType: createRefToElmWithValue(enums.portlet_analytics_height),
       annotations: {
       },
     }, /* Original description: This field is available when the portlettype value is equal to CHART.   For information about possible values, see portlet_analytics_height. */
     visiblerows: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
       },
     }, /* Original description: This field value must be less than or equal to 200.   This field is available when the portlettype value is equal to any of the following lists or values: PIVOT, TABLE. */
@@ -78,63 +79,63 @@ const publisheddashboard_dashboards_dashboard_centercolumn_calendar = new Object
   },
   fields: {
     numberofrecordsinagenda: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must be greater than or equal to 0.   The default value is '7'. */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showevents: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showblockingtasks: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     shownonblockingtasks: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showblockingcalls: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     shownonblockingcalls: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showcanceledevents: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showweekendsinmonthlyview: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     recordstodisplayinagenda: {
-      type: enums.portlet_calendar_agenda,
+      refType: createRefToElmWithValue(enums.portlet_calendar_agenda),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_calendar_agenda.   The default value is 'TODAY_ONLY'. */
     showcampaignevents: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showresourceallocations: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the RESOURCEALLOCATIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. RESOURCEALLOCATIONS must be enabled for this field to appear in your account. */
@@ -152,12 +153,12 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customportlet = new O
   },
   fields: {
     source: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the scriptdeployment custom type. */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -175,43 +176,43 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customsearch = new Ob
   },
   fields: {
     savedsearch: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see portlet_customsearch_savedsearch. */
     resultssize: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is '10'. */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     drilldown: {
-      type: enums.portlet_customsearch_drilldown,
+      refType: createRefToElmWithValue(enums.portlet_customsearch_drilldown),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_customsearch_drilldown.   The default value is 'NEW_PAGE'. */
     charttheme: {
-      type: enums.portlet_customsearch_charttheme,
+      refType: createRefToElmWithValue(enums.portlet_customsearch_charttheme),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_customsearch_charttheme.   The default value is 'GLOBAL_THEME'. */
     backgroundtype: {
-      type: enums.portlet_customsearch_backgroundtype,
+      refType: createRefToElmWithValue(enums.portlet_customsearch_backgroundtype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_customsearch_backgroundtype.   The default value is 'GLOBAL_BACKGROUND'. */
     allowinlineediting: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T.   If this field appears in the project, you must reference the EXTREMELIST feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. EXTREMELIST must be enabled for this field to appear in your account. */
     title: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
@@ -230,59 +231,59 @@ const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicat
   },
   fields: {
     kpi: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see the following lists:   snapshot_type_period_range_not_comparable   snapshot_type_period_range_comparable   snapshot_type_date_range_not_comparable   snapshot_type_date_range_comparable   snapshot_type_custom */
     daterange: {
-      type: enums.report_date_range,
+      refType: createRefToElmWithValue(enums.report_date_range),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see report_date_range. */
     comparedaterange: {
-      type: enums.report_date_range,
+      refType: createRefToElmWithValue(enums.report_date_range),
       annotations: {
       },
     }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the compare value is equal to T.   For information about possible values, see report_date_range. */
     compareperiodrange: {
-      type: enums.report_period_range,
+      refType: createRefToElmWithValue(enums.report_period_range),
       annotations: {
       },
     }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the compare value is equal to T.   For information about possible values, see report_period_range. */
     savedsearch: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field is available when the kpi value is present in snapshot_type_custom.   This field is mandatory when the kpi value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
     periodrange: {
-      type: enums.report_period_range,
+      refType: createRefToElmWithValue(enums.report_period_range),
       annotations: {
       },
     }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_period_range_not_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_period_range_not_comparable, snapshot_type_custom.   For information about possible values, see report_period_range. */
     compare: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   The default value is T. */
     employees: {
-      type: enums.portlet_kpi_employees,
+      refType: createRefToElmWithValue(enums.portlet_kpi_employees),
       annotations: {
       },
     }, /* Original description: This field is available when the center value is equal to any of the following lists or values: SALESCENTER, SUPPORTCENTER.   For information about possible values, see portlet_kpi_employees.   The default value is 'ME_ONLY'. */
     headline: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     highlightif: {
-      type: enums.portlet_kpi_highlightif,
+      refType: createRefToElmWithValue(enums.portlet_kpi_highlightif),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_kpi_highlightif. */
     threshold: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
       },
     },
@@ -300,7 +301,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicat
   },
   fields: {
     kpi: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpi),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpi)),
       annotations: {
       },
     },
@@ -318,17 +319,17 @@ const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicat
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     cacheddata: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     kpis: {
-      type: publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis),
       annotations: {
       },
     },
@@ -346,13 +347,13 @@ const publisheddashboard_dashboards_dashboard_centercolumn_kpimeter = new Object
   },
   fields: {
     kpi: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see the following lists:   snapshot_type_period_range_not_comparable   snapshot_type_period_range_comparable   snapshot_type_date_range_not_comparable   snapshot_type_date_range_comparable   snapshot_type_custom   portlet_kpimeter_combined_snapshots */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -370,32 +371,32 @@ const publisheddashboard_dashboards_dashboard_centercolumn_kpireport = new Objec
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     reportid: {
-      type: enums.portlet_kpireport_reportid,
+      refType: createRefToElmWithValue(enums.portlet_kpireport_reportid),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_kpireport_reportid. */
     restrict: {
-      type: enums.portlet_kpireport_restrict,
+      refType: createRefToElmWithValue(enums.portlet_kpireport_restrict),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_kpireport_restrict. */
     orientation: {
-      type: enums.portlet_kpireport_orientation,
+      refType: createRefToElmWithValue(enums.portlet_kpireport_orientation),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_kpireport_orientation. */
     trend: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showdates: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -413,23 +414,23 @@ const publisheddashboard_dashboards_dashboard_centercolumn_list = new ObjectType
   },
   fields: {
     type: {
-      type: enums.portlet_list_type,
+      refType: createRefToElmWithValue(enums.portlet_list_type),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_list_type. */
     size: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from 1 through 50. (inclusive)   The default value is '5'. */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allowinlineediting: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -447,23 +448,23 @@ const publisheddashboard_dashboards_dashboard_centercolumn_quicksearch = new Obj
   },
   fields: {
     searchtype: {
-      type: enums.portlet_quicksearch_type,
+      refType: createRefToElmWithValue(enums.portlet_quicksearch_type),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see portlet_quicksearch_type.   The default value is 'GENERIC'. */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     defaultgeneraltype: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the customrecordtype custom type.   For information about other possible values, see portlet_quicksearch_generic. */
     defaulttransactiontype: {
-      type: enums.portlet_quicksearch_transaction,
+      refType: createRefToElmWithValue(enums.portlet_quicksearch_transaction),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_quicksearch_transaction. */
@@ -481,7 +482,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_recentrecords = new O
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -499,7 +500,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_recentreports = new O
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -517,13 +518,13 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_re
   },
   fields: {
     greaterthanorequalto: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive) */
     color: {
-      type: enums.reminders_highlighting_rules_colors,
+      refType: createRefToElmWithValue(enums.reminders_highlighting_rules_colors),
       annotations: {
       },
     }, /* Original description: For information about possible values, see reminders_highlighting_rules_colors.   The default value is 'YELLOW'. */
@@ -541,7 +542,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_re
   },
   fields: {
     rule: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_rule),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_rule)),
       annotations: {
       },
     },
@@ -559,18 +560,18 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_re
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   reminders_standard_reminders_without_days   reminders_standard_reminders_with_days */
     days: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
       },
     }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive)   This field is available when the id value is present in reminders_standard_reminders_with_days.   The default value is '5'. */
     highlightingrules: {
-      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules),
       annotations: {
       },
     },
@@ -588,7 +589,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline = 
   },
   fields: {
     reminder: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder)),
       annotations: {
       },
     },
@@ -606,13 +607,13 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_remin
   },
   fields: {
     greaterthanorequalto: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive) */
     color: {
-      type: enums.reminders_highlighting_rules_colors,
+      refType: createRefToElmWithValue(enums.reminders_highlighting_rules_colors),
       annotations: {
       },
     }, /* Original description: For information about possible values, see reminders_highlighting_rules_colors.   The default value is 'YELLOW'. */
@@ -630,7 +631,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_remin
   },
   fields: {
     rule: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules_rule),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules_rule)),
       annotations: {
       },
     },
@@ -648,18 +649,18 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_remin
   },
   fields: {
     id: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   reminders_standard_reminders_without_days   reminders_standard_reminders_with_days */
     days: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
       },
     }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive)   This field is available when the id value is present in reminders_standard_reminders_with_days.   The default value is '5'. */
     highlightingrules: {
-      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules),
       annotations: {
       },
     },
@@ -677,7 +678,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other = new
   },
   fields: {
     reminder: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder)),
       annotations: {
       },
     },
@@ -695,22 +696,22 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders = new Objec
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showzeroresults: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     headline: {
-      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline),
       annotations: {
       },
     },
     other: {
-      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_other,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other),
       annotations: {
       },
     },
@@ -728,7 +729,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_scheduler = new Objec
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -746,13 +747,13 @@ const publisheddashboard_dashboards_dashboard_centercolumn_searchform = new Obje
   },
   fields: {
     savedsearch: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -770,7 +771,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_settings = new Object
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -788,7 +789,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_shortcuts = new Objec
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -806,7 +807,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_tasklinks = new Objec
   },
   fields: {
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -824,65 +825,65 @@ const publisheddashboard_dashboards_dashboard_centercolumn_trendgraph = new Obje
   },
   fields: {
     kpi: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see the following lists:   snapshot_type_trendgraph   snapshot_type_custom */
     trendtype: {
-      type: enums.portlet_trendgraph_trendtype,
+      refType: createRefToElmWithValue(enums.portlet_trendgraph_trendtype),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see portlet_trendgraph_trendtype. */
     movingaverageperiod: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from 1 through 10. (inclusive)   The default value is '2'. */
     savedsearch: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field is available when the kpi value is present in snapshot_type_custom.   This field is mandatory when the kpi value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
     isminimized: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     backgroundtype: {
-      type: enums.portlet_trendgraph_backgroundtype,
+      refType: createRefToElmWithValue(enums.portlet_trendgraph_backgroundtype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_trendgraph_backgroundtype.   The default value is 'GLOBAL_BACKGROUND'. */
     charttheme: {
-      type: enums.portlet_trendgraph_charttheme,
+      refType: createRefToElmWithValue(enums.portlet_trendgraph_charttheme),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_trendgraph_charttheme.   The default value is 'GLOBAL_THEME'. */
     customseriescolor: {
-      type: BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */),
       annotations: {
       },
     },
     defaultcharttype: {
-      type: enums.portlet_trendgraph_charttype,
+      refType: createRefToElmWithValue(enums.portlet_trendgraph_charttype),
       annotations: {
       },
     }, /* Original description: For information about possible values, see portlet_trendgraph_charttype.   The default value is 'AREA'. */
     includezeroonyaxis: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showmovingaverage: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showlastdatapoint: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -900,92 +901,92 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
   },
   fields: {
     analytics: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_analytics),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_analytics)),
       annotations: {
       },
     },
     calendar: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_calendar),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_calendar)),
       annotations: {
       },
     },
     customportlet: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet)),
       annotations: {
       },
     },
     customsearch: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customsearch),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customsearch)),
       annotations: {
       },
     },
     keyperformanceindicators: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators)),
       annotations: {
       },
     },
     kpimeter: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpimeter),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpimeter)),
       annotations: {
       },
     },
     kpireport: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpireport),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpireport)),
       annotations: {
       },
     },
     list: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list)),
       annotations: {
       },
     },
     quicksearch: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_quicksearch),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_quicksearch)),
       annotations: {
       },
     },
     recentrecords: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentrecords),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentrecords)),
       annotations: {
       },
     },
     recentreports: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentreports),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentreports)),
       annotations: {
       },
     },
     reminders: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders)),
       annotations: {
       },
     },
     scheduler: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_scheduler),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_scheduler)),
       annotations: {
       },
     },
     searchform: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_searchform),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_searchform)),
       annotations: {
       },
     },
     settings: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_settings),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_settings)),
       annotations: {
       },
     },
     shortcuts: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_shortcuts),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_shortcuts)),
       annotations: {
       },
     },
     tasklinks: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_tasklinks),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_tasklinks)),
       annotations: {
       },
     },
     trendgraph: {
-      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_trendgraph),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_trendgraph)),
       annotations: {
       },
     },
@@ -1031,35 +1032,35 @@ const publisheddashboard_dashboards_dashboard = new ObjectType({
   },
   fields: {
     centertab: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the centertab custom type.   For information about other possible values, see generic_centertab. */
     mode: {
-      type: enums.dashboard_mode,
+      refType: createRefToElmWithValue(enums.dashboard_mode),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see dashboard_mode.   The default value is 'UNLOCKED'. */
     layout: {
-      type: enums.dashboard_layout,
+      refType: createRefToElmWithValue(enums.dashboard_layout),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see dashboard_layout.   The default value is 'TWO_COLUMN'. */
     centercolumn: {
-      type: publisheddashboard_dashboards_dashboard_centercolumn,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_centercolumn),
       annotations: {
       },
     },
     leftcolumn: {
-      type: publisheddashboard_dashboards_dashboard_leftcolumn,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_leftcolumn),
       annotations: {
       },
     },
     rightcolumn: {
-      type: publisheddashboard_dashboards_dashboard_rightcolumn,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_rightcolumn),
       annotations: {
       },
     },
@@ -1077,7 +1078,7 @@ const publisheddashboard_dashboards = new ObjectType({
   },
   fields: {
     dashboard: {
-      type: new ListType(publisheddashboard_dashboards_dashboard),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard)),
       annotations: {
       },
     },
@@ -1095,7 +1096,7 @@ const publisheddashboard_roles_role = new ObjectType({
   },
   fields: {
     role: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -1114,7 +1115,7 @@ const publisheddashboard_roles = new ObjectType({
   },
   fields: {
     role: {
-      type: new ListType(publisheddashboard_roles_role),
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_roles_role)),
       annotations: {
       },
     },
@@ -1131,7 +1132,7 @@ export const publisheddashboard = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -1139,41 +1140,41 @@ export const publisheddashboard = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpubdashboard’. */
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
     }, /* Original description: This field value can be up to 30 characters long. */
     center: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see role_centertype. */
     lockshortcuts: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     locknewbar: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     notes: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 4000,
       },
     }, /* Original description: This field value can be up to 4000 characters long. */
     dashboards: {
-      type: publisheddashboard_dashboards,
+      refType: createRefToElmWithValue(publisheddashboard_dashboards),
       annotations: {
       },
     },
     roles: {
-      type: publisheddashboard_roles,
+      refType: createRefToElmWithValue(publisheddashboard_roles),
       annotations: {
       },
     },

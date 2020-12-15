@@ -36,7 +36,7 @@ const castAndOrderListsRecursively = (
 ): void => {
   // Cast all values of list type to list and order lists according to unorderedListFields
   const castAndOrderLists = (field: Field, value: Value): Value => {
-    if (!isListType(field.type)) {
+    if (!isListType(field.getType())) {
       return value
     }
     if (!_.isArray(value)) {

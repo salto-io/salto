@@ -99,7 +99,7 @@ export const getField = (
   getFieldAndPath(baseType, pathParts)?.field
 )
 
-const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
+export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
   TypeElement | undefined => {
   const getFieldInternalType = (
     fieldType: TypeElement,

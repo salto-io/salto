@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { validateDependsOnInvalidElement } from '../../src/change_validators/dependencies'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'

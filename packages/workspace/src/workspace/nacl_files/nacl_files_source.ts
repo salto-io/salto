@@ -22,6 +22,7 @@ import {
   isVariable,
   Change,
   isEqualElements,
+  toChange,
 } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
@@ -200,20 +201,44 @@ export const calcChanges = (
 ): Change<Element>[] => fullNames.map(fullName => {
   const before = currentElements[fullName]
   const after = newElements[fullName]
-  // Addition
-  if (_.isUndefined(before) && !_.isUndefined(after)) {
-    return { action: 'add', data: { after } }
+  if (before === undefined && after === undefined) {
+    return undefined
   }
-  // Removal
-  if (!_.isUndefined(before) && _.isUndefined(after)) {
-    return { action: 'remove', data: { before } }
-  }
-  // Modification
-  if ((!_.isUndefined(before) && !_.isUndefined(after)) && !isEqualElements(before, after)) {
-    return { action: 'modify', data: { before, after } }
-  }
-  return undefined
+  const change = toChange({ before, after })
+  return isEqualElements(before, after) ? undefined : change
 }).filter(c => !_.isUndefined(c)) as Change[]
+
+export const calcNewMerged = <T extends MergeError | Element>(
+  currentMergeErrors: T[], newMergeErrors: T[], relevantElementIDs: Set<string>
+): T[] => currentMergeErrors
+    .filter(e =>
+      !relevantElementIDs.has(e.elemID.createTopLevelParentID().parent.getFullName()))
+    .concat(newMergeErrors)
+
+export const buildNewMergedElementsAndErrors = ({
+  newElements, currentElements = {}, currentMergeErrors = [], relevantElementIDs,
+}: {
+  newElements: Element[]
+  currentElements?: Record<string, Element>
+  currentMergeErrors?: MergeError[]
+  relevantElementIDs: string[]
+}): {
+  mergedElements: Record<string, Element>
+  mergeErrors: MergeError[]
+  changes: Change<Element>[]
+} => {
+  const currentMergedElementsWithoutRelevants = _.omit(currentElements, relevantElementIDs)
+  const newMergedElementsResult = mergeElements(newElements, currentMergedElementsWithoutRelevants)
+  const mergeErrors = calcNewMerged(
+    currentMergeErrors, newMergedElementsResult.errors, new Set(relevantElementIDs)
+  )
+  const mergedElements = {
+    ...currentMergedElementsWithoutRelevants,
+    ..._.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName()),
+  }
+  const changes = calcChanges(relevantElementIDs, currentElements, mergedElements)
+  return { mergeErrors, mergedElements, changes }
+}
 
 const buildNaclFilesState = (
   newNaclFiles: ParsedNaclFile[], currentState?: NaclFilesState
@@ -241,37 +266,39 @@ const buildNaclFilesState = (
   const newNaclFilesElements = newNaclFiles.flatMap(naclFile => naclFile.elements)
   const currentElementsOfNewFiles = newNaclFiles
     .map(naclFile => naclFile.filename)
-    .flatMap(filename => ((current ?? {})[filename]?.elements) ?? [])
-  const relevantElementsIDs = _.uniq([...newNaclFilesElements, ...currentElementsOfNewFiles]
-    .map(e => e.elemID.getFullName()))
-  const newElementsToMerge = relevantElementsIDs
-    .flatMap(fullName => Array.from(elementsIndex[fullName] ?? [])
-      .flatMap(name => allParsed[name].elements.filter(e => e.elemID.getFullName() === fullName)))
-
-  const newMergedElementsResult = mergeElements(
-    newElementsToMerge, currentState?.mergedElements ?? {}
+    .flatMap(filename => current?.[filename]?.elements ?? [])
+  const relevantElementIDs = _.uniq(
+    [...newNaclFilesElements, ...currentElementsOfNewFiles]
+      .map(e => e.elemID.getFullName())
   )
-  const mergeErrors = (currentState?.mergeErrors ?? [])
-    .filter(e => !relevantElementsIDs.includes(e.elemID.getFullName()))
-    .concat(newMergedElementsResult.errors)
-  const newMergedElements = _.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName())
-  const currentMergedElements = currentState?.mergedElements ?? {}
-  const mergedElements = {
-    ..._.omit(currentMergedElements, relevantElementsIDs),
-    ...newMergedElements,
-  }
-  const changes = calcChanges(relevantElementsIDs, currentMergedElements, mergedElements)
+
+  const relevantFilesToElementsIDs = _.fromPairs(
+    relevantElementIDs
+      .flatMap(fullName => Array.from(elementsIndex[fullName] ?? []))
+      .map(fileName =>
+        [fileName, _.groupBy(allParsed[fileName].elements, e => e.elemID.getFullName())])
+  )
+  const newElementsToMerge = relevantElementIDs
+    .flatMap(fullName => (Array.from(elementsIndex[fullName] ?? [])
+      .flatMap(fileName => relevantFilesToElementsIDs[fileName][fullName] ?? [])
+    ))
   log.info('workspace has %d elements and %d parsed NaCl files',
     _.size(elementsIndex), _.size(allParsed))
+  const mergedResult = buildNewMergedElementsAndErrors({
+    newElements: newElementsToMerge,
+    relevantElementIDs,
+    currentElements: currentState?.mergedElements,
+    currentMergeErrors: currentState?.mergeErrors,
+  })
   return {
     state: {
       parsedNaclFiles: allParsed,
-      mergedElements,
-      mergeErrors,
+      mergedElements: mergedResult.mergedElements,
+      mergeErrors: mergedResult.mergeErrors,
       elementsIndex: _.mapValues(elementsIndex, val => Array.from(val)),
       referencedIndex: _.mapValues(referencedIndex, val => Array.from(val)),
     },
-    changes,
+    changes: mergedResult.changes,
   }
 }
 
@@ -461,7 +488,6 @@ const buildNaclFilesSource = (
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       await setNaclFiles(...updatedNaclFiles)
       const res = buildNaclFilesState(updatedNaclFiles, await getState())
-      // TODO: that hack looks bad - fix it
       state = Promise.resolve(res.state)
       return res.changes
     }
@@ -580,6 +606,9 @@ export const naclFilesSource = (
     ? buildNaclFilesState(parsedFiles, undefined).state
     : undefined
   return buildNaclFilesSource(
-    naclFilesStore, cache, staticFileSource, state ? Promise.resolve(state) : undefined
+    naclFilesStore,
+    cache,
+    staticFileSource,
+    state !== undefined ? Promise.resolve(state) : undefined,
   )
 }

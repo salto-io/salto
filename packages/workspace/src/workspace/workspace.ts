@@ -21,12 +21,12 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import { resolvePath } from '@salto-io/adapter-utils'
+import { resolvePath } from '@salto-io/adapter-utils' .
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile, calcNewMerged } from './nacl_files/nacl_files_source'
 import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError,
@@ -34,7 +34,7 @@ import { Errors, ServiceDuplicationError, EnvDuplicationError,
 import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
-import { MergeResult, MergeError } from '../merger'
+import { MergeResult } from '../merger'
 
 const log = logger(module)
 
@@ -67,11 +67,6 @@ export type WorkspaceComponents = {
   staticResources: boolean
   credentials: boolean
   serviceConfig: boolean
-}
-
-type WorkspaceState = {
-  elements: Element[]
-  mergeErrors: MergeError[]
 }
 
 export type Workspace = {
@@ -162,52 +157,42 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   const buildWorkspaceState = async ({
     currentState, changes = [], env,
   }: {
-    currentState?: WorkspaceState
+    currentState?: MergeResult
     changes?: Change<Element>[]
     env?: string
-  }): Promise<WorkspaceState> => {
-    if (_.isUndefined(currentState) || (env && env !== currentEnv())) {
+  }): Promise<MergeResult> => {
+    if (_.isUndefined(currentState) || (env !== undefined && env !== currentEnv())) {
       const visibleElements = await naclFilesSource.getAll(env)
       const stateElements = await state(env).getAll()
-      const { merged, errors: mergeErrors } = mergeWithHidden(visibleElements, stateElements)
-      return { elements: merged, mergeErrors }
+      return mergeWithHidden(visibleElements, stateElements)
     }
-    const changedElements = changes.map(getChangeElement).map(e => e.elemID.getFullName())
+    const changedElementIDs = new Set(
+      changes.map(getChangeElement).map(e => e.elemID.getFullName())
+    )
     const newElements = changes.filter(isAdditionOrModificationChange).map(getChangeElement)
     const mergeRes = mergeWithHidden(
       newElements,
-      (await Promise.all(newElements.map(e => state().get(e.elemID))))
-        .filter(e => !_.isUndefined(e))
+      (await Promise.all(newElements.map(e => state().get(e.elemID)))).filter(values.isDefined)
     )
-    const mergedElements = currentState.elements
-      .filter(e => !changedElements.includes(e.elemID.getFullName()))
-      .concat(mergeRes.merged)
-    const mergedErrors = currentState.mergeErrors
-      .filter(e =>
-        !changedElements.includes(e.elemID.createTopLevelParentID().parent.getFullName()))
-      .concat(mergeRes.errors)
-    // TODO: change set, update and remove to build the state
-    // TODO: create a getState function
-    return { elements: mergedElements, mergeErrors: mergedErrors }
+    return {
+      merged: calcNewMerged(currentState.merged, mergeRes.merged, changedElementIDs),
+      errors: calcNewMerged(currentState.errors, mergeRes.errors, changedElementIDs),
+    }
   }
 
-  let workspaceState: Promise<WorkspaceState> | undefined
-  const getState = (): Promise<WorkspaceState> => {
+  let workspaceState: Promise<MergeResult> | undefined
+  const getWorkspaceState = (): Promise<MergeResult> => {
     if (_.isUndefined(workspaceState)) {
       workspaceState = buildWorkspaceState({})
     }
     return workspaceState
   }
 
-  const wsStateToMergeResult = (wsState: WorkspaceState): MergeResult => ({
-    merged: wsState.elements, errors: wsState.mergeErrors,
-  })
-
   const elements = async (env?: string): Promise<MergeResult> => {
     if (env && env !== currentEnv()) {
-      return wsStateToMergeResult(await buildWorkspaceState({ env }))
+      return buildWorkspaceState({ env })
     }
-    return wsStateToMergeResult(await getState())
+    return getWorkspaceState()
   }
 
   const updateNaclFiles = async (
@@ -219,21 +204,21 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )
     const elementChanges = await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
     workspaceState = buildWorkspaceState(
-      { currentState: await getState(), changes: elementChanges }
+      { currentState: await getWorkspaceState(), changes: elementChanges }
     )
   }
 
   const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<void> => {
     const elementChanges = await naclFilesSource.setNaclFiles(...naclFiles)
     workspaceState = buildWorkspaceState(
-      { currentState: await getState(), changes: elementChanges }
+      { currentState: await getWorkspaceState(), changes: elementChanges }
     )
   }
 
   const removeNaclFiles = async (...names: string[]): Promise<void> => {
     const elementChanges = await naclFilesSource.removeNaclFiles(...names)
     workspaceState = buildWorkspaceState(
-      { currentState: await getState(), changes: elementChanges }
+      { currentState: await getWorkspaceState(), changes: elementChanges }
     )
   }
 

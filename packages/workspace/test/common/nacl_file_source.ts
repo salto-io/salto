@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Element } from '@salto-io/adapter-api'
+import { ElemID, Element, Change } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -25,7 +25,8 @@ export const createMockNaclFileSource = (
   elements: Element[],
   naclFiles: Record<string, Element[]> = {},
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
-  sourceRanges?: SourceRange[]
+  sourceRanges?: SourceRange[],
+  changes: Change<Element>[] = [],
 ): NaclFilesSource => ({
   list: async () => elements.map(e => e.elemID),
   isEmpty: async () => elements.length === 0,
@@ -38,14 +39,14 @@ export const createMockNaclFileSource = (
   clear: jest.fn().mockImplementation(() => Promise.resolve()),
   rename: jest.fn().mockImplementation(() => Promise.resolve()),
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
-  updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([])),
+  updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(changes)),
   listNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(_.keys(naclFiles))),
   getTotalSize: jest.fn().mockImplementation(() => Promise.resolve(5)),
   getNaclFile: jest.fn().mockImplementation(
     (filename: string) => Promise.resolve(naclFiles[filename] ? { filename, buffer: '' } : undefined)
   ),
-  setNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([])),
-  removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([])),
+  setNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(changes)),
+  removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(changes)),
   getSourceMap: jest.fn().mockImplementation(() => Promise.resolve(new Map())),
   getSourceRanges: jest.fn().mockImplementation(async elemID => sourceRanges
     || _.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(

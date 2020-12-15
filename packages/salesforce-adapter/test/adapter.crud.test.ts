@@ -1017,9 +1017,9 @@ describe('SalesforceAdapter CRUD', () => {
           expect(deployedValues).toBeDefined()
           const updatedObj = deployedValues.CustomObject
           expect(updatedObj.label).toEqual('test2 label')
-          // It should deploy all fields when there is an annotation change
-          expect(updatedObj.fields).toHaveLength(2)
-          const [newField] = updatedObj.fields
+          // It should not deploy all fields when the sharingModel is not ControlledByParent
+          expect(Array.isArray(updatedObj.fields)).toBeFalsy()
+          const newField = updatedObj.fields
           expect(newField.fullName).toEqual('address__c')
           expect(newField.type).toEqual('Text')
           expect(newField.label).toEqual('test2 label')

@@ -248,12 +248,16 @@ export class CustomField implements MetadataInfo {
   }
 }
 
+type SharingModelEnum = 'Private' | 'Read' | 'ReadSelect'
+  | 'ReadWrite' | 'ReadWriteTransfer' | 'FullAccess' | 'ControlledByParent'
+  | 'ControlledByLeadOrContact' | 'ControlledByCampaign'
+
 export type CustomObject = MetadataInfo & {
   label: string
   fields?: CustomField | CustomField[]
   pluralLabel?: string
   deploymentStatus?: string
-  sharingModel?: string
+  sharingModel?: SharingModelEnum
   nameField?: Partial<CustomField>
 }
 

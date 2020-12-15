@@ -1543,10 +1543,17 @@ describe('Custom Objects filter', () => {
             annotations: { [API_NAME]: 'Test__c.SysField' },
           },
         },
+        annotationTypes: {
+          [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
+          [LABEL]: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+        },
         annotations: {
           [METADATA_TYPE]: CUSTOM_OBJECT,
           [API_NAME]: 'Test__c',
           [LABEL]: 'TestObject',
+          sharingModel: 'ControlledByParent',
         },
       })
       parentAnnotation = { [CORE_ANNOTATIONS.PARENT]: [testObject] }
@@ -1650,10 +1657,11 @@ describe('Custom Objects filter', () => {
         beforeAll(async () => {
           await filter.preDeploy(changes)
         })
-        it('should create a custom object instance change with all fields and annotations', () => {
+        it('should create a custom object instance change with annotations and master-detail fields', () => {
           expect(changes).toHaveLength(1)
           const { before, after } = changes[0].data as ModificationChange<InstanceElement>['data']
-          expect(after.value.fields).toHaveLength(Object.keys(testObject.fields).length)
+          expect(after.value.fields).toHaveLength(1)
+          expect(after.value.fields[0].type).toEqual('MasterDetail')
           expect(after.value[LABEL]).toEqual('New Label')
           expect(before.value[LABEL]).toEqual('TestObject')
         })

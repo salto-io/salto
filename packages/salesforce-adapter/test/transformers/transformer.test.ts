@@ -1585,7 +1585,7 @@ describe('transformer', () => {
       const mockBusinessHoursInstance = new InstanceElement('BusinessHours', mockBusinessHoursSettingsType)
       const testField = new Field(mockEntitlementProcessType, 'businessHours', BuiltinTypes.STRING)
       const mockDefaultElemId = new ElemID(SALESFORCE, BUSINESS_HOURS_METADATA_TYPE, 'instance', 'Default')
-      it('should resolve with map strategy', () => {
+      it('should resolve with mapKey strategy', () => {
         expect(getLookUpName({
           ref: new ReferenceExpression(
             mockDefaultElemId,

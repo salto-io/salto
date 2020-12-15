@@ -17,8 +17,7 @@ import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { metadataTypeToFieldToMapDef } from '../filters/convert_maps'
-import { apiName, metadataType } from './transformer'
+import { apiName } from './transformer'
 import {
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_OBJECT, API_NAME_SEPARATOR,
   WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_QUERY, CPQ_PRICE_RULE,
@@ -43,7 +42,7 @@ export type ReferenceSerializationStrategy = {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
- | 'map'
+ | 'mapKey'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -84,23 +83,8 @@ const ReferenceSerializationStrategyLookup: Record<
       )
     },
   },
-  map: {
-    serialize: ({ ref, field }) => {
-      // ref.value is a value in a map
-      if (ref.topLevelParent !== undefined) {
-        const type = metadataType(ref.topLevelParent)
-        if (metadataTypeToFieldToMapDef[type] !== undefined
-           && field !== undefined
-           && metadataTypeToFieldToMapDef[type][field.name] !== undefined) {
-          const { key } = metadataTypeToFieldToMapDef[type][field.name]
-          // key is a field of ref.value which is also the key of ref.value in the map
-          if (ref.value[key] !== undefined) {
-            return ref.value[key]
-          }
-        }
-      }
-      throw new Error(`Failed serializing a reference to a map value in field: ${field?.name}`)
-    },
+  mapKey: {
+    serialize: ({ ref }) => ref.elemId.name,
     lookup: val => val,
   },
 }
@@ -197,7 +181,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'businessHours', parentTypes: ['EntitlementProcess'] },
     target: { type: 'BusinessHoursEntry' },
-    serializationStrategy: 'map',
+    serializationStrategy: 'mapKey',
   },
   {
     src: { field: 'businessProcess', parentTypes: [RECORD_TYPE_METADATA_TYPE] },

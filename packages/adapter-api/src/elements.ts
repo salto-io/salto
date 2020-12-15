@@ -141,13 +141,14 @@ abstract class PlaceholderTypeElement extends Element {
 }
 
 export class ListType extends Element {
+  public refInnerType: ReferenceExpression
   public constructor(
-   public innerType: TypeElement
+    innerTypeOrRefInnerType: TypeElement | ReferenceExpression
   ) {
     super({
       elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
     })
-    this.setInnerType(innerType)
+    this.setInnerType(innerTypeOrRefInnerType)
   }
 
   isEqual(other: ListType): boolean {
@@ -161,11 +162,16 @@ export class ListType extends Element {
     )
   }
 
-  setInnerType(innerType: TypeElement): void {
-    if (innerType.elemID.isEqual(this.innerType.elemID)) {
-      this.innerType = innerType
-      this.annotations = innerType.annotations
-      this.annotationTypes = innerType.annotationTypes
+  setRefInnerType(innerTypeOrRefInnerType: TypeElement | ReferenceExpression): void {
+    if (innerType.elemID.isEqual(this.refInnerType.elemID)) {
+      this.refInnerType = innerTypeOrRefInnerType
+      const innerType = isType(innerTypeOrRefInnerType)
+        ? innerTypeOrRefInnerType
+        : innerTypeOrRefInnerType.value()
+      if (innerType !== undefined) {
+        this.annotations = innerType.annotations
+        this.annotationTypes = innerType.annotationTypes
+      }
     } else {
       throw new Error('Inner type id does not match ListType id')
     }

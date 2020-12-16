@@ -16,7 +16,8 @@
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse, Values,
+  InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
+  Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import SalesforceClient, { validateCredentials } from './client/client'
@@ -27,6 +28,7 @@ import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
   Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName } from './types'
+import { getElementUrl } from './elements_url_retreiver/elements_url_retreiver'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -154,4 +156,5 @@ export const adapter: Adapter = {
     changeValidator,
     getChangeGroupIds,
   },
+  getElementUrl,
 }

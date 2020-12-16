@@ -22,6 +22,7 @@ import { Change } from './change'
 import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
+import { Value } from './values'
 
 export interface FetchResult {
   elements: Element[]
@@ -69,6 +70,8 @@ export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureI
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
   result is AdapterSuccessInstallResult => result.success
 
+export type ElementIDResolver = (id: ElemID) => Promise<Value | undefined>
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
@@ -80,6 +83,7 @@ export type Adapter = {
     getChangeGroupIds?: ChangeGroupIdFunction
   }
   install?: () => Promise<AdapterInstallResult>
+  getElementUrl?: (id: ElemID, elementIDResolver: ElementIDResolver) => Promise<URL | undefined>
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

@@ -16,10 +16,11 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values } from '@salto-io/lowerdash'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -119,6 +120,7 @@ export type Workspace = {
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
+  getValue(id: ElemID): Promise<Value | undefined>
 }
 
 // common source has no state
@@ -407,6 +409,30 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         return 'Valid'
       })()
       return { serviceName, status, date }
+    },
+    getValue: async (id: ElemID): Promise<Value | undefined> => {
+      const topLevelID = id.createTopLevelParentID().parent
+
+      const workspaceElement = await naclFilesSource.get(topLevelID)
+      const stateElement = await state().get(topLevelID)
+
+      if (workspaceElement === undefined && stateElement === undefined) {
+        log.debug('ElemID not found %s', id.getFullName())
+        return undefined
+      }
+
+      const mergeResults = mergeWithHidden([workspaceElement].filter(values.isDefined),
+        [stateElement].filter(values.isDefined))
+
+      if (mergeResults.errors.length !== 0) {
+        log.error('Failed to merge elements with errors: %o', mergeResults.errors)
+        return undefined
+      }
+      if (mergeResults.merged.length !== 1) {
+        log.debug('Got %d merge results when expected to get one', mergeResults.merged.length)
+        return undefined
+      }
+      return resolvePath(mergeResults.merged[0], id)
     },
   }
 }

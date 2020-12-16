@@ -13,15 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType, OAuthMethod } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, OAuthMethod, ElementIDResolver } from '@salto-io/adapter-api'
+import { INTERNAL_ACCOUNT_INFO } from '../src/instance_url'
 import { adapter } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType } from '../src/types'
-import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { INTERNAL_ID_FIELD, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
+
 
 describe('SalesforceAdapter creator', () => {
   const credentials = new InstanceElement(
@@ -350,6 +352,171 @@ describe('SalesforceAdapter creator', () => {
 
     it('should not throw an error when no config is passed', () => {
       expect(() => adapter.operations({ credentials })).not.toThrow()
+    })
+  })
+
+  describe('getElementUrl', () => {
+    const internalAccountInfoElement = new InstanceElement(
+      'name',
+      new ObjectType({ elemID: new ElemID('salesforce', 'someTypeName') }),
+      { instanceUrl: 'https://url.my.salesforce.com' },
+    )
+    const lightiningUrl = new URL('https://url.lightning.force.com/lightning/setup/SetupOneHome/home')
+
+    const expectedInternalAccountInfoID = new ElemID('salesforce', INTERNAL_ACCOUNT_INFO, 'instance')
+    const requestedElementID = new ElemID('salesforce', 'testObj__c')
+
+    describe('when there is no internal account info element', () => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
+        if (id.isEqual(expectedInternalAccountInfoID)) {
+          return undefined
+        }
+
+        throw new Error(`Unexpected element id: ${id}`)
+      }
+
+      it('should return undefined', async () => {
+        expect(adapter.getElementUrl).toBeDefined()
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
+            .toBeUndefined()
+        }
+      })
+    })
+
+    describe('when there is no instanceUrl in the internal account info element', () => {
+      const invalidSettingsElement = internalAccountInfoElement.clone()
+      invalidSettingsElement.value = {}
+
+      const mockElementIDResolver: ElementIDResolver = async id => {
+        if (id.isEqual(expectedInternalAccountInfoID)) {
+          return invalidSettingsElement
+        }
+
+        throw new Error(`Unexpected element id: ${id}`)
+      }
+
+      it('should return undefined', async () => {
+        expect(adapter.getElementUrl).toBeDefined()
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
+            .toBeUndefined()
+        }
+      })
+    })
+
+    describe('when instanceUrl in the internal account info element is invalid', () => {
+      const invalidSettingsElement = internalAccountInfoElement.clone()
+      invalidSettingsElement.value.instanceUrl = 'invalidUrl'
+
+      const mockElementIDResolver: ElementIDResolver = async id => {
+        if (id.isEqual(expectedInternalAccountInfoID)) {
+          return invalidSettingsElement
+        }
+
+        throw new Error(`Unexpected element id: ${id}`)
+      }
+
+      it('should return undefined', async () => {
+        expect(adapter.getElementUrl).toBeDefined()
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
+            .toBeUndefined()
+        }
+      })
+    })
+
+    describe('when instanceUrl in the internal account info element is not in the expected format', () => {
+      const invalidSettingsElement = internalAccountInfoElement.clone()
+      invalidSettingsElement.value.instanceUrl = 'https://google.com'
+
+      const mockElementIDResolver: ElementIDResolver = async id => {
+        if (id.isEqual(expectedInternalAccountInfoID)) {
+          return invalidSettingsElement
+        }
+
+        throw new Error(`Unexpected element id: ${id}`)
+      }
+
+      it('should return undefined', async () => {
+        expect(adapter.getElementUrl).toBeDefined()
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
+            .toBeUndefined()
+        }
+      })
+    })
+
+    describe('when requested element does not exists', () => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
+        if (id.isEqual(expectedInternalAccountInfoID)) {
+          return internalAccountInfoElement
+        }
+
+        if (id.isEqual(requestedElementID)) {
+          return undefined
+        }
+
+        throw new Error(`Unexpected element id: ${id}`)
+      }
+
+      it('should return base lightining url', async () => {
+        expect(adapter.getElementUrl).toBeDefined()
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
+            .toEqual(lightiningUrl)
+        }
+      })
+    })
+
+    describe('when urlRetreiver failed to convert element', () => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
+        if (id.isEqual(expectedInternalAccountInfoID)) {
+          return internalAccountInfoElement
+        }
+
+        if (id.isEqual(requestedElementID)) {
+          return new ObjectType({ elemID: new ElemID('salesforce', 'unkown') })
+        }
+
+        throw new Error(`Unexpected element id: ${id}`)
+      }
+
+      it('should return base lightining url', async () => {
+        expect(adapter.getElementUrl).toBeDefined()
+        if (adapter.getElementUrl !== undefined) {
+          expect(await adapter.getElementUrl(requestedElementID, mockElementIDResolver))
+            .toEqual(lightiningUrl)
+        }
+      })
+    })
+
+    describe('when a valid element id is received', () => {
+      const mockElementIDResolver: ElementIDResolver = async id => {
+        if (id.isEqual(expectedInternalAccountInfoID)) {
+          return internalAccountInfoElement
+        }
+
+        if (id.isEqual(requestedElementID)) {
+          return new ObjectType({
+            elemID: requestedElementID,
+            annotations: {
+              [INTERNAL_ID_FIELD]: 'aaaaaa',
+            },
+          })
+        }
+
+        throw new Error(`Unexpected element id: ${id}`)
+      }
+
+      it('should return the correct url', async () => {
+        expect(adapter.getElementUrl).toBeDefined()
+        if (adapter.getElementUrl !== undefined) {
+          const url = await adapter.getElementUrl(requestedElementID, mockElementIDResolver)
+          expect(url).toBeDefined()
+          expect(url).not.toBe(lightiningUrl)
+        }
+      })
     })
   })
 })

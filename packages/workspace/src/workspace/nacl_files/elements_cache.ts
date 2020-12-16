@@ -15,8 +15,11 @@
 */
 import _ from 'lodash'
 import { Element, Change, isEqualElements, toChange, isType } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { mergeElements, MergeError, updateMergedTypes } from '../../merger'
+
+const log = logger(module)
 
 const calcChanges = (
   fullNames: string[],
@@ -51,6 +54,8 @@ export const buildNewMergedElementsAndErrors = ({
   mergeErrors: MergeError[]
   changes: Change<Element>[]
 } => {
+  log.info('going to merge %d new elements to the existing %d elements',
+    newElements.length, Object.keys(currentElements))
   const currentMergedElementsWithoutRelevants = _.omit(currentElements, relevantElementIDs)
   const newMergedElementsResult = mergeElements(newElements, currentMergedElementsWithoutRelevants)
   const mergeErrors = calcNewMerged(
@@ -65,5 +70,6 @@ export const buildNewMergedElementsAndErrors = ({
     elements, _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
   ), e => e.elemID.getFullName())
   const changes = calcChanges(relevantElementIDs, currentElements, mergedElementsUpdated)
+  log.info('%d changes resulted from the merge', changes.length)
   return { mergeErrors, mergedElements: mergedElementsUpdated, changes }
 }

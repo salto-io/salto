@@ -26,7 +26,7 @@ import { Consumer, ParseContext, ConsumerReturnType } from '../types'
 import { createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher,
   registerRange, positionAtStart, positionAtEnd } from '../helpers'
 import { TOKEN_TYPES, LexerToken, TRUE } from '../lexer'
-import { missingComma, unknownFunction, unterminatedString, invalidStringTemplate, missingValue, invalidAttrKey, missingEqualMark, duplicatedAttribute, missingNewline } from '../errors'
+import { missingComma, unknownFunction, unterminatedString, invalidStringTemplate, missingValue, invalidAttrKey, missingEqualMark, duplicatedAttribute, missingNewline, invalidStringChar } from '../errors'
 
 import { IllegalReference } from '../../types'
 import lexer from '../../nearly/lexer'
@@ -42,26 +42,49 @@ const consumeWord: Consumer<string> = context => {
 }
 
 const defaultStringTokenTranformFunc = (
+  context: ParseContext,
   token: Required<Token>
-): string => JSON.parse(`"${unescapeTemplateMarker(token.text)}"`)
+): string => {
+  try {
+    return JSON.parse(`"${unescapeTemplateMarker(token.text)}"`)
+  } catch (e) {
+    context.errors.push(invalidStringChar(
+      {
+        start: positionAtStart(token),
+        end: positionAtEnd(token),
+        filename: context.filename,
+      },
+      e.message
+    ))
+    return ''
+  }
+}
 
 const createSimpleStringValue = (
+  context: ParseContext,
   tokens: Required<Token>[],
-  transformFunc: (token: Required<Token>) => string = defaultStringTokenTranformFunc
+  transformFunc: (
+    context: ParseContext,
+    token: Required<Token>
+  ) => string = defaultStringTokenTranformFunc
 ): string => (
-  tokens.map(token => transformFunc(token)).join('')
+  tokens.map(token => transformFunc(context, token)).join('')
 )
 
 const createTemplateExpressions = (
+  context: ParseContext,
   tokens: Required<Token>[],
-  transformFunc: (token: Required<Token>) => string = defaultStringTokenTranformFunc
+  transformFunc: (
+    context: ParseContext,
+    token: Required<Token>
+  ) => string = defaultStringTokenTranformFunc
 ): TemplateExpression => (
   new TemplateExpression({ parts: tokens.map(token => {
     if (token.type === TOKEN_TYPES.REFERENCE) {
       const ref = createReferenceExpresion(token.value)
       return ref instanceof IllegalReference ? token.text : ref
     }
-    return transformFunc(token)
+    return transformFunc(context, token)
   }) })
 )
 
@@ -72,9 +95,13 @@ const trimToken = (token: Required<Token>): Required<Token> => ({
 })
 
 const createStringValue = (
+  context: ParseContext,
   tokens: Required<Token>[],
   trim?: boolean,
-  transformFunc? : (token: Required<Token>) => string
+  transformFunc? : (
+    context: ParseContext,
+    token: Required<Token>
+  ) => string
 ): string|TemplateExpression => {
   const trimmedTokens = trim && tokens.length > 0
     ? [...tokens.slice(0, -1), trimToken(tokens[tokens.length - 1])]
@@ -82,8 +109,8 @@ const createStringValue = (
 
   const simpleString = _.every(trimmedTokens, token => token.type === TOKEN_TYPES.CONTENT)
   return simpleString
-    ? createSimpleStringValue(trimmedTokens, transformFunc)
-    : createTemplateExpressions(trimmedTokens, transformFunc)
+    ? createSimpleStringValue(context, trimmedTokens, transformFunc)
+    : createTemplateExpressions(context, trimmedTokens, transformFunc)
 }
 
 const consumeStringData = (
@@ -143,7 +170,7 @@ const consumeSimpleString = (
         }))
     )
   }
-  const value = createSimpleStringValue(stringData.value)
+  const value = createSimpleStringValue(context, stringData.value)
   return {
     range: stringData.range,
     value,
@@ -154,7 +181,7 @@ const consumeString = (
   context: ParseContext
 ): ConsumerReturnType<string | TemplateExpression> => {
   const stringData = consumeStringData(context)
-  const value = createStringValue(stringData.value)
+  const value = createStringValue(context, stringData.value)
   return {
     value,
     range: stringData.range,
@@ -236,9 +263,10 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
   // Getting the position of the end marker
   const end = positionAtEnd(context.lexer.next())
   const value = createStringValue(
+    context,
     tokens,
     true,
-    t => unescapeTemplateMarker(t.text)
+    (_c, t) => unescapeTemplateMarker(t.text)
   )
   return {
     value,

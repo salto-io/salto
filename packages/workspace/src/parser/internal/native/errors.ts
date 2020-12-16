@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ParseError } from '../../types'
 import { SourceRange } from '../types'
 
@@ -170,3 +171,23 @@ export const missingBlockOpen = (range: SourceRange): ParseError => createError(
   range,
   'Expected {',
 )
+
+export const invalidStringChar = (stringRange: SourceRange, errMsg: string): ParseError => {
+  const errMsgPosition = Number.parseInt(_.last(errMsg.split(' ')) || '', 10)
+  const range = Number.isNaN(errMsgPosition)
+    ? stringRange
+    : {
+      ...stringRange,
+      start: {
+        ...stringRange.start,
+        byte: stringRange.start.byte + errMsgPosition - 1,
+        col: stringRange.start.col + errMsgPosition - 1,
+      },
+      end: {
+        ...stringRange.start,
+        byte: stringRange.start.byte + errMsgPosition,
+        col: stringRange.start.col + errMsgPosition,
+      },
+    }
+  return createError(range, 'Invalid string character')
+}

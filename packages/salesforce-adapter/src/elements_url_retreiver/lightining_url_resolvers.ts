@@ -48,8 +48,8 @@ const SETTINGS_URLS_MAP: Record<string, string> = {
   ApexSettings: 'lightning/setup/ApexSettings/home',
 }
 
-const getTypeIdentifier = (element: Element | undefined): string | undefined =>
-  (element === undefined ? undefined : (getInternalId(element) ?? apiName(element, true)))
+const getTypeIdentifier = (element?: Element): string | undefined =>
+  (element === undefined ? undefined : (getInternalId(element) ?? apiName(element)))
 
 const getFieldIdentifier = (element: Field): string =>
   (getInternalId(element) ?? element.annotations.relationshipName ?? apiName(element, true))
@@ -70,8 +70,8 @@ const settingsConstantsResolver: UrlResolver = async (element, baseUrl) => {
 
 const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
   if (isInstanceOfType('AssignmentRules')(element)
-    && ['Lead', 'Case'].includes(apiName(element, true))) {
-    return new URL(`${baseUrl}lightning/setup/${apiName(element, true)}Rules/home`)
+    && ['Lead', 'Case'].includes(apiName(element))) {
+    return new URL(`${baseUrl}lightning/setup/${apiName(element)}Rules/home`)
   }
   return undefined
 }
@@ -79,7 +79,7 @@ const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
 const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (isType(element)
-    && apiName(element, true)?.endsWith('__mdt')
+    && apiName(element)?.endsWith('__mdt')
     && internalId !== undefined) {
     return (new URL(`${baseUrl}lightning/setup/CustomMetadata/page?address=%2F${internalId}%3Fsetupid%3DCustomMetadata`))
   }

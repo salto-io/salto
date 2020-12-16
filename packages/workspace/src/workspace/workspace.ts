@@ -417,7 +417,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       const stateElement = await state().get(topLevelID)
 
       if (workspaceElement === undefined && stateElement === undefined) {
-        log.error(`ElemID not found ${id}`)
+        log.debug('ElemID not found %s', id.getFullName())
         return undefined
       }
 
@@ -425,10 +425,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         [stateElement].filter(values.isDefined))
 
       if (mergeResults.errors.length !== 0) {
-        log.error(`Failed to merge elements ${mergeResults.errors}`)
+        log.error('Failed to merge elements with errors: %o', mergeResults.errors)
         return undefined
       }
       if (mergeResults.merged.length !== 1) {
+        log.debug('Number of merge results is different than one: %o', mergeResults.merged)
         return undefined
       }
       return resolvePath(mergeResults.merged[0], id)

@@ -44,7 +44,7 @@ describe('lightiningElementsUrlRetreiver', () => {
     })
 
     it('retreiveBaseUrl returns lightining url', () => {
-      expect(elementUrlRetreiver?.retreiveBaseUrl()).toEqual(new URL('https://salto5-dev-ed.lightning.force.com'))
+      expect(elementUrlRetreiver?.retreiveBaseUrl()).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/SetupOneHome/home'))
     })
     describe('retreiveUrl', () => {
       it('genernalConstantsResolver', async () => {

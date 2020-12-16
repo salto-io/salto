@@ -29,7 +29,7 @@ export const INTERNAL_ACCOUNT_INFO = 'AccountInfo5a2ca8777a7743c3814ec83e3c4f014
 
 export const getInstanceUrl = async (elementIDResolver: ElementIDResolver):
   Promise<URL | undefined> => {
-  const internalAccountInfoElement = await elementIDResolver(new ElemID(constants.SALESFORCE, INTERNAL_ACCOUNT_INFO, 'instance'))
+  const internalAccountInfoElement = await elementIDResolver(new ElemID(constants.SALESFORCE, INTERNAL_ACCOUNT_INFO, 'instance', ElemID.CONFIG_NAME))
 
   if (internalAccountInfoElement === undefined || !isInstanceElement(internalAccountInfoElement)) {
     log.error('Could not found internalAccountInfo element')
@@ -44,7 +44,7 @@ export const getInstanceUrl = async (elementIDResolver: ElementIDResolver):
   try {
     return new URL(url)
   } catch (e) {
-    log.error(`Failed to parse url: ${e}`)
+    log.error('Failed to parse url: %o', e)
     return undefined
   }
 }

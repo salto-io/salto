@@ -13,13 +13,40 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, Element, isField, Field, isInstanceElement, isType, ElementIDResolver, CORE_ANNOTATIONS, isElement } from '@salto-io/adapter-api'
+import { isObjectType, Element, isField, Field, isInstanceElement, isType, ElementIDResolver, CORE_ANNOTATIONS, isElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { getParents } from '@salto-io/adapter-utils'
+import { metadataType } from '../transformers/transformer'
 import { getInternalId } from '../filters/utils'
-import { GENERAL_URLS_MAP, SETTINGS_URLS_MAP } from './constants'
 
 export type UrlResolver = (element: Element, baseUrl: URL, _elementIDResolver: ElementIDResolver) =>
   Promise<URL | undefined>
 
+const GENERAL_URLS_MAP: Record<string, string> = {
+  PermissionSet: 'lightning/setup/PermSets/home',
+  PermissionSetGroup: 'lightning/setup/PermSetGroups/home',
+  ApexClass: 'lightning/setup/ApexClasses/home',
+  Flow: 'lightning/setup/Flows/home',
+  Profile: 'lightning/setup/EnhancedProfiles/home',
+  CustomMetadata: 'lightning/setup/CustomMetadata/home',
+  CustomPermission: 'lightning/setup/CustomPermissions/home',
+  ApexComponent: 'lightning/setup/ApexComponents/home',
+  ApexPage: 'lightning/setup/ApexPages/home',
+  EmailTemplate: 'lightning/setup/CommunicationTemplatesEmail/home',
+  ReportType: 'lightning/setup/CustomReportTypes/home',
+  AnalyticSnapshot: 'lightning/setup/AnalyticSnapshots/home',
+  ApexTrigger: 'lightning/setup/ApexTriggers/home',
+  Queue: 'lightning/setup/Queues/home',
+  LightningComponentBundle: 'lightning/setup/LightningComponentBundles/home',
+  Report: 'lightning/o/Report/home',
+  Dashboard: 'lightning/o/Dashboard/home',
+}
+
+const SETTINGS_URLS_MAP: Record<string, string> = {
+  BusinessHoursSettings: 'lightning/setup/BusinessHours/home',
+  LanguageSettings: 'lightning/setup/LanguageSettings/home',
+  MyDomainSettings: 'lightning/setup/OrgDomain/home',
+  ApexSettings: 'lightning/setup/ApexSettings/home',
+}
 
 const getTypeIdentifier = (element: Element | undefined): string | undefined =>
   (element === undefined ? undefined : (getInternalId(element) ?? element.annotations.apiName))
@@ -28,23 +55,22 @@ const getFieldIdentifier = (element: Field): string =>
   (getInternalId(element) ?? element.annotations.relationshipName ?? element.name)
 
 const genernalConstantsResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) => {
-  if (element.annotations.metadataType in GENERAL_URLS_MAP) {
+  if (isObjectType(element) && metadataType(element) in GENERAL_URLS_MAP) {
     return new URL(`${baseUrl}${GENERAL_URLS_MAP[element.annotations.metadataType]}`)
   }
   return undefined
 }
 
 const settingsConstantsResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) => {
-  const settingsElement = isInstanceElement(element) ? element.type : element
-  if (settingsElement.annotations.metadataType in SETTINGS_URLS_MAP) {
-    return new URL(`${baseUrl}${SETTINGS_URLS_MAP[settingsElement.annotations.metadataType]}`)
+  if (metadataType(element) in SETTINGS_URLS_MAP) {
+    return new URL(`${baseUrl}${SETTINGS_URLS_MAP[metadataType(element)]}`)
   }
   return undefined
 }
 
 const assignmentRulesResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) => {
   if (isInstanceElement(element)
-    && element.type.annotations.metadataType === 'AssignmentRules'
+    && metadataType(element) === 'AssignmentRules'
     && ['Lead', 'Case'].includes(element.value.fullName)) {
     return new URL(`${baseUrl}lightning/setup/${element.value.fullName}Rules/home`)
   }
@@ -64,7 +90,7 @@ const metadataTypeResolver: UrlResolver = async (element, baseUrl, _elementIDRes
 const objectResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) => {
   const typeIdentfier = getTypeIdentifier(element)
   if (isObjectType(element)
-    && element.annotations.metadataType === 'CustomObject'
+    && metadataType(element) === 'CustomObject'
     && typeIdentfier !== undefined) {
     return new URL(`${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/Details/view`)
   }
@@ -76,7 +102,7 @@ const fieldResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) 
     const fieldIdentifier = getFieldIdentifier(element)
     const typeIdentfier = getTypeIdentifier(element.parent)
     if (fieldIdentifier !== undefined
-      && element.parent.annotations.metadataType === 'CustomObject'
+      && metadataType(element.parent) === 'CustomObject'
       && typeIdentfier !== undefined) {
       return new URL(`${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/FieldsAndRelationships/${fieldIdentifier}/view`)
     }
@@ -87,7 +113,7 @@ const fieldResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) 
 const flowResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) => {
   const internalId = getInternalId(element)
   if (isInstanceElement(element)
-    && element.type.annotations.metadataType === 'Flow'
+    && metadataType(element) === 'Flow'
     && element.value.processType === 'Flow'
     && internalId !== undefined) {
     return (new URL(`${baseUrl}builder_platform_interaction/flowBuilder.app?flowId=${internalId}`))
@@ -97,7 +123,7 @@ const flowResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) =
 
 const workflowResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) => {
   if (isInstanceElement(element)
-    && element.type.annotations.metadataType === 'Flow'
+    && metadataType(element) === 'Flow'
     && element.value.processType === 'Workflow') {
     // It seems all the process builder flows has the same url so we return the process buider home
     return new URL(`${baseUrl}lightning/setup/ProcessAutomation/home`)
@@ -108,7 +134,7 @@ const workflowResolver: UrlResolver = async (element, baseUrl, _elementIDResolve
 const queueResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) => {
   const internalId = getInternalId(element)
   if (isInstanceElement(element)
-    && element.type.annotations.metadataType === 'Queue'
+    && metadataType(element) === 'Queue'
     && getInternalId(element) !== undefined) {
     return new URL(`${baseUrl}lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3D${internalId}`)
   }
@@ -117,13 +143,14 @@ const queueResolver: UrlResolver = async (element, baseUrl, _elementIDResolver) 
 
 const layoutResolver: UrlResolver = async (element, baseUrl, elementIDResolver) => {
   const internalId = getInternalId(element)
+  const [parentRef] = getParents(element)
+
   if (isInstanceElement(element)
-      && element.type.annotations.metadataType === 'Layout'
+      && metadataType(element) === 'Layout'
       && internalId !== undefined
-      && element.annotations[CORE_ANNOTATIONS.PARENT] !== undefined
-      && element.annotations[CORE_ANNOTATIONS.PARENT].length === 1) {
+      && isReferenceExpression(parentRef)) {
     const parent = await elementIDResolver(element.annotations[CORE_ANNOTATIONS.PARENT][0].elemId)
-    if (isElement(element)) {
+    if (isElement(parent)) {
       const parentIdentifier = getTypeIdentifier(parent)
       if (parentIdentifier !== undefined) {
         return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/PageLayouts/${internalId}/view`)

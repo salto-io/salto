@@ -18,7 +18,6 @@ import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
-  isElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import SalesforceClient, { validateCredentials } from './client/client'
@@ -29,8 +28,7 @@ import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
   Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName } from './types'
-import { lightiningElementsUrlRetreiver } from './elements_url_retreiver/elements_url_retreiver'
-import { getInstanceUrl } from './instance_url'
+import { getElementUrl } from './elements_url_retreiver/elements_url_retreiver'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -158,30 +156,5 @@ export const adapter: Adapter = {
     changeValidator,
     getChangeGroupIds,
   },
-  getElementUrl: async (id, elementIDResolver) => {
-    const instanceUrl = await getInstanceUrl(elementIDResolver)
-    if (instanceUrl === undefined) {
-      log.error('Failed to find instanceUrl')
-      return undefined
-    }
-
-    const urlRetreiver = lightiningElementsUrlRetreiver(instanceUrl, elementIDResolver)
-    if (urlRetreiver === undefined) {
-      log.error('Failed to create url retreiver')
-      return undefined
-    }
-
-    const element = await elementIDResolver(id)
-    if (!isElement(element)) {
-      log.error(`Failed to resolve element: ${id.getFullName()}`)
-      return urlRetreiver.retreiveBaseUrl()
-    }
-
-    const url = await urlRetreiver.retreiveUrl(element)
-    if (url === undefined) {
-      log.error(`Failed to retreive url for id ${id.getFullName()}`)
-      return urlRetreiver.retreiveBaseUrl()
-    }
-    return url
-  },
+  getElementUrl,
 }

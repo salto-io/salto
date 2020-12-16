@@ -361,7 +361,7 @@ describe('SalesforceAdapter creator', () => {
       new ObjectType({ elemID: new ElemID('salesforce', 'someTypeName') }),
       { instanceUrl: 'https://url.my.salesforce.com' },
     )
-    const lightiningUrl = new URL('https://url.lightning.force.com')
+    const lightiningUrl = new URL('https://url.lightning.force.com/lightning/setup/SetupOneHome/home')
 
     const expectedInternalAccountInfoID = new ElemID('salesforce', INTERNAL_ACCOUNT_INFO, 'instance')
     const requestedElementID = new ElemID('salesforce', 'testObj__c')

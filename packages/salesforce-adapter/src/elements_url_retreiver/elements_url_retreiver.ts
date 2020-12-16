@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElementIDResolver } from '@salto-io/adapter-api'
+import { Element, ElementIDResolver, ElemID, isElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
+import { getInstanceUrl } from '../instance_url'
 import { resolvers } from './lightining_url_resolvers'
 
 const log = logger(module)
@@ -34,18 +36,41 @@ export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementIDResolver: 
   }
   const lightiningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
 
-  const retreiveUrl = async (element: Element): Promise<URL | undefined> => {
-    for (const resolver of resolvers) {
-      // eslint-disable-next-line no-await-in-loop
-      const url = await resolver(element, lightiningUrl, elementIDResolver)
-      if (url !== undefined) {
-        return url
-      }
-    }
-    return undefined
-  }
+  const retreiveUrl = async (element: Element): Promise<URL | undefined> =>
+    ((await Promise.all(
+      resolvers.map(resolver => resolver(element, lightiningUrl, elementIDResolver))
+    )).find(values.isDefined))
+
   return {
     retreiveUrl,
-    retreiveBaseUrl: () => lightiningUrl,
+    retreiveBaseUrl: () => new URL(`${lightiningUrl}lightning/setup/SetupOneHome/home`),
   }
+}
+
+export const getElementUrl = async (id: ElemID, elementIDResolver: ElementIDResolver):
+  Promise<URL | undefined> => {
+  const instanceUrl = await getInstanceUrl(elementIDResolver)
+  if (instanceUrl === undefined) {
+    log.error('Failed to find instanceUrl')
+    return undefined
+  }
+
+  const urlRetreiver = lightiningElementsUrlRetreiver(instanceUrl, elementIDResolver)
+  if (urlRetreiver === undefined) {
+    log.error('Failed to create url retreiver')
+    return undefined
+  }
+
+  const element = await elementIDResolver(id)
+  if (!isElement(element)) {
+    log.error(`Failed to resolve element: ${id.getFullName()}`)
+    return urlRetreiver.retreiveBaseUrl()
+  }
+
+  const url = await urlRetreiver.retreiveUrl(element)
+  if (url === undefined) {
+    log.error(`Failed to retreive url for id ${id.getFullName()}`)
+    return urlRetreiver.retreiveBaseUrl()
+  }
+  return url
 }

@@ -429,7 +429,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         return undefined
       }
       if (mergeResults.merged.length !== 1) {
-        log.debug('Number of merge results is different than one: %o', mergeResults.merged)
+        log.debug('Got %d merge results when expected to get one', mergeResults.merged.length)
         return undefined
       }
       return resolvePath(mergeResults.merged[0], id)

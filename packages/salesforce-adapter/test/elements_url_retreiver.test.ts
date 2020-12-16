@@ -26,7 +26,7 @@ describe('lightiningElementsUrlRetreiver', () => {
     const baseUrl = new URL('https://salto5-dev-ed.my.salesforce.com')
 
     const standardObject = new ObjectType({ elemID: new ElemID('salesforce', 'Account'), annotations: { apiName: 'Account', metadataType: 'CustomObject' } })
-    const customObject = new ObjectType({ elemID: new ElemID('salesforce', 'custom__c'), annotations: { internalId: 'someId', metadataType: 'CustomObject' } })
+    const customObject = new ObjectType({ elemID: new ElemID('salesforce', 'custom__c'), annotations: { apiName: 'custom__c', internalId: 'someId', metadataType: 'CustomObject' } })
     const flowType = new ObjectType({ elemID: new ElemID('salesforce', 'Flow'), annotations: { metadataType: 'Flow' } })
 
     const elementUrlRetreiver = lightiningElementsUrlRetreiver(
@@ -76,7 +76,7 @@ describe('lightiningElementsUrlRetreiver', () => {
       })
 
       it('standard field standard object', async () => {
-        const element = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER)
+        const element = new Field(standardObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
         expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view'))
       })
 
@@ -86,7 +86,7 @@ describe('lightiningElementsUrlRetreiver', () => {
       })
 
       it('standard field custom object', async () => {
-        const element = new Field(customObject, 'standardField', BuiltinTypes.NUMBER)
+        const element = new Field(customObject, 'standardField', BuiltinTypes.NUMBER, { apiName: 'standardField' })
         expect(await elementUrlRetreiver?.retreiveUrl(element)).toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/FieldsAndRelationships/standardField/view'))
       })
 

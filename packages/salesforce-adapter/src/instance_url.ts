@@ -32,7 +32,7 @@ export const getInstanceUrl = async (elementIDResolver: ElementIDResolver):
   const internalAccountInfoElement = await elementIDResolver(new ElemID(constants.SALESFORCE, INTERNAL_ACCOUNT_INFO, 'instance', ElemID.CONFIG_NAME))
 
   if (internalAccountInfoElement === undefined || !isInstanceElement(internalAccountInfoElement)) {
-    log.error('Could not found internalAccountInfo element')
+    log.error('Could not find internalAccountInfo element')
     return undefined
   }
   const url = internalAccountInfoElement.value.instanceUrl

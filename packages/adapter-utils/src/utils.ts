@@ -764,7 +764,10 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
   return instance
 }
 
-export const safeJsonStringify = (value: Value): string => safeStringify(value)
+export const safeJsonStringify = (value: Value,
+  replacer?: (key: string, value: Value) => Value,
+  space?: string | number): string =>
+  safeStringify(value, replacer, space)
 
 export const getAllReferencedIds = (element: Element, onlyAnnotations = false): Set<string> => {
   const allReferencedIds = new Set<string>()

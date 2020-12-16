@@ -116,4 +116,4 @@ export const serializedPathIndex = (index: PathIndex): string => (
 )
 export const serializePathIndexByService = (index: PathIndex): Record<string, string> =>
   _.mapValues(_.groupBy(Array.from(index.entries()), entry =>
-    ElemID.fromFullName(entry[0]).adapter), safeJsonStringify)
+    ElemID.fromFullName(entry[0]).adapter), e => safeJsonStringify(e))

@@ -18,7 +18,7 @@ import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
   Adapter, AdapterAuthentication,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import adapterCreators from './creators'
 
@@ -52,7 +52,7 @@ export const initAdapters = (
       if (!creator) {
         throw new Error(`${adapter} adapter is not registered.`)
       }
-      log.debug('Using the following config for %s adapter: %s', adapter, JSON.stringify(context.config?.value, null, 2))
+      log.debug('Using the following config for %s adapter: %s', adapter, safeJsonStringify(context.config?.value, undefined, 2))
       return creator.operations(context)
     }
   )

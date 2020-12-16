@@ -28,6 +28,8 @@ export const getToken = (fileContent: string, position: EditorPosition):
   if (lines.length <= position.line) {
     return undefined
   }
+  // This is done to avoid parsing the entire file
+  // and cause us to not support multiline tokens
   const line = lines[position.line]
 
   const lexer = new parser.PeekableLexer(line)
@@ -44,6 +46,7 @@ export const getToken = (fileContent: string, position: EditorPosition):
     }
   // eslint-disable-next-line no-empty
   } catch (e) {
+    // Lexer throws an error when there is nothing left to parse
   }
   return undefined
 }

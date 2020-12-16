@@ -46,7 +46,7 @@ export const createInvlidIdFieldConfigChange = (
 ): ConfigChangeSuggestion =>
   ({
     type: DATA_MANAGEMENT,
-    value: typeName,
+    value: `^${typeName}$`,
     reason: `${invalidFields} defined as idFields but are not queryable or do not exist on type ${typeName}`,
   })
 
@@ -56,7 +56,7 @@ export const createUnresolvedRefIdFieldConfigChange = (
 ): ConfigChangeSuggestion =>
   ({
     type: DATA_MANAGEMENT,
-    value: typeName,
+    value: `^${typeName}$`,
     reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
 

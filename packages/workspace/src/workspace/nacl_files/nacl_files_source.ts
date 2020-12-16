@@ -35,7 +35,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
-import { buildNewMergedElementsAndErrors } from './elements_merger'
+import { buildNewMergedElementsAndErrors } from './elements_cache'
 
 import { Functions } from '../../parser/functions'
 

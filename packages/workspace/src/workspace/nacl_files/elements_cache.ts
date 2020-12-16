@@ -30,7 +30,7 @@ const calcChanges = (
   }
   const change = toChange({ before, after })
   return isEqualElements(before, after) ? undefined : change
-}).filter(values.isDefined) as Change[]
+}).filter(values.isDefined)
 
 export const calcNewMerged = <T extends MergeError | Element>(
   currentMerged: T[], newMerged: T[], relevantElementIDs: Set<string>

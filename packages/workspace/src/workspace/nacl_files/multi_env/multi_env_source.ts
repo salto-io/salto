@@ -29,7 +29,7 @@ import { ParseError, SourceRange, SourceMap } from '../../../parser'
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
-import { buildNewMergedElementsAndErrors } from '../elements_merger'
+import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
 
 const { series } = promises.array
@@ -93,15 +93,16 @@ const buildMultiEnvSource = (
     ]
   }
 
-  const getRelevantElemsInEnv = async (
-    envElemIDsToElems: Record<string, Element | undefined>,
-    envName: string,
+  const getRelevantElems = async (
+    envElemIDsToElems: Record<string, Record<string, Element | undefined>>,
+    envNames: string[],
     relevantElementIDs: string[],
   ): Promise<Element[]> => (await Promise.all(
-    relevantElementIDs.map(async id =>
-      (id in envElemIDsToElems
-        ? envElemIDsToElems[id]
-        : sources[envName].get(ElemID.fromFullName(id))))
+    envNames.flatMap(envName =>
+      relevantElementIDs.map(async id =>
+        (id in (envElemIDsToElems[envName] ?? {})
+          ? envElemIDsToElems[envName][id]
+          : sources[envName].get(ElemID.fromFullName(id)))))
   )).filter(values.isDefined)
 
   const buildState = async (env?: string): Promise<MultiEnvState> => {
@@ -126,20 +127,15 @@ const buildMultiEnvSource = (
     if (state === undefined || primaryEnv !== primarySourceName) {
       return { state: await buildState(env), changes: [] }
     }
-    const commonElemIDsToElems = _.fromPairs(
-      (changes[commonSourceName] ?? []).map(getAfterFromChange)
-    )
-    const primaryElemIDsToElems = _.fromPairs(
-      (changes[primaryEnv] ?? []).map(getAfterFromChange)
-    )
     const relevantElementIDs = _.uniq(
       Object.values(changes).flat().map(getChangeElement).map(e => e.elemID.getFullName())
     )
-    const newElements = (await Promise.all(
-      [
-        getRelevantElemsInEnv(commonElemIDsToElems, commonSourceName, relevantElementIDs),
-        getRelevantElemsInEnv(primaryElemIDsToElems, primaryEnv, relevantElementIDs),
-      ]
+    const changedElementsByEnv = _.mapValues(
+      _.pick(changes, [commonSourceName, primaryEnv]),
+      envChanges => Object.fromEntries(envChanges.map(getAfterFromChange))
+    )
+    const newElements = (await getRelevantElems(
+      changedElementsByEnv, [commonSourceName, primaryEnv], relevantElementIDs
     )).flat()
     const mergeResult = buildNewMergedElementsAndErrors({
       newElements,

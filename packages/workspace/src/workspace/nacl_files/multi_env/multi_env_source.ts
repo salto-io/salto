@@ -95,13 +95,12 @@ const buildMultiEnvSource = (
 
   const getRelevantElems = async (
     envElemIDsToElems: Record<string, Record<string, Element | undefined>>,
-    envNames: string[],
     relevantElementIDs: string[],
   ): Promise<Element[]> => (await Promise.all(
-    envNames.flatMap(envName =>
+    Object.entries(envElemIDsToElems).flatMap(([envName, elemIDToElems]) =>
       relevantElementIDs.map(async id =>
-        (id in (envElemIDsToElems[envName] ?? {})
-          ? envElemIDsToElems[envName][id]
+        (id in elemIDToElems
+          ? elemIDToElems[id]
           : sources[envName].get(ElemID.fromFullName(id)))))
   )).filter(values.isDefined)
 
@@ -121,26 +120,26 @@ const buildMultiEnvSource = (
   const buildMultiEnvState = async ({ env, changes = {} }: {
     env?: string
     changes?: Record<string, Change<Element>[]>
-    currentState?: MultiEnvState
   }): Promise<{ state: MultiEnvState; changes: Change<Element>[] }> => {
     const primaryEnv = env ?? primarySourceName
     if (state === undefined || primaryEnv !== primarySourceName) {
       return { state: await buildState(env), changes: [] }
     }
+    const current = await state
     const relevantElementIDs = _.uniq(
       Object.values(changes).flat().map(getChangeElement).map(e => e.elemID.getFullName())
     )
+    const envs = [commonSourceName, primaryEnv]
     const changedElementsByEnv = _.mapValues(
-      _.pick(changes, [commonSourceName, primaryEnv]),
+      _.pick(changes, envs),
       envChanges => Object.fromEntries(envChanges.map(getAfterFromChange))
     )
-    const newElements = (await getRelevantElems(
-      changedElementsByEnv, [commonSourceName, primaryEnv], relevantElementIDs
-    )).flat()
+    envs.forEach(name => { changedElementsByEnv[name] = changedElementsByEnv[name] ?? {} })
+    const newElements = (await getRelevantElems(changedElementsByEnv, relevantElementIDs)).flat()
     const mergeResult = buildNewMergedElementsAndErrors({
       newElements,
-      currentElements: (await state).elements,
-      currentMergeErrors: (await state).mergeErrors,
+      currentElements: current.elements,
+      currentMergeErrors: current.mergeErrors,
       relevantElementIDs,
     })
     return {

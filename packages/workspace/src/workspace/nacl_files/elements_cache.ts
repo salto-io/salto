@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, Change, isEqualElements, toChange } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, isType } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { mergeElements, MergeError } from '../../merger'
+import { mergeElements, MergeError, updateMergedTypes } from '../../merger'
 
 const calcChanges = (
   fullNames: string[],
@@ -59,7 +59,11 @@ export const buildNewMergedElementsAndErrors = ({
   const mergedElements = {
     ...currentMergedElementsWithoutRelevants,
     ..._.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName()),
-  }
-  const changes = calcChanges(relevantElementIDs, currentElements, mergedElements)
-  return { mergeErrors, mergedElements, changes }
+  } as Record<string, Element>
+  const elements = Object.values(mergedElements)
+  const mergedElementsUpdated = _.keyBy(updateMergedTypes(
+    elements, _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
+  ), e => e.elemID.getFullName())
+  const changes = calcChanges(relevantElementIDs, currentElements, mergedElementsUpdated)
+  return { mergeErrors, mergedElements: mergedElementsUpdated, changes }
 }

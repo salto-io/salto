@@ -352,6 +352,16 @@ describe('workspace', () => {
       const mockStoreDelete = dirStore.delete as jest.Mock
       expect(mockStoreDelete.mock.calls.map(c => c[0])).toEqual(removedPaths)
     })
+
+    it('should also work if we do not call elements in advance', async () => {
+      const newWorkspace = await createWorkspace(mockDirStore())
+      await newWorkspace.removeNaclFiles(...removedPaths)
+      const elemMap = getElemMap(await newWorkspace.elements())
+      expect(Object.keys(elemMap).sort())
+        .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
+      const lead = elemMap['salesforce.lead'] as ObjectType
+      expect(Object.keys(lead.fields)).toContain('ext_field')
+    })
   })
 
   describe('setNaclFiles', () => {
@@ -365,16 +375,18 @@ describe('workspace', () => {
       elemMap = getElemMap(await workspace.elements())
     })
 
-    it('should update elements', () => {
+    it('should update elements1', () => {
       const salesforceLeadElemID = new ElemID('salesforce', 'lead')
-      const salesforceLeadObject = new ObjectType({ elemID: salesforceLeadElemID })
       const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      salesforceLeadObject.fields.new_base = new Field(salesforceLeadObject, 'new_base', salesforceText)
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      salesforceLeadObject.fields.ext_field = new Field(
-        salesforceLeadObject, 'ext_field', salesforceText, { [CORE_ANNOTATIONS.DEFAULT]: 'foo' }
-      )
+      const salesforceLeadObject = new ObjectType({
+        elemID: salesforceLeadElemID,
+        fields: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          new_base: { type: salesforceText },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          ext_field: { type: salesforceText, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
+        },
+      })
       expect(elemMap).toEqual({
         'multi.loc': new ObjectType({ elemID: new ElemID('multi', 'loc'), annotations: { b: 1 } }),
         'salesforce.lead': salesforceLeadObject,

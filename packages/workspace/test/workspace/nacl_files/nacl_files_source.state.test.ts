@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ModificationChange, InstanceElement, RemovalChange, ObjectType, PrimitiveTypes, ElemID, AdditionChange, DetailedChange } from '@salto-io/adapter-api'
+import { ModificationChange, InstanceElement, RemovalChange, ObjectType, PrimitiveTypes,
+  ElemID, AdditionChange, DetailedChange, BuiltinTypes } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -255,6 +256,85 @@ describe('Nacl Files Source', () => {
             data: { before: instanceElementObjectMatcher },
           },
         ])
+      })
+      describe('splitted elements', () => {
+        describe('fragmented in all files', () => {
+          let naclFileSourceWithFragments: NaclFilesSource
+          const splittedFile1 = {
+            filename: 'file1.nacl',
+            buffer: `
+              type dummy.test2 {
+                number a {}
+              }
+              type dummy.test1 {
+                string a {}
+              }
+            `,
+          }
+          const splittedFile2 = {
+            filename: 'file2.nacl',
+            buffer: `
+              type dummy.test1 {
+                number b {}
+              }
+              type dummy.test2 {
+                string c {}
+              }
+            `,
+          }
+          beforeEach(async () => {
+            const naclFiles = [splittedFile1, splittedFile2]
+            const parsedNaclFiles = await Promise.all(naclFiles.map(async naclFile =>
+              toParsedNaclFile(
+                naclFile,
+                await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})
+              )))
+            naclFileSourceWithFragments = naclFilesSource(
+              mockDirStore, mockCache, mockedStaticFilesSource, parsedNaclFiles
+            )
+          })
+          it('should change splitted element correctly', async () => {
+            const newFile = {
+              filename: 'file1.nacl',
+              buffer: `
+                type dummy.test2 {
+                  string d {}
+                }
+              `,
+            }
+            const currentElements = await naclFileSourceWithFragments.getAll()
+            const res = await naclFileSourceWithFragments.setNaclFiles(newFile)
+            expect(res).toHaveLength(2)
+            const objType1ElemID = new ElemID('dummy', 'test1')
+            const objType2ElemID = new ElemID('dummy', 'test2')
+            const objType1 = {
+              before: new ObjectType({
+                elemID: objType1ElemID,
+                fields: { a: { type: BuiltinTypes.STRING }, b: { type: BuiltinTypes.NUMBER } },
+              }),
+              after: new ObjectType({
+                elemID: objType1ElemID, fields: { b: { type: BuiltinTypes.NUMBER } },
+              }),
+            }
+            const objType2 = {
+              before: new ObjectType({
+                elemID: objType2ElemID,
+                fields: { a: { type: BuiltinTypes.NUMBER }, c: { type: BuiltinTypes.STRING } },
+              }),
+              after: new ObjectType({
+                elemID: objType2ElemID,
+                fields: { d: { type: BuiltinTypes.STRING }, c: { type: BuiltinTypes.STRING } },
+              }),
+            }
+            expect(res).toEqual([
+              { action: 'modify', data: objType2 },
+              { action: 'modify', data: objType1 },
+            ])
+            expect(currentElements).toEqual([objType2.before, objType1.before])
+            expect(await naclFileSourceWithFragments.getAll())
+              .toEqual([objType2.after, objType1.after])
+          })
+        })
       })
     })
     describe('removeNaclFiles', () => {

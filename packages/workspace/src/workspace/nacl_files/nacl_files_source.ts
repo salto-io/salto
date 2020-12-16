@@ -191,9 +191,10 @@ export const getParsedNaclFiles = async (
   return parseNaclFiles(naclFiles, cache, functions)
 }
 
+type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change<Element>[] }
 const buildNaclFilesState = (
   newNaclFiles: ParsedNaclFile[], currentState?: NaclFilesState
-): { state: NaclFilesState; changes: Change<Element>[] } => {
+): buildNaclFilesStateResult => {
   const current = currentState ? currentState.parsedNaclFiles : {}
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
@@ -218,30 +219,21 @@ const buildNaclFilesState = (
   const currentElementsOfNewFiles = newNaclFiles
     .map(naclFile => naclFile.filename)
     .flatMap(filename => current?.[filename]?.elements ?? [])
-  const relevantElementIDs = _.uniq(
-    [...newNaclFilesElements, ...currentElementsOfNewFiles]
-      .map(e => e.elemID.getFullName())
+  const relevantElementIDs = new Set(
+    [...newNaclFilesElements, ...currentElementsOfNewFiles].map(e => e.elemID.getFullName())
   )
 
   const relevantFiles = _.uniq(
-    relevantElementIDs.flatMap(fullName => Array.from(elementsIndex[fullName] ?? []))
+    [...relevantElementIDs].flatMap(fullName => Array.from(elementsIndex[fullName] ?? []))
   )
-  const relevantFilesToElementsIDs = Object.fromEntries(
-    relevantFiles
-      .map(fileName => [
-        fileName,
-        _.groupBy(allParsed[fileName].elements, e => e.elemID.getFullName()),
-      ])
-  )
-  const newElementsToMerge = relevantElementIDs
-    .flatMap(fullName => (Array.from(elementsIndex[fullName] ?? [])
-      .flatMap(fileName => relevantFilesToElementsIDs[fileName][fullName] ?? [])
-    ))
+  const newElementsToMerge = relevantFiles.flatMap(fileName => (
+    allParsed[fileName].elements.filter(e => relevantElementIDs.has(e.elemID.getFullName()))
+  ))
   log.info('workspace has %d elements and %d parsed NaCl files',
     _.size(elementsIndex), _.size(allParsed))
   const mergedResult = buildNewMergedElementsAndErrors({
     newElements: newElementsToMerge,
-    relevantElementIDs,
+    relevantElementIDs: [...relevantElementIDs],
     currentElements: currentState?.mergedElements,
     currentMergeErrors: currentState?.mergeErrors,
   })
@@ -313,6 +305,15 @@ const buildNaclFilesSource = (
         .then(res => res.state)
     }
     return state
+  }
+
+  const buildNaclFilesStateInner = async (parsedNaclFiles: ParsedNaclFile[]):
+  Promise<buildNaclFilesStateResult> => {
+    if (_.isUndefined(state)) {
+      return { changes: [], state: await getState() }
+    }
+    const current = await state
+    return buildNaclFilesState(parsedNaclFiles, current)
   }
 
   const getNaclFile = (filename: string): Promise<NaclFile | undefined> =>
@@ -442,7 +443,7 @@ const buildNaclFilesSource = (
     if (updatedNaclFiles.length > 0) {
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       await setNaclFiles(...updatedNaclFiles)
-      const res = buildNaclFilesState(updatedNaclFiles, await getState())
+      const res = await buildNaclFilesStateInner(updatedNaclFiles)
       state = Promise.resolve(res.state)
       return res.changes
     }
@@ -497,9 +498,8 @@ const buildNaclFilesSource = (
 
     removeNaclFiles: async (...names: string[]) => {
       await Promise.all(names.map(name => naclFilesStore.delete(name)))
-      const res = buildNaclFilesState(
+      const res = await buildNaclFilesStateInner(
         await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), cache, functions),
-        await getState()
       )
       state = Promise.resolve(res.state)
       return res.changes
@@ -537,10 +537,7 @@ const buildNaclFilesSource = (
     updateNaclFiles,
     setNaclFiles: async (...naclFiles) => {
       await setNaclFiles(...naclFiles)
-      const res = buildNaclFilesState(
-        await parseNaclFiles(naclFiles, cache, functions),
-        await getState()
-      )
+      const res = await buildNaclFilesStateInner(await parseNaclFiles(naclFiles, cache, functions))
       state = Promise.resolve(res.state)
       return res.changes
     },

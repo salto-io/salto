@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { ModificationDiff, RemovalDiff } from '@salto-io/dag'
+import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { routeChanges, routePromote, routeDemote, routeCopyTo } from '../../../src/workspace/nacl_files/multi_env/routers'
 
@@ -126,8 +126,33 @@ const splitInstanceJoined = new InstanceElement(
 const commonOnlyObject = new ObjectType({
   elemID: new ElemID('salto', 'commonOnly'),
 })
+
+const commonOnlyFieldObjectID = new ElemID('salto', 'CommonOnlyFieldObject')
+const commonCommonOnlyFieldObject = new ObjectType({
+  elemID: commonOnlyFieldObjectID,
+  fields: {
+    ofdreams: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        catchphrase: 'if you will build it',
+      },
+    },
+  },
+})
+
+const envCommonOnlyFieldObject = new ObjectType({
+  elemID: commonOnlyFieldObjectID,
+})
+
 const commonSource = createMockNaclFileSource(
-  [commonObj, commonInstance, splitObjJoined, splitInstanceJoined, commonOnlyObject],
+  [
+    commonObj,
+    commonInstance,
+    splitObjJoined,
+    splitInstanceJoined,
+    commonOnlyObject,
+    commonCommonOnlyFieldObject,
+  ],
   {
     'test/path.nacl': [commonObj, commonInstance, commonOnlyObject],
     'test/anno.nacl': [splitObjectAnnotations],
@@ -135,12 +160,14 @@ const commonSource = createMockNaclFileSource(
     'test/fields.nacl': [splitObjectFields],
     'test/inst1.nacl': [splitInstance1],
     'test/inst2.nacl': [splitInstance2],
+    'test/onlyfields': [commonCommonOnlyFieldObject],
   }
 )
+
 const envOnlyID = new ElemID('salto', 'envOnly')
 const envOnlyObj = new ObjectType({ elemID: envOnlyID })
-const envSource = createMockNaclFileSource([envObj, envOnlyObj])
-const secEnv = createMockNaclFileSource([envObj])
+const envSource = createMockNaclFileSource([envObj, envOnlyObj, envCommonOnlyFieldObject])
+const secEnv = createMockNaclFileSource([envObj, envCommonOnlyFieldObject])
 
 describe('default fetch routing', () => {
   it('should route add changes to common when there is only one configured env', async () => {
@@ -827,6 +854,46 @@ describe('isolated routing', () => {
       },
       path: ['test', 'path'],
     })
+  })
+
+  it('should route a common modification diff to comon and revert the change in'
+   + 'secondary envs for nested elements without parents in the env', async () => {
+    const fieldID = commonOnlyFieldObjectID.createNestedID('field', 'ofdreams')
+    const specificChange: DetailedChange = {
+      action: 'modify',
+      data: { before: 'if you will build it', after: 'they will come' },
+      id: fieldID.createNestedID('catchphrase'),
+    }
+    const beforeField = commonCommonOnlyFieldObject.fields.ofdreams
+    const afterField = _.clone(beforeField)
+    afterField.annotate({
+      catchphrase: specificChange.data.after,
+    })
+
+    const routedChanges = await routeChanges(
+      [specificChange],
+      envSource,
+      commonSource,
+      { sec: secEnv },
+      'isolated'
+    )
+    expect(routedChanges.primarySource).toHaveLength(1)
+    expect(routedChanges.commonSource).toHaveLength(1)
+    expect(routedChanges.secondarySources?.sec).toHaveLength(1)
+    expect(routedChanges.primarySource?.[0].action).toEqual('add')
+    const primaryChangeData = routedChanges.primarySource?.[0] as AdditionDiff<Field>
+    expect(routedChanges.primarySource?.[0].id).toEqual(fieldID)
+    expect(primaryChangeData.data.after.type.elemID).toEqual(afterField.type.elemID)
+    expect(primaryChangeData.data.after.annotations).toEqual(afterField.annotations)
+
+    expect(routedChanges.commonSource?.[0].action).toEqual('remove')
+    expect(routedChanges.commonSource?.[0].id).toEqual(specificChange.id)
+
+    expect(routedChanges.primarySource?.[0].action).toEqual('add')
+    const secChangeData = routedChanges.secondarySources?.sec[0] as AdditionDiff<Field>
+    expect(routedChanges.secondarySources?.sec[0].id).toEqual(fieldID)
+    expect(secChangeData.data.after.type.elemID).toEqual(beforeField.type.elemID)
+    expect(secChangeData.data.after.annotations).toEqual(beforeField.annotations)
   })
 })
 

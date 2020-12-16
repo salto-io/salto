@@ -17,12 +17,13 @@ import _ from 'lodash'
 import { ModificationChange, InstanceElement, RemovalChange, ObjectType, PrimitiveTypes, ElemID, AdditionChange, DetailedChange } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource, toParsedNaclFile } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { ParseResultCache } from '../../../src/workspace/cache'
 
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
+import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>

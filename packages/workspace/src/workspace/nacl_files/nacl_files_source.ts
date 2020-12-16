@@ -18,16 +18,12 @@ import { logger } from '@salto-io/logging'
 import {
   Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, TypeElement,
-  getDeepInnerType,
-  isVariable,
-  Change,
-  isEqualElements,
-  toChange,
+  getDeepInnerType, isVariable, Change,
 } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
-import { mergeElements, MergeError } from '../../merger'
+import { MergeError } from '../../merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
   getNestedStaticFiles,
@@ -39,6 +35,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
+import { buildNewMergedElementsAndErrors } from './elements_merger'
 
 import { Functions } from '../../parser/functions'
 
@@ -194,52 +191,6 @@ export const getParsedNaclFiles = async (
   return parseNaclFiles(naclFiles, cache, functions)
 }
 
-export const calcChanges = (
-  fullNames: string[],
-  currentElements: Record<string, Element>,
-  newElements: Record<string, Element>,
-): Change<Element>[] => fullNames.map(fullName => {
-  const before = currentElements[fullName]
-  const after = newElements[fullName]
-  if (before === undefined && after === undefined) {
-    return undefined
-  }
-  const change = toChange({ before, after })
-  return isEqualElements(before, after) ? undefined : change
-}).filter(c => !_.isUndefined(c)) as Change[]
-
-export const calcNewMerged = <T extends MergeError | Element>(
-  currentMergeErrors: T[], newMergeErrors: T[], relevantElementIDs: Set<string>
-): T[] => currentMergeErrors
-    .filter(e =>
-      !relevantElementIDs.has(e.elemID.createTopLevelParentID().parent.getFullName()))
-    .concat(newMergeErrors)
-
-export const buildNewMergedElementsAndErrors = ({
-  newElements, currentElements = {}, currentMergeErrors = [], relevantElementIDs,
-}: {
-  newElements: Element[]
-  currentElements?: Record<string, Element>
-  currentMergeErrors?: MergeError[]
-  relevantElementIDs: string[]
-}): {
-  mergedElements: Record<string, Element>
-  mergeErrors: MergeError[]
-  changes: Change<Element>[]
-} => {
-  const currentMergedElementsWithoutRelevants = _.omit(currentElements, relevantElementIDs)
-  const newMergedElementsResult = mergeElements(newElements, currentMergedElementsWithoutRelevants)
-  const mergeErrors = calcNewMerged(
-    currentMergeErrors, newMergedElementsResult.errors, new Set(relevantElementIDs)
-  )
-  const mergedElements = {
-    ...currentMergedElementsWithoutRelevants,
-    ..._.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName()),
-  }
-  const changes = calcChanges(relevantElementIDs, currentElements, mergedElements)
-  return { mergeErrors, mergedElements, changes }
-}
-
 const buildNaclFilesState = (
   newNaclFiles: ParsedNaclFile[], currentState?: NaclFilesState
 ): { state: NaclFilesState; changes: Change<Element>[] } => {
@@ -272,11 +223,15 @@ const buildNaclFilesState = (
       .map(e => e.elemID.getFullName())
   )
 
-  const relevantFilesToElementsIDs = _.fromPairs(
-    relevantElementIDs
-      .flatMap(fullName => Array.from(elementsIndex[fullName] ?? []))
-      .map(fileName =>
-        [fileName, _.groupBy(allParsed[fileName].elements, e => e.elemID.getFullName())])
+  const relevantFiles = _.uniq(
+    relevantElementIDs.flatMap(fullName => Array.from(elementsIndex[fullName] ?? []))
+  )
+  const relevantFilesToElementsIDs = Object.fromEntries(
+    relevantFiles
+      .map(fileName => [
+        fileName,
+        _.groupBy(allParsed[fileName].elements, e => e.elemID.getFullName()),
+      ])
   )
   const newElementsToMerge = relevantElementIDs
     .flatMap(fullName => (Array.from(elementsIndex[fullName] ?? [])

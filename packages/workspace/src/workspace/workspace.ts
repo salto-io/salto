@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import { resolvePath } from '@salto-io/adapter-utils' .
+import { resolvePath } from '@salto-io/adapter-utils'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -462,27 +462,13 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     },
     getValue: async (id: ElemID): Promise<Value | undefined> => {
       const topLevelID = id.createTopLevelParentID().parent
+      const element = (await elements()).merged.find(e => e.elemID.isEqual(topLevelID))
 
-      const workspaceElement = await naclFilesSource.get(topLevelID)
-      const stateElement = await state().get(topLevelID)
-
-      if (workspaceElement === undefined && stateElement === undefined) {
+      if (element === undefined) {
         log.debug('ElemID not found %s', id.getFullName())
         return undefined
       }
-
-      const mergeResults = mergeWithHidden([workspaceElement].filter(values.isDefined),
-        [stateElement].filter(values.isDefined))
-
-      if (mergeResults.errors.length !== 0) {
-        log.error('Failed to merge elements with errors: %o', mergeResults.errors)
-        return undefined
-      }
-      if (mergeResults.merged.length !== 1) {
-        log.debug('Got %d merge results when expected to get one', mergeResults.merged.length)
-        return undefined
-      }
-      return resolvePath(mergeResults.merged[0], id)
+      return resolvePath(element, id)
     },
   }
 }

@@ -17,7 +17,8 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField, isObjectType, ContainerType,
+  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField,
+  isObjectType, ContainerType,
 } from '@salto-io/adapter-api'
 import {
   findElement, applyDetailedChanges,
@@ -211,21 +212,6 @@ describe('workspace', () => {
 
       it('element field should return the element', async () => {
         expect(isField(await workspace.getValue(new ElemID('salesforce', 'lead', 'field', 'base_field')))).toBeTruthy()
-      })
-
-      it('when merge error should return undefined', async () => {
-        const instanceElement = new InstanceElement(
-          'instWithHidden',
-          new ObjectType({
-            elemID: new ElemID('salesforce', 'ObjWithHidden'),
-          }),
-          { other: 2 },
-          [],
-          { [CORE_ANNOTATIONS.HIDDEN]: true },
-        )
-        await state.set(instanceElement)
-
-        expect(await workspace.getValue(instanceElement.elemID)).toBeUndefined()
       })
     })
   })

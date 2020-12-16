@@ -863,7 +863,7 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithOrphanValue = changeSuggestions
-          .filter(suggestion => suggestion.value === orphanObjectName)
+          .filter(suggestion => suggestion.value.includes(orphanObjectName))
         expect(changeSuggestionWithOrphanValue).toHaveLength(1)
         expect(changeSuggestionWithOrphanValue[0].type).toEqual('dataManagement')
         expect(changeSuggestionWithOrphanValue[0].reason).toEqual(`${orphanObjectName} has Parent (reference) configured as idField. Failed to resolve some of the references.`)
@@ -881,7 +881,7 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
-          .filter(suggestion => suggestion.value === badIdFieldsName)
+          .filter(suggestion => suggestion.value.includes(badIdFieldsName))
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
         expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
         expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`Bad defined as idFields but are not queryable or do not exist on type ${badIdFieldsName}`)
@@ -899,7 +899,7 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
-          .filter(suggestion => suggestion.value === notQueryableIdFieldsName)
+          .filter(suggestion => suggestion.value.includes(notQueryableIdFieldsName))
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
         expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
         expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`NotQueryable defined as idFields but are not queryable or do not exist on type ${notQueryableIdFieldsName}`)

@@ -323,7 +323,7 @@ export const configType = new ObjectType({
       type: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
-          '^EmailTemplate.MarketoEmailTemplates',
+          '^EmailTemplate.Marketo',
 
           // We currently can't deploy them or edit them after they are created:
           '^StandardValueSet.AddressCountryCode',

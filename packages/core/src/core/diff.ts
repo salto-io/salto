@@ -13,31 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
-import { Element, DetailedChange, getChangeElement, ElemID } from '@salto-io/adapter-api'
+import { Element, DetailedChange, ElemID } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal } from '@salto-io/workspace'
-import { filterByID, applyFunctionToChangeData, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { getDetailedChanges } from './fetch'
 
-const filterChangesByIds = async (
-  changes: DetailedChange[],
-  ids: string[],
-): Promise<DetailedChange[]> => {
-  const filterChangeByID = (change: DetailedChange): DetailedChange | undefined => {
-    const filteredChange = applyFunctionToChangeData(
-      change,
-      changeData => filterByID(change.id, changeData,
-        id => ids.some(relevantId => (relevantId === id.getFullName()
-          || ElemID.fromFullName(relevantId).isParentOf(id)))),
-    )
-    return getChangeElement(filteredChange) === undefined
-      ? undefined
-      : filteredChange
-  }
-  return changes.map(filterChangeByID).filter(values.isDefined)
-}
+const isIdRelevant = (elementIds: ElemID[], id: ElemID): boolean =>
+  elementIds.some(elemId => id.isParentOf(elemId) || elemId.getFullName() === id.getFullName())
 
 export const createDiffChanges = async (
   toElements: readonly Element[],
@@ -49,37 +32,38 @@ export const createDiffChanges = async (
       toElements.map(element => ({ elemID: element.elemID, element })), true)
     const fromElementIdsFiltered = selectElementIdsByTraversal(elementSelectors,
       fromElements.map(element => ({ elemID: element.elemID, element })), true)
-    const allRelevantIds = _.uniq(toElementIdsFiltered
-      .concat(fromElementIdsFiltered).map(id => id.getFullName()))
     const selectorsToVerify = new Set<string>(elementSelectors
       .map(sel => sel.origin).filter(sel => !sel.includes('*')))
-    const verifySelectors: TransformFunc = ({ path, value }) => {
+    const filterElements = (elementIds: ElemID[]): TransformFunc => ({ path, value }) => {
       if (path !== undefined) {
         const id = path.getFullName()
-        if (selectorsToVerify.has(id)) {
-          selectorsToVerify.delete(id)
+        selectorsToVerify.delete(id)
+        if (isIdRelevant(elementIds, path)) {
+          return value
         }
-        return value
       }
       return undefined
     }
-    toElements.forEach(elem => {
-      if (selectorsToVerify.has(elem.elemID.getFullName())) {
-        selectorsToVerify.delete(elem.elemID.getFullName())
-      }
-      transformElement({ element: elem, transformFunc: verifySelectors })
+    const toElementsFiltered = toElements.filter(elem => isIdRelevant(toElementIdsFiltered,
+      elem.elemID)).map(elem => {
+      selectorsToVerify.delete(elem.elemID.getFullName())
+      return transformElement({
+        element: elem,
+        transformFunc: filterElements(toElementIdsFiltered),
+      })
     })
-    fromElements.forEach(elem => {
-      if (selectorsToVerify.has(elem.elemID.getFullName())) {
-        selectorsToVerify.delete(elem.elemID.getFullName())
-      }
-      transformElement({ element: elem, transformFunc: verifySelectors })
+    const fromElementsFiltered = fromElements.filter(elem => isIdRelevant(fromElementIdsFiltered,
+      elem.elemID)).map(elem => {
+      selectorsToVerify.delete(elem.elemID.getFullName())
+      return transformElement({
+        element: elem,
+        transformFunc: filterElements(fromElementIdsFiltered),
+      })
     })
     if (selectorsToVerify.size > 0) {
       throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)
     }
-    return filterChangesByIds(wu(await getDetailedChanges(toElements, fromElements))
-      .toArray(), allRelevantIds)
+    return wu(await getDetailedChanges(toElementsFiltered, fromElementsFiltered)).toArray()
   }
   return wu(await getDetailedChanges(toElements, fromElements)).toArray()
 }

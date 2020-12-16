@@ -139,8 +139,8 @@ describe('diff', () => {
     singlePathInstMergedAfter.value.nested.str = 'modified'
     const beforeElements = [
       multiPathObjMerged,
-      singlePathInstMergedAfter,
       multiPathInstMerged,
+      singlePathInstMergedAfter,
     ]
     describe('without filters', () => {
       let changes: DetailedChange[]
@@ -195,7 +195,7 @@ describe('diff', () => {
     describe('check diff handling of selectors', () => {
       it('returns empty diff when element id exists but is not in diff', async () => {
         const selectors = [
-          createElementSelector('salto.multiPathObj.attr.simple'),
+          createElementSelector(multiPathInstMerged.elemID.getFullName()),
         ]
         const changes = await createDiffChanges(toElements, beforeElements, selectors)
         expect(changes).toHaveLength(0)

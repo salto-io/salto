@@ -357,6 +357,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       if (args.credentials) {
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
+      workspaceState = undefined
     },
     addService: async (service: string): Promise<void> => {
       const currentServices = services() || []

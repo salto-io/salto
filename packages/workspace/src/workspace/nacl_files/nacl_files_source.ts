@@ -23,7 +23,7 @@ import {
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
-import { MergeError } from '../../merger'
+import { MergeError, mergeElements } from '../../merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
   getNestedStaticFiles,
@@ -201,21 +201,39 @@ const buildNaclFilesState = (
   const allParsed = _.omitBy({ ...current, ...newParsed },
     parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
 
-  const elementsIndex: Record<string, Set<string>> = {}
-  const referencedIndex: Record<string, Set<string>> = {}
+  const elementsIndexSet: Record<string, Set<string>> = {}
+  const referencedIndexSet: Record<string, Set<string>> = {}
   Object.values(allParsed).forEach(naclFile => {
     naclFile.elements.forEach(element => {
       const elementFullName = element.elemID.getFullName()
-      elementsIndex[elementFullName] = elementsIndex[elementFullName] ?? new Set<string>()
-      elementsIndex[elementFullName].add(naclFile.filename)
+      elementsIndexSet[elementFullName] = elementsIndexSet[elementFullName] ?? new Set<string>()
+      elementsIndexSet[elementFullName].add(naclFile.filename)
     })
     naclFile.referenced.forEach(elemID => {
       const elementFullName = elemID.getFullName()
-      referencedIndex[elementFullName] = referencedIndex[elementFullName] ?? new Set<string>()
-      referencedIndex[elementFullName].add(naclFile.filename)
+      referencedIndexSet[elementFullName] = referencedIndexSet[elementFullName] ?? new Set<string>()
+      referencedIndexSet[elementFullName].add(naclFile.filename)
     })
   })
+  const elementsIndex = _.mapValues(elementsIndexSet, val => Array.from(val))
+  const referencedIndex = _.mapValues(referencedIndexSet, val => Array.from(val))
+  log.info('workspace has %d elements and %d parsed NaCl files',
+    _.size(elementsIndex), _.size(allParsed))
   const newNaclFilesElements = newNaclFiles.flatMap(naclFile => naclFile.elements)
+
+  if (_.isUndefined(currentState)) {
+    const mergeResult = mergeElements(newNaclFilesElements)
+    return {
+      state: {
+        parsedNaclFiles: allParsed,
+        mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+        mergeErrors: mergeResult.errors,
+        elementsIndex,
+        referencedIndex,
+      },
+      changes: [],
+    }
+  }
   const currentElementsOfNewFiles = newNaclFiles
     .map(naclFile => naclFile.filename)
     .flatMap(filename => current?.[filename]?.elements ?? [])
@@ -224,13 +242,11 @@ const buildNaclFilesState = (
   )
 
   const relevantFiles = _.uniq(
-    [...relevantElementIDs].flatMap(fullName => Array.from(elementsIndex[fullName] ?? []))
+    [...relevantElementIDs].flatMap(fullName => elementsIndex[fullName] ?? [])
   )
   const newElementsToMerge = relevantFiles.flatMap(fileName => (
     allParsed[fileName].elements.filter(e => relevantElementIDs.has(e.elemID.getFullName()))
   ))
-  log.info('workspace has %d elements and %d parsed NaCl files',
-    _.size(elementsIndex), _.size(allParsed))
   const mergedResult = buildNewMergedElementsAndErrors({
     newElements: newElementsToMerge,
     relevantElementIDs: [...relevantElementIDs],
@@ -242,8 +258,8 @@ const buildNaclFilesState = (
       parsedNaclFiles: allParsed,
       mergedElements: mergedResult.mergedElements,
       mergeErrors: mergedResult.mergeErrors,
-      elementsIndex: _.mapValues(elementsIndex, val => Array.from(val)),
-      referencedIndex: _.mapValues(referencedIndex, val => Array.from(val)),
+      elementsIndex,
+      referencedIndex,
     },
     changes: mergedResult.changes,
   }

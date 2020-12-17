@@ -65,10 +65,14 @@ export const buildNewMergedElementsAndErrors = ({
     ...currentMergedElementsWithoutRelevants,
     ..._.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName()),
   } as Record<string, Element>
-  const elements = Object.values(mergedElements)
-  const mergedElementsUpdated = _.keyBy(updateMergedTypes(
-    elements, _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
-  ), e => e.elemID.getFullName())
+
+  const mergedElementsUpdated = _.keyBy(
+    updateMergedTypes(
+      Object.values(mergedElements),
+      _.pickBy(mergedElements, isType),
+    ),
+    elem => elem.elemID.getFullName(),
+  )
   const changes = calcChanges(relevantElementIDs, currentElements, mergedElementsUpdated)
   log.info('%d changes resulted from the merge', changes.length)
   return { mergeErrors, mergedElements: mergedElementsUpdated, changes }

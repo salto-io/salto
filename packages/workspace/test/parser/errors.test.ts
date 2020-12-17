@@ -980,6 +980,33 @@ describe('parsing errors', () => {
         expect(element.elemID.getFullName()).toEqual('nowhere.${man}')
       })
     })
+    describe('when the string has invalid chars', () => {
+      const nacl = `
+      type nowhere.man {
+        sitting = "in his \\. nowhere land"
+        making = "all his nowhere plans"
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should throw an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 28, byte: 53 },
+          end: { line: 3, col: 29, byte: 54 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Invalid string character')
+        expect(res.errors[0].summary).toBe('Invalid string character')
+      })
+      it('should parse items after the unterminated array', () => {
+        expect(res.elements).toHaveLength(1)
+        const element = res.elements[0] as ObjectType
+        expect(element.annotations.making).toEqual('all his nowhere plans')
+      })
+    })
   })
   describe('function definition errors', () => {
     describe('unknown function name', () => {

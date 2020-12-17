@@ -361,7 +361,7 @@ describe('workspace', () => {
       elemMap = getElemMap(await workspace.elements())
     })
 
-    it('should update elements1', () => {
+    it('should update elements', () => {
       const salesforceLeadElemID = new ElemID('salesforce', 'lead')
       const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
       const salesforceLeadObject = new ObjectType({

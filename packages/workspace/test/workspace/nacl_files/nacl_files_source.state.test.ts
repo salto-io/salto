@@ -112,6 +112,7 @@ describe('Nacl Files Source', () => {
       naclFileSourceTest = naclFilesSource(
         mockDirStore, mockCache, mockedStaticFilesSource, parsedNaclFiles
       )
+      await naclFileSourceTest.getAll()
     })
     it('should includes expected elements', async () => {
       const elements = await naclFileSourceTest.getAll()
@@ -256,6 +257,26 @@ describe('Nacl Files Source', () => {
             data: { before: instanceElementObjectMatcher },
           },
         ])
+      })
+      it('should update the type of an instance upon type update', async () => {
+        const newFile = {
+          filename: 'file2.nacl',
+          buffer: `
+            dummy.test inst {
+              a = "me"
+              b = 5
+            }
+          `,
+        }
+        const res = await naclFileSourceTest.setNaclFiles(newFile)
+        expect(res).toHaveLength(1)
+        const elements = await naclFileSourceTest.getAll()
+        expect(elements).toHaveLength(2)
+        const instance = elements
+          .find(e => e.elemID.getFullName() === 'dummy.test.instance.inst') as InstanceElement
+        const objType = elements.find(e => e.elemID.getFullName() === 'dummy.test') as ObjectType
+        expect(objType).toBeDefined()
+        expect(instance.type).toBe(objType)
       })
       describe('splitted elements', () => {
         describe('fragmented in all files', () => {

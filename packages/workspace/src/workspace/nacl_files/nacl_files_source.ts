@@ -536,6 +536,7 @@ const buildNaclFilesSource = (
       if (args.cache) {
         await cache.clear()
       }
+      state = undefined
     },
 
     rename: async (name: string) => {

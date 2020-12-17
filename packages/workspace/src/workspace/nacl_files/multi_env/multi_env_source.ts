@@ -407,6 +407,7 @@ const buildMultiEnvSource = (
       // We use series here since we don't want to perform too much delete operation concurrently
       await series([primarySource(), commonSource(), ...Object.values(secondarySources())]
         .map(f => () => f.clear(args)))
+      state = undefined
     },
     rename: async (name: string): Promise<void> => {
       await series([primarySource(), commonSource(), ...Object.values(secondarySources())]

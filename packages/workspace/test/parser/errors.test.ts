@@ -498,7 +498,7 @@ describe('parsing errors', () => {
         expect(res.elements).toHaveLength(1)
         const element = res.elements[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
-        expect(element.fields.mycar.type.elemID.getFullName()).toEqual('can.drive')
+        expect(element.fields.mycar.refType.elemID.getFullName()).toEqual('can.drive')
       })
     })
     describe('has a duplicated attribute', () => {

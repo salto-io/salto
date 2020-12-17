@@ -448,21 +448,21 @@ describe('projections', () => {
       const newField = new Field(
         parentObj,
         'new_field',
-        field.type,
+        field.getType(),
         _.clone(field.annotations),
       )
 
       const newPartialField = new Field(
         field.parent,
         'newName',
-        field.type,
+        field.getType(),
         _.omit(field.annotations, _.keys(partialField.annotations)),
       )
 
       const modifiedField = new Field(
         field.parent,
         field.name,
-        field.type,
+        field.getType(),
         _.cloneDeepWith(field.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
       )
 

@@ -483,8 +483,8 @@ describe('Elements validation', () => {
         })
 
         it('should return error when lists elements missing required fields', () => {
-          extType.fields.reqNested.type = new ListType(extType.fields.reqNested.type)
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extType.fields.reqNested.refType = createRefToElmWithValue(new ListType(extType.fields.reqNested.getType()))
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.reqNested = [
             {
               str: 'str',

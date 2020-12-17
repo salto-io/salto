@@ -282,8 +282,8 @@ describe('merger', () => {
       expect(merged).toHaveLength(2)
       const mergedPrim = merged[0] as PrimitiveType
       const mergedObj = merged[1] as ObjectType
-      const mapType = mergedObj.fields.prim.type as MapType
-      expect(mapType.innerType).toEqual(mergedPrim)
+      const mapType = mergedObj.fields.prim.getType() as MapType
+      expect(mapType.getInnerType()).toEqual(mergedPrim)
     })
   })
 
@@ -437,8 +437,8 @@ describe('merger', () => {
       ])
       expect(errors).toHaveLength(0)
       const element = merged[2] as ObjectType
-      expect(element.fields.prim.type).toEqual(strType)
-      expect(element.fields.base.type).toEqual(base)
+      expect(element.fields.prim.getType()).toEqual(strType)
+      expect(element.fields.base.getType()).toEqual(base)
     })
   })
 

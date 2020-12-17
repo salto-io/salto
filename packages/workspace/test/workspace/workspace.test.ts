@@ -19,9 +19,7 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType,
 } from '@salto-io/adapter-api'
-import {
-  findElement, applyDetailedChanges,
-} from '@salto-io/adapter-utils'
+import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
 import {
   METADATA_TYPE,
@@ -330,7 +328,7 @@ describe('workspace', () => {
       {},
     )
     const newField = oldField.clone()
-    newField.type = new ListType(newField.type)
+    newField.refType = createRefToElmWithValue(new ListType(newField.getType()))
     const anotherNewField = new Field(
       fieldsParent,
       'lala',
@@ -787,7 +785,7 @@ describe('workspace', () => {
         .annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, { foo: 'bla' }])
     })
     it('should change isList value in fields', () => {
-      expect(isListType(lead.fields.not_a_list_yet_field.type)).toBeTruthy()
+      expect(isListType(lead.fields.not_a_list_yet_field.getType())).toBeTruthy()
     })
 
     it('my formula was added correctly', () => {

@@ -238,14 +238,14 @@ let functions: Functions
       it('should have the correct inner type', () => {
         expect(genericTypes[0]).toBeDefined()
         const listType = genericTypes[0] as ListType
-        expect(listType?.innerType.elemID).toEqual(new ElemID('salesforce', 'string'))
+        expect(listType?.refInnerType.elemID).toEqual(new ElemID('salesforce', 'string'))
       })
     })
 
     describe('map type', () => {
       it('should have the correct inner type', () => {
         const mapType = elements.find(isMapType)
-        expect(mapType?.innerType.elemID).toEqual(new ElemID('salesforce', 'number'))
+        expect(mapType?.refInnerType.elemID).toEqual(new ElemID('salesforce', 'number'))
       })
     })
 
@@ -270,7 +270,7 @@ let functions: Functions
           expect(model.fields).toHaveProperty('name')
         })
         it('should have the correct type', () => {
-          expect(model.fields.name.type.elemID).toEqual(new ElemID('salesforce', 'string'))
+          expect(model.fields.name.refType.elemID).toEqual(new ElemID('salesforce', 'string'))
         })
         it('should have annotation values', () => {
           expect(model.fields.name.annotations).toHaveProperty('label')
@@ -285,7 +285,7 @@ let functions: Functions
           expect(model.fields).toHaveProperty('nicknames')
         })
         it('should have the correct type', () => {
-          expect(model.fields.nicknames.type.elemID).toEqual(new ElemID('', 'list<salesforce.string>'))
+          expect(model.fields.nicknames.refType.elemID).toEqual(new ElemID('', 'list<salesforce.string>'))
         })
       })
       describe('map field', () => {
@@ -293,7 +293,7 @@ let functions: Functions
           expect(model.fields).toHaveProperty('numChildren')
         })
         it('should have the correct type', () => {
-          expect(model.fields.numChildren.type.elemID).toEqual(new ElemID('', 'map<salesforce.number>'))
+          expect(model.fields.numChildren.refType.elemID).toEqual(new ElemID('', 'map<salesforce.number>'))
         })
       })
       describe('field annotations', () => {
@@ -397,7 +397,7 @@ let functions: Functions
         const orig = elements[7] as ObjectType
         const update = elements[8] as ObjectType
         expect(orig.elemID).toEqual(update.elemID)
-        expect(update.fields.num.type.elemID.name).toBe('update')
+        expect(update.fields.num.refType.elemID.name).toBe('update')
       })
     })
 

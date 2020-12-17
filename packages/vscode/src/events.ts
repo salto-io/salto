@@ -57,6 +57,22 @@ export const onFileOpen = (): void => {
   vscode.commands.executeCommand('editor.foldAllMarkerRegions')
 }
 
+export const onActiveTextEditorChange = async (
+  document: vscode.TextDocument | undefined,
+  workspace: ws.EditorWorkspace
+): Promise<void> => {
+  let isGoToServiceSupported: boolean
+  if (document === undefined || path.extname(document.fileName) !== FILE_EXTENSION) {
+    isGoToServiceSupported = false
+  } else {
+    const elements = await workspace.getElements(document.fileName)
+    isGoToServiceSupported = elements.some(e => e.elemID.adapter === 'salesforce')
+  }
+
+  vscode.commands.executeCommand('setContext', 'isGoToServiceSupported', isGoToServiceSupported)
+}
+
+
 const showReloadWSPrompt = _.debounce(async (): Promise<void> => {
   const msg = 'Some workspace files have changed. Reload vs-code for the change to take effect.'
   const action = 'Reload'

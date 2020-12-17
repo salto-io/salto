@@ -19,6 +19,8 @@ import wu from 'wu'
 import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 
+export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
+
 export class EditorWorkspace {
   private workspace: Workspace
   // Indicates that the workspace is not the active workspace
@@ -27,6 +29,7 @@ export class EditorWorkspace {
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
+  private pendingPromises: Promise<unknown>[] = []
   private wsErrors?: Promise<Readonly<errors.Errors>>
 
   constructor(public baseDir: string, workspace: Workspace) {
@@ -82,7 +85,9 @@ export class EditorWorkspace {
   }
 
   private hasPendingUpdates(): boolean {
-    return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
+    return !(_.isEmpty(this.pendingSets)
+      && _.isEmpty(this.pendingDeletes)
+      && _.isEmpty(this.pendingPromises))
   }
 
   private addPendingNaclFiles(naclFiles: nacl.NaclFile[]): void {
@@ -97,8 +102,10 @@ export class EditorWorkspace {
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
       const opNaclFiles = this.pendingSets
+      const { pendingPromises } = this
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
+      this.pendingPromises = []
       this.wsErrors = undefined
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
@@ -108,6 +115,9 @@ export class EditorWorkspace {
       if (!_.isEmpty(opNaclFiles) && this.workspace) {
         await this.workspace.setNaclFiles(..._.values(opNaclFiles))
       }
+
+      await Promise.all(pendingPromises)
+
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
       // keeps on waiting until the queue is clear.
@@ -184,6 +194,18 @@ export class EditorWorkspace {
   }
 
   async awaitAllUpdates(): Promise<void> {
-    if (this.runningSetOperation) await this.runningSetOperation
+    while (this.runningSetOperation !== undefined) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.runningSetOperation
+    }
+  }
+
+
+  async runOperationWithWorkspace<T>(operation: WorkspaceOperation<T>): Promise<T> {
+    this.awaitAllUpdates()
+    const operationPromise = operation(this.workspace)
+    this.pendingPromises.push(operationPromise)
+    this.runningSetOperation = this.runAggregatedSetOperation()
+    return operationPromise
   }
 }

@@ -64,4 +64,9 @@ describe('workspace', () => {
     const removeNaclFilesMock = baseWs.removeNaclFiles as jest.Mock
     expect(removeNaclFilesMock.mock.calls[0][0]).toContain('all.nacl')
   })
+
+  it('should call workspace opearation', async () => {
+    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
+    expect(await workspace.runOperationWithWorkspace(async _innerWorkspace => 'some value')).toBe('some value')
+  })
 })

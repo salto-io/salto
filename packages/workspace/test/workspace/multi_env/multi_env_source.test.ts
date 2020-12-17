@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { ElemID, BuiltinTypes, ObjectType, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes, ObjectType, DetailedChange, Change } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { createElementSelectors } from '../../../src/workspace/element_selector'
@@ -196,6 +196,124 @@ describe('multi env source', () => {
       expect(commonSource.updateNaclFiles).toHaveBeenCalled()
       expect(inactiveSource.updateNaclFiles).not.toHaveBeenCalled()
     })
+
+    it('should change inner state upon update with addition', async () => {
+      const change = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment])
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envFragment, envObject], {}, undefined, undefined, [change]
+      )
+      const secondarySourceName = 'env2'
+      const mockSecondaryNaclFileSource = createMockNaclFileSource([])
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+          [secondarySourceName]: mockSecondaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const detailedChange = { ...change, id: commonElemID, path: ['test'] } as DetailedChange
+      const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles([detailedChange])
+      expect(elementChanges).toEqual([change])
+      const mergedSaltoObject = new ObjectType({
+        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+      })
+      expect(await multiEnvSourceWithMockSources.getAll())
+        .toEqual([mergedSaltoObject, envObject, commonObject])
+    })
+    it('should change inner state upon update with removal', async () => {
+      const change = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonFragment], {}, undefined, undefined, [change]
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject])
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const mergedSaltoObject = new ObjectType({
+        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+      })
+      const detailedChange = {
+        action: 'modify',
+        data: { before: mergedSaltoObject, after: envFragment },
+        path: ['bla'],
+        id: objectElemID,
+      } as DetailedChange
+      const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles([detailedChange])
+      expect(elementChanges).toEqual([_.omit(detailedChange, ['path', 'id'])])
+      expect(await multiEnvSourceWithMockSources.getAll()).toEqual([envObject, envFragment])
+    })
+    it('should change inner state upon update with modification with multiple changes', async () => {
+      const newEnvFragment = new ObjectType({
+        elemID: objectElemID,
+        fields: { ...envFragment.fields, field1: { type: BuiltinTypes.SERVICE_ID } },
+      })
+      const removal = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
+      const addition = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
+      const envObjectRemoval = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
+      const modificaton = { action: 'modify', data: { before: envFragment, after: newEnvFragment } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonFragment], {}, undefined, undefined, [removal, addition]
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envFragment, envObject], {}, undefined, undefined, [envObjectRemoval, modificaton]
+      )
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const mergedSaltoObject = currentElements.find(e => e.elemID.isEqual(objectElemID))
+      const detailedChanges = [
+        {
+          action: 'remove',
+          data: { before: envObject },
+          path: ['bla1'],
+          id: envElemID,
+        },
+        {
+          action: 'modify',
+          data: { before: mergedSaltoObject, after: newEnvFragment },
+          path: ['bla'],
+          id: objectElemID,
+        },
+        {
+          action: 'add',
+          data: { after: commonObject },
+          path: ['bla1'],
+          id: commonElemID,
+        },
+      ] as DetailedChange[]
+      const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(detailedChanges)
+      const elements = await multiEnvSourceWithMockSources.getAll()
+      expect(elementChanges).toEqual(detailedChanges.map(dc => _.omit(dc, ['path', 'id'])))
+      expect(elements).toEqual([commonObject, newEnvFragment])
+    })
   })
   describe('flush', () => {
     it('should flush all sub sources', async () => {
@@ -306,6 +424,164 @@ describe('multi env source', () => {
       await source.setNaclFiles(naclFile)
       expect(commonSource.setNaclFiles).toHaveBeenCalled()
     })
+
+    it('should not change inner state upon set with no changes', async () => {
+      const change = { action: 'add', data: { after: inactiveFragment } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonFragment], {}, undefined, undefined, [change]
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envFragment, envObject], {}, undefined, undefined, [change]
+      )
+      const inactiveSourceName = 'env2'
+      const mockInacvtiveNaclFileSource = createMockNaclFileSource(
+        [inactiveObject], {}, undefined, undefined, [change]
+      )
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+          [inactiveSourceName]: mockInacvtiveNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles(
+        { filename: path.join(ENVS_PREFIX, inactiveSourceName, 'env.nacl'), buffer: 'test' }
+      )
+      expect(elementChanges).toHaveLength(0)
+      const elements = await multiEnvSourceWithMockSources.getAll()
+      expect(elements).toHaveLength(2)
+    })
+    it('should change inner state upon set with addition', async () => {
+      const change = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonFragment], {}, undefined, undefined, [change]
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject])
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles(
+        { filename: 'test', buffer: 'test' }
+      )
+      expect(elementChanges).toHaveLength(1)
+      expect(elementChanges[0]).toEqual(change)
+      const mergedSaltoObject = new ObjectType({
+        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+      })
+      expect(await multiEnvSourceWithMockSources.getAll())
+        .toEqual([mergedSaltoObject, envObject, commonObject])
+    })
+    it('should change inner state upon set with removal', async () => {
+      const change = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment])
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envFragment, envObject], {}, undefined, undefined, [change]
+      )
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles(
+        { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }
+      )
+      expect(elementChanges).toHaveLength(1)
+      expect(elementChanges[0]).toEqual(change)
+      const mergedSaltoObject = new ObjectType({
+        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+      })
+      expect(await multiEnvSourceWithMockSources.getAll()).toEqual([mergedSaltoObject])
+    })
+    it('should change inner state upon set with modification', async () => {
+      const newEnvObject = new ObjectType({
+        elemID: envElemID,
+        fields: { ...envObject.fields, field1: { type: BuiltinTypes.BOOLEAN } },
+      })
+      const change = {
+        action: 'modify',
+        data: { before: envObject, after: newEnvObject },
+      } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource([commonFragment])
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envFragment, envObject], {}, undefined, undefined, [change]
+      )
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles(
+        { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }
+      )
+      expect(elementChanges).toEqual([change])
+      const mergedSaltoObject = new ObjectType({
+        elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
+      })
+      expect(await multiEnvSourceWithMockSources.getAll())
+        .toEqual([mergedSaltoObject, newEnvObject])
+    })
+    it('should not change inner state upon set that ends up with the same state', async () => {
+      const removal = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
+      const addition = { action: 'add', data: { after: envObject } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonFragment], {}, undefined, undefined, [addition]
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envFragment, envObject], {}, undefined, undefined, [removal]
+      )
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = await multiEnvSourceWithMockSources.setNaclFiles(
+        { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' },
+        { filename: 'test', buffer: 'test' },
+      )
+      expect(elementChanges).toHaveLength(0)
+      expect(await multiEnvSourceWithMockSources.getAll()).toEqual(currentElements)
+    })
   })
   describe('removeNaclFiles', () => {
     it('should forward the removeNaclFiles command to the active source', async () => {
@@ -316,6 +592,58 @@ describe('multi env source', () => {
     it('should forward the removeNaclFiles command to the common source', async () => {
       await source.removeNaclFiles(path.join(commonPrefix, 'common.nacl'))
       expect(envSource.removeNaclFiles).toHaveBeenCalled()
+    })
+
+    it('should change inner state upon remove of a file', async () => {
+      const change = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonFragment], {}, undefined, undefined, [change]
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource([envObject])
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = await multiEnvSourceWithMockSources.removeNaclFiles('test.nacl')
+      expect(elementChanges).toEqual([change])
+      expect(await multiEnvSourceWithMockSources.getAll()).toEqual([envObject])
+    })
+    it('should change inner state upon remove of multiple files', async () => {
+      const removalCommon = { action: 'remove', data: { before: commonObject } } as Change<ObjectType>
+      const removalPrimary = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonObject], {}, undefined, undefined, [removalCommon]
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envObject], {}, undefined, undefined, [removalPrimary]
+      )
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+        },
+        primarySourceName,
+        commonSourceName,
+      )
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await multiEnvSourceWithMockSources.getAll()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = await multiEnvSourceWithMockSources.removeNaclFiles(
+        'test.nacl', path.join(ENVS_PREFIX, primarySourceName, 'env.nacl')
+      )
+      expect(elementChanges).toEqual([removalCommon, removalPrimary])
+      expect(await multiEnvSourceWithMockSources.getAll()).toEqual([])
     })
   })
   describe('getSourceMap', () => {

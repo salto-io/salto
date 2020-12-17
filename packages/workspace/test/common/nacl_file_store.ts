@@ -59,6 +59,13 @@ type salesforce.WithAnnotationsBlock {
 type salesforce.WithoutAnnotationsBlock {
 }
 
+salesforce.WithoutAnnotationsBlock instWithoutAnnotationsBlock {
+}
+
+type salesforce.WithoutAnnotationsBlockListNested {
+  "List<salesforce.WithoutAnnotationsBlock>" noAnno {
+  }
+}
 
 type salesforce.ObjWithHidden {
   annotations {
@@ -207,11 +214,11 @@ export const mockDirStore = (
     (buffer, filename) => ({ filename, buffer }))
   return {
     list: jest.fn()
-      .mockResolvedValue(Object.keys(naclFiles).filter(name => !exclude.includes(name))),
+      .mockImplementation(() => Object.keys(naclFiles).filter(name => !exclude.includes(name))),
     isEmpty: jest.fn().mockResolvedValue(Object.keys(naclFiles).length === 0),
     get: jest.fn().mockImplementation((filename: string) => Promise.resolve(naclFiles[filename])),
-    set: jest.fn().mockImplementation(() => Promise.resolve()),
-    delete: jest.fn().mockImplementation(() => Promise.resolve()),
+    set: jest.fn().mockImplementation((file: File<string>) => { naclFiles[file.filename] = file }),
+    delete: jest.fn().mockImplementation((fileName: string) => { delete naclFiles[fileName] }),
     clear: jest.fn().mockImplementation(() => Promise.resolve()),
     rename: jest.fn().mockImplementation(() => Promise.resolve()),
     renameFile: jest.fn().mockImplementation(() => Promise.resolve()),

@@ -17,7 +17,8 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField, isObjectType,
+  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField,
+  isObjectType, ContainerType,
 } from '@salto-io/adapter-api'
 import {
   findElement, applyDetailedChanges,
@@ -212,21 +213,6 @@ describe('workspace', () => {
       it('element field should return the element', async () => {
         expect(isField(await workspace.getValue(new ElemID('salesforce', 'lead', 'field', 'base_field')))).toBeTruthy()
       })
-
-      it('when merge error should return undefined', async () => {
-        const instanceElement = new InstanceElement(
-          'instWithHidden',
-          new ObjectType({
-            elemID: new ElemID('salesforce', 'ObjWithHidden'),
-          }),
-          { other: 2 },
-          [],
-          { [CORE_ANNOTATIONS.HIDDEN]: true },
-        )
-        await state.set(instanceElement)
-
-        expect(await workspace.getValue(instanceElement.elemID)).toBeUndefined()
-      })
     })
   })
 
@@ -321,25 +307,46 @@ describe('workspace', () => {
   })
 
   describe('removeNaclFiles', () => {
-    const dirStore = mockDirStore()
+    let dirStore: DirectoryStore<string>
     let workspace: Workspace
     const removedPaths = ['file.nacl', 'willbempty.nacl']
-    let elemMap: Record<string, Element>
 
-    beforeAll(async () => {
+    beforeEach(async () => {
+      dirStore = mockDirStore()
       workspace = await createWorkspace(dirStore)
+      await workspace.elements()
+    })
+
+    it('should update elements to not include fields from removed Nacl files', async () => {
       await workspace.removeNaclFiles(...removedPaths)
-      elemMap = getElemMap(await workspace.elements())
-    })
-
-    it('should update elements to not include fields from removed Nacl files', () => {
+      const elemMap = getElemMap(await workspace.elements())
+      expect(Object.keys(elemMap).sort())
+        .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
       const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(_.keys(lead.fields)).toHaveLength(1)
+      expect(Object.keys(lead.fields)).toContain('ext_field')
     })
 
-    it('should remove from store', () => {
+    it('should modify element to not include fields from removed Nacl files', async () => {
+      await workspace.removeNaclFiles('subdir/file.nacl')
+      const elemMap = getElemMap(await workspace.elements())
+      const lead = elemMap['salesforce.lead'] as ObjectType
+      expect(Object.keys(lead.fields)).not.toContain('ext_field')
+    })
+
+    it('should remove from store', async () => {
+      await workspace.removeNaclFiles(...removedPaths)
       const mockStoreDelete = dirStore.delete as jest.Mock
       expect(mockStoreDelete.mock.calls.map(c => c[0])).toEqual(removedPaths)
+    })
+
+    it('should also work if we do not call elements in advance', async () => {
+      const newWorkspace = await createWorkspace(mockDirStore())
+      await newWorkspace.removeNaclFiles(...removedPaths)
+      const elemMap = getElemMap(await newWorkspace.elements())
+      expect(Object.keys(elemMap).sort())
+        .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
+      const lead = elemMap['salesforce.lead'] as ObjectType
+      expect(Object.keys(lead.fields)).toContain('ext_field')
     })
   })
 
@@ -354,13 +361,24 @@ describe('workspace', () => {
       elemMap = getElemMap(await workspace.elements())
     })
 
-    it('should add new elements', () => {
-      expect(elemMap).toHaveProperty(['salesforce.new'])
-    })
     it('should update elements', () => {
-      const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(lead.fields.new_base).toBeDefined()
-      expect(lead.fields.base_field).not.toBeDefined()
+      const salesforceLeadElemID = new ElemID('salesforce', 'lead')
+      const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
+      const salesforceLeadObject = new ObjectType({
+        elemID: salesforceLeadElemID,
+        fields: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          new_base: { type: salesforceText },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          ext_field: { type: salesforceText, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
+        },
+      })
+      expect(elemMap).toEqual({
+        'multi.loc': new ObjectType({ elemID: new ElemID('multi', 'loc'), annotations: { b: 1 } }),
+        'salesforce.lead': salesforceLeadObject,
+        'salesforce.new': new ObjectType({ elemID: new ElemID('salesforce', 'new') }),
+        'salesforce.RenamedType1': new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
+      })
     })
 
     it('should create Nacl files that were added', async () => {
@@ -851,6 +869,11 @@ describe('workspace', () => {
         action: 'add',
         data: { after: renamedTypes.after },
       },
+      {
+        id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'attr', 'bla'),
+        action: 'add',
+        data: { after: 5 },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -993,6 +1016,18 @@ describe('workspace', () => {
       expect(objWithHidden.annotations).toHaveProperty('internalId')
       const nestedHiddenVal = elemMapWithHidden['salesforce.NestedHiddenVal'] as ObjectType
       expect(nestedHiddenVal.annotations).toHaveProperty('hidden_val_anno')
+    })
+
+    it('should change instance type if type was modified', () => {
+      const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
+      const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlock.instance.instWithoutAnnotationsBlock'] as InstanceElement
+      expect(changedInstance.type).toBe(changedType)
+    })
+
+    it('should change inner type inside containers types if type was changed', () => {
+      const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
+      const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlockListNested'] as ObjectType
+      expect((changedInstance.fields.noAnno.type as ContainerType).innerType).toBe(changedType)
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType

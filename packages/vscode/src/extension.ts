@@ -103,7 +103,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => (
   vscode.window.withProgress({
     location: vscode.ProgressLocation.Window,
-    title: 'Initiating @salto-io/core extension',
+    title: 'Initiating salto extension',
   },
   async () => onActivate(context))
 )

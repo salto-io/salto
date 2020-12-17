@@ -133,6 +133,9 @@ describe('merger', () => {
     },
   })
 
+  const typeRef = (typeToRef: TypeElement): ObjectType =>
+    new ObjectType({ elemID: typeToRef.elemID })
+
   describe('updates', () => {
     it('does not modify an element list with no updates', () => {
       const elements = [base, unrelated]
@@ -375,9 +378,6 @@ describe('merger', () => {
   })
 
   describe('replace type defs', () => {
-    const typeRef = (typeToRef: TypeElement): ObjectType =>
-      new ObjectType({ elemID: typeToRef.elemID })
-
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
@@ -448,6 +448,32 @@ describe('merger', () => {
       const { errors } = mergeElements(elements)
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual('Error merging salto.settingObj: conflicting is settings definitions')
+    })
+  })
+
+  describe('merge with context', () => {
+    const objectTypeElemID = new ElemID('salesforce', 'test')
+    const objTypeAnnotation = { test: 'my test' }
+    const objectType = new ObjectType({ elemID: objectTypeElemID, annotations: objTypeAnnotation })
+    const instanceElementToMerge = new InstanceElement('inst', typeRef(objectType))
+    const instanceElementContext = new InstanceElement('instInContext', typeRef(objectType))
+    it('should replace type refs with full types in the elements that are being merged', () => {
+      const elements = [instanceElementToMerge]
+      const context = _.keyBy([objectType], e => e.elemID.getFullName())
+      const { errors, merged } = mergeElements(elements, context)
+      expect(errors).toHaveLength(0)
+      const mergedElement = merged.find(e => e.elemID.isEqual(instanceElementToMerge.elemID))
+      expect(mergedElement).toBeDefined()
+      expect((mergedElement as InstanceElement).type).toBe(objectType)
+    })
+    it('should not replace type refs with full types in the context elements', () => {
+      const elements = [instanceElementToMerge]
+      const context = _.keyBy([objectType, instanceElementContext], e => e.elemID.getFullName())
+      const { errors, merged } = mergeElements(elements, context)
+      expect(errors).toHaveLength(0)
+      const mergedElement = merged.find(e => e.elemID.isEqual(instanceElementContext.elemID))
+      expect(mergedElement).toBeUndefined()
+      expect(instanceElementContext.type).not.toBe(objectType)
     })
   })
 })

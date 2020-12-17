@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import * as path from 'path'
 import { EditorWorkspace } from '../src/workspace'
 import { mockWorkspace } from './workspace'
@@ -69,8 +68,10 @@ describe('workspace', () => {
   it('should call workspace opearation', async () => {
     const baseWs = await mockWorkspace(naclFileName)
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-    expect(await workspace.runOperationWithWorkspace(async _innerWorkspace =>
-      baseWs === _innerWorkspace)).toBeTruthy()
+
+    const mockFunc = jest.fn().mockReturnValue(Promise.resolve('value'))
+    expect(await workspace.runOperationWithWorkspace(mockFunc)).toBe('value')
+    expect(mockFunc).toHaveBeenCalledWith(baseWs)
   })
 
   it('should not run two workspace opearations in parallel', async () => {
@@ -94,6 +95,6 @@ describe('workspace', () => {
     await firstPromise
     await secondPromise
 
-    expect(_.isEqual(arr, ['second', 'second', 'first', 'first']) || _.isEqual(arr, ['first', 'first', 'second', 'second'])).toBeTruthy()
+    expect(arr).toEqual(['first', 'first', 'second', 'second'])
   })
 })

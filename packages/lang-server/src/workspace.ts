@@ -85,8 +85,7 @@ export class EditorWorkspace {
   }
 
   private hasPendingUpdates(): boolean {
-    return !(_.isEmpty(this.pendingSets)
-      && _.isEmpty(this.pendingDeletes))
+    return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
   }
 
   private addPendingNaclFiles(naclFiles: nacl.NaclFile[]): void {
@@ -190,7 +189,7 @@ export class EditorWorkspace {
   }
 
   async awaitAllUpdates(): Promise<void> {
-    await this.runningWorkspaceOperation
+    await this.runningSetOperation
   }
 
   private async waitForOperation(operationPromise: Promise<unknown>): Promise<void> {
@@ -201,11 +200,10 @@ export class EditorWorkspace {
   async runOperationWithWorkspace<T>(operation: WorkspaceOperation<T>): Promise<T> {
     while (this.runningWorkspaceOperation !== undefined) {
       // eslint-disable-next-line no-await-in-loop
-      await this.awaitAllUpdates()
+      await this.runningWorkspaceOperation
     }
     const operationPromise = operation(this.workspace)
     this.runningWorkspaceOperation = this.waitForOperation(operationPromise)
-    await this.runningWorkspaceOperation
     return operationPromise
   }
 }

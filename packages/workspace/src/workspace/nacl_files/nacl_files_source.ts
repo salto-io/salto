@@ -250,8 +250,8 @@ const buildNaclFilesState = (
   const mergedResult = buildNewMergedElementsAndErrors({
     newElements: newElementsToMerge,
     relevantElementIDs: [...relevantElementIDs],
-    currentElements: currentState?.mergedElements,
-    currentMergeErrors: currentState?.mergeErrors,
+    currentElements: currentState.mergedElements,
+    currentMergeErrors: currentState.mergeErrors,
   })
   return {
     state: {

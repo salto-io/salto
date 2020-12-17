@@ -1094,10 +1094,6 @@ export const getSObjectFieldElement = (
   if (field.picklistValues && field.picklistValues.length > 0) {
     addPicklistAnnotations(field.picklistValues,
       Boolean(field.restrictedPicklist), annotations)
-    if (field.dependentPicklist) {
-      // will be populated in the field_dependencies filter
-      annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = {}
-    }
     if (field.type === 'multipicklist') {
       // Precision is the field for multi-picklist in SFDC API that defines how many objects will
       // be visible in the picklist in the UI. Why? Because.
@@ -1132,10 +1128,6 @@ export const getSObjectFieldElement = (
       // there are some SF reference fields without related fields
       // e.g. salesforce.user_app_menu_item.ApplicationId, salesforce.login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
-    }
-    if (field.filteredLookupInfo) {
-      // will be populated in the lookup_filter filter
-      annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
   // Compound Fields
   } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {

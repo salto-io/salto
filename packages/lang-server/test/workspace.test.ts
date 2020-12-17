@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import * as path from 'path'
 import { EditorWorkspace } from '../src/workspace'
 import { mockWorkspace } from './workspace'
@@ -66,7 +67,33 @@ describe('workspace', () => {
   })
 
   it('should call workspace opearation', async () => {
+    const baseWs = await mockWorkspace(naclFileName)
+    const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+    expect(await workspace.runOperationWithWorkspace(async _innerWorkspace =>
+      baseWs === _innerWorkspace)).toBeTruthy()
+  })
+
+  it('should not run two workspace opearations in parallel', async () => {
+    const arr: string[] = []
+
+    const firstOperation = async (): Promise<void> => {
+      arr.push('first')
+      await new Promise(resolve => setTimeout(resolve, 0))
+      arr.push('first')
+    }
+
+    const secondOperation = async (): Promise<void> => {
+      arr.push('second')
+      await new Promise(resolve => setTimeout(resolve, 0))
+      arr.push('second')
+    }
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
-    expect(await workspace.runOperationWithWorkspace(async _innerWorkspace => 'some value')).toBe('some value')
+    const firstPromise = workspace.runOperationWithWorkspace(firstOperation)
+    const secondPromise = workspace.runOperationWithWorkspace(secondOperation)
+
+    await firstPromise
+    await secondPromise
+
+    expect(_.isEqual(arr, ['second', 'second', 'first', 'first']) || _.isEqual(arr, ['first', 'first', 'second', 'second'])).toBeTruthy()
   })
 })

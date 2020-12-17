@@ -16,7 +16,7 @@
 import * as vscode from 'vscode'
 import { loadLocalWorkspace } from '@salto-io/core'
 import { diagnostics, workspace as ws } from '@salto-io/lang-server'
-import { onTextChangeEvent, onFileChange, onFileOpen, onActiveTextEditorChange, createReportErrorsEventListener } from './events'
+import { onTextChangeEvent, onFileChange, onFileOpen, createReportErrorsEventListener } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -68,8 +68,6 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       createFoldingProvider(workspace)
     )
 
-    onActiveTextEditorChange(vscode.window.activeTextEditor?.document, workspace)
-
     context.subscriptions.push(
       completionProvider,
       definitionProvider,
@@ -84,8 +82,6 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
         createReportErrorsEventListener(workspace, diagCollection)
       ),
       vscode.workspace.onDidOpenTextDocument(onFileOpen),
-      vscode.window.onDidChangeActiveTextEditor(e =>
-        onActiveTextEditorChange(e?.document, workspace)),
       vscode.commands.registerCommand('salto.copyReference', createCopyReferenceCommand(workspace)),
       vscode.commands.registerCommand('salto.goToService', createGoToServiceCommand(workspace))
     )

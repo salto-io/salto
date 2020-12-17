@@ -47,7 +47,7 @@
                 {
                     "command": "salto.goToService",
                     "group": "navigation@3",
-                    "when": "resourceExtname == .nacl && isGoToServiceSupported"
+                    "when": "resourceExtname == .nacl"
                 }
             ]
         },

@@ -27,9 +27,9 @@ export class EditorWorkspace {
   // (which means that the active workspace contains errors)
   // attempting to modify a copy of a workspace will result in an error
   private runningSetOperation?: Promise<void>
+  private runningWorkspaceOperation?: Promise<void>
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
-  private pendingPromises: Promise<unknown>[] = []
   private wsErrors?: Promise<Readonly<errors.Errors>>
 
   constructor(public baseDir: string, workspace: Workspace) {
@@ -86,8 +86,7 @@ export class EditorWorkspace {
 
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets)
-      && _.isEmpty(this.pendingDeletes)
-      && _.isEmpty(this.pendingPromises))
+      && _.isEmpty(this.pendingDeletes))
   }
 
   private addPendingNaclFiles(naclFiles: nacl.NaclFile[]): void {
@@ -102,10 +101,8 @@ export class EditorWorkspace {
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
       const opNaclFiles = this.pendingSets
-      const { pendingPromises } = this
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
-      this.pendingPromises = []
       this.wsErrors = undefined
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
@@ -115,8 +112,6 @@ export class EditorWorkspace {
       if (!_.isEmpty(opNaclFiles) && this.workspace) {
         await this.workspace.setNaclFiles(..._.values(opNaclFiles))
       }
-
-      await Promise.all(pendingPromises)
 
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
@@ -129,7 +124,8 @@ export class EditorWorkspace {
 
   private async triggerAggregatedSetOperation(): Promise<void> {
     if (this.runningSetOperation === undefined) {
-      this.runningSetOperation = this.runAggregatedSetOperation()
+      this.runningSetOperation = this.runOperationWithWorkspace(() =>
+        this.runAggregatedSetOperation())
     }
     return this.runningSetOperation
   }
@@ -194,18 +190,22 @@ export class EditorWorkspace {
   }
 
   async awaitAllUpdates(): Promise<void> {
-    while (this.runningSetOperation !== undefined) {
-      // eslint-disable-next-line no-await-in-loop
-      await this.runningSetOperation
-    }
+    await this.runningWorkspaceOperation
   }
 
+  private async waitForOperation(operationPromise: Promise<unknown>): Promise<void> {
+    await operationPromise
+    this.runningWorkspaceOperation = undefined
+  }
 
   async runOperationWithWorkspace<T>(operation: WorkspaceOperation<T>): Promise<T> {
-    this.awaitAllUpdates()
+    while (this.runningWorkspaceOperation !== undefined) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.awaitAllUpdates()
+    }
     const operationPromise = operation(this.workspace)
-    this.pendingPromises.push(operationPromise)
-    this.runningSetOperation = this.runAggregatedSetOperation()
+    this.runningWorkspaceOperation = this.waitForOperation(operationPromise)
+    await this.runningWorkspaceOperation
     return operationPromise
   }
 }

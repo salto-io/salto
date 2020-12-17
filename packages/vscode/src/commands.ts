@@ -15,8 +15,11 @@
 */
 import * as vscode from 'vscode'
 import _ from 'lodash'
+import open from 'open'
+
 import { copy as copyToClipboard } from 'copy-paste'
 import { context, workspace as ws } from '@salto-io/lang-server'
+import { getElementUrl } from '@salto-io/core'
 import { vsPosToSaltoPos } from './adapters'
 
 export const createCopyReferenceCommand = (
@@ -41,4 +44,42 @@ export const createCopyReferenceCommand = (
       : ctx.ref.element.elemID.getFullName()
     copyToClipboard(copyText)
   }
+}
+
+
+const getServiceUrl = async (workspace: ws.EditorWorkspace): Promise<URL | undefined> => {
+  const editor = vscode.window.activeTextEditor
+  if (editor === undefined) {
+    return undefined
+  }
+
+  const position = editor.selection.active
+  await workspace.awaitAllUpdates()
+  const saltoPos = vsPosToSaltoPos(position)
+  const ctx = await context.getPositionContext(
+    workspace,
+    editor.document.fileName,
+    saltoPos
+  )
+
+  if (ctx.ref === undefined) {
+    return undefined
+  }
+  const { elemID } = ctx.ref.element
+
+  return workspace.runOperationWithWorkspace(innerWorkspace =>
+    getElementUrl(innerWorkspace, elemID))
+}
+
+export const createGoToServiceCommand = (
+  workspace: ws.EditorWorkspace
+): (
+) => Promise<void> => async () => {
+  const url = await getServiceUrl(workspace)
+  if (url === undefined) {
+    vscode.window.showErrorMessage('Go to service is not supported for the chosen token')
+    return
+  }
+  // Using this library instead of vscode.env.openExternal because of issue: https://github.com/microsoft/vscode/issues/112577
+  open(url.href)
 }

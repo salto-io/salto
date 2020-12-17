@@ -31,6 +31,10 @@
             {
                 "command": "salto.copyReference",
                 "title": "Copy Salto Reference"
+            },
+            {
+                "command": "salto.goToService",
+                "title": "Go To Service"
             }
         ],
         "menus": {
@@ -38,6 +42,11 @@
                 {
                     "command": "salto.copyReference",
                     "group": "9_cutcopypaste",
+                    "when": "resourceExtname == .nacl"
+                },
+                {
+                    "command": "salto.goToService",
+                    "group": "navigation@3",
                     "when": "resourceExtname == .nacl"
                 }
             ]
@@ -122,6 +131,7 @@
         "@salto-io/workspace": "0.2.0",
         "copy-paste": "^1.3.0",
         "lodash": "^4.17.19",
+        "open": "^7.2.0",
         "wu": "^2.1.0"
     },
     "devDependencies": {

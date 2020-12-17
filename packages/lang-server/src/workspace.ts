@@ -19,12 +19,15 @@ import wu from 'wu'
 import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 
+export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
+
 export class EditorWorkspace {
   private workspace: Workspace
   // Indicates that the workspace is not the active workspace
   // (which means that the active workspace contains errors)
   // attempting to modify a copy of a workspace will result in an error
   private runningSetOperation?: Promise<void>
+  private runningWorkspaceOperation?: Promise<void>
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
   private wsErrors?: Promise<Readonly<errors.Errors>>
@@ -108,6 +111,7 @@ export class EditorWorkspace {
       if (!_.isEmpty(opNaclFiles) && this.workspace) {
         await this.workspace.setNaclFiles(..._.values(opNaclFiles))
       }
+
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
       // keeps on waiting until the queue is clear.
@@ -119,7 +123,8 @@ export class EditorWorkspace {
 
   private async triggerAggregatedSetOperation(): Promise<void> {
     if (this.runningSetOperation === undefined) {
-      this.runningSetOperation = this.runAggregatedSetOperation()
+      this.runningSetOperation = this.runOperationWithWorkspace(() =>
+        this.runAggregatedSetOperation())
     }
     return this.runningSetOperation
   }
@@ -184,6 +189,21 @@ export class EditorWorkspace {
   }
 
   async awaitAllUpdates(): Promise<void> {
-    if (this.runningSetOperation) await this.runningSetOperation
+    await this.runningSetOperation
+  }
+
+  private async waitForOperation(operationPromise: Promise<unknown>): Promise<void> {
+    await operationPromise
+    this.runningWorkspaceOperation = undefined
+  }
+
+  async runOperationWithWorkspace<T>(operation: WorkspaceOperation<T>): Promise<T> {
+    while (this.runningWorkspaceOperation !== undefined) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.runningWorkspaceOperation
+    }
+    const operationPromise = operation(this.workspace)
+    this.runningWorkspaceOperation = this.waitForOperation(operationPromise)
+    return operationPromise
   }
 }

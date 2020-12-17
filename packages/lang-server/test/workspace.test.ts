@@ -64,4 +64,37 @@ describe('workspace', () => {
     const removeNaclFilesMock = baseWs.removeNaclFiles as jest.Mock
     expect(removeNaclFilesMock.mock.calls[0][0]).toContain('all.nacl')
   })
+
+  it('should call workspace opearation', async () => {
+    const baseWs = await mockWorkspace(naclFileName)
+    const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+
+    const mockFunc = jest.fn().mockReturnValue(Promise.resolve('value'))
+    expect(await workspace.runOperationWithWorkspace(mockFunc)).toBe('value')
+    expect(mockFunc).toHaveBeenCalledWith(baseWs)
+  })
+
+  it('should not run two workspace opearations in parallel', async () => {
+    const arr: string[] = []
+
+    const firstOperation = async (): Promise<void> => {
+      arr.push('first')
+      await new Promise(resolve => setTimeout(resolve, 0))
+      arr.push('first')
+    }
+
+    const secondOperation = async (): Promise<void> => {
+      arr.push('second')
+      await new Promise(resolve => setTimeout(resolve, 0))
+      arr.push('second')
+    }
+    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
+    const firstPromise = workspace.runOperationWithWorkspace(firstOperation)
+    const secondPromise = workspace.runOperationWithWorkspace(secondOperation)
+
+    await firstPromise
+    await secondPromise
+
+    expect(arr).toEqual(['first', 'first', 'second', 'second'])
+  })
 })

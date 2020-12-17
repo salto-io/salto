@@ -24,7 +24,7 @@ import {
   createFoldingProvider,
 } from './providers'
 import { toVSDiagnostics } from './adapters'
-import { createCopyReferenceCommand } from './commands'
+import { createCopyReferenceCommand, createGoToServiceCommand } from './commands'
 /**
  * This files act as a bridge between VSC and the @salto-io/core specific functionality.
  */
@@ -82,7 +82,8 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
         createReportErrorsEventListener(workspace, diagCollection)
       ),
       vscode.workspace.onDidOpenTextDocument(onFileOpen),
-      vscode.commands.registerCommand('salto.copyReference', createCopyReferenceCommand(workspace))
+      vscode.commands.registerCommand('salto.copyReference', createCopyReferenceCommand(workspace)),
+      vscode.commands.registerCommand('salto.goToService', createGoToServiceCommand(workspace))
     )
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.nacl')
     fileWatcher.onDidCreate((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))

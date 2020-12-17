@@ -100,7 +100,7 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
       expect(isListType(mockObjectType.fields.listFieldTest.getType())).toBeTruthy()
       expect(isListType(mockObjectType.fields.listOfListFieldTest.getType())).toBeTruthy()
       const mapOfListType = mockObjectType.fields.mapOfListFieldTest.getType() as MapType
-      expect(isListType(mapOfListType.innerType)).toBeTruthy()
+      expect(isListType(mapOfListType.getInnerType())).toBeTruthy()
     })
 
     it('should return false for non-list types', () => {
@@ -115,7 +115,7 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
       expect(isMapType(mockObjectType.fields.mapOfMapFieldTest.getType())).toBeTruthy()
       expect(isMapType(mockObjectType.fields.mapOfListFieldTest.getType())).toBeTruthy()
       const listOfMapType = mockObjectType.fields.listOfMapFieldTest.getType() as ListType
-      expect(isMapType(listOfMapType.innerType)).toBeTruthy()
+      expect(isMapType(listOfMapType.getInnerType())).toBeTruthy()
     })
 
     it('should return false for non-map types', () => {

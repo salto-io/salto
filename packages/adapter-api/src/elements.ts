@@ -143,28 +143,43 @@ abstract class PlaceholderTypeElement extends Element {
 export class ListType extends Element {
   public refInnerType: ReferenceExpression
   public constructor(
-    innerTypeOrRefInnerType: TypeElement | ReferenceExpression
+    innerTypeOrRef: TypeElement | ReferenceExpression
   ) {
     super({
-      elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
+      elemID: new ElemID('', `list<${innerTypeOrRef.elemID.getFullName()}>`),
     })
-    this.setInnerType(innerTypeOrRefInnerType)
+    this.refInnerType = isReferenceExpression(innerTypeOrRef)
+      ? innerTypeOrRef
+      : new ReferenceExpression(innerTypeOrRef.elemID, innerTypeOrRef)
+    this.setRefInnerType(innerTypeOrRef)
   }
 
   isEqual(other: ListType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+    return super.isEqual(other) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID)
   }
 
   clone(): ListType {
     return new ListType(
-      this.innerType.clone()
+      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
     )
   }
 
+  getInnerType(elementsSource?: ElementsSource): TypeElement {
+    const refInnerTypeVal = this.refInnerType.getResolvedValue(elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isType(refInnerTypeVal)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
+    }
+    return refInnerTypeVal
+  }
+
   setRefInnerType(innerTypeOrRefInnerType: TypeElement | ReferenceExpression): void {
-    if (innerType.elemID.isEqual(this.refInnerType.elemID)) {
-      this.refInnerType = innerTypeOrRefInnerType
+    if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
+      this.refInnerType = isReferenceExpression(innerTypeOrRefInnerType)
+        ? innerTypeOrRefInnerType
+        : new ReferenceExpression(innerTypeOrRefInnerType.elemID, innerTypeOrRefInnerType)
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
       const innerType = isType(innerTypeOrRefInnerType)
         ? innerTypeOrRefInnerType
         : innerTypeOrRefInnerType.value()
@@ -182,31 +197,52 @@ export class ListType extends Element {
  * Represents a map with string keys and innerType values.
  */
 export class MapType extends Element {
+  public refInnerType: ReferenceExpression
   public constructor(
-   public innerType: TypeElement
+    innerTypeOrRef: TypeElement | ReferenceExpression
   ) {
     super({
-      elemID: new ElemID('', `map<${innerType.elemID.getFullName()}>`),
+      elemID: new ElemID('', `map<${innerTypeOrRef.elemID.getFullName()}>`),
     })
-    this.setInnerType(innerType)
+    this.refInnerType = isReferenceExpression(innerTypeOrRef)
+      ? innerTypeOrRef
+      : new ReferenceExpression(innerTypeOrRef.elemID, innerTypeOrRef)
+    this.setRefInnerType(innerTypeOrRef)
   }
 
-  isEqual(other: MapType): boolean {
+  isEqual(other: ListType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+    return super.isEqual(other) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID)
   }
 
-  clone(): MapType {
-    return new MapType(
-      this.innerType.clone()
+  clone(): ListType {
+    return new ListType(
+      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
     )
   }
 
-  setInnerType(innerType: TypeElement): void {
-    if (innerType.elemID.isEqual(this.innerType.elemID)) {
-      this.innerType = innerType
-      this.annotations = innerType.annotations
-      this.annotationTypes = innerType.annotationTypes
+  getInnerType(elementsSource?: ElementsSource): TypeElement {
+    const refInnerTypeVal = this.refInnerType.getResolvedValue(elementsSource)
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (!isType(refInnerTypeVal)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
+    }
+    return refInnerTypeVal
+  }
+
+  setRefInnerType(innerTypeOrRefInnerType: TypeElement | ReferenceExpression): void {
+    if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
+      this.refInnerType = isReferenceExpression(innerTypeOrRefInnerType)
+        ? innerTypeOrRefInnerType
+        : new ReferenceExpression(innerTypeOrRefInnerType.elemID, innerTypeOrRefInnerType)
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      const innerType = isType(innerTypeOrRefInnerType)
+        ? innerTypeOrRefInnerType
+        : innerTypeOrRefInnerType.value()
+      if (innerType !== undefined) {
+        this.annotations = innerType.annotations
+        this.annotationTypes = innerType.annotationTypes
+      }
     } else {
       throw new Error('Inner type id does not match MapType id')
     }

@@ -732,11 +732,12 @@ describe('Test elements.ts', () => {
       it('should set new innerType with correct elemID', () => {
         const newInnerType = primStr.clone()
         newInnerType.annotate({ testAnnotation: 'value' })
-        lstType.setInnerType(newInnerType)
+        lstType.setRefInnerType(newInnerType)
         expect(lstType.annotations).toEqual({ testAnnotation: 'value' })
       })
+      // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
-        expect(() => { lstType.setInnerType(ot) }).toThrow()
+        expect(() => { lstType.setRefInnerType(ot) }).toThrow()
       })
     })
   })
@@ -750,11 +751,12 @@ describe('Test elements.ts', () => {
       it('should set new innerType with correct elemID', () => {
         const newInnerType = primStr.clone()
         newInnerType.annotate({ testAnnotation: 'value' })
-        mapType.setInnerType(newInnerType)
+        mapType.setRefInnerType(newInnerType)
         expect(mapType.annotations).toEqual({ testAnnotation: 'value' })
       })
+      // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
-        expect(() => { mapType.setInnerType(ot) }).toThrow()
+        expect(() => { mapType.setRefInnerType(ot) }).toThrow()
       })
     })
   })

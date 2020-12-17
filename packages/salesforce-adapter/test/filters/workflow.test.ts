@@ -78,7 +78,7 @@ describe('Workflow filter', () => {
   const generateInnerInstance = (values: MetadataValues, fieldName: string): InstanceElement => (
     createInstanceElement(
       values,
-      (mockTypes.Workflow.fields[fieldName].getType() as ListType).innerType as ObjectType,
+      (mockTypes.Workflow.fields[fieldName].getType() as ListType).getInnerType() as ObjectType,
     )
   )
 
@@ -94,7 +94,7 @@ describe('Workflow filter', () => {
         const workflowSubTypes = Object.keys(WORKFLOW_FIELD_TO_TYPE)
           .map(fieldName => workflowType.fields[fieldName].getType())
           .filter(isListType)
-          .map(fieldType => fieldType.innerType)
+          .map(fieldType => fieldType.getInnerType())
         elements = [workflowType, workflowWithInnerTypes, ...workflowSubTypes]
         await filter.onFetch(elements)
       })

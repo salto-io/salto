@@ -35,7 +35,7 @@ const convertUserIdentifiers = (
     listType: ListType,
     listValue: Values,
   ): void => {
-    const currentLevelInnerType = listType.innerType
+    const currentLevelInnerType = listType.getInnerType()
     if (isListType(currentLevelInnerType)) {
       getValueAsArray(listValue).forEach((val: Values): void => {
         convertListTypeOfObjectType(currentLevelInnerType, val)

@@ -1187,7 +1187,7 @@ const doesObjectIncludeUserIdentifier = (
       return doesObjectIncludeUserIdentifier(type, checkedTypes)
     }
     if (isContainerType(type)) {
-      return doesTypeIncludeUserIdentifier(type.innerType)
+      return doesTypeIncludeUserIdentifier(type.getInnerType())
     }
     return isUserIdentifierType(type)
   }

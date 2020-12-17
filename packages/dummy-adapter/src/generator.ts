@@ -292,12 +292,14 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       return _.mapValues(ref.fields, field => generateValue(field.getType()))
     }
     if (isListType(ref)) {
-      return arrayOf(getListLength(), () => generateValue(ref.innerType))
+      return arrayOf(getListLength(), () => generateValue(ref.getInnerType()))
     }
     if (isMapType(ref)) {
-      return Object.fromEntries(arrayOf(getListLength(), () => generateValue(ref.innerType)).map(
-        (val, index) => [`k${index}`, val]
-      ))
+      return Object.fromEntries(
+        arrayOf(getListLength(), () => generateValue(ref.getInnerType())).map(
+          (val, index) => [`k${index}`, val]
+        )
+      )
     }
     // Linter token
     return undefined

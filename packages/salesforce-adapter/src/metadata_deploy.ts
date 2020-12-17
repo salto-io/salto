@@ -44,7 +44,7 @@ const addNestedInstanceRemovalsToPackage = (
   nestedTypeInfo.nestedInstanceFields.forEach(fieldName => {
     const rawFieldType = changeElem.getType().fields[fieldName]?.getType()
     // We generally expect these to be lists, handling non list types just in case of a bug
-    const fieldType = isContainerType(rawFieldType) ? rawFieldType.innerType : rawFieldType
+    const fieldType = isContainerType(rawFieldType) ? rawFieldType.getInnerType() : rawFieldType
     if (!isMetadataObjectType(fieldType)) {
       log.error(
         'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',

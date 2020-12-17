@@ -309,7 +309,7 @@ describe('Test utils.ts', () => {
             field: new Field(
               mockType.fields.strArray.parent,
               mockType.fields.strArray.name,
-              (mockType.fields.strArray.getType() as ListType).innerType,
+              (mockType.fields.strArray.getType() as ListType).getInnerType(),
               mockType.fields.strArray.annotations,
             ),
           })
@@ -340,7 +340,7 @@ describe('Test utils.ts', () => {
               field: new Field(
                 mockType.fields.numArray.parent,
                 mockType.fields.numArray.name,
-                (numArrayFieldType as ListType).innerType,
+                (numArrayFieldType as ListType).getInnerType(),
                 mockType.fields.numArray.annotations,
               ),
             })
@@ -373,13 +373,13 @@ describe('Test utils.ts', () => {
           ): Field => {
             if (typeof path[0] === 'number' && isListType(type)) {
               return getField(
-                (type.innerType as ObjectType | ContainerType),
+                (type.getInnerType() as ObjectType | ContainerType),
                 path.slice(1),
                 value[path[0]],
               )
             }
             const field = isMapType(type)
-              ? new Field(toObjectType(type, value), String(path[0]), type.innerType)
+              ? new Field(toObjectType(type, value), String(path[0]), type.getInnerType())
               : type.fields[path[0]]
             return path.length === 1 ? field
               : getField(

@@ -70,8 +70,7 @@ export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectT
       fields: Object.fromEntries(Object.keys(value).map(key =>
         [
           key,
-          // TODO: Change this to the type's refType later
-          { refType: createRefToElmWithValue(type.innerType) },
+          { refType: type.refInnerType },
         ])),
       annotationTypes: type.annotationTypes,
       annotations: type.annotations,
@@ -145,7 +144,7 @@ export const transformValues = (
           new Field(
             field.parent,
             field.name,
-            fieldType.innerType,
+            fieldType.refInnerType,
             field.annotations
           ),
         ))
@@ -325,14 +324,14 @@ export const transformElement = <T extends Element>(
 
   if (isListType(element)) {
     newElement = new ListType(
-      transformElement({ element: element.innerType, transformFunc, strict })
+      transformElement({ element: element.getInnerType(elementsSource), transformFunc, strict })
     )
     return newElement as T
   }
 
   if (isMapType(element)) {
     newElement = new MapType(
-      transformElement({ element: element.innerType, transformFunc, strict })
+      transformElement({ element: element.getInnerType(elementsSource), transformFunc, strict })
     )
     return newElement as T
   }
@@ -702,7 +701,9 @@ export const applyRecursive = (type: ObjectType | MapType, value: Values,
     value[key] = innerChange(objType.fields[key], value[key])
     const fieldType = objType.fields[key].getType(elementsSource)
     if (!isContainerType(fieldType) && !isObjectType(fieldType)) return
-    const actualFieldType = isContainerType(fieldType) ? fieldType.innerType : fieldType
+    const actualFieldType = isContainerType(fieldType)
+      ? fieldType.getInnerType(elementsSource)
+      : fieldType
     if (isObjectType(actualFieldType)) {
       if (_.isArray(value[key])) {
         value[key].forEach((val: Values) =>

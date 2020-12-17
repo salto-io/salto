@@ -33,7 +33,7 @@ type SubElementSearchResult = {
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
 
 export const getDeepInnerType = (containerType: ContainerType): ObjectType | PrimitiveType => {
-  const { innerType } = containerType
+  const innerType = containerType.getInnerType() // TODO: ElementsSource
   if (!isContainerType(innerType)) {
     return innerType
   }
@@ -46,7 +46,7 @@ export const getSubElement = (
 ): SubElementSearchResult | undefined => {
   const getChildElement = (source: TypeElement, key: string): Field | TypeElement| undefined => {
     if ((isIndexPathPart(key) && isListType(source)) || isMapType(source)) {
-      return source.innerType
+      return source.getInnerType() // TODO: ElementsSource
     }
     if (source.annotationTypes[key]) return source.annotationTypes[key]
     if (isObjectType(source)) return source.fields[key]
@@ -110,7 +110,7 @@ export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>)
       return fieldType
     }
     if ((isIndexPathPart(curPart) && isListType(fieldType)) || isMapType(fieldType)) {
-      return getFieldInternalType(fieldType.innerType, restOfParts)
+      return getFieldInternalType(fieldType.getInnerType(), restOfParts) // TODO: elementsSource
     }
     return undefined
   }

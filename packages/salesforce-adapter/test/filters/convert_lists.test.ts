@@ -308,18 +308,18 @@ describe('convert lists filter', () => {
 
     it('should convert list inside objs in lists', () => {
       expect(isListType(type.fields.ordered.getType())).toBeTruthy()
-      const { innerType } = (type.fields.ordered.getType() as ListType)
+      const innerType = (type.fields.ordered.getType() as ListType).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
       expect(isListType((innerType as ObjectType).fields.list.getType())).toBeTruthy()
     })
 
     it('should convert list inside objs in list inside list of obj', () => {
       expect(isListType(type.fields.ordered.getType())).toBeTruthy()
-      const { innerType } = (type.fields.ordered.getType() as ListType)
+      const innerType = (type.fields.ordered.getType() as ListType).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
       expect(isListType((innerType as ObjectType).fields.listOfObj.getType())).toBeTruthy()
       const innerInnerType = ((innerType as ObjectType).fields.listOfObj
-        .getType() as ListType).innerType
+        .getType() as ListType).getInnerType()
       expect(isObjectType(innerInnerType)).toBeTruthy()
       expect(isListType((innerInnerType as ObjectType).fields.list.getType())).toBeTruthy()
     })
@@ -332,7 +332,7 @@ describe('convert lists filter', () => {
     it('should convert a list inside an hardcoded field to list', () => {
       const hardcodedObjType = type.fields.singleObjHardcoded.getType()
       expect(isListType(hardcodedObjType)).toBeTruthy()
-      const innerObj = (hardcodedObjType as ListType).innerType
+      const innerObj = (hardcodedObjType as ListType).getInnerType()
       expect(isObjectType(innerObj)).toBeTruthy()
       expect(isListType((innerObj as ObjectType).fields.list.getType())).toBeTruthy()
     })

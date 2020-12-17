@@ -432,7 +432,7 @@ describe('SalesforceAdapter fetch', () => {
         expect(layout.value.layoutSections[2].style).toBe('CustomLinks')
         expect(
           ((layout.getType().fields.processMetadataValues.getType() as ListType)
-            .innerType as ObjectType).fields.name.refType.elemID.name
+            .getInnerType() as ObjectType).fields.name.refType.elemID.name
         ).toBe('string')
         expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
         // empty objects should be omitted

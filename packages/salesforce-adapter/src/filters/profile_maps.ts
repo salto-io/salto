@@ -178,7 +178,7 @@ const updateFieldTypes = (
   ).forEach(f => {
     const mapDef = profileMapFieldDef[f.name]
     const fieldType = f.getType()
-    let innerType = isContainerType(fieldType) ? fieldType.innerType : fieldType
+    let innerType = isContainerType(fieldType) ? fieldType.getInnerType() : fieldType
     if (mapDef.mapToList || nonUniqueMapFields.includes(f.name)) {
       innerType = new ListType(innerType)
     }
@@ -278,12 +278,12 @@ const convertFieldTypesBackToLists = (
   ).forEach(f => {
     const fieldType = f.getType()
     if (isMapType(fieldType)) {
-      f.refType = createRefToElmWithValue(fieldType.innerType)
+      f.refType = createRefToElmWithValue(fieldType.getInnerType())
     }
     // for nested fields (not using while to avoid edge cases)
     const newFieldType = f.getType()
     if (isMapType(newFieldType)) {
-      f.refType = createRefToElmWithValue(newFieldType.innerType)
+      f.refType = createRefToElmWithValue(newFieldType.getInnerType())
     }
   })
 }

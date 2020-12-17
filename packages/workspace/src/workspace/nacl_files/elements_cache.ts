@@ -66,11 +66,14 @@ export const buildNewMergedElementsAndErrors = ({
     ..._.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName()),
   } as Record<string, Element>
 
-  updateMergedTypes(
-    Object.values(mergedElements),
-    _.pickBy(mergedElements, isType),
+  const mergedElementsUpdated = _.keyBy(
+    updateMergedTypes(
+      Object.values(mergedElements),
+      _.pickBy(mergedElements, isType),
+    ),
+    elem => elem.elemID.getFullName(),
   )
-  const changes = calcChanges(relevantElementIDs, currentElements, mergedElements)
+  const changes = calcChanges(relevantElementIDs, currentElements, mergedElementsUpdated)
   log.info('%d changes resulted from the merge', changes.length)
-  return { mergeErrors, mergedElements, changes }
+  return { mergeErrors, mergedElements: mergedElementsUpdated, changes }
 }

@@ -107,10 +107,27 @@ describe('workspace', () => {
       expect(newValidationErrors).toHaveLength(1)
       expect(newValidationErrors[0]).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
     })
+    it('should have a validation error for unresolved reference even if errors was never called', async () => {
+      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
+      const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      const buffer = `
+      vs.type inst {
+        field = "4"
+      }
+      
+      vs.type oldReferenced {
+      }
+      `
+      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.awaitAllUpdates()
+      const newValidationErrors = (await workspace.errors()).validation
+      expect(newValidationErrors).toHaveLength(1)
+      expect(newValidationErrors[0]).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+    })
   })
 
   it('should call workspace opearation', async () => {
-    const baseWs = await mockWorkspace(naclFileName)
+    const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
 
     const mockFunc = jest.fn().mockReturnValue(Promise.resolve('value'))
@@ -132,7 +149,7 @@ describe('workspace', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
       arr.push('second')
     }
-    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
+    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace([naclFileName]))
     const firstPromise = workspace.runOperationWithWorkspace(firstOperation)
     const secondPromise = workspace.runOperationWithWorkspace(secondOperation)
 

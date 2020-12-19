@@ -124,33 +124,46 @@ export class EditorWorkspace {
     return validator.validateElements(elementsToValidate, allElements)
   }
 
+  private async update(opDeletes: string[], opNaclFiles: Record<string, nacl.NaclFile>):
+  Promise<void> {
+    // We start by running all deleted
+    if (!_.isEmpty(opDeletes) && this.workspace) {
+      await this.workspace.removeNaclFiles(...opDeletes)
+    }
+    // Now add the waiting changes
+    if (!_.isEmpty(opNaclFiles) && this.workspace) {
+      await this.workspace.setNaclFiles(..._.values(opNaclFiles))
+    }
+  }
+
   private async runAggregatedSetOperation(): Promise<void> {
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
       const opNaclFiles = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
-      const relevantFiles = [...new Set([...opDeletes, ...Object.keys(opNaclFiles)])]
-      const currentRelevantElements = await this.elementsInFiles(relevantFiles)
-      // We start by running all deleted
-      if (!_.isEmpty(opDeletes) && this.workspace) {
-        await this.workspace.removeNaclFiles(...opDeletes)
+      if (_.isUndefined(this.wsErrors)) {
+        await this.update([...opDeletes], opNaclFiles)
+      } else {
+        // We update the validation errors iterativly by validate the following elements:
+        //   - all the elements in the edited/deleted files
+        //   - all the elements to includes reference expressions to them
+        //   - all the elements that currently got validation errors
+        const relevantFiles = [...new Set([...opDeletes, ...Object.keys(opNaclFiles)])]
+        const currentRelevantElements = await this.elementsInFiles(relevantFiles)
+        await this.update([...opDeletes], opNaclFiles)
+        const newRelevantElements = await this.elementsInFiles(relevantFiles)
+        const relevantElements = _.uniqBy(
+          [...currentRelevantElements, ...newRelevantElements], e => e.getFullName()
+        )
+        const validation = await this.getValidationErrors(relevantElements)
+        const errorsWithoutValidation = await this.workspace.errors(false)
+        this.wsErrors = Promise.resolve(new errors.Errors({
+          merge: errorsWithoutValidation.merge,
+          parse: errorsWithoutValidation.parse,
+          validation,
+        }))
       }
-      // Now add the waiting changes
-      if (!_.isEmpty(opNaclFiles) && this.workspace) {
-        await this.workspace.setNaclFiles(..._.values(opNaclFiles))
-      }
-      const newRelevantElements = await this.elementsInFiles(relevantFiles)
-      const relevantElements = _.uniqBy(
-        [...currentRelevantElements, ...newRelevantElements], e => e.getFullName()
-      )
-      const validation = await this.getValidationErrors(relevantElements)
-      const errorsWithoutValidation = await this.workspace.errors(false)
-      this.wsErrors = Promise.resolve(new errors.Errors({
-        merge: errorsWithoutValidation.merge,
-        parse: errorsWithoutValidation.parse,
-        validation,
-      }))
 
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller

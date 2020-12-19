@@ -1,0 +1,7 @@
+type vs.type {
+    string field {}
+}
+
+vs.type withReference {
+    _parent = vs.type.instance.referenced
+}

@@ -23,11 +23,11 @@ import { mockWorkspace } from './workspace'
 // TODO: enable this
 describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
-  const naclFileName = 'all.nacl'
+  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
+  const naclFileName = path.join(baseDir, 'all.nacl')
 
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace([naclFileName], ['path/to/content', 'path/to/deep_content']))
   })
 
   it('should give a single definition for a type that is defined once', async () => {

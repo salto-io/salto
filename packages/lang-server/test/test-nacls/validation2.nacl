@@ -1,0 +1,6 @@
+vs.type inst {
+    field = 4
+}
+
+vs.type referenced {
+}

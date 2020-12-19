@@ -25,7 +25,7 @@ describe('Cursor context resolver', () => {
   const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
   const naclFilename = path.join(baseDir, 'all.nacl')
   beforeAll(async () => {
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace(naclFilename))
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace([naclFilename]))
   })
 
   it('should create type symbol', async () => {

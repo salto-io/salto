@@ -14,39 +14,44 @@
 * limitations under the License.
 */
 import * as path from 'path'
+import { validator } from '@salto-io/workspace'
 import { EditorWorkspace } from '../src/workspace'
 import { mockWorkspace } from './workspace'
 
 describe('workspace', () => {
   const workspaceBaseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
   const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
+  const validation1FileName = path.join(workspaceBaseDir, 'validation1.nacl')
+  const validation2FileName = path.join(workspaceBaseDir, 'validation2.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
     expect(wsElements && wsElements.length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
-    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
+    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace([naclFileName]))
     await validate(workspace, 20)
   })
 
   it('should collect errors', async () => {
-    const baseWs = await mockWorkspace(naclFileName)
+    const baseWs = await mockWorkspace([naclFileName])
     baseWs.hasErrors = jest.fn().mockResolvedValue(true)
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
     expect(workspace.hasErrors()).toBeTruthy()
   })
 
   it('should update a single file', async () => {
-    const baseWs = await mockWorkspace(naclFileName)
+    const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-    workspace.setNaclFiles({ filename: 'new', buffer: '' })
+    const filename = 'new'
+    const buffer = 'test'
+    workspace.setNaclFiles({ filename, buffer })
     await workspace.awaitAllUpdates()
-    expect((baseWs.setNaclFiles as jest.Mock).mock.calls[0][0].filename).toContain('new')
+    expect((await workspace.getNaclFile(filename))?.buffer).toEqual(buffer)
   })
 
   it('should maintain status on error', async () => {
-    const baseWs = await mockWorkspace(naclFileName)
+    const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
     baseWs.hasErrors = jest.fn().mockResolvedValue(true)
     workspace.setNaclFiles({ filename: 'error', buffer: 'error content' })
@@ -57,12 +62,51 @@ describe('workspace', () => {
   })
 
   it('should support file removal', async () => {
-    const baseWs = await mockWorkspace(naclFileName)
+    const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-    workspace.removeNaclFiles(path.basename(naclFileName))
+    workspace.removeNaclFiles(naclFileName)
     await workspace.awaitAllUpdates()
-    const removeNaclFilesMock = baseWs.removeNaclFiles as jest.Mock
-    expect(removeNaclFilesMock.mock.calls[0][0]).toContain('all.nacl')
+    expect(await workspace.getNaclFile(naclFileName)).toEqual(undefined)
+  })
+
+  describe('error iterative calculation', () => {
+    it('should fix old validation errors', async () => {
+      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
+      const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      expect((await workspace.errors()).validation).toHaveLength(1)
+      const buffer = `
+      type vs.type {
+        number field {}
+      }
+      
+      vs.type withReference {
+          _parent = vs.type.instance.referenced
+      }
+      `
+      workspace.setNaclFiles({ filename: validation1FileName, buffer })
+      await workspace.awaitAllUpdates()
+      expect((await workspace.errors()).validation).toHaveLength(0)
+    })
+    it('should create a validation error for unresolved reference', async () => {
+      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
+      const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      const currentValidationErrors = (await workspace.errors()).validation
+      expect(currentValidationErrors).toHaveLength(1)
+      expect(currentValidationErrors[0]).toBeInstanceOf(validator.InvalidValueTypeValidationError)
+      const buffer = `
+      vs.type inst {
+        field = "4"
+      }
+      
+      vs.type oldReferenced {
+      }
+      `
+      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.awaitAllUpdates()
+      const newValidationErrors = (await workspace.errors()).validation
+      expect(newValidationErrors).toHaveLength(1)
+      expect(newValidationErrors[0]).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+    })
   })
 
   it('should call workspace opearation', async () => {

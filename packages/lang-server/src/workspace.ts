@@ -16,8 +16,9 @@
 import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
-import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
+import { Workspace, nacl, errors, parser, validator } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, Value } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 
 export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
 
@@ -96,13 +97,41 @@ export class EditorWorkspace {
     names.forEach(n => this.pendingDeletes.add(n))
   }
 
+  private async elementsInFiles(filenames: string[]): Promise<ElemID[]> {
+    return (await Promise.all(
+      filenames.map(f => this.workspace.getParsedNaclFile(f))
+    )).filter(values.isDefined)
+      .flatMap(parsed => parsed.elements)
+      .map(e => e.elemID)
+  }
+
+  private async getValidationErrors(relevantElements: ElemID[]):
+  Promise<errors.ValidationError[]> {
+    const relevantReferencesFiles = [...new Set(
+      (await Promise.all(
+        relevantElements.map(e => this.workspace.getElementReferencesToFiles(e))
+      )).flat()
+    )]
+    const relevantElementsFromReferences = await this.elementsInFiles(relevantReferencesFiles)
+    const allElements = await this.workspace.elements()
+    const elementsByName = _.keyBy(allElements, e => e.elemID.getFullName())
+    const currentValidationErrorsElements = (
+      this.wsErrors ? (await this.errors()).validation.map(ve => ve.elemID) : []
+    )
+    const elementsToValidate = _.uniq([
+      ...relevantElements, ...relevantElementsFromReferences, ...currentValidationErrorsElements,
+    ].map(e => e.getFullName())).map(elemName => elementsByName[elemName]).filter(values.isDefined)
+    return validator.validateElements(elementsToValidate, allElements)
+  }
+
   private async runAggregatedSetOperation(): Promise<void> {
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
       const opNaclFiles = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
-      this.wsErrors = undefined
+      const relevantFiles = [...new Set([...opDeletes, ...Object.keys(opNaclFiles)])]
+      const currentRelevantElements = await this.elementsInFiles(relevantFiles)
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
         await this.workspace.removeNaclFiles(...opDeletes)
@@ -111,6 +140,17 @@ export class EditorWorkspace {
       if (!_.isEmpty(opNaclFiles) && this.workspace) {
         await this.workspace.setNaclFiles(..._.values(opNaclFiles))
       }
+      const newRelevantElements = await this.elementsInFiles(relevantFiles)
+      const relevantElements = _.uniqBy(
+        [...currentRelevantElements, ...newRelevantElements], e => e.getFullName()
+      )
+      const validation = await this.getValidationErrors(relevantElements)
+      const errorsWithoutValidation = await this.workspace.errors(false)
+      this.wsErrors = Promise.resolve(new errors.Errors({
+        merge: errorsWithoutValidation.merge,
+        parse: errorsWithoutValidation.parse,
+        validation,
+      }))
 
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
@@ -180,6 +220,11 @@ export class EditorWorkspace {
 
   async getElementReferencedFiles(id: ElemID): Promise<string[]> {
     return (await this.workspace.getElementReferencedFiles(id))
+      .map(filename => this.editorFilename(filename))
+  }
+
+  async getElementReferencesToFiles(id: ElemID): Promise<string[]> {
+    return (await this.workspace.getElementReferencesToFiles(id))
       .map(filename => this.editorFilename(filename))
   }
 

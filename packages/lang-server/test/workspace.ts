@@ -16,23 +16,9 @@
 import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
-import { Workspace, parser, errors as wsErrors,
-  merger, configSource as cs, nacl, staticFiles, dirStore } from '@salto-io/workspace'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
-
-
-const { parse } = parser
-const { mergeElements } = merger
-const SERVICES = ['salesforce']
-
-const configID = new ElemID(SERVICES[0])
-const mockConfigType = new ObjectType({
-  elemID: configID,
-  fields: { username: { type: BuiltinTypes.STRING } },
-})
-const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
-  username: 'test@test',
-})
+import { Workspace, parser, errors as wsErrors, parseCache, state,
+  nacl, staticFiles, dirStore, pathIndex, loadWorkspace, EnvironmentsSources } from '@salto-io/workspace'
+import { ElemID, SaltoError } from '@salto-io/adapter-api'
 
 export const mockErrors = (
   errors: SaltoError[], parseErrors: parser.ParseError[] = []
@@ -48,100 +34,112 @@ export const mockErrors = (
 export const mockFunction = <T extends (...args: never[]) => unknown>():
 jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
-const buildMockWorkspace = async (
-  naclFile?: string,
-  buffer?: string,
-): Promise<Workspace> => {
-  const baseDir = naclFile ? path.dirname(naclFile) : 'default_base_dir'
-  const filename = naclFile ? path.relative(baseDir, naclFile) : 'default.nacl'
-  let parseResult: Required<parser.ParseResult>
-  if (buffer) {
-    const mockDirStore: dirStore.SyncDirectoryStore<Buffer> = {
-      list: mockFunction<dirStore.SyncDirectoryStore<Buffer>['list']>(),
-      get: mockFunction<dirStore.SyncDirectoryStore<Buffer>['get']>().mockImplementation(async filepath => ({ filename: filepath, buffer: Buffer.from(filepath) })),
-      set: mockFunction<dirStore.SyncDirectoryStore<Buffer>['set']>(),
-      delete: mockFunction<dirStore.SyncDirectoryStore<Buffer>['delete']>(),
-      clear: mockFunction<dirStore.SyncDirectoryStore<Buffer>['clear']>(),
-      rename: mockFunction<dirStore.SyncDirectoryStore<Buffer>['rename']>(),
-      renameFile: mockFunction<dirStore.SyncDirectoryStore<Buffer>['renameFile']>(),
-      flush: mockFunction<dirStore.SyncDirectoryStore<Buffer>['flush']>(),
-      mtimestamp: mockFunction<dirStore.SyncDirectoryStore<Buffer>['mtimestamp']>().mockResolvedValue(0),
-      getFiles: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getFiles']>(),
-      getTotalSize: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getTotalSize']>(),
-      clone: mockFunction<dirStore.SyncDirectoryStore<Buffer>['clone']>(),
-      isEmpty: mockFunction<dirStore.SyncDirectoryStore<Buffer>['isEmpty']>(),
-      getFullPath: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getFullPath']>().mockImplementation(filepath => `full-${filepath}`),
-      getSync: mockFunction<dirStore.SyncDirectoryStore<Buffer>['getSync']>(),
-    }
-
-    const mockStaticFilesCache: staticFiles.StaticFilesCache = {
-      get: mockFunction<staticFiles.StaticFilesCache['get']>(),
-      put: mockFunction<staticFiles.StaticFilesCache['put']>(),
-      flush: mockFunction<staticFiles.StaticFilesCache['flush']>(),
-      clear: mockFunction<staticFiles.StaticFilesCache['clear']>(),
-      rename: mockFunction<staticFiles.StaticFilesCache['rename']>(),
-      clone: mockFunction<staticFiles.StaticFilesCache['clone']>(),
-    }
-
-    const staticFilesSource = staticFiles.buildStaticFilesSource(mockDirStore, mockStaticFilesCache)
-
-    parseResult = await parse(Buffer.from(buffer), filename, nacl.getFunctions(staticFilesSource))
-  } else {
-    parseResult = {
-      elements: [], errors: [] as parser.ParseError[], sourceMap: new parser.SourceMap(),
-    }
-  }
-  const merged = mergeElements(parseResult.elements)
+const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> = {}):
+dirStore.SyncDirectoryStore<T> => {
+  let naclFiles = _.mapValues(
+    files,
+    (buffer, filename) => ({ filename, buffer })
+  )
   return {
-    elements: () => Promise.resolve(merged.merged),
-    errors: () => Promise.resolve({
-      all: () => parseResult.errors || [],
-      strings: () => (parseResult.errors || []).map(err => err.message),
-      parse: parseResult.errors || [],
-      merge: [],
-      validation: [],
-      hasErrors: () => (!_.isEmpty(parseResult.errors)),
-    }),
-    hasErrors: mockFunction<Workspace['hasErrors']>().mockResolvedValue(!_.isEmpty(parseResult.errors)),
-    getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(parseResult.sourceMap),
-    getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockImplementation(async elemID =>
-      (parseResult.sourceMap.get(elemID.getFullName()) || [])),
-    getNaclFile: mockFunction<Workspace['getNaclFile']>().mockResolvedValue({ filename, buffer: buffer ?? '' }),
-    services: () => SERVICES,
-    updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
-    flush: mockFunction<Workspace['flush']>(),
-    credentials: {
-      get: mockFunction<cs.ConfigSource['get']>().mockResolvedValue(mockConfigInstance),
-      set: mockFunction<cs.ConfigSource['set']>().mockResolvedValue(),
-    },
-    transformError: mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
-      ...err,
-      sourceFragments: [{
-        fragment: '',
-        sourceRange: {
-          start: { line: 1, col: 1, byte: 1 },
-          end: { line: 1, col: 2, byte: 2 },
-          filename: 'test.nacl',
-        },
-      }],
-    })),
-    setNaclFiles: mockFunction<Workspace['setNaclFiles']>().mockResolvedValue(),
-    removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>().mockResolvedValue(),
-    listNaclFiles: mockFunction<Workspace['listNaclFiles']>().mockResolvedValue([filename]),
-    getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>().mockResolvedValue({
-      elements: merged.merged,
-      filename: '',
-      timestamp: Date.now(),
-      errors: [],
-      referenced: [],
-    }),
-    getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([filename]),
-    getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([filename]),
-    clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(naclFile, buffer))),
-  } as unknown as Workspace
+    list: mockFunction<dirStore.SyncDirectoryStore<T>['list']>().mockImplementation(async () => Object.keys(naclFiles)),
+    get: mockFunction<dirStore.SyncDirectoryStore<T>['get']>().mockImplementation(async filepath => naclFiles[filepath]),
+    set: mockFunction<dirStore.SyncDirectoryStore<T>['set']>().mockImplementation(async file => { naclFiles[file.filename] = file }),
+    delete: mockFunction<dirStore.SyncDirectoryStore<T>['delete']>().mockImplementation(async filepath => { delete naclFiles[filepath] }),
+    clear: mockFunction<dirStore.SyncDirectoryStore<T>['clear']>().mockImplementation(async () => { naclFiles = {} }),
+    rename: mockFunction<dirStore.SyncDirectoryStore<T>['rename']>(),
+    renameFile: mockFunction<dirStore.SyncDirectoryStore<T>['renameFile']>(),
+    flush: mockFunction<dirStore.SyncDirectoryStore<T>['flush']>(),
+    mtimestamp: mockFunction<dirStore.SyncDirectoryStore<T>['mtimestamp']>().mockResolvedValue(0),
+    getFiles: mockFunction<dirStore.SyncDirectoryStore<T>['getFiles']>().mockImplementation(async filenames => filenames.map(name => naclFiles[name])),
+    getTotalSize: mockFunction<dirStore.SyncDirectoryStore<T>['getTotalSize']>(),
+    clone: mockFunction<dirStore.SyncDirectoryStore<T>['clone']>(),
+    isEmpty: mockFunction<dirStore.SyncDirectoryStore<T>['isEmpty']>(),
+    getFullPath: mockFunction<dirStore.SyncDirectoryStore<T>['getFullPath']>().mockImplementation(filepath => `full-${filepath}`),
+    getSync: mockFunction<dirStore.SyncDirectoryStore<T>['getSync']>(),
+  }
 }
 
-export const mockWorkspace = async (naclFile?: string): Promise<Workspace> => {
-  const buffer = naclFile ? readFileSync(naclFile, { encoding: 'utf8' }) : 'blabla'
-  return buildMockWorkspace(naclFile, buffer)
+const mockParseCache = (): parseCache.ParseResultCache => ({
+  put: () => Promise.resolve(),
+  get: () => Promise.resolve(undefined),
+  flush: () => Promise.resolve(undefined),
+  clear: () => Promise.resolve(),
+  rename: () => Promise.resolve(),
+  clone: () => mockParseCache(),
+})
+
+const buildMockWorkspace = async (files: Record<string, string>, staticFileNames: string[]):
+Promise<Workspace> => {
+  const mockStaticFilesCache: staticFiles.StaticFilesCache = {
+    get: mockFunction<staticFiles.StaticFilesCache['get']>(),
+    put: mockFunction<staticFiles.StaticFilesCache['put']>(),
+    flush: mockFunction<staticFiles.StaticFilesCache['flush']>(),
+    clear: mockFunction<staticFiles.StaticFilesCache['clear']>(),
+    rename: mockFunction<staticFiles.StaticFilesCache['rename']>(),
+    clone: mockFunction<staticFiles.StaticFilesCache['clone']>(),
+  }
+
+  const mockedDirStore = mockDirStore(files)
+  const commonNaclFilesSource = nacl.naclFilesSource(
+    mockedDirStore,
+    mockParseCache(),
+    staticFiles.buildStaticFilesSource(
+      mockDirStore(Object.fromEntries(staticFileNames.map(f => [f, Buffer.from(f)]))),
+      mockStaticFilesCache
+    )
+  )
+  const elementsSources = {
+    commonSourceName: '',
+    sources: {
+      '': {
+        naclFiles: commonNaclFilesSource,
+      },
+      default: {
+        naclFiles: nacl.naclFilesSource(
+          mockDirStore({}),
+          mockParseCache(),
+          staticFiles.buildStaticFilesSource(
+            mockDirStore({}),
+            mockStaticFilesCache
+          )
+        ),
+        state: state.buildInMemState(async () => ({
+          elements: _.keyBy(await commonNaclFilesSource.getAll(), e => e.elemID.getFullName()),
+          pathIndex: new pathIndex.PathIndex(),
+          servicesUpdateDate: {},
+          saltoVersion: '0.0.1',
+        })),
+      },
+    },
+  } as EnvironmentsSources
+  const mockConfSource = {
+    getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+      envs: [
+        { name: 'default', services: [] },
+      ],
+      uid: '',
+      name: 'test',
+      currentEnv: 'default',
+    })),
+    setWorkspaceConfig: jest.fn(),
+    getAdapter: jest.fn(),
+    setAdapter: jest.fn(),
+  }
+  const mockCredentialsSource = {
+    get: jest.fn(),
+    set: jest.fn(),
+    delete: jest.fn(),
+    rename: jest.fn(),
+  }
+  return loadWorkspace(mockConfSource, mockCredentialsSource, elementsSources)
 }
+
+export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []):
+Promise<Workspace> =>
+  buildMockWorkspace(
+    Object.fromEntries(
+      naclFiles
+        .map(file => [path.basename(file), readFileSync(file, { encoding: 'utf8' }) ?? 'blabla'])
+    ),
+    staticFileNames,
+  )

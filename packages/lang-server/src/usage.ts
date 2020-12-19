@@ -104,9 +104,9 @@ export const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
   id: ElemID
-): Promise<ElemID[]> => _.flatten((await Promise.all(
+): Promise<ElemID[]> => _((await Promise.all(
   (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id))
-)))
+))).flatten().uniqBy(e => e.getFullName()).value()
 
 export const getWorkspaceReferences = async (
   workspace: EditorWorkspace,

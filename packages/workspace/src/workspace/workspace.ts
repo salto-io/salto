@@ -89,7 +89,7 @@ export type Workspace = {
   hasElementsInEnv(envName: string): Promise<boolean>
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
-  errors(): Promise<Readonly<Errors>>
+  errors(validate?: boolean): Promise<Readonly<Errors>>
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
@@ -102,6 +102,7 @@ export type Workspace = {
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
+  getElementReferencesToFiles: (id: ElemID) => Promise<string[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (selectors: ElementSelector[],
     commonOnly?: boolean) => Promise<ElemID[]>
@@ -264,13 +265,13 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     return { ...error, sourceFragments: [] }
   }
 
-  const errors = async (): Promise<Errors> => {
+  const errors = async (validate = true): Promise<Errors> => {
     const resolvedElements = await elements()
     const errorsFromSource = await naclFilesSource.getErrors()
     return new Errors({
       ...errorsFromSource,
       merge: [...errorsFromSource.merge, ...resolvedElements.errors],
-      validation: validateElements(resolvedElements.merged),
+      validation: validate ? validateElements(resolvedElements.merged) : [],
     })
   }
 
@@ -330,6 +331,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getElementIdsBySelectors: async (selectors: ElementSelector[],
       commonOnly = false) => naclFilesSource.getElementIdsBySelectors(selectors, commonOnly),
     getElementReferencedFiles: id => naclFilesSource.getElementReferencedFiles(id),
+    getElementReferencesToFiles: id => naclFilesSource.getElementReferencesToFiles(id),
     getElementNaclFiles: id => naclFilesSource.getElementNaclFiles(id),
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),

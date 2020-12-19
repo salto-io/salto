@@ -1648,9 +1648,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('getElementReferencedFiles', () => {
-    let workspace: Workspace
-    let referencedFiles: string[]
+  describe('references', () => {
     const defFile = `
       type salesforce.lead {
 
@@ -1707,8 +1705,7 @@ describe('workspace', () => {
         whatami = salesforce.lead.attr.key
       }
     `
-
-    const naclFileStore = mockDirStore(undefined, undefined, {
+    const files = {
       'defFile.nacl': defFile,
       'usedAsInstType.nacl': usedAsInstType,
       'usedAsField.nacl': usedAsField,
@@ -1716,44 +1713,92 @@ describe('workspace', () => {
       'usedAsReference.nacl': usedAsReference,
       'usedAsNestedReference.nacl': usedAsNestedReference,
       'unmerged.nacl': usedInUnmerged,
-    })
+    }
+    describe('getElementReferencedFiles', () => {
+      let workspace: Workspace
+      let referencedFiles: string[]
+      const naclFileStore = mockDirStore(undefined, undefined, files)
 
-    beforeAll(async () => {
-      workspace = await createWorkspace(naclFileStore)
-      referencedFiles = await workspace
-        .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
-    })
+      beforeAll(async () => {
+        workspace = await createWorkspace(naclFileStore)
+        referencedFiles = await workspace
+          .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
+      })
 
-    it('should find files in which the id is used as an instance type', () => {
-      expect(referencedFiles).toContain('usedAsInstType.nacl')
-    })
+      it('should find files in which the id is used as an instance type', () => {
+        expect(referencedFiles).toContain('usedAsInstType.nacl')
+      })
 
-    it('should find files in which the id is used as an field type', () => {
-      expect(referencedFiles).toContain('usedAsField.nacl')
-    })
+      it('should find files in which the id is used as an field type', () => {
+        expect(referencedFiles).toContain('usedAsField.nacl')
+      })
 
-    it('should find files in which the id is used as an inner field type', () => {
-      expect(referencedFiles).toContain('usedAsInnerFieldType.nacl')
-    })
+      it('should find files in which the id is used as an inner field type', () => {
+        expect(referencedFiles).toContain('usedAsInnerFieldType.nacl')
+      })
 
-    it('should find files in which the id is used as reference', () => {
-      expect(referencedFiles).toContain('usedAsReference.nacl')
-    })
+      it('should find files in which the id is used as reference', () => {
+        expect(referencedFiles).toContain('usedAsReference.nacl')
+      })
 
-    it('should find files in which the id is used as nested reference', () => {
-      expect(referencedFiles).toContain('usedAsNestedReference.nacl')
-    })
+      it('should find files in which the id is used as nested reference', () => {
+        expect(referencedFiles).toContain('usedAsNestedReference.nacl')
+      })
 
-    it('should find nested attr referenced', async () => {
-      const attrRefFiles = await workspace
-        .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-      expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
-    })
+      it('should find nested attr referenced', async () => {
+        const attrRefFiles = await workspace
+          .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
+      })
 
-    it('should find referenced in values of with no matching field in the type', async () => {
-      const attrRefFiles = await workspace
-        .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-      expect(attrRefFiles).toContain('unmerged.nacl')
+      it('should find referenced in values of with no matching field in the type', async () => {
+        const attrRefFiles = await workspace
+          .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        expect(attrRefFiles).toContain('unmerged.nacl')
+      })
+    })
+    describe('getElementReferencesToFiles', () => {
+      let workspace: Workspace
+      let referencesToFiles: string[]
+      const naclFileStore = mockDirStore(undefined, undefined, files)
+
+      beforeAll(async () => {
+        workspace = await createWorkspace(naclFileStore)
+        referencesToFiles = await workspace
+          .getElementReferencesToFiles(ElemID.fromFullName('salesforce.lead'))
+      })
+
+      it('should not find files in which the id is used as an instance type', () => {
+        expect(referencesToFiles).not.toContain('usedAsInstType.nacl')
+      })
+
+      it('should not find files in which the id is used as an field type', () => {
+        expect(referencesToFiles).not.toContain('usedAsField.nacl')
+      })
+
+      it('should not find files in which the id is used as an inner field type', () => {
+        expect(referencesToFiles).not.toContain('usedAsInnerFieldType.nacl')
+      })
+
+      it('should find files in which the id is used as reference', () => {
+        expect(referencesToFiles).toContain('usedAsReference.nacl')
+      })
+
+      it('should find files in which the id is used as nested reference', () => {
+        expect(referencesToFiles).toContain('usedAsNestedReference.nacl')
+      })
+
+      it('should find nested attr referenced', async () => {
+        const attrRefFiles = await workspace
+          .getElementReferencesToFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
+      })
+
+      it('should find referenced in values of with no matching field in the type', async () => {
+        const attrRefFiles = await workspace
+          .getElementReferencesToFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        expect(attrRefFiles).toContain('unmerged.nacl')
+      })
     })
   })
 

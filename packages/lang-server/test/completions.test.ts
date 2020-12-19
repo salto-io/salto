@@ -74,10 +74,10 @@ describe('Test auto complete', () => {
   ]
 
   let workspace: EditorWorkspace
-  const naclFileName = 'all.nacl'
+  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
+  const naclFileName = path.join(baseDir, 'all.nacl')
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace([path.join(baseDir, 'all.nacl')]))
   })
 
   describe('empty line', () => {

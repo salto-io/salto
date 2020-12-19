@@ -46,6 +46,7 @@
     "@salto-io/workspace": "0.2.1",
     "axios": "^0.19.2",
     "glob": "^7.1.6",
+    "leveldown": "^5.6.0",
     "levelup": "^4.4.0",
     "lodash": "^4.17.19",
     "lru-cache": "^6.0.0",
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@types/jest": "^24.0.0",
+    "@types/leveldown": "^4.0.2",
     "@types/levelup": "^4.3.0",
     "@types/lodash": "^4.14.133",
     "@types/node": "^12.7.1",

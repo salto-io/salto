@@ -16,7 +16,7 @@
 import * as vscode from 'vscode'
 import path from 'path'
 import wu from 'wu'
-import { provider, context as ctx, definitions,
+import { provider, context as ctx, token, definitions,
   usage, workspace as ws, location } from '@salto-io/lang-server'
 import _ from 'lodash'
 import {
@@ -70,9 +70,15 @@ export const createDefinitionsProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Definition> => {
-    const tokenPosition = doc.getWordRangeAtPosition(position, /"[^"]+"/)
-      ?? doc.getWordRangeAtPosition(position, /[\w.]+/)
-    const currentToken = doc.getText(tokenPosition)
+    const currentToken = token.getToken(
+      doc.getText(),
+      { line: position.line, col: position.character }
+    )
+
+    if (_.isUndefined(currentToken)) {
+      return []
+    }
+
     const context = await ctx.getPositionContext(
       workspace,
       doc.fileName,
@@ -94,13 +100,21 @@ export const createReferenceProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Location[]> => {
-    const currenToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
+    const currentToken = token.getToken(
+      doc.getText(),
+      { line: position.line, col: position.character }
+    )
+
+    if (_.isUndefined(currentToken)) {
+      return []
+    }
+
     const context = await ctx.getPositionContext(
       workspace,
       doc.fileName,
       vsPosToSaltoPos(position)
     )
-    return (await usage.provideWorkspaceReferences(workspace, currenToken, context)).map(
+    return (await usage.provideWorkspaceReferences(workspace, currentToken, context)).map(
       def => new vscode.Location(
         vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
         saltoPosToVsPos(def.range.start)

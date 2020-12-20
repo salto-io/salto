@@ -19,11 +19,14 @@ import { values } from '@salto-io/lowerdash'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { getLocations, SaltoElemLocation, getStaticLocations } from './location'
+import { Token } from './token'
+
+const CONTAINER_PATTERN = /<([\w.]+)>/
 
 export const provideWorkspaceDefinition = async (
   workspace: EditorWorkspace,
   context: PositionContext,
-  token: string
+  token: Token
 ): Promise<SaltoElemLocation[]> => {
   if (context.ref) {
     const staticFileLocation = getStaticLocations(context.ref.element, context.ref.path, token)
@@ -33,7 +36,10 @@ export const provideWorkspaceDefinition = async (
   }
 
   try {
-    const locations = await getLocations(workspace, token)
+    const match = CONTAINER_PATTERN.exec(token.value)
+    const idToken = match !== null ? match[1] : token.value
+
+    const locations = await getLocations(workspace, idToken)
     if (locations.length !== 0) {
       return locations
     }
@@ -45,7 +51,7 @@ export const provideWorkspaceDefinition = async (
   if (context.ref) {
     if (isInstanceElement(context.ref.element)) {
       const refPath = context.ref.path
-      if (!_.isEmpty(refPath) && _.last(refPath) === token) {
+      if (!_.isEmpty(refPath) && _.last(refPath) === token.value) {
         const field = getField(context.ref.element.type, refPath)
         return field ? getLocations(workspace, field.elemID.getFullName()) : []
       }
@@ -53,7 +59,7 @@ export const provideWorkspaceDefinition = async (
     if (context.type === 'type') {
       return getLocations(
         workspace,
-        context.ref?.element.elemID.createNestedID('annotation', token).getFullName()
+        context.ref?.element.elemID.createNestedID('annotation', token.value).getFullName()
       )
     }
   }

@@ -33,7 +33,7 @@ describe('Test go to definitions', () => {
   it('should give a single definition for a type that is defined once', async () => {
     const pos = { line: 40, col: 8 }
     const ctx = await getPositionContext(workspace, naclFileName, pos)
-    const token = 'vs.num'
+    const token = { value: 'vs.num', type: 'word' }
 
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)
@@ -43,7 +43,7 @@ describe('Test go to definitions', () => {
   it('should give all definitions for a type that is extended', async () => {
     const pos = { line: 86, col: 6 }
     const ctx = await getPositionContext(workspace, naclFileName, pos)
-    const token = 'vs.loan'
+    const token = { value: 'vs.loan', type: 'word' }
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(2)
   })
@@ -51,7 +51,8 @@ describe('Test go to definitions', () => {
   it('should give the field definition for an instance attr', async () => {
     const pos = { line: 89, col: 8 }
     const ctx = await getPositionContext(workspace, naclFileName, pos)
-    const token = 'loaner'
+    const token = { value: 'loaner', type: 'word' }
+
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)
     expect(defs[0].range.start.line).toBe(64)
@@ -60,7 +61,8 @@ describe('Test go to definitions', () => {
   it('should empty list for undefined type', async () => {
     const pos = { line: 74, col: 6 }
     const ctx = await getPositionContext(workspace, naclFileName, pos)
-    const token = 'vs.nope'
+    const token = { value: 'vs.nope', type: 'word' }
+
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(0)
   })
@@ -68,7 +70,8 @@ describe('Test go to definitions', () => {
   it('should give annotation definition for annotation values', async () => {
     const pos = { line: 208, col: 8 }
     const ctx = await getPositionContext(workspace, naclFileName, pos)
-    const token = 'loan'
+    const token = { value: 'loan', type: 'word' }
+
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)
     expect(defs[0].range.start.line).toBe(203)
@@ -80,7 +83,8 @@ describe('Test go to definitions', () => {
       [' nested', { line: 242, col: 31 }, 'path/to/deep_content'],
     ]).it('should give a%s static file its definition', async (_text, pos, filepath) => {
       const ctx = await getPositionContext(workspace, naclFileName, pos)
-      const token = `"${filepath}"`
+      const token = { value: filepath, type: 'content' }
+
       const defs = await provideWorkspaceDefinition(workspace, ctx, token)
       expect(defs.length).toBe(1)
       expect(defs[0].filename).toBe(`full-${filepath}`)
@@ -90,10 +94,27 @@ describe('Test go to definitions', () => {
   it('should give annotation type definition', async () => {
     const pos = { line: 172, col: 15 }
     const ctx = await getPositionContext(workspace, naclFileName, pos)
-    const token = 'vs.person'
+    const token = { value: 'vs.person', type: 'word' }
+
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(2)
     expect(defs[0].range.start.line).toBe(32)
     expect(defs[1].range.start.line).toBe(127)
+  })
+
+  it('should give list element type definition', async () => {
+    const pos = { line: 128, col: 15 }
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
+    const token = { value: 'List<vs.str>', type: 'content' }
+    const defs = await provideWorkspaceDefinition(workspace, ctx, token)
+    expect(defs[0].range.start.line).toBe(1)
+  })
+
+  it('should give list of lists element type definition', async () => {
+    const pos = { line: 128, col: 15 }
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
+    const token = { value: 'List<List<vs.str>>', type: 'content' }
+    const defs = await provideWorkspaceDefinition(workspace, ctx, token)
+    expect(defs[0].range.start.line).toBe(1)
   })
 })

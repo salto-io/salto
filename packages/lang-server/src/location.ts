@@ -20,6 +20,7 @@ import { Element, ElemID, isObjectType, isInstanceElement, isField } from '@salt
 import { staticFiles } from '@salto-io/workspace'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
+import { Token } from './token'
 
 export interface SaltoElemLocation {
   fullname: string
@@ -77,7 +78,7 @@ const extractStaticFileAttributes = (
 export const getStaticLocations = (
   element: Element,
   refPath: string[],
-  token: string
+  token: Token
 ): SaltoElemLocation | undefined => {
   const staticFileAttributes = extractStaticFileAttributes(element, refPath)
 
@@ -86,7 +87,8 @@ export const getStaticLocations = (
   }
 
   if (staticFileAttributes.staticFile instanceof staticFiles.AbsoluteStaticFile
-    && `"${staticFileAttributes.staticFile.filepath}"` === token) {
+    && token.type === 'content'
+    && staticFileAttributes.staticFile.filepath === token.value) {
     return {
       fullname: staticFileAttributes.fullname,
       filename: staticFileAttributes.staticFile.absoluteFilePath,

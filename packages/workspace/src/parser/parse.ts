@@ -20,6 +20,7 @@ import { parseBufferAndFixErrors } from './internal/nearly/parse'
 import {
   Functions,
 } from './functions'
+import PeekableLexer from './internal/native/lexer'
 import { parseBuffer } from './internal/native/parse'
 import { ParseResult } from './types'
 
@@ -47,4 +48,23 @@ export const parse = async (
   return process.env.SALTO_USE_LEGACY_PARSER
     ? parseBufferAndFixErrors(srcString, filename, functions)
     : parseBuffer(srcString, filename, functions)
+}
+
+export type Token = {
+  value: string
+  type: string
+  col: number
+  line: number
+}
+
+export function *tokenizeContent(content: string): IterableIterator<Token> {
+  const lexer = new PeekableLexer(content)
+  try {
+    while (true) {
+      const token = lexer.next()
+      yield { value: token.value, type: token.type, col: token.col, line: token.line }
+    }
+  } catch (e) {
+    // Lexer throws an error when there is nothing left to parse
+  }
 }

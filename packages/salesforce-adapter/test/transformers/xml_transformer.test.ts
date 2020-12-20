@@ -121,7 +121,7 @@ describe('XML Transformer', () => {
           expect(values).toMatchObject({ Profile: _.omit(profileValues, ['fullName', 'str']) })
         })
         it('should encode special XML characters', () => {
-          expect(values.Profile.str).toEqual('str &lt;&gt; bla')
+          expect(values.Profile.str).toEqual('str &#x3C;&#x3E; bla')
         })
       })
     })

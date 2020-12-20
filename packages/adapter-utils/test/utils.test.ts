@@ -1321,6 +1321,12 @@ describe('Test utils.ts', () => {
         mockInstance.elemID.createNestedID('str')
       )).toBe('val')
     })
+    it('should not resolve an annotation type path', () => {
+      expect(resolvePath(
+        mockType,
+        mockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno')
+      )).toBeUndefined()
+    })
     it('should resolve an instance annotation value path', () => {
       expect(resolvePath(
         mockInstance,

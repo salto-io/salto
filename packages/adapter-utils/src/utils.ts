@@ -492,14 +492,13 @@ export const getPath = (
     const annoTypeName = path[0]
     const annoTypePath = path.slice(1)
     if (_.isEmpty(annoTypePath)) return ['annotationRefTypes', annoTypeName]
-    return ['annotationRefTypes', annoTypeName, 'annotations', ...annoTypePath]
+    return undefined
   }
   return undefined
 }
 
 export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value): void => {
   const path = getPath(rootElement, fullElemID)
-  console.log(path)
   if (path === undefined) {
     log.warn(`Failed to set: ${rootElement.elemID.getFullName()} is not parent of ${fullElemID.getFullName()}`)
     return

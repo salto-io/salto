@@ -73,9 +73,9 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
   const returnOnlyAnnotationTypesDiff = (
     val: Value,
     otherVal: Value
-  ): Value => _.pickBy(val.annotationTypes,
-    (annotationType, annotationName) =>
-      !(otherVal.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
+  ): Value => _.pickBy(val.annotationRefTypes,
+    (annotationRefType, annotationName) =>
+      !(otherVal.annotationRefTypes[annotationName]?.elemID.isEqual(annotationRefType.elemID)))
 
   if (hasAnnotationTypes(before) && hasAnnotationTypes(after)) {
     const beforeUniqueAnnotationsTypes = returnOnlyAnnotationTypesDiff(before, after)

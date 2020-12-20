@@ -1216,11 +1216,6 @@ describe('Test utils.ts', () => {
       expect(clonedMockType.getAnnotationTypes().testAnno).toEqual(BuiltinTypes.NUMBER)
     })
 
-    it('should set an annotation type anno path', () => {
-      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno'), 'NEW TEST ANNO TYPE')
-      expect(clonedMockType.getAnnotationTypes().testAnno.annotations.testAnno).toEqual('NEW TEST ANNO TYPE')
-    })
-
     it('should set an instance value path', () => {
       const clonedMockInstance = mockInstance.clone()
       setPath(clonedMockInstance, clonedMockInstance.elemID.createNestedID('str'), 'new val')
@@ -1231,11 +1226,6 @@ describe('Test utils.ts', () => {
       const clonedMockInstance = mockInstance.clone()
       setPath(clonedMockInstance, clonedMockInstance.elemID.createNestedID('str'), undefined)
       expect('str' in clonedMockInstance.value).toBeFalsy()
-    })
-
-    it('should unset an annotation type anno path', () => {
-      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno'), undefined)
-      expect('testAnno' in clonedMockType.getAnnotationTypes().testAnno.annotations).toBeFalsy()
     })
 
     it('should unset annotation type path', () => {
@@ -1276,17 +1266,17 @@ describe('Test utils.ts', () => {
         mockType.elemID.createNestedID('attr', 'testAnno')
       )).toBe('TEST ANNO')
     })
-    it('should resolve an annotation type path', () => {
-      expect(resolvePath(
-        mockType,
-        mockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno')
-      )).toBe('TEST ANNO TYPE')
-    })
     it('should resolve an instance value path', () => {
       expect(resolvePath(
         mockInstance,
         mockInstance.elemID.createNestedID('str')
       )).toBe('val')
+    })
+    it('should not resolve an annotation type path', () => {
+      expect(resolvePath(
+        mockType,
+        mockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno')
+      )).toBeUndefined()
     })
     it('should resolve an instance annotation value path', () => {
       expect(resolvePath(

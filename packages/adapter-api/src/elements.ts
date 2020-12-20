@@ -85,13 +85,6 @@ export abstract class Element {
   }
 
   getAnnotationTypes(elementsSource?: ElementsSource): TypeMap {
-    Object.entries(this.annotationRefTypes).forEach((v, k) => {
-      if (!isReferenceExpression(v)) {
-        console.log(v)
-        console.log(k)
-        console.log(this.elemID)
-      }
-    })
     const annotationTypes = _.mapValues(
       this.annotationRefTypes,
       refType => refType.getResolvedValue(elementsSource)

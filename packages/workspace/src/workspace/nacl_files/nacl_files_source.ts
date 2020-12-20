@@ -86,7 +86,6 @@ export type ParsedNaclFile = {
   elements: Element[]
   errors: ParseError[]
   timestamp: number
-  buffer?: string
   referenced: ElemID[]
 }
 
@@ -426,7 +425,8 @@ const buildNaclFilesSource = (
         // Group changes file, we use lower case in order to support case insensitive file systems
         .groupBy(change => change.location.filename.toLowerCase())
         .entries()
-        .map(([_lowerCaseFilename, fileChanges]) => async () => {
+        .map(([_lowerCaseFilename, fileChanges]) => async ():
+          Promise<ParsedNaclFile & NaclFile | undefined> => {
           // Changes might have a different cased filename, we just take the first variation
           const [filename] = fileChanges.map(change => change.location.filename).sort()
           try {
@@ -454,12 +454,18 @@ const buildNaclFilesSource = (
         })
         .value(),
       DUMP_CONCURRENCY
-    )).filter(b => b !== undefined) as Required<ParsedNaclFile>[]
+    )).filter(values.isDefined)
 
     if (updatedNaclFiles.length > 0) {
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
-      await setNaclFiles(...updatedNaclFiles)
-      const res = await buildNaclFilesStateInner(updatedNaclFiles)
+      // The map is to avoid saving unnecessary fields in the nacl files
+      await setNaclFiles(
+        ...updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename', 'timestamp']))
+      )
+      // The map is to avoid saving unnecessary fields in the state
+      const res = await buildNaclFilesStateInner(
+        updatedNaclFiles.map(file => _.pick(file, ['filename', 'elements', 'errors', 'timestamp', 'referenced']))
+      )
       state = Promise.resolve(res.state)
       return res.changes
     }

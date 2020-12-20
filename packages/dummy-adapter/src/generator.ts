@@ -231,7 +231,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
       .map(e => elementRanks[e.elemID.getFullName()] || 0)) : 0)
 
   const updateElementRank = (element: TypeElement): void => {
-    const maxAnnotationRank = getMaxRank(Object.values(element.annotationTypes))
+    const maxAnnotationRank = getMaxRank(Object.values(element.getAnnotationTypes()))
     const maxFieldsRank = isObjectType(element)
       ? getMaxRank(Object.values(element.fields).map(field => field.getType()))
       : 0
@@ -321,7 +321,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
         const fieldType = getFieldType(true)
         return [name, { refType: createRefToElmWithValue(fieldType),
           annotations:
-          generateAnnotations(fieldType.annotationTypes) }]
+          generateAnnotations(fieldType.getAnnotationTypes()) }]
       }
     )
   )
@@ -334,7 +334,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
   // Note that this has side effects tracking the static fields and reference fields
   const generatePrimitiveTypes = (): PrimitiveType[] => arrayOf(params.numOfPrimitiveTypes, () => {
     const name = getName()
-    const annotationTypes = generateAnnotationTypes(
+    const annotationRefsOrTypes = generateAnnotationTypes(
       normalRandom(defaultParams.primAnnoMean, defaultParams.primAnnoStd)
     )
     const element = new PrimitiveType({
@@ -344,8 +344,8 @@ export const generateElements = (params: GeneratorParams): Element[] => {
         PrimitiveTypes.STRING,
         PrimitiveTypes.NUMBER,
       ]),
-      annotationTypes,
-      annotations: generateAnnotations(annotationTypes, true),
+      annotationRefsOrTypes,
+      annotations: generateAnnotations(annotationRefsOrTypes, true),
       path: [DUMMY_ADAPTER, 'Types', name],
     })
     updateElementRank(element)
@@ -361,14 +361,14 @@ export const generateElements = (params: GeneratorParams): Element[] => {
 
   const generateTypes = (): ObjectType[] => arrayOf(params.numOfTypes, () => {
     const name = getName()
-    const annotationTypes = generateAnnotationTypes(
+    const annotationRefsOrTypes = generateAnnotationTypes(
       normalRandom(defaultParams.typetAnnoMean, defaultParams.typetAnnoStd)
     )
     const objType = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, name),
       fields: generateFields(),
-      annotationTypes,
-      annotations: generateAnnotations(annotationTypes, true),
+      annotationRefsOrTypes,
+      annotations: generateAnnotations(annotationRefsOrTypes, true),
       path: [DUMMY_ADAPTER, 'Types', name],
     })
     updateElementRank(objType)
@@ -378,14 +378,14 @@ export const generateElements = (params: GeneratorParams): Element[] => {
 
   const generateObjects = (): ObjectType[] => arrayOf(params.numOfObjs, () => {
     const name = getName()
-    const annotationTypes = generateAnnotationTypes(
+    const annotationRefsOrTypes = generateAnnotationTypes(
       normalRandom(defaultParams.objectAnnoMean, defaultParams.objectAnnoStd)
     )
     const fullObjType = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, name),
       fields: generateFields(),
-      annotationTypes,
-      annotations: generateAnnotations(annotationTypes),
+      annotationRefsOrTypes,
+      annotations: generateAnnotations(annotationRefsOrTypes),
     })
     const fieldsObjType = new ObjectType({
       elemID: fullObjType.elemID,
@@ -394,7 +394,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     })
     const annoTypesObjType = new ObjectType({
       elemID: fullObjType.elemID,
-      annotationRefsOrTypes: fullObjType.annotationTypes,
+      annotationRefsOrTypes: fullObjType.getAnnotationTypes(),
       annotations: fullObjType.annotations,
       path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
     })

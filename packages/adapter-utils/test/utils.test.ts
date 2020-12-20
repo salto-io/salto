@@ -1212,7 +1212,7 @@ describe('Test utils.ts', () => {
     })
 
     it('should set annotation type path', () => {
-      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno'), BuiltinTypes.NUMBER)
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno'), createRefToElmWithValue(BuiltinTypes.NUMBER))
       expect(clonedMockType.getAnnotationTypes().testAnno).toEqual(BuiltinTypes.NUMBER)
     })
 
@@ -1818,12 +1818,12 @@ describe('Test utils.ts', () => {
         configType,
         { val1: 'test' }
       ))).toBeTruthy()
-      // expect(createDefaultInstanceFromType('test', configType))
-      //   .toEqual(new InstanceElement(
-      //     'test',
-      //     configType,
-      //     { val1: 'test' }
-      //   ))
+      expect(createDefaultInstanceFromType('test', configType))
+        .toEqual(new InstanceElement(
+          'test',
+          configType,
+          { val1: 'test' }
+        ))
     })
   })
 

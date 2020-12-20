@@ -57,23 +57,7 @@ export abstract class Element {
       (annotationRefsOrTypes ?? {}),
       refOrType => getRefType(refOrType)
     )
-    // console.log(this.annotationRefTypes)
     this.path = path
-  }
-
-  getAnnotationTypes = (elementsSource?: ElementsSource): TypeMap => {
-    console.log(this.elemID)
-    console.log(this.annotationRefTypes)
-    const annotationTypes = _.mapValues(
-      this.annotationRefTypes,
-      refType => refType.getResolvedValue(elementsSource)
-    )
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const nonTypeVals = Object.values(annotationTypes).filter(type => !isType(type))
-    if (nonTypeVals.length) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s has annotationType that resolves as non-TypeElement`)
-    }
-    return annotationTypes
   }
 
   /**
@@ -98,6 +82,26 @@ export abstract class Element {
       _.mapValues(this.annotationRefTypes, a => a.elemID),
       _.mapValues(other.annotationRefTypes, a => a.elemID)
     )
+  }
+
+  getAnnotationTypes(elementsSource?: ElementsSource): TypeMap {
+    Object.entries(this.annotationRefTypes).forEach((v, k) => {
+      if (!isReferenceExpression(v)) {
+        console.log(v)
+        console.log(k)
+        console.log(this.elemID)
+      }
+    })
+    const annotationTypes = _.mapValues(
+      this.annotationRefTypes,
+      refType => refType.getResolvedValue(elementsSource)
+    )
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const nonTypeVals = Object.values(annotationTypes).filter(type => !isType(type))
+    if (nonTypeVals.length) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s has annotationType that resolves as non-TypeElement`)
+    }
+    return annotationTypes
   }
 
   annotate(annotations: Values): void {

@@ -499,6 +499,7 @@ export const getPath = (
 
 export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value): void => {
   const path = getPath(rootElement, fullElemID)
+  console.log(path)
   if (path === undefined) {
     log.warn(`Failed to set: ${rootElement.elemID.getFullName()} is not parent of ${fullElemID.getFullName()}`)
     return

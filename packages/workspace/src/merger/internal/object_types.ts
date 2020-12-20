@@ -87,7 +87,7 @@ const mergeFieldDefinitions = (
   )
 
   // Ensure all types are compatible
-  const definedTypes = new Set(definitions.map(field => field.type.elemID.getFullName()))
+  const definedTypes = new Set(definitions.map(field => field.refType.elemID.getFullName()))
   const typeErrors = definedTypes.size === 1
     ? []
     : [new ConflictingFieldTypesError({ elemID, definedTypes })]
@@ -125,7 +125,7 @@ const mergeObjectDefinitions = (
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
   const annotationTypesMergeResults = mergeNoDuplicates(
-    objects.map(o => o.annotationTypes),
+    objects.map(o => o.annotationRefTypes),
     key => new DuplicateAnnotationTypeError({ elemID, key }),
   )
 
@@ -145,7 +145,7 @@ const mergeObjectDefinitions = (
     merged: new ObjectType({
       elemID,
       fields: _.mapValues(fieldsMergeResults, r => r.merged),
-      annotationTypes: annotationTypesMergeResults.merged,
+      annotationRefsOrTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
       isSettings: refIsSettings,
     }),

@@ -153,8 +153,8 @@ const resolveElement = (
     element.value = _.cloneWith(element.value, referenceCloner)
   }
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
-  element.annotationTypes = _.mapValues(
-    element.annotationTypes,
+  element.annotationRefTypes = _.mapValues(
+    element.annotationRefTypes,
     type => getResolvedElement(type, contextElements)
   )
 }

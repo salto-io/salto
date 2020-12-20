@@ -112,7 +112,7 @@ describe('convert lists filter', () => {
   const mockObjWithAnnotationsId = new ElemID(constants.SALESFORCE, 'objWithAnnotations')
   const mockFieldTypeWithAnnotations = new ObjectType({
     elemID: mockObjWithAnnotationsId,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       annotationToSort: mockTypeToSort,
       otherAnnotation: mockTypeToSort,
       nestedAnnoToSort: nestedMockTypeToSort,
@@ -158,7 +158,7 @@ describe('convert lists filter', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       objAnnotationToSort: mockTypeToSort,
       otherObjAnnotation: mockTypeToSort,
       nestedObjAnnoToSort: nestedMockTypeToSort,

@@ -485,13 +485,13 @@ describe('fetch', () => {
       const origRegularFieldType = new PrimitiveType({
         elemID: new ElemID('adapter', 'regular'),
         primitive: PrimitiveTypes.STRING,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [SERVICE_ID_ANNOTATION]: BuiltinTypes.SERVICE_ID,
         },
       })
       const origObj = new ObjectType({
         elemID: typeElemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [SERVICE_ID_ANNOTATION]: BuiltinTypes.SERVICE_ID,
         },
         annotations: {

@@ -69,7 +69,7 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
   const pathHints = {
     [element.elemID.getFullName()]: [element.path],
   }
-  _.keys(element.annotationTypes).forEach(key => {
+  _.keys(element.annotationRefTypes).forEach(key => {
     const id = element.elemID.createNestedID('annotation').createNestedID(key)
     if (element.path) {
       pathHints[id.getFullName()] = [element.path]

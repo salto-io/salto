@@ -42,7 +42,7 @@ const addToField = (
   if (!_.isEmpty(path)) {
     _.set(annotations, path.slice(1), nestedValue.value)
   }
-  return { [name]: { type: commonField.type, annotations } }
+  return { [name]: { refType: commonField.refType, annotations } }
 }
 
 const createObjectTypeFromNestedAdditions = (

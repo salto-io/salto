@@ -611,7 +611,7 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
   })
   const customObjectType = new ObjectType({
     elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
-    annotationTypes: _.clone(metadataAnnotationTypes),
+    annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
     annotations: {
       metadataType: CUSTOM_OBJECT,
       dirName: 'objects',

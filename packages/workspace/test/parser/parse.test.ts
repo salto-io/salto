@@ -332,11 +332,11 @@ let functions: Functions
 
       describe('annotation types', () => {
         it('should exist', () => {
-          expect(model.annotationTypes).toHaveProperty('convertSettings')
+          expect(model.annotationRefTypes).toHaveProperty('convertSettings')
         })
         it('should have the correct type', () => {
-          expect(model.annotationTypes.convertSettings.elemID.adapter).toEqual('salesforce')
-          expect(model.annotationTypes.convertSettings.elemID.name).toEqual('LeadConvertSettings')
+          expect(model.annotationRefTypes.convertSettings.elemID.adapter).toEqual('salesforce')
+          expect(model.annotationRefTypes.convertSettings.elemID.name).toEqual('LeadConvertSettings')
         })
       })
     })
@@ -411,9 +411,9 @@ let functions: Functions
       })
 
       it('should have the correct annotations', () => {
-        expect(numberType.annotationTypes.scale.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
-        expect(numberType.annotationTypes.precision.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
-        expect(numberType.annotationTypes.unique.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
+        expect(numberType.annotationRefTypes.scale.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+        expect(numberType.annotationRefTypes.precision.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+        expect(numberType.annotationRefTypes.unique.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
       })
     })
 

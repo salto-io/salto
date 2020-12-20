@@ -165,7 +165,7 @@ const isTopLevelSelector = (selector: ElementSelector, depth: number): boolean =
 const getPossiblePathsFromParent = (parent: Element): string[] => {
   const paths = ['annotations']
   if (isType(parent)) {
-    paths.push('annotationTypes')
+    paths.push('annotationRefTypes')
   }
   if (isObjectType(parent)) {
     paths.push('fields')

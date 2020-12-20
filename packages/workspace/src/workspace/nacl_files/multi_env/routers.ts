@@ -49,7 +49,7 @@ const toPathHint = (filename: string): string[] => {
 }
 
 const isEmptyAnnoAndAnnoTypes = (element: Element): boolean =>
-  (_.isEmpty(element.annotations) && _.isEmpty(element.annotationTypes))
+  (_.isEmpty(element.annotations) && _.isEmpty(element.annotationRefTypes))
 
 const isEmptyChangeElement = (element: Element): boolean => {
   if (isObjectType(element)) {

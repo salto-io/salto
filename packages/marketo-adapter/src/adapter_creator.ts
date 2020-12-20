@@ -36,7 +36,7 @@ const credentialsType = new ObjectType({
       refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
     },
   },
-  annotationTypes: {},
+  annotationRefsOrTypes: {},
   annotations: {},
 })
 

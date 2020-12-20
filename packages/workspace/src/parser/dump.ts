@@ -121,7 +121,7 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
       labels: [dumpElemID(elem)],
       attrs: await dumpAttributes(elem.annotations, functions),
-      blocks: dumpAnnotationTypesBlock(elem.annotationTypes).concat(
+      blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes).concat(
         await Promise.all(Object.values(elem.fields).map(field => dumpFieldBlock(field, functions)))
       ),
     }
@@ -135,7 +135,7 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
         getPrimitiveTypeName(elem.primitive),
       ],
       attrs: await dumpAttributes(elem.annotations, functions),
-      blocks: dumpAnnotationTypesBlock(elem.annotationTypes),
+      blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes),
     }
   }
   if (isInstanceElement(elem)) {

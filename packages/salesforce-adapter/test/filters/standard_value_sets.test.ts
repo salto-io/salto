@@ -70,7 +70,7 @@ describe('Standard Value Sets filter', () => {
   type FilterType = FilterWith<'onFetch'>
   const { client } = mockClient()
   const mockSVSType = new ObjectType({
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     elemID: new ElemID(constants.SALESFORCE, 'standard_value_set'),
   })
   mockSVSType.annotations[constants.METADATA_TYPE] = STANDARD_VALUE_SET

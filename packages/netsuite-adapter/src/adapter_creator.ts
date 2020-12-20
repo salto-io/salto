@@ -41,7 +41,7 @@ export const defaultCredentialsType = new ObjectType({
     tokenId: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     tokenSecret: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
-  annotationTypes: {},
+  annotationRefsOrTypes: {},
   annotations: {},
 })
 

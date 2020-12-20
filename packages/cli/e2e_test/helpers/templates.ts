@@ -18,7 +18,7 @@ import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, BuiltinTypes, Instan
 const sfText = new PrimitiveType({
   elemID: new ElemID('salesforce', 'Text'),
   primitive: PrimitiveTypes.STRING,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     label: BuiltinTypes.STRING,
     _required: BuiltinTypes.BOOLEAN,
   },
@@ -26,7 +26,7 @@ const sfText = new PrimitiveType({
 
 const sfRole = new ObjectType({
   elemID: new ElemID('salesforce', 'Role'),
-  annotationTypes: {
+  annotationRefsOrTypes: {
     metadataType: BuiltinTypes.SERVICE_ID,
     suffix: BuiltinTypes.STRING,
     dirName: BuiltinTypes.STRING,

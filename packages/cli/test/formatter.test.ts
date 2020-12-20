@@ -228,7 +228,7 @@ describe('formatter', () => {
           elemID: new ElemID('salesforce', 'text'),
           primitive: PrimitiveTypes.STRING,
           annotations: { bla: 'foo' },
-          annotationTypes: { bla: BuiltinTypes.STRING },
+          annotationRefsOrTypes: { bla: BuiltinTypes.STRING },
         })
         beforeAll(() => {
           const typeChange = detailedChange('add', dummyType.elemID, undefined, dummyType)

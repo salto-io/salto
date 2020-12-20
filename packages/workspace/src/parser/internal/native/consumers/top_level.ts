@@ -72,7 +72,7 @@ const consumePrimitive = (
     value: new PrimitiveType({
       elemID,
       primitive,
-      annotationTypes: consumedBlock.value.annotationTypes,
+      annotationRefsOrTypes: consumedBlock.value.annotationRefsOrTypes,
       annotations: consumedBlock.value.attrs,
     }),
     range: consumedBlock.range,
@@ -90,7 +90,7 @@ const consumeObjectType = (
     value: new ObjectType({
       elemID,
       fields: consumedBlock.value.fields,
-      annotationTypes: consumedBlock.value.annotationTypes,
+      annotationRefsOrTypes: consumedBlock.value.annotationTypes,
       annotations: consumedBlock.value.attrs,
       isSettings,
     }),

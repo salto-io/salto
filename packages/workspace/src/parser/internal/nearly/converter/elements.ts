@@ -75,7 +75,7 @@ const parseType = (
   const elemID = parseElemID(typeName)
   const typeObj = new ObjectType({
     elemID,
-    annotationTypes,
+    annotationRefsOrTypes: annotationTypes,
     annotations: annotations.value,
     isSettings,
   })

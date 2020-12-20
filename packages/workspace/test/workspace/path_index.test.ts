@@ -47,7 +47,7 @@ const singlePathObject = new ObjectType({
       refType: createRefToElmWithValue(nestedType),
     },
   },
-  annotationTypes: {
+  annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
   },
@@ -71,7 +71,7 @@ const singlePathObjectOtherService = new ObjectType({
       refType: createRefToElmWithValue(nestedType),
     },
   },
-  annotationTypes: {
+  annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
   },
@@ -89,7 +89,7 @@ const singlePathObjectOtherService = new ObjectType({
 // singlePathObject
 const multiPathAnnoObj = new ObjectType({
   elemID: new ElemID('salto', 'multiPathObj'),
-  annotationTypes: {
+  annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
   },

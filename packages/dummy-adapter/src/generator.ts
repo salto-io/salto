@@ -394,7 +394,7 @@ export const generateElements = (params: GeneratorParams): Element[] => {
     })
     const annoTypesObjType = new ObjectType({
       elemID: fullObjType.elemID,
-      annotationTypes: fullObjType.annotationTypes,
+      annotationRefsOrTypes: fullObjType.annotationTypes,
       annotations: fullObjType.annotations,
       path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
     })

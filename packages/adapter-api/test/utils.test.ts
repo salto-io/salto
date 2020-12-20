@@ -56,7 +56,7 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
         refType: new ReferenceExpression(listOfMapOfNum.elemID, listOfMapOfNum),
       },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
   describe('isElement func', () => {

@@ -752,24 +752,24 @@ describe('workspace', () => {
       expect(lead.fields.empty.annotations.test).toEqual('some value')
     })
     it('should add annotation types block when having new annotation type changes', () => {
-      expect(lead.annotationTypes).toHaveProperty('newAnnoType1')
-      expect(lead.annotationTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
-      expect(lead.annotationTypes).toHaveProperty('newAnnoType2')
-      expect(lead.annotationTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
+      expect(lead.annotationRefTypes).toHaveProperty('newAnnoType1')
+      expect(lead.annotationRefTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
+      expect(lead.annotationRefTypes).toHaveProperty('newAnnoType2')
+      expect(lead.annotationRefTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
-      expect(objWithAnnotationsBlock.annotationTypes).toHaveProperty('firstAnnotation')
-      expect(objWithAnnotationsBlock.annotationTypes.firstAnnotation).toEqual(BuiltinTypes.STRING)
-      expect(objWithAnnotationsBlock.annotationTypes).toHaveProperty('secondAnnotation')
-      expect(objWithAnnotationsBlock.annotationTypes.secondAnnotation).toEqual(BuiltinTypes.NUMBER)
+      expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('firstAnnotation')
+      expect(objWithAnnotationsBlock.annotationRefTypes.firstAnnotation).toEqual(BuiltinTypes.STRING)
+      expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('secondAnnotation')
+      expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation).toEqual(BuiltinTypes.NUMBER)
     })
     it('should add annotation type to the existing annotations block without path hint', () => {
       const objWithoutAnnoBlock = elemMap['salesforce.WithoutAnnotationsBlock'] as ObjectType
-      expect(objWithoutAnnoBlock.annotationTypes).toHaveProperty('newAnnoType1')
-      expect(objWithoutAnnoBlock.annotationTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
-      expect(objWithoutAnnoBlock.annotationTypes).toHaveProperty('newAnnoType2')
-      expect(objWithoutAnnoBlock.annotationTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
+      expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType1')
+      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
+      expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType2')
+      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
     })
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi.loc')

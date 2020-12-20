@@ -91,7 +91,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {
       [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       [constants.API_NAME]: 'Type',
@@ -227,7 +227,7 @@ describe('Custom Object Instances CRUD', () => {
       const stringType = new PrimitiveType({
         elemID: new ElemID(constants.SALESFORCE, 'Text'),
         primitive: PrimitiveTypes.STRING,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [constants.LABEL]: BuiltinTypes.STRING,
         },
       })
@@ -264,7 +264,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.API_NAME]: 'Type.TestField__c',
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           },
-          annotationTypes: {
+          annotationRefsOrTypes: {
             [constants.LABEL]: BuiltinTypes.STRING,
             [constants.API_NAME]: BuiltinTypes.STRING,
           },

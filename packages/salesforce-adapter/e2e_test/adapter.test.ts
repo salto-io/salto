@@ -456,7 +456,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const nameFieldElemID = new ElemID(constants.SALESFORCE, 'NameField')
       const element = new ObjectType({
         elemID: mockElemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           deploymentStatus: BuiltinTypes.STRING,
           enableHistory: BuiltinTypes.BOOLEAN,
           nameField: new ObjectType({ elemID: nameFieldElemID,
@@ -797,7 +797,7 @@ describe('Salesforce adapter E2E with real account', () => {
             },
           },
         },
-        annotationTypes: {
+        annotationRefsOrTypes: {
           deploymentStatus: BuiltinTypes.STRING,
           nameField: nameFieldType,
         },

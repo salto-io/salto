@@ -24,8 +24,7 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  INSTANCE_ANNOTATIONS,
-  ElementsSource,
+  INSTANCE_ANNOTATIONS, ElementsSource, ReferenceMap,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -72,7 +71,7 @@ export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectT
           key,
           { refType: type.refInnerType },
         ])),
-      annotationTypes: type.annotationTypes,
+      annotationRefsOrTypes: type.annotationRefTypes,
       annotations: type.annotations,
       path: type.path,
     })
@@ -226,8 +225,8 @@ export const transformElementAnnotations = <T extends Element>(
       ...InstanceAnnotationTypes,
       ...CoreAnnotationTypes,
       ...(isField(element)
-        ? element.getType(elementsSource).annotationTypes
-        : element.annotationTypes),
+        ? element.getType(elementsSource).getAnnotationTypes(elementsSource)
+        : element.getAnnotationTypes(elementsSource)),
     }
   }
 
@@ -291,7 +290,7 @@ export const transformElement = <T extends Element>(
     newElement = new ObjectType({
       elemID: element.elemID,
       fields: clonedFields,
-      annotationTypes: element.annotationTypes,
+      annotationRefsOrTypes: element.annotationRefTypes,
       annotations: transformedAnnotations,
       path: element.path,
       isSettings: element.isSettings,
@@ -314,7 +313,7 @@ export const transformElement = <T extends Element>(
     newElement = new PrimitiveType({
       elemID: element.elemID,
       primitive: element.primitive,
-      annotationTypes: element.annotationTypes,
+      annotationRefsOrTypes: element.annotationRefTypes,
       path: element.path,
       annotations: transformedAnnotations,
     })
@@ -492,8 +491,8 @@ export const getPath = (
   if (isType(rootElement) && fullElemID.idType === 'annotation') {
     const annoTypeName = path[0]
     const annoTypePath = path.slice(1)
-    if (_.isEmpty(annoTypePath)) return ['annotationTypes', annoTypeName]
-    return ['annotationTypes', annoTypeName, 'annotations', ...annoTypePath]
+    if (_.isEmpty(annoTypePath)) return ['annotationRefTypes', annoTypeName]
+    return ['annotationRefTypes', annoTypeName, 'annotations', ...annoTypePath]
   }
   return undefined
 }
@@ -561,7 +560,7 @@ export const flattenElementStr = (element: Element): Element => {
 
   const flattenObjectType = (obj: ObjectType): ObjectType => new ObjectType({
     elemID: obj.elemID,
-    annotationTypes: _(obj.annotationTypes).mapKeys((_v, k) => flatStr(k)).value(),
+    annotationRefsOrTypes: _(obj.annotationRefTypes).mapKeys((_v, k) => flatStr(k)).value(),
     annotations: flatValues(obj.annotations),
     fields: _(obj.fields).mapKeys((_v, k) => flatStr(k)).mapValues(flattenField).value(),
     isSettings: obj.isSettings,
@@ -571,7 +570,7 @@ export const flattenElementStr = (element: Element): Element => {
   const flattenPrimitiveType = (prim: PrimitiveType): PrimitiveType => new PrimitiveType({
     elemID: prim.elemID,
     primitive: prim.primitive,
-    annotationTypes: _.mapKeys(prim.annotationTypes, (_v, k) => flatStr(k)),
+    annotationRefsOrTypes: _.mapKeys(prim.annotationRefTypes, (_v, k) => flatStr(k)),
     annotations: flatValues(prim.annotations),
     path: prim.path?.map(flatStr),
   })
@@ -618,8 +617,8 @@ export const filterByID = <T extends Element | Values>(
     filterByID(id.createNestedID('attr'), annotations, filterFunc)
   )
 
-  const filterAnnotationType = (annoTypes: TypeMap): TypeMap => _.pickBy(
-    _.mapValues(annoTypes, (anno, annoName) => (
+  const filterAnnotationType = (annoRefTypes: ReferenceMap): ReferenceMap => _.pickBy(
+    _.mapValues(annoRefTypes, (anno, annoName) => (
       filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
     )),
     isDefined,
@@ -634,7 +633,7 @@ export const filterByID = <T extends Element | Values>(
     return new ObjectType({
       elemID: value.elemID,
       annotations: filterAnnotations(value.annotations),
-      annotationTypes: filterAnnotationType(value.annotationTypes),
+      annotationRefsOrTypes: filterAnnotationType(value.annotationRefTypes),
       fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
       path: value.path,
       isSettings: value.isSettings,
@@ -644,7 +643,7 @@ export const filterByID = <T extends Element | Values>(
     return new PrimitiveType({
       elemID: value.elemID,
       annotations: filterAnnotations(value.annotations),
-      annotationTypes: filterAnnotationType(value.annotationTypes),
+      annotationRefsOrTypes: filterAnnotationType(value.annotationRefTypes),
       primitive: value.primitive,
       path: value.path,
     }) as Value as T
@@ -771,7 +770,7 @@ export const applyInstancesDefaults = (
 
 export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
   InstanceElement => {
-  const instance = new InstanceElement(name, new ReferenceExpression(objectType.elemID, objectType))
+  const instance = new InstanceElement(name, objectType)
   instance.value = createDefaultValuesFromType(objectType)
   return instance
 }

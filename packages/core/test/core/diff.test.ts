@@ -45,7 +45,7 @@ describe('diff', () => {
         type: nestedType,
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       simple: BuiltinTypes.STRING,
       nested: nestedType,
     },
@@ -62,7 +62,7 @@ describe('diff', () => {
 
   const multiPathAnnoObj = new ObjectType({
     elemID: new ElemID('salto', 'multiPathObj'),
-    annotationTypes: {
+    annotationRefsOrTypes: {
       simple: BuiltinTypes.STRING,
       nested: nestedType,
     },

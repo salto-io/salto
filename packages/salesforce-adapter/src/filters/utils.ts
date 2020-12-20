@@ -59,15 +59,15 @@ void => {
     elem.annotations[API_NAME] = fullApiName
     log.debug(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
   }
-  if (!isField(elem) && !elem.annotationTypes[API_NAME]) {
-    elem.annotationTypes[API_NAME] = BuiltinTypes.SERVICE_ID
+  if (!isField(elem) && !elem.annotationRefTypes[API_NAME]) {
+    elem.annotationRefTypes[API_NAME] = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
   }
 }
 
 export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJECT): void => {
-  const { annotations, annotationTypes } = elem
-  if (!annotationTypes[METADATA_TYPE]) {
-    annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
+  const { annotations, annotationRefTypes } = elem
+  if (!annotationRefTypes[METADATA_TYPE]) {
+    annotationRefTypes[METADATA_TYPE] = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
   }
   if (!annotations[METADATA_TYPE]) {
     annotations[METADATA_TYPE] = metadataTypeValue

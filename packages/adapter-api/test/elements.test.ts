@@ -31,14 +31,14 @@ describe('Test elements.ts', () => {
   const primStr = new PrimitiveType({
     elemID: primID,
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
 
   const primNum = new PrimitiveType({
     elemID: primID,
     primitive: PrimitiveTypes.NUMBER,
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
 
@@ -52,7 +52,7 @@ describe('Test elements.ts', () => {
       // eslint-disable-next-line @typescript-eslint/camelcase
       str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
 
@@ -76,7 +76,7 @@ describe('Test elements.ts', () => {
   it('Should test getValuesThatNotInPrevOrDifferent func', () => {
     const prevObjType = new ObjectType({
       elemID: new ElemID('test', 'diff'),
-      annotationTypes: {},
+      annotationRefsOrTypes: {},
       annotations: {},
     })
     const prevInstance = new InstanceElement('diff', new ReferenceExpression(prevObjType.elemID, prevObjType),
@@ -98,7 +98,7 @@ describe('Test elements.ts', () => {
       },)
     const newObjType = new ObjectType({
       elemID: new ElemID('test', 'diff'),
-      annotationTypes: {},
+      annotationRefsOrTypes: {},
       annotations: {},
     })
     const newInstance = new InstanceElement('diff', new ReferenceExpression(newObjType.elemID, newObjType),
@@ -159,7 +159,7 @@ describe('Test elements.ts', () => {
     const objT = new ObjectType({
       elemID: new ElemID('test', 'obj'),
       fields: { str: { refType: new ReferenceExpression(primStr.elemID, primStr) } },
-      annotationTypes: {
+      annotationRefsOrTypes: {
         anno: primStr,
       },
       annotations: {},

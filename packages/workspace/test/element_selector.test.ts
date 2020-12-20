@@ -27,7 +27,7 @@ const mockStrType = new PrimitiveType({
 const mockElem = new ElemID('mockAdapter', 'test')
 const mockType = new ObjectType({
   elemID: mockElem,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     testAnno: mockStrType,
   },
   annotations: {

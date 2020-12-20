@@ -651,7 +651,7 @@ describe('transformer', () => {
       const notInAnnotationTypes = 'notInAnnotationTypes'
       const objType = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.STRING,
           [DESCRIPTION]: BuiltinTypes.STRING,
@@ -742,7 +742,7 @@ describe('transformer', () => {
         beforeEach(() => {
           const customSettingsObj = new ObjectType({
             elemID,
-            annotationTypes: {
+            annotationRefsOrTypes: {
               [API_NAME]: BuiltinTypes.SERVICE_ID,
               [METADATA_TYPE]: BuiltinTypes.STRING,
               [DESCRIPTION]: BuiltinTypes.STRING,
@@ -1132,7 +1132,7 @@ describe('transformer', () => {
             },
           },
         },
-        annotationTypes: {},
+        annotationRefsOrTypes: {},
         annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
       }),
       values,
@@ -1492,7 +1492,7 @@ describe('transformer', () => {
 
     const element = new ObjectType({
       elemID: elementID,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         instanceRef: BuiltinTypes.STRING,
         objectRef: BuiltinTypes.STRING,
         valueRef: BuiltinTypes.STRING,
@@ -1513,7 +1513,7 @@ describe('transformer', () => {
     const elemID = new ElemID('salesforce', 'base')
     const orig = new ObjectType({
       elemID,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         instanceRef: BuiltinTypes.STRING,
         objectRef: BuiltinTypes.STRING,
         valueRef: BuiltinTypes.STRING,
@@ -1862,7 +1862,7 @@ describe('transformer', () => {
               },
             },
           },
-          annotationTypes: {},
+          annotationRefsOrTypes: {},
           annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
         }),
         values,

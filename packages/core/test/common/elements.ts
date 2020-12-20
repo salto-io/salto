@@ -28,7 +28,7 @@ export const getAllElements = (): AllElementsTypes => {
       country: { type: BuiltinTypes.STRING },
       city: { type: BuiltinTypes.STRING },
     },
-    annotationTypes: { label: BuiltinTypes.STRING },
+    annotationRefsOrTypes: { label: BuiltinTypes.STRING },
   })
 
   const officeElemID = new ElemID('salto', 'office')
@@ -46,7 +46,7 @@ export const getAllElements = (): AllElementsTypes => {
       rooms: { type: new ListType(BuiltinTypes.STRING) },
       seats: { type: new MapType(BuiltinTypes.STRING) },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       label: BuiltinTypes.STRING,
       old: BuiltinTypes.STRING,
       // eslint-disable-next-line @typescript-eslint/camelcase

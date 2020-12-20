@@ -320,7 +320,7 @@ const filterOutHiddenChanges = async (
       // Instance values and annotation values can be hidden
       const [changeType, valuePath] = isInstanceElement(baseElem)
         ? [baseElem.type, path]
-        : [baseElem.annotationTypes[path[0]], path.slice(1)]
+        : [baseElem.annotationRefTypes[path[0]], path.slice(1)]
 
       if (changeType === undefined) {
         // a value without a type cannot be hidden

@@ -42,12 +42,12 @@ const projectValue = (src: Value, target: Value): Value => {
 
 const projectType = (src: TypeElement, target: TypeElement): TypeElement => {
   const annotations = projectValue(src.annotations, target.annotations)
-  const annotationTypes = _.pick(src.annotationTypes, _.keys(target.annotationTypes))
+  const annotationTypes = _.pick(src.annotationRefTypes, _.keys(target.annotationRefTypes))
   if (isObjectType(src) && isObjectType(target)) {
     const fields = _.pick(src.fields, _.keys(target.fields))
     return new ObjectType({
       ...src,
-      annotationTypes,
+      annotationRefsOrTypes: annotationTypes,
       annotations,
       fields,
     })
@@ -60,11 +60,11 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement => {
 }
 
 const projectField = (src: Field, target: Field): Field => {
-  if (src.type !== target.type) return src
+  if (!src.refType.elemID.isEqual(target.refType.elemID)) return src
   const annotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(annotations)
     ? target
-    : new Field(target.parent, src.name, src.type, annotations)
+    : new Field(target.parent, src.name, src.refType, annotations)
 }
 
 const projectInstance = (

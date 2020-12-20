@@ -98,8 +98,8 @@ export const findFullCustomObject = (elements: Element[], name: string): ObjectT
   const customObjects = findElements(elements, name) as ObjectType[]
   return new ObjectType({
     elemID: customObjects[0].elemID,
-    annotationTypes: Object.fromEntries(
-      customObjects.flatMap(obj => Object.entries(obj.annotationTypes))
+    annotationRefsOrTypes: Object.fromEntries(
+      customObjects.flatMap(obj => Object.entries(obj.annotationRefTypes))
     ),
     annotations: Object.fromEntries(
       customObjects.flatMap(obj => Object.entries(obj.annotations))
@@ -189,7 +189,7 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
 const stringType = new PrimitiveType({
   elemID: new ElemID(constants.SALESFORCE, 'Text'),
   primitive: PrimitiveTypes.STRING,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     [constants.LABEL]: BuiltinTypes.STRING,
   },
 })
@@ -232,7 +232,7 @@ export const createCustomSettingsObject = (
         [constants.API_NAME]: `${name}.TestField__c`,
         [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
       },
-      annotationTypes: {
+      annotationRefsOrTypes: {
         [constants.LABEL]: BuiltinTypes.STRING,
         [constants.API_NAME]: BuiltinTypes.STRING,
       },
@@ -245,7 +245,7 @@ export const createCustomSettingsObject = (
       [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       [constants.CUSTOM_SETTINGS_TYPE]: settingsType,
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       [constants.CUSTOM_SETTINGS_TYPE]: BuiltinTypes.STRING,
       [constants.METADATA_TYPE]: BuiltinTypes.STRING,
     },

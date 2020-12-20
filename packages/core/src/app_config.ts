@@ -100,7 +100,7 @@ export const saltoAppConfigType = new ObjectType({
       annotations: { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG },
     },
   },
-  annotationTypes: {},
+  annotationRefsOrTypes: {},
   annotations: {},
 })
 

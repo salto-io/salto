@@ -60,7 +60,7 @@ describe('detailedCompare', () => {
   describe('compare primitive types', () => {
     const before = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         before: BuiltinTypes.STRING,
         modify: BuiltinTypes.STRING,
       },
@@ -73,7 +73,7 @@ describe('detailedCompare', () => {
 
     const after = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         modify: BuiltinTypes.NUMBER,
         after: BuiltinTypes.STRING,
       },
@@ -126,7 +126,7 @@ describe('detailedCompare', () => {
   describe('compare object types', () => {
     const before = new ObjectType({
       elemID: new ElemID('salto', 'prim'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         before: BuiltinTypes.STRING,
         modify: BuiltinTypes.STRING,
       },
@@ -153,7 +153,7 @@ describe('detailedCompare', () => {
     })
     const after = new ObjectType({
       elemID: new ElemID('salto', 'obj'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         after: BuiltinTypes.STRING,
         modify: BuiltinTypes.NUMBER,
       },

@@ -24,7 +24,7 @@ const configID = new ElemID('hubspot')
 export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: { apiKey: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
-  annotationTypes: {},
+  annotationRefsOrTypes: {},
   annotations: {},
 })
 

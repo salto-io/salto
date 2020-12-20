@@ -52,7 +52,7 @@ describe('hide_types filter', () => {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {
       [METADATA_TYPE]: 'mockMetadata',
     },
@@ -62,7 +62,7 @@ describe('hide_types filter', () => {
     {
       elemID: new ElemID(SALESFORCE, 'mockPrimitive'),
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,

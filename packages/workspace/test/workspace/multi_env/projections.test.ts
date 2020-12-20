@@ -59,7 +59,7 @@ describe('projections', () => {
   const objectTypeElemID = new ElemID('salto', 'object')
   const objectType = new ObjectType({
     elemID: objectTypeElemID,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'OBJECT_1',
       list1: ['OBJECT_LIST_1'],
@@ -136,7 +136,7 @@ describe('projections', () => {
   })
   const partialObjectType = new ObjectType({
     elemID: objectTypeElemID,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'OBJECT_1',
       list1: ['OBJECT_LIST_1'],
@@ -281,7 +281,7 @@ describe('projections', () => {
   describe('project object types', () => {
     const newObjectType = new ObjectType({
       elemID: new ElemID('salto', 'new_object'),
-      annotationTypes: _.clone(objectType.annotationTypes),
+      annotationRefsOrTypes: _.clone(objectType.annotationRefTypes),
       annotations: _.clone(objectType.annotations),
     })
 
@@ -292,7 +292,7 @@ describe('projections', () => {
         objectType.annotations,
         v => (_.isString(v) ? 'MODIFIED' : undefined)
       ),
-      annotationTypes: objectType.annotationTypes,
+      annotationRefsOrTypes: objectType.annotationRefTypes,
     })
 
     it('should project an add change for a missing object type', async () => {
@@ -364,7 +364,7 @@ describe('projections', () => {
   describe('project primitive types', () => {
     const newPrimitiveType = new PrimitiveType({
       elemID: new ElemID('salto', 'new_object'),
-      annotationTypes: _.clone(primitiveType.annotationTypes),
+      annotationTypes: _.clone(primitiveType.annotationRefTypes),
       annotations: _.clone(primitiveType.annotations),
       primitive: primitiveType.primitive,
     })
@@ -372,7 +372,7 @@ describe('projections', () => {
     const modifiedPrimitive = new PrimitiveType({
       elemID: primitiveType.elemID,
       annotations: _.cloneDeepWith(primitiveType.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
-      annotationTypes: primitiveType.annotationTypes,
+      annotationTypes: primitiveType.annotationRefTypes,
       primitive: primitiveType.primitive,
     })
 

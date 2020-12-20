@@ -29,7 +29,7 @@ describe('Remove memory-only annotations filter', () => {
 
   const generateElements = (): Element[] => {
     const objType = new ObjectType({
-      annotationTypes: {
+      annotationRefsOrTypes: {
         [INTERNAL_ID_ANNOTATION]: BuiltinTypes.STRING,
         [METADATA_TYPE]: BuiltinTypes.STRING,
       },

@@ -400,7 +400,7 @@ export class Types {
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
@@ -412,7 +412,7 @@ export class Types {
     Number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
@@ -424,7 +424,7 @@ export class Types {
     AutoNumber: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
@@ -433,7 +433,7 @@ export class Types {
     Checkbox: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CHECKBOX),
       primitive: PrimitiveTypes.BOOLEAN,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.DEFAULT_VALUE]: BuiltinTypes.BOOLEAN,
       },
@@ -441,7 +441,7 @@ export class Types {
     Date: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATE),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -449,7 +449,7 @@ export class Types {
     Time: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TIME),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -457,7 +457,7 @@ export class Types {
     DateTime: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATETIME),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -465,7 +465,7 @@ export class Types {
     Currency: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
@@ -475,7 +475,7 @@ export class Types {
     Picklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
@@ -488,7 +488,7 @@ export class Types {
     MultiselectPicklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.MultiPicklistVisibleLines,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
@@ -502,7 +502,7 @@ export class Types {
     Email: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
@@ -512,7 +512,7 @@ export class Types {
     Percent: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
@@ -522,7 +522,7 @@ export class Types {
     Phone: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PHONE),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -530,7 +530,7 @@ export class Types {
     LongTextArea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.LongTextAreaVisibleLines,
         [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
@@ -540,7 +540,7 @@ export class Types {
     Html: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.RichTextAreaVisibleLines,
         [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
@@ -549,7 +549,7 @@ export class Types {
     TextArea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -557,7 +557,7 @@ export class Types {
     EncryptedText: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.MASK_CHAR]: Types.encryptedTextMaskCharType,
         [FIELD_ANNOTATIONS.MASK_TYPE]: Types.encryptedTextMaskTypeType,
@@ -567,7 +567,7 @@ export class Types {
     Url: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.URL),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -575,7 +575,7 @@ export class Types {
     Lookup: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
@@ -586,7 +586,7 @@ export class Types {
     MasterDetail: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MASTER_DETAIL),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
@@ -599,7 +599,7 @@ export class Types {
     Summary: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ROLLUP_SUMMARY),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         // todo: currently SUMMARIZED_FIELD && SUMMARY_FOREIGN_KEY are populated with the referenced
         //  field's API name should be modified to elemID reference once we'll use HIL
@@ -612,14 +612,14 @@ export class Types {
     Unknown: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.UNKNOWN),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     AnyType: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.ANY),
       primitive: PrimitiveTypes.UNKNOWN,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
@@ -632,8 +632,8 @@ export class Types {
     return { [typeName]: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, typeName),
       primitive: baseType.primitive,
-      annotationTypes: {
-        ...baseType.annotationTypes,
+      annotationRefsOrTypes: {
+        ...baseType.annotationRefTypes,
         [FORMULA]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]: Types.TreatBlankAsType,
       },
@@ -699,14 +699,14 @@ export class Types {
           refType: createRefToElmWithValue(Types.primitiveDataTypes.TextArea),
         },
       },
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     Name: new ObjectType({
       elemID: nameElemID,
       fields: Types.nameInnerFields,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
@@ -714,7 +714,7 @@ export class Types {
       // replaces the regular Name for types that don't have Salutation attribute (e.g User)
       elemID: nameNoSalutationElemID,
       fields: _.omit(Types.nameInnerFields, [NAME_FIELDS.SALUTATION]),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
@@ -728,7 +728,7 @@ export class Types {
           refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
         },
       },
-      annotationTypes: {
+      annotationRefsOrTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         ...Types.commonAnnotationTypes,
@@ -810,7 +810,7 @@ export class Types {
         const fieldType = type.clone()
         fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
           ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
-          : [SALESFORCE, TYPES_PATH, 'annotationTypes']
+          : [SALESFORCE, TYPES_PATH, 'annotationRefTypes']
         return fieldType
       })
   }
@@ -929,7 +929,7 @@ export const toCustomField = (field: Field): CustomField => {
     ...internalUseAnnotations,
   ]
   const isAllowed = (annotationName: string): boolean => (
-    Object.keys(field.getType().annotationTypes).includes(annotationName)
+    Object.keys(field.getType().annotationRefTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
   // Convert the annotations' names to the required API name
@@ -978,7 +978,7 @@ export const toCustomProperties = (
   ]
 
   const isAllowed = (annotationName: string): boolean => (
-    Object.keys(element.annotationTypes).includes(annotationName)
+    Object.keys(element.annotationRefTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
   _.assign(
@@ -1210,14 +1210,14 @@ export const getSObjectFieldElement = (
     }
   }
 
-  if (!_.isEmpty(naclFieldType.annotationTypes)) {
+  if (!_.isEmpty(naclFieldType.annotationRefTypes)) {
     // Get the rest of the annotations if their name matches exactly the API response
     // and they are not already assigned
     _.assign(
       annotations,
       _.pick(
         _.omit(field, Object.keys(annotations)),
-        Object.keys(naclFieldType.annotationTypes),
+        Object.keys(naclFieldType.annotationRefTypes),
       )
     )
   }
@@ -1306,11 +1306,11 @@ export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, Type
   folderContentType: BuiltinTypes.STRING,
   suffix: BuiltinTypes.STRING,
   dirName: BuiltinTypes.STRING,
-}
+} // TODO: This should be ref / something that contains ElemID
 
 export type MetadataObjectType = ObjectType & {
   annotations: ObjectType['annotations'] & MetadataTypeAnnotations
-  annotationTypes: ObjectType['annotationTypes'] & typeof metadataAnnotationTypes
+  annotationRefTypes: ObjectType['annotationRefTypes'] & typeof metadataAnnotationTypes
 }
 
 export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType => (

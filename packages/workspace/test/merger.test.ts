@@ -101,14 +101,14 @@ describe('merger', () => {
 
   const updateAnno = new ObjectType({
     elemID: baseElemID,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
   })
 
   const multipleUpdateAnno = new ObjectType({
     elemID: baseElemID,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
   })
@@ -152,7 +152,7 @@ describe('merger', () => {
         field2: 'base2',
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
   })

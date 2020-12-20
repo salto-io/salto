@@ -105,7 +105,7 @@ const createDummyWorkflowInstance = (
   )
   const dummyFieldType = (typeName: string): ObjectType => new ObjectType({
     elemID: new ElemID(SALESFORCE, typeName),
-    annotationTypes: _.clone(metadataAnnotationTypes),
+    annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
     annotations: { metadataType: typeName } as MetadataTypeAnnotations,
   })
   const workflowType = new ObjectType({
@@ -119,7 +119,7 @@ const createDummyWorkflowInstance = (
         )
       ),
     },
-    annotationTypes: metadataAnnotationTypes,
+    annotationRefsOrTypes: metadataAnnotationTypes,
     annotations: {
       metadataType: 'Workflow',
       dirName: 'workflows',

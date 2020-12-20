@@ -49,7 +49,7 @@ describe('Topics for objects filter', () => {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {
       [constants.METADATA_TYPE]: TOPICS_FOR_OBJECTS_METADATA_TYPE,
     },

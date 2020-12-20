@@ -336,7 +336,7 @@ describe('Test Salto Expressions', () => {
       const objType = new ObjectType({
         elemID: new ElemID('test', 'obj'),
         fields: { f: { refType: createRefToElmWithValue(primType) } },
-        annotationTypes: { a: primType },
+        annotationRefsOrTypes: { a: primType },
       })
       const inst = new InstanceElement('test', objType, { f: 1 })
 
@@ -344,7 +344,7 @@ describe('Test Salto Expressions', () => {
         [inst, objType, primType]
       ) as [InstanceElement, ObjectType, PrimitiveType]
       expect(resObj.fields.f.getType()).toBe(resPrim)
-      expect(resObj.annotationTypes.a).toBe(resPrim)
+      expect(resObj.annotationRefTypes.a).toBe(resPrim)
       expect(resInst.getType()).toBe(resObj)
     })
   })

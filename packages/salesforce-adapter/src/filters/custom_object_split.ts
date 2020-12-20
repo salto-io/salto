@@ -83,7 +83,7 @@ const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] 
   const namespace = getNamespace(customObject)
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
-    annotationTypes: customObject.annotationTypes,
+    annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
     path: [...getObjectDirectoryPath(customObject, namespace),
       annotationsFileName(customObject.elemID.name)],

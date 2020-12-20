@@ -115,7 +115,7 @@ describe('SalesforceAdapter CRUD', () => {
             token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
             sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
           },
-          annotationTypes: {},
+          annotationRefsOrTypes: {},
           annotations: { [constants.METADATA_TYPE]: 'Flow' },
         }),
         {
@@ -618,7 +618,7 @@ describe('SalesforceAdapter CRUD', () => {
                 refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
               },
             },
-            annotationTypes: {},
+            annotationRefsOrTypes: {},
             annotations: { [constants.METADATA_TYPE]: 'Flow' },
           }),
           { [constants.INSTANCE_FULL_NAME_FIELD]: instanceName },
@@ -866,7 +866,7 @@ describe('SalesforceAdapter CRUD', () => {
                 })),
               },
             },
-            annotationTypes: {},
+            annotationRefsOrTypes: {},
             annotations: {
               [constants.METADATA_TYPE]: 'CustomLabels',
             },

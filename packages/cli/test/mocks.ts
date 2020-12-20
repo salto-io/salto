@@ -367,7 +367,7 @@ export const mockConfigType = (adapterName: string): ObjectType => {
       token: { type: BuiltinTypes.STRING },
       sandbox: { type: BuiltinTypes.BOOLEAN },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
 }

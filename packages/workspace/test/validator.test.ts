@@ -48,7 +48,7 @@ describe('Elements validation', () => {
         annotations: { _required: true },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       annostr: BuiltinTypes.STRING,
       annonum: BuiltinTypes.NUMBER,
       annoboolean: BuiltinTypes.BOOLEAN,
@@ -192,7 +192,7 @@ describe('Elements validation', () => {
       },
       reqNested: { refType: createRefToElmWithValue(simpleType) },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       nested: simpleType,
       restrictedPrimitive: restrictedType,
     },
@@ -270,7 +270,7 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
             fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
@@ -288,7 +288,7 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: BuiltinTypes.STRING,
         },
         annotations: {
@@ -303,7 +303,7 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
             fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
@@ -323,7 +323,7 @@ describe('Elements validation', () => {
         elemID,
         fields: {
         },
-        annotationTypes: {
+        annotationRefsOrTypes: {
           notList: BuiltinTypes.STRING,
         },
         annotations: {
@@ -717,7 +717,7 @@ describe('Elements validation', () => {
           'withFile',
           new ObjectType({
             elemID: new ElemID('salesforce', 'test'),
-            annotationTypes: {
+            annotationRefsOrTypes: {
               ServiceId: BuiltinTypes.SERVICE_ID,
             },
             fields: {
@@ -743,7 +743,7 @@ describe('Elements validation', () => {
           'withFile',
           new ObjectType({
             elemID: new ElemID('salesforce', 'test'),
-            annotationTypes: {
+            annotationRefsOrTypes: {
               ServiceId: BuiltinTypes.SERVICE_ID,
             },
             fields: {

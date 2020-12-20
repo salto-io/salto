@@ -426,11 +426,11 @@ const validateField = (field: Field): ValidationError[] =>
 
 const validateType = (element: TypeElement): ValidationError[] => {
   const errors = Object.keys(element.annotations)
-    .filter(k => element.annotationTypes[k]).flatMap(
+    .filter(k => element.annotationRefTypes[k]).flatMap(
       k => validateValue(
         element.elemID.createNestedID('attr', k),
         element.annotations[k],
-        element.annotationTypes[k],
+        element.annotationRefTypes[k],
       )
     )
 

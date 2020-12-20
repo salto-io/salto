@@ -24,12 +24,12 @@ const removeMemoryOnlyAnnotations = (elements: Element[]): void => {
   elements
     .filter(isObjectType)
     .flatMap(e => ([e, ...Object.values(e.fields)]))
-    .filter(e => (Object.keys(e.annotations).concat(Object.keys(e.annotationTypes))).some(
+    .filter(e => (Object.keys(e.annotations).concat(Object.keys(e.annotationRefTypes))).some(
       t => constants.MEMORY_ONLY_ANNOTATIONS.includes(t)
     ))
     .forEach(e => {
       e.annotations = _.omit(e.annotations, constants.MEMORY_ONLY_ANNOTATIONS)
-      e.annotationTypes = _.omit(e.annotationTypes, constants.MEMORY_ONLY_ANNOTATIONS)
+      e.annotationRefTypes = _.omit(e.annotationRefTypes, constants.MEMORY_ONLY_ANNOTATIONS)
     })
 }
 

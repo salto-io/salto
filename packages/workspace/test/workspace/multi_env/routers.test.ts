@@ -32,7 +32,7 @@ const envField = { name: 'envField', refType: createRefToElmWithValue(BuiltinTyp
 const simpleObjID = new ElemID('salto', 'simple')
 const simpleObj = new ObjectType({
   elemID: simpleObjID,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     str1: BuiltinTypes.STRING,
     str2: BuiltinTypes.STRING,
   },
@@ -40,7 +40,7 @@ const simpleObj = new ObjectType({
 const listField = { name: 'listField', refType: createRefToElmWithValue(new ListType(simpleObj)) }
 const commonObj = new ObjectType({
   elemID: objectElemID,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     boolean: BuiltinTypes.BOOLEAN,
   },
   annotations: {
@@ -59,7 +59,7 @@ const envObj = new ObjectType({
 })
 const sharedObject = new ObjectType({
   elemID: objectElemID,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     boolean: BuiltinTypes.BOOLEAN,
   },
   annotations: {
@@ -91,12 +91,12 @@ const splitObjectAnnotations = new ObjectType({
 })
 const splitObjectAnnotationTypes = new ObjectType({
   elemID: splitObjectID,
-  annotationTypes: commonObj.annotationTypes,
+  annotationRefsOrTypes: commonObj.annotationRefTypes,
 })
 const splitObjJoined = new ObjectType({
   elemID: splitObjectID,
   fields: splitObjectFields.fields,
-  annotationTypes: splitObjectAnnotationTypes.annotationTypes,
+  annotationRefsOrTypes: splitObjectAnnotationTypes.annotationRefTypes,
   annotations: splitObjectAnnotations.annotations,
 })
 const splitInstName = 'splitInst'
@@ -893,7 +893,7 @@ describe('track', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       env: BuiltinTypes.STRING,
     },
     annotations: {
@@ -924,7 +924,7 @@ describe('track', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       common: BuiltinTypes.STRING,
     },
     annotations: {
@@ -1124,7 +1124,7 @@ describe('untrack', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       env: BuiltinTypes.STRING,
     },
     annotations: {
@@ -1155,7 +1155,7 @@ describe('untrack', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       common: BuiltinTypes.STRING,
     },
     annotations: {

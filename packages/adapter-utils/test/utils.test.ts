@@ -44,7 +44,7 @@ describe('Test utils.ts', () => {
   const mockElem = new ElemID('mockAdapter', 'test')
   const mockType = new ObjectType({
     elemID: mockElem,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       testAnno: mockStrType,
     },
     annotations: {
@@ -183,7 +183,7 @@ describe('Test utils.ts', () => {
   const mockPrim = new PrimitiveType({
     elemID: new ElemID('mockAdapter', 'prim'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       str: mockStrType,
     },
     annotations: {
@@ -679,7 +679,7 @@ describe('Test utils.ts', () => {
       primType = new PrimitiveType({
         elemID: new ElemID('test', 'prim'),
         primitive: PrimitiveTypes.NUMBER,
-        annotationTypes: { a1: BuiltinTypes.STRING },
+        annotationRefsOrTypes: { a1: BuiltinTypes.STRING },
         annotations: { a1: 'asd' },
       })
       listType = new ListType(primType)
@@ -703,7 +703,7 @@ describe('Test utils.ts', () => {
             },
           },
         },
-        annotationTypes: { a2: BuiltinTypes.STRING },
+        annotationRefsOrTypes: { a2: BuiltinTypes.STRING },
         annotations: { a2: 1 },
       })
       inst = new InstanceElement(
@@ -813,7 +813,7 @@ describe('Test utils.ts', () => {
     const elementID = new ElemID('salesforce', 'elememt')
     const element = new ObjectType({
       elemID: elementID,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         refValue: BuiltinTypes.STRING,
         reg: BuiltinTypes.STRING,
 
@@ -887,7 +887,7 @@ describe('Test utils.ts', () => {
 
     const sourceElement = new ObjectType({
       elemID,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         refValue: BuiltinTypes.STRING,
         objectRef: BuiltinTypes.STRING,
         reg: BuiltinTypes.STRING,
@@ -940,10 +940,10 @@ describe('Test utils.ts', () => {
       it('should maintain new values when transforming back to orig value', () => {
         const after = resolvedElement.clone()
         after.annotations.new = newValue
-        after.annotationTypes.new = BuiltinTypes.STRING
+        after.annotationRefTypes.new = createRefToElmWithValue(BuiltinTypes.STRING)
         after.fields.field.annotations.new = newValue
         after.annotations.regValue = newValue
-        after.annotationTypes.regValue = BuiltinTypes.STRING
+        after.annotationRefTypes.regValue = createRefToElmWithValue(BuiltinTypes.STRING)
         after.fields.field.annotations.regValue = newValue
 
         const restored = restoreValues(sourceElement, after, getName)
@@ -994,7 +994,7 @@ describe('Test utils.ts', () => {
       const prim = new PrimitiveType({
         elemID: new ElemID('mockAdapter', 'str'),
         primitive: PrimitiveTypes.STRING,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           testAnno: BuiltinTypes.STRING,
           testNumAnno: BuiltinTypes.NUMBER,
           refAnno: BuiltinTypes.STRING,
@@ -1019,7 +1019,7 @@ describe('Test utils.ts', () => {
         expect(resolvedPrim.primitive).toEqual(prim.primitive)
         expect(resolvedPrim.elemID).toEqual(prim.elemID)
         expect(resolvedPrim.path).toEqual(prim.path)
-        expect(resolvedPrim.annotationTypes).toEqual(prim.annotationTypes)
+        expect(resolvedPrim.annotationRefTypes).toEqual(prim.annotationRefTypes)
 
         expect(resolvedPrim.annotations).not.toEqual(prim.annotations)
         expect(resolvedPrim.annotations.refAnno).toEqual(regValue)
@@ -1033,7 +1033,7 @@ describe('Test utils.ts', () => {
     describe('resolveValues on field', () => {
       const FieldType = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           testAnno: BuiltinTypes.STRING,
           testNumAnno: BuiltinTypes.NUMBER,
           refAnno: BuiltinTypes.STRING,
@@ -1213,12 +1213,12 @@ describe('Test utils.ts', () => {
 
     it('should set annotation type path', () => {
       setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno'), BuiltinTypes.NUMBER)
-      expect(clonedMockType.annotationTypes.testAnno).toEqual(BuiltinTypes.NUMBER)
+      expect(clonedMockType.getAnnotationTypes().testAnno).toEqual(BuiltinTypes.NUMBER)
     })
 
     it('should set an annotation type anno path', () => {
       setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno'), 'NEW TEST ANNO TYPE')
-      expect(clonedMockType.annotationTypes.testAnno.annotations.testAnno).toEqual('NEW TEST ANNO TYPE')
+      expect(clonedMockType.getAnnotationTypes().testAnno.annotations.testAnno).toEqual('NEW TEST ANNO TYPE')
     })
 
     it('should set an instance value path', () => {
@@ -1235,12 +1235,12 @@ describe('Test utils.ts', () => {
 
     it('should unset an annotation type anno path', () => {
       setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno'), undefined)
-      expect('testAnno' in clonedMockType.annotationTypes.testAnno.annotations).toBeFalsy()
+      expect('testAnno' in clonedMockType.getAnnotationTypes().testAnno.annotations).toBeFalsy()
     })
 
     it('should unset annotation type path', () => {
       setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno'), undefined)
-      expect('testAnno' in clonedMockType.annotationTypes).toBeFalsy()
+      expect('testAnno' in clonedMockType.annotationRefTypes).toBeFalsy()
     })
 
     it('should unset an annotation path', () => {
@@ -1304,14 +1304,14 @@ describe('Test utils.ts', () => {
     const primStr = new PrimitiveType({
       elemID: primID,
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {},
+      annotationRefsOrTypes: {},
       annotations: {},
     })
 
     const primNum = new PrimitiveType({
       elemID: primID,
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {},
+      annotationRefsOrTypes: {},
       annotations: {},
     })
 
@@ -1325,7 +1325,7 @@ describe('Test utils.ts', () => {
         // eslint-disable-next-line @typescript-eslint/camelcase
         str_field: { refType: createRefToElmWithValue(primStr) },
       },
-      annotationTypes: {},
+      annotationRefsOrTypes: {},
       annotations: {},
     })
     const otRef = new ReferenceExpression(ot.elemID, ot)
@@ -1445,7 +1445,7 @@ describe('Test utils.ts', () => {
     const objElemID = new ElemID('salto', 'obj')
     const obj = new ObjectType({
       elemID: objElemID,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         obj: annoType,
         list: new ListType(BuiltinTypes.STRING),
         map: new MapType(BuiltinTypes.STRING),
@@ -1482,7 +1482,7 @@ describe('Test utils.ts', () => {
     )
     const prim = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         obj: annoType,
       },
       annotations: {
@@ -1510,7 +1510,7 @@ describe('Test utils.ts', () => {
       expect(onlyFields).toBeDefined()
       expectEqualFields(onlyFields?.fields, obj.fields)
       expect(onlyFields?.annotations).toEqual({})
-      expect(onlyFields?.annotationTypes).toEqual({})
+      expect(onlyFields?.annotationRefTypes).toEqual({})
       const onlyAnno = await filterByID(
         objElemID,
         obj,
@@ -1519,7 +1519,7 @@ describe('Test utils.ts', () => {
       expect(onlyAnno).toBeDefined()
       expect(onlyAnno?.fields).toEqual({})
       expect(onlyAnno?.annotations).toEqual(obj.annotations)
-      expect(onlyAnno?.annotationTypes).toEqual({})
+      expect(onlyAnno?.annotationRefTypes).toEqual({})
 
       const onlyAnnoType = await filterByID(
         objElemID,
@@ -1529,7 +1529,7 @@ describe('Test utils.ts', () => {
       expect(onlyAnnoType).toBeDefined()
       expect(onlyAnnoType?.fields).toEqual({})
       expect(onlyAnnoType?.annotations).toEqual({})
-      expect(onlyAnnoType?.annotationTypes).toEqual(obj.annotationTypes)
+      expect(onlyAnnoType?.annotationRefTypes).toEqual(obj.annotationRefTypes)
 
       const withoutAnnoObjStr = await filterByID(
         objElemID,
@@ -1541,7 +1541,7 @@ describe('Test utils.ts', () => {
       expect(withoutAnnoObjStr?.annotations.obj).toEqual({ num: 42 })
       expect(withoutAnnoObjStr?.annotations.list).toEqual(obj.annotations.list)
       expect(withoutAnnoObjStr?.annotations.map).toEqual(obj.annotations.map)
-      expect(withoutAnnoObjStr?.annotationTypes).toEqual(obj.annotationTypes)
+      expect(withoutAnnoObjStr?.annotationRefTypes).toEqual(obj.annotationRefTypes)
 
       const withoutFieldAnnotations = await filterByID(
         objElemID,
@@ -1551,7 +1551,7 @@ describe('Test utils.ts', () => {
 
       expect(withoutFieldAnnotations).toBeDefined()
       expect(withoutFieldAnnotations?.annotations).toEqual(obj.annotations)
-      expect(withoutFieldAnnotations?.annotationTypes).toEqual(obj.annotationTypes)
+      expect(withoutFieldAnnotations?.annotationRefTypes).toEqual(obj.annotationRefTypes)
       expect(withoutFieldAnnotations?.fields.obj).toBeDefined()
       expect(withoutFieldAnnotations?.fields.obj.annotations).toEqual({})
       const onlyI = await filterByID(
@@ -1566,7 +1566,7 @@ describe('Test utils.ts', () => {
       expectEqualFields(onlyI?.fields, obj.fields)
       expect(onlyI?.annotations.obj).toEqual(obj.annotations.obj)
       expect(onlyI?.annotations.list).toEqual(['I'])
-      expect(onlyI?.annotationTypes).toEqual(obj.annotationTypes)
+      expect(onlyI?.annotationRefTypes).toEqual(obj.annotationRefTypes)
     })
 
     it('should filter primitive type', async () => {
@@ -1576,7 +1576,7 @@ describe('Test utils.ts', () => {
         id => !id.getFullNameParts().includes('str')
       )
       expect(filteredPrim?.annotations.obj).toEqual({ num: 17 })
-      expect(filteredPrim?.annotationTypes).toEqual({ obj: annoType })
+      expect(filteredPrim?.annotationRefTypes).toEqual({ obj: createRefToElmWithValue(annoType) })
     })
 
     it('should filter instances', async () => {
@@ -1808,18 +1808,22 @@ describe('Test utils.ts', () => {
         elemID: mockElemID,
         fields: {
           val1: {
-
             refType: createRefToElmWithValue(BuiltinTypes.STRING),
             annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'test' },
           },
         },
       })
-      expect(createDefaultInstanceFromType('test', configType))
-        .toEqual(new InstanceElement(
-          'test',
-          new ReferenceExpression(configType.elemID, configType),
-          { val1: 'test' }
-        ))
+      expect(createDefaultInstanceFromType('test', configType).isEqual(new InstanceElement(
+        'test',
+        configType,
+        { val1: 'test' }
+      ))).toBeTruthy()
+      // expect(createDefaultInstanceFromType('test', configType))
+      //   .toEqual(new InstanceElement(
+      //     'test',
+      //     configType,
+      //     { val1: 'test' }
+      //   ))
     })
   })
 
@@ -1865,7 +1869,7 @@ describe('Test utils.ts', () => {
       const elemID = new ElemID('salto', 'obj')
       const obj = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           target: BuiltinTypes.STRING,
         },
         annotations: {

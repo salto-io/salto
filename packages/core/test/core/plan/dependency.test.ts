@@ -279,7 +279,7 @@ describe('dependency changers', () => {
           },
         },
         annotations: { annoRef: new ReferenceExpression(testAnnoType.elemID) },
-        annotationTypes: { annoRef: testAnnoType },
+        annotationRefsOrTypes: { annoRef: testAnnoType },
       })
       testParent = new InstanceElement(
         'parent',

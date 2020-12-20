@@ -48,7 +48,8 @@ export const getSubElement = (
     if ((isIndexPathPart(key) && isListType(source)) || isMapType(source)) {
       return source.getInnerType() // TODO: ElementsSource
     }
-    if (source.annotationTypes[key]) return source.annotationTypes[key]
+    // TODO: ElementsSource
+    if (source.annotationRefTypes[key]) return source.getAnnotationTypes()[key]
     if (isObjectType(source)) return source.fields[key]
     return undefined
   }

@@ -81,7 +81,7 @@ describe('Salto Dump', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       ServiceId: BuiltinTypes.SERVICE_ID,
     },
   })

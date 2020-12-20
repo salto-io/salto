@@ -24,7 +24,7 @@ import { Types } from '../../src/transformers/transformer'
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
   }),
   {

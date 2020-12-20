@@ -492,7 +492,7 @@ export const getPath = (
     const annoTypeName = path[0]
     const annoTypePath = path.slice(1)
     if (_.isEmpty(annoTypePath)) return ['annotationTypes', annoTypeName]
-    return ['annotationTypes', annoTypeName, 'annotations', ...annoTypePath]
+    return undefined
   }
   return undefined
 }

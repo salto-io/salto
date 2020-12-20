@@ -459,19 +459,13 @@ const buildNaclFilesSource = (
     if (updatedNaclFiles.length > 0) {
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files
-      await setNaclFiles(...updatedNaclFiles.map(naclFile => ({
-        buffer: naclFile.buffer,
-        timestamp: naclFile.timestamp,
-        filename: naclFile.filename,
-      })))
+      await setNaclFiles(
+        ...updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename', 'timestamp']))
+      )
       // The map is to avoid saving unnecessary fields in the state
-      const res = await buildNaclFilesStateInner(updatedNaclFiles.map(parsedNaclFile => ({
-        filename: parsedNaclFile.filename,
-        elements: parsedNaclFile.elements,
-        errors: parsedNaclFile.errors,
-        timestamp: parsedNaclFile.timestamp,
-        referenced: parsedNaclFile.referenced,
-      })))
+      const res = await buildNaclFilesStateInner(
+        updatedNaclFiles.map(file => _.pick(file, ['filename', 'elements', 'errors', 'timestamp', 'referenced']))
+      )
       state = Promise.resolve(res.state)
       return res.changes
     }

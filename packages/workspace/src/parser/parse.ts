@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   SourceRange as InternalSourceRange,
 } from './internal/types'
@@ -27,6 +28,9 @@ import { ParseResult } from './types'
 
 export { parseElemID } from './internal/nearly/converter/elements'
 export { IllegalReference } from './internal/types'
+
+
+const log = logger(module)
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -69,5 +73,6 @@ export function *tokenizeContent(content: string): IterableIterator<Token> {
     }
   // eslint-disable-next-line no-empty
   } catch (e) {
+    log.error('Error occured while getting token: %o', e)
   }
 }

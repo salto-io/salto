@@ -316,6 +316,7 @@ export const configType = new ObjectType({
           'DashboardFolder',
           'Profile',
           'PermissionSet',
+          'SiteDotCom', // Fetched as a binary blob and seems to change on each fetch
         ],
       },
     },

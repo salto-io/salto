@@ -71,7 +71,6 @@ export function *tokenizeContent(content: string): IterableIterator<Token> {
       const token = lexer.next()
       yield _.pick(token, ['value', 'type', 'col', 'line'])
     }
-  // eslint-disable-next-line no-empty
   } catch (e) {
     log.error('Error occured while getting token: %o', e)
   }

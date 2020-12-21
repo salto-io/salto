@@ -189,18 +189,18 @@ describe('Salesforce adapter E2E with real account', () => {
       describe('should fetch sobject annotations from the custom object instance', () => {
         it('should fetch relevant simple annotations for standard object', () => {
           const lead = findAnnotationsObject(result, 'Lead')
-          expect(lead.annotationTypes).toHaveProperty('enableFeeds')
+          expect(lead.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(lead.annotations.enableFeeds).toBeDefined()
 
-          expect(lead.annotationTypes).not.toHaveProperty('deploymentStatus')
+          expect(lead.getAnnotationTypes()).not.toHaveProperty('deploymentStatus')
           expect(lead.annotations.deploymentStatus).toBeUndefined()
         })
 
         it('should fetch relevant simple annotations for custom object', () => {
           const customObj = findAnnotationsObject(result, 'TestFields__c')
-          expect(customObj.annotationTypes).toHaveProperty('enableFeeds')
+          expect(customObj.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(customObj.annotations.enableFeeds).toBeDefined()
-          expect(customObj.annotationTypes).toHaveProperty('deploymentStatus')
+          expect(customObj.getAnnotationTypes()).toHaveProperty('deploymentStatus')
           expect(customObj.annotations.deploymentStatus).toBeDefined()
         })
       })

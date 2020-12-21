@@ -113,8 +113,8 @@ describe('Remove memory-only annotations filter', () => {
       const objType = elements[0] as ObjectType
       expect(Object.keys(objType.annotations)).not.toContain(INTERNAL_ID_ANNOTATION)
       expect(Object.keys(objType.annotations)).toHaveLength(1)
-      expect(Object.keys(objType.annotationTypes)).not.toContain(INTERNAL_ID_ANNOTATION)
-      expect(Object.keys(objType.annotationTypes)).toHaveLength(1)
+      expect(Object.keys(objType.getAnnotationTypes())).not.toContain(INTERNAL_ID_ANNOTATION)
+      expect(Object.keys(objType.getAnnotationTypes())).toHaveLength(1)
     })
   })
 })

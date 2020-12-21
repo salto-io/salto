@@ -151,7 +151,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
       expect(flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType())
         .toEqual(BuiltinTypes.SERVICE_ID)
-      expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(flow.getAnnotationTypes()[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
 

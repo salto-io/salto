@@ -480,8 +480,8 @@ describe('Custom Objects filter', () => {
         mockSingleSObject('Lead', [])
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect(lead.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-        expect(lead.annotationTypes[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(lead.getAnnotationTypes()[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(lead.getAnnotationTypes()[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
         expect(lead.annotations[API_NAME]).toEqual('Lead')
         expect(lead.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
       })
@@ -1154,7 +1154,7 @@ describe('Custom Objects filter', () => {
             expect(lead).toBeDefined()
             expect(isObjectType(lead)).toBeTruthy()
             const leadObjectType = lead as ObjectType
-            expect(leadObjectType.annotationTypes[INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
+            expect(leadObjectType.getAnnotationTypes()[INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
           })
 
           it('should merge regular instance element annotations into the standard-custom object type', async () => {
@@ -1162,9 +1162,9 @@ describe('Custom Objects filter', () => {
             result.push(customObjectInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+            expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
             expect(lead.annotations.pluralLabel).toBeUndefined()
           })
 
@@ -1174,9 +1174,9 @@ describe('Custom Objects filter', () => {
             result.push(customSettingsInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+            expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
             expect(lead.annotations.customSettingsType).toBeDefined()
             expect(lead.annotations.customSettingsType).toEqual('Hierarchical')
           })
@@ -1186,9 +1186,9 @@ describe('Custom Objects filter', () => {
             result.push(customObjectInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect(lead.annotationTypes.pluralLabel).toBeDefined()
+            expect(lead.getAnnotationTypes().pluralLabel).toBeDefined()
             expect(lead.annotations.pluralLabel).toEqual('Leads')
           })
 
@@ -1197,7 +1197,7 @@ describe('Custom Objects filter', () => {
             result.push(customObjectInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.listViews).toBeUndefined()
+            expect(lead.getAnnotationTypes().listViews).toBeUndefined()
             expect(lead.annotations.listViews).toBeUndefined()
           })
 
@@ -1264,10 +1264,10 @@ describe('Custom Objects filter', () => {
               result.push(customSettingsObjectInstance)
               await filter.onFetch(result)
               const lead = findElements(result, 'Lead').pop() as ObjectType
-              expect(lead.annotationTypes.enableFeeds).toBeDefined()
+              expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
               expect(lead.annotations.enableFeeds).toBeTruthy()
-              expect(lead.annotationTypes.apiName).toBeDefined()
-              expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+              expect(lead.getAnnotationTypes().apiName).toBeDefined()
+              expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
               expect(lead.annotations.pluralLabel).toBeUndefined()
             })
 
@@ -1277,10 +1277,10 @@ describe('Custom Objects filter', () => {
               result.push(customSettingsObjectInstance)
               await filter.onFetch(result)
               const lead = findElements(result, 'Lead').pop() as ObjectType
-              expect(lead.annotationTypes.enableFeeds).toBeDefined()
+              expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
               expect(lead.annotations.enableFeeds).toBeTruthy()
-              expect(lead.annotationTypes.apiName).toBeDefined()
-              expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+              expect(lead.getAnnotationTypes().apiName).toBeDefined()
+              expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
               expect(lead.annotations.pluralLabel).toBeUndefined()
             })
 
@@ -1288,7 +1288,7 @@ describe('Custom Objects filter', () => {
               result.push(customObjectInstance)
               await filter.onFetch(result)
               const lead = findElements(result, 'Lead').pop() as ObjectType
-              expect(lead.annotationTypes.listViews).toBeUndefined()
+              expect(lead.getAnnotationTypes().listViews).toBeUndefined()
               expect(lead.annotations.listViews).toBeUndefined()
             })
 
@@ -1299,7 +1299,7 @@ describe('Custom Objects filter', () => {
               leadElements.forEach(lead => {
                 expect(lead.annotations[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS])
                   .toBeUndefined()
-                expect(lead.annotationTypes[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS])
+                expect(lead.getAnnotationTypes()[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS])
                   .toBeUndefined()
               })
               const [leadListView] = result.filter(o => o.elemID.name === 'Lead_PartialListViewFullName')

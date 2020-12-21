@@ -306,7 +306,7 @@ const toMetadataXml = (name: string, values: Values): string =>
   new parser.j2xParser({
     attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
     ignoreAttributes: false,
-    tagValueProcessor: val => he.encode(String(val), { useNamedReferences: true }),
+    tagValueProcessor: val => he.encode(String(val)),
   }).parse({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
 const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => {

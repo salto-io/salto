@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   SourceRange as InternalSourceRange,
 } from './internal/types'
@@ -57,14 +58,16 @@ export type Token = {
   line: number
 }
 
+// I don't return LexerToken because it would require the workspace package to
+// add @types/moo to the dependencies (instead of dev dependencies)
 export function *tokenizeContent(content: string): IterableIterator<Token> {
   const lexer = new PeekableLexer(content)
   try {
-    while (true) {
+    while (lexer.peek()) {
       const token = lexer.next()
-      yield { value: token.value, type: token.type, col: token.col, line: token.line }
+      yield _.pick(token, ['value', 'type', 'col', 'line'])
     }
+  // eslint-disable-next-line no-empty
   } catch (e) {
-    // Lexer throws an error when there is nothing left to parse
   }
 }

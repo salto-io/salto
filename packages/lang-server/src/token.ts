@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import os from 'os'
+import wu from 'wu'
+import _ from 'lodash'
 import { parser } from '@salto-io/workspace'
 import { EditorPosition } from './context'
 
@@ -29,14 +31,11 @@ export const getToken = (fileContent: string, position: EditorPosition):
   // and cause us to not support multiline tokens
   const line = lines[position.line]
 
-  for (const token of parser.tokenizeContent(line)) {
-    const col = token.col - 1
-    if (col <= position.col && position.col < col + token.value.length) {
-      return { value: token.value, type: token.type }
-    }
-    if (col > position.col) {
-      return undefined
-    }
+  const lexerToken = wu(parser.tokenizeContent(line)).find(
+    token => token.col < position.col && position.col < token.col + token.value.length - 1,
+  )
+  if (lexerToken === undefined) {
+    return undefined
   }
-  return undefined
+  return _.pick(lexerToken, ['value', 'type'])
 }

@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
+import { promises } from '@salto-io/lowerdash'
 import { PlanItem, Plan, preview, DeployResult, Tags, ItemStatus, deploy } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
@@ -44,8 +45,9 @@ const printPlan = async (
   workspace: Workspace,
   detailedPlan: boolean,
 ): Promise<void> => {
-  const planWorkspaceErrors = await Promise.all(
-    actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
+  const planWorkspaceErrors = await promises.array.withLimitedConcurrency(
+    actions.changeErrors.map(ce => () => workspace.transformToWorkspaceError(ce)),
+    20,
   )
   outputLine(header(Prompts.PLAN_STEPS_HEADER_DEPLOY), output)
   outputLine(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan), output)

@@ -15,16 +15,8 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
-import {
-  ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField,
-} from 'jsforce'
-import {
-  TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
-  PrimitiveValue,
-  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
-} from '@salto-io/adapter-api'
+import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField } from 'jsforce'
+import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord, CustomProperties } from '../client/types'
@@ -1299,18 +1291,17 @@ export type MetadataTypeAnnotations = {
   dirName?: string
 }
 
-export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeElement> = {
-  [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
-  hasMetaFile: BuiltinTypes.BOOLEAN,
-  folderType: BuiltinTypes.STRING,
-  folderContentType: BuiltinTypes.STRING,
-  suffix: BuiltinTypes.STRING,
-  dirName: BuiltinTypes.STRING,
-} // TODO: This should be ref / something that contains ElemID
+export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, ReferenceExpression> = {
+  [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+  hasMetaFile: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+  folderType: createRefToElmWithValue(BuiltinTypes.STRING),
+  folderContentType: createRefToElmWithValue(BuiltinTypes.STRING),
+  suffix: createRefToElmWithValue(BuiltinTypes.STRING),
+  dirName: createRefToElmWithValue(BuiltinTypes.STRING),
+}
 
 export type MetadataObjectType = ObjectType & {
   annotations: ObjectType['annotations'] & MetadataTypeAnnotations
-  annotationRefTypes: ObjectType['annotationRefTypes'] & typeof metadataAnnotationTypes
 }
 
 export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType => (
@@ -1410,7 +1401,7 @@ export const createMetadataTypeElements = async ({
   const element = Types.get(name, false, isSettings) as MetadataObjectType
   knownTypes.set(name, element)
   const isTopLevelType = baseTypeNames.has(name) || annotations.folderContentType !== undefined
-  element.annotationTypes = _.clone(metadataAnnotationTypes)
+  element.annotationRefTypes = _.clone(metadataAnnotationTypes)
   element.annotate({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,

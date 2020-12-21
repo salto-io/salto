@@ -245,7 +245,7 @@ export const transformFieldAnnotations = (
   }
 
   const annotations = transfromAnnotationsNames(instanceFieldValues, parentName)
-  const annotationsType = buildAnnotationsObjectType(fieldType.annotationTypes)
+  const annotationsType = buildAnnotationsObjectType(fieldType.getAnnotationTypes())
   convertList(annotationsType, annotations)
 
   return transformValues(
@@ -272,10 +272,15 @@ const transformObjectAnnotationValues = (instance: InstanceElement,
 
 const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
   instance: InstanceElement): void => {
-  Object.assign(customObject.annotationTypes, annotationTypesFromInstance)
+  customObject.annotationRefTypes = {
+    ...customObject.annotationRefTypes,
+    ..._.mapValues(annotationTypesFromInstance, t => createRefToElmWithValue(t)),
+  }
 
-  Object.assign(customObject.annotations,
-    transformObjectAnnotationValues(instance, annotationTypesFromInstance))
+  customObject.annotations = {
+    ...customObject.annotations,
+    ...transformObjectAnnotationValues(instance, annotationTypesFromInstance),
+  }
 }
 
 const createFieldFromMetadataInstance = (

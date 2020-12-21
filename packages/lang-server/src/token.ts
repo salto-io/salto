@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import os from 'os'
+import wu from 'wu'
+import _ from 'lodash'
 import { parser } from '@salto-io/workspace'
 import { EditorPosition } from './context'
 
-export type Token = {
-  value: string
-  type: string
-}
+export type Token = Pick<parser.Token, 'value' | 'type'>
 
 export const getToken = (fileContent: string, position: EditorPosition):
   Token | undefined => {
@@ -32,21 +31,11 @@ export const getToken = (fileContent: string, position: EditorPosition):
   // and cause us to not support multiline tokens
   const line = lines[position.line]
 
-  const lexer = new parser.PeekableLexer(line)
-  try {
-    while (true) {
-      const token = lexer.next()
-      const col = token.col - 1
-      if (col <= position.col && position.col < col + token.value.length) {
-        return { value: token.value, type: token.type }
-      }
-      if (col > position.col) {
-        return undefined
-      }
-    }
-  // eslint-disable-next-line no-empty
-  } catch (e) {
-    // Lexer throws an error when there is nothing left to parse
+  const lexerToken = wu(parser.tokenizeContent(line)).find(
+    token => token.col < position.col && position.col < token.col + token.value.length - 1,
+  )
+  if (lexerToken === undefined) {
+    return undefined
   }
-  return undefined
+  return _.pick(lexerToken, ['value', 'type'])
 }

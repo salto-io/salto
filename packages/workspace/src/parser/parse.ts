@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   SourceRange as InternalSourceRange,
 } from './internal/types'
@@ -20,11 +22,15 @@ import { parseBufferAndFixErrors } from './internal/nearly/parse'
 import {
   Functions,
 } from './functions'
+import PeekableLexer from './internal/native/lexer'
 import { parseBuffer } from './internal/native/parse'
 import { ParseResult } from './types'
 
 export { parseElemID } from './internal/nearly/converter/elements'
 export { IllegalReference } from './internal/types'
+
+
+const log = logger(module)
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -47,4 +53,25 @@ export const parse = async (
   return process.env.SALTO_USE_LEGACY_PARSER
     ? parseBufferAndFixErrors(srcString, filename, functions)
     : parseBuffer(srcString, filename, functions)
+}
+
+export type Token = {
+  value: string
+  type: string
+  col: number
+  line: number
+}
+
+// I don't return LexerToken because it would require the workspace package to
+// add @types/moo to the dependencies (instead of dev dependencies)
+export function *tokenizeContent(content: string): IterableIterator<Token> {
+  const lexer = new PeekableLexer(content)
+  try {
+    while (lexer.peek()) {
+      const token = lexer.next()
+      yield _.pick(token, ['value', 'type', 'col', 'line'])
+    }
+  } catch (e) {
+    log.error('Error occured while getting token: %o', e)
+  }
 }

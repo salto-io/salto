@@ -23,7 +23,7 @@ import { registerTestFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
-import { SourceRange, parse, SourceMap } from '../../src/parser'
+import { SourceRange, parse, SourceMap, tokenizeContent } from '../../src/parser'
 
 const funcName = 'funcush'
 
@@ -720,5 +720,17 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
     const body = 'bla'
     const result = await parse(Buffer.from(body), 'none', functions)
     expect(result.errors).not.toHaveLength(0)
+  })
+  describe('tokenizeContent', () => {
+    it('seperate and token each part of a line correctly', () => {
+      expect(Array.from(tokenizeContent('aaa   bbb ccc.ddd   "eee fff  ggg.hhh"'))).toEqual([
+        { value: 'aaa', type: 'word', line: 1, col: 1 },
+        { value: 'bbb', type: 'word', line: 1, col: 7 },
+        { value: 'ccc.ddd', type: 'word', line: 1, col: 11 },
+        { value: '"', type: 'dq', line: 1, col: 21 },
+        { value: 'eee fff  ggg.hhh', type: 'content', line: 1, col: 22 },
+        { value: '"', type: 'dq', line: 1, col: 38 },
+      ])
+    })
   })
 })

@@ -21,7 +21,7 @@ import { mergeElements, MergeError, updateMergedTypes } from '../../merger'
 
 const log = logger(module)
 
-const calcChanges = (
+export const calcChanges = (
   fullNames: string[],
   currentElements: Record<string, Element>,
   newElements: Record<string, Element>,

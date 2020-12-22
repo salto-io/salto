@@ -28,7 +28,7 @@ const getElemIDUsages = async (
   element: Element,
   id: ElemID
 ): Promise<ElemID[]> => {
-  const pathesToAdd = new Set<ElemID>()
+  const pathsToAdd = new Set<string>()
   if (isObjectType(element)) {
     _(element.fields)
       .values()
@@ -36,18 +36,18 @@ const getElemIDUsages = async (
         const fieldType = f.type
         const nonGenericType = isContainerType(fieldType) ? getDeepInnerType(fieldType) : f.type
         return id.isEqual(nonGenericType.elemID)
-      }).forEach(f => pathesToAdd.add(f.elemID))
+      }).forEach(f => pathsToAdd.add(f.elemID.getFullName()))
   }
   if (isInstanceElement(element) && element.type.elemID.isEqual(id)) {
-    pathesToAdd.add(element.elemID)
+    pathsToAdd.add(element.elemID.getFullName())
   }
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field?.elemID.isEqual(id) && path && !isIndexPathPart(path.name)) {
-      pathesToAdd.add(path)
+      pathsToAdd.add(path.getFullName())
     }
     if (isReferenceExpression(value) && path) {
       if (id.isEqual(value.elemId) || id.isParentOf(value.elemId)) {
-        pathesToAdd.add(path)
+        pathsToAdd.add(path.getFullName())
       }
     }
     return value
@@ -55,9 +55,7 @@ const getElemIDUsages = async (
   if (!isContainerType(element)) {
     transformElement({ element, transformFunc, strict: false })
   }
-  return _.flatten(
-    await Promise.all(wu(pathesToAdd.values()))
-  )
+  return [...pathsToAdd].map(pathToAdd => ElemID.fromFullName(pathToAdd))
 }
 
 const isTokenElemID = (token: string): boolean => {

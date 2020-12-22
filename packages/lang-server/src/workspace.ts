@@ -17,9 +17,12 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 import { Workspace, nacl, errors, parser, validator } from '@salto-io/workspace'
-import { Element, SaltoError, ElemID, Value } from '@salto-io/adapter-api'
+import { Element, SaltoError, ElemID, Change, getChangeElement, isAdditionOrModificationChange,
+  isRemovalChange, isReferenceExpression, isContainerType, Value } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
+import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 
+const { validateElements } = validator
 export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
 
 export class EditorWorkspace {
@@ -105,35 +108,78 @@ export class EditorWorkspace {
       .map(e => e.elemID)
   }
 
-  private async getValidationErrors(relevantElements: ElemID[]):
+  private async getUnresolvedRefOfFile(target: ElemID, filename: string):
+  Promise<errors.UnresolvedReferenceValidationError[]> {
+    const elements = (await this.workspace.getParsedNaclFile(filename))?.elements ?? []
+    const ids = new Set<string>()
+    const transformFunc = ({ value, path: elemPath }: TransformFuncArgs): Value => {
+      if (isReferenceExpression(value) && elemPath) {
+        if (target.isEqual(value.elemId) || target.isParentOf(value.elemId)) {
+          ids.add(elemPath.getFullName())
+        }
+      }
+      return value
+    }
+    elements.forEach(element => {
+      if (!isContainerType(element)) {
+        transformElement({ element, transformFunc, strict: false })
+      }
+    })
+    return [...ids].map(id => new errors.UnresolvedReferenceValidationError(
+      { elemID: ElemID.fromFullName(id), target }
+    ))
+  }
+
+  private async getUnresolvedRefForElement(element: Element):
+  Promise<errors.UnresolvedReferenceValidationError[]> {
+    const referencedFiles = await this.workspace.getElementReferencesToFiles(element.elemID)
+    return (await Promise.all(
+      referencedFiles.map(file => this.getUnresolvedRefOfFile(element.elemID, file))
+    )).flat()
+  }
+
+  private async getValidationErrors(changes: Change<Element>[]):
   Promise<errors.ValidationError[]> {
-    const relevantReferencesFiles = [...new Set(
-      (await Promise.all(
-        relevantElements.map(e => this.workspace.getElementReferencesToFiles(e))
-      )).flat()
-    )]
-    const relevantElementsFromReferences = await this.elementsInFiles(relevantReferencesFiles)
-    const allElements = await this.workspace.elements()
-    const elementsByName = _.keyBy(allElements, e => e.elemID.getFullName())
-    const currentValidationErrorsElements = (
-      this.wsErrors ? (await this.errors()).validation.map(ve => ve.elemID) : []
+    // We update the validation errors iterativly by validate the following elements:
+    //   - changed elements
+    //   - all the elements to includes reference expressions to them
+    //   - all the elements that currently got validation errors
+    const elementNamesToValidate = new Set<string>()
+    if (this.wsErrors) {
+      (await this.errors()).validation
+        .forEach(ve => { elementNamesToValidate.add(ve.elemID.getFullName()) })
+    }
+    changes.filter(isAdditionOrModificationChange)
+      .forEach(c => { elementNamesToValidate.add(getChangeElement(c).elemID.getFullName()) })
+    const elementsToValidate = (await Promise.all([...elementNamesToValidate]
+      .map(name => this.workspace.getElement(ElemID.fromFullName(name)))))
+      .flat()
+      .filter(values.isDefined)
+    const validationErrors = validateElements(
+      elementsToValidate, await this.workspace.elements()
     )
-    const elementsToValidate = _.uniq([
-      ...relevantElements, ...relevantElementsFromReferences, ...currentValidationErrorsElements,
-    ].map(e => e.getFullName())).map(elemName => elementsByName[elemName]).filter(values.isDefined)
-    return validator.validateElements(elementsToValidate, allElements)
+    const unresolvedReferences = (await Promise.all(
+      changes
+        .filter(isRemovalChange)
+        .map(getChangeElement)
+        .map(async element => this.getUnresolvedRefForElement(element))
+    )).flat()
+    return validationErrors
+      .filter(e => !validator.isUnresolvedRefError(e))
+      .concat(unresolvedReferences)
   }
 
   private async update(opDeletes: string[], opNaclFiles: Record<string, nacl.NaclFile>):
-  Promise<void> {
+  Promise<Change<Element>[]> {
     // We start by running all deleted
-    if (!_.isEmpty(opDeletes) && this.workspace) {
-      await this.workspace.removeNaclFiles(...opDeletes)
-    }
+    const removeChanges = (!_.isEmpty(opDeletes) && this.workspace)
+      ? await this.workspace.removeNaclFiles(...opDeletes)
+      : []
     // Now add the waiting changes
-    if (!_.isEmpty(opNaclFiles) && this.workspace) {
-      await this.workspace.setNaclFiles(..._.values(opNaclFiles))
-    }
+    const updateChanges = (!_.isEmpty(opNaclFiles) && this.workspace)
+      ? await this.workspace.setNaclFiles(..._.values(opNaclFiles))
+      : []
+    return [...removeChanges, ...updateChanges]
   }
 
   private async runAggregatedSetOperation(): Promise<void> {
@@ -144,19 +190,10 @@ export class EditorWorkspace {
       this.pendingSets = {}
       if (_.isUndefined(this.wsErrors)) {
         await this.update([...opDeletes], opNaclFiles)
+        await this.errors()
       } else {
-        // We update the validation errors iterativly by validate the following elements:
-        //   - all the elements in the edited/deleted files
-        //   - all the elements to includes reference expressions to them
-        //   - all the elements that currently got validation errors
-        const relevantFiles = [...new Set([...opDeletes, ...Object.keys(opNaclFiles)])]
-        const currentRelevantElements = await this.elementsInFiles(relevantFiles)
-        await this.update([...opDeletes], opNaclFiles)
-        const newRelevantElements = await this.elementsInFiles(relevantFiles)
-        const relevantElements = _.uniqBy(
-          [...currentRelevantElements, ...newRelevantElements], e => e.getFullName()
-        )
-        const validation = await this.getValidationErrors(relevantElements)
+        const changes = await this.update([...opDeletes], opNaclFiles)
+        const validation = await this.getValidationErrors(changes)
         const errorsWithoutValidation = await this.workspace.errors(false)
         this.wsErrors = Promise.resolve(new errors.Errors({
           merge: errorsWithoutValidation.merge,
@@ -244,6 +281,23 @@ export class EditorWorkspace {
   async getElementNaclFiles(id: ElemID): Promise<string[]> {
     return (await this.workspace.getElementNaclFiles(id))
       .map(filename => this.editorFilename(filename))
+  }
+
+  async validateFiles(filenames: string[]): Promise<void> {
+    if (_.isUndefined(this.wsErrors)) {
+      await this.errors()
+      return
+    }
+    const elements = (await this.elementsInFiles(filenames)).map(e => e.getFullName())
+    const currentErrors = await this.errors()
+    const allElements = _.keyBy(await this.workspace.elements(), e => e.elemID.getFullName())
+    const validation = currentErrors.validation
+      .filter(e => !elements.includes(e.elemID.getFullName()))
+      .concat(validateElements(elements.map(e => allElements[e]), Object.values(allElements)))
+    this.wsErrors = Promise.resolve(new errors.Errors({
+      ...currentErrors,
+      validation,
+    }))
   }
 
   async awaitAllUpdates(): Promise<void> {

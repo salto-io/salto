@@ -19,8 +19,36 @@ import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { getDetailedChanges } from './fetch'
 
-const isIdRelevant = (elementIds: ElemID[], id: ElemID): boolean =>
-  elementIds.some(elemId => id.isParentOf(elemId) || elemId.getFullName() === id.getFullName())
+const isIdRelevant = (relevantIds: ElemID[], id: ElemID): boolean =>
+  relevantIds.some(elemId => id.isParentOf(elemId) || elemId
+    .getFullName() === id.getFullName() || elemId.isParentOf(id))
+
+const filterRelevantParts = (elementIds: ElemID[],
+  selectorsToVerify: Set<string>): TransformFunc => ({ path, value }) => {
+  if (path !== undefined) {
+    const id = path.getFullName()
+    selectorsToVerify.delete(id)
+    if (isIdRelevant(elementIds, path)) {
+      return value
+    }
+  }
+  return undefined
+}
+
+const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
+  selectorsToVerify: Set<string>): Element[] => {
+  const topLevelIds = new Set<string>(relevantIds
+    .map(id => id.createTopLevelParentID().parent.getFullName()))
+  const toElementsFiltered = elements.filter(elem => topLevelIds.has(elem
+    .elemID.getFullName())).map(elem => {
+    selectorsToVerify.delete(elem.elemID.getFullName())
+    return transformElement({
+      element: elem,
+      transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
+    })
+  })
+  return toElementsFiltered
+}
 
 export const createDiffChanges = async (
   toElements: readonly Element[],
@@ -34,32 +62,10 @@ export const createDiffChanges = async (
       fromElements.map(element => ({ elemID: element.elemID, element })), true)
     const selectorsToVerify = new Set<string>(elementSelectors
       .map(sel => sel.origin).filter(sel => !sel.includes('*')))
-    const filterElements = (elementIds: ElemID[]): TransformFunc => ({ path, value }) => {
-      if (path !== undefined) {
-        const id = path.getFullName()
-        selectorsToVerify.delete(id)
-        if (isIdRelevant(elementIds, path)) {
-          return value
-        }
-      }
-      return undefined
-    }
-    const toElementsFiltered = toElements.filter(elem => isIdRelevant(toElementIdsFiltered,
-      elem.elemID)).map(elem => {
-      selectorsToVerify.delete(elem.elemID.getFullName())
-      return transformElement({
-        element: elem,
-        transformFunc: filterElements(toElementIdsFiltered),
-      })
-    })
-    const fromElementsFiltered = fromElements.filter(elem => isIdRelevant(fromElementIdsFiltered,
-      elem.elemID)).map(elem => {
-      selectorsToVerify.delete(elem.elemID.getFullName())
-      return transformElement({
-        element: elem,
-        transformFunc: filterElements(fromElementIdsFiltered),
-      })
-    })
+    const toElementsFiltered = filterElementsByRelevance(toElements as Element[],
+      toElementIdsFiltered, selectorsToVerify)
+    const fromElementsFiltered = filterElementsByRelevance(fromElements,
+      fromElementIdsFiltered, selectorsToVerify)
     if (selectorsToVerify.size > 0) {
       throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)
     }

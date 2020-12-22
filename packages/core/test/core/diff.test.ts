@@ -206,6 +206,27 @@ describe('diff', () => {
         ]
         await expect(createDiffChanges(toElements, beforeElements, selectors)).rejects.toThrow()
       })
+      it('includes child elements when their parent is selected ', async () => {
+        const nestedID = singlePathInstMerged.elemID
+          .createNestedID('nested')
+          .createNestedID('str').getFullName()
+        const simpleId = singlePathInstMerged.elemID
+          .createNestedID('simple').getFullName()
+        const newSinglePathInstMergedAfter = singlePathInstMergedAfter.clone() as InstanceElement
+        newSinglePathInstMergedAfter.value.simple = 'old simple'
+        const newBeforeElements = [
+          multiPathObjMerged,
+          multiPathInstMerged,
+          newSinglePathInstMergedAfter,
+        ]
+        const selectors = [
+          createElementSelector(singlePathInstMerged.elemID.getFullName()),
+        ]
+        const changes = await createDiffChanges(toElements, newBeforeElements, selectors)
+        expect(changes).toHaveLength(2)
+        expect(changes.map(change => change.id.getFullName())
+          .sort()).toEqual([nestedID, simpleId].sort())
+      })
     })
   })
 })

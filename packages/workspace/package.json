@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/workspace",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "Apache-2.0",
   "description": "Salto workspace",
   "repository": {
@@ -32,10 +32,10 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.2.0",
-    "@salto-io/adapter-utils": "0.2.0",
-    "@salto-io/logging": "0.2.0",
-    "@salto-io/lowerdash": "0.2.0",
+    "@salto-io/adapter-api": "0.2.1",
+    "@salto-io/adapter-utils": "0.2.1",
+    "@salto-io/logging": "0.2.1",
+    "@salto-io/lowerdash": "0.2.1",
     "is-promise": "4.0.0",
     "jest-each": "^26.5.0",
     "lodash": "^4.17.19",
@@ -44,10 +44,11 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/dag": "0.2.0",
-    "@salto-io/salesforce-adapter": "0.2.0",
+    "@salto-io/dag": "0.2.1",
+    "@salto-io/salesforce-adapter": "0.2.1",
     "@types/jest": "^24.0.0",
     "@types/lodash": "^4.14.133",
+    "@types/moo": "^0.5.0",
     "@types/nearley": "^2.11.0",
     "@types/node": "^12.7.1",
     "@types/supertest": "^2.0.4",
@@ -55,7 +56,6 @@
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",
-    "@types/moo": "^0.5.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",

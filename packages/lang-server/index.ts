@@ -23,6 +23,7 @@ import * as usage from './src/usage'
 import * as workspace from './src/workspace'
 import * as provider from './src/completions/provider'
 import * as suggestions from './src/completions/suggestions'
+import * as serviceUrl from './src/service_url'
 
 export {
   context,
@@ -35,4 +36,5 @@ export {
   workspace,
   provider,
   suggestions,
+  serviceUrl,
 }

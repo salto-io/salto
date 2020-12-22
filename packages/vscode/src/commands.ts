@@ -18,8 +18,7 @@ import _ from 'lodash'
 import open from 'open'
 
 import { copy as copyToClipboard } from 'copy-paste'
-import { context, workspace as ws } from '@salto-io/lang-server'
-import { getElementUrl } from '@salto-io/core'
+import { context, serviceUrl, workspace as ws } from '@salto-io/lang-server'
 import { vsPosToSaltoPos } from './adapters'
 
 export const createCopyReferenceCommand = (
@@ -62,13 +61,7 @@ const getServiceUrl = async (workspace: ws.EditorWorkspace): Promise<URL | undef
     saltoPos
   )
 
-  if (ctx.ref === undefined) {
-    return undefined
-  }
-  const { elemID } = ctx.ref.element
-
-  return workspace.runOperationWithWorkspace(innerWorkspace =>
-    getElementUrl(innerWorkspace, elemID))
+  return serviceUrl.getServiceUrl(workspace, ctx)
 }
 
 export const createGoToServiceCommand = (

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
-import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
+import { Element, SaltoError, ElemID, Value } from '@salto-io/adapter-api'
 
 export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
 
@@ -205,5 +205,9 @@ export class EditorWorkspace {
     const operationPromise = operation(this.workspace)
     this.runningWorkspaceOperation = this.waitForOperation(operationPromise)
     return operationPromise
+  }
+
+  async getValue(id: ElemID): Promise<Value | undefined> {
+    return this.workspace.getValue(id)
   }
 }

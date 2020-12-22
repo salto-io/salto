@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, Element, isField, Field, isType, ElementIDResolver, isElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { isObjectType, Element, isField, Field, isType, isReferenceExpression, ElemID } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
 
+export type ElementIDResolver = (id: ElemID) => Element | undefined
+
 export type UrlResolver = (element: Element, baseUrl: URL, elementIDResolver: ElementIDResolver) =>
-  Promise<URL | undefined>
+  URL | undefined
 
 const GENERAL_URLS_MAP: Record<string, string> = {
   PermissionSet: 'lightning/setup/PermSets/home',
@@ -54,21 +56,21 @@ const getTypeIdentifier = (element?: Element): string | undefined =>
 const getFieldIdentifier = (element: Field): string =>
   (getInternalId(element) ?? element.annotations.relationshipName ?? apiName(element, true))
 
-const genernalConstantsResolver: UrlResolver = async (element, baseUrl) => {
+const genernalConstantsResolver: UrlResolver = (element, baseUrl) => {
   if (isObjectType(element) && metadataType(element) in GENERAL_URLS_MAP) {
     return new URL(`${baseUrl}${GENERAL_URLS_MAP[metadataType(element)]}`)
   }
   return undefined
 }
 
-const settingsConstantsResolver: UrlResolver = async (element, baseUrl) => {
+const settingsConstantsResolver: UrlResolver = (element, baseUrl) => {
   if (metadataType(element) in SETTINGS_URLS_MAP) {
     return new URL(`${baseUrl}${SETTINGS_URLS_MAP[metadataType(element)]}`)
   }
   return undefined
 }
 
-const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
+const assignmentRulesResolver: UrlResolver = (element, baseUrl) => {
   if (isInstanceOfType('AssignmentRules')(element)
     && ['Lead', 'Case'].includes(apiName(element))) {
     return new URL(`${baseUrl}lightning/setup/${apiName(element)}Rules/home`)
@@ -76,7 +78,7 @@ const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
+const metadataTypeResolver: UrlResolver = (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (isType(element)
     && apiName(element)?.endsWith('__mdt')
@@ -86,7 +88,7 @@ const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const objectResolver: UrlResolver = async (element, baseUrl) => {
+const objectResolver: UrlResolver = (element, baseUrl) => {
   const typeIdentfier = getTypeIdentifier(element)
   if (isCustomObject(element)
     && typeIdentfier !== undefined) {
@@ -95,7 +97,7 @@ const objectResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const fieldResolver: UrlResolver = async (element, baseUrl) => {
+const fieldResolver: UrlResolver = (element, baseUrl) => {
   if (isField(element) && isFieldOfCustomObject(element)) {
     const fieldIdentifier = getFieldIdentifier(element)
     const typeIdentfier = getTypeIdentifier(element.parent)
@@ -107,7 +109,7 @@ const fieldResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const flowResolver: UrlResolver = async (element, baseUrl) => {
+const flowResolver: UrlResolver = (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (isInstanceOfType('Flow')(element)
     && element.value.processType === 'Flow'
@@ -117,7 +119,7 @@ const flowResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const workflowResolver: UrlResolver = async (element, baseUrl) => {
+const workflowResolver: UrlResolver = (element, baseUrl) => {
   if (isInstanceOfType('Flow')(element)
     && element.value.processType === 'Workflow') {
     // It seems all the process builder flows has the same url so we return the process buider home
@@ -126,7 +128,7 @@ const workflowResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const queueResolver: UrlResolver = async (element, baseUrl) => {
+const queueResolver: UrlResolver = (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (isInstanceOfType('Queue')(element)
     && getInternalId(element) !== undefined) {
@@ -135,25 +137,23 @@ const queueResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const layoutResolver: UrlResolver = async (element, baseUrl, elementIDResolver) => {
+const layoutResolver: UrlResolver = (element, baseUrl, elementIDResolver) => {
   const internalId = getInternalId(element)
   const [parentRef] = getParents(element)
 
   if (isInstanceOfType('Layout')(element)
       && internalId !== undefined
       && isReferenceExpression(parentRef)) {
-    const parent = await elementIDResolver(parentRef.elemId)
-    if (isElement(parent)) {
-      const parentIdentifier = getTypeIdentifier(parent)
-      if (parentIdentifier !== undefined) {
-        return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/PageLayouts/${internalId}/view`)
-      }
+    const parent = elementIDResolver(parentRef.elemId)
+    const parentIdentifier = getTypeIdentifier(parent)
+    if (parentIdentifier !== undefined) {
+      return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/PageLayouts/${internalId}/view`)
     }
   }
   return undefined
 }
 
-const internalIdResolver: UrlResolver = async (element, baseUrl) => {
+const internalIdResolver: UrlResolver = (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (internalId !== undefined) {
     return new URL(`${baseUrl}lightning/_classic/%2F${internalId}`)

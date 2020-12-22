@@ -64,6 +64,7 @@ import profilePathsFilter from './filters/profile_paths'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
+import elementsUrlFilter from './filters/elements_url'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -72,7 +73,6 @@ import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, l
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
-import { createInternalAccountInfoElements } from './instance_url'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -112,6 +112,7 @@ export const DEFAULT_FILTERS = [
   staticResourceFileExtFilter,
   xmlAttributesFilter,
   profilePathsFilter,
+  elementsUrlFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,
@@ -394,8 +395,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       await Promise.all([annotationTypes, fieldTypes, missingTypes,
         metadataTypes]) as Element[][]
     )
-
-    elements.push(...await createInternalAccountInfoElements(this.client))
 
     const {
       elements: metadataInstancesElements,

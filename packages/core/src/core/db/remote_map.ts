@@ -37,26 +37,43 @@ export type RemoteMap = {
   destroy: () => void
   close: () => Promise<void>
   flush: () => Promise<void>
+  revert: () => Promise<void>
 }
 
 type RocksDBValue = string | Buffer | undefined
 let dbCreated = false
 let db: rocksdb
-const createDBIfNotCreated = async (): Promise<void> => {
-  if (!dbCreated) {
-    dbCreated = true
-    db = rocksdb(DB_LOCATION)
-    await promisify(db.open.bind(db))()
-  }
-}
 
 export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => {
-  await createDBIfNotCreated()
   const cache = new LRU<ElemID, Element>(LRU_OPTIONS)
   const keyToDBKey = (key: ElemID): string =>
     namespace.concat(NAMESPACE_SEPARATOR).concat(key.getFullName())
   const keyToTempDBKey = (key: ElemID): string =>
     TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR).concat(key.getFullName()))
+  const getAppropriateKey = (element: Element, temp = false): string =>
+    (temp ? keyToTempDBKey(element.elemID) : keyToDBKey(element.elemID))
+  const getPrefixEndCondition = (prefix: string): string => prefix
+    .substring(0, prefix.length - 1).concat((String
+      .fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1)))
+  const createIterator = (prefix: string, keys = false,
+    values = false): rocksdb.Iterator => db.iterator({
+    keys,
+    values,
+    gte: prefix,
+    lte: getPrefixEndCondition(prefix),
+  })
+  const readIteratorNext = (iterator: rocksdb
+    .Iterator, retrieveKey: boolean): Promise<string | undefined> =>
+    new Promise<string | undefined>(resolve => {
+      const callback = (_err: Error | undefined, key: RocksDBValue, value: RocksDBValue): void => {
+        if (retrieveKey) {
+          resolve(key?.toString())
+        } else {
+          resolve(value?.toString())
+        }
+      }
+      iterator.next(callback)
+    })
   const putAllImpl = async (elements: AsyncIterable<Element>,
     temp = true): Promise<void> => {
     let i = 0
@@ -64,8 +81,7 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
     for await (const element of elements) {
       i += 1
       cache.set(element.elemID, element)
-      batch.put(temp ? keyToTempDBKey(element
-        .elemID) : keyToDBKey(element.elemID), serialize([element]))
+      batch.put(getAppropriateKey(element, temp), serialize([element]))
       if (i % BATCH_WRITE_INTERVAL === 0) {
         await promisify(batch.write.bind(batch))()
         batch = db.batch()
@@ -76,56 +92,47 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
     }
   }
   const getAllImpl = (tempOnly = false): AsyncIterator<Element> => {
-    const tempValueIter = db.iterator({
-      keys: false,
-      gte: TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR)),
-      lte: TEMP_PREFIX.concat(namespace
-        .concat(String.fromCharCode(NAMESPACE_SEPARATOR.charCodeAt(0) + 1))),
-    })
-    const valueIter = db.iterator({
-      keys: false,
-      gte: namespace.concat(NAMESPACE_SEPARATOR),
-      lte: namespace.concat(String.fromCharCode(NAMESPACE_SEPARATOR.charCodeAt(0) + 1)),
-    })
-    let done = false
+    const tempValueIter = createIterator(TEMP_PREFIX
+      .concat(namespace.concat(NAMESPACE_SEPARATOR)), false, true)
+    const valueIter = createIterator(namespace.concat(NAMESPACE_SEPARATOR), false, true)
     let tempDone = false
     return {
       next: async () => {
         let curVal: RocksDBValue
-        await new Promise<void>(resolve => {
-          if (!tempDone) {
-            tempValueIter.next((_err, _key, value) => {
-              tempDone = value === undefined
-              if (!tempDone) {
-                curVal = value
-                resolve()
-              } else {
-                valueIter.next((_innerErr, _innerKey, innerValue) => {
-                  done = innerValue === undefined
-                  curVal = innerValue
-                  resolve()
-                })
-              }
-            })
-          } else {
-            valueIter.next((_err, _key, value) => {
-              done = value === undefined
-              curVal = value
-              resolve()
-            })
+        if (!tempDone) {
+          curVal = await readIteratorNext(tempValueIter, false)
+          if (curVal === undefined) {
+            tempDone = true
           }
-        })
-        if (tempOnly) {
-          done = tempDone
+        }
+        if (tempDone && !tempOnly) {
+          curVal = await readIteratorNext(valueIter, false)
         }
         return {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           value: curVal ? (await deserialize(curVal.toString()))[0] : undefined as any,
-          done,
+          done: curVal === undefined,
         }
       },
     }
   }
+  const clearImpl = (prefix: string): Promise<void> => new Promise<void>(resolve => {
+    db.clear({
+      gte: prefix,
+      lte: getPrefixEndCondition(prefix),
+    }, () => {
+      resolve()
+    })
+  })
+  const createDBIfNotCreated = async (): Promise<void> => {
+    if (!dbCreated) {
+      dbCreated = true
+      db = rocksdb(DB_LOCATION)
+      await promisify(db.open.bind(db))()
+      await clearImpl(TEMP_PREFIX)
+    }
+  }
+  await createDBIfNotCreated()
   return {
     get: async (key: ElemID): Promise<Element | undefined> => new Promise(resolve => {
       if (cache.has(key)) {
@@ -152,71 +159,43 @@ export const createRemoteMap = async (namespace: string): Promise<RemoteMap> => 
       }
     }),
     getAll: getAllImpl,
-    set: async (key: ElemID, element: Element): Promise<void> => new Promise(resolve => {
+    set: async (key: ElemID, element: Element): Promise<void> => {
       cache.set(key, element)
-      db.put(keyToTempDBKey(key), serialize([element]), () => { resolve() })
-    }),
+      await promisify(db.put.bind(db))(keyToTempDBKey(key), serialize([element]))
+    },
     putAll: putAllImpl,
     list: () => {
-      const tempKeyIter = db.iterator({
-        values: false,
-        gte: TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR)),
-        lte: TEMP_PREFIX.concat(namespace.concat(String
-          .fromCharCode(NAMESPACE_SEPARATOR.charCodeAt(0) + 1))),
-      })
-      const keyIter = db.iterator({
-        values: false,
-        gte: namespace.concat(NAMESPACE_SEPARATOR),
-        lte: namespace.concat(String.fromCharCode(NAMESPACE_SEPARATOR.charCodeAt(0) + 1)),
-      })
-      let done = false
+      const tempKeyIter = createIterator(TEMP_PREFIX
+        .concat(namespace.concat(NAMESPACE_SEPARATOR)), true)
+      const keyIter = createIterator(namespace.concat(NAMESPACE_SEPARATOR), true)
       let tempDone = false
       return {
-        next: async () => {
-          let value: RocksDBValue
-          await new Promise<void>(resolve => {
-            if (!tempDone) {
-              tempKeyIter.next((_err, next) => {
-                tempDone = next === undefined
-                if (!tempDone) {
-                  value = next
-                  resolve()
-                } else {
-                  keyIter.next((_innerErr, innerNext) => {
-                    done = innerNext === undefined
-                    value = innerNext
-                    resolve()
-                  })
-                }
-              })
-            } else {
-              keyIter.next((_err, next) => {
-                done = next === undefined
-                value = next
-                resolve()
-              })
+        next: async (): Promise<IteratorResult<ElemID, boolean>> => {
+          let curVal: RocksDBValue
+          if (!tempDone) {
+            curVal = await readIteratorNext(tempKeyIter, true)
+            if (curVal === undefined) {
+              tempDone = true
             }
-          })
+          }
+          if (tempDone) {
+            curVal = await readIteratorNext(keyIter, true)
+          }
           return {
-            value: value ? ElemID.fromFullName(value.toString().replace(namespace.concat(NAMESPACE_SEPARATOR), '')
+            value: curVal ? ElemID.fromFullName(curVal.toString().replace(namespace.concat(NAMESPACE_SEPARATOR), '')
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               .replace(TEMP_PREFIX, '')) : undefined as any,
-            done,
+            done: curVal === undefined,
           }
         },
       }
     },
     flush: async () => {
       await putAllImpl({ [Symbol.asyncIterator]: () => getAllImpl(true) }, false)
-      return new Promise<void>(resolve => {
-        db.clear({
-          gte: TEMP_PREFIX,
-          lte: TEMP_PREFIX.substring(0, TEMP_PREFIX.length - 1).concat(String
-            .fromCharCode(TEMP_PREFIX[TEMP_PREFIX.length - 1].charCodeAt(0) + 1)),
-        }, () => {
-          resolve()
-        })
-      })
+      await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
+    },
+    revert: async () => {
+      await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
     },
     close: () => promisify(db.close.bind(db))(),
     destroy: () => {

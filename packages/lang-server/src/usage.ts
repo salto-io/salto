@@ -76,11 +76,10 @@ export const getSearchElementFullName = (
     return ElemID.fromFullName(token)
   }
   if (context.ref !== undefined) {
-    if (!_.isEmpty(context.ref.path) && context.type === 'type') {
-      return context.ref?.element.elemID.createNestedID('attr', ...context.ref.path)
-    }
-    if (!_.isEmpty(context.ref.path) && context.type === 'field') {
-      return context.ref?.element.elemID.createNestedID(...context.ref.path)
+    if (!_.isEmpty(context.ref.path)) {
+      return context.type === 'type'
+        ? context.ref?.element.elemID.createNestedID('attr', ...context.ref.path)
+        : context.ref?.element.elemID.createNestedID(...context.ref.path)
     }
     return context.ref?.element.elemID
   }

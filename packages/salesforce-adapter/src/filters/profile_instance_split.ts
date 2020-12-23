@@ -35,6 +35,7 @@ const splitProfile = (profile: InstanceElement): InstanceElement[] => {
       profile.type,
       _.pick(profile.value, ...fieldNames),
       profile.path === undefined ? undefined : [...profile.path, naclFilename],
+      naclFilename === DEFAULT_NACL_FILENAME ? profile.annotations : undefined,
     )
   )
 
@@ -51,7 +52,6 @@ const splitProfile = (profile: InstanceElement): InstanceElement[] => {
     ([fileName, fields]) => toInstancePart(fileName, fields)
   )
 
-  profileInstances[0].annotations = profile.annotations
   return profileInstances
 }
 

@@ -284,17 +284,19 @@ const addToSource = async ({
   originSource,
   targetSource,
   overrideTargetElements = false,
-  valuesOverides = {},
+  valuesOverrides = {},
 }: {
   ids: ElemID[]
   originSource: NaclFilesSource
   targetSource: NaclFilesSource
   overrideTargetElements?: boolean
-  valuesOverides?: Record<string, Value>
+  valuesOverrides?: Record<string, Value>
 }): Promise<DetailedChange[]> => {
   const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
   const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
-    const topLevelElement = await originSource.get(gids[0].createTopLevelParentID().parent)
+    const topLevelGid = gids[0].createTopLevelParentID().parent
+    const topLevelElement = valuesOverrides[topLevelGid.getFullName()]
+      ?? await originSource.get(topLevelGid)
     if (topLevelElement === undefined) {
       throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
     }
@@ -304,7 +306,7 @@ const addToSource = async ({
       : wrapNestedValues(
         gids.map(id => ({
           id,
-          value: valuesOverides[id.getFullName()] ?? resolvePath(topLevelElement, id),
+          value: valuesOverrides[id.getFullName()] ?? resolvePath(topLevelElement, id),
         })),
         topLevelElement
       )
@@ -386,7 +388,7 @@ export const routeIsolated = async (
       ids: [change.id],
       originSource: commonSource,
       targetSource: primarySource,
-      valuesOverides: {
+      valuesOverrides: {
         [change.id.getFullName()]: commonChangeProjection,
       },
     }) : []
@@ -397,6 +399,7 @@ export const routeIsolated = async (
   )
   const currentEnvChanges = await projectChange(change, primarySource)
   return {
+    // No need to apply addToSource to primary env changes since it was handled by the original plan
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
     commonSource: [createRemoveChange(currentCommonElement, change.id, pathHint)],
     secondarySources: secondaryChanges,

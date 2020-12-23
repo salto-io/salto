@@ -160,7 +160,7 @@ const commonSource = createMockNaclFileSource(
     'test/fields.nacl': [splitObjectFields],
     'test/inst1.nacl': [splitInstance1],
     'test/inst2.nacl': [splitInstance2],
-    'test/onlyfields': [commonCommonOnlyFieldObject],
+    'test/onlyfields.nacl': [commonCommonOnlyFieldObject],
   }
 )
 
@@ -683,7 +683,7 @@ describe('isolated routing', () => {
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
       .toEqual(change)
   })
-  it('should route a common modification diff to comon and revert the change in secondary envs', async () => {
+  it('should route a common modification diff to common and revert the change in secondary envs', async () => {
     const specificChange: DetailedChange = {
       action: 'modify',
       data: { before: false, after: true },
@@ -718,7 +718,7 @@ describe('isolated routing', () => {
       path: ['test', 'path'],
     })
   })
-  it('should route a common removal diff to comon and revert the change in secondary envs', async () => {
+  it('should route a common removal diff to common and revert the change in secondary envs', async () => {
     const splitObjChange: DetailedChange = {
       action: 'remove',
       data: { before: splitObjJoined },
@@ -778,7 +778,7 @@ describe('isolated routing', () => {
       path: ['test', 'inst2'],
     })
   })
-  it('should route a removal diff to comon and env and revert the change in secondary envs', async () => {
+  it('should route a removal diff to common and env and revert the change in secondary envs', async () => {
     const change: DetailedChange = {
       action: 'remove',
       data: { before: sharedObject },
@@ -856,20 +856,27 @@ describe('isolated routing', () => {
     })
   })
 
-  it('should route a common modification diff to comon and revert the change in'
+  it('should route a common modification diff to common and revert the change in '
    + 'secondary envs for nested elements without parents in the env', async () => {
     const fieldID = commonOnlyFieldObjectID.createNestedID('field', 'ofdreams')
     const specificChange: DetailedChange = {
       action: 'modify',
-      data: { before: 'if you will build it', after: 'they will come' },
+      data: { before: 'if you build it', after: 'they will come' },
       id: fieldID.createNestedID('catchphrase'),
     }
     const beforeField = commonCommonOnlyFieldObject.fields.ofdreams
-    const afterField = _.clone(beforeField)
-    afterField.annotate({
-      catchphrase: specificChange.data.after,
+    const afterObject = new ObjectType({
+      ...commonCommonOnlyFieldObject,
+      fields: {
+        ofdreams: {
+          ...commonCommonOnlyFieldObject.fields.ofdreams,
+          annotations: {
+            catchphrase: specificChange.data.after,
+          },
+        },
+      },
     })
-
+    const afterField = afterObject.fields.ofdreams
     const routedChanges = await routeChanges(
       [specificChange],
       envSource,

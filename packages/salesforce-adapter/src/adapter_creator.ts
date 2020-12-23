@@ -28,7 +28,6 @@ import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
   Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName } from './types'
-import { getElementUrl } from './elements_url_retreiver/elements_url_retreiver'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -156,5 +155,4 @@ export const adapter: Adapter = {
     changeValidator,
     getChangeGroupIds,
   },
-  getElementUrl,
 }

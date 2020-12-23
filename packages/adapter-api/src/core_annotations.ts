@@ -22,4 +22,5 @@ export const CORE_ANNOTATIONS = {
   DEPENDS_ON: '_depends_on',
   PARENT: '_parent',
   GENERATED_DEPENDENCIES: '_generated_dependencies',
+  SERVICE_URL: '_service_url',
 }

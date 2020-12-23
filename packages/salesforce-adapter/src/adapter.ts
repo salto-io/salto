@@ -112,9 +112,8 @@ export const DEFAULT_FILTERS = [
   staticResourceFileExtFilter,
   xmlAttributesFilter,
   profilePathsFilter,
-  // The following filters should remain last in order to make sure they fix all elements
-  profileInstanceSplitFilter,
   elementsUrlFilter,
+  // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,
   replaceFieldValuesFilter,
@@ -127,6 +126,7 @@ export const DEFAULT_FILTERS = [
   // extraDependenciesFilter should run after addMissingIdsFilter
   extraDependenciesFilter,
   customObjectsSplitFilter,
+  profileInstanceSplitFilter,
 ]
 
 export interface SalesforceAdapterParams {

@@ -44,12 +44,15 @@ const splitProfile = (profile: InstanceElement): InstanceElement[] => {
   )
 
   // keep the default filename first so that it comes up first when searching the path index
-  return _.sortBy(
+  const profileInstances = _.sortBy(
     Object.entries(targetFieldsByFile),
     ([fileName]) => fileName !== DEFAULT_NACL_FILENAME,
   ).map(
     ([fileName, fields]) => toInstancePart(fileName, fields)
   )
+
+  profileInstances[0].annotations = profile.annotations
+  return profileInstances
 }
 
 const isProfileInstance = (elem: Element): elem is InstanceElement => (

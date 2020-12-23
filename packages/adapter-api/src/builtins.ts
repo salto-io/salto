@@ -48,14 +48,6 @@ const StandardBuiltinTypes = {
   }),
 }
 
-
-export const InstanceAnnotationTypes: TypeMap = {
-  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),
-  [INSTANCE_ANNOTATIONS.PARENT]: new ListType(StandardBuiltinTypes.STRING),
-  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(StandardBuiltinTypes.STRING),
-  [INSTANCE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
-}
-
 const restrictionType = new ObjectType({
   elemID: new ElemID('', 'restriction'),
   fields: {
@@ -96,6 +88,13 @@ export const BuiltinTypes = {
   }),
 }
 
+export const InstanceAnnotationTypes: TypeMap = {
+  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.PARENT]: new ListType(StandardBuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(StandardBuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
+  [INSTANCE_ANNOTATIONS.SERVICE_URL]: BuiltinTypes.HIDDEN_STRING,
+}
 export const getRestriction = (
   { annotations }: { annotations: Element['annotations'] },
 ): RestrictionAnnotationType => (

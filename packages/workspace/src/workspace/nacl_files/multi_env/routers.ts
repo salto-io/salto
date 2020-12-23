@@ -284,15 +284,19 @@ const addToSource = async ({
   originSource,
   targetSource,
   overrideTargetElements = false,
+  valuesOverrides = {},
 }: {
   ids: ElemID[]
   originSource: NaclFilesSource
   targetSource: NaclFilesSource
   overrideTargetElements?: boolean
+  valuesOverrides?: Record<string, Value>
 }): Promise<DetailedChange[]> => {
   const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
   const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
-    const topLevelElement = await originSource.get(gids[0].createTopLevelParentID().parent)
+    const topLevelGid = gids[0].createTopLevelParentID().parent
+    const topLevelElement = valuesOverrides[topLevelGid.getFullName()]
+      ?? await originSource.get(topLevelGid)
     if (topLevelElement === undefined) {
       throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
     }
@@ -300,14 +304,16 @@ const addToSource = async ({
     const wrappedElement = !_.isEmpty(topLevelIds)
       ? topLevelElement
       : wrapNestedValues(
-        gids.map(id => ({ id, value: resolvePath(topLevelElement, id) })),
+        gids.map(id => ({
+          id,
+          value: valuesOverrides[id.getFullName()] ?? resolvePath(topLevelElement, id),
+        })),
         topLevelElement
       )
     const before = await targetSource.get(topLevelElement.elemID)
     if (before === undefined) {
       return [createAddChange(wrappedElement, topLevelElement.elemID)]
     }
-
     if (overrideTargetElements) {
       // we want to override, not merge - so we need to wrap each gid individually
       return gids.flatMap(id => overrideIdInSource(
@@ -316,7 +322,6 @@ const addToSource = async ({
         topLevelElement as ChangeDataType,
       ))
     }
-
     const mergeResult = mergeElements([
       before,
       wrappedElement,
@@ -363,7 +368,6 @@ export const routeIsolated = async (
   if (change.action === 'add') {
     return { primarySource: [change] }
   }
-
   // In remove and modify changes, we need to remove the current value from
   // common, add it to the inactive envs, and apply the actual change to the
   // active env.
@@ -373,17 +377,21 @@ export const routeIsolated = async (
   if (currentCommonElement === undefined) {
     return { primarySource: [change] }
   }
+
   const commonChangeProjection = projectElementOrValueToEnv(
     getChangeElement(change),
     currentCommonElement,
   )
-
   // Add the changed part of common to the target source
   const addCommonProjectionToCurrentChanges = change.action === 'modify'
-    ? await projectChange(
-      createAddChange(commonChangeProjection, change.id, pathHint),
-      primarySource
-    ) : []
+    ? await addToSource({
+      ids: [change.id],
+      originSource: commonSource,
+      targetSource: primarySource,
+      valuesOverrides: {
+        [change.id.getFullName()]: commonChangeProjection,
+      },
+    }) : []
   // Add the old value of common to the inactive sources
   const secondaryChanges = await promises.object.mapValuesAsync(
     secondarySources,
@@ -391,6 +399,7 @@ export const routeIsolated = async (
   )
   const currentEnvChanges = await projectChange(change, primarySource)
   return {
+    // No need to apply addToSource to primary env changes since it was handled by the original plan
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
     commonSource: [createRemoveChange(currentCommonElement, change.id, pathHint)],
     secondarySources: secondaryChanges,

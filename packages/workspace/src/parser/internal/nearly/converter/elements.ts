@@ -151,7 +151,7 @@ const parsePrimitiveType = (
     element: new PrimitiveType({
       elemID,
       primitive: primitiveType(baseType.value),
-      annotationTypes,
+      annotationRefsOrTypes: annotationTypes,
       annotations: annotations.value,
     }),
     sourceMap,

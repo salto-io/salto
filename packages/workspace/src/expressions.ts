@@ -14,20 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-
-import {
-  ElemID, Element, isObjectType, isInstanceElement, Value,
-  ReferenceExpression, TemplateExpression, isVariable,
-  isReferenceExpression, isVariableExpression, isElement, Field,
-} from '@salto-io/adapter-api'
-import {
-  resolvePath,
-} from '@salto-io/adapter-utils'
+import { ElemID, Element, isObjectType, isInstanceElement, Value, ReferenceExpression, TemplateExpression, isVariable, isReferenceExpression, isVariableExpression, isElement, Field, ElementsSource, isType } from '@salto-io/adapter-api'
+import { resolvePath, createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 type Resolver<T> = (
   v: T,
-  contextElements: Record<string, Element>,
-  visited?: Set<string>
+  elementsSource: ElementsSource,
+  resolvedElements: Record<string, Element>,
+  visited?: Set<string>,
 ) => Value
 
 export class UnresolvedReference {
@@ -38,33 +32,33 @@ export class CircularReference {
   constructor(public ref: string) {}
 }
 
-const getResolvedElement = <T extends Element>(
-  elem: T, contextElements: Record<string, Element>
-): T => (
-    contextElements[elem.elemID.getFullName()] as T ?? elem
-  )
+const getResolvedElement = (
+  elemID: ElemID, elementsSource: ElementsSource, resolvedElements: Record<string, Element>
+): Element | undefined =>
+  (resolvedElements[elemID.getFullName()] ?? elementsSource.getSync(elemID))
 
 let resolveReferenceExpression: Resolver<ReferenceExpression>
 let resolveTemplateExpression: Resolver<TemplateExpression>
 
 const resolveMaybeExpression: Resolver<Value> = (
   value: Value,
-  contextElements: Record<string, Element>,
+  elementsSource: ElementsSource,
+  resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): Value => {
   if (isReferenceExpression(value)) {
-    return resolveReferenceExpression(value, contextElements, visited)
+    return resolveReferenceExpression(value, elementsSource, resolvedElements, visited)
   }
 
   if (value instanceof TemplateExpression) {
-    return resolveTemplateExpression(value, contextElements, visited)
+    return resolveTemplateExpression(value, elementsSource, resolvedElements, visited)
   }
 
   // We do not want to recurse into elements because we can assume they will also be resolved
   // at some point (because we are calling resolve on all elements), so if we encounter an element
   // all we need to do is make it point to the element from the context
   if (isElement(value)) {
-    return getResolvedElement(value, contextElements)
+    return getResolvedElement(value.elemID, elementsSource, resolvedElements)
   }
 
   return undefined
@@ -72,7 +66,8 @@ const resolveMaybeExpression: Resolver<Value> = (
 
 resolveReferenceExpression = (
   expression: ReferenceExpression,
-  contextElements: Record<string, Element>,
+  elementsSource: ElementsSource,
+  resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): ReferenceExpression => {
   const { traversalParts } = expression
@@ -86,7 +81,7 @@ resolveReferenceExpression = (
   const fullElemID = ElemID.fromFullName(traversal)
   const { parent } = fullElemID.createTopLevelParentID()
   // Validation should throw an error if there is no match
-  const rootElement = contextElements[parent.getFullName()]
+  const rootElement = elementsSource.getSync(parent)
 
   if (!rootElement) {
     return expression.createWithValue(new UnresolvedReference(fullElemID))
@@ -106,46 +101,69 @@ resolveReferenceExpression = (
   if (isVariableExpression(expression)) {
     // Replace the Variable element by its value.
     return expression.createWithValue(
-      resolveMaybeExpression(value.value, contextElements, visited) ?? value.value,
+      resolveMaybeExpression(value.value, elementsSource, resolvedElements, visited) ?? value.value,
       rootElement,
     )
   }
   return (expression as ReferenceExpression).createWithValue(
-    resolveMaybeExpression(value, contextElements, visited) ?? value,
+    resolveMaybeExpression(value, elementsSource, resolvedElements, visited) ?? value,
     rootElement,
   )
 }
 
 resolveTemplateExpression = (
   expression: TemplateExpression,
-  contextElements: Record<string, Element>,
+  elementsSource: ElementsSource,
+  resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): Value => expression.parts
   .map(p => {
-    const res = resolveMaybeExpression(p, contextElements, visited)
+    const res = resolveMaybeExpression(p, elementsSource, resolvedElements, visited)
     return res ? res?.value ?? res : p
   })
   .join('')
 
 const resolveElement = (
   element: Element,
-  contextElements: Record<string, Element>
+  elementsSource: ElementsSource,
+  resolvedElements: Record<string, Element>,
 ): void => {
-  const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
+  const referenceCloner = (v: Value): Value => resolveMaybeExpression(
+    v,
+    elementsSource,
+    resolvedElements
+  )
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
-    // element.type = getResolvedElement(element.refType, contextElements)
+    const resolveElm = getResolvedElement(element.refType.elemID, elementsSource, resolvedElements)
+    if (resolveElm === undefined) {
+      throw new Error(`Could not resolve element with ElemID ${element.refType.elemID.getFullName()}`)
+    }
+    if (!isObjectType(resolveElm)) {
+      throw new Error(`InstanceElement ${element.elemID.getFullName()}'s type resolved to non ObjectType Element`)
+    }
+    element.refType = createRefToElmWithValue(resolveElm)
   }
 
   if (isObjectType(element)) {
     element.fields = _.mapValues(
       element.fields,
-      field => new Field(
-        element,
-        field.name,
-        getResolvedElement(field.type, contextElements),
-        _.cloneDeepWith(field.annotations, referenceCloner),
-      ),
+      field => {
+        const resolvedFieldType = getResolvedElement(
+          field.refType.elemID,
+          elementsSource,
+          resolvedElements
+        )
+        if (!isType(resolvedFieldType)) {
+          throw new Error(`Field ${field.elemID.getFullName()}'s type did not resolve to TypeElement`)
+        }
+        return new Field(
+          element,
+          field.name,
+          resolvedFieldType,
+          _.cloneDeepWith(field.annotations, referenceCloner),
+        )
+      },
     )
   }
 
@@ -155,20 +173,26 @@ const resolveElement = (
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
   element.annotationRefTypes = _.mapValues(
     element.annotationRefTypes,
-    type => getResolvedElement(type, contextElements)
+    refType => {
+      const resolvedType = getResolvedElement(refType.elemID, elementsSource, resolvedElements)
+      if (!isType(resolvedType)) {
+        throw new Error(`annotationType ${refType.elemID.getFullName()}'s type did not resolve to TypeElement`)
+      }
+      return createRefToElmWithValue(resolvedType)
+    }
   )
 }
 
 export const resolve = (
   elements: ReadonlyArray<Element>,
-  additionalContext: ReadonlyArray<Element> = [],
+  elementsSource: ElementsSource,
 ): Element[] => {
   // intentionally shallow clone because in resolve element we replace only top level properties
   const clonedElements = elements.map(_.clone)
-  const contextElements = _.keyBy(
-    [...additionalContext, ...clonedElements],
-    e => e.elemID.getFullName()
+  const resolvedElements = _.keyBy(
+    clonedElements,
+    elm => elm.elemID.getFullName()
   )
-  clonedElements.forEach(e => resolveElement(e, contextElements))
+  clonedElements.forEach(e => resolveElement(e, elementsSource, resolvedElements))
   return clonedElements
 }

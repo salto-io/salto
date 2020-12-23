@@ -102,7 +102,7 @@ describe('Elements validation', () => {
   const restrictedAnnotation = new PrimitiveType({
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedAnnotation'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       temp: restrictedType,
       range: restrictedRangeType,
       rangeNoMin: restrictedRangeNoMinType,
@@ -483,7 +483,9 @@ describe('Elements validation', () => {
         })
 
         it('should return error when lists elements missing required fields', () => {
-          extType.fields.reqNested.refType = createRefToElmWithValue(new ListType(extType.fields.reqNested.getType()))
+          extType.fields.reqNested.refType = createRefToElmWithValue(
+            new ListType(extType.fields.reqNested.getType())
+          )
           extInst.refType = createRefToElmWithValue(extType)
           extInst.value.reqNested = [
             {

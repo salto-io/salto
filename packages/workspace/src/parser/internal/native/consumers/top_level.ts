@@ -72,7 +72,7 @@ const consumePrimitive = (
     value: new PrimitiveType({
       elemID,
       primitive,
-      annotationRefsOrTypes: consumedBlock.value.annotationRefsOrTypes,
+      annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
     }),
     range: consumedBlock.range,
@@ -90,7 +90,7 @@ const consumeObjectType = (
     value: new ObjectType({
       elemID,
       fields: consumedBlock.value.fields,
-      annotationRefsOrTypes: consumedBlock.value.annotationTypes,
+      annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
       isSettings,
     }),
@@ -115,8 +115,8 @@ const consumeInstanceElement = (
   const consumedBlockBody = consumeBlockBody(context, instance.elemID)
 
   // You can't define a block inside an instance. Blocks will be ignored.
-  const { attrs, fields, annotationTypes } = consumedBlockBody.value
-  if (!_.isEmpty(annotationTypes) || !_.isEmpty(fields)) {
+  const { attrs, fields, annotationRefTypes } = consumedBlockBody.value
+  if (!_.isEmpty(annotationRefTypes) || !_.isEmpty(fields)) {
     context.errors.push(
       invalidBlocksInInstance({ ...consumedBlockBody.range, filename: context.filename })
     )

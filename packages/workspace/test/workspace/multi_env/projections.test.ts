@@ -40,7 +40,7 @@ describe('projections', () => {
   const primitiveType = new PrimitiveType({
     elemID: new ElemID('salto', 'string'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'PRIMITIVE_1',
       list1: ['PRIMITIVE_LIST_1'],
@@ -125,7 +125,7 @@ describe('projections', () => {
   const partialPrimitiveType = new PrimitiveType({
     elemID: new ElemID('salto', 'string'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'PRIMITIVE_1',
       list1: ['PRIMITIVE_LIST_1'],
@@ -364,7 +364,7 @@ describe('projections', () => {
   describe('project primitive types', () => {
     const newPrimitiveType = new PrimitiveType({
       elemID: new ElemID('salto', 'new_object'),
-      annotationTypes: _.clone(primitiveType.annotationRefTypes),
+      annotationRefsOrTypes: _.clone(primitiveType.annotationRefTypes),
       annotations: _.clone(primitiveType.annotations),
       primitive: primitiveType.primitive,
     })
@@ -372,7 +372,7 @@ describe('projections', () => {
     const modifiedPrimitive = new PrimitiveType({
       elemID: primitiveType.elemID,
       annotations: _.cloneDeepWith(primitiveType.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
-      annotationTypes: primitiveType.annotationRefTypes,
+      annotationRefsOrTypes: primitiveType.annotationRefTypes,
       primitive: primitiveType.primitive,
     })
 

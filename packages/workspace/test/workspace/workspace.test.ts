@@ -760,9 +760,11 @@ describe('workspace', () => {
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('firstAnnotation')
-      expect(objWithAnnotationsBlock.annotationRefTypes.firstAnnotation).toEqual(BuiltinTypes.STRING)
+      expect(objWithAnnotationsBlock.annotationRefTypes.firstAnnotation)
+        .toEqual(BuiltinTypes.STRING)
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('secondAnnotation')
-      expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation).toEqual(BuiltinTypes.NUMBER)
+      expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation)
+        .toEqual(BuiltinTypes.NUMBER)
     })
     it('should add annotation type to the existing annotations block without path hint', () => {
       const objWithoutAnnoBlock = elemMap['salesforce.WithoutAnnotationsBlock'] as ObjectType

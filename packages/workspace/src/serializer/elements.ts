@@ -166,7 +166,7 @@ export const deserialize = async (
     ObjectType: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
       fields: v.fields,
-      annotationRefsOrTypes: v.annotationTypes,
+      annotationRefsOrTypes: v.annotationRefTypes,
       annotations: v.annotations,
       isSettings: v.isSettings,
     }),
@@ -176,7 +176,7 @@ export const deserialize = async (
     PrimitiveType: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
-      annotationTypes: v.annotationTypes,
+      annotationRefsOrTypes: v.annotationRefTypes,
       annotations: v.annotations,
     }),
     ListType: v => new ListType(

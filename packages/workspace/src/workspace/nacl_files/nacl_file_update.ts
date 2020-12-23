@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange,
-  DetailedChange, Value, StaticFile, isStaticFile } from '@salto-io/adapter-api'
+  DetailedChange, Value, StaticFile, isStaticFile, ReferenceExpression } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { SourceRange, SourceMap } from '../../parser'
@@ -200,7 +200,11 @@ export const updateNaclFileData = async (
       const isListElement = changeKey.match(/^\d+$/) !== null
       if (change.id.idType === 'annotation') {
         if (isType(elem)) {
-          newData = dumpSingleAnnotationType(changeKey, elem, indentationLevel)
+          newData = dumpSingleAnnotationType(
+            changeKey,
+            new ReferenceExpression(elem.elemID),
+            indentationLevel
+          )
         } else {
           newData = dumpAnnotationTypes(elem, indentationLevel)
         }

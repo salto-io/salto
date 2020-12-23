@@ -53,7 +53,7 @@ describe('Salto Dump', () => {
   const fieldType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'field'),
     primitive: PrimitiveTypes.NUMBER,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       alice: BuiltinTypes.NUMBER,
       bob: BuiltinTypes.NUMBER,
       tom: BuiltinTypes.BOOLEAN,
@@ -394,7 +394,7 @@ describe('Salto Dump', () => {
       let body: string
 
       beforeAll(() => {
-        body = dumpSingleAnnotationType('ServiceId', BuiltinTypes.SERVICE_ID)
+        body = dumpSingleAnnotationType('ServiceId', createRefToElmWithValue(BuiltinTypes.SERVICE_ID))
       })
 
       it('should contain only the annotation type definition', () => {
@@ -405,7 +405,7 @@ describe('Salto Dump', () => {
       let body: string
 
       beforeAll(() => {
-        body = dumpAnnotationTypes({ ServiceId: BuiltinTypes.SERVICE_ID })
+        body = dumpAnnotationTypes({ ServiceId: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) })
       })
 
       it('should contain only the annotations block definition', () => {

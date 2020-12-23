@@ -59,11 +59,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     }
 
-    const updateIterator = getRelevantElements(elements)
-      .map(element => updateElementUrl(element))
-
-    // eslint-disable-next-line no-empty
-    while (!updateIterator.next().done) {}
+    getRelevantElements(elements).forEach(element => updateElementUrl(element))
   },
 })
 

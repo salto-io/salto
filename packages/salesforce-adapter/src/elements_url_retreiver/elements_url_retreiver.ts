@@ -16,6 +16,7 @@
 import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
+import wu from 'wu'
 import { ElementIDResolver, resolvers } from './lightining_url_resolvers'
 
 const log = logger(module)
@@ -35,8 +36,9 @@ export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementIDResolver: 
   const lightiningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
 
   const retreiveUrl = (element: Element): URL | undefined =>
-    (resolvers.map(resolver => resolver(element, lightiningUrl, elementIDResolver))
-      .find(values.isDefined))
+    wu(resolvers)
+      .map(resolver => resolver(element, lightiningUrl, elementIDResolver))
+      .find(values.isDefined)
 
   return {
     retreiveUrl,

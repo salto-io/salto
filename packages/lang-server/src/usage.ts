@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value, isContainerType } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID,
+  isObjectType, getDeepInnerType, Value, isContainerType } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 import wu from 'wu'
-import { getLocations, SaltoElemLocation } from './location'
+import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { Token } from './token'
@@ -107,23 +108,36 @@ export const getUsageInFile = async (
   (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id))
 )))
 
-export const provideWorkspaceReferences = async (
+export const getWorkspaceReferences = async (
   workspace: EditorWorkspace,
-  token: Token,
+  token: string,
   context: PositionContext
-): Promise<SaltoElemLocation[]> => {
-  const id = getSearchElementFullName(context, token.value)
+): Promise<SaltoElemFileLocation[]> => {
+  const id = getSearchElementFullName(context, token)
   if (id === undefined) {
     return []
   }
   const referencedByFiles = await getReferencingFiles(workspace, id.getFullName())
   const usages = _.flatten(await Promise.all(
-    referencedByFiles.map(filename => getUsageInFile(workspace, filename, id))
+    referencedByFiles.map(async filename =>
+      (await getUsageInFile(workspace, filename, id))
+        .flatMap(elemID => ({ filename, fullname: elemID.getFullName() })))
   ))
+  const selfReferences = (await workspace.getElementNaclFiles(id))
+    .map(filename => ({ filename, fullname: id.getFullName() }))
+  return [...usages, ...selfReferences]
+}
+
+export const provideWorkspaceReferences = async (
+  workspace: EditorWorkspace,
+  token: Token,
+  context: PositionContext
+): Promise<SaltoElemLocation[]> => {
+  const usages = _.uniq(
+    (await getWorkspaceReferences(workspace, token.value, context))
+      .map(usage => usage.fullname)
+  )
   // We need a single await for all get location calls in order to take advantage
   // of the Salto SaaS getFiles aggregation functionality
-  return (await Promise.all([
-    ...usages.map(p => getLocations(workspace, p.getFullName())),
-    getLocations(workspace, id.getFullName()),
-  ])).flat()
+  return (await Promise.all(usages.map(usage => getLocations(workspace, usage)))).flat()
 }

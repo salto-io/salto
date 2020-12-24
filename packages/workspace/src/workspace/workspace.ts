@@ -224,7 +224,6 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
 
   const updateStateAndReturnChanges = async (elementChanges: Change<Element>[]):
   Promise<Change<Element>[]> => {
-    // TODO: add tests for it
     const changedElementIDs = elementChanges.map(e => getChangeElement(e).elemID.getFullName())
     const allElements = (await getWorkspaceState()).elements
     workspaceState = buildWorkspaceState({ changes: elementChanges })

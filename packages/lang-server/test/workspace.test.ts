@@ -23,6 +23,7 @@ describe('workspace', () => {
   const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
   const validation1FileName = path.join(workspaceBaseDir, 'validation1.nacl')
   const validation2FileName = path.join(workspaceBaseDir, 'validation2.nacl')
+  const validation3FileName = path.join(workspaceBaseDir, 'validation3.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
@@ -123,6 +124,61 @@ describe('workspace', () => {
       const newValidationErrors = (await workspace.errors()).validation
       expect(newValidationErrors).toHaveLength(1)
       expect(newValidationErrors[0]).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+    })
+  })
+
+  describe('validate files', () => {
+    let workspace: EditorWorkspace
+    beforeEach(async () => {
+      const baseWs = await mockWorkspace([validation3FileName, validation2FileName])
+      workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      await workspace.errors()
+      const buffer = `
+      type vs.type {
+        string field {}
+      }
+      `
+      workspace.setNaclFiles({ filename: validation3FileName, buffer })
+      await workspace.awaitAllUpdates()
+    })
+    it('should validate specific files correctly', async () => {
+      expect((await workspace.errors()).validation).toHaveLength(0)
+      const newErrors = await workspace.validateFiles([validation2FileName])
+      expect(newErrors.validation).toHaveLength(1)
+      expect(await workspace.errors()).toEqual(newErrors)
+    })
+
+    it('should validate all files correctly', async () => {
+      expect((await workspace.errors()).validation).toHaveLength(0)
+      const newErrors = await workspace.validate()
+      expect(newErrors.validation).toHaveLength(1)
+      expect(await workspace.errors()).toEqual(newErrors)
+    })
+
+    it('should validate file with element with error correctly', async () => {
+      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
+      const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      await newWorkspace.errors()
+      const buffer = `
+        type vs.type {
+          boolean field {}
+        }
+      `
+      newWorkspace.setNaclFiles({ filename: validation1FileName, buffer })
+      await newWorkspace.awaitAllUpdates()
+      const currentErrors = (await newWorkspace.errors()).validation
+      expect(currentErrors).toHaveLength(1)
+      const newErrors = await newWorkspace.validateFiles([validation2FileName])
+      expect(newErrors.validation).toHaveLength(1)
+      expect(await newWorkspace.errors()).toEqual(newErrors)
+    })
+
+    it('should calc all errors if wsErrors is undefiend', async () => {
+      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
+      const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      const errors = await newWorkspace.validateFiles([validation1FileName])
+      expect(errors.validation).toHaveLength(1)
+      expect(errors.validation[0].elemID.getFullName()).toEqual('vs.type.instance.inst.field')
     })
   })
 

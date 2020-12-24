@@ -18,7 +18,7 @@ import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField,
-  isObjectType, ContainerType,
+  isObjectType, ContainerType, Change, AdditionChange, getChangeElement,
 } from '@salto-io/adapter-api'
 import {
   findElement, applyDetailedChanges,
@@ -214,6 +214,35 @@ describe('workspace', () => {
         expect(isField(await workspace.getValue(new ElemID('salesforce', 'lead', 'field', 'base_field')))).toBeTruthy()
       })
     })
+    describe('elements of non primary env', () => {
+      it('should create a new workspace state correctly', async () => {
+        const primaryEnvElemID = new ElemID('salesforce', 'primaryObj')
+        const secondaryEnvElemID = new ElemID('salesforce', 'secondaryObj')
+        const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
+        const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
+        const newWorkspace = await createWorkspace(
+          undefined, undefined, undefined, undefined, undefined, {
+            '': {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: createMockNaclFileSource([primaryEnvObj]),
+              state: createState([primaryEnvObj]),
+            },
+            inactive: {
+              naclFiles: createMockNaclFileSource([secondaryEnvObj]),
+              state: createState([secondaryEnvObj]),
+            },
+          },
+        )
+        const currentEnvElements = await newWorkspace.elements()
+        expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
+        expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
+        const inactiveEnvElements = await newWorkspace.elements(undefined, 'inactive')
+        expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
+        expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
+      })
+    })
   })
 
   describe('sourceMap', () => {
@@ -327,10 +356,12 @@ describe('workspace', () => {
     })
 
     it('should modify element to not include fields from removed Nacl files', async () => {
-      await workspace.removeNaclFiles('subdir/file.nacl')
+      const changes = await workspace.removeNaclFiles('subdir/file.nacl')
       const elemMap = getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
+      expect(changes.map(getChangeElement).map(c => c.elemID.getFullName()))
+        .toEqual(['salesforce.lead', 'multi.loc'])
     })
 
     it('should remove from store', async () => {
@@ -354,29 +385,34 @@ describe('workspace', () => {
     const naclFileStore = mockDirStore()
     let workspace: Workspace
     let elemMap: Record<string, Element>
+    let changes: Change<Element>[]
+    const newAddedObject = new ObjectType({ elemID: new ElemID('salesforce', 'new') })
+    const salesforceLeadElemID = new ElemID('salesforce', 'lead')
+    const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
+    const salesforceLeadObject = new ObjectType({
+      elemID: salesforceLeadElemID,
+      fields: {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        new_base: { type: salesforceText },
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        ext_field: { type: salesforceText, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
+      },
+    })
+    const multiLocElemID = new ElemID('multi', 'loc')
+    const mutliLocObject = new ObjectType({ elemID: multiLocElemID, annotations: { b: 1 } })
 
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
-      await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
+      await workspace.elements()
+      changes = await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
       elemMap = getElemMap(await workspace.elements())
     })
 
     it('should update elements', () => {
-      const salesforceLeadElemID = new ElemID('salesforce', 'lead')
-      const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
-      const salesforceLeadObject = new ObjectType({
-        elemID: salesforceLeadElemID,
-        fields: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          new_base: { type: salesforceText },
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          ext_field: { type: salesforceText, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
-        },
-      })
       expect(elemMap).toEqual({
-        'multi.loc': new ObjectType({ elemID: new ElemID('multi', 'loc'), annotations: { b: 1 } }),
+        'multi.loc': mutliLocObject,
         'salesforce.lead': salesforceLeadObject,
-        'salesforce.new': new ObjectType({ elemID: new ElemID('salesforce', 'new') }),
+        'salesforce.new': newAddedObject,
         'salesforce.RenamedType1': new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
       })
     })
@@ -389,6 +425,20 @@ describe('workspace', () => {
     it('should change the content of Nacl files that were updated', async () => {
       const mockSetNaclFileStore = naclFileStore.set as jest.Mock
       expect(mockSetNaclFileStore).toHaveBeenCalledWith(changedNaclFile)
+    })
+
+    it('should return the correct changes', async () => {
+      expect(changes).toHaveLength(24)
+      expect((changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
+        .toEqual(newAddedObject)
+      const multiLocChange = changes.find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
+      expect(multiLocChange).toEqual({
+        action: 'modify',
+        data: {
+          before: new ObjectType({ elemID: multiLocElemID, annotations: { a: 1, b: 1 } }),
+          after: mutliLocObject,
+        },
+      })
     })
   })
 
@@ -1142,6 +1192,17 @@ describe('workspace', () => {
         filename: 'renamed_type.nacl',
         buffer: expect.stringMatching(/^\s*type salesforce.RenamedType2 {\s*}\s*$/),
       }))
+    })
+
+    it('should get a single hidden element correctly', async () => {
+      const leadWithHidden = await workspace.getElement(new ElemID('salesforce', 'lead')) as ObjectType
+      expect(leadWithHidden).toBeDefined()
+      expect(leadWithHidden.annotations).toHaveProperty('newHiddenAnno')
+    })
+
+    it('should return undefined if element does not exist', async () => {
+      const leadWithHidden = await workspace.getElement(new ElemID('dummy', 'notExist')) as ObjectType
+      expect(leadWithHidden).not.toBeDefined()
     })
 
     it('should not fail in case one of the changes fails', async () => {

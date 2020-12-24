@@ -102,7 +102,7 @@ export class EditorWorkspace {
 
   private async elementsInFiles(filenames: string[]): Promise<ElemID[]> {
     return (await Promise.all(
-      filenames.map(f => this.workspace.getParsedNaclFile(f))
+      filenames.map(f => this.workspace.getParsedNaclFile(this.workspaceFilename(f)))
     )).filter(values.isDefined)
       .flatMap(parsed => parsed.elements)
       .map(e => e.elemID)
@@ -110,7 +110,9 @@ export class EditorWorkspace {
 
   private async getUnresolvedRefOfFile(target: ElemID, filename: string):
   Promise<errors.UnresolvedReferenceValidationError[]> {
-    const elements = (await this.workspace.getParsedNaclFile(filename))?.elements ?? []
+    const elements = (await this.workspace.getParsedNaclFile(
+      this.workspaceFilename(filename)
+    ))?.elements ?? []
     const ids = new Set<string>()
     const transformFunc = ({ value, path: elemPath }: TransformFuncArgs): Value => {
       if (isReferenceExpression(value) && elemPath) {
@@ -132,7 +134,7 @@ export class EditorWorkspace {
 
   private async getUnresolvedRefForElement(element: Element):
   Promise<errors.UnresolvedReferenceValidationError[]> {
-    const referencedFiles = await this.workspace.getElementReferencesToFiles(element.elemID)
+    const referencedFiles = await this.getElementReferencesToFiles(element.elemID)
     return (await Promise.all(
       referencedFiles.map(file => this.getUnresolvedRefOfFile(element.elemID, file))
     )).flat()
@@ -147,7 +149,9 @@ export class EditorWorkspace {
     const elementNamesToValidate = new Set<string>()
     if (this.wsErrors) {
       (await this.errors()).validation
-        .forEach(ve => { elementNamesToValidate.add(ve.elemID.getFullName()) })
+        .forEach(ve => {
+          elementNamesToValidate.add(ve.elemID.createTopLevelParentID().parent.getFullName())
+        })
     }
     changes.filter(isAdditionOrModificationChange)
       .forEach(c => { elementNamesToValidate.add(getChangeElement(c).elemID.getFullName()) })
@@ -283,21 +287,26 @@ export class EditorWorkspace {
       .map(filename => this.editorFilename(filename))
   }
 
-  async validateFiles(filenames: string[]): Promise<void> {
+  async validateFiles(filenames: string[]): Promise<errors.Errors> {
     if (_.isUndefined(this.wsErrors)) {
-      await this.errors()
-      return
+      return this.errors()
     }
     const elements = (await this.elementsInFiles(filenames)).map(e => e.getFullName())
     const currentErrors = await this.errors()
     const allElements = _.keyBy(await this.workspace.elements(), e => e.elemID.getFullName())
     const validation = currentErrors.validation
-      .filter(e => !elements.includes(e.elemID.getFullName()))
+      .filter(e => !elements.includes(e.elemID.createTopLevelParentID().parent.getFullName()))
       .concat(validateElements(elements.map(e => allElements[e]), Object.values(allElements)))
     this.wsErrors = Promise.resolve(new errors.Errors({
       ...currentErrors,
       validation,
     }))
+    return this.wsErrors
+  }
+
+  async validate(): Promise<errors.Errors> {
+    this.wsErrors = undefined
+    return this.errors()
   }
 
   async awaitAllUpdates(): Promise<void> {

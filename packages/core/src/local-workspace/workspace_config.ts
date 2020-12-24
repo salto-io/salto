@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { workspaceConfigSource as wcs,
   WorkspaceConfig, configSource } from '@salto-io/workspace'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
@@ -29,10 +29,12 @@ export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
   localStorage: string
 }
 
-export const workspaceConfigSource = async (baseDir: string, localStorage?: string):
-Promise<WorkspaceConfigSource> => {
+export const workspaceConfigSource = async (
+  baseDir: string, localStorage?: string, configOverrides?: DetailedChange[]
+): Promise<WorkspaceConfigSource> => {
   const repoCs = configSource.configSource(
-    localDirectoryStore({ baseDir, name: CONFIG_DIR_NAME, encoding: 'utf8' })
+    localDirectoryStore({ baseDir, name: CONFIG_DIR_NAME, encoding: 'utf8' }),
+    configOverrides,
   )
   const workspaceConf = (await repoCs.get(WORKSPACE_CONFIG_NAME))?.value
 
@@ -43,7 +45,8 @@ Promise<WorkspaceConfigSource> => {
   const computedLocalStorage = localStorage
   || path.join(getSaltoHome(), `${workspaceConf?.name}-${workspaceConf?.uid}`)
   const localCs = configSource.configSource(
-    localDirectoryStore({ baseDir: computedLocalStorage, name: '', encoding: 'utf8' })
+    localDirectoryStore({ baseDir: computedLocalStorage, name: '', encoding: 'utf8' }),
+    configOverrides,
   )
   return {
     localStorage: computedLocalStorage,

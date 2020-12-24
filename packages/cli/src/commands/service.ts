@@ -25,7 +25,7 @@ import { createCommandGroupDef, createPublicCommandDef, CommandDefAction, KeyedO
 import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatConfiguredServices, formatServiceNotConfigured, formatLoginOverride } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
-import { EnvArg, ENVIORMENT_OPTION } from './common/env'
+import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
 
 const log = logger(module)
 
@@ -150,7 +150,7 @@ const serviceAddDef = createPublicCommandDef({
         required: false,
       },
       AUTH_TYPE_OPTION,
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
     ],
     positionalOptions: [
       {
@@ -182,7 +182,7 @@ const serviceListDef = createPublicCommandDef({
     name: 'list',
     description: 'List all environment services',
     keyedOptions: [
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
     ],
   },
   action: listAction,
@@ -227,7 +227,7 @@ const serviceLoginDef = createPublicCommandDef({
     description: 'Set the environment service credentials',
     keyedOptions: [
       AUTH_TYPE_OPTION,
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
     ],
     positionalOptions: [
       {

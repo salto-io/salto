@@ -21,13 +21,14 @@ import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
-import { EnvArg, ENVIORMENT_OPTION } from './common/env'
+import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
 import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../workspace/workspace'
+import { ConfigOverrideArg, getConfigOverrideChanges, CONFIG_OVERRIDE_OPTION } from './common/config_override'
 
 const log = logger(module)
 
@@ -74,7 +75,7 @@ type DeployArgs = {
   force: boolean
   dryRun: boolean
   detailedPlan: boolean
-} & ServicesArg & EnvArg
+} & ServicesArg & EnvArg & ConfigOverrideArg
 
 const deployPlan = async (
   actionPlan: Plan,
@@ -185,6 +186,7 @@ export const action: CommandDefAction<DeployArgs> = async ({
       recommendStateStatus: true,
       spinnerCreator,
       sessionEnv: env,
+      configOverrides: getConfigOverrideChanges(input),
     })
   if (errored) {
     cliTelemetry.failure()
@@ -252,7 +254,8 @@ const deployDef = createPublicCommandDef({
         type: 'boolean',
       },
       SERVICES_OPTION,
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
+      CONFIG_OVERRIDE_OPTION,
     ],
   },
   action,

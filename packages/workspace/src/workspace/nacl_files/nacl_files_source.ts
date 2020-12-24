@@ -504,7 +504,7 @@ const buildNaclFilesSource = (
       )
       // The map is to avoid saving unnecessary fields in the state
       const res = await buildNaclFilesStateInner(
-        updatedNaclFiles.map(file => _.pick(file, ['filename', 'elements', 'errors', 'timestamp', 'referenced']))
+        updatedNaclFiles.map(file => _.pick(file, ['filename', 'elements', 'errors', 'timestamp', 'referenced', 'referencesTo']))
       )
       state = Promise.resolve(res.state)
       return res.changes

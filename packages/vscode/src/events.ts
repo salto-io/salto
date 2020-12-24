@@ -53,8 +53,10 @@ export const onTextChangeEvent = (
   }
 }
 
-export const onFileOpen = (): void => {
+export const onFileOpen = async (workspace: ws.EditorWorkspace, filename: string):
+Promise<void> => {
   vscode.commands.executeCommand('editor.foldAllMarkerRegions')
+  await workspace.validateFiles([filename])
 }
 
 const showReloadWSPrompt = _.debounce(async (): Promise<void> => {

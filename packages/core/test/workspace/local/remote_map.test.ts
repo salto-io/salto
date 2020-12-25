@@ -15,10 +15,13 @@
 */
 import _ from 'lodash'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
-import { ElemID, Element } from '@salto-io/adapter-api'
+import { Element } from '@salto-io/adapter-api'
 import rocksdb from 'rocksdb'
 import { promisify } from 'util'
-import { createRemoteMap, RemoteMap, DB_LOCATION } from '../../../src/core/db/remote_map'
+import { serialization } from '@salto-io/workspace'
+import { createRemoteMap, RemoteMap } from '../../../src/local-workspace/remote_map'
+
+const { serialize, deserialize } = serialization
 
 const createElements = (): Element[] => {
   const params = Object.assign(defaultParams)
@@ -31,20 +34,31 @@ const createElements = (): Element[] => {
   return elements
 }
 
-let remoteMap: RemoteMap
+const DB_LOCATION = '/tmp/test_db'
+
+let remoteMap: RemoteMap<Element>
+
+const createMap = async (namespace:
+  string): Promise<RemoteMap<Element>> => createRemoteMap<Element>(
+    namespace,
+    DB_LOCATION,
+    elem => serialize([elem]),
+    async elemStr => (await deserialize(elemStr))[0],
+    elem => elem.elemID.getFullName()
+  )
 
 describe('test operations on remote db', () => {
   const elements = createElements()
   beforeEach(async () => {
-    remoteMap = await createRemoteMap(Math.random().toString(36).substring(2, 15))
+    remoteMap = await createMap(Math.random().toString(36).substring(2, 15))
   })
   afterEach(async () => {
     await remoteMap.revert()
   })
 
   it('finds an item after it is put', async () => {
-    remoteMap.set(elements[0].elemID, elements[0])
-    expect(await remoteMap.get(elements[0].elemID)).toEqual(elements[0])
+    remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+    expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(elements[0])
   })
 
   it('put all and then list finds all keys', async () => {
@@ -55,12 +69,11 @@ describe('test operations on remote db', () => {
     }
     await remoteMap.putAll(await createAsyncIterable(elements))
     const iter = remoteMap.list()
-    const res: ElemID[] = []
+    const res: string[] = []
     for await (const elemId of { [Symbol.asyncIterator]: () => iter }) {
       res.push(elemId)
     }
-    expect(res.map(id => id.getFullName()).sort())
-      .toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+    expect(res.sort()).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
   })
 
   it('put all and then getAll finds all values', async () => {
@@ -83,9 +96,9 @@ describe('test operations on remote db', () => {
 
 describe('full integration', () => {
   it('creates keys and values, flushes', async () => {
-    remoteMap = await createRemoteMap('integration')
+    remoteMap = await createMap('integration')
     const elements = createElements()
-    await remoteMap.set(elements[0].elemID, elements[0])
+    await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element> {
       for (const elem of iterable) {
         yield elem
@@ -131,7 +144,7 @@ describe('full integration', () => {
         ids.push(id)
       }
     }
-    expect(ids.sort()).toEqual(elements.map(elem => 'integration_'
+    expect(ids.sort()).toEqual(elements.map(elem => 'integration::'
       .concat(elem.elemID.getFullName())).sort())
   })
 })

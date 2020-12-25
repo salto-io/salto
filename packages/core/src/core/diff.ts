@@ -20,8 +20,8 @@ import wu from 'wu'
 import { getDetailedChanges } from './fetch'
 
 const isIdRelevant = (relevantIds: ElemID[], id: ElemID): boolean =>
-  relevantIds.some(elemId => id.isParentOf(elemId) || elemId
-    .getFullName() === id.getFullName() || elemId.isParentOf(id))
+  relevantIds.some(elemId =>
+    id.isParentOf(elemId) || elemId.getFullName() === id.getFullName() || elemId.isParentOf(id))
 
 const filterRelevantParts = (elementIds: ElemID[],
   selectorsToVerify: Set<string>): TransformFunc => ({ path, value }) => {
@@ -39,15 +39,13 @@ const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
   selectorsToVerify: Set<string>): Element[] => {
   const topLevelIds = new Set<string>(relevantIds
     .map(id => id.createTopLevelParentID().parent.getFullName()))
-  const toElementsFiltered = elements.filter(elem => topLevelIds.has(elem
-    .elemID.getFullName())).map(elem => {
+  return elements.filter(elem => topLevelIds.has(elem.elemID.getFullName())).map(elem => {
     selectorsToVerify.delete(elem.elemID.getFullName())
     return transformElement({
       element: elem,
       transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
     })
   })
-  return toElementsFiltered
 }
 
 export const createDiffChanges = async (
@@ -62,7 +60,7 @@ export const createDiffChanges = async (
       fromElements.map(element => ({ elemID: element.elemID, element })), true)
     const selectorsToVerify = new Set<string>(elementSelectors
       .map(sel => sel.origin).filter(sel => !sel.includes('*')))
-    const toElementsFiltered = filterElementsByRelevance(toElements as Element[],
+    const toElementsFiltered = filterElementsByRelevance([...toElements],
       toElementIdsFiltered, selectorsToVerify)
     const fromElementsFiltered = filterElementsByRelevance(fromElements,
       fromElementIdsFiltered, selectorsToVerify)

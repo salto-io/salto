@@ -45,6 +45,7 @@ export interface ContextReference {
   element: Element
   path: string[]
   isList: boolean
+  id: ElemID
 }
 
 export interface PositionContext {
@@ -85,7 +86,7 @@ const getContextReference = (
   const { parent, path } = elemID.createBaseID()
   const element = refElements[parent.getFullName()]
   if (element) {
-    return { element, path: [...path], isList }
+    return { element, path: [...path], isList, id: elemID }
   }
   return undefined
 }

@@ -110,10 +110,10 @@ export const getUsageInFile = async (
 
 export const getWorkspaceReferences = async (
   workspace: EditorWorkspace,
-  token: string,
+  tokenValue: string,
   context: PositionContext
 ): Promise<SaltoElemFileLocation[]> => {
-  const id = getSearchElementFullName(context, token)
+  const id = getSearchElementFullName(context, tokenValue)
   if (id === undefined) {
     return []
   }

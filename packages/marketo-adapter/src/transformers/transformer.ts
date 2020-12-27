@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import {
-  ElemID,
+  ChangeDataType,
+  ElemID, FieldDefinition,
   InstanceElement,
   ObjectType,
   PrimitiveType,
@@ -22,9 +23,24 @@ import {
   TypeMap,
   Values,
 } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
-import { LeadAttribute, Field, MarketoMetadata } from '../client/types'
-import { FIELD_TYPES, MARKETO, SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } from '../constants'
+import { GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { LeadAttribute, Field, MarketoMetadata, CustomObject, CustomObjectResponse } from '../client/types'
+import {
+  FIELD_TYPES,
+  MARKETO,
+  SUBTYPES_PATH,
+  TYPES_PATH,
+  RECORDS_PATH,
+  NAME,
+  API_NAME,
+  DATA_TYPE,
+  OBJECT_TYPE,
+  OBJECTS_NAMES,
+  DISPLAY_NAME,
+  DESCRIPTION,
+  STATE,
+  PLURAL_NAME, ID_FIELD, SHOW_IN_LEAD_DETAIL, IS_DEDUPE_FIELD, OBJECTS_PATH,
+} from '../constants'
 
 const isAttributeField = (object: LeadAttribute | Field): object is LeadAttribute => 'rest' in object
 
@@ -99,29 +115,82 @@ export class Types {
   }
 }
 
+const extractFields = (
+  fields: (LeadAttribute | Field)[]
+): Record<string, FieldDefinition> => Object.fromEntries(
+  fields.map((field: LeadAttribute | Field) => {
+    const name = isAttributeField(field) ? field.rest.name : field.name
+    return [name, {
+      type: Types.getFieldType(field.dataType),
+      annotations: {
+        [NAME]: name,
+        [API_NAME]: name,
+        [DISPLAY_NAME]: field.displayName,
+        [DATA_TYPE]: field.dataType,
+      },
+    }]
+  })
+)
+
 export const createMarketoObjectType = (
   name: string,
-  fields: (LeadAttribute | Field)[]
+  fields: LeadAttribute[]
 ): ObjectType => {
-  // TODO: use the ElemIdGetter functionality
   const elemID = new ElemID(MARKETO, name)
-  const fieldsDefinition = Object.fromEntries(
-    fields.map((field: LeadAttribute | Field) =>
-      [isAttributeField(field) ? field.rest.name : field.name, {
-        type: Types.getFieldType(field.dataType),
-        annotations: field,
-      }])
-  )
   return new ObjectType({
     elemID,
-    fields: fieldsDefinition,
+    fields: extractFields(fields),
     path: [MARKETO, TYPES_PATH, elemID.name],
   })
 }
 
+export const createMarketoCustomObjectType = (
+  customObjectResponse: CustomObjectResponse
+): ObjectType => {
+  const customObject = (customObjectResponse.approved
+    ? customObjectResponse.approved
+    : customObjectResponse.draft) as CustomObject
+  const elemID = new ElemID(MARKETO, customObject.apiName)
+  const objFileName = pathNaclCase(elemID.name)
+  return new ObjectType({
+    elemID,
+    fields: extractFields(customObject.fields),
+    path: [MARKETO, OBJECTS_PATH, objFileName],
+    annotations: {
+      [OBJECT_TYPE]: OBJECTS_NAMES.CUSTOM_OBJECT,
+      [DISPLAY_NAME]: customObject.displayName,
+      [PLURAL_NAME]: customObject.pluralName,
+      [ID_FIELD]: customObject.idField,
+      [API_NAME]: customObject.apiName,
+      [DESCRIPTION]: customObject.description,
+      [STATE]: customObjectResponse.state,
+    },
+  })
+}
+
+export const changeDataTypeToCustomObjectRequest = (change: ChangeDataType): Values => ({
+  [API_NAME]: change.annotations[API_NAME],
+  [DISPLAY_NAME]: change.annotations[DISPLAY_NAME],
+  [PLURAL_NAME]: change.annotations[PLURAL_NAME],
+  [DESCRIPTION]: change.annotations[DESCRIPTION],
+  [SHOW_IN_LEAD_DETAIL]: change.annotations[SHOW_IN_LEAD_DETAIL],
+})
+
+export const changeDataTypeToCustomObjectFieldRequest = (change: ChangeDataType): Values => ({
+  [NAME]: change.annotations[NAME],
+  [DISPLAY_NAME]: change.annotations[DISPLAY_NAME],
+  [DATA_TYPE]: change.annotations[DATA_TYPE],
+  [DESCRIPTION]: change.annotations[DESCRIPTION] ?? '',
+  [IS_DEDUPE_FIELD]: change.annotations[IS_DEDUPE_FIELD] ?? false,
+})
+
 export const createInstanceName = (
   name: string
 ): string => naclCase(name)
+
+export const isCustomObject = (
+  change: ChangeDataType
+): boolean => change.annotations[OBJECT_TYPE] === OBJECTS_NAMES.CUSTOM_OBJECT
 
 export const getLookUpName: GetLookupNameFunc = ({ ref }) =>
   ref.value
@@ -136,7 +205,7 @@ export const createMarketoInstanceElement = (
   type: ObjectType
 ): InstanceElement => {
   const typeName = type.elemID.name
-  const instanceName = createInstanceName(marketoMetadata.name.toString())
+  const instanceName = createInstanceName(marketoMetadata.name)
   return new InstanceElement(
     new ElemID(MARKETO, instanceName).name,
     type,

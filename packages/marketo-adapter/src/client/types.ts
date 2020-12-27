@@ -84,6 +84,8 @@ export interface LeadMapAttribute {
   readOnly?: boolean // Whether the attribute is read only
 }
 
+export type CustomObjectState = 'draft' | 'approved' | 'approvedWithDraft'
+
 export interface CustomObject extends MarketoMetadata {
   idField: string // Primary id key of the object type
   displayName: string // UI display-name of the object type
@@ -92,12 +94,18 @@ export interface CustomObject extends MarketoMetadata {
   dedupeFields: string[] // List of dedupe fields. Arrays with multiple members are compound keys
   searchableFields: string[][] // List of fields valid for use as a filter type in a query
   fields: Field[] // List of fields available on the object type
-  state?: 'draft' | 'approved' | 'approvedWithDraft' // Approval state of object type
+  state?: CustomObjectState // Approval state of object type
   relationships: Relation[] // List of relationships which the object has
   createdAt: string // Datetime when the object type was created
   apiName: string // Name of the object type
   updatedAt: string // Datetime when the object type was most recently updated
   version: 'draft' | 'approved' // Version of object type that is returned in response
+}
+
+export type CustomObjectResponse = {
+  state: CustomObjectState
+  approved?: CustomObject
+  draft?: CustomObject
 }
 
 export interface Field {

@@ -38,7 +38,7 @@ const extractInstanceId = (marketoMetadata: MarketoMetadata, typeName: string): 
     return marketoMetadata.name.toString()
   }
 
-  throw new Error(`Instance id ${marketoMetadata.name} not found.`)
+  throw new Error(`Instance ${marketoMetadata.name} not found.`)
 }
 
 export default class MarketoClient {
@@ -59,13 +59,15 @@ export default class MarketoClient {
   }
 
   async getAllInstances(typeName: string): Promise<Values[]> {
-    return this.conn.getAll({
+    return this.conn.request({
+      method: 'GET',
       path: `/rest/v1/${typeName}.json`,
     })
   }
 
   async describe(typeName: string, options?: RequestOptions): Promise<Values[]> {
-    return this.conn.describe({
+    return this.conn.request({
+      method: 'GET',
       path: `/rest/v1/${typeName}/describe.json`,
       ...options,
     })
@@ -75,9 +77,80 @@ export default class MarketoClient {
     typeName: string,
     _marketoMetadata: MarketoMetadata
   ): Promise<Values[]> {
-    return this.conn.create({
+    return this.conn.request({
+      method: 'POST',
       path: `/rest/v1/${typeName}/describe.json`,
       body: {},
+    })
+  }
+
+  async getCustomObjects(qs: object = {}): Promise<Values[]> {
+    return this.conn.request({
+      method: 'GET',
+      path: '/rest/v1/customobjects/schema.json',
+      qs,
+    })
+  }
+
+  async createOrUpdateCustomObject(
+    object: Values
+  ): Promise<Values[]> {
+    return this.conn.request({
+      method: 'POST',
+      path: '/rest/v1/customobjects/schema.json',
+      body: object,
+    })
+  }
+
+  async approveCustomObject(
+    apiName: string
+  ): Promise<Values[]> {
+    return this.conn.request({
+      method: 'POST',
+      path: `/rest/v1/customobjects/schema/${apiName}/approve.json`,
+    })
+  }
+
+  async addCustomObjectField(
+    apiName: string,
+    object: Values
+  ): Promise<Values[]> {
+    return this.conn.request({
+      method: 'POST',
+      path: `/rest/v1/customobjects/schema/${apiName}/addField.json`,
+      body: object,
+    })
+  }
+
+  async updateCustomObjectField(
+    apiName: string,
+    fieldApiName: string,
+    object: Values
+  ): Promise<Values[]> {
+    return this.conn.request({
+      method: 'POST',
+      path: `/rest/v1/customobjects/schema/${apiName}/${fieldApiName}/updateField.json`,
+      body: object,
+    })
+  }
+
+  async removeCustomObjectField(
+    apiName: string,
+    object: Values
+  ): Promise<Values[]> {
+    return this.conn.request({
+      method: 'POST',
+      path: `/rest/v1/customobjects/schema/${apiName}/deleteField.json`,
+      body: object,
+    })
+  }
+
+  async deleteCustomObject(
+    apiName: string
+  ): Promise<Values[]> {
+    return this.conn.request({
+      method: 'POST',
+      path: `/rest/v1/customobjects/schema/${apiName}/delete.json`,
     })
   }
 
@@ -85,7 +158,7 @@ export default class MarketoClient {
     typeName: string,
     marketoMetadata: MarketoMetadata
   ): Promise<Values[]> {
-    return this.conn.update({
+    return this.conn.request({
       id: extractInstanceId(marketoMetadata, typeName),
       body: {},
     })
@@ -93,11 +166,13 @@ export default class MarketoClient {
 
   async deleteInstance(
     typeName: string,
-    marketoMetadata: MarketoMetadata
+    name: string,
+    deleteRequest: Values,
   ): Promise<boolean> {
-    await this.conn.delete({
-      id: extractInstanceId(marketoMetadata, typeName),
-      body: {},
+    await this.conn.request({
+      method: 'POST',
+      path: `/rest/v1/${typeName}/${name}/delete.json`,
+      body: deleteRequest,
     })
     return true
   }

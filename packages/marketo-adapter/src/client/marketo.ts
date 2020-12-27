@@ -31,17 +31,13 @@ export interface RequestOptions {
   id?: string | number
   method?: RestMethod
   path?: string
-  body?: {[key: string]: string | number}
-  qs?: {[key: string]: string | number}
+  body?: Values
+  qs?: Values
 }
 
 export interface MarketoObjectAPI {
   refreshAccessToken(): Promise<Identity>
-  getAll(options: RequestOptions): Promise<Values[]>
-  create(options: RequestOptions): Promise<Values[]>
-  delete(options: RequestOptions): Promise<Values[]>
-  update(options: RequestOptions): Promise<Values[]>
-  describe(options: RequestOptions): Promise<Values[]>
+  request(requestOptions: RequestOptions): Promise<Values[]>
 }
 
 export class Marketo extends EventEmitter implements MarketoObjectAPI {
@@ -57,27 +53,7 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
     axiosRetry(this.api, { retries: 3, retryDelay: axiosRetry.exponentialDelay })
   }
 
-  async getAll(options: RequestOptions): Promise<Values[]> {
-    return this.apiRequest({ ...options, method: 'GET' })
-  }
-
-  async describe(options: RequestOptions): Promise<Values[]> {
-    return this.apiRequest({ ...options, method: 'GET' })
-  }
-
-  async create(options: RequestOptions): Promise<Values[]> {
-    return this.apiRequest({ ...options, method: 'POST' })
-  }
-
-  async update(options: RequestOptions): Promise<Values[]> {
-    return this.apiRequest({ ...options, method: 'PUT' })
-  }
-
-  async delete(options: RequestOptions): Promise<Values[]> {
-    return this.apiRequest({ ...options, method: 'DELETE' })
-  }
-
-  async apiRequest(requestOptions: RequestOptions): Promise<Values[]> {
+  async request(requestOptions: RequestOptions): Promise<Values[]> {
     if (!this.isAccessTokenValid()) {
       await this.refreshAccessToken()
     }
@@ -97,14 +73,16 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
   }
 
   private isAccessTokenValid(): boolean {
-    if (this.credentials.identity === undefined) {
+    if (this.credentials.identity === undefined
+      || this.credentials.identity.accessToken === undefined) {
       return false
     }
     return Date.now() < this.credentials.identity.expiresIn
   }
 
   private getAccessToken(): string {
-    if (this.credentials.identity !== undefined) {
+    if (this.credentials.identity !== undefined
+      && this.credentials.identity.accessToken !== undefined) {
       return this.credentials.identity.accessToken
     }
     throw new Error('Missing identity')

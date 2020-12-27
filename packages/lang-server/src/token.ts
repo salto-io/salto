@@ -32,7 +32,7 @@ export const getToken = (fileContent: string, position: EditorPosition):
   const line = lines[position.line]
 
   const lexerToken = wu(parser.tokenizeContent(line)).find(
-    token => token.col < position.col && position.col < token.col + token.value.length - 1,
+    token => token.col - 1 <= position.col && position.col < token.col + token.value.length - 1,
   )
   if (lexerToken === undefined) {
     return undefined

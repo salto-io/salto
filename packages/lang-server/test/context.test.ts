@@ -52,7 +52,6 @@ describe('Cursor context resolver', () => {
       const pos = { line: 4, col: 1 }
       const ctx = await getPositionContext(workspace, naclFilename, pos)
       expect(ctx.type).toBe('type')
-      expect(ctx.ref?.id).toEqual(new ElemID('salto', 'str', 'annotation', '_required'))
       expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'str'))
     })
 
@@ -73,7 +72,6 @@ describe('Cursor context resolver', () => {
       const ctx = await getPositionContext(workspace, naclFilename, pos)
       expect(ctx.type).toBe('field')
 
-      expect(ctx.ref?.id).toEqual(new ElemID('salto', 'complex', 'field', 'object'))
       expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex', 'field', 'object'))
     })
   })
@@ -95,7 +93,6 @@ describe('Cursor context resolver', () => {
       const pos = { line: 33, col: 1 }
       const ctx = await getPositionContext(workspace, naclFilename, pos)
       expect(ctx.type).toBe('instance')
-      expect(ctx.ref?.id).toEqual(new ElemID('salto', 'complex', 'instance', 'inst'))
       expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex', 'instance', 'inst'))
     })
 

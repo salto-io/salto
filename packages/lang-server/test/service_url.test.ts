@@ -44,10 +44,12 @@ describe('getServiceUrl', () => {
   })
 
   it('when element does not have service url annotation should return undefined', async () => {
+    const elemID = new ElemID('salesforce', 'Account')
     ctx.ref = {
-      element: new ObjectType({ elemID: new ElemID('salesforce', 'Account') }),
+      element: new ObjectType({ elemID }),
       path: [],
       isList: false,
+      id: elemID,
     }
 
     workspace.getValue = mockFunction<Workspace['getValue']>().mockResolvedValue(
@@ -59,10 +61,12 @@ describe('getServiceUrl', () => {
   })
 
   it('when getValue return non-element value should return undefined', async () => {
+    const elemID = new ElemID('salesforce', 'Account')
     ctx.ref = {
-      element: new ObjectType({ elemID: new ElemID('salesforce', 'Account') }),
+      element: new ObjectType({ elemID }),
       path: [],
       isList: false,
+      id: elemID,
     }
 
     workspace.getValue = mockFunction<Workspace['getValue']>().mockResolvedValue('aaa')
@@ -72,10 +76,12 @@ describe('getServiceUrl', () => {
   })
 
   it('should return the url of the element in the context', async () => {
+    const elemID = new ElemID('salesforce', 'Account')
     ctx.ref = {
-      element: new ObjectType({ elemID: new ElemID('salesforce', 'Account') }),
+      element: new ObjectType({ elemID }),
       path: [],
       isList: false,
+      id: elemID,
     }
 
     workspace.getValue = mockFunction<Workspace['getValue']>().mockResolvedValue(
@@ -87,8 +93,9 @@ describe('getServiceUrl', () => {
   })
 
   it('when parent has annoation and child does not should return the url of the parent', async () => {
+    const elemID = new ElemID('salesforce', 'Account')
     const type = new ObjectType({
-      elemID: new ElemID('salesforce', 'Account'),
+      elemID,
       fields: {
         fieldName: { type: BuiltinTypes.NUMBER },
       },
@@ -98,6 +105,7 @@ describe('getServiceUrl', () => {
       element: type.fields.fieldName,
       path: [],
       isList: false,
+      id: type.fields.fieldName.elemID,
     }
 
     const typeWithAnnotations = type.clone()
@@ -118,8 +126,9 @@ describe('getServiceUrl', () => {
   })
 
   it('when parent has annoation and child has annotation return the url of the child', async () => {
+    const elemID = new ElemID('salesforce', 'Account')
     const type = new ObjectType({
-      elemID: new ElemID('salesforce', 'Account'),
+      elemID,
       fields: {
         fieldName: { type: BuiltinTypes.NUMBER },
       },
@@ -129,6 +138,7 @@ describe('getServiceUrl', () => {
       element: type.fields.fieldName,
       path: [],
       isList: false,
+      id: type.fields.fieldName.elemID,
     }
 
     const typeWithAnnotations = type.clone()

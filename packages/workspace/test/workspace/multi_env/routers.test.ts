@@ -144,6 +144,18 @@ const envCommonOnlyFieldObject = new ObjectType({
   elemID: commonOnlyFieldObjectID,
 })
 
+const commonObjWithList = new ObjectType({
+  elemID: new ElemID('salto', 'withList'),
+  annotationTypes: {
+    boolean: BuiltinTypes.BOOLEAN,
+    list: BuiltinTypes.NUMBER, // No need to list type this this is annotations...
+  },
+  annotations: {
+    boolean: false,
+    list: [1, 2, 3],
+  },
+})
+
 const commonSource = createMockNaclFileSource(
   [
     commonObj,
@@ -152,6 +164,7 @@ const commonSource = createMockNaclFileSource(
     splitInstanceJoined,
     commonOnlyObject,
     commonCommonOnlyFieldObject,
+    commonObjWithList,
   ],
   {
     'test/path.nacl': [commonObj, commonInstance, commonOnlyObject],
@@ -161,6 +174,7 @@ const commonSource = createMockNaclFileSource(
     'test/inst1.nacl': [splitInstance1],
     'test/inst2.nacl': [splitInstance2],
     'test/onlyfields.nacl': [commonCommonOnlyFieldObject],
+    'test/withlists.nacl': [commonObjWithList],
   }
 )
 
@@ -901,6 +915,36 @@ describe('isolated routing', () => {
     expect(routedChanges.secondarySources?.sec[0].id).toEqual(fieldID)
     expect(secChangeData.data.after.type.elemID).toEqual(beforeField.type.elemID)
     expect(secChangeData.data.after.annotations).toEqual(beforeField.annotations)
+  })
+  it('name', async () => {
+    const annotationID = commonObjWithList.elemID.createNestedID('attr', 'list')
+    const specificChange: DetailedChange = {
+      action: 'modify',
+      data: { before: [1, 2, 3], after: [1, 2, 3, 4] },
+      id: annotationID,
+    }
+    const routedChanges = await routeChanges(
+      [specificChange],
+      envSource,
+      commonSource,
+      { sec: secEnv },
+      'isolated'
+    )
+    expect(routedChanges.primarySource).toHaveLength(1)
+    expect(routedChanges.commonSource).toHaveLength(1)
+    expect(routedChanges.secondarySources?.sec).toHaveLength(1)
+    expect(routedChanges.primarySource?.[0].action).toEqual('add')
+    const primaryChangeData = routedChanges.primarySource?.[0] as AdditionDiff<ObjectType>
+    expect(routedChanges.primarySource?.[0].id).toEqual(commonObjWithList.elemID)
+    expect(primaryChangeData.data.after.annotations.list).toEqual([1, 2, 3, 4])
+
+    expect(routedChanges.commonSource?.[0].action).toEqual('remove')
+    expect(routedChanges.commonSource?.[0].id).toEqual(specificChange.id)
+
+    expect(routedChanges.primarySource?.[0].action).toEqual('add')
+    const secChangeData = routedChanges.secondarySources?.sec[0] as AdditionDiff<Field>
+    expect(routedChanges.secondarySources?.sec[0].id).toEqual(commonObjWithList.elemID)
+    expect(secChangeData.data.after.annotations.list).toEqual([1, 2, 3])
   })
 })
 

@@ -22,7 +22,6 @@ import {
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import { SETTINGS_METADATA_TYPE } from '../../src/filters/settings_type'
 import mockClient from '../client'
 
 describe('convert types filter', () => {
@@ -104,7 +103,7 @@ describe('convert types filter', () => {
   const mockSettings = new InstanceElement(
     'test_settings',
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, SETTINGS_METADATA_TYPE),
+      elemID: new ElemID(constants.SALESFORCE, constants.SETTINGS_METADATA_TYPE),
     }),
     {},
   )

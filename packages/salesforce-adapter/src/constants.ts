@@ -307,6 +307,7 @@ export const WORKFLOW_RULE_METADATA_TYPE = 'WorkflowRule'
 export const WORKFLOW_TASK_METADATA_TYPE = 'WorkflowTask'
 export const WEBLINK_METADATA_TYPE = 'WebLink'
 export const BUSINESS_HOURS_METADATA_TYPE = 'BusinessHoursSettings'
+export const SETTINGS_METADATA_TYPE = 'Settings'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

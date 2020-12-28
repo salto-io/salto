@@ -77,7 +77,7 @@ const addNestedInstancesToPackageManifest = (
       .map(getNestedInstanceApiName)
 
     idsToDelete.forEach(nestedInstName => {
-      pkg.delete(fieldType, nestedInstName)
+      pkg.delete(fieldType, nestedInstName, changeElem.type.isSettings)
     })
 
     const idsToAdd = addNestedAfterInstances
@@ -111,7 +111,7 @@ const addChangeToPackage = (
     : {}
 
   if (isRemovalChange(change)) {
-    pkg.delete(instance.type, apiName(instance))
+    pkg.delete(instance.type, apiName(instance), instance.type.isSettings)
   } else {
     pkg.add(instance, addInstanceToManifest)
   }

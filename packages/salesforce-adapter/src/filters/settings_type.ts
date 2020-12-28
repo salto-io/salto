@@ -17,16 +17,13 @@ import _ from 'lodash'
 import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import {
-  createMetadataTypeElements, apiName,
-} from '../transformers/transformer'
+import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { ConfigChangeSuggestion } from '../types'
+import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
 const log = logger(module)
-
-export const SETTINGS_METADATA_TYPE = 'Settings'
 
 // This method receiving settings type name and call to describeMetadataType
 // And creating the new (settings) type
@@ -46,6 +43,10 @@ const createSettingsType = async (
       childTypeNames: new Set(),
       client,
       isSettings: true,
+      annotations: {
+        suffix: SETTINGS_METADATA_TYPE.toLowerCase(),
+        dirName: SETTINGS_METADATA_TYPE.toLowerCase(),
+      },
     })
   } catch (e) {
     log.error('failed to fetch settings type %s reason: %o', settingsTypesName, e)

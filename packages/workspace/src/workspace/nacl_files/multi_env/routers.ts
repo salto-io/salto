@@ -405,7 +405,7 @@ export const routeIsolated = async (
   const currentEnvChanges = await projectChange(change, primarySource)
   return {
     // No need to apply addToSource to primary env changes since it was handled by the original plan
-    primarySource: [...addCommonProjectionToCurrentChanges, ...currentEnvChanges],
+    primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
     commonSource: [createRemoveChange(currentCommonElement, change.id, pathHint)],
     secondarySources: secondaryChanges,
   }

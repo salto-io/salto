@@ -12,7 +12,7 @@
   },
   "resolutions": {
     "**/debug": "^4.1.1",
-    "**/color-convert" : "^2.0.1"
+    "**/color-convert": "^2.0.1"
   },
   "devDependencies": {
     "concurrently": "^5.2.0",

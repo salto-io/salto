@@ -139,8 +139,8 @@ describe('diff', () => {
     singlePathInstMergedAfter.value.nested.str = 'modified'
     const beforeElements = [
       multiPathObjMerged,
-      singlePathInstMergedAfter,
       multiPathInstMerged,
+      singlePathInstMergedAfter,
     ]
     describe('without filters', () => {
       let changes: DetailedChange[]
@@ -190,6 +190,42 @@ describe('diff', () => {
       })
       it('should create partial changes for elements that pass nested filters', () => {
         expect(changes.find(c => c.id.isEqual(nestedID))).toBeTruthy()
+      })
+    })
+    describe('check diff handling of selectors', () => {
+      it('returns empty diff when element id exists but is not in diff', async () => {
+        const selectors = [
+          createElementSelector(multiPathInstMerged.elemID.getFullName()),
+        ]
+        const changes = await createDiffChanges(toElements, beforeElements, selectors)
+        expect(changes).toHaveLength(0)
+      })
+      it('throws error when selector catches nothing', async () => {
+        const selectors = [
+          createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname'),
+        ]
+        await expect(createDiffChanges(toElements, beforeElements, selectors)).rejects.toThrow()
+      })
+      it('includes child elements when their parent is selected ', async () => {
+        const nestedID = singlePathInstMerged.elemID
+          .createNestedID('nested')
+          .createNestedID('str').getFullName()
+        const simpleId = singlePathInstMerged.elemID
+          .createNestedID('simple').getFullName()
+        const newSinglePathInstMergedAfter = singlePathInstMergedAfter.clone() as InstanceElement
+        newSinglePathInstMergedAfter.value.simple = 'old simple'
+        const newBeforeElements = [
+          multiPathObjMerged,
+          multiPathInstMerged,
+          newSinglePathInstMergedAfter,
+        ]
+        const selectors = [
+          createElementSelector(singlePathInstMerged.elemID.getFullName()),
+        ]
+        const changes = await createDiffChanges(toElements, newBeforeElements, selectors)
+        expect(changes).toHaveLength(2)
+        expect(changes.map(change => change.id.getFullName())
+          .sort()).toEqual([nestedID, simpleId].sort())
       })
     })
   })

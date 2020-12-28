@@ -189,7 +189,7 @@ export default class MarketoAdapter implements AdapterOperations {
     throw new Error('Can\'t update unsupported object type')
   }
 
-  private async updateCustomObject(change: ChangeDataType): Promise<ObjectType> {
+  private async updateCustomObject(change: ObjectType): Promise<ObjectType> {
     const apiName = change.annotations[API_NAME]
     await this.client.createOrUpdateCustomObject({
       action: UPDATE_ONLY,

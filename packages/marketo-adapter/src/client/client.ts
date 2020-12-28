@@ -75,11 +75,12 @@ export default class MarketoClient {
 
   async createInstance(
     typeName: string,
+    name: string,
     _marketoMetadata: MarketoMetadata
   ): Promise<Values[]> {
     return this.conn.request({
       method: 'POST',
-      path: `/rest/v1/${typeName}/describe.json`,
+      path: `/rest/v1/${typeName}/${name}.json`,
       body: {},
     })
   }

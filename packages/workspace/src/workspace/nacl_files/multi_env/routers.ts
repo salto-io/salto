@@ -32,17 +32,6 @@ export interface RoutedChanges {
   secondarySources?: Record<string, DetailedChange[]>
 }
 
-const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]} => {
-  const isListPart = (part: string): boolean => !Number.isNaN(Number(part))
-  const firstListNamePart = id.getFullNameParts().findIndex(isListPart)
-  if (firstListNamePart < 0) return { mergeableID: id, path: [] }
-  const mergeableNameParts = id.getFullNameParts().slice(0, firstListNamePart)
-  return {
-    mergeableID: ElemID.fromFullNameParts(mergeableNameParts),
-    path: id.getFullNameParts().slice(firstListNamePart),
-  }
-}
-
 const filterByFile = (
   valueID: ElemID,
   value: Value,
@@ -50,12 +39,7 @@ const filterByFile = (
 ): Value => filterByID(
   valueID,
   value,
-  id => !_.isEmpty((fileElements).filter(
-    e => resolvePath(
-      e,
-      getMergeableParentID(id).mergeableID
-    ) !== undefined
-  ))
+  id => !_.isEmpty((fileElements).filter(e => resolvePath(e, id) !== undefined))
 )
 
 const toPathHint = (filename: string): string[] => {
@@ -132,6 +116,17 @@ const createUpdateChanges = async (
     ...otherChanges,
     ..._.flatten(modifiedAdditions),
   ]
+}
+
+const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]} => {
+  const isListPart = (part: string): boolean => !Number.isNaN(Number(part))
+  const firstListNamePart = id.getFullNameParts().findIndex(isListPart)
+  if (firstListNamePart < 0) return { mergeableID: id, path: [] }
+  const mergeableNameParts = id.getFullNameParts().slice(0, firstListNamePart)
+  return {
+    mergeableID: ElemID.fromFullNameParts(mergeableNameParts),
+    path: id.getFullNameParts().slice(firstListNamePart),
+  }
 }
 
 const createMergeableChange = async (

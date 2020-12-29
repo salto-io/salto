@@ -49,4 +49,10 @@ describe('Test go to definitions', () => {
   it('For valid token the right token should be return', () => {
     expect(getToken(naclFileContent, { line: 135, col: 5 })).toEqual({ value: 'vs.person', type: 'word' })
   })
+  it('For a position of the first character of a valid token the right token should be return', () => {
+    expect(getToken(naclFileContent, { line: 135, col: 0 })).toEqual({ value: 'vs.person', type: 'word' })
+  })
+  it('For a position of the last character of a valid token the right token should be return', () => {
+    expect(getToken(naclFileContent, { line: 135, col: 8 })).toEqual({ value: 'vs.person', type: 'word' })
+  })
 })

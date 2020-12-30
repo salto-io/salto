@@ -18,8 +18,8 @@ import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element } from '@salto-io/adapter-api'
 import rocksdb from 'rocksdb'
 import { promisify } from 'util'
-import { serialization } from '@salto-io/workspace'
-import { createRemoteMap, RemoteMap } from '../../../src/local-workspace/remote_map'
+import { serialization, RemoteMap } from '@salto-io/workspace'
+import { createRemoteMap } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
 
@@ -41,7 +41,11 @@ let remoteMap: RemoteMap<Element>
 const createMap = async (namespace:
   string): Promise<RemoteMap<Element>> => createRemoteMap<Element>(
     namespace,
-    DB_LOCATION,
+    {
+      dbLocation: DB_LOCATION,
+      batchInterval: 1000,
+      LRUSize: 500,
+    },
     elem => serialize([elem]),
     async elemStr => (await deserialize(elemStr))[0],
     elem => elem.elemID.getFullName()
@@ -68,24 +72,24 @@ describe('test operations on remote db', () => {
       }
     }
     await remoteMap.putAll(await createAsyncIterable(elements))
-    const iter = remoteMap.list()
+    const iter = await remoteMap.list()
     const res: string[] = []
-    for await (const elemId of { [Symbol.asyncIterator]: () => iter }) {
+    for await (const elemId of iter) {
       res.push(elemId)
     }
     expect(res.sort()).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
   })
 
-  it('put all and then getAll finds all values', async () => {
+  it('put all and then values finds all values', async () => {
     async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element> {
       for (const elem of iterable) {
         yield elem
       }
     }
     await remoteMap.putAll(await createAsyncIterable(elements))
-    const iter = remoteMap.getAll()
+    const iter = remoteMap.values()
     const res: Element[] = []
-    for await (const element of { [Symbol.asyncIterator]: () => iter }) {
+    for await (const element of iter) {
       res.push(element)
     }
 
@@ -106,9 +110,9 @@ describe('full integration', () => {
     }
     await remoteMap.putAll(await createAsyncIterable(elements.slice(1, elements.length)))
     await remoteMap.flush()
-    const iter = remoteMap.getAll()
+    const iter = remoteMap.values()
     const res: Element[] = []
-    for await (const element of { [Symbol.asyncIterator]: () => iter }) {
+    for await (const element of iter) {
       res.push(element)
     }
     expect(_.uniq(res.map(elem => elem.elemID.getFullName())).sort()).toEqual(elements

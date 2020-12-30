@@ -32,6 +32,65 @@ const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
 const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
 const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}content.html${ATTRIBUTES_FILE_SUFFIX}`
 const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
+
+const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
+<projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
+<frameworkversion>1.0</frameworkversion>
+<dependencies>
+  <features>
+    <feature required="true">ADVANCEDEXPENSEMANAGEMENT</feature>
+    <feature required="true">SFA</feature>
+    <feature required="true">MULTICURRENCYVENDOR</feature>
+    <feature required="true">ACCOUNTING</feature>
+    <feature required="true">SUBSCRIPTIONBILLING</feature>
+    <feature required="true">ADDRESSCUSTOMIZATION</feature>
+    <feature required="true">WMSSYSTEM</feature>
+    <feature required="true">SUBSIDIARIES</feature>
+    <feature required="true">RECEIVABLES</feature>
+    <feature required="true">BILLINGACCOUNTS</feature>
+  </features>
+  <objects>
+    <object>custentity2edited</object>
+    <object>custentity13</object>
+    <object>custentity_14</object>
+    <object>custentity10</object>
+    <object>custentitycust_active</object>
+    <object>custentity11</object>
+    <object>custentity_slt_tax_reg</object>
+  </objects>
+  <files>
+    <file>/SuiteScripts/clientScript_2_0.js</file>
+  </files>
+</dependencies>
+</manifest>`
+
+const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
+<projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
+<frameworkversion>1.0</frameworkversion>
+<dependencies>
+  <features>
+    <feature required="true">SFA</feature>
+    <feature required="true">MULTICURRENCYVENDOR</feature>
+    <feature required="true">ACCOUNTING</feature>
+    <feature required="true">ADDRESSCUSTOMIZATION</feature>
+    <feature required="true">SUBSIDIARIES</feature>
+    <feature required="true">RECEIVABLES</feature>
+  </features>
+  <objects>
+    <object>custentity2edited</object>
+    <object>custentity13</object>
+    <object>custentity_14</object>
+    <object>custentity10</object>
+    <object>custentitycust_active</object>
+    <object>custentity11</object>
+    <object>custentity_slt_tax_reg</object>
+  </objects>
+  <files>
+    <file>/SuiteScripts/clientScript_2_0.js</file>
+  </files>
+</dependencies>
+</manifest>`
+
 jest.mock('@salto-io/file', () => ({
   readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
   readFile: jest.fn().mockImplementation(filePath => {
@@ -46,6 +105,10 @@ jest.mock('@salto-io/file', () => ({
     }
     if (filePath.endsWith(MOCK_FOLDER_ATTRS_PATH)) {
       return '<folder><description>folder description</description></folder>'
+    }
+
+    if (filePath.endsWith('manifest.xml')) {
+      return MOCK_MANIFEST_INVALID_DEPENDENCIES
     }
     return `<TypeA filename="${filePath.split('/').pop()}">`
   }),
@@ -640,9 +703,10 @@ describe('netsuite client', () => {
           scriptId,
         } as CustomTypeInfo
         await client.deploy([customTypeInfo])
-        expect(writeFileMock).toHaveBeenCalledTimes(1)
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -662,11 +726,12 @@ describe('netsuite client', () => {
           fileExtension: 'html',
         } as TemplateCustomTypeInfo
         await client.deploy([templateCustomTypeInfo])
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.template.html`), MOCK_TEMPLATE_CONTENT)
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -706,9 +771,10 @@ describe('netsuite client', () => {
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(1)
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>')
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(rmMock).toHaveBeenCalledTimes(1)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -735,11 +801,12 @@ describe('netsuite client', () => {
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
           dummyFileContent)
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(rmMock).toHaveBeenCalledTimes(1)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -763,11 +830,12 @@ describe('netsuite client', () => {
         scriptId: scriptId2,
       }
       await client.deploy([customTypeInfo1, customTypeInfo2])
-      expect(writeFileMock).toHaveBeenCalledTimes(2)
+      expect(writeFileMock).toHaveBeenCalledTimes(3)
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),
         '<typeName><key>val</key></typeName>')
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)

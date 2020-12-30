@@ -85,7 +85,7 @@ export const fileCabinetTopLevelFolders = [
 const MINUTE_IN_MILLISECONDS = 1000 * 60
 
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
-const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required="true">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
+const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
 
 const baseExecutionPath = os.tmpdir()
 

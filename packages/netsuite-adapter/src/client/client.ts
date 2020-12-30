@@ -84,6 +84,9 @@ export const fileCabinetTopLevelFolders = [
 ]
 const MINUTE_IN_MILLISECONDS = 1000 * 60
 
+const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
+const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
+
 const baseExecutionPath = os.tmpdir()
 
 export interface CustomizationInfo {
@@ -182,6 +185,7 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
 
 type Project = {
   projectName: string
+  projectPath: string
   executor: CommandActionExecutor
   authId: string
 }
@@ -329,10 +333,11 @@ export default class NetsuiteClient {
     const authId = uuidv4()
     const projectName = `TempSdfProject-${authId}`
     await this.createProject(projectName)
+    const projectPath = NetsuiteClient.getProjectPath(projectName)
     const executor = NetsuiteClient
-      .initCommandActionExecutor(NetsuiteClient.getProjectPath(projectName))
+      .initCommandActionExecutor(projectPath)
     await this.setupAccount(executor, authId)
-    return { projectName, executor, authId }
+    return { projectName, projectPath, executor, authId }
   }
 
   private static async deleteProject(projectName: string): Promise<void> {
@@ -604,8 +609,18 @@ export default class NetsuiteClient {
     await this.projectCleanup(project.projectName, project.authId)
   }
 
-  private async runDeployCommands({ executor }: Project): Promise<void> {
+  private static async cleanInvalidDependencies(projectPath: string): Promise<void> {
+    // This is done due to an SDF bug described in SALTO-1107.
+    // This function should be removed once the bug is fixed.
+    const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
+    const manifestContent = await readFile(manifestPath)
+    const fixedManifestContent = manifestContent.toString().replace(INVALID_DEPENDENCIES_PATTERN, '')
+    await writeFile(manifestPath, fixedManifestContent)
+  }
+
+  private async runDeployCommands({ executor, projectPath }: Project): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
+    await NetsuiteClient.cleanInvalidDependencies(projectPath)
     await this.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, executor)
   }
 

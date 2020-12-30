@@ -119,6 +119,21 @@ const getElementHiddenParts = <T extends Element>(
       hidden.fields,
       (field, key) => workspaceFields.has(key) || isHidden(field)
     )
+    // Keep field types from the workspace element to avoid merge conflicts
+    Object.values(hidden.fields)
+      .filter(field => !isHidden(field))
+      .forEach(field => {
+        const workspaceField = workspaceElement.fields[field.name]
+        if (!field.type.elemID.isEqual(workspaceField.type.elemID)) {
+          log.debug(
+            'Field type mismatch on %s, overriding state type %s with workspace type %s',
+            field.elemID.getFullName(),
+            field.type.elemID.getFullName(),
+            workspaceField.type.elemID.getFullName(),
+          )
+          field.type = workspaceField.type
+        }
+      })
   }
   return hidden
 }

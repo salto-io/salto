@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID,
   isObjectType, getDeepInnerType, Value, isContainerType } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
-import wu from 'wu'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'

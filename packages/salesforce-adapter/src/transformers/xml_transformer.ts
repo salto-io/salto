@@ -54,9 +54,9 @@ const TARGET_CONFIGS = 'targetConfigs'
 const LWC_RESOURCES = 'lwcResources'
 const LWC_RESOURCE = 'lwcResource'
 
-export const getManifestTypeName = (type: MetadataObjectType, isSettings?: boolean): string => (
+export const getManifestTypeName = (type: MetadataObjectType): string => (
   // Salesforce quirk - folder instances are listed under their content's type in the manifest
-  isSettings
+  type.isSettings
     ? SETTINGS_METADATA_TYPE
     : (type.annotations.folderContentType ?? type.annotations.metadataType)
 )
@@ -355,8 +355,8 @@ const toPackageXml = (manifest: Map<string, string[]>): string => (
 
 export type DeployPackage = {
   add(instance: MetadataInstanceElement, withManifest?: boolean): void
-  addToManifest(type: MetadataObjectType, name: string, isSettings?: boolean): void
-  delete(type: MetadataObjectType, name: string, isSettings?: boolean): void
+  addToManifest(type: MetadataObjectType, name: string): void
+  delete(type: MetadataObjectType, name: string): void
   getZip(): Promise<Buffer>
   getDeletionsPackageName(): string
 }
@@ -367,15 +367,15 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
   const deleteManifest = new collections.map.DefaultMap<string, string[]>(() => [])
   const deletionsPackageName = deleteBeforeUpdate ? 'destructiveChanges.xml' : 'destructiveChangesPost.xml'
 
-  const addToManifest: DeployPackage['addToManifest'] = (type, name, isSettings) => {
-    const typeName = getManifestTypeName(type, isSettings)
+  const addToManifest: DeployPackage['addToManifest'] = (type, name) => {
+    const typeName = getManifestTypeName(type)
     addManifest.get(typeName).push(name)
   }
   return {
     add: (instance, withManifest = true) => {
       const instanceName = apiName(instance)
       if (withManifest) {
-        addToManifest(instance.type, instanceName, instance.type.isSettings)
+        addToManifest(instance.type, instanceName)
       }
       // Add instance file(s) to zip
       const typeName = metadataType(instance)
@@ -420,8 +420,8 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       }
     },
     addToManifest,
-    delete: (type, name, isSettings) => {
-      const typeName = getManifestTypeName(type, isSettings)
+    delete: (type, name) => {
+      const typeName = getManifestTypeName(type)
       deleteManifest.get(typeName).push(name)
     },
     getZip: () => {

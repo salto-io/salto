@@ -29,6 +29,7 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
 import { Errors } from '../../errors'
+import { InMemoryRemoteElementSource } from '../../elements_source'
 
 const { series } = promises.array
 
@@ -84,7 +85,10 @@ const buildMultiEnvSource = (
       _.values(getActiveSources(env)).map(s => (s ? s.getAll() : []))
     ))
     const { errors, merged } = mergeElements(allActiveElements)
-    applyInstancesDefaults(merged.filter(isInstanceElement))
+    applyInstancesDefaults(
+      merged.filter(isInstanceElement),
+      new InMemoryRemoteElementSource(allActiveElements),
+    )
     return {
       elements: _.keyBy(merged, e => e.elemID.getFullName()),
       mergeErrors: errors,
@@ -245,7 +249,6 @@ const buildMultiEnvSource = (
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]
     ),
-    getSync: (_id: ElemID): Value => (''),
     getAll: async (env?: string): Promise<Element[]> => (env === undefined
       ? _.values((await getState()).elements)
       // When we get an env override we don't want to keep that state

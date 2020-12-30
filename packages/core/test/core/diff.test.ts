@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { merger, createElementSelector } from '@salto-io/workspace'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { merger, createElementSelector, InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { createDiffChanges } from '../../src/core/diff'
 
 const { mergeElements } = merger
@@ -24,13 +25,13 @@ describe('diff', () => {
     elemID: new ElemID('salto', 'nested'),
     fields: {
       str: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       num: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       },
       list: {
-        type: new ListType(BuiltinTypes.NUMBER),
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
       },
     },
   })
@@ -39,10 +40,10 @@ describe('diff', () => {
     elemID: new ElemID('salto', 'singlePathObj'),
     fields: {
       simple: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       nested: {
-        type: nestedType,
+        refType: createRefToElmWithValue(nestedType),
       },
     },
     annotationRefsOrTypes: {
@@ -81,10 +82,10 @@ describe('diff', () => {
     elemID: new ElemID('salto', 'multiPathObj'),
     fields: {
       simple: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       nested: {
-        type: nestedType,
+        refType: createRefToElmWithValue(nestedType),
       },
     },
     path: ['salto', 'obj', 'multi', 'fields'],
@@ -124,7 +125,11 @@ describe('diff', () => {
 
   describe('with no changes', () => {
     it('should not create changes toElements and the fromElements are the same', async () => {
-      const changes = await createDiffChanges(allElement, allElement)
+      const changes = await createDiffChanges(
+        allElement,
+        allElement,
+        new InMemoryRemoteElementSource(allElement),
+      )
       expect(changes).toHaveLength(0)
     })
   })
@@ -145,7 +150,11 @@ describe('diff', () => {
     describe('without filters', () => {
       let changes: DetailedChange[]
       beforeAll(async () => {
-        changes = await createDiffChanges(toElements, beforeElements)
+        changes = await createDiffChanges(
+          toElements,
+          beforeElements,
+          new InMemoryRemoteElementSource([...beforeElements, ...toElements]),
+        )
       })
 
       it('should create all changes', () => {
@@ -180,7 +189,12 @@ describe('diff', () => {
           createElementSelector(singlePathObjMerged.elemID.getFullName()),
           createElementSelector(nestedID.getFullName()),
         ]
-        changes = await createDiffChanges(toElements, beforeElements, selectors)
+        changes = await createDiffChanges(
+          toElements,
+          beforeElements,
+          new InMemoryRemoteElementSource([...beforeElements, ...toElements]),
+          selectors,
+        )
       })
       it('should filter out changes that did not pass any of the filters', () => {
         expect(changes).toHaveLength(2)

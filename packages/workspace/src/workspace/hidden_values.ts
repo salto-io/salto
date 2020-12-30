@@ -16,21 +16,7 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import {
-  CORE_ANNOTATIONS, Element,
-  isInstanceElement, isType,
-  TypeElement,
-  getField,
-  DetailedChange,
-  isRemovalChange,
-  ElemID,
-  isObjectType,
-  ObjectType,
-  Values,
-  isRemovalOrModificationChange,
-  isAdditionOrModificationChange,
-  isElement,
-} from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField, DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values, isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, ElementsSource } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
@@ -100,7 +86,6 @@ export const mergeWithHidden = (
     .filter(elem => isHidden(elem) || workspaceElemIds.has(elem.elemID.getFullName()))
     .map(elem => splitElementHiddenParts(elem).hidden)
     .filter(values.isDefined)
-
   return mergeElements([...workspaceElements, ...hiddenElements])
 }
 
@@ -294,7 +279,8 @@ const isHiddenField = (baseType: TypeElement, fieldPath: ReadonlyArray<string>):
 
 const filterOutHiddenChanges = async (
   changes: DetailedChange[],
-  state: State
+  state: State,
+  elementsSource: ElementsSource,
 ): Promise<DetailedChange[]> => {
   const filterOutHidden = async (change: DetailedChange): Promise<DetailedChange | undefined> => {
     if (isRemovalChange(change)) {
@@ -319,8 +305,8 @@ const filterOutHiddenChanges = async (
     if (isInstanceElement(baseElem) || (isObjectType(baseElem) && change.id.idType === 'attr')) {
       // Instance values and annotation values can be hidden
       const [changeType, valuePath] = isInstanceElement(baseElem)
-        ? [baseElem.type, path]
-        : [baseElem.annotationRefTypes[path[0]], path.slice(1)]
+        ? [baseElem.getType(elementsSource), path]
+        : [baseElem.getAnnotationTypes(elementsSource)[path[0]], path.slice(1)]
 
       if (changeType === undefined) {
         // a value without a type cannot be hidden
@@ -335,7 +321,7 @@ const filterOutHiddenChanges = async (
       if (isInstanceElement(change.data.after)) {
         return applyFunctionToChangeData(change, removeHiddenFromElement)
       }
-      const fieldType = changeType && getField(changeType, valuePath)?.type
+      const fieldType = changeType && getField(changeType, valuePath)?.getType(elementsSource)
       if (isObjectType(fieldType)) {
         return applyFunctionToChangeData(
           change,
@@ -354,9 +340,10 @@ export const handleHiddenChanges = async (
   changes: DetailedChange[],
   state: State,
   getWorkspaceElements: () => Promise<Element[]>,
+  elementsSource: ElementsSource,
 ): Promise<DetailedChange[]> => {
   const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
     changes, state, getWorkspaceElements,
   )
-  return filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)
+  return filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state, elementsSource)
 }

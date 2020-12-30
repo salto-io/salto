@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-// import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
@@ -28,6 +27,28 @@ const getRefType = (typeOrRef: TypeElement | ReferenceExpression): ReferenceExpr
   (isReferenceExpression(typeOrRef)
     ? typeOrRef
     : new ReferenceExpression(typeOrRef.elemID, typeOrRef))
+
+// const isContainerTypeElemIDName = (fullName: string): boolean =>
+//   ((fullName.startsWith(LIST_PREFIX)
+// || fullName.startsWith(MAP_PREFIX)) && fullName.endsWith('>'))
+
+// const getTypeFromContainerTypeFullName = (
+//   fullName: string,
+//   elementsSource?: ElementsSource,
+// ): TypeElement => {
+//   if (!isContainerTypeElemIDName(fullName)) {
+
+//   }
+//   if (fullName.startsWith(LIST_PREFIX)) {
+
+//   }
+// }
+
+const getRefTypeValue = (
+  refType: ReferenceExpression,
+  elementsSource?: ElementsSource,
+): Value =>
+  (refType.getResolvedValue(elementsSource))
 
 /**
  * An abstract class that represent the base element.
@@ -87,7 +108,7 @@ export abstract class Element {
   getAnnotationTypes(elementsSource?: ElementsSource): TypeMap {
     const annotationTypes = _.mapValues(
       this.annotationRefTypes,
-      refType => refType.getResolvedValue(elementsSource)
+      refType => (refType.getResolvedValue(elementsSource))
     )
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const nonTypeVals = Object.values(annotationTypes).filter(type => !isType(type))
@@ -142,7 +163,7 @@ abstract class PlaceholderTypeElement extends Element {
   }
 
   getType(elementsSource?: ElementsSource): TypeElement {
-    const type = this.refType.getResolvedValue(elementsSource)
+    const type = getRefTypeValue(this.refType, elementsSource)
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     if (!isType(type)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
@@ -157,7 +178,7 @@ export class ListType extends Element {
     innerTypeOrRef: TypeElement | ReferenceExpression
   ) {
     super({
-      elemID: new ElemID('', `list<${innerTypeOrRef.elemID.getFullName()}>`),
+      elemID: new ElemID('', `List<${innerTypeOrRef.elemID.getFullName()}>`),
     })
     this.refInnerType = getRefType(innerTypeOrRef)
     this.setRefInnerType(innerTypeOrRef)
@@ -175,7 +196,7 @@ export class ListType extends Element {
   }
 
   getInnerType(elementsSource?: ElementsSource): TypeElement {
-    const refInnerTypeVal = this.refInnerType.getResolvedValue(elementsSource)
+    const refInnerTypeVal = getRefTypeValue(this.refInnerType, elementsSource)
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
@@ -209,7 +230,7 @@ export class MapType extends Element {
     innerTypeOrRef: TypeElement | ReferenceExpression
   ) {
     super({
-      elemID: new ElemID('', `map<${innerTypeOrRef.elemID.getFullName()}>`),
+      elemID: new ElemID('', `Map<${innerTypeOrRef.elemID.getFullName()}>`),
     })
     this.refInnerType = getRefType(innerTypeOrRef)
     this.setRefInnerType(innerTypeOrRef)
@@ -227,7 +248,7 @@ export class MapType extends Element {
   }
 
   getInnerType(elementsSource?: ElementsSource): TypeElement {
-    const refInnerTypeVal = this.refInnerType.getResolvedValue(elementsSource)
+    const refInnerTypeVal = getRefTypeValue(this.refInnerType, elementsSource)
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
@@ -428,7 +449,7 @@ export class InstanceElement extends PlaceholderTypeElement {
   }
 
   getType(elementsSource?: ElementsSource): ObjectType {
-    const type = this.refType.getResolvedValue(elementsSource)
+    const type = getRefTypeValue(this.refType, elementsSource)
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     if (!isObjectType(type)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)

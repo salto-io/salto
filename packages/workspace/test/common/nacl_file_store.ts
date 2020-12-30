@@ -38,6 +38,8 @@ type salesforce.lead {
   salesforce.text empty {}
 }
 
+type salesforce.text is string {}
+
 type salesforce.AccountIntelligenceSettings {
   boolean enableAccountLogos {
   }

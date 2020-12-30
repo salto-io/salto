@@ -21,9 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
-import {
-  METADATA_TYPE,
-} from '@salto-io/salesforce-adapter/dist/src/constants'
+import { METADATA_TYPE } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
@@ -34,11 +32,9 @@ import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
-
+import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
 import { StaticFilesSource } from '../../src/workspace/static_files'
-
 import * as dump from '../../src/parser/dump'
-
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { PathIndex } from '../../src/workspace/path_index'
@@ -90,8 +86,10 @@ const createState = (elements: Element[]): State => buildInMemState(async () => 
 }))
 
 const createWorkspace = async (
-  dirStore?: DirectoryStore<string>, state?: State,
-  configSource?: WorkspaceConfigSource, credentials?: ConfigSource,
+  dirStore?: DirectoryStore<string>,
+  state?: State,
+  configSource?: WorkspaceConfigSource,
+  credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
 ): Promise<Workspace> =>
@@ -243,7 +241,8 @@ describe('workspace', () => {
         }),
         state,
       )
-      state.override(resolve(await workspace.elements(false)))
+      const elements = await workspace.elements(false)
+      state.override(resolve(elements, new InMemoryRemoteElementSource(elements)))
 
       const wsErrors = await workspace.errors()
       expect(wsErrors.merge).toHaveLength(1)
@@ -332,7 +331,7 @@ describe('workspace', () => {
     const anotherNewField = new Field(
       fieldsParent,
       'lala',
-      new ListType(BuiltinTypes.NUMBER),
+      new ListType(BuiltinTypes.BOOLEAN),
       {},
     )
     const newMultiLineField = new Field(
@@ -392,7 +391,7 @@ describe('workspace', () => {
         numHidden: new Field(
           queueSobjectHiddenSubType,
           'numHidden',
-          BuiltinTypes.NUMBER,
+          BuiltinTypes.STRING,
           {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
@@ -505,7 +504,6 @@ describe('workspace', () => {
         id: anotherNewField.elemID,
         action: 'add',
         data: { after: anotherNewField },
-
       },
       {
         path: ['other', 'battr'],
@@ -536,29 +534,29 @@ describe('workspace', () => {
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType1'),
         action: 'add',
-        data: { after: BuiltinTypes.STRING },
+        data: { after: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       { // new annotation type to a type with no annotation types block
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType2'),
         action: 'add',
-        data: { after: BuiltinTypes.NUMBER },
+        data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
       { // new annotation type to a type with annotation types block
         path: ['file'],
         id: new ElemID('salesforce', 'WithAnnotationsBlock', 'annotation', 'secondAnnotation'),
         action: 'add',
-        data: { after: BuiltinTypes.NUMBER },
+        data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
       { // new annotation type to a type with no annotation types block without path
         id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'annotation', 'newAnnoType1'),
         action: 'add',
-        data: { after: BuiltinTypes.STRING },
+        data: { after: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       { // new annotation type to a type with no annotation types block without path
         id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'annotation', 'newAnnoType2'),
         action: 'add',
-        data: { after: BuiltinTypes.NUMBER },
+        data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
       { // new Hidden type (should be removed)
         id: new ElemID('salesforce', 'Queue'),
@@ -678,7 +676,17 @@ describe('workspace', () => {
       // The call to resolve is the only safe way to clone elements while keeping all
       // the inner references between elements correct, we then apply all the changes to the copied
       // elements and set them along with the hidden types as the state elements
-      const stateElements = resolve(await workspace.elements())
+      const elements = await workspace.elements()
+      // const elementsWithInnerTypes = elements.flatMap(e => {
+      //   if (isObjectType(e)) {
+      //     return [e, ...getFieldsAndAnnoTypes(e)]
+      //   }
+      //   if (isInstanceElement(e)) {
+      //     return [e, e.getType(), ...getFieldsAndAnnoTypes(e.getType())]
+      //   }
+      //   return e
+      // })
+      const stateElements = resolve(elements, new InMemoryRemoteElementSource(elements))
       const stateElementsById = _.keyBy(stateElements, elem => elem.elemID.getFullName())
       const changesByElem = _.groupBy(
         changes,
@@ -690,7 +698,7 @@ describe('workspace', () => {
           applyDetailedChanges(elem, elemChanges)
         }
       })
-      state.override(
+      await state.override(
         [...stateElements, accountInsightsSettingsType, queueHiddenType]
       )
 
@@ -753,25 +761,27 @@ describe('workspace', () => {
     })
     it('should add annotation types block when having new annotation type changes', () => {
       expect(lead.annotationRefTypes).toHaveProperty('newAnnoType1')
-      expect(lead.annotationRefTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
+      expect(lead.annotationRefTypes.newAnnoType1.elemID).toEqual(BuiltinTypes.STRING.elemID)
       expect(lead.annotationRefTypes).toHaveProperty('newAnnoType2')
-      expect(lead.annotationRefTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
+      expect(lead.annotationRefTypes.newAnnoType2.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('firstAnnotation')
-      expect(objWithAnnotationsBlock.annotationRefTypes.firstAnnotation)
-        .toEqual(BuiltinTypes.STRING)
+      expect(objWithAnnotationsBlock.annotationRefTypes.firstAnnotation.elemID)
+        .toEqual(BuiltinTypes.STRING.elemID)
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('secondAnnotation')
-      expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation)
-        .toEqual(BuiltinTypes.NUMBER)
+      expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation.elemID)
+        .toEqual(BuiltinTypes.NUMBER.elemID)
     })
     it('should add annotation type to the existing annotations block without path hint', () => {
       const objWithoutAnnoBlock = elemMap['salesforce.WithoutAnnotationsBlock'] as ObjectType
       expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType1')
-      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
+      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType1.elemID)
+        .toEqual(BuiltinTypes.STRING.elemID)
       expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType2')
-      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
+      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType2.elemID)
+        .toEqual(BuiltinTypes.NUMBER.elemID)
     })
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi.loc')

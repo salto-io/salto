@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { Element, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { Element, DetailedChange, getChangeElement, ElementsSource } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementsBySelectors } from '@salto-io/workspace'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import wu from 'wu'
@@ -43,8 +43,9 @@ const filterChangesBySelectors = async (
 export const createDiffChanges = async (
   toElements: readonly Element[],
   fromElements: Element[],
+  elementsSource: ElementsSource,
   elementSelectors: ElementSelector[] = [],
 ): Promise<DetailedChange[]> => filterChangesBySelectors(
-  wu(await getDetailedChanges(toElements, fromElements)).toArray(),
+  wu(await getDetailedChanges(toElements, fromElements, elementsSource)).toArray(),
   elementSelectors
 )

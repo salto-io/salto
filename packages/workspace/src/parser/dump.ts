@@ -88,12 +88,13 @@ const dumpFieldBlock = async (field: Field, functions: Functions): Promise<Dumpe
   blocks: [],
 })
 
-const dumpAnnotationTypeBlock = (key: string, refType: ReferenceExpression): DumpedHclBlock => ({
-  type: dumpElemID(refType.elemID),
-  labels: [key],
-  attrs: {},
-  blocks: [],
-})
+const dumpAnnotationTypeBlock = (key: string, refType: ReferenceExpression): DumpedHclBlock =>
+  ({
+    type: dumpElemID(refType.elemID),
+    labels: [key],
+    attrs: {},
+    blocks: [],
+  })
 
 const dumpAnnotationTypesBlock = (annotationRefTypes: ReferenceMap): DumpedHclBlock[] =>
   (_.isEmpty(annotationRefTypes) ? [] : [{

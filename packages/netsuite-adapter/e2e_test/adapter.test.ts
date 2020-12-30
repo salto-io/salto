@@ -231,7 +231,7 @@ describe('Netsuite adapter E2E with real account', () => {
       const permissions = makeArray(fetchedCustomRecordType.value.permissions?.permission)
       const createdRolePermission = permissions
         .find(permission => isReferenceExpression(permission.permittedrole)
-          && permission.permittedrole.elemId
+          && permission.permittedrole.elemID
             .isEqual(roleToCreateThatDependsOnCustomRecord.elemID.createNestedID(SCRIPT_ID)))
       expect(createdRolePermission).toBeDefined()
     })
@@ -245,7 +245,7 @@ describe('Netsuite adapter E2E with real account', () => {
       const permissions = makeArray(fetchedRole.value.permissions?.permission)
       const customRecordTypePermission = permissions
         .find(permission => isReferenceExpression(permission.permkey)
-          && permission.permkey.elemId
+          && permission.permkey.elemID
             .isEqual(customRecordTypeToCreate.elemID.createNestedID(SCRIPT_ID)))
       expect(customRecordTypePermission).toBeDefined()
     })

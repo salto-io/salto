@@ -472,7 +472,7 @@ export const getPath = (
   fullElemID: ElemID
 ): string[] | undefined => {
   const { parent, path } = fullElemID.createTopLevelParentID()
-  if (!_.isEqual(parent, rootElement.elemID)) return undefined
+  if (!parent.isEqual(rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []
   if (fullElemID.isAttrID()) {
     return ['annotations', ...path]

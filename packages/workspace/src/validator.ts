@@ -421,7 +421,7 @@ const validateFieldValue = (elemID: ElemID, value: Value, field: Field): Validat
 
 const validateField = (field: Field): ValidationError[] =>
   Object.keys(field.annotations)
-    .filter(k => field.annotationRefTypes[k])
+    .filter(k => field.getType().annotationRefTypes[k])
     .flatMap(k => validateValue(
       field.elemID.createNestedID(k),
       field.annotations[k],

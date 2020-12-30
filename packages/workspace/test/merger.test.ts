@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType, PrimitiveTypes, TypeElement, Variable, MapType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType, PrimitiveTypes, TypeElement, Variable } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { mergeElements, DuplicateAnnotationError } from '../src/merger'
@@ -87,7 +87,7 @@ describe('merger', () => {
     fields: {
       field1: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: { a: 'update' },
+        annotations: { b: 'update' },
       },
     },
   })
@@ -126,9 +126,6 @@ describe('merger', () => {
       anno1: 'updated',
     },
   })
-
-  const instanceElement = new InstanceElement('inst', base, {})
-  const instanceElement2 = new InstanceElement('inst2', unrelated, {})
 
   const mergedObject = new ObjectType({
     elemID: baseElemID,
@@ -240,50 +237,6 @@ describe('merger', () => {
       expect(errors[0].message).toContain(BuiltinTypes.STRING.elemID.getFullName())
       expect(errors[0].message).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
       expect(String(errors[0])).toEqual(errors[0].message)
-    })
-  })
-
-  describe('merging placeholders', () => {
-    it('update type pointers with the modified type', () => {
-      const elements = [
-        base,
-        unrelated,
-        fieldUpdate,
-        fieldUpdate2,
-        updateAnno,
-        updateAnnoValues,
-        instanceElement,
-        instanceElement2,
-      ]
-      const { merged, errors } = mergeElements(elements)
-      expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(4)
-    })
-
-    it('update placehoder for map types', () => {
-      const primElemID = new ElemID('salto', 'string')
-      const prim = new PrimitiveType({
-        elemID: primElemID,
-        primitive: PrimitiveTypes.STRING,
-      })
-      const objType = new ObjectType({
-        elemID: new ElemID('salto', 'obj'),
-        fields: {
-          prim: {
-            refType: createRefToElmWithValue(new MapType(new ObjectType({
-              elemID: primElemID,
-            }))),
-          },
-        },
-      })
-
-      const { merged, errors } = mergeElements([prim, objType])
-      expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(2)
-      const mergedPrim = merged[0] as PrimitiveType
-      const mergedObj = merged[1] as ObjectType
-      const mapType = mergedObj.fields.prim.getType() as MapType
-      expect(mapType.getInnerType()).toEqual(mergedPrim)
     })
   })
 
@@ -437,8 +390,8 @@ describe('merger', () => {
       ])
       expect(errors).toHaveLength(0)
       const element = merged[2] as ObjectType
-      expect(element.fields.prim.getType()).toEqual(strType)
-      expect(element.fields.base.getType()).toEqual(base)
+      expect(element.fields.prim.refType.elemID).toEqual(strType.elemID)
+      expect(element.fields.base.refType.elemID).toEqual(base.elemID)
     })
   })
 

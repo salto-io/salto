@@ -349,7 +349,7 @@ const buildNaclFilesSource = (
     }
 
     // This method was written with the assumption that each static file is pointed by no more
-    // then one value inthe nacls. A ticket was open to fix that (SALTO-954)
+    // then one value in the nacls. A ticket was open to fix that (SALTO-954)
 
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
       await Promise.all(fileChanges.filter(change => change.action === 'remove')
@@ -431,8 +431,6 @@ const buildNaclFilesSource = (
       const baseElement = currentState.mergedElements[parent.getFullName()]
       return baseElement && !_.isEmpty(path) ? resolvePath(baseElement, id) : baseElement
     },
-
-    getSync: (_id: ElemID): Value => (''),
 
     getAll: async (): Promise<Element[]> => _.values((await getState()).mergedElements),
 

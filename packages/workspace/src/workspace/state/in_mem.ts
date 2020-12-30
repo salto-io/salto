@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ElemID, GLOBAL_ADAPTER, Value } from '@salto-io/adapter-api'
+import { Element, ElemID, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { PathIndex, createPathIndex, updatePathIndex } from '../path_index'
 import { State, StateData } from './state'
@@ -34,7 +34,6 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     list: async (): Promise<ElemID[]> =>
       Object.keys((await stateData()).elements).map(n => ElemID.fromFullName(n)),
     get: async (id: ElemID): Promise<Element> => ((await stateData()).elements[id.getFullName()]),
-    getSync: (_id: ElemID): Value => (''),
     set: async (element: Element): Promise<void> => {
       (await stateData()).elements[element.elemID.getFullName()] = element
     },

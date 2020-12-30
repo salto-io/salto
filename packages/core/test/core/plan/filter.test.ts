@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import { getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import wu, { WuIterable } from 'wu'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
@@ -23,7 +25,7 @@ import { mockFunction } from '../../common/helpers'
 
 describe('filterInvalidChanges', () => {
   const allElements = mock.getAllElements()
-
+  const elementsSource = new InMemoryRemoteElementSource(allElements)
 
   const mockChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
     async changes => changes
@@ -36,6 +38,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: allElements,
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(0)
@@ -53,6 +56,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: [...allElements, ...newElements],
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(0)
@@ -71,8 +75,8 @@ describe('filterInvalidChanges', () => {
     const newInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_invalid_obj'),
       fields: {
-        valid: { type: BuiltinTypes.STRING },
-        invalid: { type: BuiltinTypes.STRING },
+        valid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       annotations: { value: 'value' },
     })
@@ -80,6 +84,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: [...allElements, newInvalidObj, newInvalidInst],
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(3)
@@ -97,14 +102,15 @@ describe('filterInvalidChanges', () => {
     const newValidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_valid_obj'),
       fields: {
-        valid: { type: BuiltinTypes.STRING },
-        invalid: { type: BuiltinTypes.STRING },
+        valid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       annotations: { value: 'value' },
     })
     const planResult = await getPlan({
       before: allElements,
       after: [...allElements, newValidObj],
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -127,6 +133,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: afterElements,
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -144,6 +151,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: afterElements,
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -166,11 +174,12 @@ describe('filterInvalidChanges', () => {
     const beforeInvalidObj = new ObjectType({ elemID: invalidObjElemId })
     const afterInvalidObj = beforeInvalidObj.clone()
     afterInvalidObj.annotations.new = 'value'
-    afterInvalidObj.annotationTypes.new = BuiltinTypes.STRING
+    afterInvalidObj.annotationRefTypes.new = createRefToElmWithValue(BuiltinTypes.STRING)
     afterInvalidObj.fields.valid = new Field(afterInvalidObj, 'valid', BuiltinTypes.STRING)
     const planResult = await getPlan({
       before: [...allElements, beforeInvalidObj],
       after: [...allElements, afterInvalidObj],
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -192,6 +201,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: beforeElements,
       after: allElements,
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -218,6 +228,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: beforeElements,
       after: afterElements,
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -247,6 +258,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: afterElements,
+      elementsSource,
       changeValidators: { salto: mockMapValueChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -267,7 +279,7 @@ describe('filterInvalidChanges', () => {
     const beforeInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'before_invalid_obj'),
       fields: {
-        invalid: { type: BuiltinTypes.STRING },
+        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
     const beforeInvalidField = beforeInvalidObj.fields.invalid
@@ -275,6 +287,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: [...allElements, beforeInvalidObj, beforeInvalidInst],
       after: allElements,
+      elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(3)

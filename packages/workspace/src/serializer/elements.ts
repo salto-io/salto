@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import {
-  PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType, MapType,
+  PrimitiveType, ElemID, Field, Element, ListType, MapType,
   ObjectType, InstanceElement, isType, isElement, isContainerType,
   ReferenceExpression, TemplateExpression, VariableExpression,
   isInstanceElement, isReferenceExpression, Variable, StaticFile, isStaticFile,
@@ -158,7 +158,7 @@ export const deserialize = async (
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
       reviveElemID(v.elemID).name,
-      v.type,
+      v.refType,
       v.value,
       undefined,
       v.annotations,
@@ -180,25 +180,25 @@ export const deserialize = async (
       annotations: v.annotations,
     }),
     ListType: v => new ListType(
-      v.innerType
+      new ReferenceExpression(v.refInnerType.elemID),
     ),
     MapType: v => new MapType(
-      v.innerType
+      new ReferenceExpression(v.refInnerType.elemID),
     ),
     Field: v => new Field(
       new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
       v.name,
-      v.type,
+      v.refType,
       v.annotations,
     ),
     TemplateExpression: v => (
       new TemplateExpression({ parts: v.parts })
     ),
     ReferenceExpression: v => (
-      new ReferenceExpression(reviveElemID(v.elemId))
+      new ReferenceExpression(reviveElemID(v.elemID))
     ),
     VariableExpression: v => (
-      new VariableExpression(reviveElemID(v.elemId))
+      new VariableExpression(reviveElemID(v.elemID))
     ),
     StaticFile: v => {
       const staticFile = new StaticFile(
@@ -231,15 +231,9 @@ export const deserialize = async (
       ))
     )
   }
-  const elementsMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
-  const builtinMap = _(BuiltinTypes).values().keyBy(b => b.elemID.getFullName()).value()
-  const typeMap = _.merge({}, elementsMap, builtinMap)
   elements.forEach(element => {
     _.keys(element).forEach(k => {
       _.set(element, k, _.cloneDeepWith(_.get(element, k), v => {
-        if (isType(v)) {
-          return typeMap[v.elemID.getFullName()]
-        }
         if (isStaticFile(v)) {
           return staticFiles[v.filepath]
         }

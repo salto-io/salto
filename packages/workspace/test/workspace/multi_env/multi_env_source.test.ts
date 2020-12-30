@@ -299,6 +299,7 @@ describe('multi env source', () => {
   })
   describe('getTotalSize', () => {
     it('should return the total size of all the sources', async () => {
+      // const elms = (await source.getAll()).map(e => e.elemID.getFullName())
       expect(await source.getTotalSize()).toEqual(5 * (await source.getAll()).length)
     })
   })

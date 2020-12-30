@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
 import { ReferenceExpression } from './values'
@@ -45,6 +46,11 @@ export const BuiltinTypes = {
     primitive: PrimitiveTypes.UNKNOWN,
   }),
 }
+
+export const BuiltinTypesByFullName: Record<string, PrimitiveType> = (_.keyBy(
+  Object.values(BuiltinTypes),
+  builtinType => builtinType.elemID.getFullName(),
+))
 
 export const CORE_ANNOTATIONS = {
   DEFAULT: '_default',

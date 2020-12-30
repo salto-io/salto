@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { InstanceElement, getChangeElement, isInstanceElement, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
 import { mockFunction } from '../../common/helpers'
@@ -23,6 +24,7 @@ import { planGenerators } from '../../common/plan_generator'
 
 describe('getPlan', () => {
   const allElements = mock.getAllElements()
+  const elementsSource = new InMemoryRemoteElementSource(allElements)
 
   const {
     planWithTypeChanges,
@@ -33,7 +35,11 @@ describe('getPlan', () => {
   } = planGenerators(allElements)
 
   it('should create empty plan', async () => {
-    const plan = await getPlan({ before: allElements, after: allElements })
+    const plan = await getPlan({
+      before: allElements,
+      after: allElements,
+      elementsSource,
+    })
     expect(plan.size).toBe(0)
   })
 
@@ -52,7 +58,11 @@ describe('getPlan', () => {
   it('should create plan with remove change', async () => {
     const pre = allElements
     const preFiltered = pre.filter(element => element.elemID.name !== 'instance')
-    const plan = await getPlan({ before: pre, after: preFiltered })
+    const plan = await getPlan({
+      before: pre,
+      after: preFiltered,
+      elementsSource,
+    })
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     const removed = _.find(pre, element => element.elemID.name === 'instance')
@@ -79,7 +89,11 @@ describe('getPlan', () => {
     const post = mock.getAllElements()
     const employee = post[4]
     employee.value.name = 'SecondEmployee'
-    const plan = await getPlan({ before: allElements, after: post })
+    const plan = await getPlan({
+      before: allElements,
+      after: post,
+      elementsSource,
+    })
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())
@@ -140,6 +154,7 @@ describe('getPlan', () => {
       plan = await getPlan({
         before,
         after,
+        elementsSource,
         customGroupIdFunctions: {
           salto: async changes => new Map([...changes.entries()].map(([changeId]) => [changeId, 'all'])),
           dummy: dummyGroupKeyFunc,

@@ -17,11 +17,8 @@
 import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
-import {
-  CORE_ANNOTATIONS, BuiltinTypes,
-  ObjectType, ElemID, InstanceElement,
-} from '@salto-io/adapter-api'
-import { applyInstancesDefaults } from '@salto-io/adapter-utils'
+import { CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue, applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
 import { parser } from '@salto-io/workspace'
 import { TelemetryConfig } from './telemetry'
@@ -93,10 +90,16 @@ const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 export const saltoAppConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
-    installationID: { type: BuiltinTypes.STRING, annotations: requireAnno },
-    telemetry: { type: BuiltinTypes.JSON, annotations: requireAnno },
+    installationID: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: requireAnno,
+    },
+    telemetry: {
+      refType: createRefToElmWithValue(BuiltinTypes.JSON),
+      annotations: requireAnno,
+    },
     command: {
-      type: BuiltinTypes.JSON,
+      refType: createRefToElmWithValue(BuiltinTypes.JSON),
       annotations: { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG },
     },
   },
@@ -137,7 +140,7 @@ const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
-  configInstance.type = saltoAppConfigType
+  configInstance.refType = createRefToElmWithValue(saltoAppConfigType)
   applyInstancesDefaults([configInstance])
   return configInstance.value as AppConfig
 }

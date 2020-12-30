@@ -144,7 +144,7 @@ const formatValue = (value: Element | Value): string => {
     return `\n${indent(formattedKeys, 2)}`
   }
   if (value instanceof ReferenceExpression) {
-    return isElement(value.value) ? value.elemId.getFullName() : formatValue(value.value)
+    return isElement(value.value) ? value.elemID.getFullName() : formatValue(value.value)
   }
   return safeJsonStringify(value)
 }

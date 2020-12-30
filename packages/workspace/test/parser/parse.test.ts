@@ -285,7 +285,7 @@ let functions: Functions
           expect(model.fields).toHaveProperty('nicknames')
         })
         it('should have the correct type', () => {
-          expect(model.fields.nicknames.refType.elemID).toEqual(new ElemID('', 'list<salesforce.string>'))
+          expect(model.fields.nicknames.refType.elemID).toEqual(new ElemID('', 'List<salesforce.string>'))
         })
       })
       describe('map field', () => {
@@ -293,7 +293,7 @@ let functions: Functions
           expect(model.fields).toHaveProperty('numChildren')
         })
         it('should have the correct type', () => {
-          expect(model.fields.numChildren.refType.elemID).toEqual(new ElemID('', 'map<salesforce.number>'))
+          expect(model.fields.numChildren.refType.elemID).toEqual(new ElemID('', 'Map<salesforce.number>'))
         })
       })
       describe('field annotations', () => {
@@ -352,16 +352,12 @@ let functions: Functions
         expect(inst.elemID).toEqual(instType.elemID.createNestedID('instance', 'inst'))
       })
       it('should have the right type', () => {
-        expect(inst.getType().elemID).toEqual(instType.elemID)
+        expect(inst.refType.elemID).toEqual(instType.elemID)
       })
       it('should have values', () => {
         expect(inst.value).toHaveProperty('name')
         expect(inst.value.name).toEqual('me')
       })
-      it('should not be setting', () => {
-        expect(inst.getType().isSettings).toBeFalsy()
-      })
-
       it('should have annotations', () => {
         expect(inst.annotations).toHaveProperty('_depends_on')
         // eslint-disable-next-line no-underscore-dangle
@@ -381,14 +377,11 @@ let functions: Functions
         )
       })
       it('should have the right type', () => {
-        expect(config.getType().elemID).toEqual(configTypeId)
+        expect(config.refType.elemID).toEqual(configTypeId)
       })
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')
         expect(config.value.username).toEqual('foo')
-      })
-      it('should not be setting', () => {
-        expect(config.getType().isSettings).toBeFalsy()
       })
     })
 
@@ -447,8 +440,7 @@ let functions: Functions
         )
       })
       it('should have to correct type ID', () => {
-        expect(settingsInstance.getType().elemID).toEqual(settingsType.elemID)
-        expect(settingsInstance.getType().isSettings).toBeTruthy()
+        expect(settingsInstance.refType.elemID).toEqual(settingsType.elemID)
       })
     })
 

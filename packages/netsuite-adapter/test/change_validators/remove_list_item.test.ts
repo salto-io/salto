@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import removeListItemValidator from '../../src/change_validators/remove_list_item'
 import { customTypes } from '../../src/types'
 import { CUSTOM_LIST } from '../../src/constants'
@@ -84,50 +84,6 @@ describe('remove customlist item change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    })
-
-    it('should have change error when removing a reference', async () => {
-      const before = new InstanceElement(
-        'instance',
-        customTypes[CUSTOM_LIST],
-        {
-          list: [
-            new ReferenceExpression(customTypes[CUSTOM_LIST].elemID, 'id1'),
-            new ReferenceExpression(customTypes[CUSTOM_LIST].elemID, 'id2'),
-          ],
-        }
-      )
-
-      const after = before.clone()
-      after.value.list.pop()
-      const changeErrors = await removeListItemValidator(
-        [toChange({ before, after })]
-      )
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
-      expect(changeErrors[0].elemID).toEqual(before.elemID)
-    })
-
-    it('should have change error when removing a scriptid string', async () => {
-      const before = new InstanceElement(
-        'instance',
-        customTypes[CUSTOM_LIST],
-        {
-          list: [
-            '[scriptid=id1]',
-            '[scriptid=id2]',
-          ],
-        }
-      )
-
-      const after = before.clone()
-      after.value.list.pop()
-      const changeErrors = await removeListItemValidator(
-        [toChange({ before, after })]
-      )
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
-      expect(changeErrors[0].elemID).toEqual(before.elemID)
     })
   })
 })

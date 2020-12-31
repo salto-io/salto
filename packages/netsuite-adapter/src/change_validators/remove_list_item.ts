@@ -16,26 +16,15 @@
 import {
   ChangeValidator, getChangeElement, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
-  isReferenceExpression,
   ElemID,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import wu from 'wu'
 import _ from 'lodash'
-import { customTypes } from '../types'
-import { CAPTURE, scriptIdReferenceRegex } from '../constants'
 
 
 const getScriptId = (value: unknown): string | undefined => {
-  if (isReferenceExpression(value)
-    && customTypes[value.elemId.typeName] !== undefined
-    && typeof value.value === 'string') {
-    return value.value
-  }
-  if (typeof value === 'string') {
-    return value.match(scriptIdReferenceRegex)?.groups?.[CAPTURE]
-  }
   if (typeof value === 'object'
     && value !== null
     && 'scriptid' in value) {

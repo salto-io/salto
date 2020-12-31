@@ -44,8 +44,8 @@ const createSettingsType = async (
       client,
       isSettings: true,
       annotations: {
-        suffix: SETTINGS_METADATA_TYPE.toLowerCase(),
-        dirName: SETTINGS_METADATA_TYPE.toLowerCase(),
+        suffix: 'settings',
+        dirName: 'settings',
       },
     })
   } catch (e) {
@@ -109,6 +109,14 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     return [...instancesConfigChanges, ...listObjectsConfigChanges]
   },
+
+  // after onFetch, the settings types have annotations.metadataType === '<name>Settings',
+  // which causes deploy to fail (SALTO-1081).
+  // We currently don't fix the metadata type in a preDeploy & onDeploy mechanism,
+  // since the '<name>Settings' format is required for comparison with the type specified in the
+  // deploy response, which is also in this format (after preDeploy and before onDeploy).
+  // instead, we change the type in the deploy pkg (PR #1727).
+
 })
 
 export default filterCreator

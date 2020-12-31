@@ -245,13 +245,16 @@ describe('XML Transformer', () => {
         zipFiles = await getZipFiles(pkg)
       })
       it('manifest should include "Settings"', () => {
-        expect(zipFiles).toHaveProperty(
-          [addManifestPath],
-          `<Package><version>${API_VERSION}</version><types><name>Settings</name><members>TestSettings</members></types></Package>`
-        )
+        expect(zipFiles).toHaveProperty([addManifestPath])
+        const manifest = xmlParser.parse(zipFiles[addManifestPath])
+        expect(manifest).toHaveProperty('Package.types')
+        expect(manifest.Package.types).toMatchObject({ name: 'Settings', members: 'TestSettings' })
+
         const filePath = `${packageName}/settings/TestSettings.settings`
         expect(zipFiles).toHaveProperty([filePath])
-        expect(zipFiles[filePath]).toMatch('<TestSettings><testField>true</testField></TestSettings>')
+        const manifest2 = xmlParser.parse(zipFiles[filePath])
+        expect(manifest2).toHaveProperty('TestSettings.testField')
+        expect(manifest2.TestSettings.testField).toEqual(true)
       })
     })
   })

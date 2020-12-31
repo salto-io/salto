@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import removeListItemValidator from '../../src/change_validators/remove_list_item'
 import { customTypes } from '../../src/types'
 import { CUSTOM_LIST } from '../../src/constants'
@@ -92,8 +92,8 @@ describe('remove customlist item change validator', () => {
         customTypes[CUSTOM_LIST],
         {
           list: [
-            new ReferenceExpression(new ElemID('netsuite', 'id1'), 'id1'),
-            new ReferenceExpression(new ElemID('netsuite', 'id2'), 'id2'),
+            new ReferenceExpression(customTypes[CUSTOM_LIST].elemID, 'id1'),
+            new ReferenceExpression(customTypes[CUSTOM_LIST].elemID, 'id2'),
           ],
         }
       )

@@ -17,17 +17,19 @@ import {
   ChangeValidator, getChangeElement, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
   isReferenceExpression,
+  ElemID,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import wu from 'wu'
+import _ from 'lodash'
 import { customTypes } from '../types'
 import { CAPTURE, scriptIdReferenceRegex } from '../constants'
 
 
 const getScriptId = (value: unknown): string | undefined => {
   if (isReferenceExpression(value)
-    && !customTypes[value.elemId.typeName] !== undefined
+    && customTypes[value.elemId.typeName] !== undefined
     && typeof value.value === 'string') {
     return value.value
   }
@@ -45,8 +47,9 @@ const getScriptId = (value: unknown): string | undefined => {
   return undefined
 }
 
-const getScriptIdsUnderLists = (instance: InstanceElement): Record<string, Set<string>> => {
-  const pathToscriptIds: Record<string, Set<string>> = {}
+const getScriptIdsUnderLists = (instance: InstanceElement):
+  collections.map.DefaultMap<string, Set<string>> => {
+  const pathToScriptIds = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
   transformValues({
     values: instance.value,
     type: instance.type,
@@ -56,10 +59,7 @@ const getScriptIdsUnderLists = (instance: InstanceElement): Record<string, Set<s
           .map(getScriptId)
           .filter(values.isDefined)
           .forEach(id => {
-            if (!(path.getFullName() in pathToscriptIds)) {
-              pathToscriptIds[path.getFullName()] = new Set()
-            }
-            pathToscriptIds[path.getFullName()].add(id)
+            pathToScriptIds.get(path.getFullName()).add(id)
           })
       }
       return value
@@ -67,34 +67,34 @@ const getScriptIdsUnderLists = (instance: InstanceElement): Record<string, Set<s
     pathID: instance.elemID,
     strict: false,
   })
-  return pathToscriptIds
+  return pathToScriptIds
 }
 
-const doesContain = <T>(firstSet: Set<T>, secondSet: Set<T>): boolean =>
-  wu(firstSet).every(firstValue => secondSet.has(firstValue))
-
-
-const hasItemRemoval = (change: ModificationChange<InstanceElement>): boolean => {
+const getRemovedListItems = (change: ModificationChange<InstanceElement>):
+  {
+    removedListItems: string[]
+    elemID: ElemID
+  } => {
   const idsUnderListsBefore = getScriptIdsUnderLists(change.data.before)
   const idsUnderListsAfter = getScriptIdsUnderLists(change.data.after)
-  return wu.entries(idsUnderListsBefore).some(
+  const removedListItems = wu(idsUnderListsBefore.entries()).map(
     ([path, beforeIds]) =>
-      path in idsUnderListsAfter
-      && !doesContain(beforeIds, idsUnderListsAfter[path])
-  )
+      wu(beforeIds).filter(beforeId => !idsUnderListsAfter.get(path).has(beforeId))
+  ).flatten().toArray()
+  return { removedListItems, elemID: getChangeElement(change).elemID }
 }
 
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .filter(hasItemRemoval)
-    .map(getChangeElement)
-    .map(({ elemID }) => ({
+    .map(getRemovedListItems)
+    .filter(({ removedListItems }) => !_.isEmpty(removedListItems))
+    .map(({ elemID, removedListItems }) => ({
       elemID,
       severity: 'Error',
       message: 'Removing custom type ids from lists is forbidden',
-      detailedMessage: `${elemID.name} has id that were removed from a list`,
+      detailedMessage: `Ids: ${removedListItems} were removed from lists in ${elemID.name}`,
     }))
 )
 

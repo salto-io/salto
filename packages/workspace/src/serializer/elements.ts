@@ -124,11 +124,6 @@ export const serialize = (elements: Element[],
     if (isSaltoSerializable(e)) {
       return saltoClassReplacer(e)
     }
-    // We need to sort objects so that the state file won't change for the same data.
-    if (_.isPlainObject(e)) {
-      return _(e).toPairs().sortBy().fromPairs()
-        .value()
-    }
     return e
   }
 

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../src/constants'
+import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
 import { MetadataTypeAnnotations, MetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
@@ -132,6 +132,14 @@ export const mockTypes = {
         type: new ListType(createMetadataObjectType({ annotations: { metadataType: typeName } })),
       }),
     ),
+  }),
+  TestSettings: createMetadataObjectType({
+    annotations: {
+      metadataType: 'TestSettings',
+      dirName: SETTINGS_METADATA_TYPE.toLowerCase(), // set to this value upon fetch
+      suffix: SETTINGS_METADATA_TYPE.toLowerCase(), // set to this value upon fetch
+    },
+    isSettings: true,
   }),
 }
 

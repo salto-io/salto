@@ -1778,10 +1778,6 @@ export const enums: Record<string, PrimitiveType> = {
     elemID: portlet_kpireport_reportidElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-        values: [],
-        enforce_value: false,
-      }),
     },
     path: [...enumsFolderPath, portlet_kpireport_reportidElemID.name],
   }),

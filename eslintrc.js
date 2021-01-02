@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -52,7 +52,7 @@ module.exports = {
         'header/header': [2, "block",
             [
                 "",
-                "*                      Copyright 2020 Salto Labs Ltd.",
+                "*                      Copyright 2021 Salto Labs Ltd.",
                 "*",
                 "* Licensed under the Apache License, Version 2.0 (the \"License\");",
                 "* you may not use this file except in compliance with",

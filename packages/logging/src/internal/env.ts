@@ -17,6 +17,7 @@ import { validateLogLevel } from './level'
 import { Config, validateFormat } from './config'
 import { toTags } from './log-tags'
 import { validateLogFile } from './log-file'
+import { ValidationError } from './common'
 
 export type Env = { [key: string]: string | undefined }
 
@@ -34,6 +35,12 @@ export const config = (env: Env): Partial<Config> => {
   }
 
   const toBoolean = (val: string): boolean => BOOLEAN_TRUE_VALUES.includes(val)
+  const toNumber = (val: string): number => {
+    if (Number.isNaN(Number(val))) {
+      throw new ValidationError(`invalid value "${val}", expected number`)
+    }
+    return Number(val)
+  }
 
   return {
     minLevel: envKey('LEVEL', validateLogLevel),
@@ -42,5 +49,6 @@ export const config = (env: Env): Partial<Config> => {
     format: envKey('FORMAT', validateFormat),
     colorize: envKey('COLOR', toBoolean),
     globalTags: envKey('GLOBAL_TAGS', toTags),
+    maxJsonMessageSize: envKey('MAX_JSON_MESSAGE_SIZE', toNumber),
   }
 }

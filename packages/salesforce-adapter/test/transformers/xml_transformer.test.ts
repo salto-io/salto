@@ -239,6 +239,24 @@ describe('XML Transformer', () => {
         })
       })
     })
+    describe('with Settings types', () => {
+      beforeEach(async () => {
+        pkg.add(createInstanceElement({ fullName: 'TestSettings', testField: true }, mockTypes.TestSettings))
+        zipFiles = await getZipFiles(pkg)
+      })
+      it('manifest should include "Settings"', () => {
+        expect(zipFiles).toHaveProperty([addManifestPath])
+        const manifest = xmlParser.parse(zipFiles[addManifestPath])
+        expect(manifest).toHaveProperty('Package.types')
+        expect(manifest.Package.types).toMatchObject({ name: 'Settings', members: 'TestSettings' })
+
+        const filePath = `${packageName}/settings/TestSettings.settings`
+        expect(zipFiles).toHaveProperty([filePath])
+        const manifest2 = xmlParser.parse(zipFiles[filePath])
+        expect(manifest2).toHaveProperty('TestSettings.testField')
+        expect(manifest2.TestSettings.testField).toEqual(true)
+      })
+    })
   })
 
   describe('fromRetrieveResult', () => {

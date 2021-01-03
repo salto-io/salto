@@ -45,7 +45,7 @@ import flowFilter from './filters/flow'
 import addMissingIdsFilter from './filters/add_missing_ids'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
-import settingsFilter, { SETTINGS_METADATA_TYPE } from './filters/settings_type'
+import settingsFilter from './filters/settings_type'
 import workflowFilter, { WORKFLOW_FIELD_TO_TYPE } from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
@@ -255,7 +255,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   public constructor({
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
-      SETTINGS_METADATA_TYPE,
+      constants.SETTINGS_METADATA_TYPE,
       'NetworkBranding',
       'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       'CustomIndex', // readMetadata and retrieve fail on this type when fetching by name

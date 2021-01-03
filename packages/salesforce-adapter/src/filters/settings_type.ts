@@ -17,16 +17,13 @@ import _ from 'lodash'
 import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import {
-  createMetadataTypeElements, apiName,
-} from '../transformers/transformer'
+import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { ConfigChangeSuggestion } from '../types'
+import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
 const log = logger(module)
-
-export const SETTINGS_METADATA_TYPE = 'Settings'
 
 // This method receiving settings type name and call to describeMetadataType
 // And creating the new (settings) type
@@ -46,6 +43,10 @@ const createSettingsType = async (
       childTypeNames: new Set(),
       client,
       isSettings: true,
+      annotations: {
+        suffix: 'settings',
+        dirName: 'settings',
+      },
     })
   } catch (e) {
     log.error('failed to fetch settings type %s reason: %o', settingsTypesName, e)
@@ -108,6 +109,14 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     return [...instancesConfigChanges, ...listObjectsConfigChanges]
   },
+
+  // after onFetch, the settings types have annotations.metadataType === '<name>Settings',
+  // which causes deploy to fail (SALTO-1081).
+  // We currently don't fix the metadata type in a preDeploy & onDeploy mechanism,
+  // since the '<name>Settings' format is required for comparison with the type specified in the
+  // deploy response, which is also in this format (after preDeploy and before onDeploy).
+  // instead, we change the type in the deploy pkg (PR #1727).
+
 })
 
 export default filterCreator

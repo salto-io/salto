@@ -82,8 +82,8 @@ const changeValidator: ChangeValidator = async changes => (
     .map(({ elemID, removedListItems }) => ({
       elemID,
       severity: 'Error',
-      message: 'Removing custom type ids from lists is forbidden',
-      detailedMessage: `Ids: ${removedListItems} were removed from lists in ${elemID.name}`,
+      message: 'Removing inner elements from custom types is forbidden',
+      detailedMessage: `Unable to remove the following inner element scriptids from ${elemID.name}: ${removedListItems}`,
     }))
 )
 

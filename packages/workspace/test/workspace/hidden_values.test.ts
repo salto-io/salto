@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType } from '@salto-io/adapter-api'
-import { mergeWithHidden } from '../../src/workspace/hidden_values'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { State } from '../../src/workspace/state'
 import { MergeResult } from '../../src/merger'
+import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
 
 describe('mergeWithHidden', () => {
   const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType => (
@@ -69,6 +70,75 @@ describe('mergeWithHidden', () => {
     it('should still add hidden annotations to the field', () => {
       const type = result.merged.find(isObjectType)
       expect(type?.fields.test.annotations).toHaveProperty('hiddenAnno', 'asd')
+    })
+  })
+
+  describe('hidden_string field', () => {
+    let result: MergeResult
+    beforeEach(() => {
+      const workspaceInstance = new InstanceElement(
+        'instance',
+        new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            test: { type: BuiltinTypes.HIDDEN_STRING },
+          },
+        }),
+      )
+
+      const stateInstance = new InstanceElement(
+        'instance',
+        new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            test: { type: BuiltinTypes.HIDDEN_STRING },
+          },
+        }),
+        { test: 'test' }
+      )
+
+
+      result = mergeWithHidden([workspaceInstance], [stateInstance])
+    })
+    it('should not have merge errors', () => {
+      expect(result.errors).toHaveLength(0)
+    })
+    it('should have the hidden_string value', () => {
+      const instance = result.merged.find(isInstanceElement)
+      expect(instance?.value?.test).toBe('test')
+    })
+  })
+})
+
+describe('handleHiddenChanges', () => {
+  describe('hidden_string field', () => {
+    const instance = new InstanceElement(
+      'instance',
+      new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          test: { type: BuiltinTypes.HIDDEN_STRING },
+        },
+      }),
+      { test: 'test' }
+    )
+
+    const change: DetailedChange = {
+      id: instance.elemID,
+      action: 'add',
+      data: { after: instance },
+    }
+
+    it('hidden_string value should be ommited', async () => {
+      const result = await handleHiddenChanges(
+        [change],
+        jest.fn() as unknown as State,
+        jest.fn().mockResolvedValue([])
+      )
+
+      expect(result.length).toBe(1)
+      expect(getChangeElement(result[0])?.value).toBeDefined()
+      expect(getChangeElement(result[0])?.value.test).toBeUndefined()
     })
   })
 })

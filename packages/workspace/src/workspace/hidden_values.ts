@@ -28,8 +28,12 @@ import { createAddChange, createRemoveChange } from './nacl_files/multi_env/proj
 
 const log = logger(module)
 
+const hasHiddenValueAnnotation = (element?: Element): boolean =>
+  (element?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true)
+
 const isHiddenValue = (element?: Element): boolean => (
-  element?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+  hasHiddenValueAnnotation(element)
+  || (isField(element) && hasHiddenValueAnnotation(element.type))
 )
 
 const isHidden = (element?: Element): boolean => (

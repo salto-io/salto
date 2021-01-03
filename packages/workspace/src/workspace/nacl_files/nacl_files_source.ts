@@ -44,7 +44,7 @@ const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 
-type References = { referenced: ElemID[]; referencesTo: ElemID[] }
+type References<T> = { referenced: T[]; referencesTo: T[] }
 export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
@@ -116,12 +116,12 @@ const getTypeOrContainerTypeID = (typeElem: TypeElement): ElemID => (isContainer
   ? getDeepInnerType(typeElem).elemID
   : typeElem.elemID)
 
-const getElementReferenced = (element: Element): References => {
-  const referenced: ElemID[] = []
-  const referencesTo: ElemID[] = []
+const getElementReferenced = (element: Element): References<string> => {
+  const referenced = new Set<string>()
+  const referencesTo = new Set<string>()
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {
-      referenced.push(getTypeOrContainerTypeID(field.type))
+      referenced.add(getTypeOrContainerTypeID(field.type).getFullName())
     }
     if (isReferenceExpression(value)) {
       const { parent, path: valueIDPath } = value.elemId.createTopLevelParentID()
@@ -129,35 +129,41 @@ const getElementReferenced = (element: Element): References => {
         value.elemId.idType,
         ...valueIDPath.slice(0, index + 1)
       ))
-      referencesTo.push(parent, ...nestedIds)
+      referencesTo.add(parent.getFullName())
+      nestedIds.forEach(id => referencesTo.add(id.getFullName()))
     }
     return value
   }
 
   if (isObjectType(element)) {
-    referenced.push(...Object.values(element.fields)
-      .map(field => getTypeOrContainerTypeID(field.type)))
+    Object.values(element.fields)
+      .map(field => getTypeOrContainerTypeID(field.type))
+      .forEach(id => referenced.add(id.getFullName()))
   }
   if (isInstanceElement(element)) {
-    referenced.push(element.type.elemID)
+    referenced.add(element.type.elemID.getFullName())
   }
-  referenced.push(...Object.values(element.annotationTypes)
-    .map(anno => getTypeOrContainerTypeID(anno)))
+  Object.values(element.annotationTypes)
+    .map(anno => getTypeOrContainerTypeID(anno))
+    .forEach(id => referenced.add(id.getFullName()))
   if (!isContainerType(element) && !isVariable(element)) {
     transformElement({ element, transformFunc, strict: false })
   }
-  return { referenced: _.uniq(referenced), referencesTo: _.uniq(referencesTo) }
+  return { referenced: [...referenced], referencesTo: [...referencesTo] }
 }
 
-const getElementsReferences = (elements: Element[]): References => {
-  const referenced: ElemID[] = []
-  const referencesTo: ElemID[] = []
+const getElementsReferences = (elements: Element[]): References<ElemID> => {
+  const referenced = new Set<string>()
+  const referencesTo = new Set<string>()
   elements.forEach(elem => {
     const references = getElementReferenced(elem)
-    referenced.push(...references.referenced)
-    referencesTo.push(...references.referencesTo)
+    references.referenced.forEach(r => referenced.add(r))
+    references.referencesTo.forEach(r => referencesTo.add(r))
   })
-  return { referenced, referencesTo }
+  return {
+    referenced: [...referenced].map(r => ElemID.fromFullName(r)),
+    referencesTo: [...referencesTo].map(r => ElemID.fromFullName(r)),
+  }
 }
 
 export const toParsedNaclFile = (

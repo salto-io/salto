@@ -114,7 +114,7 @@ export class EditorWorkspace {
       this.workspaceFilename(filename)
     ))?.elements ?? []
     const ids = new Set<string>()
-    const transformFunc = ({ value, path: elemPath }: TransformFuncArgs): Value => {
+    const getReferenceExpressions = ({ value, path: elemPath }: TransformFuncArgs): Value => {
       if (isReferenceExpression(value) && elemPath) {
         if (target.isEqual(value.elemId) || target.isParentOf(value.elemId)) {
           ids.add(elemPath.getFullName())
@@ -124,7 +124,7 @@ export class EditorWorkspace {
     }
     elements.forEach(element => {
       if (!isContainerType(element)) {
-        transformElement({ element, transformFunc, strict: false })
+        transformElement({ element, transformFunc: getReferenceExpressions, strict: false })
       }
     })
     return [...ids].map(id => new errors.UnresolvedReferenceValidationError(
@@ -134,17 +134,17 @@ export class EditorWorkspace {
 
   private async getUnresolvedRefForElement(element: Element):
   Promise<errors.UnresolvedReferenceValidationError[]> {
-    const referencedFiles = await this.getElementReferencesToFiles(element.elemID)
+    const filesWithRefExpToElem = await this.getElementReferencesToFiles(element.elemID)
     return (await Promise.all(
-      referencedFiles.map(file => this.getUnresolvedRefOfFile(element.elemID, file))
+      filesWithRefExpToElem.map(file => this.getUnresolvedRefOfFile(element.elemID, file))
     )).flat()
   }
 
   private async getValidationErrors(files: string[], changes: Change<Element>[]):
   Promise<errors.ValidationError[]> {
-    // We update the validation errors iterativly by validate the following elements:
+    // We update the validation errors iterativly by validating the following elements:
     //   - all the elements in the changed files
-    //   - all the elements to includes reference expressions to them
+    //   - all the elements that includes references expression to removed elements
     //   - all the elements that currently got validation errors
     const elementNamesToValidate = new Set<string>()
     if (this.wsErrors) {
@@ -157,8 +157,7 @@ export class EditorWorkspace {
       file => this.workspace.getParsedNaclFile(this.workspaceFilename(file))
     ))).filter(values.isDefined)
     parsedNaclFiles.forEach(parsed => {
-      (parsed?.elements ?? [])
-        .forEach(elem => elementNamesToValidate.add(elem.elemID.getFullName()))
+      parsed.elements.forEach(elem => elementNamesToValidate.add(elem.elemID.getFullName()))
     })
     const elementsToValidate = (await Promise.all([...elementNamesToValidate]
       .map(name => this.workspace.getElement(ElemID.fromFullName(name)))))

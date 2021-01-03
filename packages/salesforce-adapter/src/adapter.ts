@@ -256,7 +256,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
       constants.SETTINGS_METADATA_TYPE,
-      'NetworkBranding',
       'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       'CustomIndex', // readMetadata and retrieve fail on this type when fetching by name
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)

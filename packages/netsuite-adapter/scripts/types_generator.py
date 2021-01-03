@@ -83,15 +83,16 @@ type_elem_id_template = '''const {type_name}ElemID = new ElemID(constants.NETSUI
 SUBTYPES_FOLDER_PATH_DEF = '''const enumsFolderPath = [constants.NETSUITE, constants.TYPES_PATH, constants.SUBTYPES_PATH]
 
 '''
+enum_restriction_annotation_template = '''
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({{
+        values: {values},
+        enforce_value: false,
+      }}),'''
 
 primitive_string_type_entry_template = '''  {type_name}: new PrimitiveType({{
     elemID: {type_name}ElemID,
     primitive: PrimitiveTypes.STRING,
-    annotations: {{
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({{
-        values: {values},
-        enforce_value: false,
-      }}),
+    annotations: {{{annotations}
     }},
     path: [...enumsFolderPath, {type_name}ElemID.name],
   }}),
@@ -395,8 +396,11 @@ def parse_netsuite_types(account_id, username, password, secret_key_2fa):
 
 
 def generate_enums_file(enum_to_possible_values):
+    def create_restriction_annotation(values):
+        return enum_restriction_annotation_template.format(values = values) if len(values) > 0 else ''
+
     enums_elem_ids_list = [type_elem_id_template.format(type_name = enum_name) for enum_name in enum_to_possible_values.keys()]
-    enums_entries_list = [primitive_string_type_entry_template.format(type_name = enum_name, values = values) for enum_name, values in enum_to_possible_values.items()]
+    enums_entries_list = [primitive_string_type_entry_template.format(type_name = enum_name, annotations = create_restriction_annotation(values)) for enum_name, values in enum_to_possible_values.items()]
     file_content = enums_file_template.format(enums_elem_ids = ''.join(enums_elem_ids_list), enums_entries = ''.join(enums_entries_list))
     with open(TYPES_DIR + 'enums.ts', 'w') as file:
         file.write(file_content)

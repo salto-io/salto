@@ -458,6 +458,28 @@ describe('pino based logger', () => {
         })
       })
     })
+
+    describe('maxJsonMessageSize', () => {
+      it('line should contain empty message', async () => {
+        initialConfig.maxJsonMessageSize = 0
+        initialConfig.format = 'json'
+        logger = createLogger()
+        await logLine({ level: 'warn' })
+        const [lineData] = consoleStream.contents().split('\n')
+        const jsonLine = JSON.parse(lineData)
+        expect(jsonLine.message).toEqual('')
+      })
+    })
+
+    it('line should contain partial message', async () => {
+      initialConfig.maxJsonMessageSize = 4
+      initialConfig.format = 'json'
+      logger = createLogger()
+      await logLine({ level: 'warn' })
+      const [lineData] = consoleStream.contents().split('\n')
+      const jsonLine = JSON.parse(lineData)
+      expect(jsonLine.message).toEqual('hell')
+    })
   })
   describe('log level methods', () => {
     beforeEach(() => {
@@ -764,7 +786,7 @@ describe('pino based logger', () => {
     })
 
     it('should return a Config instance', () => {
-      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags'
+      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonMessageSize'
         .split(' ')
         .sort()
 

@@ -186,6 +186,19 @@ Add tags to all log messages. When configuring this variable via the CLI, make s
 
 Default: {} - Doesn't add any tags to log messages. 
 
+### `maxMessageSize: number | null`
+
+Environment variable:
+
+```bash
+SALTO_LOG_JSON_MAX_MESSAGE_SIZE=3072 # 3K
+```
+
+Configure the max message size of the 'message' element inside of output JSON.
+
+Default: 200 * 1024 - 200K
+
+Supported formatting: Receives only number which signifies the allowed bytes amount
 
 ## <a name="configure_API"></a>setting the logging from the programmatic API
 

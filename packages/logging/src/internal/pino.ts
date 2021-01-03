@@ -46,9 +46,7 @@ type FormatterBaseInput = {
   time: string
   name: string
   stack?: string
-  excessArgs: {
-    [key: string]: unknown
-  }
+  excessArgs: unknown[]
   type?: 'Error'
 }
 
@@ -79,7 +77,7 @@ const formatPrimitiveExcessArg = (
   [formatArgumentKey(i)]: value,
 })
 
-const formatExcessArgs = (excessArgs?: unknown[]): LogTags => {
+const formatExcessArgs = (excessArgs?: FormatterBaseInput['excessArgs']): LogTags => {
   const baseExcessArgs = (excessArgs || [])
   const formattedExcessArgs = {}
   baseExcessArgs.forEach((excessArg, i) => {
@@ -94,7 +92,7 @@ const formatExcessArgs = (excessArgs?: unknown[]): LogTags => {
   return formattedExcessArgs
 }
 
-const textFormat = (
+const textPrettifier = (
   { colorize }: { colorize: boolean }
 ): Formatter => input => {
   const { level: levelNumber, name, message, time: timeJson } = input
@@ -118,10 +116,13 @@ const textFormat = (
 
 const numberOfSpecifiers = (s: string): number => s.match(/%[^%]/g)?.length ?? 0
 
-const formatMessage = (s: string, ...args: unknown[]): [string, unknown[]] => {
+const formatMessage = (config: Config, s: string, ...args: unknown[]): [string, unknown[]] => {
   const n = numberOfSpecifiers(s)
+  const formattedMessage = format(s, ...args.slice(0, n))
   return [
-    format(s, ...args.slice(0, n)),
+    config.format === 'json'
+      ? formattedMessage.slice(0, config.maxJsonMessageSize)
+      : formattedMessage,
     args.slice(n),
   ]
 }
@@ -152,16 +153,14 @@ const toStream = (
     : consoleToStream(consoleStream)
 )
 
-type JsonLogObject = Record<string, unknown> & { excessArgs: unknown[] }
-
 const formatJsonStringValue = (s: string): string => (
   s.match(/^.*(\n|\t|").*$/) ? safeStringify(s) : s
 )
 
-const formatJsonLog = (object: JsonLogObject): Record<string, unknown> => {
+const formatJsonLog = (object: FormatterBaseInput): Record<string, unknown> => {
   const {
     excessArgs, ...logJson
-  } = object as object & { excessArgs: unknown[]}
+  } = object
   const formattedExcessArgs = {}
   Object.entries(formatExcessArgs(excessArgs))
     .forEach(([key, value]) => {
@@ -188,7 +187,7 @@ export const loggerRepo = (
   const rootPinoLogger = pino({
     timestamp: isoTime,
     level: toPinoLogLevel(config.minLevel),
-    prettifier: textFormat,
+    prettifier: textPrettifier,
     prettyPrint: config.format === 'text' ? {
       colorize,
     } : false,
@@ -196,7 +195,7 @@ export const loggerRepo = (
       level: (level: string) => ({ level: level.toLowerCase() }),
       log: (object: object) => {
         // When config is text leave the formatting for prettifier.
-        if (config.format === 'json') return formatJsonLog(object as JsonLogObject)
+        if (config.format === 'json') return formatJsonLog(object as FormatterBaseInput)
         return object
       },
       bindings: (bindings: pino.Bindings) => _.omit(bindings, [...excessDefaultPinoKeys]),
@@ -224,7 +223,7 @@ export const loggerRepo = (
           normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
         )
         const [formatted, unconsumedArgs] = typeof message === 'string'
-          ? formatMessage(message, ...args)
+          ? formatMessage(config, message, ...args)
           : [message, args]
 
         const logArgs = unconsumedArgs.length

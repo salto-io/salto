@@ -24,16 +24,15 @@ import _ from 'lodash'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, SCRIPT_ID,
   PATH,
+  CAPTURE,
+  scriptIdReferenceRegex,
 } from '../constants'
 import { serviceId } from '../transformer'
 import { FilterCreator } from '../filter'
 import { isCustomType } from '../types'
 
-const CAPTURE = 'capture'
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
 const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURE}>\\/(${TEMPLATES_FOLDER_NAME}|${SUITE_SCRIPTS_FOLDER_NAME}|${WEB_SITE_HOSTING_FILES_FOLDER_NAME})\\/.+)]$`)
-// e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
-const scriptIdReferenceRegex = new RegExp(`^\\[${SCRIPT_ID}=(?<${CAPTURE}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]$`)
 
 /**
  * This method tries to capture the serviceId from Netsuite references format. For example:

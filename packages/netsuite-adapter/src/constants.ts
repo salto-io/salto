@@ -64,3 +64,7 @@ export const MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 'maxItemsInImportObjectsReque
 export const DEPLOY_REFERENCED_ELEMENTS = 'deployReferencedElements'
 export const SDF_CONCURRENCY_LIMIT = 'sdfConcurrencyLimit'
 export const CLIENT_CONFIG = 'client'
+
+export const CAPTURE = 'capture'
+// e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
+export const scriptIdReferenceRegex = new RegExp(`^\\[${SCRIPT_ID}=(?<${CAPTURE}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]$`)

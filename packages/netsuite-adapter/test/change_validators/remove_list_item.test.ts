@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import removeCustomListItemValidator from '../../src/change_validators/remove_customlist_item'
+import removeListItemValidator from '../../src/change_validators/remove_list_item'
 import { customTypes } from '../../src/types'
 import { CUSTOM_LIST } from '../../src/constants'
 
@@ -31,7 +31,7 @@ describe('remove customlist item change validator', () => {
             value: 'Value 1',
           },
           {
-            scriptid: 'val_1',
+            scriptid: 'val_2',
             value: 'Value 2',
           },
         ],
@@ -45,7 +45,7 @@ describe('remove customlist item change validator', () => {
 
   describe('When adding new customlist', () => {
     it('should have no change errors when adding a customlist', async () => {
-      const changeErrors = await removeCustomListItemValidator([toChange({ after: instance })])
+      const changeErrors = await removeListItemValidator([toChange({ after: instance })])
       expect(changeErrors).toHaveLength(0)
     })
   })
@@ -60,7 +60,7 @@ describe('remove customlist item change validator', () => {
           value: 'Value 3',
         },
       ]
-      const changeErrors = await removeCustomListItemValidator(
+      const changeErrors = await removeListItemValidator(
         [toChange({ before: instance, after })]
       )
       expect(changeErrors).toHaveLength(0)
@@ -69,7 +69,7 @@ describe('remove customlist item change validator', () => {
     it('should have no change error when modifying a customvalue', async () => {
       const after = instance.clone()
       after.value.customvalues.customvalue[0].value = 'Some Edited Value'
-      const changeErrors = await removeCustomListItemValidator(
+      const changeErrors = await removeListItemValidator(
         [toChange({ before: instance, after })]
       )
       expect(changeErrors).toHaveLength(0)
@@ -78,7 +78,7 @@ describe('remove customlist item change validator', () => {
     it('should have change error when removing a customvalue', async () => {
       const after = instance.clone()
       after.value.customvalues.customvalue.pop()
-      const changeErrors = await removeCustomListItemValidator(
+      const changeErrors = await removeListItemValidator(
         [toChange({ before: instance, after })]
       )
       expect(changeErrors).toHaveLength(1)

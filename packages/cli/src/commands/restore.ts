@@ -26,7 +26,7 @@ import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../wo
 import { getApprovedChanges } from '../callbacks'
 import { createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
-import { EnvArg, ENVIORMENT_OPTION } from './common/env'
+import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
 
 const log = logger(module)
 
@@ -218,7 +218,7 @@ const restoreDef = createPublicCommandDef({
         type: 'boolean',
       },
       SERVICES_OPTION,
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
       {
         name: 'mode',
         alias: 'm',

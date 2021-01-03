@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { setPath } from '@salto-io/adapter-utils'
+import { InstanceElement, DetailedChange, isInstanceElement, getChangeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { parse, dumpElements } from '../parser'
 
@@ -38,14 +39,18 @@ class ConfigParseError extends Error {
 
 export const configSource = (
   dirStore: DirectoryStore<string>,
+  configOverrides?: DetailedChange[],
 ): ConfigSource => {
   const filename = (name: string): string =>
     (name.endsWith(FILE_EXTENSION) ? name : name.concat(FILE_EXTENSION))
+
+  const configOverridesById = _.groupBy(configOverrides, change => change.id.adapter)
 
   return {
     get: async (name: string): Promise<InstanceElement | undefined> => {
       const naclFile = await dirStore.get(filename(name))
       if (_.isUndefined(naclFile)) {
+        log.warn('Could not find file %s for configuration %s', filename(name), name)
         return undefined
       }
       const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
@@ -57,9 +62,21 @@ export const configSource = (
         log.warn('%s has more than a single element in the config file; returning the first element',
           name)
       }
-      return naclFile
-        ? parseResult.elements.pop() as InstanceElement
-        : undefined
+      const configInstance = parseResult.elements.find(isInstanceElement)
+      if (configInstance === undefined) {
+        log.warn(
+          'failed to find config instance for %s, found the following elements: %s',
+          name,
+          parseResult.elements.map(elem => elem.elemID.getFullName()).join(','),
+        )
+        return undefined
+      }
+      // Apply configuration overrides
+      const overridesForInstance = configOverridesById[configInstance.elemID.adapter] ?? []
+      overridesForInstance.forEach(change => {
+        setPath(configInstance, change.id, getChangeElement(change))
+      })
+      return configInstance
     },
 
     set: async (name: string, config: InstanceElement): Promise<void> => {

@@ -23,7 +23,7 @@ import { errorOutputLine, outputLine } from '../outputer'
 import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { EnvArg, ENVIORMENT_OPTION } from './common/env'
+import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
 
 const log = logger(module)
 
@@ -122,7 +122,7 @@ const moveToCommonDef = createPublicCommandDef({
       },
     ],
     keyedOptions: [
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
     ],
   },
   action: moveToCommonAction,
@@ -245,7 +245,7 @@ const cloneDef = createPublicCommandDef({
         type: 'stringsList',
         required: true,
       },
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
       // TODO: Check if needed
       {
         name: 'force',
@@ -334,7 +334,7 @@ const listUnresolvedDef = createPublicCommandDef({
         type: 'string',
         required: false,
       },
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
     ],
   },
   action: listUnresolvedAction,

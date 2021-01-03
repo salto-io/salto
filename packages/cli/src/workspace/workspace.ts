@@ -18,7 +18,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import semver from 'semver'
 import { FetchChange, Tags, loadLocalWorkspace, StepEmitter } from '@salto-io/core'
-import { SaltoError } from '@salto-io/adapter-api'
+import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace, nacl, StateRecency, validator as wsValidator } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -61,6 +61,7 @@ export type LoadWorkspaceOptions = {
   sessionEnv?: string
   services?: string[]
   ignoreUnresolvedRefs?: boolean
+  configOverrides?: DetailedChange[]
 }
 
 type ApplyProgressEvents = {
@@ -181,13 +182,14 @@ export const loadWorkspace = async (
     sessionEnv = undefined,
     services = undefined,
     ignoreUnresolvedRefs = false,
+    configOverrides,
   }: Partial<LoadWorkspaceOptions> = {}
 ): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
 
-  const workspace = await loadLocalWorkspace(workingDir)
+  const workspace = await loadLocalWorkspace(workingDir, configOverrides)
   if (!_.isUndefined(sessionEnv)) {
     if (!(workspace.envs().includes(sessionEnv))) {
       spinner.fail(`Environment ${sessionEnv} isn't configured. Use salto env create.`)

@@ -19,7 +19,7 @@ export type EnvArg = {
     env?: string
 }
 
-export const ENVIORMENT_OPTION: KeyedOption<EnvArg> = {
+export const ENVIRONMENT_OPTION: KeyedOption<EnvArg> = {
   name: 'env',
   alias: 'e',
   required: false,

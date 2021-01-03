@@ -28,8 +28,9 @@ import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatF
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { ENVIORMENT_OPTION, EnvArg } from './common/env'
+import { ENVIRONMENT_OPTION, EnvArg } from './common/env'
 import { SERVICES_OPTION, ServicesArg, getAndValidateActiveServices } from './common/services'
+import { ConfigOverrideArg, getConfigOverrideChanges, CONFIG_OVERRIDE_OPTION } from './common/config_override'
 
 const log = logger(module)
 const { series } = promises.array
@@ -217,7 +218,7 @@ type FetchArgs = {
   interactive: boolean
   stateOnly: boolean
   mode: nacl.RoutingMode
-} & ServicesArg & EnvArg
+} & ServicesArg & EnvArg & ConfigOverrideArg
 
 export const action: CommandDefAction<FetchArgs> = async ({
   input,
@@ -230,8 +231,17 @@ export const action: CommandDefAction<FetchArgs> = async ({
   log.debug('running fetch command on \'%s\' %o', workspacePath, input)
   const { force, interactive, stateOnly, services, env, mode } = input
   const { shouldCalcTotalSize } = config
-  const { workspace, errored, stateRecencies } = await loadWorkspace(workspacePath, output,
-    { force, printStateRecency: true, spinnerCreator, sessionEnv: env })
+  const { workspace, errored, stateRecencies } = await loadWorkspace(
+    workspacePath,
+    output,
+    {
+      force,
+      printStateRecency: true,
+      spinnerCreator,
+      sessionEnv: env,
+      configOverrides: getConfigOverrideChanges(input),
+    }
+  )
   if (errored) {
     cliTelemetry.failure()
     return CliExitCode.AppError
@@ -295,7 +305,8 @@ const fetchDef = createPublicCommandDef({
         type: 'boolean',
       },
       SERVICES_OPTION,
-      ENVIORMENT_OPTION,
+      ENVIRONMENT_OPTION,
+      CONFIG_OVERRIDE_OPTION,
       {
         name: 'mode',
         alias: 'm',

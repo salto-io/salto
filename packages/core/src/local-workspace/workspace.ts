@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import uuidv4 from 'uuid/v4'
+import { DetailedChange } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
   configSource as cs, parseCache, staticFiles, dirStore, WorkspaceComponents } from '@salto-io/workspace'
@@ -167,13 +168,14 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
     encoding: 'utf8',
   }))
 
-export const loadLocalWorkspace = async (lookupDir: string):
-Promise<Workspace> => {
+export const loadLocalWorkspace = async (
+  lookupDir: string, configOverrides?: DetailedChange[],
+): Promise<Workspace> => {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
-  const workspaceConfig = await workspaceConfigSource(baseDir)
+  const workspaceConfig = await workspaceConfigSource(baseDir, undefined, configOverrides)
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
   const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)

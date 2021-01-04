@@ -44,7 +44,6 @@ describe('dummy adapter', () => {
       expect(progressReportMock.reportProgress).toHaveBeenCalledTimes(6)
       expect(progressReportMock.reportProgress).toHaveBeenLastCalledWith({
         details: 'Generation done',
-        completedPercents: 100,
       })
     })
   })

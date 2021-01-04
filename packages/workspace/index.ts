@@ -34,6 +34,7 @@ import { createElementSelector, ElementSelector, validateSelectorsMatches,
   selectElementsBySelectors, createElementSelectors, ElementIDToValue,
   getElementIdsFromSelectorsRecursively } from './src/workspace/element_selector'
 import * as validator from './src/validator'
+import { RemoteMap, RemoteMapOptions } from './src/workspace/remote_map/remote_map'
 
 export {
   errors,
@@ -68,4 +69,6 @@ export {
   createElementSelectors,
   ElementIDToValue,
   getElementIdsFromSelectorsRecursively,
+  RemoteMap,
+  RemoteMapOptions,
 }

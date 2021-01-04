@@ -700,7 +700,10 @@ describe('Test utils.ts', () => {
         objType,
         { f1: 'a', f2: [1, 2, 3], f3: false },
         undefined,
-        { [CORE_ANNOTATIONS.PARENT]: ['me'] },
+        {
+          [CORE_ANNOTATIONS.PARENT]: ['me'],
+          [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+        },
       )
       transformFunc = mockFunction<TransformFunc>().mockImplementation(({ value }) => value)
     })
@@ -854,6 +857,13 @@ describe('Test utils.ts', () => {
           field: expect.any(Field),
           path: inst.elemID.createNestedID(CORE_ANNOTATIONS.PARENT, '0'),
         })
+      })
+
+      it('should copy the annotation type annotations to the field annotations', () => {
+        const callArgs = transformFunc.mock.calls.flat().find(args => args.value === 'someUrl')
+        expect(callArgs?.field).toBeDefined()
+        expect(callArgs?.field?.annotations).toEqual(callArgs?.field?.type.annotations)
+        expect(_.isEmpty(callArgs?.field?.annotations)).toBeFalsy()
       })
     })
   })

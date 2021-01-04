@@ -80,9 +80,13 @@ const fieldMapperGenerator = (
     return name => objType.fields[name]
   }
   const objType = new ObjectType({ elemID: new ElemID('') })
-  return name => (type[name] !== undefined
-    // we set the annotations as type[name].annotations to support hidden_string (or any other type with hidden_value) in instance annotation types.
-    ? new Field(objType, name, type[name], type[name].annotations) : undefined)
+  return name => (
+    type[name] !== undefined
+      // we set the annotations as type[name].annotations to support hidden_string
+      // (or any other type with hidden_value) in instance annotation types.
+      ? new Field(objType, name, type[name], type[name].annotations)
+      : undefined
+  )
 }
 
 export type TransformFuncArgs = {

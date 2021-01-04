@@ -15,10 +15,10 @@
 */
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement,
-  ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
+  ElemIdGetter, FetchResult, AdapterOperations, ChangeGroup, DeployResult, ProgressReporter,
 } from '@salto-io/adapter-api'
 import {
-  resolveChangeElement, restoreChangeElement,
+  resolveChangeElement, restoreChangeElement, reportProgress,
 } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
@@ -378,8 +378,9 @@ export default class SalesforceAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  async fetch(): Promise<FetchResult> {
+  async fetch(progressReporter?: ProgressReporter): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
+    reportProgress('Fetching types', progressReporter)
     const fieldTypes = Types.getAllFieldTypes()
     const missingTypes = Types.getAllMissingTypes()
     const annotationTypes = Types.getAnnotationTypes()
@@ -388,11 +389,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataTypeInfos,
       annotationTypes,
     )
-    const metadataInstances = this.fetchMetadataInstances(metadataTypeInfos, metadataTypes)
 
-    const elements = _.flatten(
-      await Promise.all([annotationTypes, fieldTypes, missingTypes,
-        metadataTypes]) as Element[][]
+    const elements = [
+      ...annotationTypes, ...fieldTypes, ...missingTypes, ...(await metadataTypes),
+    ] as Element[]
+    const metadataInstances = this.fetchMetadataInstances(
+      metadataTypeInfos, metadataTypes, progressReporter
     )
 
     const {
@@ -401,6 +403,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     } = await metadataInstances
     elements.push(...metadataInstancesElements)
 
+    reportProgress('Running filters on the elements', progressReporter)
     const filtersConfigChanges = (
       await this.filtersRunner.onFetch(elements)
     ) as ConfigChangeSuggestion[]
@@ -409,6 +412,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       configChangeSuggestions,
       this.userConfig,
     )
+    reportProgress('Finished to fetch elements', progressReporter)
     if (_.isUndefined(config)) {
       return { elements }
     }
@@ -484,7 +488,9 @@ export default class SalesforceAdapter implements AdapterOperations {
 
   @logDuration('fetching instances')
   private async fetchMetadataInstances(
-    typeInfoPromise: Promise<MetadataObject[]>, types: Promise<TypeElement[]>
+    typeInfoPromise: Promise<MetadataObject[]>,
+    types: Promise<TypeElement[]>,
+    progressReporter?: ProgressReporter,
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
@@ -507,7 +513,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         topLevelTypeNames.includes(apiName(t))
         || t.annotations.folderContentType !== undefined
       ))
-
+    reportProgress(`Going to read instances of ${topLevelTypes.length} types`, progressReporter)
     const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(
       topLevelTypes,
       t => this.metadataToRetrieve.includes(apiName(t)),

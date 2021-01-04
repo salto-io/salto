@@ -20,6 +20,7 @@ import {
   CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
   getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
 } from '@salto-io/adapter-api'
+import { reportProgress } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
@@ -520,21 +521,18 @@ export const generateElements = (
       }
     ).flat()
   }
-  const reportProgress = (details: string, completedPercents: number): void => {
-    if (progressReporter) progressReporter.reportProgress({ details, completedPercents })
-  }
   const defaultTypes = [defaultObj, permissionsType, profileType]
-  reportProgress('Generating primitive types', 10)
+  reportProgress('Generating primitive types', progressReporter)
   const primtiveTypes = generatePrimitiveTypes()
-  reportProgress('Generating types', 30)
+  reportProgress('Generating types', progressReporter)
   const types = generateTypes()
-  reportProgress('Generating objects', 50)
+  reportProgress('Generating objects', progressReporter)
   const objects = generateObjects()
-  reportProgress('Generating records', 70)
+  reportProgress('Generating records', progressReporter)
   const records = generateRecords()
-  reportProgress('Generating profile likes', 90)
+  reportProgress('Generating profile likes', progressReporter)
   const profiles = generateProfileLike(params.useOldProfiles)
-  reportProgress('Generation done', 100)
+  reportProgress('Generation done', progressReporter)
   return [
     ...defaultTypes,
     ...primtiveTypes,

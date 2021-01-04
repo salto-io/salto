@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2020 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/utils'
-export * from './src/nacl_case_utils'
-export * from './src/change_validator'
-export * from './src/deploy'
-export * from './src/compare'
-export * from './src/progress'
+import { ProgressReporter } from '@salto-io/adapter-api'
+
+export const reportProgress = (details: string, progressReporter?: ProgressReporter): void => {
+  if (progressReporter) progressReporter.reportProgress({ details })
+}

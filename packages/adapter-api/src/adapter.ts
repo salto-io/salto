@@ -35,7 +35,6 @@ export type DeployResult = {
 
 export type Progress = {
   details: string
-  completedPercents: number
 }
 
 export type ProgressReporter = {

@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
 import { State } from '../../src/workspace/state'
 import { MergeResult } from '../../src/merger'
-import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
+import { handleHiddenChanges, mergeWithHidden } from '../../src/workspace/hidden_values'
 
 describe('mergeWithHidden', () => {
   const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType => (
@@ -73,16 +73,13 @@ describe('mergeWithHidden', () => {
     })
   })
 
-  describe('hidden_string field', () => {
+  describe('hidden_string in instance annotation', () => {
     let result: MergeResult
     beforeEach(() => {
       const workspaceInstance = new InstanceElement(
         'instance',
         new ObjectType({
           elemID: new ElemID('test', 'type'),
-          fields: {
-            test: { type: BuiltinTypes.HIDDEN_STRING },
-          },
         }),
       )
 
@@ -90,11 +87,10 @@ describe('mergeWithHidden', () => {
         'instance',
         new ObjectType({
           elemID: new ElemID('test', 'type'),
-          fields: {
-            test: { type: BuiltinTypes.HIDDEN_STRING },
-          },
         }),
-        { test: 'test' }
+        {},
+        undefined,
+        { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' }
       )
 
 
@@ -105,7 +101,7 @@ describe('mergeWithHidden', () => {
     })
     it('should have the hidden_string value', () => {
       const instance = result.merged.find(isInstanceElement)
-      expect(instance?.value?.test).toBe('test')
+      expect(instance?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('someUrl')
     })
   })
 })
@@ -116,11 +112,10 @@ describe('handleHiddenChanges', () => {
       'instance',
       new ObjectType({
         elemID: new ElemID('test', 'type'),
-        fields: {
-          test: { type: BuiltinTypes.HIDDEN_STRING },
-        },
       }),
-      { test: 'test' }
+      {},
+      undefined,
+      { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' }
     )
 
     const change: DetailedChange = {
@@ -129,7 +124,7 @@ describe('handleHiddenChanges', () => {
       data: { after: instance },
     }
 
-    it('hidden_string value should be ommited', async () => {
+    it('hidden_string value should be omitted', async () => {
       const result = await handleHiddenChanges(
         [change],
         jest.fn() as unknown as State,
@@ -137,8 +132,9 @@ describe('handleHiddenChanges', () => {
       )
 
       expect(result.length).toBe(1)
-      expect(getChangeElement(result[0])?.value).toBeDefined()
-      expect(getChangeElement(result[0])?.value.test).toBeUndefined()
+      expect(getChangeElement(result[0])).toBeDefined()
+      expect(getChangeElement(result[0])?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL])
+        .toBeUndefined()
     })
   })
 })

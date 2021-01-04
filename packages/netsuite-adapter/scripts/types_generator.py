@@ -31,7 +31,7 @@ INNER_TYPE_NAME_TO_DEF = 'inner_type_name_to_def'
 TYPE_DEF = 'type_def'
 
 LICENSE_HEADER = '''/*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with

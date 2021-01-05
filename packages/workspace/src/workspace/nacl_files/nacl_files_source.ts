@@ -101,16 +101,19 @@ const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer
   buffer: naclFile.buffer,
 })
 
-// This assumes < and > will only be in container types' ElemID
+// This assumes List</Map< will only be in container types' ElemID and that they have closing >
 const getTypeOrContainerTypeID = (elemID: ElemID): ElemID => {
   const fullName = elemID.getFullName()
-  const deepInnerTypeStart = fullName.lastIndexOf('<')
+  const deepInnerTypeStart = _.max([
+    fullName.lastIndexOf('List<'),
+    fullName.lastIndexOf('Map<'),
+  ])
   const deepInnerTypeEnd = fullName.indexOf('>')
-  if (deepInnerTypeStart === -1 && deepInnerTypeEnd === -1) {
+  if ((deepInnerTypeStart === -1 || deepInnerTypeStart === undefined) && deepInnerTypeEnd === -1) {
     return elemID
   }
-  if (deepInnerTypeEnd < deepInnerTypeStart
-    || deepInnerTypeStart === -1 || deepInnerTypeEnd === -1) {
+  if (deepInnerTypeStart === undefined || deepInnerTypeStart === -1
+    || deepInnerTypeEnd < deepInnerTypeStart) {
     throw new Error(`Invalid < > structure in ElemID - ${fullName}`)
   }
   return ElemID.fromFullName(fullName.substr(deepInnerTypeStart, deepInnerTypeEnd))

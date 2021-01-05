@@ -14,11 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, isObjectType, isInstanceElement, Value, ReferenceExpression, TemplateExpression, isVariable, isReferenceExpression, isVariableExpression, isElement, Field, ReadOnlyElementsSource, isType } from '@salto-io/adapter-api'
+import { ElemID, Element, isObjectType, isInstanceElement, Value, ReferenceExpression, TemplateExpression, isVariable, isReferenceExpression, isVariableExpression, isElement, Field, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { resolvePath, createRefToElmWithValue } from '@salto-io/adapter-utils'
-// import { collections } from '@salto-io/lowerdash'
-
-// const { asynciterable } = collections
 
 type Resolver<T> = (
   v: T,
@@ -131,7 +128,10 @@ const resolveElement = (
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
 ): void => {
-  const proxyElementSource = {
+  // Create a ReadonlyElementSource (ElementsGetter) with the proper context
+  // to be used to resolve types. If it was already resolved use the reolsved and if not
+  // fallback to the elementsSource
+  const contextedElementsGetter = {
     getSync: (id: ElemID): Value =>
       (getResolvedElement(id, elementsSource, resolvedElements)),
   }
@@ -142,7 +142,7 @@ const resolveElement = (
   )
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
-    element.refType = createRefToElmWithValue(element.getType(proxyElementSource))
+    element.refType = createRefToElmWithValue(element.getType(contextedElementsGetter))
   }
 
   if (isObjectType(element)) {
@@ -151,7 +151,7 @@ const resolveElement = (
       field => (new Field(
         element,
         field.name,
-        field.getType(proxyElementSource),
+        field.getType(contextedElementsGetter),
         _.cloneDeepWith(field.annotations, referenceCloner),
       )),
     )
@@ -161,28 +161,9 @@ const resolveElement = (
     element.value = _.cloneWith(element.value, referenceCloner)
   }
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
-  // This is a workaround because annotationTypes are not Fields
-  // and do not have getType
-  // const dummyAnnoTypeObj = new ObjectType({
-  //   elemID: new ElemID(GLOBAL_ADAPTER, 'dummyAnnoType'), // dummy elemID, it's not really used
-  //   fields: _.mapValues(
-  //     element.annotationRefTypes,
-  //     refType => ({ refType }),
-  //   ),
-  // })
-  // element.annotationRefTypes = _.mapValues(
-  //   dummyAnnoTypeObj.fields,
-  //   dummyField => (createRefToElmWithValue(dummyField.getType(proxyElementSource)))
-  // )
   element.annotationRefTypes = _.mapValues(
-    element.annotationRefTypes,
-    refType => {
-      const resolvedType = getResolvedElement(refType.elemID, elementsSource, resolvedElements)
-      if (!isType(resolvedType)) {
-        throw new Error(`annotationType ${refType.elemID.getFullName()}'s type (${refType.elemID.getFullName()}) did not resolve to TypeElement`)
-      }
-      return createRefToElmWithValue(resolvedType)
-    }
+    element.getAnnotationTypes(contextedElementsGetter),
+    type => createRefToElmWithValue(type)
   )
 }
 

@@ -45,12 +45,12 @@ export const getSubElement = (
   pathParts: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
 ): SubElementSearchResult | undefined => {
-  const getChildElement = (source: TypeElement, key: string): Field | TypeElement| undefined => {
-    if ((isIndexPathPart(key) && isListType(source)) || isMapType(source)) {
-      return source.getInnerType(elementsSource)
+  const getChildElement = (type: TypeElement, key: string): Field | TypeElement | undefined => {
+    if ((isIndexPathPart(key) && isListType(type)) || isMapType(type)) {
+      return type.getInnerType(elementsSource)
     }
-    if (source.annotationRefTypes[key]) return source.getAnnotationTypes(elementsSource)[key]
-    if (isObjectType(source)) return source.fields[key]
+    if (type.annotationRefTypes[key]) return type.getAnnotationTypes(elementsSource)?.[key]
+    if (isObjectType(type)) return type.fields[key]
     return undefined
   }
 

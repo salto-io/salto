@@ -34,7 +34,7 @@
     "@salto-io/adapter-utils": "0.2.1",
     "@salto-io/logging": "0.2.1",
     "@salto-io/lowerdash": "0.2.1",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
     "humanize-duration": "^3.22.0",
     "lodash": "^4.17.19"

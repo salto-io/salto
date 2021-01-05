@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
-import { Element } from '@salto-io/adapter-api'
+import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import rocksdb from 'rocksdb'
 import { promisify } from 'util'
 import { serialization, RemoteMap } from '@salto-io/workspace'
@@ -51,6 +51,12 @@ const createMap = async (namespace:
     elem => elem.elemID.getFullName()
   )
 
+async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element> {
+  for (const elem of iterable) {
+    yield elem
+  }
+}
+
 describe('test operations on remote db', () => {
   const elements = createElements()
   beforeEach(async () => {
@@ -66,34 +72,46 @@ describe('test operations on remote db', () => {
   })
 
   it('put all and then list finds all keys', async () => {
-    async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element> {
-      for (const elem of iterable) {
-        yield elem
-      }
-    }
-    await remoteMap.putAll(await createAsyncIterable(elements))
-    const iter = await remoteMap.list()
+    await remoteMap.putAll(createAsyncIterable(elements))
+    const iter = remoteMap.list()
     const res: string[] = []
     for await (const elemId of iter) {
       res.push(elemId)
     }
-    expect(res.sort()).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+    expect(res).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+  })
+
+  it('when overriden, returns new value', async () => {
+    await remoteMap.putAll(createAsyncIterable(elements))
+    await remoteMap.flush()
+    const cloneElements = elements.map(elem => elem.clone())
+    const changedElement = cloneElements[0] as ObjectType
+    const changedValue = Object.values(changedElement.fields)[0]
+    changedValue.name += 'A CHANGE'
+    changedElement.fields = { [Object.keys(changedElement.fields)[0].concat('A CHANGE')]:
+      changedValue }
+    await remoteMap.set(cloneElements[0].elemID.getFullName(), cloneElements[0])
+    const iter = remoteMap.values()
+    const res: Element[] = []
+    const elemToFieldNameMapping = (elem: Element): string | undefined =>
+      (isObjectType(elem) ? Object.values((elem as ObjectType).fields)
+        .map(field => field.name).sort().toString() : undefined)
+    for await (const element of iter) {
+      res.push(element)
+    }
+    expect(res.map(elemToFieldNameMapping)).toEqual(cloneElements.sort((a, b) =>
+      (a.elemID.getFullName() < b.elemID.getFullName() ? -1 : 1))
+      .map(elemToFieldNameMapping))
   })
 
   it('put all and then values finds all values', async () => {
-    async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element> {
-      for (const elem of iterable) {
-        yield elem
-      }
-    }
     await remoteMap.putAll(await createAsyncIterable(elements))
     const iter = remoteMap.values()
     const res: Element[] = []
     for await (const element of iter) {
       res.push(element)
     }
-
-    expect(res.map(elem => elem.elemID.getFullName()).sort())
+    expect(res.map(elem => elem.elemID.getFullName()))
       .toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
   })
 })
@@ -103,11 +121,6 @@ describe('full integration', () => {
     remoteMap = await createMap('integration')
     const elements = createElements()
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
-    async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element> {
-      for (const elem of iterable) {
-        yield elem
-      }
-    }
     await remoteMap.putAll(await createAsyncIterable(elements.slice(1, elements.length)))
     await remoteMap.flush()
     const iter = remoteMap.values()
@@ -115,7 +128,7 @@ describe('full integration', () => {
     for await (const element of iter) {
       res.push(element)
     }
-    expect(_.uniq(res.map(elem => elem.elemID.getFullName())).sort()).toEqual(elements
+    expect(_.uniq(res.map(elem => elem.elemID.getFullName()))).toEqual(elements
       .map(elem => elem.elemID.getFullName()).sort())
     await remoteMap.close()
     const db = rocksdb(DB_LOCATION)
@@ -144,11 +157,11 @@ describe('full integration', () => {
       }),
     }
     for await (const id of iterable) {
-      if (id) {
+      if (id && id.includes('integration::')) {
         ids.push(id)
       }
     }
-    expect(ids.sort()).toEqual(elements.map(elem => 'integration::'
+    expect(ids).toEqual(elements.map(elem => 'integration::'
       .concat(elem.elemID.getFullName())).sort())
   })
 })

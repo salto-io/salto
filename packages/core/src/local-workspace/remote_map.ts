@@ -32,8 +32,8 @@ const readIteratorNext = (iterator: rocksdb
   new Promise<Entry<string> | undefined>(resolve => {
     const callback = (_err: Error | undefined, key: RocksDBValue, value: RocksDBValue): void => {
       const keyAsString = key?.toString()
-      const cleanKey = keyAsString ? keyAsString.substr(keyAsString
-        .indexOf(NAMESPACE_SEPARATOR) + NAMESPACE_SEPARATOR.length) : undefined
+      const cleanKey = keyAsString?.substr(keyAsString
+        .indexOf(NAMESPACE_SEPARATOR) + NAMESPACE_SEPARATOR.length)
       if (value !== undefined && cleanKey !== undefined) {
         resolve({ key: cleanKey, value: value.toString() })
       } else {
@@ -46,9 +46,9 @@ const readIteratorNext = (iterator: rocksdb
 type RocksDBValue = string | Buffer | undefined
 
 async function *aggregatedIterable(iterators: rocksdb.Iterator[]): AsyncIterable<Entry<string>> {
-  const latestEntries: (Entry<string> | undefined)[] = []
-  await Promise.all(iterators.map(async iter => {
-    latestEntries.push(await readIteratorNext(iter))
+  const latestEntries: (Entry<string> | undefined)[] = Array.from({ length: iterators.length })
+  await Promise.all(iterators.map(async (iter, i) => {
+    latestEntries[i] = await readIteratorNext(iter)
   }))
   let done = false
   while (!done) {

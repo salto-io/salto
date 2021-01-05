@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 export type RemoteMapOptions = {
-  batchInterval: number,
-  LRUSize: number,
-  dbLocation: string,
+  batchInterval: number
+  LRUSize: number
+  dbLocation: string
 }
 export type RemoteMap<T> = {
   get: (key: string) => Promise<T | undefined>

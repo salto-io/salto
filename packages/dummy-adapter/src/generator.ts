@@ -521,17 +521,17 @@ export const generateElements = (
     ).flat()
   }
   const defaultTypes = [defaultObj, permissionsType, profileType]
-  progressReporter.reportProgress({ details: 'Generating primitive types' })
+  progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = generatePrimitiveTypes()
-  progressReporter.reportProgress({ details: 'Generating types' })
+  progressReporter.reportProgress({ message: 'Generating types' })
   const types = generateTypes()
-  progressReporter.reportProgress({ details: 'Generating objects' })
+  progressReporter.reportProgress({ message: 'Generating objects' })
   const objects = generateObjects()
-  progressReporter.reportProgress({ details: 'Generating records' })
+  progressReporter.reportProgress({ message: 'Generating records' })
   const records = generateRecords()
-  progressReporter.reportProgress({ details: 'Generating profile likes' })
+  progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
-  progressReporter.reportProgress({ details: 'Generation done' })
+  progressReporter.reportProgress({ message: 'Generation done' })
   return [
     ...defaultTypes,
     ...primtiveTypes,

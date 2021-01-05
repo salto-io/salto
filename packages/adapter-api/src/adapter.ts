@@ -34,7 +34,7 @@ export type DeployResult = {
 }
 
 export type Progress = {
-  details: string
+  message: string
 }
 
 export type ProgressReporter = {

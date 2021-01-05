@@ -328,7 +328,7 @@ describe('fetch', () => {
       describe('when adapter progress is reported ', () => {
         beforeEach(async () => {
           mockAdapters.dummy.fetch.mockImplementationOnce(fetchOpts => {
-            fetchOpts.progressReporter.reportProgress({ details: 'done' })
+            fetchOpts.progressReporter.reportProgress({ message: 'done' })
             return Promise.resolve({ elements: [newTypeBase, newTypeExt] })
           })
           const result = await fetchChanges(
@@ -344,7 +344,7 @@ describe('fetch', () => {
           expect(progressEmitter.emit).toHaveBeenCalledTimes(3)
           expect(progressEmitter.emit).toHaveBeenCalledWith('changesWillBeFetched', expect.anything(), expect.anything())
           expect(progressEmitter.emit).toHaveBeenCalledWith('diffWillBeCalculated', expect.anything())
-          expect(progressEmitter.emit).toHaveBeenCalledWith('adapterProgress', 'dummy', 'fetch', { details: 'done' })
+          expect(progressEmitter.emit).toHaveBeenCalledWith('adapterProgress', 'dummy', 'fetch', { message: 'done' })
         })
       })
     })

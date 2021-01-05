@@ -18,7 +18,7 @@ import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, isReferenceExpression, ReferenceExpression, CORE_ANNOTATIONS,
   TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
-  Change, FetchOptions,
+  Change, FetchOptions, ProgressReporter,
 } from '@salto-io/adapter-api'
 import {
   findElement, naclCase,
@@ -48,6 +48,7 @@ import {
   findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject,
   findFullCustomObject,
   MockInterface,
+  MockFunction,
 } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
@@ -107,8 +108,9 @@ describe('Salesforce adapter E2E with real account', () => {
   ].join(constants.API_NAME_SEPARATOR)
 
   beforeAll(async () => {
+    const mockReportProgress: MockFunction<ProgressReporter['reportProgress']> = jest.fn()
     const mockFetchOpts: MockInterface<FetchOptions> = {
-      progressReporter: { reportProgress: jest.fn() },
+      progressReporter: { reportProgress: mockReportProgress },
     }
     await verifyElementsExist(client)
     result = (await adapter.fetch(mockFetchOpts)).elements

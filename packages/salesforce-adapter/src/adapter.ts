@@ -391,7 +391,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const elements = [
       ...annotationTypes, ...fieldTypes, ...missingTypes, ...(await metadataTypes),
     ] as Element[]
-    progressReporter.reportProgress({ details: 'Fetched all types. Reading instances' })
+    progressReporter.reportProgress({ message: 'Finished fetching types. Fetching instances' })
 
     const {
       elements: metadataInstancesElements,
@@ -399,7 +399,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     } = await metadataInstances
     elements.push(...metadataInstancesElements)
 
-    progressReporter.reportProgress({ details: 'Running filters on the elements' })
+    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
     const filtersConfigChanges = (
       await this.filtersRunner.onFetch(elements)
     ) as ConfigChangeSuggestion[]

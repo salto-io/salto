@@ -73,7 +73,7 @@ describe('api.ts', () => {
   const mockAdapterOps = {
     fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
     deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(
-      deployOpts => Promise.resolve({ errors: [], appliedChanges: deployOpts.changeGroup.changes })
+      ({ changeGroup }) => Promise.resolve({ errors: [], appliedChanges: changeGroup.changes })
     ),
   }
 
@@ -245,8 +245,8 @@ describe('api.ts', () => {
           return { action: 'add', data: { after: cloned } }
         }
         mockAdapterOps.deploy.mockClear()
-        mockAdapterOps.deploy.mockImplementationOnce(async deployOpts => ({
-          appliedChanges: deployOpts.changeGroup.changes
+        mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
+          appliedChanges: changeGroup.changes
             .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
           errors: [],
         }))
@@ -319,8 +319,8 @@ describe('api.ts', () => {
         })
 
         mockAdapterOps.deploy.mockClear()
-        mockAdapterOps.deploy.mockImplementationOnce(async deployOpts => ({
-          appliedChanges: deployOpts.changeGroup.changes.filter(isModificationChange),
+        mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
+          appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [new Error('cannot add new employee')],
         }))
         result = await api.deploy(ws, actionPlan, jest.fn(), SERVICES)

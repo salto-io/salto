@@ -45,7 +45,7 @@ describe('dummy adapter', () => {
       await adapter.fetch({ progressReporter: progressReportMock })
       expect(progressReportMock.reportProgress).toHaveBeenCalledTimes(6)
       expect(progressReportMock.reportProgress).toHaveBeenLastCalledWith({
-        details: 'Generation done',
+        message: 'Generation done',
       })
     })
   })

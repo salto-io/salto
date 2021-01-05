@@ -186,20 +186,10 @@ const resolveElement = (
   )
 }
 
-// const printElementsSourceId = (elm: ElementsSource): void => {
-//   elm.list().then(a => {
-//     asynciterable.toArrayAsync(a).then(ar => {
-//       console.log(ar.map(z => z.getFullName()).join(','))
-//       throw new Error(ar.map(z => z.getFullName()).join(','))
-//     })
-//   })
-// }
-
 export const resolve = (
   elements: ReadonlyArray<Element>,
   elementsSource: ReadOnlyElementsSource,
 ): Element[] => {
-  // printElementsSourceId(elementsSource)
   // intentionally shallow clone because in resolve element we replace only top level properties
   const clonedElements = elements.map(_.clone)
   const resolvedElements = _.keyBy(

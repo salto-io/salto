@@ -27,8 +27,7 @@ import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_f
 import { calcNewMerged } from './nacl_files/elements_cache'
 import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
-import { Errors, ServiceDuplicationError, EnvDuplicationError,
-  UnknownEnvError, DeleteCurrentEnvError } from './errors'
+import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
@@ -176,10 +175,6 @@ export const loadWorkspace = async (
     )
     const merged = calcNewMerged(current.merged, mergeRes.merged, changedElementIDs)
     return {
-      // TODO: This was important, now deleted
-      // merged: updateMergedTypes(
-      //  merged, _.keyBy(merged.filter(isType), e => e.elemID.getFullName())
-      // ),
       merged,
       errors: calcNewMerged(current.errors, mergeRes.errors, changedElementIDs),
     }
@@ -204,8 +199,15 @@ export const loadWorkspace = async (
     mode?: RoutingMode
   ): Promise<void> => {
     const { merged } = await elements()
+    const stateElements = (await state().getAll())
     const changesAfterHiddenRemoved = await handleHiddenChanges(
-      changes, state(), naclFilesSource.getAll, new InMemoryRemoteElementSource(merged),
+      changes,
+      state(),
+      naclFilesSource.getAll,
+      new InMemoryRemoteElementSource([
+        ...merged,
+        ...stateElements,
+      ]),
     )
     const elementChanges = await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
     workspaceState = buildWorkspaceState({ changes: elementChanges })
@@ -268,13 +270,17 @@ export const loadWorkspace = async (
 
   const errors = async (): Promise<Errors> => {
     const resolvedElements = await elements()
+    const stateElements = await state().getAll()
     const errorsFromSource = await naclFilesSource.getErrors()
     return new Errors({
       ...errorsFromSource,
       merge: [...errorsFromSource.merge, ...resolvedElements.errors],
       validation: validateElements(
         resolvedElements.merged,
-        new InMemoryRemoteElementSource(resolvedElements.merged)
+        new InMemoryRemoteElementSource([
+          ...resolvedElements.merged,
+          ...stateElements,
+        ])
       ),
     })
   }

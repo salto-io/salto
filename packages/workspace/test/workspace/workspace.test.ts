@@ -17,8 +17,8 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isListType, isInstanceElement, isType, isField,
-  isObjectType, ContainerType,
+  Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField,
+  isObjectType, ContainerType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -235,7 +235,7 @@ describe('workspace', () => {
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
-      const err = 'Expected {'
+      const err = 'Expected block labels, found { instead.'
       expect(errors.strings()[0]).toMatch(err)
       expect(errors.parse[0].message).toMatch(err)
 
@@ -366,11 +366,11 @@ describe('workspace', () => {
         fields: {
           // eslint-disable-next-line @typescript-eslint/camelcase
           new_base: {
-            refType: createRefToElmWithValue(salesforceText),
+            refType: new ReferenceExpression(salesforceText.elemID),
           },
           // eslint-disable-next-line @typescript-eslint/camelcase
           ext_field: {
-            refType: createRefToElmWithValue(salesforceText),
+            refType: new ReferenceExpression(salesforceText.elemID),
             annotations: {
               [CORE_ANNOTATIONS.DEFAULT]: 'foo',
             },
@@ -899,6 +899,7 @@ describe('workspace', () => {
     let elemMap: Record<string, Element>
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
+    let elementsSource: InMemoryRemoteElementSource
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -920,7 +921,8 @@ describe('workspace', () => {
       //   }
       //   return e
       // })
-      const stateElements = resolve(elements, new InMemoryRemoteElementSource(elements))
+      elementsSource = new InMemoryRemoteElementSource(elements)
+      const stateElements = resolve(elements, elementsSource)
       const stateElementsById = _.keyBy(stateElements, elem => elem.elemID.getFullName())
       const changesByElem = _.groupBy(
         changes,
@@ -1035,14 +1037,14 @@ describe('workspace', () => {
     it('should change instance type if type was modified', () => {
       const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
       const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlock.instance.instWithoutAnnotationsBlock'] as InstanceElement
-      expect(changedInstance.refType.elemID).toBe(changedType.elemID)
+      expect(changedInstance.refType.elemID.isEqual(changedType.elemID)).toBeTruthy()
     })
 
     it('should change inner type inside containers types if type was changed', () => {
       const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
       const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlockListNested'] as ObjectType
-      expect((changedInstance.fields.noAnno.getType() as ContainerType).getInnerType())
-        .toBe(changedType)
+      expect((changedInstance.fields.noAnno.getType(elementsSource) as ContainerType)
+        .refInnerType.elemID.isEqual(changedType.elemID)).toBeTruthy()
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
@@ -1076,7 +1078,8 @@ describe('workspace', () => {
         .annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, { foo: 'bla' }])
     })
     it('should change isList value in fields', () => {
-      expect(isListType(lead.fields.not_a_list_yet_field.getType())).toBeTruthy()
+      expect(lead.fields.not_a_list_yet_field.refType.elemID.getFullName()).toContain('List<')
+      // expect(isListType(lead.fields.not_a_list_yet_field.getType())).toBeTruthy()
     })
 
     it('my formula was added correctly', () => {

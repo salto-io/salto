@@ -194,7 +194,7 @@ type salesforce.lead {
 }
 type multi.loc { b = 1 }`,
 
-  'error.nacl': 'invalid syntax }}',
+  'error.nacl': '{{ invalid syntax }}',
 
   'dup.nacl': `
 type salesforce.lead {

@@ -16,7 +16,7 @@
 import {
   FetchResult,
   AdapterOperations,
-  ChangeGroup,
+  DeployOptions,
   DeployResult,
   InstanceElement,
   Element, ObjectType, ElemID, BuiltinTypes,
@@ -85,7 +85,7 @@ export default class MarketoAdapter implements AdapterOperations {
     )).flat() as CustomObject[]
   }
 
-  public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
+  public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const operations = {
       add: this.add.bind(this),
       remove: this.remove.bind(this),

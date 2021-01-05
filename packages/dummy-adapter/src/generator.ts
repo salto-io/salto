@@ -20,7 +20,6 @@ import {
   CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
   getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
 } from '@salto-io/adapter-api'
-import { reportProgress } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
@@ -147,7 +146,7 @@ const profileType = new ObjectType({
 
 export const generateElements = (
   params: GeneratorParams,
-  progressReporter?: ProgressReporter
+  progressReporter: ProgressReporter
 ): Element[] => {
   seedrandom(params.seed.toString(), { global: true })
   const elementRanks: Record<string, number> = {}
@@ -522,17 +521,17 @@ export const generateElements = (
     ).flat()
   }
   const defaultTypes = [defaultObj, permissionsType, profileType]
-  reportProgress('Generating primitive types', progressReporter)
+  progressReporter.reportProgress({ details: 'Generating primitive types' })
   const primtiveTypes = generatePrimitiveTypes()
-  reportProgress('Generating types', progressReporter)
+  progressReporter.reportProgress({ details: 'Generating types' })
   const types = generateTypes()
-  reportProgress('Generating objects', progressReporter)
+  progressReporter.reportProgress({ details: 'Generating objects' })
   const objects = generateObjects()
-  reportProgress('Generating records', progressReporter)
+  progressReporter.reportProgress({ details: 'Generating records' })
   const records = generateRecords()
-  reportProgress('Generating profile likes', progressReporter)
+  progressReporter.reportProgress({ details: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
-  reportProgress('Generation done', progressReporter)
+  progressReporter.reportProgress({ details: 'Generation done' })
   return [
     ...defaultTypes,
     ...primtiveTypes,

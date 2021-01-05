@@ -240,9 +240,9 @@ const fetchAndProcessMergeErrors = async (
     const fetchResults = await Promise.all(
       Object.entries(adapters)
         .map(async ([adapterName, adapter]) => {
-          const fetchResult = await adapter.fetch(
-            createAdapterProgressReporter(adapterName, 'fetch', progressEmitter)
-          )
+          const fetchResult = await adapter.fetch({
+            progressReporter: createAdapterProgressReporter(adapterName, 'fetch', progressEmitter),
+          })
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
           const { updatedConfig } = fetchResult

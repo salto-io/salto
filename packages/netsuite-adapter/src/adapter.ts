@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  FetchResult, isInstanceElement, ObjectType, AdapterOperations, DeployResult, ChangeGroup,
+  FetchResult, isInstanceElement, ObjectType, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, Element, getChangeElement, InstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -143,7 +143,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return getRequiredReferencedInstances(changedInstances)
   }
 
-  public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
+  public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     const customizationInfosToDeploy = this.getAllRequiredReferencedInstances(changedInstances)
       .map(instance => resolveValues(instance, getLookUpName))

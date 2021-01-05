@@ -425,7 +425,7 @@ describe('merger', () => {
       expect(errors).toHaveLength(0)
       const mergedElement = merged.find(e => e.elemID.isEqual(instanceElementToMerge.elemID))
       expect(mergedElement).toBeDefined()
-      expect((mergedElement as InstanceElement).refType).toBe(objectType.elemID)
+      expect((mergedElement as InstanceElement).refType.elemID).toBe(objectType.elemID)
     })
     it('should not replace type refs with full types in the context elements', () => {
       const elements = [instanceElementToMerge]

@@ -260,7 +260,6 @@ export const transformElement = <T extends Element>(
   }
 ): T => {
   let newElement: Element
-
   const transformedAnnotations = transformElementAnnotations({
     element,
     transformFunc,
@@ -804,7 +803,10 @@ export const applyInstancesDefaults = (
   // Grouping by type before using the elementsSource to get the actual type will be an improvement
   instances
     .forEach(inst => {
-      const defaultValues = createDefaultValuesFromType(inst.getType(elementsSrouce))
+      const defaultValues = createDefaultValuesFromType(
+        inst.getType(elementsSrouce),
+        elementsSrouce
+      )
       inst.value = _.merge({}, defaultValues, inst.value)
     })
 }

@@ -694,7 +694,7 @@ describe('workspace', () => {
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newHiddenAnno'),
         action: 'add',
-        data: { after: BuiltinTypes.HIDDEN_STRING },
+        data: { after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING) },
       },
       { // new annotation type to a type with annotation types block
         path: ['file'],
@@ -1035,7 +1035,7 @@ describe('workspace', () => {
     it('should change instance type if type was modified', () => {
       const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
       const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlock.instance.instWithoutAnnotationsBlock'] as InstanceElement
-      expect(changedInstance.refType).toBe(changedType.elemID)
+      expect(changedInstance.refType.elemID).toBe(changedType.elemID)
     })
 
     it('should change inner type inside containers types if type was changed', () => {
@@ -1667,6 +1667,7 @@ describe('workspace', () => {
     })
   })
 
+  // eslint-disable-next-line
   describe.skip('getElementReferencedFiles', () => {
     let workspace: Workspace
     let referencedFiles: string[]
@@ -1780,6 +1781,7 @@ describe('workspace', () => {
 describe('getElementNaclFiles', () => {
   let workspace: Workspace
   const firstFile = `
+    type salesforce.text is string {}
     type salesforce.lead {
       salesforce.text singleDef {
 

@@ -90,6 +90,7 @@ export abstract class Element {
       this.annotationRefTypes,
       refType => (refType.getResolvedValue(elementsSource))
     )
+
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const nonTypeVals = Object.values(annotationTypes).filter(type => !isType(type))
     if (nonTypeVals.length) {
@@ -481,7 +482,7 @@ export class Variable extends Element {
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isElement(value: any): value is Element {
-  return value && value.elemID && value.elemID instanceof ElemID
+  return value instanceof Element
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

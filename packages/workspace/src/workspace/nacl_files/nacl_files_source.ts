@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType, isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change } from '@salto-io/adapter-api'
+import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType, isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -143,7 +143,12 @@ const getElementReferenced = (element: Element): ElemID[] => {
   referenced.push(...Object.values(element.annotationRefTypes)
     .map(annoRefType => getTypeOrContainerTypeID(annoRefType.elemID)))
   if (!isContainerType(element) && !isVariable(element)) {
-    transformElement({ element, transformFunc, strict: false })
+    transformElement({
+      element,
+      transformFunc,
+      strict: false,
+      elementsSource: placeholderReadonlyElementsSource,
+    })
   }
   return _.uniq(referenced)
 }
@@ -223,7 +228,6 @@ const buildNaclFilesState = (
   log.info('workspace has %d elements and %d parsed NaCl files',
     _.size(elementsIndex), _.size(allParsed))
   const newNaclFilesElements = newNaclFiles.flatMap(naclFile => naclFile.elements)
-
   if (_.isUndefined(currentState)) {
     const mergeResult = mergeElements(newNaclFilesElements)
     return {

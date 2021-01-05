@@ -460,7 +460,8 @@ const filterOutHiddenChanges = async (
         return undefined
       }
 
-      const fieldType = changeType && getField(changeType, changePath)?.getType(elementsSource)
+      const fieldType = changeType
+        && getField(changeType, changePath, elementsSource)?.getType(elementsSource)
       if (isObjectType(fieldType)) {
         return applyFunctionToChangeData(
           change,

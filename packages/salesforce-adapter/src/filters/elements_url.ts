@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import wu from 'wu'
 import { isCustomObject } from '../transformers/transformer'
@@ -54,9 +54,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
       const elementURL = urlRetreiver.retreiveUrl(element)
 
       if (elementURL !== undefined) {
-        if (!isInstanceElement(element)) {
-          element.annotationTypes[CORE_ANNOTATIONS.SERVICE_URL] = BuiltinTypes.HIDDEN_STRING
-        }
         element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = elementURL.href
       }
     }

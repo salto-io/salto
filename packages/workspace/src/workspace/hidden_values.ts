@@ -400,16 +400,15 @@ const filterOutHiddenChanges = async (
         }
         if (change.id.idType === 'attr') {
           return {
-            changeType: baseElem.annotationTypes[path[0]],
+            changeType: elementAnnotationTypes(baseElem)[path[0]],
             changePath: path.slice(1),
           }
         }
 
         // idType === 'field'
-        const field = baseElem.fields[path[0]]
         return {
           // changeType will be undefined if the path is too short
-          changeType: field !== undefined ? elementAnnotationTypes(field)[path[1]] : undefined,
+          changeType: elementAnnotationTypes(baseElem.fields[path[0]])[path[1]],
           changePath: path.slice(2),
         }
       }

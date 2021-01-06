@@ -70,7 +70,7 @@ export const buildSelectStr = (fields: Field[]): string => (
   fields
     .map(field => {
       if (isNameField(field)) {
-        return Object.keys((field.type as ObjectType).fields).join(',')
+        return Object.keys((field.getType() as ObjectType).fields).join(',')
       }
       return apiName(field, true)
     }).join(','))

@@ -23,7 +23,7 @@ type ChangeIdFunction = (change: Change) => string | undefined
 
 const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = change => (
   isInstanceOfCustomObjectChange(change)
-    ? `${change.action}_${apiName(getChangeElement(change).type)}_instances`
+    ? `${change.action}_${apiName(getChangeElement(change).getType())}_instances`
     : undefined
 )
 

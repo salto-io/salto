@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 const sfText = new PrimitiveType({
   elemID: new ElemID('salesforce', 'Text'),
   primitive: PrimitiveTypes.STRING,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     label: BuiltinTypes.STRING,
     _required: BuiltinTypes.BOOLEAN,
   },
@@ -26,7 +27,7 @@ const sfText = new PrimitiveType({
 
 const sfRole = new ObjectType({
   elemID: new ElemID('salesforce', 'Role'),
-  annotationTypes: {
+  annotationRefsOrTypes: {
     metadataType: BuiltinTypes.SERVICE_ID,
     suffix: BuiltinTypes.STRING,
     dirName: BuiltinTypes.STRING,
@@ -37,8 +38,8 @@ const sfRole = new ObjectType({
     dirName: 'roles',
   },
   fields: {
-    description: { type: BuiltinTypes.STRING },
-    name: { type: BuiltinTypes.STRING },
+    description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
 })
 
@@ -49,8 +50,14 @@ export const customObject = (
   return new ObjectType({
     elemID,
     fields: {
-      alpha: { type: sfText, annotations: { label: data.alphaLabel } },
-      beta: { type: sfText, annotations: { label: data.betaLabel } },
+      alpha: {
+        refType: createRefToElmWithValue(sfText),
+        annotations: { label: data.alphaLabel },
+      },
+      beta: {
+        refType: createRefToElmWithValue(sfText),
+        annotations: { label: data.betaLabel },
+      },
     },
   })
 }

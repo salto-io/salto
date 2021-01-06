@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import { getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import wu, { WuIterable } from 'wu'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
@@ -23,7 +25,7 @@ import { mockFunction } from '../../common/helpers'
 
 describe('filterInvalidChanges', () => {
   const allElements = mock.getAllElements()
-
+  const elementsSource = new InMemoryRemoteElementSource(allElements)
 
   const mockChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
     async changes => changes
@@ -36,6 +38,8 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: allElements,
+      beforeSource: elementsSource,
+      afterSource: elementsSource,
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(0)
@@ -50,9 +54,12 @@ describe('filterInvalidChanges', () => {
       isSettings: true,
     })
     const newElements = [newValidObj, newValidInst, newValidSetting]
+    const afterElms = [...allElements, ...newElements]
     const planResult = await getPlan({
       before: allElements,
-      after: [...allElements, ...newElements],
+      after: afterElms,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(afterElms),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(0)
@@ -71,15 +78,18 @@ describe('filterInvalidChanges', () => {
     const newInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_invalid_obj'),
       fields: {
-        valid: { type: BuiltinTypes.STRING },
-        invalid: { type: BuiltinTypes.STRING },
+        valid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       annotations: { value: 'value' },
     })
     const newInvalidInst = new InstanceElement('new_invalid_inst', newInvalidObj, {})
+    const afterElms = [...allElements, newInvalidObj, newInvalidInst]
     const planResult = await getPlan({
       before: allElements,
-      after: [...allElements, newInvalidObj, newInvalidInst],
+      after: afterElms,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(afterElms),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(3)
@@ -97,14 +107,17 @@ describe('filterInvalidChanges', () => {
     const newValidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_valid_obj'),
       fields: {
-        valid: { type: BuiltinTypes.STRING },
-        invalid: { type: BuiltinTypes.STRING },
+        valid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       annotations: { value: 'value' },
     })
+    const afterElms = [...allElements, newValidObj]
     const planResult = await getPlan({
       before: allElements,
-      after: [...allElements, newValidObj],
+      after: afterElms,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(afterElms),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -121,12 +134,14 @@ describe('filterInvalidChanges', () => {
   })
 
   it('should have onUpdate change errors when all changes are invalid', async () => {
-    const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const afterElms = mock.getAllElements()
+    const saltoOffice = afterElms[2] as ObjectType
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     const planResult = await getPlan({
       before: allElements,
-      after: afterElements,
+      after: afterElms,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(afterElms),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -137,13 +152,15 @@ describe('filterInvalidChanges', () => {
   })
 
   it('should have onUpdate change errors when only some field addition are invalid', async () => {
-    const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const afterElms = mock.getAllElements()
+    const saltoOffice = afterElms[2] as ObjectType
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     saltoOffice.fields.valid = new Field(saltoOffice, 'valid', BuiltinTypes.STRING)
     const planResult = await getPlan({
       before: allElements,
-      after: afterElements,
+      after: afterElms,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(afterElms),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -166,11 +183,14 @@ describe('filterInvalidChanges', () => {
     const beforeInvalidObj = new ObjectType({ elemID: invalidObjElemId })
     const afterInvalidObj = beforeInvalidObj.clone()
     afterInvalidObj.annotations.new = 'value'
-    afterInvalidObj.annotationTypes.new = BuiltinTypes.STRING
+    afterInvalidObj.annotationRefTypes.new = createRefToElmWithValue(BuiltinTypes.STRING)
     afterInvalidObj.fields.valid = new Field(afterInvalidObj, 'valid', BuiltinTypes.STRING)
+    const afterElms = [...allElements, afterInvalidObj]
     const planResult = await getPlan({
       before: [...allElements, beforeInvalidObj],
-      after: [...allElements, afterInvalidObj],
+      after: afterElms,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(afterElms),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -192,6 +212,8 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: beforeElements,
       after: allElements,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(allElements),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -218,6 +240,8 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: beforeElements,
       after: afterElements,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(allElements),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -247,6 +271,8 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: allElements,
       after: afterElements,
+      beforeSource: elementsSource,
+      afterSource: new InMemoryRemoteElementSource(allElements),
       changeValidators: { salto: mockMapValueChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -267,14 +293,17 @@ describe('filterInvalidChanges', () => {
     const beforeInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'before_invalid_obj'),
       fields: {
-        invalid: { type: BuiltinTypes.STRING },
+        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
     const beforeInvalidField = beforeInvalidObj.fields.invalid
     const beforeInvalidInst = new InstanceElement('before_invalid_inst', beforeInvalidObj, {})
+    const beforeElms = [...allElements, beforeInvalidObj, beforeInvalidInst]
     const planResult = await getPlan({
-      before: [...allElements, beforeInvalidObj, beforeInvalidInst],
+      before: beforeElms,
       after: allElements,
+      beforeSource: new InMemoryRemoteElementSource(beforeElms),
+      afterSource: new InMemoryRemoteElementSource(allElements),
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors).toHaveLength(3)

@@ -62,8 +62,9 @@ const formatValueForWhere = (field: Field, value: Value): string => {
   if (value === undefined) {
     return 'null'
   }
-  if (isPrimitiveType(field.type)) {
-    if (field.type.primitive === PrimitiveTypes.STRING) {
+  const fieldType = field.getType()
+  if (isPrimitiveType(fieldType)) {
+    if (fieldType.primitive === PrimitiveTypes.STRING) {
       return `'${escapeWhereStr(value)}'`
     }
     return value.toString()
@@ -80,7 +81,7 @@ const getRecordsBySaltoIds = async (
   // The use of IN can lead to querying uneeded records (cross values between instances)
   // and can be optimized
   const computeWhereConditions = (field: Field): string | string[] => {
-    const fieldType = field.type
+    const fieldType = field.getType()
     if (isObjectType(fieldType)) {
       const compoundFieldType = Object.values(Types.compoundDataTypes)
         .find(compoundType => compoundType.isEqual(fieldType))
@@ -100,7 +101,7 @@ const getRecordsBySaltoIds = async (
     }
     const instancesFieldValues = [...new Set(instances
       .map(instance =>
-        (formatValueForWhere(instance.type.fields[field.name], instance.value[field.name]))))]
+        (formatValueForWhere(instance.getType().fields[field.name], instance.value[field.name]))))]
     return `${apiName(field, true)} IN (${instancesFieldValues.join(',')})`
   }
   // Should always query Id together with the SaltoIdFields to match it to instances
@@ -117,7 +118,7 @@ const getRecordsBySaltoIds = async (
 
 const getDataManagementConfigForCustomSettings = (instances: InstanceElement[]):
   DataManagementConfig => ({
-  includeObjects: [`^${apiName(instances[0].type)}`],
+  includeObjects: [`^${apiName(instances[0].getType())}`],
   saltoIDSettings: {
     defaultIdFields: ['Name'],
   },
@@ -187,7 +188,7 @@ const deployAddInstances = async (
   idFields: Field[],
   client: SalesforceClient,
 ): Promise<DeployResult> => {
-  const { type } = instances[0]
+  const type = instances[0].getType()
   const typeName = apiName(type)
   const idFieldsNames = idFields.map(field => field.name)
   const computeSaltoIdHash = (vals: Values): string => {
@@ -245,7 +246,7 @@ const deployRemoveInstances = async (
   client: SalesforceClient,
 ): Promise<DeployResult> => {
   const { successInstances, errorMessages } = await deleteInstances(
-    apiName(instances[0].type),
+    apiName(instances[0].getType()),
     instances,
     client
   )
@@ -261,7 +262,7 @@ const deployModifyChanges = async (
 ): Promise<DeployResult> => {
   const changesData = changes
     .map(change => change.data)
-  const instancesType = apiName(changesData[0].after.type)
+  const instancesType = apiName(changesData[0].after.getType())
   const [validData, diffApiNameData] = _.partition(
     changesData,
     changeData => apiName(changeData.before) === apiName(changeData.after)
@@ -305,17 +306,17 @@ export const deployCustomObjectInstancesGroup = async (
 ): Promise<DeployResult> => {
   try {
     const instances = changes.map(change => getChangeElement(change))
-    const instanceTypes = [...new Set(instances.map(inst => apiName(inst.type)))]
+    const instanceTypes = [...new Set(instances.map(inst => apiName(inst.getType())))]
     if (instanceTypes.length > 1) {
       throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
     }
-    const actualDataManagement = isListCustomSettingsObject(instances[0].type)
+    const actualDataManagement = isListCustomSettingsObject(instances[0].getType())
       ? getDataManagementConfigForCustomSettings(instances) : dataManagementConfig
     if (actualDataManagement === undefined) {
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
     if (changes.every(isAdditionChange)) {
-      const { idFields, invalidFields } = getIdFields(instances[0].type, actualDataManagement)
+      const { idFields, invalidFields } = getIdFields(instances[0].getType(), actualDataManagement)
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }

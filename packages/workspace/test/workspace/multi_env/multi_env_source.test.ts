@@ -34,20 +34,36 @@ jest.mock('@salto-io/adapter-utils', () => ({
 const objectElemID = new ElemID('salto', 'object')
 const commonFragment = new ObjectType({
   elemID: objectElemID,
-  fields: { commonField: { type: BuiltinTypes.STRING } },
+  fields: {
+    commonField: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const envFragment = new ObjectType({
   elemID: objectElemID,
-  fields: { envField: { type: BuiltinTypes.STRING } },
+  fields: {
+    envField: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const inactiveFragment = new ObjectType({
   elemID: objectElemID,
-  fields: { inactiveField: { type: BuiltinTypes.STRING } },
+  fields: {
+    inactiveField: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const commonElemID = new ElemID('salto', 'common')
 const commonObject = new ObjectType({
   elemID: commonElemID,
-  fields: { field: { type: BuiltinTypes.STRING } },
+  fields: {
+    field: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const commonNaclFiles = {
   'common.nacl': [commonObject],
@@ -73,7 +89,11 @@ const commonErrors = new Errors({
 const envElemID = new ElemID('salto', 'env')
 const envObject = new ObjectType({
   elemID: envElemID,
-  fields: { field: { type: BuiltinTypes.STRING } },
+  fields: {
+    field: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const envSourceRange = {
   start: { col: 0, line: 0, byte: 0 },
@@ -98,7 +118,11 @@ const envNaclFiles = {
 const inactiveElemID = new ElemID('salto', 'inactive')
 const inactiveObject = new ObjectType({
   elemID: inactiveElemID,
-  fields: { field: { type: BuiltinTypes.STRING } },
+  fields: {
+    field: {
+      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
 })
 const inactiveNaclFiles = {
   'inenv.nacl': [inactiveObject],
@@ -263,7 +287,12 @@ describe('multi env source', () => {
     it('should change inner state upon update with modification with multiple changes', async () => {
       const newEnvFragment = new ObjectType({
         elemID: objectElemID,
-        fields: { ...envFragment.fields, field1: { type: BuiltinTypes.SERVICE_ID } },
+        fields: {
+          ...envFragment.fields,
+          field1: {
+            refType: utils.createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+          },
+        },
       })
       const removal = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
       const addition = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
@@ -393,6 +422,7 @@ describe('multi env source', () => {
   })
   describe('getTotalSize', () => {
     it('should return the total size of all the sources', async () => {
+      // const elms = (await source.getAll()).map(e => e.elemID.getFullName())
       expect(await source.getTotalSize()).toEqual(5 * (await source.getAll()).length)
     })
   })
@@ -520,7 +550,12 @@ describe('multi env source', () => {
     it('should change inner state upon set with modification', async () => {
       const newEnvObject = new ObjectType({
         elemID: envElemID,
-        fields: { ...envObject.fields, field1: { type: BuiltinTypes.BOOLEAN } },
+        fields: {
+          ...envObject.fields,
+          field1: {
+            refType: utils.createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          },
+        },
       })
       const change = {
         action: 'modify',

@@ -13,15 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  BuiltinTypes, ElemID, InstanceElement, ObjectType,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterWith } from '../../src/filter'
-import {
-  IS_ATTRIBUTE, METADATA_TYPE, SALESFORCE, XML_ATTRIBUTE_PREFIX, INSTANCE_FULL_NAME_FIELD,
-  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
-} from '../../src/constants'
+import { IS_ATTRIBUTE, METADATA_TYPE, SALESFORCE, XML_ATTRIBUTE_PREFIX, INSTANCE_FULL_NAME_FIELD, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/xml_attributes'
 
 const isAttributeTrue = 'isAttributeTrue'
@@ -35,19 +31,19 @@ describe('XML Attributes Filter', () => {
     elemID: new ElemID(SALESFORCE, 'someType'),
     fields: {
       [isAttributeTrue]: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [IS_ATTRIBUTE]: true,
         },
       },
       [isAttributeFalse]: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [IS_ATTRIBUTE]: false,
         },
       },
       [noIsAttribute]: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
     },
     annotations: {

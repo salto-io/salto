@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, BuiltinTypes, ListType,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
@@ -25,7 +24,9 @@ describe('missing fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
-    fields: { existing: { type: BuiltinTypes.STRING } },
+    fields: { existing: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    } },
   })
   const complexType = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'complex_type'),
@@ -68,14 +69,14 @@ describe('missing fields filter', () => {
       const [testType] = testElements
       expect(testType.fields.lst).toBeDefined()
       expect(testType.fields.lst.annotations).toEqual({ dummy: true })
-      expect(testType.fields.lst.type).toEqual(new ListType(BuiltinTypes.STRING))
+      expect(testType.fields.lst.getType()).toEqual(new ListType(BuiltinTypes.STRING))
     })
 
     it('should add fields by type name', () => {
       const [testType] = testElements
       expect(testType.fields.complex).toBeDefined()
       expect(testType.fields.complex.annotations).toEqual({})
-      expect(testType.fields.complex.type).toEqual(complexType)
+      expect(testType.fields.complex.getType()).toEqual(complexType)
     })
 
     it('should keep existing fields unchanged', () => {

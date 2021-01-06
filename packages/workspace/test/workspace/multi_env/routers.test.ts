@@ -15,11 +15,10 @@
 */
 import _ from 'lodash'
 import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { detailedCompare } from '@salto-io/adapter-utils'
+import { detailedCompare, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { routeChanges, routePromote, routeDemote, routeCopyTo } from '../../../src/workspace/nacl_files/multi_env/routers'
-
 
 const hasChanges = (
   changes: DetailedChange[],
@@ -28,20 +27,20 @@ const hasChanges = (
   .find(c => changeToFind.id.isEqual(c.id) && changeToFind.action === c.action)))
 
 const objectElemID = new ElemID('salto', 'object')
-const commonField = { name: 'commonField', type: BuiltinTypes.STRING }
-const envField = { name: 'envField', type: BuiltinTypes.STRING }
+const commonField = { name: 'commonField', refType: createRefToElmWithValue(BuiltinTypes.STRING) }
+const envField = { name: 'envField', refType: createRefToElmWithValue(BuiltinTypes.STRING) }
 const simpleObjID = new ElemID('salto', 'simple')
 const simpleObj = new ObjectType({
   elemID: simpleObjID,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     str1: BuiltinTypes.STRING,
     str2: BuiltinTypes.STRING,
   },
 })
-const listField = { name: 'listField', type: new ListType(simpleObj) }
+const listField = { name: 'listField', refType: createRefToElmWithValue(new ListType(simpleObj)) }
 const commonObj = new ObjectType({
   elemID: objectElemID,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     boolean: BuiltinTypes.BOOLEAN,
   },
   annotations: {
@@ -60,7 +59,7 @@ const envObj = new ObjectType({
 })
 const sharedObject = new ObjectType({
   elemID: objectElemID,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     boolean: BuiltinTypes.BOOLEAN,
   },
   annotations: {
@@ -92,12 +91,12 @@ const splitObjectAnnotations = new ObjectType({
 })
 const splitObjectAnnotationTypes = new ObjectType({
   elemID: splitObjectID,
-  annotationTypes: commonObj.annotationTypes,
+  annotationRefsOrTypes: commonObj.annotationRefTypes,
 })
 const splitObjJoined = new ObjectType({
   elemID: splitObjectID,
   fields: splitObjectFields.fields,
-  annotationTypes: splitObjectAnnotationTypes.annotationTypes,
+  annotationRefsOrTypes: splitObjectAnnotationTypes.annotationRefTypes,
   annotations: splitObjectAnnotations.annotations,
 })
 const splitInstName = 'splitInst'
@@ -132,7 +131,7 @@ const commonCommonOnlyFieldObject = new ObjectType({
   elemID: commonOnlyFieldObjectID,
   fields: {
     ofdreams: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         catchphrase: 'if you will build it',
       },
@@ -146,7 +145,7 @@ const envCommonOnlyFieldObject = new ObjectType({
 
 const commonObjWithList = new ObjectType({
   elemID: new ElemID('salto', 'withList'),
-  annotationTypes: {
+  annotationRefsOrTypes: {
     boolean: BuiltinTypes.BOOLEAN,
     list: BuiltinTypes.NUMBER, // No need to list type this this is annotations...
   },
@@ -904,7 +903,7 @@ describe('isolated routing', () => {
     expect(routedChanges.primarySource?.[0].action).toEqual('add')
     const primaryChangeData = routedChanges.primarySource?.[0] as AdditionDiff<Field>
     expect(routedChanges.primarySource?.[0].id).toEqual(fieldID)
-    expect(primaryChangeData.data.after.type.elemID).toEqual(afterField.type.elemID)
+    expect(primaryChangeData.data.after.refType.elemID).toEqual(afterField.refType.elemID)
     expect(primaryChangeData.data.after.annotations).toEqual(afterField.annotations)
 
     expect(routedChanges.commonSource?.[0].action).toEqual('remove')
@@ -913,7 +912,7 @@ describe('isolated routing', () => {
     expect(routedChanges.primarySource?.[0].action).toEqual('add')
     const secChangeData = routedChanges.secondarySources?.sec[0] as AdditionDiff<Field>
     expect(routedChanges.secondarySources?.sec[0].id).toEqual(fieldID)
-    expect(secChangeData.data.after.type.elemID).toEqual(beforeField.type.elemID)
+    expect(secChangeData.data.after.refType.elemID).toEqual(beforeField.refType.elemID)
     expect(secChangeData.data.after.annotations).toEqual(beforeField.annotations)
   })
   it('name', async () => {
@@ -954,10 +953,10 @@ describe('track', () => {
     elemID: onlyInEnvElemID,
     fields: {
       str: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       num: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       },
     },
     annotations: {
@@ -969,7 +968,7 @@ describe('track', () => {
     elemID: onlyInEnvElemID,
     fields: {
       otherPartField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
     },
   })
@@ -978,13 +977,13 @@ describe('track', () => {
     elemID: onlyInEnvElemID,
     fields: {
       str: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       num: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       },
       otherPartField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
     },
     annotations: {
@@ -996,7 +995,7 @@ describe('track', () => {
     elemID: new ElemID('salto', 'splitObj'),
     fields: {
       envField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           here: {
             we: {
@@ -1006,13 +1005,13 @@ describe('track', () => {
         },
       },
       splitField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           env: 'ENV',
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       env: BuiltinTypes.STRING,
     },
     annotations: {
@@ -1027,7 +1026,7 @@ describe('track', () => {
     elemID: new ElemID('salto', 'splitObj'),
     fields: {
       commonField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           here: {
             we: {
@@ -1037,13 +1036,13 @@ describe('track', () => {
         },
       },
       splitField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           common: 'COMMON',
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       common: BuiltinTypes.STRING,
     },
     annotations: {
@@ -1212,10 +1211,10 @@ describe('untrack', () => {
     elemID: new ElemID('salto', 'onlyInCommonObj'),
     fields: {
       str: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       num: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       },
     },
     annotations: {
@@ -1227,7 +1226,7 @@ describe('untrack', () => {
     elemID: new ElemID('salto', 'splitObj'),
     fields: {
       envField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           here: {
             we: {
@@ -1237,13 +1236,13 @@ describe('untrack', () => {
         },
       },
       splitField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           env: 'ENV',
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       env: BuiltinTypes.STRING,
     },
     annotations: {
@@ -1258,7 +1257,7 @@ describe('untrack', () => {
     elemID: new ElemID('salto', 'splitObj'),
     fields: {
       commonField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           here: {
             we: {
@@ -1268,13 +1267,13 @@ describe('untrack', () => {
         },
       },
       splitField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           common: 'COMMON',
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       common: BuiltinTypes.STRING,
     },
     annotations: {
@@ -1418,10 +1417,10 @@ describe('copyTo', () => {
     elemID: new ElemID('salto', 'onlyInEnvObj'),
     fields: {
       str: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       num: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       },
     },
     annotations: {
@@ -1433,7 +1432,7 @@ describe('copyTo', () => {
     elemID: new ElemID('salto', 'splitObj'),
     fields: {
       e1Field: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           here: {
             we: {
@@ -1443,7 +1442,7 @@ describe('copyTo', () => {
         },
       },
       splitField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           env: 'ENV',
         },
@@ -1455,7 +1454,7 @@ describe('copyTo', () => {
     elemID: new ElemID('salto', 'splitObj'),
     fields: {
       e2Field: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           here: {
             we: {
@@ -1465,7 +1464,7 @@ describe('copyTo', () => {
         },
       },
       splitField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           common: 'COMMON',
         },

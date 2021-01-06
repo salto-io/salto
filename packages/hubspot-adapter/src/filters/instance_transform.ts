@@ -13,12 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, isInstanceElement, isObjectType, ObjectType,
-} from '@salto-io/adapter-api'
-import {
-  transformValues,
-} from '@salto-io/adapter-utils'
+import { Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { transformValues } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
 
@@ -30,12 +26,12 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => isObjectType(instance.type))
+      .filter(instance => isObjectType(instance.getType()))
       .forEach(instance => {
         instance.value = transformValues(
           {
             values: instance.value,
-            type: instance.type as ObjectType,
+            type: instance.getType(),
             transformFunc: transformPrimitive,
             pathID: instance.elemID,
           }

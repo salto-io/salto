@@ -168,7 +168,7 @@ describe('workflow filter', () => {
       subDescription: string): void => {
       expect(workflow.value[subField]).toBeDefined()
       const subElemId = makeArray(workflow.value[subField])
-        .find((ref: {elemId: ElemID}) => ref.elemId.name === subName)?.elemId
+        .find((ref: {elemID: ElemID}) => ref.elemID.name === subName)?.elemID
       const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
       expect(subInstance.value.description).toEqual(subDescription)
     }

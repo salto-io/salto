@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeElement,
-  FieldDefinition, Values, TypeElement,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeElement, FieldDefinition, Values, ReferenceExpression } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -32,9 +30,9 @@ describe('Object Permissions filter', () => {
     parent: string,
     name: string,
     annotations: Values = {},
-    type: TypeElement = Types.primitiveDataTypes.Text,
+    refType: ReferenceExpression = createRefToElmWithValue(Types.primitiveDataTypes.Text),
   ): Record<string, FieldDefinition> => ({
-    [name]: { type, annotations: { [constants.API_NAME]: `${parent}.${name}`, ...annotations } },
+    [name]: { refType, annotations: { [constants.API_NAME]: `${parent}.${name}`, ...annotations } },
   })
 
   const mockObject = (name: string): ObjectType => new ObjectType({
@@ -47,7 +45,7 @@ describe('Object Permissions filter', () => {
     fields: {
       ...createField(name, 'desc__c'),
       ...createField(name, 'req__c', { [CORE_ANNOTATIONS.REQUIRED]: true }),
-      ...createField(name, 'master__c', {}, Types.primitiveDataTypes.MasterDetail),
+      ...createField(name, 'master__c', {}, createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)),
       ...createField(name, 'standard'),
     },
   })

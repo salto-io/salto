@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, Change, isEqualElements, toChange, isType } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { mergeElements, MergeError, updateMergedTypes } from '../../merger'
+import { mergeElements, MergeError } from '../../merger'
 
 const log = logger(module)
 
@@ -57,7 +57,7 @@ export const buildNewMergedElementsAndErrors = ({
   log.info('going to merge %d new elements to the existing %d elements',
     newElements.length, Object.keys(currentElements))
   const currentMergedElementsWithoutRelevants = _.omit(currentElements, relevantElementIDs)
-  const newMergedElementsResult = mergeElements(newElements, currentMergedElementsWithoutRelevants)
+  const newMergedElementsResult = mergeElements(newElements)
   const mergeErrors = calcNewMerged(
     currentMergeErrors, newMergedElementsResult.errors, new Set(relevantElementIDs)
   )
@@ -67,10 +67,7 @@ export const buildNewMergedElementsAndErrors = ({
   } as Record<string, Element>
 
   const mergedElementsUpdated = _.keyBy(
-    updateMergedTypes(
-      Object.values(mergedElements),
-      _.pickBy(mergedElements, isType),
-    ),
+    mergedElements,
     elem => elem.elemID.getFullName(),
   )
   const changes = calcChanges(relevantElementIDs, currentElements, mergedElementsUpdated)

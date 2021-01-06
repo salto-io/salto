@@ -13,13 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression,
-  BuiltinTypes,
-} from '@salto-io/adapter-api'
-import {
-  naclCase, pathNaclCase,
-} from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
+import { naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -69,12 +64,19 @@ describe('Test layout filter', () => {
       const standardFieldObj = new ObjectType({
         elemID: testSObj.elemID,
         path: [constants.SALESFORCE],
-        fields: { foo: { type: BuiltinTypes.STRING, annotations: { apiName: 'foo' } } },
+        fields: { foo: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: { apiName: 'foo' },
+        } },
       })
       const customFieldObj = new ObjectType({
         elemID: testSObj.elemID,
         path: [constants.SALESFORCE],
-        fields: { bar: { type: BuiltinTypes.STRING, annotations: { apiName: 'bar' } } },
+        fields: {
+          bar: {
+            refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: { apiName: 'bar' },
+          },
+        },
       })
 
       const webLinkObj = new ObjectType({

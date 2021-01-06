@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { ObjectType, TypeElement, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { file, folder } from './types/file_cabinet_types'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
@@ -202,11 +202,11 @@ export const fileCabinetTypes: Readonly<Record<string, ObjectType>> = {
   folder,
 }
 
-export const isCustomType = (type: ObjectType): boolean =>
-  !_.isUndefined(customTypes[type.elemID.name])
+export const isCustomType = (typeElemID: ElemID): boolean =>
+  !_.isUndefined(customTypes[typeElemID.name])
 
-export const isFileCabinetType = (type: ObjectType): boolean =>
-  !_.isUndefined(fileCabinetTypes[type.elemID.name])
+export const isFileCabinetType = (typeElemID: ElemID): boolean =>
+  !_.isUndefined(fileCabinetTypes[typeElemID.name])
 
 export const getAllTypes = (): TypeElement[] => [
   ...Object.values(customTypes),

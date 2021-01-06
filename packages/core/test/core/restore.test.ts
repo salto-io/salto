@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { merger, pathIndex } from '@salto-io/workspace'
 import { createRestoreChanges } from '../../src/core/restore'
 
@@ -25,13 +26,13 @@ describe('restore', () => {
     elemID: new ElemID('salto', 'nested'),
     fields: {
       str: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       num: {
-        type: BuiltinTypes.NUMBER,
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       },
       list: {
-        type: new ListType(BuiltinTypes.NUMBER),
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
       },
     },
   })
@@ -40,13 +41,13 @@ describe('restore', () => {
     elemID: new ElemID('salto', 'singlePathObj'),
     fields: {
       simple: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       nested: {
-        type: nestedType,
+        refType: createRefToElmWithValue(nestedType),
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       simple: BuiltinTypes.STRING,
       nested: nestedType,
     },
@@ -63,7 +64,7 @@ describe('restore', () => {
 
   const multiPathAnnoObj = new ObjectType({
     elemID: new ElemID('salto', 'multiPathObj'),
-    annotationTypes: {
+    annotationRefsOrTypes: {
       simple: BuiltinTypes.STRING,
       nested: nestedType,
     },
@@ -82,10 +83,10 @@ describe('restore', () => {
     elemID: new ElemID('salto', 'multiPathObj'),
     fields: {
       simple: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       nested: {
-        type: nestedType,
+        refType: createRefToElmWithValue(nestedType),
       },
     },
     path: ['salto', 'obj', 'multi', 'fields'],
@@ -116,18 +117,27 @@ describe('restore', () => {
     multiPathFieldsObj,
     multiPathInstace1,
     multiPathInstace2,
+    nestedType,
   ]
   const { merged: allElement } = mergeElements([singlePathObject, ...elementfragments])
-  const singlePathObjMerged = allElement[0].clone()
-  const multiPathObjMerged = allElement[1].clone()
-  const singlePathInstMerged = allElement[2].clone()
-  const multiPathInstMerged = allElement[3].clone()
+  const singlePathObjMerged = allElement
+    .find(e => e.elemID.isEqual(singlePathObject.elemID)) as ObjectType
+  const multiPathObjMerged = allElement
+    .find(e => e.elemID.isEqual(multiPathAnnoObj.elemID)) as ObjectType
+  const singlePathInstMerged = allElement
+    .find(e => e.elemID.isEqual(singlePathInstance.elemID)) as InstanceElement
+  const multiPathInstMerged = allElement
+    .find(e => e.elemID.isEqual(multiPathInstace2.elemID)) as InstanceElement
 
   const index = createPathIndex(elementfragments)
 
   describe('with no changes', () => {
     it('should not create changes ws and the state are the same', async () => {
-      const changes = await createRestoreChanges(allElement, allElement, index)
+      const changes = await createRestoreChanges(
+        allElement,
+        allElement,
+        index,
+      )
       expect(changes).toHaveLength(0)
     })
   })
@@ -148,7 +158,11 @@ describe('restore', () => {
     describe('without filters', () => {
       let changes: DetailedChange[]
       beforeAll(async () => {
-        changes = await createRestoreChanges(wsElements, stateElements, index)
+        changes = await createRestoreChanges(
+          [...wsElements, nestedType],
+          [...stateElements, nestedType],
+          index,
+        )
       })
 
       it('should create all changes', () => {
@@ -169,7 +183,7 @@ describe('restore', () => {
         expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
         expect(removeChange?.path).toBeUndefined()
       })
-      it('should create remove changes for elements which have different values in the state and ws with proper path', () => {
+      it('should create modify changes for elements which have different values in the state and ws with proper path', () => {
         const modifyChange = changes.find(c => c.action === 'modify')
         expect(modifyChange).toBeDefined()
         expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID

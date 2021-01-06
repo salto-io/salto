@@ -24,7 +24,7 @@ import { formElemID, contactPropertyElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS } 
 const { makeArray } = collections.array
 
 export const isFormInstance = (instance: Readonly<InstanceElement>): boolean =>
-  instance.type.elemID.isEqual(formElemID)
+  instance.getType().elemID.isEqual(formElemID)
 
 const contactPropertyOverrideFields = Object.values(CONTACT_PROPERTY_OVERRIDES_FIELDS)
 
@@ -32,7 +32,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const findContactProperty = (contactPropertyName: string): InstanceElement | undefined => {
       const isContactPropertyInstance = (instance: InstanceElement): boolean =>
-        instance.type.elemID.isEqual(contactPropertyElemID)
+        instance.getType().elemID.isEqual(contactPropertyElemID)
       return elements
         .filter(isInstanceElement)
         .filter(isContactPropertyInstance)

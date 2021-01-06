@@ -38,8 +38,8 @@ describe('adapter creator', () => {
         adapter.authenticationMethods.basic.credentialsType),
       config: new InstanceElement(
         DUMMY_ADAPTER,
-                adapter.configType as ObjectType,
-                defaultParams
+        adapter.configType as ObjectType,
+        defaultParams
       ),
     })).toBeInstanceOf(DummyAdapter)
   })

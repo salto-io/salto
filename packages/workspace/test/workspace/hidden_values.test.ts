@@ -14,16 +14,18 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { State } from '../../src/workspace/state'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
+import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
 
 describe('mergeWithHidden', () => {
   const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType => (
     new PrimitiveType({
       elemID: new ElemID('test', typeName),
       primitive,
-      annotationTypes: { hiddenAnno: BuiltinTypes.HIDDEN_STRING },
+      annotationRefsOrTypes: { hiddenAnno: BuiltinTypes.HIDDEN_STRING },
     })
   )
   describe('when parent value is deleted in the workspace', () => {
@@ -33,7 +35,10 @@ describe('mergeWithHidden', () => {
       const mockObjType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          f1: { type: fieldType, annotations: { hiddenAnno: 'asd' } },
+          f1: {
+            refType: createRefToElmWithValue(fieldType),
+            annotations: { hiddenAnno: 'asd' },
+          },
         },
       })
       const workspaceObjType = mockObjType.clone()
@@ -52,14 +57,17 @@ describe('mergeWithHidden', () => {
       const workspaceType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          test: { type: workspaceFieldType },
+          test: { refType: createRefToElmWithValue(workspaceFieldType) },
         },
       })
       const stateFieldType = getFieldType('text', PrimitiveTypes.STRING)
       const stateType = new ObjectType({
         ...workspaceType,
         fields: {
-          test: { type: stateFieldType, annotations: { hiddenAnno: 'asd' } },
+          test: {
+            refType: createRefToElmWithValue(stateFieldType),
+            annotations: { hiddenAnno: 'asd' },
+          },
         },
       })
       result = mergeWithHidden([workspaceFieldType, workspaceType], [stateFieldType, stateType])
@@ -81,7 +89,7 @@ describe('mergeWithHidden', () => {
         new ObjectType({
           elemID: new ElemID('test', 'type'),
           fields: {
-            test: { type: BuiltinTypes.HIDDEN_STRING },
+            test: { refType: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING) },
           },
         }),
       )
@@ -91,7 +99,7 @@ describe('mergeWithHidden', () => {
         new ObjectType({
           elemID: new ElemID('test', 'type'),
           fields: {
-            test: { type: BuiltinTypes.HIDDEN_STRING },
+            test: { refType: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING) },
           },
         }),
         { test: 'test' }
@@ -112,14 +120,15 @@ describe('mergeWithHidden', () => {
 
 describe('handleHiddenChanges', () => {
   describe('hidden_string field', () => {
+    const obj = new ObjectType({
+      elemID: new ElemID('test', 'type'),
+      fields: {
+        test: { refType: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING) },
+      },
+    })
     const instance = new InstanceElement(
       'instance',
-      new ObjectType({
-        elemID: new ElemID('test', 'type'),
-        fields: {
-          test: { type: BuiltinTypes.HIDDEN_STRING },
-        },
-      }),
+      obj,
       { test: 'test' }
     )
 
@@ -133,7 +142,8 @@ describe('handleHiddenChanges', () => {
       const result = await handleHiddenChanges(
         [change],
         jest.fn() as unknown as State,
-        jest.fn().mockResolvedValue([])
+        jest.fn().mockResolvedValue([]),
+        new InMemoryRemoteElementSource([instance, obj]),
       )
 
       expect(result.length).toBe(1)

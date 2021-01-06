@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { fieldTypes } from '../field_types'
 
@@ -32,7 +33,7 @@ const workbook_charts_chart = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -52,7 +53,7 @@ const workbook_charts = new ObjectType({
   },
   fields: {
     chart: {
-      type: new ListType(workbook_charts_chart),
+      refType: createRefToElmWithValue(new ListType(workbook_charts_chart)),
       annotations: {
       },
     },
@@ -70,7 +71,7 @@ const workbook_dependencies = new ObjectType({
   },
   fields: {
     dependency: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -89,7 +90,7 @@ const workbook_pivots_pivot = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -109,7 +110,7 @@ const workbook_pivots = new ObjectType({
   },
   fields: {
     pivot: {
-      type: new ListType(workbook_pivots_pivot),
+      refType: createRefToElmWithValue(new ListType(workbook_pivots_pivot)),
       annotations: {
       },
     },
@@ -127,7 +128,7 @@ const workbook_tables_table = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -147,7 +148,7 @@ const workbook_tables = new ObjectType({
   },
   fields: {
     table: {
-      type: new ListType(workbook_tables_table),
+      refType: createRefToElmWithValue(new ListType(workbook_tables_table)),
       annotations: {
       },
     },
@@ -164,7 +165,7 @@ export const workbook = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -172,35 +173,35 @@ export const workbook = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custworkbook’. */
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
     }, /* Original description: This field value can be up to 50 characters long. */
     definition: {
-      type: fieldTypes.cdata,
+      refType: createRefToElmWithValue(fieldTypes.cdata),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     charts: {
-      type: workbook_charts,
+      refType: createRefToElmWithValue(workbook_charts),
       annotations: {
       },
     },
     dependencies: {
-      type: workbook_dependencies,
+      refType: createRefToElmWithValue(workbook_dependencies),
       annotations: {
       },
     },
     pivots: {
-      type: workbook_pivots,
+      refType: createRefToElmWithValue(workbook_pivots),
       annotations: {
       },
     },
     tables: {
-      type: workbook_tables,
+      refType: createRefToElmWithValue(workbook_tables),
       annotations: {
       },
     },

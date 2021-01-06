@@ -36,7 +36,7 @@ const castAndOrderListsRecursively = (
 ): void => {
   // Cast all values of list type to list and order lists according to unorderedListFields
   const castAndOrderLists = (field: Field, value: Value): Value => {
-    if (!isListType(field.type)) {
+    if (!isListType(field.getType())) {
       return value
     }
     if (!_.isArray(value)) {
@@ -60,7 +60,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .forEach(inst => castAndOrderListsRecursively(inst.type, inst.value))
+      .forEach(inst => castAndOrderListsRecursively(inst.getType(), inst.value))
   },
 })
 

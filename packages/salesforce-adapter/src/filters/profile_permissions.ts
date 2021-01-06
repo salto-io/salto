@@ -58,7 +58,7 @@ const createAdminProfile = (): InstanceElement => createInstanceElement(
   } as ProfileInfo,
   new ObjectType({
     elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
-    annotationTypes: _.clone(metadataAnnotationTypes),
+    annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
     annotations: {
       metadataType: PROFILE_METADATA_TYPE,
       dirName: 'profiles',

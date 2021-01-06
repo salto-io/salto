@@ -21,7 +21,7 @@ import {
   isRemovalChange, ElemID, isObjectType, ObjectType, Values, isRemovalOrModificationChange,
   isAdditionOrModificationChange, isElement, isField,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -389,7 +389,7 @@ const filterOutHiddenChanges = async (
       || (isObjectType(baseElem) && ['field', 'attr'].includes(change.id.idType))) {
       // Instance values and annotation values in fields and objects can be hidden
       const getChangeTypeAndPath = (): {
-        changeType: TypeElement
+        changeType: TypeElement | undefined
         changePath: ReadonlyArray<string>
       } => {
         if (isInstanceElement(baseElem)) {
@@ -404,10 +404,12 @@ const filterOutHiddenChanges = async (
             changePath: path.slice(1),
           }
         }
+
         // idType === 'field'
+        const field = baseElem.fields[path[0]]
         return {
           // changeType will be undefined if the path is too short
-          changeType: baseElem.fields[path[0]].type.annotationTypes[path[1]],
+          changeType: field !== undefined ? elementAnnotationTypes(field)[path[1]] : undefined,
           changePath: path.slice(2),
         }
       }

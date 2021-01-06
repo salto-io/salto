@@ -201,6 +201,18 @@ export const transformValues = (
   return _.isEmpty(result) ? undefined : result
 }
 
+export const elementAnnotationTypes = (element: Element): TypeMap => {
+  if (isInstanceElement(element)) {
+    return InstanceAnnotationTypes
+  }
+
+  return {
+    ...CoreAnnotationTypes,
+    ...(isField(element) ? element.type.annotationTypes : element.annotationTypes),
+  }
+}
+
+
 export const transformElementAnnotations = <T extends Element>(
   {
     element,
@@ -211,28 +223,16 @@ export const transformElementAnnotations = <T extends Element>(
     transformFunc: TransformFunc
     strict?: boolean
   }
-): Values => {
-  const elementAnnotationTypes = (): TypeMap => {
-    if (isInstanceElement(element)) {
-      return InstanceAnnotationTypes
-    }
-
-    return {
-      ...InstanceAnnotationTypes,
-      ...CoreAnnotationTypes,
-      ...(isField(element) ? element.type.annotationTypes : element.annotationTypes),
-    }
-  }
-
-  return transformValues({
-    values: element.annotations,
-    type: elementAnnotationTypes(),
-    transformFunc,
-    strict,
-    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
-    isTopLevel: false,
-  }) || {}
-}
+): Values => (
+    transformValues({
+      values: element.annotations,
+      type: elementAnnotationTypes(element),
+      transformFunc,
+      strict,
+      pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+      isTopLevel: false,
+    }) || {}
+  )
 
 export const transformElement = <T extends Element>(
   {

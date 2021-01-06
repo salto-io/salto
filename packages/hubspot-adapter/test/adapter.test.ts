@@ -112,10 +112,8 @@ describe('Hubspot Adapter Operations', () => {
     )
 
     const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => adapter.deploy({
-      changeGroup: {
-        groupID: after.elemID.getFullName(),
-        changes: [{ action: 'add', data: { after } }],
-      },
+      groupID: after.elemID.getFullName(),
+      changes: [{ action: 'add', data: { after } }],
     })
 
     let mockCreateInstance: jest.Mock
@@ -370,10 +368,8 @@ describe('Hubspot Adapter Operations', () => {
     let mockDelete: jest.Mock
 
     const adapterRemove = (before: ChangeDataType): Promise<DeployResult> => adapter.deploy({
-      changeGroup: {
-        groupID: before.elemID.getFullName(),
-        changes: [{ action: 'remove', data: { before } }],
-      },
+      groupID: before.elemID.getFullName(),
+      changes: [{ action: 'remove', data: { before } }],
     })
 
     describe('When remove fails', () => {
@@ -452,10 +448,8 @@ describe('Hubspot Adapter Operations', () => {
     const adapterUpdate = (
       before: ChangeDataType, after: ChangeDataType
     ): Promise<DeployResult> => adapter.deploy({
-      changeGroup: {
-        groupID: before.elemID.getFullName(),
-        changes: [{ action: 'modify', data: { before, after } }],
-      },
+      groupID: before.elemID.getFullName(),
+      changes: [{ action: 'modify', data: { before, after } }],
     })
 
     describe('When Update success', () => {

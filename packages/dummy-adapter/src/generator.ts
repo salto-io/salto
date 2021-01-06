@@ -146,7 +146,7 @@ const profileType = new ObjectType({
 
 export const generateElements = (
   params: GeneratorParams,
-  progressReporter: ProgressReporter
+  progressReporter?: ProgressReporter
 ): Element[] => {
   seedrandom(params.seed.toString(), { global: true })
   const elementRanks: Record<string, number> = {}
@@ -520,18 +520,21 @@ export const generateElements = (
       }
     ).flat()
   }
+  const reportProgress = (details: string, completedPercents: number): void => {
+    if (progressReporter) progressReporter.reportProgress({ details, completedPercents })
+  }
   const defaultTypes = [defaultObj, permissionsType, profileType]
-  progressReporter.reportProgress({ message: 'Generating primitive types' })
+  reportProgress('Generating primitive types', 10)
   const primtiveTypes = generatePrimitiveTypes()
-  progressReporter.reportProgress({ message: 'Generating types' })
+  reportProgress('Generating types', 30)
   const types = generateTypes()
-  progressReporter.reportProgress({ message: 'Generating objects' })
+  reportProgress('Generating objects', 50)
   const objects = generateObjects()
-  progressReporter.reportProgress({ message: 'Generating records' })
+  reportProgress('Generating records', 70)
   const records = generateRecords()
-  progressReporter.reportProgress({ message: 'Generating profile likes' })
+  reportProgress('Generating profile likes', 90)
   const profiles = generateProfileLike(params.useOldProfiles)
-  progressReporter.reportProgress({ message: 'Generation done' })
+  reportProgress('Generation done', 100)
   return [
     ...defaultTypes,
     ...primtiveTypes,

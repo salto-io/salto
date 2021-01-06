@@ -172,7 +172,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
     let deployResult: DeployResult
     beforeAll(async () => {
-      deployResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes } })
+      deployResult = await adapter.deploy({ groupID: 'SDF', changes })
     })
 
     it('should deploy new records', async () => {
@@ -189,7 +189,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
     let deployResult: DeployResult
     beforeAll(async () => {
-      deployResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes } })
+      deployResult = await adapter.deploy({ groupID: 'SDF', changes })
     })
 
     it('should deploy new records that depend on existing ones', async () => {

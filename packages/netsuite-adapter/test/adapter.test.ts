@@ -275,10 +275,8 @@ describe('Adapter', () => {
     })
 
     const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => netsuiteAdapter.deploy({
-      changeGroup: {
-        groupID: after.elemID.getFullName(),
-        changes: [{ action: 'add', data: { after } }],
-      },
+      groupID: after.elemID.getFullName(),
+      changes: [{ action: 'add', data: { after } }],
     })
 
     describe('add', () => {
@@ -315,13 +313,11 @@ describe('Adapter', () => {
 
       it('should support deploying multiple changes at once', async () => {
         const result = await netsuiteAdapter.deploy({
-          changeGroup: {
-            groupID: 'some group id',
-            changes: [
-              { action: 'add', data: { after: fileInstance } },
-              { action: 'add', data: { after: folderInstance } },
-            ],
-          },
+          groupID: 'some group id',
+          changes: [
+            { action: 'add', data: { after: fileInstance } },
+            { action: 'add', data: { after: folderInstance } },
+          ],
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [toCustomizationInfo(folderInstance), toCustomizationInfo(fileInstance)]
@@ -334,13 +330,11 @@ describe('Adapter', () => {
         const clientError = new Error('some client error')
         client.deploy = jest.fn().mockRejectedValue(clientError)
         const result = await netsuiteAdapter.deploy({
-          changeGroup: {
-            groupID: 'some group id',
-            changes: [
-              { action: 'add', data: { after: fileInstance } },
-              { action: 'add', data: { after: folderInstance } },
-            ],
-          },
+          groupID: 'some group id',
+          changes: [
+            { action: 'add', data: { after: fileInstance } },
+            { action: 'add', data: { after: folderInstance } },
+          ],
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [toCustomizationInfo(folderInstance), toCustomizationInfo(fileInstance)]
@@ -355,10 +349,8 @@ describe('Adapter', () => {
       const adapterUpdate = (
         before: ChangeDataType, after: ChangeDataType
       ): Promise<DeployResult> => netsuiteAdapter.deploy({
-        changeGroup: {
-          groupID: after.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before, after } }],
-        },
+        groupID: after.elemID.getFullName(),
+        changes: [{ action: 'modify', data: { before, after } }],
       })
 
       it('should update custom type instance', async () => {
@@ -426,10 +418,8 @@ describe('Adapter', () => {
       })
 
       await netsuiteAdapterWithDeployReferencedElements.deploy({
-        changeGroup: {
-          groupID: instance.elemID.getFullName(),
-          changes: [{ action: 'add', data: { after: instance } }],
-        },
+        groupID: instance.elemID.getFullName(),
+        changes: [{ action: 'add', data: { after: instance } }],
       })
 
       expect(getAllReferencedInstancesMock).toHaveBeenCalledTimes(1)

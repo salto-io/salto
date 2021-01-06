@@ -17,7 +17,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
-  ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
+  ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ProgressReporter,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import {
@@ -327,8 +327,8 @@ describe('fetch', () => {
       })
       describe('when adapter progress is reported ', () => {
         beforeEach(async () => {
-          mockAdapters.dummy.fetch.mockImplementationOnce(fetchOpts => {
-            fetchOpts.progressReporter.reportProgress({ message: 'done' })
+          mockAdapters.dummy.fetch.mockImplementationOnce((progressReporter?: ProgressReporter) => {
+            if (progressReporter) progressReporter.reportProgress({ details: 'done', completedPercents: 100 })
             return Promise.resolve({ elements: [newTypeBase, newTypeExt] })
           })
           const result = await fetchChanges(
@@ -344,7 +344,7 @@ describe('fetch', () => {
           expect(progressEmitter.emit).toHaveBeenCalledTimes(3)
           expect(progressEmitter.emit).toHaveBeenCalledWith('changesWillBeFetched', expect.anything(), expect.anything())
           expect(progressEmitter.emit).toHaveBeenCalledWith('diffWillBeCalculated', expect.anything())
-          expect(progressEmitter.emit).toHaveBeenCalledWith('adapterProgress', 'dummy', 'fetch', { message: 'done' })
+          expect(progressEmitter.emit).toHaveBeenCalledWith('adapterProgress', 'dummy', 'fetch', { details: 'done', completedPercents: 100 })
         })
       })
     })

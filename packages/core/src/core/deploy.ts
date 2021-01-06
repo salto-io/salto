@@ -35,7 +35,7 @@ const deployAction = (
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  return adapter.deploy({ changeGroup: { groupID: planItem.groupKey, changes } })
+  return adapter.deploy({ groupID: planItem.groupKey, changes })
 }
 
 export class DeployError extends Error {

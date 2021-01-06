@@ -165,10 +165,8 @@ describe('SalesforceAdapter CRUD', () => {
           }))
 
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: newInst.elemID.getFullName(),
-              changes: [{ action: 'add', data: { after: newInst } }],
-            },
+            groupID: newInst.elemID.getFullName(),
+            changes: [{ action: 'add', data: { after: newInst } }],
           })
         })
 
@@ -187,10 +185,8 @@ describe('SalesforceAdapter CRUD', () => {
             checkOnly: true,
           }))
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: instance.elemID.getFullName(),
-              changes: [{ action: 'add', data: { after: instance } }],
-            },
+            groupID: instance.elemID.getFullName(),
+            changes: [{ action: 'add', data: { after: instance } }],
           })
         })
         it('should not return any changes as applied', () => {
@@ -589,7 +585,7 @@ describe('SalesforceAdapter CRUD', () => {
             ...deployResultParams,
             rollbackOnError: true,
           }))
-          result = await adapter.deploy({ changeGroup: deployChangeGroup })
+          result = await adapter.deploy(deployChangeGroup)
         })
         it('should not apply the instance change', () => {
           expect(result.appliedChanges).toHaveLength(0)
@@ -606,7 +602,7 @@ describe('SalesforceAdapter CRUD', () => {
             ...deployResultParams,
             rollbackOnError: false,
           }))
-          result = await adapter.deploy({ changeGroup: deployChangeGroup })
+          result = await adapter.deploy(deployChangeGroup)
         })
         it('should apply the component changes', () => {
           expect(result.appliedChanges).toHaveLength(1)
@@ -781,10 +777,8 @@ describe('SalesforceAdapter CRUD', () => {
             }],
           }))
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: afterInstance.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
-            },
+            groupID: afterInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
           })
         })
 
@@ -808,10 +802,8 @@ describe('SalesforceAdapter CRUD', () => {
           afterInstance = beforeInstance.clone()
           afterInstance.value[constants.INSTANCE_FULL_NAME_FIELD] = 'wrong'
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: afterInstance.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
-            },
+            groupID: afterInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
           })
         })
 
@@ -847,13 +839,11 @@ describe('SalesforceAdapter CRUD', () => {
             // Remove one of the rules
             newAssignmentRules.value[assignmentRuleFieldName].pop()
             await adapter.deploy({
-              changeGroup: {
-                groupID: oldAssignmentRules.elemID.getFullName(),
-                changes: [{
-                  action: 'modify',
-                  data: { before: oldAssignmentRules, after: newAssignmentRules },
-                }],
-              },
+              groupID: oldAssignmentRules.elemID.getFullName(),
+              changes: [{
+                action: 'modify',
+                data: { before: oldAssignmentRules, after: newAssignmentRules },
+              }],
             })
           })
 
@@ -910,13 +900,11 @@ describe('SalesforceAdapter CRUD', () => {
 
           beforeEach(async () => {
             await adapter.deploy({
-              changeGroup: {
-                groupID: oldCustomLabels.elemID.getFullName(),
-                changes: [{
-                  action: 'modify',
-                  data: { before: oldCustomLabels, after: newCustomLabels },
-                }],
-              },
+              groupID: oldCustomLabels.elemID.getFullName(),
+              changes: [{
+                action: 'modify',
+                data: { before: oldCustomLabels, after: newCustomLabels },
+              }],
             })
           })
 
@@ -943,10 +931,8 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = oldElement.clone()
           newElement.annotations[constants.API_NAME] = 'Test2__c'
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: oldElement.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
-            },
+            groupID: oldElement.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
           })
         })
 
@@ -1011,10 +997,8 @@ describe('SalesforceAdapter CRUD', () => {
             { action: 'add', data: { after: newElement.fields.address } },
           ]
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: oldElement.elemID.getFullName(),
-              changes,
-            },
+            groupID: oldElement.elemID.getFullName(),
+            changes,
           })
         })
 
@@ -1124,10 +1108,8 @@ describe('SalesforceAdapter CRUD', () => {
           ]
 
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: oldElement.elemID.getFullName(),
-              changes,
-            },
+            groupID: oldElement.elemID.getFullName(),
+            changes,
           })
         })
 
@@ -1227,15 +1209,13 @@ describe('SalesforceAdapter CRUD', () => {
             componentSuccess: [{ fullName: 'Test__c', componentType: constants.CUSTOM_OBJECT }],
           }))
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: oldElement.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before: oldElement, after: newElement } },
-                { action: 'modify',
-                  data: { before: oldElement.fields.banana,
-                    after: newElement.fields.banana } },
-              ],
-            },
+            groupID: oldElement.elemID.getFullName(),
+            changes: [
+              { action: 'modify', data: { before: oldElement, after: newElement } },
+              { action: 'modify',
+                data: { before: oldElement.fields.banana,
+                  after: newElement.fields.banana } },
+            ],
           })
         })
 
@@ -1271,12 +1251,10 @@ describe('SalesforceAdapter CRUD', () => {
           const after = mockTypes.Layout.clone()
           after.annotations[constants.LABEL] = 'test'
           result = await adapter.deploy({
-            changeGroup: {
-              groupID: after.elemID.getFullName(),
-              changes: [
-                { action: 'modify', data: { before, after } },
-              ],
-            },
+            groupID: after.elemID.getFullName(),
+            changes: [
+              { action: 'modify', data: { before, after } },
+            ],
           })
         })
         it('should fail because the type is not deployable', () => {
@@ -1327,13 +1305,11 @@ describe('SalesforceAdapter CRUD', () => {
         delete after.fields.one
 
         result = await adapter.deploy({
-          changeGroup: {
-            groupID: after.elemID.getFullName(),
-            changes: [
-              { action: 'modify', data: { before, after } },
-              { action: 'remove', data: { before: before.fields.one } },
-            ],
-          },
+          groupID: after.elemID.getFullName(),
+          changes: [
+            { action: 'modify', data: { before, after } },
+            { action: 'remove', data: { before: before.fields.one } },
+          ],
         })
       })
 

@@ -46,7 +46,7 @@ const match = (elemId: ElemID, selector: ElementSelector): boolean =>
   && testNames(elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
     selector.nameSelectors)
 
-const createRegex = (selector: string): RegExp => new RegExp(`^${selector.replace(/\*/g, '\\w*')}$`)
+const createRegex = (selector: string): RegExp => new RegExp(`^${selector.replace(/\*/g, '[^\\.]*')}$`)
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 function isElementContainer(value: any): value is ElementIDContainer {

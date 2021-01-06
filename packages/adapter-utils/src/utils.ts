@@ -24,7 +24,7 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  ReadOnlyElementsSource, ReferenceMap,
+  ReadOnlyElementsSource, ReferenceMap, BuiltinTypesRefByFullName,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -52,8 +52,11 @@ export const applyFunctionToChangeData = <T extends Change<unknown>>(
   return change
 }
 
-export const createRefToElmWithValue = (element: Element): ReferenceExpression =>
-  (new ReferenceExpression(element.elemID, element))
+export const createRefToElmWithValue = (element: Element): ReferenceExpression => (
+  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
+  BuiltinTypesRefByFullName[element.elemID.getFullName()]
+    ?? new ReferenceExpression(element.elemID, element)
+)
 
 /**
  * Generate synthetic object types for validating / transforming map type values.

@@ -120,6 +120,11 @@ export const BuiltinTypesByFullName: Record<string, PrimitiveType> = (_.keyBy(
   builtinType => builtinType.elemID.getFullName(),
 ))
 
+export const BuiltinTypesRefByFullName = _.mapValues(
+  BuiltinTypesByFullName,
+  type => new ReferenceExpression(type.elemID, type)
+)
+
 export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),
   [INSTANCE_ANNOTATIONS.PARENT]: new ListType(StandardBuiltinTypes.STRING),

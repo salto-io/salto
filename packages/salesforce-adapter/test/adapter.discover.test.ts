@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, FetchOptions,
+  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
   Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType, getRestriction,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
@@ -31,10 +31,7 @@ import {
   INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, MAX_ITEMS_IN_RETRIEVE_REQUEST,
 } from '../src/types'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
-import {
-  MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput,
-  mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveResult,
-} from './connection'
+import { MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput, mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveResult } from './connection'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
@@ -45,10 +42,6 @@ describe('SalesforceAdapter fetch', () => {
   ]
 
   const testMaxItemsInRetrieveRequest = 100
-
-  const mockFetchOpts: MockInterface<FetchOptions> = {
-    progressReporter: { reportProgress: jest.fn() },
-  }
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
@@ -137,7 +130,7 @@ describe('SalesforceAdapter fetch', () => {
           ],
         }
       )
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
@@ -173,7 +166,7 @@ describe('SalesforceAdapter fetch', () => {
           ],
         }
       )
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
@@ -226,7 +219,7 @@ describe('SalesforceAdapter fetch', () => {
         }
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
 
       expect(result).toHaveLength(_.concat(
         Object.keys(Types.primitiveDataTypes),
@@ -307,7 +300,7 @@ describe('SalesforceAdapter fetch', () => {
 
       it('should fetch metadata instance', async () => {
         mockFlowType()
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch()
         const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
         expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
         expect(flow.value.bla.bla).toBe(55)
@@ -327,7 +320,7 @@ describe('SalesforceAdapter fetch', () => {
 
         mockFlowType()
 
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch()
         const flow = findElements(result, 'Flow', 'my_FlowInstance').pop() as InstanceElement
         expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
         expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('FlowInstance')
@@ -421,7 +414,7 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       it('should fetch complicated metadata instance', async () => {
-        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const { elements: result } = await adapter.fetch()
         const layout = findElements(result, 'Layout', 'Order_Order_Layout@bs').pop() as InstanceElement
         expect(layout).toBeDefined()
         expect(layout.type.elemID).toEqual(LAYOUT_TYPE_ID)
@@ -486,7 +479,7 @@ describe('SalesforceAdapter fetch', () => {
         ]
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
       expect(isListType((flow.type as ObjectType).fields.listTest.type)).toBeTruthy()
@@ -514,7 +507,7 @@ describe('SalesforceAdapter fetch', () => {
         ]
       )
 
-      await adapter.fetch(mockFetchOpts)
+      await adapter.fetch()
 
       expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
     })
@@ -524,7 +517,7 @@ describe('SalesforceAdapter fetch', () => {
         { xmlName: 'Base', childXmlNames: ['Child'] },
         { valueTypeFields: [] },
       )
-      await adapter.fetch(mockFetchOpts)
+      await adapter.fetch()
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
@@ -571,7 +564,7 @@ public class MyClass${index} {
         )
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(2)
       const [first] = findElements(result, 'ApexClass', 'MyClass0') as InstanceElement[]
       const [second] = findElements(result, 'ApexClass', 'MyClass1') as InstanceElement[]
@@ -616,7 +609,7 @@ public class MyClass${index} {
         ]
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
       const [testElem] = findElements(result, 'EmailFolder', 'MyFolder')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
@@ -661,7 +654,7 @@ public class MyClass${index} {
         ]
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
       const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')
       expect(testInst).toBeDefined()
       expect(testInst.path)
@@ -682,7 +675,7 @@ public class MyClass${index} {
         ]
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path)
@@ -703,7 +696,7 @@ public class MyClass${index} {
         ]
       )
 
-      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      const { elements: result } = await adapter.fetch()
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual(
@@ -762,7 +755,7 @@ public class MyClass${index} {
           }
         )
 
-        result = await adapter.fetch(mockFetchOpts)
+        result = await adapter.fetch()
         elements = result.elements
       })
 
@@ -808,7 +801,7 @@ public class MyClass${index} {
           ]
         )
 
-        result = (await adapter.fetch(mockFetchOpts)).elements
+        result = (await adapter.fetch()).elements
       })
 
       it('should skip skippedlist retrieve instances', () => {
@@ -884,7 +877,7 @@ public class MyClass${index} {
 
       it('should return correct config when orig config has values', async () => {
         mockFailures(connection)
-        result = await adapter.fetch(mockFetchOpts)
+        result = await adapter.fetch()
         config = result?.updatedConfig?.config as InstanceElement
         expect(config).toBeDefined()
         expect(config.value).toEqual(
@@ -912,7 +905,7 @@ public class MyClass${index} {
         })
         mockFailures(connectionMock)
 
-        result = await adapterMock.fetch(mockFetchOpts)
+        result = await adapterMock.fetch()
         config = result?.updatedConfig?.config as InstanceElement
         expect(config.value).toEqual(
           {

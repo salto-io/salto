@@ -16,7 +16,7 @@
 import {
   FetchResult,
   AdapterOperations,
-  DeployOptions,
+  ChangeGroup,
   DeployResult,
   Element, ObjectType, Change,
   ChangeDataType, isObjectType, isField, FieldMap, Values,
@@ -83,7 +83,7 @@ export default class MarketoAdapter implements AdapterOperations {
     }
   }
 
-  public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+  public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const deployResults = await Promise.all(
       changeGroup.changes.map(async (change: Change): Promise<DeployResult> => {
         try {

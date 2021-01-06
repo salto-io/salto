@@ -177,7 +177,7 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
     groupID: 'add test elements',
     changes: [{ action: 'add', data: { after: element } }],
   }
-  const result = await adapter.deploy({ changeGroup })
+  const result = await adapter.deploy(changeGroup)
   if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
@@ -214,7 +214,7 @@ export const removeElement = async <T extends InstanceElement | ObjectType>(
     groupID: 'remove test elements',
     changes: [{ action: 'remove', data: { before: element } }],
   }
-  const result = await adapter.deploy({ changeGroup })
+  const result = await adapter.deploy(changeGroup)
   if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)

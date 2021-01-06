@@ -18,25 +18,24 @@ import _ from 'lodash'
 import { generateElements } from '../src/generator'
 import testParams from './test_params'
 
-const mockProgressReporter = { reportProgress: jest.fn() }
 
 describe('elements generator', () => {
   describe('consistency', () => {
     it('should create the same set of elements when invoked with the same seed and params', () => {
-      const run1 = generateElements(testParams, mockProgressReporter)
-      const run2 = generateElements(testParams, mockProgressReporter)
+      const run1 = generateElements(testParams)
+      const run2 = generateElements(testParams)
       expect(run1).toEqual(run2)
     })
     it('should create different results when invoked with different seeds', () => {
-      const run1 = generateElements(testParams, mockProgressReporter)
+      const run1 = generateElements(testParams)
       const run2 = generateElements({
         ...testParams,
         seed: 3.14,
-      }, mockProgressReporter)
+      })
       expect(run1).not.toEqual(run2)
     })
     it('should create the amount of elements as the params specified', () => {
-      const elements = generateElements(testParams, mockProgressReporter)
+      const elements = generateElements(testParams)
       const primitives = elements.filter(isPrimitiveType)
       const [types, objects] = _.partition(
         elements.filter(isObjectType),
@@ -62,12 +61,12 @@ describe('elements generator', () => {
         ...testParams,
         listFieldFreq: 1,
         mapFieldFreq: 0,
-      }, mockProgressReporter)
+      })
       const run2 = generateElements({
         ...testParams,
         listFieldFreq: 0,
         mapFieldFreq: 1,
-      }, mockProgressReporter)
+      })
       const [maps, lists] = _.partition(
         [...run1, ...run2].filter(isObjectType).flatMap(e => _.values(e.fields)).filter(
           f => isContainerType(f.type)
@@ -81,7 +80,7 @@ describe('elements generator', () => {
       const elements = generateElements({
         ...testParams,
         useOldProfiles: true,
-      }, mockProgressReporter)
+      })
       const profiles = elements.filter(isInstanceElement).filter(
         e => e.path !== undefined && e.path[2] === 'Profile'
       )

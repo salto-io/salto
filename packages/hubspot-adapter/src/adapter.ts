@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, ObjectType, FetchResult, AdapterOperations,
-  DeployOptions, DeployResult,
+  Element, InstanceElement, ObjectType, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
 } from '@salto-io/adapter-api'
 import {
   restoreValues, deployInstance, resolveValues,
@@ -158,7 +157,7 @@ export default class HubspotAdapter implements AdapterOperations {
     )
   }
 
-  public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+  public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const operations = {
       add: this.add.bind(this),
       remove: this.remove.bind(this),

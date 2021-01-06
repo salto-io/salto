@@ -153,10 +153,8 @@ describe('custom object instances e2e', () => {
       updatedInstance.value.isActive = false
       updatedInstance.value.ProductCode = 'newCode'
       await adapter.deploy({
-        changeGroup: {
-          groupID: updatedInstance.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
-        },
+        groupID: updatedInstance.elemID.getFullName(),
+        changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
       })
       const fields = ['IsActive', 'ProductCode', 'IsArchived']
       const result = await getRecordOfInstance(client, createdInstance, fields)

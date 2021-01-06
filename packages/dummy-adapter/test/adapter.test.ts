@@ -24,7 +24,7 @@ describe('dummy adapter', () => {
       expect(adapter.deploy).toBeDefined()
     })
     it('should do nothing', async () => {
-      expect(await adapter.deploy({ changeGroup: { changes: [], groupID: ':)' } })).toEqual({
+      expect(await adapter.deploy({ changes: [], groupID: ':)' })).toEqual({
         appliedChanges: [],
         errors: [],
       })
@@ -36,16 +36,15 @@ describe('dummy adapter', () => {
       reportProgress: jest.fn(),
     }
     it('should return the result of the generateElement command withuot modifications', async () => {
-      const mockReporter = { reportProgress: jest.fn() }
-      const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
-      expect(fetchResult)
-        .toEqual({ elements: generator.generateElements(testParams, mockReporter) })
+      const fetchResult = await adapter.fetch()
+      expect(fetchResult).toEqual({ elements: generator.generateElements(testParams) })
     })
     it('should report fetch progress', async () => {
-      await adapter.fetch({ progressReporter: progressReportMock })
+      await adapter.fetch(progressReportMock)
       expect(progressReportMock.reportProgress).toHaveBeenCalledTimes(6)
       expect(progressReportMock.reportProgress).toHaveBeenLastCalledWith({
-        message: 'Generation done',
+        details: 'Generation done',
+        completedPercents: 100,
       })
     })
   })

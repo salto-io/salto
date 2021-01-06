@@ -80,6 +80,7 @@ const mockInstance = new InstanceElement(
   },
   ['yes', 'this', 'is', 'path'],
 )
+
 describe('element selector', () => {
   const selectElements = (elements: ElemID[], selectors: string[]): ElemID[] =>
     selectElementsBySelectors(elements, createElementSelectors(selectors).validSelectors).elements
@@ -109,12 +110,13 @@ describe('element selector', () => {
   it('should handle asterisks in field type and instance name', () => {
     const elements = [
       new ElemID('salesforce', 'sometype', 'instance', 'one_instance'),
+      new ElemID('salesforce', 'sometype', 'instance', 'second_instance_specialchar@s'),
       new ElemID('salesforce', 'othertype', 'type', 'typename'),
       new ElemID('otheradapter', 'othertype', 'instance', 'some_other_instance2'),
       new ElemID('salesforce', 'othertype', 'instance', 'some_other_instance'),
     ]
     const selectedElements = selectElements(elements, ['salesforce.*.instance.*'])
-    expect(selectedElements).toEqual([elements[0], elements[3]])
+    expect(selectedElements).toEqual([elements[0], elements[1], elements[4]])
   })
 
   it('should handle asterisks alongside partial names in type', () => {

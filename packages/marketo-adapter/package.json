@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/marketo-adapter",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "Apache-2.0",
   "description": "Salto Marketo adapter",
   "repository": {
@@ -30,10 +30,10 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.2.1",
-    "@salto-io/adapter-utils": "0.2.1",
-    "@salto-io/logging": "0.2.1",
-    "@salto-io/lowerdash": "0.2.1",
+    "@salto-io/adapter-api": "0.2.2",
+    "@salto-io/adapter-utils": "0.2.2",
+    "@salto-io/logging": "0.2.2",
+    "@salto-io/lowerdash": "0.2.2",
     "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
     "lodash": "^4.17.19"

@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -32,19 +33,19 @@ const sspapplication_entrypoints_entrypoint = new ObjectType({
   },
   fields: {
     entrytype: {
-      type: enums.webapp_entrytype,
+      refType: createRefToElmWithValue(enums.webapp_entrytype),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see webapp_entrytype. */
     entryitem: {
-      type: BuiltinTypes.STRING /* Original type was filereference */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a file with any of the following extensions: .html, .ss, .ssp */
     entryparameter: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 60,
       },
@@ -63,7 +64,7 @@ const sspapplication_entrypoints = new ObjectType({
   },
   fields: {
     entrypoint: {
-      type: new ListType(sspapplication_entrypoints_entrypoint),
+      refType: createRefToElmWithValue(new ListType(sspapplication_entrypoints_entrypoint)),
       annotations: {
       },
     },
@@ -81,7 +82,7 @@ const sspapplication_libraries_library = new ObjectType({
   },
   fields: {
     scriptfile: {
-      type: BuiltinTypes.STRING /* Original type was filereference */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -100,7 +101,7 @@ const sspapplication_libraries = new ObjectType({
   },
   fields: {
     library: {
-      type: new ListType(sspapplication_libraries_library),
+      refType: createRefToElmWithValue(new ListType(sspapplication_libraries_library)),
       annotations: {
       },
     },
@@ -117,7 +118,7 @@ export const sspapplication = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -125,71 +126,71 @@ export const sspapplication = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 34 characters long.   The default value is ‘webapp’. */
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     status: {
-      type: enums.plugintype_status,
+      refType: createRefToElmWithValue(enums.plugintype_status),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
     rootpath: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     appfolder: {
-      type: BuiltinTypes.STRING /* Original type was folderreference */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was folderreference */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     runtimeversion: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long.   The default value is '1.0'. */
     description: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 3999,
       },
     }, /* Original description: This field value can be up to 3999 characters long. */
     isinactive: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
     loglevel: {
-      type: enums.plugintype_loglevel,
+      refType: createRefToElmWithValue(enums.plugintype_loglevel),
       annotations: {
       },
     }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
     systemdomain: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: This field is available when the runtimeversion value is equal to 2.x.   The default value is F. */
     defaultsspfile: {
-      type: BuiltinTypes.STRING /* Original type was filereference */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
       annotations: {
       },
     }, /* Original description: This field must reference a file with any of the following extensions: .js, .ss, .ssp */
     entrypoints: {
-      type: sspapplication_entrypoints,
+      refType: createRefToElmWithValue(sspapplication_entrypoints),
       annotations: {
       },
     },
     libraries: {
-      type: sspapplication_libraries,
+      refType: createRefToElmWithValue(sspapplication_libraries),
       annotations: {
       },
     },

@@ -28,10 +28,7 @@ import {
   RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE,
 } from '../constants'
-import {
-  apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType,
-  toDeployableInstance,
-} from './transformer'
+import { apiName, metadataType, MetadataValues, MetadataInstanceElement, MetadataObjectType, toDeployableInstance, assertMetadataObjectType } from './transformer'
 
 
 const { isDefined } = lowerDashValues
@@ -331,7 +328,7 @@ const cloneValuesWithAttributePrefixes = (instance: InstanceElement): Values => 
 
   transformValues({
     values: instance.value,
-    type: instance.type,
+    type: instance.getType(),
     transformFunc: createPathsSetCallback,
     pathID: instance.elemID,
     strict: false,
@@ -384,7 +381,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
     add: (instance, withManifest = true) => {
       const instanceName = apiName(instance)
       if (withManifest) {
-        addToManifest(instance.type, instanceName)
+        addToManifest(assertMetadataObjectType(instance.getType()), instanceName)
       }
       // Add instance file(s) to zip
       const typeName = metadataType(instance)
@@ -409,7 +406,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           Object.entries(fileNameToContentMap)
             .forEach(([fileName, content]) => zip.file(fileName, content)))
       } else {
-        const { dirName, suffix, hasMetaFile } = instance.type.annotations
+        const { dirName, suffix, hasMetaFile } = instance.getType().annotations
         const instanceContentPath = [
           PACKAGE,
           dirName,

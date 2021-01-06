@@ -14,16 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
-  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType,
-  createRestriction,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from 'jsforce'
-import {
-  restoreValues, resolveValues,
-} from '@salto-io/adapter-utils'
+import { restoreValues, resolveValues, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,
   getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
@@ -138,7 +132,7 @@ describe('transformer', () => {
         expectedRelatedTo: string[],
         expectedType: TypeElement,
       ): void => {
-        expect(fieldElement.type).toEqual(expectedType)
+        expect(fieldElement.getType()).toEqual(expectedType)
         expect(fieldElement.name).toEqual('OwnerId')
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
           .toHaveLength(expectedRelatedTo.length)
@@ -239,14 +233,14 @@ describe('transformer', () => {
       it('should fetch rollup summary field', async () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
           serviceIds)
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Summary)
+        expect(fieldElement.getType()).toEqual(Types.primitiveDataTypes.Summary)
       })
 
       it('should not fetch summary field if it is a calculated formula', async () => {
         salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
           serviceIds)
-        expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.Summary)
+        expect(fieldElement.getType()).not.toEqual(Types.primitiveDataTypes.Summary)
       })
     })
 
@@ -302,7 +296,7 @@ describe('transformer', () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.SCALE]).toEqual(scale)
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
+        expect(fieldElement.getType()).toEqual(Types.primitiveDataTypes.Number)
       })
 
       it('should fetch int field and init its annotations', async () => {
@@ -311,7 +305,7 @@ describe('transformer', () => {
         salesforceNumberField.digits = precision
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
+        expect(fieldElement.getType()).toEqual(Types.primitiveDataTypes.Number)
       })
     })
 
@@ -366,7 +360,7 @@ describe('transformer', () => {
           serviceIds,
           { OtherAddress: 'OtherAddress' }
         )
-        expect(fieldElement.type).toEqual(Types.compoundDataTypes.Address)
+        expect(fieldElement.getType()).toEqual(Types.compoundDataTypes.Address)
       })
     })
 
@@ -414,7 +408,7 @@ describe('transformer', () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField,
           serviceIds, {})
-        expect(fieldElement.type).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(fieldElement.getType()).toEqual(BuiltinTypes.SERVICE_ID)
       })
     })
 
@@ -469,7 +463,7 @@ describe('transformer', () => {
             serviceIds,
             {}
           )
-          expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
+          expect(fieldElement.getType()).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
           expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         })
@@ -484,7 +478,7 @@ describe('transformer', () => {
             serviceIds,
             {}
           )
-          expect(fieldElement.type).toEqual(Types.primitiveDataTypes.AutoNumber)
+          expect(fieldElement.getType()).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
           expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         })
@@ -543,12 +537,12 @@ describe('transformer', () => {
           serviceIds,
           { Name: 'Name' }
         )
-        expect(fieldElement.type).toEqual(Types.compoundDataTypes.Name)
+        expect(fieldElement.getType()).toEqual(Types.compoundDataTypes.Name)
       })
 
       it('should fetch name field as text type when no name compound field in object', async () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, {})
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Text)
+        expect(fieldElement.getType()).toEqual(Types.primitiveDataTypes.Text)
       })
     })
   })
@@ -565,7 +559,7 @@ describe('transformer', () => {
       expect(customField.label).toEqual('Labelo')
     })
     it('should convert geolocation type to location', () => {
-      field.type = Types.compoundDataTypes.Location
+      field.refType = createRefToElmWithValue(Types.compoundDataTypes.Location)
       const customField = toCustomField(field)
       expect(customField.type).toEqual('Location')
     })
@@ -584,7 +578,7 @@ describe('transformer', () => {
       const notInAnnotationTypes = 'notInAnnotationTypes'
       const objType = new ObjectType({
         elemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.STRING,
           [DESCRIPTION]: BuiltinTypes.STRING,
@@ -623,11 +617,11 @@ describe('transformer', () => {
         elemID,
         fields: {
           [existingField]: {
-            type: Types.primitiveDataTypes.Text,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
             annotations: { [API_NAME]: 'Test__c' },
           },
           [ignoredField]: {
-            type: Types.primitiveDataTypes.Text,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
             annotations: { [API_NAME]: 'Ignored__c' },
           },
         },
@@ -675,7 +669,7 @@ describe('transformer', () => {
         beforeEach(() => {
           const customSettingsObj = new ObjectType({
             elemID,
-            annotationTypes: {
+            annotationRefsOrTypes: {
               [API_NAME]: BuiltinTypes.SERVICE_ID,
               [METADATA_TYPE]: BuiltinTypes.STRING,
               [DESCRIPTION]: BuiltinTypes.STRING,
@@ -710,7 +704,12 @@ describe('transformer', () => {
       const fieldName = COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
       const origObjectType = new ObjectType({
         elemID,
-        fields: { [fieldName]: { type: Types.primitiveDataTypes.Lookup, annotations } },
+        fields: {
+          [fieldName]: {
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+            annotations,
+          },
+        },
       })
       let objectType: ObjectType
       beforeEach(() => {
@@ -729,7 +728,7 @@ describe('transformer', () => {
 
       it('should transform masterdetail field', async () => {
         const masterDetailField = objectType.fields[fieldName]
-        masterDetailField.type = Types.primitiveDataTypes.MasterDetail
+        masterDetailField.refType = createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)
         masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
         masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
         const customMasterDetailField = toCustomField(masterDetailField)
@@ -764,7 +763,12 @@ describe('transformer', () => {
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({
         elemID,
-        fields: { [fieldName]: { type: Types.primitiveDataTypes.Picklist, annotations } },
+        fields: {
+          [fieldName]: {
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+            annotations,
+          },
+        },
       })
       let obj: ObjectType
       beforeEach(() => {
@@ -797,7 +801,9 @@ describe('transformer', () => {
       })
 
       it('should transform field dependency for multi picklist field', async () => {
-        obj.fields[fieldName].type = Types.primitiveDataTypes.MultiselectPicklist
+        obj.fields[fieldName].refType = createRefToElmWithValue(
+          Types.primitiveDataTypes.MultiselectPicklist
+        )
         const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
           .toEqual(FIELD_TYPE_NAMES.MULTIPICKLIST)
@@ -832,7 +838,12 @@ describe('transformer', () => {
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({
         elemID,
-        fields: { [fieldName]: { type: Types.primitiveDataTypes.Picklist, annotations } },
+        fields: {
+          [fieldName]: {
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+            annotations,
+          },
+        },
       })
       let obj: ObjectType
       beforeEach(() => {
@@ -870,7 +881,12 @@ describe('transformer', () => {
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({
         elemID,
-        fields: { [fieldName]: { type: Types.primitiveDataTypes.Summary, annotations } },
+        fields: {
+          [fieldName]: {
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Summary),
+            annotations,
+          },
+        },
       })
       let obj: ObjectType
       beforeEach(() => {
@@ -943,70 +959,70 @@ describe('transformer', () => {
         elemID: mockElemID,
         fields: {
           Id: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           Name: {
-            type: Types.compoundDataTypes.Name,
+            refType: createRefToElmWithValue(Types.compoundDataTypes.Name),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           LocalAddress: {
-            type: Types.compoundDataTypes.Address,
+            refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           LocalLocation: {
-            type: Types.compoundDataTypes.Location,
+            refType: createRefToElmWithValue(Types.compoundDataTypes.Location),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           NotCreatableNotUpdateableCompound: {
-            type: Types.compoundDataTypes.Address,
+            refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: false,
               [FIELD_ANNOTATIONS.CREATABLE]: false,
             },
           },
           Creatable: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           NotCreatable: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: false,
             },
           },
           Updateable: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           NotUpdateable: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: false,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
         },
-        annotationTypes: {},
+        annotationRefsOrTypes: {},
         annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
       }),
       values,
@@ -1114,7 +1130,7 @@ describe('transformer', () => {
   describe('type definitions', () => {
     it('should include apiName annotation with service_id type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
-        expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(type.getAnnotationTypes()[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
       })
     })
   })
@@ -1230,7 +1246,7 @@ describe('transformer', () => {
       expect(fieldType.path).toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
       expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
-      expect(nestedFieldType.fields.inner.type).toEqual(BuiltinTypes.STRING)
+      expect(nestedFieldType.fields.inner.getType()).toEqual(BuiltinTypes.STRING)
     })
 
     it('should create nested field as subtype when nested field has fields', async () => {
@@ -1472,7 +1488,7 @@ describe('transformer', () => {
 
     const element = new ObjectType({
       elemID: elementID,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         instanceRef: BuiltinTypes.STRING,
         objectRef: BuiltinTypes.STRING,
         valueRef: BuiltinTypes.STRING,
@@ -1493,7 +1509,7 @@ describe('transformer', () => {
     const elemID = new ElemID('salesforce', 'base')
     const orig = new ObjectType({
       elemID,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         instanceRef: BuiltinTypes.STRING,
         objectRef: BuiltinTypes.STRING,
         valueRef: BuiltinTypes.STRING,
@@ -1508,7 +1524,7 @@ describe('transformer', () => {
       },
       fields: {
         field: {
-          type: element,
+          refType: createRefToElmWithValue(element),
           annotations: {
             instanceRef,
             objectRef: elementRef,
@@ -1545,7 +1561,7 @@ describe('transformer', () => {
       expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
 
       // Should not resolve field type annotations
-      expect(modified.fields.field.type.annotations.typeRef).toEqual(typeRef)
+      expect(modified.fields.field.getType().annotations.typeRef).toEqual(typeRef)
     })
 
     it('should transform back to orig value', () => {
@@ -1573,7 +1589,7 @@ describe('transformer', () => {
     const refObject = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'Lead'),
       fields: { test: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [API_NAME]: 'Lead.Test__c',
         },
@@ -1588,7 +1604,11 @@ describe('transformer', () => {
         },
       })
       const mockEntitlementProcessType = new ObjectType({ elemID: new ElemID(SALESFORCE, 'EntitlementProcess'),
-        fields: { businessHours: { type: allMissingSubTypes[0] } },
+        fields: {
+          businessHours: {
+            refType: createRefToElmWithValue(allMissingSubTypes[0]),
+          },
+        },
         annotations: {
           [METADATA_TYPE]: 'EntitlementProcess',
         } })
@@ -1611,22 +1631,26 @@ describe('transformer', () => {
     describe('with fields in layout instance', () => {
       const mockLayoutItem = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutItem'),
-        fields: { field: { type: BuiltinTypes.STRING } },
+        fields: { field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
         annotations: { [METADATA_TYPE]: 'LayoutItem' },
       })
       const mockLayoutColumn = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutColumn'),
-        fields: { layoutItems: { type: new ListType(mockLayoutItem) } },
+        fields: { layoutItems: { refType: createRefToElmWithValue(new ListType(mockLayoutItem)) } },
         annotations: { [METADATA_TYPE]: 'LayoutColumn' },
       })
       const mockLayoutSection = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutSection'),
-        fields: { layoutColumns: { type: new ListType(mockLayoutColumn) } },
+        fields: {
+          layoutColumns: { refType: createRefToElmWithValue(new ListType(mockLayoutColumn)) },
+        },
         annotations: { [METADATA_TYPE]: 'LayoutSection' },
       })
       const mockLayoutType = new ObjectType({
         elemID: LAYOUT_TYPE_ID,
-        fields: { layoutSections: { type: new ListType(mockLayoutSection) } },
+        fields: {
+          layoutSections: { refType: createRefToElmWithValue(new ListType(mockLayoutSection)) },
+        },
         annotations: { [METADATA_TYPE]: LAYOUT_TYPE_ID_METADATA_TYPE },
       })
       const mockLayoutInstance = new InstanceElement('test', mockLayoutType, {})
@@ -1647,7 +1671,7 @@ describe('transformer', () => {
           SALESFORCE,
           WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
         ),
-        fields: { field: { type: BuiltinTypes.STRING } },
+        fields: { field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
         annotations: { [METADATA_TYPE]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE },
       })
       const mockWorkflowFieldUpdateInstance = new InstanceElement(
@@ -1672,7 +1696,7 @@ describe('transformer', () => {
         {
           elemID: new ElemID(SALESFORCE, CPQ_PRODUCT_RULE),
           fields: {
-            [CPQ_LOOKUP_PRODUCT_FIELD]: { type: BuiltinTypes.STRING },
+            [CPQ_LOOKUP_PRODUCT_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           },
           annotations: {
             [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -1704,14 +1728,14 @@ describe('transformer', () => {
       const workflowActionReference = new ObjectType({
         elemID: new ElemID(SALESFORCE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE),
         fields: {
-          name: { type: BuiltinTypes.STRING },
-          type: { type: BuiltinTypes.STRING },
+          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          type: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
         },
         annotations: { [METADATA_TYPE]: WORKFLOW_ACTION_REFERENCE_METADATA_TYPE },
       })
       const workflowRule = new ObjectType({
         elemID: new ElemID(SALESFORCE, WORKFLOW_RULE_METADATA_TYPE),
-        fields: { actions: { type: workflowActionReference } },
+        fields: { actions: { refType: createRefToElmWithValue(workflowActionReference) } },
         annotations: { [METADATA_TYPE]: WORKFLOW_RULE_METADATA_TYPE },
       })
       const mockWorkflowRuleInstance = new InstanceElement(
@@ -1745,7 +1769,7 @@ describe('transformer', () => {
     describe('when field is not specified', () => {
       const srcObject = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
-        fields: { test: { type: BuiltinTypes.STRING } },
+        fields: { test: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
         annotations: { [METADATA_TYPE]: 'test' },
       })
       const srcInst = new InstanceElement('test', srcObject, {})
@@ -1760,7 +1784,7 @@ describe('transformer', () => {
     describe('with all other cases', () => {
       const srcObject = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
-        fields: { test: { type: BuiltinTypes.STRING } },
+        fields: { test: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
         annotations: { [METADATA_TYPE]: 'test' },
       })
       const srcInst = new InstanceElement('test', srcObject, {})
@@ -1850,16 +1874,16 @@ describe('transformer', () => {
           elemID: mockElemID,
           fields: {
             Id: {
-              type: BuiltinTypes.STRING,
+              refType: createRefToElmWithValue(BuiltinTypes.STRING),
               annotations: {
                 [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
               },
             },
             Name: {
-              type: Types.compoundDataTypes.Name,
+              refType: createRefToElmWithValue(Types.compoundDataTypes.Name),
             },
             LocalAddress: {
-              type: Types.compoundDataTypes.Address,
+              refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
               annotations: {
                 [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
                 [FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -1867,7 +1891,7 @@ describe('transformer', () => {
               },
             },
           },
-          annotationTypes: {},
+          annotationRefsOrTypes: {},
           annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
         }),
         values,
@@ -1891,11 +1915,11 @@ describe('transformer', () => {
       mockObjType = new ObjectType({
         elemID: new ElemID('test', 'obj'),
         fields: {
-          str: { type: BuiltinTypes.STRING },
-          num: { type: BuiltinTypes.NUMBER },
-          bool: { type: BuiltinTypes.BOOLEAN },
-          obj: { type: new ObjectType({ elemID: new ElemID('test', 'nested') }) },
-          unknown: { type: BuiltinTypes.UNKNOWN },
+          str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          bool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+          obj: { refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID('test', 'nested') })) },
+          unknown: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
         },
       })
     })

@@ -575,8 +575,8 @@ describe('multi env tests', () => {
           expect(obj.fields.alpha.annotations.apiName).toBeDefined()
           expect(obj.annotations.metadataType).toBeDefined()
           expect(obj.annotations.apiName).toBeDefined()
-          expect(obj.annotationTypes.apiName).toBeDefined()
-          expect(obj.annotationTypes.metadataType).toBeDefined()
+          expect(obj.annotationRefTypes.apiName).toBeDefined()
+          expect(obj.annotationRefTypes.metadataType).toBeDefined()
         }))
       })
 
@@ -589,8 +589,8 @@ describe('multi env tests', () => {
         expect(obj.fields.alpha.annotations.apiName).toBeDefined()
         expect(obj.annotations.metadataType).toBeDefined()
         expect(obj.annotations.apiName).toBeDefined()
-        expect(obj.annotationTypes.apiName).toBeDefined()
-        expect(obj.annotationTypes.metadataType).toBeDefined()
+        expect(obj.annotationRefTypes.apiName).toBeDefined()
+        expect(obj.annotationRefTypes.metadataType).toBeDefined()
       })
     })
 

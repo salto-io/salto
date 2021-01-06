@@ -20,9 +20,9 @@ import {
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
-  InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError,
+  InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
+import { toObjectType, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -270,7 +270,7 @@ const validateAnnotationsValue = (
 
   // Checking restrictions
   if ((isPrimitiveType(type)
-    || (isContainerType(type) && isPrimitiveType(type.innerType))
+    || (isContainerType(type) && isPrimitiveType(type.getInnerType()))
   ) && shouldEnforceValue()) {
     // TODO: This currently only checks one level of nesting for primitive types inside lists.
     // We should add support for List of list of primitives
@@ -299,16 +299,19 @@ const mapAsArrayWithIds = <T>(value: T | T[], elemID: ElemID): ItemWithNestedId<
 const validateFieldAnnotations = (
   elemID: ElemID, value: Value, field: Field,
 ): ValidationError[] => {
-  const errors = validateAnnotationsValue(elemID, value, field.annotations, field.type)
+  const errors = validateAnnotationsValue(elemID, value, field.annotations, field.getType())
   if (!_.isUndefined(errors)) {
     return errors
   }
 
-  return mapAsArrayWithIds(value, elemID).flatMap(item => validateAnnotations(
-    item.nestedID,
-    item.value,
-    isListType(field.type) ? field.type.innerType : field.type,
-  ))
+  return mapAsArrayWithIds(value, elemID).flatMap(item => {
+    const fieldType = field.getType()
+    return validateAnnotations(
+      item.nestedID,
+      item.value,
+      isListType(fieldType) ? fieldType.getInnerType() : field.getType(),
+    )
+  })
 }
 
 export class InvalidValueTypeValidationError extends ValidationError {
@@ -396,7 +399,7 @@ const validateValue = (elemID: ElemID, value: Value, type: TypeElement): Validat
     return mapAsArrayWithIds(value, elemID).flatMap(item => validateValue(
       item.nestedID,
       item.value,
-      type.innerType,
+      type.getInnerType(),
     ))
   }
 
@@ -404,14 +407,15 @@ const validateValue = (elemID: ElemID, value: Value, type: TypeElement): Validat
 }
 
 const validateFieldValue = (elemID: ElemID, value: Value, field: Field): ValidationError[] => {
-  if (!isListType(field.type) && Array.isArray(value) && value.length === 0) {
+  const fieldType = field.getType()
+  if (!isListType(fieldType) && Array.isArray(value) && value.length === 0) {
     // return an error if value is required
-    return validateAnnotationsValue(elemID, undefined, field.annotations, field.type) ?? []
+    return validateAnnotationsValue(elemID, undefined, field.annotations, fieldType) ?? []
   }
   return mapAsArrayWithIds(value, elemID).flatMap(item => validateValue(
     item.nestedID,
     item.value,
-    isListType(field.type) ? field.type.innerType : field.type,
+    isListType(fieldType) ? fieldType.getInnerType() : fieldType,
   ))
 }
 
@@ -447,14 +451,14 @@ const instanceAnnotationsType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, 'instanceAnnotations'), // dummy elemID, it's not really used
   fields: Object.fromEntries(
     Object.entries(InstanceAnnotationTypes)
-      .map(([name, type]) => [name, { type }])
+      .map(([name, type]) => [name, { refType: createRefToElmWithValue(type) }])
   ),
 })
 
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
   [
-    ...validateValue(element.elemID, element.value, element.type),
-    ...validateAnnotations(element.elemID, element.value, element.type),
+    ...validateValue(element.elemID, element.value, element.getType()),
+    ...validateAnnotations(element.elemID, element.value, element.getType()),
     ...validateValue(element.elemID, element.annotations, instanceAnnotationsType),
   ]
 
@@ -483,9 +487,9 @@ const validateVariable = (element: Variable): ValidationError[] => validateVaria
 )
 
 export const validateElements = (
-  elements: ReadonlyArray<Element>, additionalContext?: ReadonlyArray<Element>,
+  elements: ReadonlyArray<Element>, elementsSource: ReadOnlyElementsSource,
 ): ValidationError[] => (
-  _(resolve(elements, additionalContext))
+  _(resolve(elements, elementsSource))
     .map(e => {
       if (isInstanceElement(e)) {
         return validateInstanceElements(e)

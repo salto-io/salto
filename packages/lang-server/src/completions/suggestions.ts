@@ -17,8 +17,8 @@ import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, ElemID, Element,
-  isListType, getRestriction, isMapType } from '@salto-io/adapter-api'
-import { parser } from '@salto-io/workspace'
+  isListType, getRestriction, isMapType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { parser, InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { ContextReference } from '../context'
 
@@ -61,7 +61,7 @@ const getAllInstances = (
 ): string[] => elements
   .filter(isInstanceElement)
   .filter(e => !adapter || e.elemID.adapter === adapter)
-  .filter(e => !typeName || e.type.elemID.getFullName() === typeName)
+  .filter(e => !typeName || e.refType.elemID.getFullName() === typeName)
   .map(e => e.elemID.name)
 
 const getAllTypes = (
@@ -70,7 +70,7 @@ const getAllTypes = (
 ): string[] => elements
   .filter(isType)
   .filter(e => !adapter || e.elemID.adapter === adapter)
-  .map(e => dumpElemID(e))
+  .map(e => dumpElemID(e.elemID))
 
 const getAdapterNames = (
   elements: ReadonlyArray<Element>
@@ -86,7 +86,7 @@ const refNameSuggestions = (
 
   switch (refElemID.idType) {
     case 'annotation':
-      return _.keys(baseElement.annotationTypes)
+      return _.keys(baseElement.annotationRefTypes)
     case 'attr':
       return _.keys(baseElement.annotations)
     case 'field':
@@ -167,9 +167,10 @@ const referenceSuggestions = (
 
 export const valueSuggestions = (
   attrName: string,
-  annotatingElem: TypeElement|Field,
+  annotatingElem: TypeElement | Field,
   valueType: TypeElement,
-  valueToken: string
+  valueToken: string,
+  elementsSource: ReadOnlyElementsSource,
 ): Suggestions => {
   // If the annotating element is a list and we are not in a list content
   // we need to created one
@@ -187,7 +188,7 @@ export const valueSuggestions = (
   if (restrictionValues) {
     return restrictionValues.map(v => safeJsonStringify(v))
   }
-  const realValueType = isListType(valueType) ? valueType.innerType : valueType
+  const realValueType = isListType(valueType) ? valueType.getInnerType(elementsSource) : valueType
   if (isListType(realValueType)) {
     return [{ label: '[]', insertText: '[$0]' }]
   }
@@ -205,19 +206,29 @@ export const valueSuggestions = (
 
 export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
-  return getFieldNames(params.ref.element.type, params.ref.path)
+  const elementsSource = new InMemoryRemoteElementSource(params.elements)
+  return getFieldNames(params.ref.element.getType(elementsSource), params.ref.path, elementsSource)
 }
 
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
+  const elementsSource = new InMemoryRemoteElementSource(params.elements)
   const attrName = params.tokens[0]
   const refPathWithAttr = getRefPathWithAttr(attrName, params.ref)
-  const valueField = getField(params.ref.element.type, refPathWithAttr)
-  const valueFieldType = getFieldType(params.ref.element.type, refPathWithAttr)
+  const valueField = getField(
+    params.ref.element.getType(elementsSource),
+    refPathWithAttr,
+    elementsSource,
+  )
+  const valueFieldType = getFieldType(
+    params.ref.element.getType(elementsSource),
+    refPathWithAttr,
+    elementsSource,
+  )
   const valueToken = _.last(params.tokens) || ''
   return (valueField && valueFieldType)
     ? [
-      ...valueSuggestions(attrName, valueField, valueFieldType, valueToken),
+      ...valueSuggestions(attrName, valueField, valueFieldType, valueToken, elementsSource),
       ...referenceSuggestions(params.elements, valueToken),
     ]
     : referenceSuggestions(params.elements, valueToken)
@@ -225,16 +236,17 @@ export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions =>
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!params.ref) return []
+  const elementsSource = new InMemoryRemoteElementSource(params.elements)
   const refType = isField(params.ref.element)
-    ? params.ref.element.type
+    ? params.ref.element.getType(elementsSource)
     : params.ref.element
   if (_.isEmpty(params.ref.path)) {
-    return _.keys(refType.annotationTypes)
+    return _.keys(refType.annotationRefTypes)
   }
   const [annoName, ...annoPath] = params.ref.path
-  const annoType = params.ref.element.annotationTypes[annoName]
+  const annoType = params.ref.element.getAnnotationTypes(elementsSource)[annoName]
   if (annoName && isObjectType(annoType)) {
-    return getFieldNames(annoType, annoPath)
+    return getFieldNames(annoType, annoPath, elementsSource)
   }
   return []
 }
@@ -242,29 +254,30 @@ export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
 
 export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!params.ref) return []
+  const elementsSource = new InMemoryRemoteElementSource(params.elements)
 
   const attrName = params.tokens[0]
   const refPathWithAttr = getRefPathWithAttr(attrName, params.ref)
   const [annoName, ...refPath] = refPathWithAttr
 
   const annoType = isField(params.ref.element)
-    ? params.ref.element.type.annotationTypes[annoName]
-    : params.ref.element.annotationTypes[annoName]
+    ? params.ref.element.getType(elementsSource).getAnnotationTypes(elementsSource)[annoName]
+    : params.ref.element.getAnnotationTypes(elementsSource)[annoName]
 
   const valueToken = _.last(params.tokens) || ''
   if (annoType && !_.isEmpty(refPath)) {
-    const attrField = getField(annoType, refPath)
-    const attrFieldType = getFieldType(annoType, refPath)
+    const attrField = getField(annoType, refPath, elementsSource)
+    const attrFieldType = getFieldType(annoType, refPath, elementsSource)
     return (attrField && attrFieldType)
       ? [
-        ...valueSuggestions(annoName, attrField, attrFieldType, valueToken),
+        ...valueSuggestions(annoName, attrField, attrFieldType, valueToken, elementsSource),
         ...referenceSuggestions(params.elements, valueToken),
       ]
       : referenceSuggestions(params.elements, valueToken)
   }
   return (annoType)
     ? [
-      ...valueSuggestions(annoName, annoType, annoType, valueToken),
+      ...valueSuggestions(annoName, annoType, annoType, valueToken, elementsSource),
       ...referenceSuggestions(params.elements, valueToken),
     ]
     : referenceSuggestions(params.elements, valueToken)

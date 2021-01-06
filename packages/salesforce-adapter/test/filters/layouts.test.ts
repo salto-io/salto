@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes,
-} from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
+import { naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
@@ -33,11 +31,11 @@ describe('Test layout filter', () => {
         {
           fields: {
             foo: {
-              type: BuiltinTypes.STRING,
+              refType: createRefToElmWithValue(BuiltinTypes.STRING),
               annotations: { apiName: [apiName, 'foo'].join(constants.API_NAME_SEPARATOR) },
             },
             bar: {
-              type: BuiltinTypes.STRING,
+              refType: createRefToElmWithValue(BuiltinTypes.STRING),
               annotations: { apiName: [apiName, 'bar'].join(constants.API_NAME_SEPARATOR) },
             },
           },

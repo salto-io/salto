@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID,
-  isObjectType, getDeepInnerType, Value, isContainerType } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value, isContainerType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
@@ -25,36 +25,38 @@ import { Token } from './token'
 
 const getElemIDUsages = async (
   element: Element,
-  id: ElemID
+  id: ElemID,
+  elementsSource: ReadOnlyElementsSource,
 ): Promise<string[]> => {
-  const pathsToAdd = new Set<string>()
+  const pathesToAdd = new Set<string>()
   if (isObjectType(element)) {
     _(element.fields)
       .values()
       .filter(f => {
-        const fieldType = f.type
-        const nonGenericType = isContainerType(fieldType) ? getDeepInnerType(fieldType) : f.type
+        const fieldType = f.getType(elementsSource)
+        const nonGenericType = isContainerType(fieldType)
+          ? getDeepInnerType(fieldType, elementsSource) : fieldType
         return id.isEqual(nonGenericType.elemID)
-      }).forEach(f => pathsToAdd.add(f.elemID.getFullName()))
+      }).forEach(f => pathesToAdd.add(f.elemID.getFullName()))
   }
-  if (isInstanceElement(element) && element.type.elemID.isEqual(id)) {
-    pathsToAdd.add(element.elemID.getFullName())
+  if (isInstanceElement(element) && element.refType.elemID.isEqual(id)) {
+    pathesToAdd.add(element.elemID.getFullName())
   }
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field?.elemID.isEqual(id) && path && !isIndexPathPart(path.name)) {
-      pathsToAdd.add(path.getFullName())
+      pathesToAdd.add(path.getFullName())
     }
     if (isReferenceExpression(value) && path) {
-      if (id.isEqual(value.elemId) || id.isParentOf(value.elemId)) {
-        pathsToAdd.add(path.getFullName())
+      if (id.isEqual(value.elemID) || id.isParentOf(value.elemID)) {
+        pathesToAdd.add(path.getFullName())
       }
     }
     return value
   }
   if (!isContainerType(element)) {
-    transformElement({ element, transformFunc, strict: false })
+    transformElement({ element, transformFunc, strict: false, elementsSource })
   }
-  return [...pathsToAdd]
+  return [...pathesToAdd]
 }
 
 const isTokenElemID = (token: string): boolean => {
@@ -100,16 +102,18 @@ export const getReferencingFiles = async (
 export const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
-  id: ElemID
-): Promise<string[]> => _((await Promise.all(
-  (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id))
-))).flatten().uniq().value()
+  id: ElemID,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<string[]> => _.flatten((await Promise.all(
+  (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id, elementsSource))
+)))
 
 export const getWorkspaceReferences = async (
   workspace: EditorWorkspace,
   tokenValue: string,
   context: PositionContext
 ): Promise<SaltoElemFileLocation[]> => {
+  const elementsSource = new InMemoryRemoteElementSource(await workspace.elements)
   const id = getSearchElementFullName(context, tokenValue)
   if (id === undefined) {
     return []
@@ -117,8 +121,8 @@ export const getWorkspaceReferences = async (
   const referencedByFiles = await getReferencingFiles(workspace, id.getFullName())
   const usages = _.flatten(await Promise.all(
     referencedByFiles.map(async filename =>
-      (await getUsageInFile(workspace, filename, id))
-        .flatMap(elemID => ({ filename, fullname: elemID })))
+      (await getUsageInFile(workspace, filename, id, elementsSource))
+        .flatMap(fullname => ({ filename, fullname })))
   ))
   const selfReferences = (await workspace.getElementNaclFiles(id))
     .map(filename => ({ filename, fullname: id.getFullName() }))

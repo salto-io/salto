@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType,
-} from '@salto-io/adapter-api'
+import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
 
@@ -23,8 +22,8 @@ const configID = new ElemID('hubspot')
 
 export const defaultCredentialsType = new ObjectType({
   elemID: configID,
-  fields: { apiKey: { type: BuiltinTypes.STRING } },
-  annotationTypes: {},
+  fields: { apiKey: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+  annotationRefsOrTypes: {},
   annotations: {},
 })
 

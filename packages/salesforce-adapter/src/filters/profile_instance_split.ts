@@ -23,7 +23,7 @@ import { PROFILE_METADATA_TYPE } from '../constants'
 const DEFAULT_NACL_FILENAME = 'Attributes'
 
 const toNaclFilename = (fieldName: string, objType: ObjectType): string => (
-  (fieldName !== undefined && isMapType(objType.fields[fieldName]?.type))
+  (fieldName !== undefined && isMapType(objType.fields[fieldName]?.getType()))
     ? strings.capitalizeFirstLetter(fieldName)
     : DEFAULT_NACL_FILENAME
 )
@@ -32,7 +32,7 @@ const splitProfile = (profile: InstanceElement): InstanceElement[] => {
   const toInstancePart = (naclFilename: string, fieldNames: string[]): InstanceElement => (
     new InstanceElement(
       profile.elemID.name,
-      profile.type,
+      profile.getType(),
       _.pick(profile.value, ...fieldNames),
       profile.path === undefined ? undefined : [...profile.path, naclFilename],
       naclFilename === DEFAULT_NACL_FILENAME ? profile.annotations : undefined,
@@ -41,7 +41,7 @@ const splitProfile = (profile: InstanceElement): InstanceElement[] => {
 
   const targetFieldsByFile = _.groupBy(
     Object.keys(profile.value),
-    fieldName => toNaclFilename(fieldName, profile.type),
+    fieldName => toNaclFilename(fieldName, profile.getType()),
   )
 
   // keep the default filename first so that it comes up first when searching the path index

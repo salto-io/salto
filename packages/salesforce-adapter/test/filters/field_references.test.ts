@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, CORE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType, TypeElement } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
@@ -28,7 +28,9 @@ import { defaultFilterContext } from '../utils'
 const customObjectType = new ObjectType({
   elemID: CUSTOM_OBJECT_TYPE_ID,
   fields: {
-    [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+    [INSTANCE_FULL_NAME_FIELD]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
   },
   annotations: {
     [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -238,7 +240,7 @@ describe('FieldReferences filter', () => {
         e => isInstanceElement(e) && metadataType(e) === 'FilterItem'
       )[0] as InstanceElement
       expect(inst.value.field).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.field?.elemId.getFullName()).toEqual('salesforce.Account.field.name')
+      expect(inst.value.field?.elemID.getFullName()).toEqual('salesforce.Account.field.name')
     })
 
     it('should resolve when field is a regular expression', () => {
@@ -246,7 +248,7 @@ describe('FieldReferences filter', () => {
         e => isInstanceElement(e) && metadataType(e) === 'CustomSite'
       )[0] as InstanceElement
       expect(inst.value.authorizationRequiredPage).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.authorizationRequiredPage?.elemId.getFullName()).toEqual('salesforce.ApexPage.instance.page1')
+      expect(inst.value.authorizationRequiredPage?.elemID.getFullName()).toEqual('salesforce.ApexPage.instance.page1')
     })
 
     it('should resolve custom object instances', () => {
@@ -255,7 +257,7 @@ describe('FieldReferences filter', () => {
       )[0] as InstanceElement
       const account = elements.filter(e => isObjectType(e) && apiName(e) === 'Account')[0]
       expect(inst.value.reportType).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.reportType?.elemId.getFullName()).toEqual(account.elemID.getFullName())
+      expect(inst.value.reportType?.elemID.getFullName()).toEqual(account.elemID.getFullName())
     })
 
     it('should resolve field with relative value using instance parent', () => {
@@ -263,44 +265,44 @@ describe('FieldReferences filter', () => {
         e => isInstanceElement(e) && metadataType(e) === 'WorkflowFieldUpdate'
       )[0] as InstanceElement
       expect(inst.value.field).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.field?.elemId.getFullName()).toEqual('salesforce.Account.field.name')
+      expect(inst.value.field?.elemID.getFullName()).toEqual('salesforce.Account.field.name')
     })
 
     it('should resolve field with relative value array using parent target', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_CUSTOM_SCRIPT
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_CUSTOM_SCRIPT
       ) as InstanceElement
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toBeDefined()
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS]).toHaveLength(1)
       expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]?.elemId.getFullName()).toEqual('salesforce.SBQQ__QuoteLine__c.field.name')
+      expect(inst.value[CPQ_QUOTE_LINE_FIELDS][0]?.elemID.getFullName()).toEqual('salesforce.SBQQ__QuoteLine__c.field.name')
     })
 
     it('should resolve object with configurationAttributeMapping strategy', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_CONFIGURATION_ATTRIBUTE
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_CONFIGURATION_ATTRIBUTE
       ) as InstanceElement
       expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]).toBeDefined()
       expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]?.elemId.getFullName()).toEqual('salesforce.SBQQ__Quote__c')
+      expect(inst.value[CPQ_DEFAULT_OBJECT_FIELD]?.elemID.getFullName()).toEqual('salesforce.SBQQ__Quote__c')
     })
 
     it('should resolve object with lookupQueryMapping strategy', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_LOOKUP_QUERY
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_LOOKUP_QUERY
       ) as InstanceElement
       expect(inst.value[CPQ_TESTED_OBJECT]).toBeDefined()
       expect(inst.value[CPQ_TESTED_OBJECT]).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value[CPQ_TESTED_OBJECT]?.elemId.getFullName()).toEqual('salesforce.SBQQ__Quote__c')
+      expect(inst.value[CPQ_TESTED_OBJECT]?.elemID.getFullName()).toEqual('salesforce.SBQQ__Quote__c')
     })
 
     it('should resolve field with scheduleConstraintFieldMapping strategy', () => {
       const inst = elements.find(
-        e => isInstanceElement(e) && apiName(e.type) === CPQ_DISCOUNT_SCHEDULE
+        e => isInstanceElement(e) && apiName(e.getType()) === CPQ_DISCOUNT_SCHEDULE
       ) as InstanceElement
       expect(inst.value[CPQ_CONSTRAINT_FIELD]).toBeDefined()
       expect(inst.value[CPQ_CONSTRAINT_FIELD]).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value[CPQ_CONSTRAINT_FIELD]?.elemId.getFullName()).toEqual('salesforce.SBQQ__Quote__c.field.SBQQ__Account__c')
+      expect(inst.value[CPQ_CONSTRAINT_FIELD]?.elemID.getFullName()).toEqual('salesforce.SBQQ__Quote__c.field.SBQQ__Account__c')
     })
 
     it('should resolve field with neighbor context using flow action call mapping', () => {
@@ -308,7 +310,7 @@ describe('FieldReferences filter', () => {
         e => isInstanceElement(e) && metadataType(e) === 'FlowActionCall'
       )[0] as InstanceElement
       expect(inst.value.actionName).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.actionName?.elemId.getFullName()).toEqual('salesforce.ApexClass.instance.class5')
+      expect(inst.value.actionName?.elemID.getFullName()).toEqual('salesforce.ApexClass.instance.class5')
     })
 
     it('should not resolve if field has no rule', () => {
@@ -345,7 +347,7 @@ describe('FieldReferences filter', () => {
         e => isInstanceElement(e) && metadataType(e) === 'FilterItem'
       )[0] as InstanceElement
       expect(inst.value.field).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.field?.elemId.getFullName()).toEqual('salesforce.Account.field.name')
+      expect(inst.value.field?.elemID.getFullName()).toEqual('salesforce.Account.field.name')
     })
 
     it('should fail to resolve field with relative value (because of the modified rule)', () => {
@@ -524,7 +526,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       instanceUnknownActionName = generateWorkFlowRuleInstance('unknownActionName', { name: 'unknown', type: 'Alert' })
       instanceMissingActionForType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'Task' })
       instanceInvalidActionType = generateWorkFlowRuleInstance('unknownActionType', { name: 'foo', type: 'InvalidType' })
-      const workflowRuleType = instanceSingleAction.type
+      const workflowRuleType = instanceSingleAction.getType()
 
       instanceFlowRecordLookup = generateFlowRecordLookupInstance('single', {
         object: 'User',
@@ -542,7 +544,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         instanceSingleAction, instanceMultiAction,
         instanceUnknownActionName, instanceMissingActionForType, instanceInvalidActionType,
         ...actionTypeObjects, ...actionInstances,
-        instanceFlowRecordLookup, instanceFlowRecordLookup.type,
+        instanceFlowRecordLookup, instanceFlowRecordLookup.getType(),
       ]
       await filter.onFetch(elements)
     })
@@ -550,7 +552,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     it('should have references to the right actions', () => {
       const getFullName = (action: WorkflowActionReference): string => {
         expect(action.name).toBeInstanceOf(ReferenceExpression)
-        return (action.name as ReferenceExpression).elemId.getFullName()
+        return (action.name as ReferenceExpression).elemID.getFullName()
       }
       expect(getFullName(instanceSingleAction.value.actions)).toEqual(
         actionInstances[0].elemID.getFullName()
@@ -569,7 +571,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     it('should have references if referencing field is an array', () => {
       const getFullName = (val: string | ReferenceExpression): string => {
         expect(val).toBeInstanceOf(ReferenceExpression)
-        return (val as ReferenceExpression).elemId.getFullName()
+        return (val as ReferenceExpression).elemID.getFullName()
       }
       expect(getFullName(instanceFlowRecordLookup.value.queriedFields[0])).toEqual('salesforce.User.field.name')
     })
@@ -577,7 +579,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     it('should have reference for parent\'s neighbor in an array', () => {
       const getFullName = (val: string | ReferenceExpression): string => {
         expect(val).toBeInstanceOf(ReferenceExpression)
-        return (val as ReferenceExpression).elemId.getFullName()
+        return (val as ReferenceExpression).elemID.getFullName()
       }
       expect(getFullName(instanceFlowRecordLookup.value.filters[0].field)).toEqual('salesforce.User.field.name')
       expect(getFullName(instanceFlowRecordLookup.value.filters[2].field)).toEqual('salesforce.User.field.name')

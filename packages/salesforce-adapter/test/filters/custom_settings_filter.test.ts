@@ -105,11 +105,11 @@ describe('Custom settings filter', () => {
     it('Should add two instances for the valid object and no instances for noName one', () => {
       const validObjectInstances = elements
         .filter(elm => isInstanceElement(elm)
-          && elm.type.elemID.isEqual(customSettingsObject.elemID))
+          && elm.getType().elemID.isEqual(customSettingsObject.elemID))
       expect(validObjectInstances).toHaveLength(2)
       const noNameObjectInstances = elements
         .filter(elm => isInstanceElement(elm)
-          && elm.type.elemID.isEqual(customSettingsWithNoNameField.elemID))
+          && elm.getType().elemID.isEqual(customSettingsWithNoNameField.elemID))
       expect(noNameObjectInstances).toHaveLength(0)
     })
   })

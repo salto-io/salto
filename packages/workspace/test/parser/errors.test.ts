@@ -456,7 +456,7 @@ describe('parsing errors', () => {
         expect(res.elements).toHaveLength(1)
         const element = res.elements[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
-        expect(Object.keys(element.annotationTypes)).toEqual(['my'])
+        expect(Object.keys(element.annotationRefTypes)).toEqual(['my'])
       })
     })
     describe('when there are duplicated annotation type blocks', () => {
@@ -491,7 +491,7 @@ describe('parsing errors', () => {
         expect(res.elements).toHaveLength(1)
         const element = res.elements[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
-        expect(Object.keys(element.annotationTypes)).toEqual(['my'])
+        expect(Object.keys(element.annotationRefTypes)).toEqual(['my'])
       })
     })
     describe('when there are multiple definition of a field', () => {
@@ -524,7 +524,7 @@ describe('parsing errors', () => {
         expect(res.elements).toHaveLength(1)
         const element = res.elements[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
-        expect(element.fields.mycar.type.elemID.getFullName()).toEqual('can.drive')
+        expect(element.fields.mycar.refType.elemID.getFullName()).toEqual('can.drive')
       })
     })
     describe('when there is a field with the name of a builtin function', () => {

@@ -15,18 +15,10 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
-import {
-  ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField,
-} from 'jsforce'
-import {
-  TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
-  PrimitiveValue,
-  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType,
-} from '@salto-io/adapter-api'
+import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField } from 'jsforce'
+import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
@@ -52,7 +44,7 @@ const { isDefined } = lowerDashValues
 
 export const metadataType = (element: Readonly<Element>): string => {
   if (isInstanceElement(element)) {
-    return metadataType(element.type)
+    return metadataType(element.getType())
   }
   if (isField(element)) {
     // We expect to reach to this place only with field of CustomObject
@@ -78,7 +70,7 @@ export const isFieldOfCustomObject = (field: Field): boolean =>
 // (before the custom objects filter turns it into a type).
 // To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
 export const isInstanceOfCustomObject = (element: Readonly<Element>): element is InstanceElement =>
-  isInstanceElement(element) && isCustomObject(element.type)
+  isInstanceElement(element) && isCustomObject(element.getType())
 
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
@@ -98,7 +90,7 @@ export const defaultApiName = (element: Readonly<Element>): string => {
 
 const fullApiName = (elem: Readonly<Element>): string => {
   if (isInstanceElement(elem)) {
-    return isCustomObject(elem.type)
+    return isCustomObject(elem.getType())
       ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
@@ -191,9 +183,9 @@ export class Types {
   private static filterItemType = new ObjectType({
     elemID: Types.filterItemElemID,
     fields: {
-      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       [FILTER_ITEM_FIELDS.OPERATION]: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: [
@@ -203,8 +195,8 @@ export class Types {
           }),
         },
       },
-      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [FILTER_ITEM_FIELDS.VALUE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
     annotations: {
       [API_NAME]: 'FilterItem',
@@ -215,12 +207,22 @@ export class Types {
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
     fields: {
-      [LOOKUP_FILTER_FIELDS.ACTIVE]: { type: BuiltinTypes.BOOLEAN },
-      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: { type: BuiltinTypes.STRING },
-      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: { type: BuiltinTypes.STRING },
-      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: { type: BuiltinTypes.STRING },
-      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: { type: BuiltinTypes.BOOLEAN },
-      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: { type: new ListType(Types.filterItemType) },
+      [LOOKUP_FILTER_FIELDS.ACTIVE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      },
+      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: {
+        refType: createRefToElmWithValue(new ListType(Types.filterItemType)),
+      },
     },
     annotations: {
       [API_NAME]: 'LookupFilter',
@@ -233,9 +235,9 @@ export class Types {
     fields: {
       // todo: currently this field is populated with the referenced field's API name,
       //  should be modified to elemID reference once we'll use HIL
-      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { type: BuiltinTypes.STRING },
+      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: {
-        type: new ListType(BuiltinTypes.STRING),
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
       },
     },
     annotations: {
@@ -247,11 +249,11 @@ export class Types {
   private static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
     fields: {
-      [CUSTOM_VALUE.FULL_NAME]: { type: BuiltinTypes.STRING },
-      [CUSTOM_VALUE.LABEL]: { type: BuiltinTypes.STRING },
-      [CUSTOM_VALUE.DEFAULT]: { type: BuiltinTypes.BOOLEAN },
-      [CUSTOM_VALUE.IS_ACTIVE]: { type: BuiltinTypes.BOOLEAN },
-      [CUSTOM_VALUE.COLOR]: { type: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.FULL_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [CUSTOM_VALUE.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [CUSTOM_VALUE.DEFAULT]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [CUSTOM_VALUE.IS_ACTIVE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [CUSTOM_VALUE.COLOR]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
 
@@ -262,8 +264,12 @@ export class Types {
   private static fieldDependencyType = new ObjectType({
     elemID: Types.fieldDependencyElemID,
     fields: {
-      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: { type: BuiltinTypes.STRING },
-      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: { type: new ListType(Types.valueSettingsType) },
+      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: {
+        refType: createRefToElmWithValue(new ListType(Types.valueSettingsType)),
+      },
     },
   })
 
@@ -303,10 +309,18 @@ export class Types {
   private static rollupSummaryFilterItemsType = new ObjectType({
     elemID: Types.rollupSummaryFilterItemsElemID,
     fields: {
-      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.OPERATION]: { type: Types.rollupSummaryFilterOperationTypeType },
-      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [FILTER_ITEM_FIELDS.OPERATION]: {
+        refType: createRefToElmWithValue(Types.rollupSummaryFilterOperationTypeType),
+      },
+      [FILTER_ITEM_FIELDS.VALUE]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
     },
   })
 
@@ -396,7 +410,7 @@ export class Types {
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
@@ -407,7 +421,7 @@ export class Types {
     Number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
@@ -418,7 +432,7 @@ export class Types {
     AutoNumber: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
       },
@@ -426,7 +440,7 @@ export class Types {
     Checkbox: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CHECKBOX),
       primitive: PrimitiveTypes.BOOLEAN,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.DEFAULT_VALUE]: BuiltinTypes.BOOLEAN,
       },
@@ -434,7 +448,7 @@ export class Types {
     Date: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATE),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -442,7 +456,7 @@ export class Types {
     Time: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TIME),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -450,7 +464,7 @@ export class Types {
     DateTime: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATETIME),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -458,7 +472,7 @@ export class Types {
     Currency: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
@@ -468,7 +482,7 @@ export class Types {
     Picklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
@@ -481,7 +495,7 @@ export class Types {
     MultiselectPicklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.MultiPicklistVisibleLines,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
@@ -495,7 +509,7 @@ export class Types {
     Email: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
@@ -504,7 +518,7 @@ export class Types {
     Percent: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
       primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
@@ -514,7 +528,7 @@ export class Types {
     Phone: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PHONE),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -522,7 +536,7 @@ export class Types {
     LongTextArea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.LongTextAreaVisibleLines,
         [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
@@ -532,7 +546,7 @@ export class Types {
     Html: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.RichTextAreaVisibleLines,
         [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
@@ -541,7 +555,7 @@ export class Types {
     TextArea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -549,7 +563,7 @@ export class Types {
     EncryptedText: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.MASK_CHAR]: Types.encryptedTextMaskCharType,
         [FIELD_ANNOTATIONS.MASK_TYPE]: Types.encryptedTextMaskTypeType,
@@ -559,7 +573,7 @@ export class Types {
     Url: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.URL),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -567,7 +581,7 @@ export class Types {
     Lookup: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
@@ -579,7 +593,7 @@ export class Types {
     MasterDetail: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MASTER_DETAIL),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
@@ -593,7 +607,7 @@ export class Types {
     Summary: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ROLLUP_SUMMARY),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
         // todo: currently SUMMARIZED_FIELD && SUMMARY_FOREIGN_KEY are populated with the referenced
         //  field's API name should be modified to elemID reference once we'll use HIL
@@ -606,14 +620,14 @@ export class Types {
     Unknown: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.UNKNOWN),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     AnyType: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.ANY),
       primitive: PrimitiveTypes.UNKNOWN,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
@@ -626,8 +640,8 @@ export class Types {
     return { [typeName]: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, typeName),
       primitive: baseType.primitive,
-      annotationTypes: {
-        ...baseType.annotationTypes,
+      annotationRefsOrTypes: {
+        ...baseType.annotationRefTypes,
         [FORMULA]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]: Types.TreatBlankAsType,
       },
@@ -646,11 +660,21 @@ export class Types {
   )
 
   private static nameInnerFields = {
-    [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
-    [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
-    [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
-    [NAME_FIELDS.MIDDLE_NAME]: { type: BuiltinTypes.STRING },
-    [NAME_FIELDS.SUFFIX]: { type: BuiltinTypes.STRING },
+    [NAME_FIELDS.FIRST_NAME]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    [NAME_FIELDS.LAST_NAME]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    [NAME_FIELDS.SALUTATION]: {
+      refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+    },
+    [NAME_FIELDS.MIDDLE_NAME]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    [NAME_FIELDS.SUFFIX]: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
   }
 
   // Type mapping for compound fields
@@ -658,23 +682,39 @@ export class Types {
     Address: new ObjectType({
       elemID: addressElemID,
       fields: {
-        [ADDRESS_FIELDS.CITY]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.COUNTRY]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: { type: Types.primitiveDataTypes.Picklist },
-        [ADDRESS_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
-        [ADDRESS_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
-        [ADDRESS_FIELDS.POSTAL_CODE]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.STATE]: { type: BuiltinTypes.STRING },
-        [ADDRESS_FIELDS.STREET]: { type: Types.primitiveDataTypes.TextArea },
+        [ADDRESS_FIELDS.CITY]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.COUNTRY]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: {
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+        },
+        [ADDRESS_FIELDS.LATITUDE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        },
+        [ADDRESS_FIELDS.LONGITUDE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        },
+        [ADDRESS_FIELDS.POSTAL_CODE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.STATE]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [ADDRESS_FIELDS.STREET]: {
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.TextArea),
+        },
       },
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     Name: new ObjectType({
       elemID: nameElemID,
       fields: Types.nameInnerFields,
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
@@ -682,17 +722,21 @@ export class Types {
       // replaces the regular Name for types that don't have Salutation attribute (e.g User)
       elemID: nameNoSalutationElemID,
       fields: _.omit(Types.nameInnerFields, [NAME_FIELDS.SALUTATION]),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     Location: new ObjectType({
       elemID: geoLocationElemID,
       fields: {
-        [GEOLOCATION_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
-        [GEOLOCATION_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
+        [GEOLOCATION_FIELDS.LATITUDE]: {
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+        },
+        [GEOLOCATION_FIELDS.LONGITUDE]: {
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+        },
       },
-      annotationTypes: {
+      annotationRefsOrTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         ...Types.commonAnnotationTypes,
@@ -777,25 +821,25 @@ export class Types {
         const fieldType = type.clone()
         fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
           ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
-          : [SALESFORCE, TYPES_PATH, 'annotationTypes']
+          : [SALESFORCE, TYPES_PATH, 'annotationRefTypes']
         return fieldType
       })
   }
 }
 
 export const isNameField = (field: Field): boolean =>
-  (isObjectType(field.type)
-    && (field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-    || field.type.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
+  (isObjectType(field.getType())
+    && (field.refType.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
+    || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
 
 const transformCompoundValues = (
   record: SalesforceRecord,
   instance: InstanceElement
 ): SalesforceRecord => {
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
-  const relevantCompoundFields = _.pickBy(instance.type.fields,
+  const relevantCompoundFields = _.pickBy(instance.getType().fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
-    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.type.elemID.isEqual(e))))
+    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
   if (_.isEmpty(relevantCompoundFields)) {
     return record
   }
@@ -808,7 +852,8 @@ const transformCompoundValues = (
       }
       // Other compound fields are added a prefix according to the field name
       // ie. LocalAddrress -> LocalCity, LocalState etc.
-      const typeName = compoundField.type.elemID.isEqual(Types.compoundDataTypes.Address.elemID)
+      const typeName = compoundField.refType.elemID
+        .isEqual(Types.compoundDataTypes.Address.elemID)
         ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.LOCATION
       const fieldPrefix = compoundFieldKey.slice(0, -typeName.length)
       return _.mapKeys(record[compoundFieldKey], (_vv, key) => fieldPrefix.concat(key))
@@ -828,7 +873,7 @@ const toRecord = (
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
       instance.value,
-      (_v, k) => instance.type.fields[k]?.annotations[fieldAnnotationToFilterBy]
+      (_v, k) => instance.getType().fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
   return transformCompoundValues(filteredRecordValues, instance)
@@ -847,7 +892,7 @@ export const toCustomField = (field: Field): CustomField => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
     apiName(field, true),
-    fieldTypeName(field.type.elemID.name),
+    fieldTypeName(field.refType.elemID.name),
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
     field.annotations[DEFAULT_VALUE_FORMULA],
@@ -896,7 +941,7 @@ export const toCustomField = (field: Field): CustomField => {
     ...isCustom(apiName(field)) ? [] : [LABEL],
   ]
   const isAllowed = (annotationName: string): boolean => (
-    Object.keys(field.type.annotationTypes).includes(annotationName)
+    Object.keys(field.getType().annotationRefTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
   // Convert the annotations' names to the required API name
@@ -932,7 +977,7 @@ export const toCustomProperties = (
   ]
 
   const isAllowed = (annotationName: string): boolean => (
-    Object.keys(element.annotationTypes).includes(annotationName)
+    Object.keys(element.annotationRefTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
   return {
@@ -1007,7 +1052,7 @@ export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
     const convertFunc = convertXsdTypeFuncMap[_.get(value, ['$', 'xsi:type'])] || (v => v)
     return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
   }
-  const fieldType = field?.type
+  const fieldType = field?.getType()
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
@@ -1154,14 +1199,14 @@ export const getSObjectFieldElement = (
     }
   }
 
-  if (!_.isEmpty(naclFieldType.annotationTypes)) {
+  if (!_.isEmpty(naclFieldType.annotationRefTypes)) {
     // Get the rest of the annotations if their name matches exactly the API response
     // and they are not already assigned
     _.assign(
       annotations,
       _.pick(
         _.omit(field, Object.keys(annotations)),
-        Object.keys(naclFieldType.annotationTypes),
+        Object.keys(naclFieldType.annotationRefTypes),
       )
     )
   }
@@ -1243,18 +1288,17 @@ export type MetadataTypeAnnotations = {
   dirName?: string
 }
 
-export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeElement> = {
-  [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
-  hasMetaFile: BuiltinTypes.BOOLEAN,
-  folderType: BuiltinTypes.STRING,
-  folderContentType: BuiltinTypes.STRING,
-  suffix: BuiltinTypes.STRING,
-  dirName: BuiltinTypes.STRING,
+export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, ReferenceExpression> = {
+  [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+  hasMetaFile: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+  folderType: createRefToElmWithValue(BuiltinTypes.STRING),
+  folderContentType: createRefToElmWithValue(BuiltinTypes.STRING),
+  suffix: createRefToElmWithValue(BuiltinTypes.STRING),
+  dirName: createRefToElmWithValue(BuiltinTypes.STRING),
 }
 
 export type MetadataObjectType = ObjectType & {
   annotations: ObjectType['annotations'] & MetadataTypeAnnotations
-  annotationTypes: ObjectType['annotationTypes'] & typeof metadataAnnotationTypes
 }
 
 export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType => (
@@ -1264,15 +1308,23 @@ export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType
 export type MetadataValues = MetadataInfo & Values
 
 export type MetadataInstanceElement = InstanceElement & {
-  type: MetadataObjectType
-  value: MetadataValues
+  getType: (() => MetadataObjectType)
+  // type: MetadataObjectType
+  value: InstanceElement['value'] & MetadataValues
+}
+
+export const assertMetadataObjectType = (type: ObjectType): MetadataObjectType => {
+  if (!isMetadataObjectType(type)) {
+    throw new Error(`This type (${type.elemID.getFullName()}) must be MetadataObjectType`)
+  }
+  return type
 }
 
 export const isMetadataInstanceElement = (
   elem?: Element
 ): elem is MetadataInstanceElement => (
   isInstanceElement(elem)
-  && isMetadataObjectType(elem.type)
+  && isMetadataObjectType(elem.getType())
   && elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
 )
 
@@ -1346,7 +1398,7 @@ export const createMetadataTypeElements = async ({
   const element = Types.get(name, false, isSettings) as MetadataObjectType
   knownTypes.set(name, element)
   const isTopLevelType = baseTypeNames.has(name) || annotations.folderContentType !== undefined
-  element.annotationTypes = _.clone(metadataAnnotationTypes)
+  element.annotationRefTypes = _.clone(metadataAnnotationTypes)
   element.annotate({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,

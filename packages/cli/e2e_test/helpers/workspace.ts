@@ -287,7 +287,7 @@ export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, 
   expectedFieldAnnotations: Record<string, Values>): ObjectType => {
   const object = findElement(elements, new ElemID(adapter, typeName)) as ObjectType
   Object.entries(expectedAnnotationTypes).forEach(([key, value]) =>
-    expect(object.annotationTypes[key]).toEqual(value))
+    expect(object.annotationRefTypes[key]).toEqual(value.elemID))
   Object.entries(expectedAnnotations).forEach(([key, value]) =>
     expect(object.annotations[key]).toEqual(value))
   Object.entries(expectedFieldAnnotations).forEach(([fieldName, fieldAnnotation]) => {

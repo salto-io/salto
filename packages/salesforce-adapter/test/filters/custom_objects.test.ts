@@ -20,7 +20,7 @@ import {
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeElement,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import {
@@ -61,30 +61,30 @@ describe('Custom Objects filter', () => {
       if (name === NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS) {
         const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
         return {
-          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
-          columns: { type: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          columns: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           filters: {
-            type: new ObjectType({
+            refType: createRefToElmWithValue(new ObjectType({
               elemID: listViewFilterElemId,
               fields: {
-                field: { type: BuiltinTypes.STRING },
-                value: { type: BuiltinTypes.STRING },
+                field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+                value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
               },
-            }),
+            })),
           },
         }
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.FIELD_SETS) {
         return {
-          availableFields: { type: BuiltinTypes.STRING },
-          displayedFields: { type: BuiltinTypes.STRING },
-          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+          availableFields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          displayedFields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
         }
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS) {
         return {
-          fields: { type: BuiltinTypes.STRING },
-          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+          fields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
         }
       }
       return {}
@@ -95,11 +95,11 @@ describe('Custom Objects filter', () => {
         .map(([annotationName, typeName]) => ([
           annotationName,
           {
-            type: new ObjectType({
+            refType: createRefToElmWithValue(new ObjectType({
               elemID: new ElemID(SALESFORCE, typeName),
               fields: generateInnerMetadataTypeFields(annotationName),
               annotations: { metadataType: typeName } as MetadataTypeAnnotations,
-            }),
+            })),
           },
         ]))
     )
@@ -108,10 +108,10 @@ describe('Custom Objects filter', () => {
       elemID: CUSTOM_OBJECT_TYPE_ID,
       fields: {
         ...innerMetadataTypesFromInstance,
-        [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
-        pluralLabel: { type: BuiltinTypes.STRING },
-        enableFeeds: { type: BuiltinTypes.BOOLEAN },
-        [CUSTOM_SETTINGS_TYPE]: { type: BuiltinTypes.STRING },
+        [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        pluralLabel: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        enableFeeds: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+        [CUSTOM_SETTINGS_TYPE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -255,7 +255,7 @@ describe('Custom Objects filter', () => {
         const leadObj = leadElements
           .find(elem => elem.path?.slice(-1)[0] === 'Lead') as ObjectType
         expect(leadObj).toBeDefined()
-        expect(leadObj.fields.LastName.type.elemID.name).toBe('Text')
+        expect(leadObj.fields.LastName.refType.elemID.name).toBe('Text')
         expect(leadObj.fields.LastName.annotations.label).toBe('Last Name')
         // Test Required true and false
         expect(leadObj.fields.LastName.annotations[CORE_ANNOTATIONS.REQUIRED])
@@ -275,7 +275,7 @@ describe('Custom Objects filter', () => {
           .toBe(false)
         // Formula field
         expect(leadObj.fields.Formula__c).toBeDefined()
-        expect(leadObj.fields.Formula__c.type.elemID.name).toBe('FormulaText')
+        expect(leadObj.fields.Formula__c.refType.elemID.name).toBe('FormulaText')
         expect(leadObj.fields.Formula__c.annotations[FORMULA]).toBe('my formula')
       })
 
@@ -329,7 +329,7 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
         expect(lead).toBeDefined()
-        expect(lead.fields.Name.type.elemID.name).toBe('Name')
+        expect(lead.fields.Name.refType.elemID.name).toBe('Name')
         expect(lead.fields.Name.annotations.label).toBe('Full Name')
         expect(lead.fields.FirstName).toBe(undefined)
         expect(lead.fields.LastName).toBe(undefined)
@@ -363,7 +363,7 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
         expect(lead).toBeDefined()
-        expect(lead.fields.Address.type.elemID.name).toBe('Address')
+        expect(lead.fields.Address.refType.elemID.name).toBe('Address')
         expect(lead.fields.Address.annotations.label).toBe('Full Name')
         expect(lead.fields.City).toBe(undefined)
         expect(lead.fields.Country).toBe(undefined)
@@ -400,7 +400,7 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
         expect(lead).toBeDefined()
-        expect(lead.fields.Name.type.elemID.name).toBe('Name2')
+        expect(lead.fields.Name.refType.elemID.name).toBe('Name2')
         expect(lead.fields.Name.annotations.label).toBe('Full Name')
         expect(lead.fields.FirstName).toBe(undefined)
         expect(lead.fields.LastName).toBe(undefined)
@@ -422,7 +422,7 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
 
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect(lead.fields.primary.type.elemID.name).toBe('Picklist')
+        expect(lead.fields.primary.refType.elemID.name).toBe('Picklist')
         expect(lead.fields.primary.annotations[FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([
             createValueSetEntry('No'),
@@ -447,7 +447,7 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
 
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect(lead.fields.primary.type.elemID.name).toBe('Picklist')
+        expect(lead.fields.primary.refType.elemID.name).toBe('Picklist')
         expect(lead.fields.primary.annotations[FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([
             createValueSetEntry('No'),
@@ -467,7 +467,7 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
 
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect(lead.fields.NumberField.type.elemID.name).toBe('Number')
+        expect(lead.fields.NumberField.getType().elemID.name).toBe('Number')
       })
 
       it('should add fields from metadata if they are missing in the sobject', async () => {
@@ -483,18 +483,18 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
 
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect(lead.fields.NumberField.type.elemID.name).toBe('Number')
-        expect(lead.fields.ExtraSalt.type.elemID.name).toBe('Checkbox')
-        expect(lead.fields.Pepper.type.elemID.name).toBe('Geolocation')
-        expect(lead.fields.WhoKnows.type.elemID.name).toBe('Unknown')
+        expect(lead.fields.NumberField.refType.elemID.name).toBe('Number')
+        expect(lead.fields.ExtraSalt.refType.elemID.name).toBe('Checkbox')
+        expect(lead.fields.Pepper.refType.elemID.name).toBe('Geolocation')
+        expect(lead.fields.WhoKnows.refType.elemID.name).toBe('Unknown')
       })
 
       it('should fetch sobject with apiName and metadataType service ids', async () => {
         mockSingleSObject('Lead', [])
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect(lead.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-        expect(lead.annotationTypes[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(lead.getAnnotationTypes()[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(lead.getAnnotationTypes()[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
         expect(lead.annotations[API_NAME]).toEqual('Lead')
         expect(lead.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
       })
@@ -595,14 +595,14 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
 
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect(lead.fields.MyAutoNumber.type.elemID.name).toBe('AutoNumber')
-        expect(lead.fields.string.type.elemID.name).toBe('Text')
-        expect(lead.fields.number.type.elemID.name).toBe('Number')
-        expect(lead.fields.MyTextArea.type.elemID.name).toBe('TextArea')
-        expect(lead.fields.MyLongTextArea.type.elemID.name).toBe('LongTextArea')
-        expect(lead.fields.MyRichTextArea.type.elemID.name).toBe('Html')
-        expect(lead.fields.MyEncryptedString.type.elemID.name).toBe('EncryptedText')
-        expect(lead.fields.MyMultiPickList.type.elemID.name).toBe('MultiselectPicklist')
+        expect(lead.fields.MyAutoNumber.refType.elemID.name).toBe('AutoNumber')
+        expect(lead.fields.string.refType.elemID.name).toBe('Text')
+        expect(lead.fields.number.refType.elemID.name).toBe('Number')
+        expect(lead.fields.MyTextArea.refType.elemID.name).toBe('TextArea')
+        expect(lead.fields.MyLongTextArea.refType.elemID.name).toBe('LongTextArea')
+        expect(lead.fields.MyRichTextArea.refType.elemID.name).toBe('Html')
+        expect(lead.fields.MyEncryptedString.refType.elemID.name).toBe('EncryptedText')
+        expect(lead.fields.MyMultiPickList.refType.elemID.name).toBe('MultiselectPicklist')
         expect(lead.fields.MyMultiPickList
           .annotations[FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
       })
@@ -740,7 +740,7 @@ describe('Custom Objects filter', () => {
         const flowElemID = mockGetElemIdFunc(SALESFORCE, {}, 'flow')
         const flowMetadataType = new ObjectType({ elemID: flowElemID,
           annotations: { [METADATA_TYPE]: 'Flow' },
-          annotationTypes: { [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
+          annotationRefsOrTypes: { [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
           path: [SALESFORCE, TYPES_PATH, 'flow'] })
         result.push(flowMetadataType)
 
@@ -1118,19 +1118,19 @@ describe('Custom Objects filter', () => {
             await filter.onFetch(result)
 
             const listViewType = customObjectType
-              .fields[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS].type as ObjectType
-            expect(isListType(listViewType.fields.columns.type)).toBeTruthy()
-            expect(isListType(listViewType.fields.filters.type)).toBeTruthy()
+              .fields[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS].getType() as ObjectType
+            expect(isListType(listViewType.fields.columns.getType())).toBeTruthy()
+            expect(isListType(listViewType.fields.filters.getType())).toBeTruthy()
 
             const fieldSetType = customObjectType
-              .fields[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS].type as ObjectType
-            expect(isListType(fieldSetType.fields.availableFields.type)).toBeTruthy()
-            expect(isListType(fieldSetType.fields.displayedFields.type)).toBeTruthy()
+              .fields[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS].getType() as ObjectType
+            expect(isListType(fieldSetType.fields.availableFields.getType())).toBeTruthy()
+            expect(isListType(fieldSetType.fields.displayedFields.getType())).toBeTruthy()
 
             const compactLayoutType = customObjectType
-              .fields[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS].type as
+              .fields[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS].getType() as
               ObjectType
-            expect(isListType(compactLayoutType.fields.fields.type)).toBeTruthy()
+            expect(isListType(compactLayoutType.fields.fields.getType())).toBeTruthy()
           })
 
           it('should remove the custom object type and its instances from the fetch result', async () => {
@@ -1190,7 +1190,7 @@ describe('Custom Objects filter', () => {
             expect(lead).toBeDefined()
             expect(isObjectType(lead)).toBeTruthy()
             const leadObjectType = lead as ObjectType
-            expect(leadObjectType.annotationTypes[INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
+            expect(leadObjectType.getAnnotationTypes()[INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
           })
 
           it('should merge regular instance element annotations into the standard-custom object type', async () => {
@@ -1198,9 +1198,9 @@ describe('Custom Objects filter', () => {
             result.push(customObjectInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+            expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
             expect(lead.annotations.pluralLabel).toBeUndefined()
           })
 
@@ -1210,9 +1210,9 @@ describe('Custom Objects filter', () => {
             result.push(customSettingsInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+            expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
             expect(lead.annotations.customSettingsType).toBeDefined()
             expect(lead.annotations.customSettingsType).toEqual('Hierarchical')
           })
@@ -1222,9 +1222,9 @@ describe('Custom Objects filter', () => {
             result.push(customObjectInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect(lead.annotationTypes.pluralLabel).toBeDefined()
+            expect(lead.getAnnotationTypes().pluralLabel).toBeDefined()
             expect(lead.annotations.pluralLabel).toEqual('Leads')
           })
 
@@ -1233,7 +1233,7 @@ describe('Custom Objects filter', () => {
             result.push(customObjectInstance)
             await filter.onFetch(result)
             const lead = findElements(result, 'Lead').pop() as ObjectType
-            expect(lead.annotationTypes.listViews).toBeUndefined()
+            expect(lead.getAnnotationTypes().listViews).toBeUndefined()
             expect(lead.annotations.listViews).toBeUndefined()
           })
 
@@ -1300,10 +1300,10 @@ describe('Custom Objects filter', () => {
               result.push(customSettingsObjectInstance)
               await filter.onFetch(result)
               const lead = findElements(result, 'Lead').pop() as ObjectType
-              expect(lead.annotationTypes.enableFeeds).toBeDefined()
+              expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
               expect(lead.annotations.enableFeeds).toBeTruthy()
-              expect(lead.annotationTypes.apiName).toBeDefined()
-              expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+              expect(lead.getAnnotationTypes().apiName).toBeDefined()
+              expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
               expect(lead.annotations.pluralLabel).toBeUndefined()
             })
 
@@ -1313,10 +1313,10 @@ describe('Custom Objects filter', () => {
               result.push(customSettingsObjectInstance)
               await filter.onFetch(result)
               const lead = findElements(result, 'Lead').pop() as ObjectType
-              expect(lead.annotationTypes.enableFeeds).toBeDefined()
+              expect(lead.getAnnotationTypes().enableFeeds).toBeDefined()
               expect(lead.annotations.enableFeeds).toBeTruthy()
-              expect(lead.annotationTypes.apiName).toBeDefined()
-              expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+              expect(lead.getAnnotationTypes().apiName).toBeDefined()
+              expect(lead.getAnnotationTypes().pluralLabel).toBeUndefined()
               expect(lead.annotations.pluralLabel).toBeUndefined()
             })
 
@@ -1324,7 +1324,7 @@ describe('Custom Objects filter', () => {
               result.push(customObjectInstance)
               await filter.onFetch(result)
               const lead = findElements(result, 'Lead').pop() as ObjectType
-              expect(lead.annotationTypes.listViews).toBeUndefined()
+              expect(lead.getAnnotationTypes().listViews).toBeUndefined()
               expect(lead.annotations.listViews).toBeUndefined()
             })
 
@@ -1335,7 +1335,7 @@ describe('Custom Objects filter', () => {
               leadElements.forEach(lead => {
                 expect(lead.annotations[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS])
                   .toBeUndefined()
-                expect(lead.annotationTypes[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS])
+                expect(lead.getAnnotationTypes()[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS])
                   .toBeUndefined()
               })
               const [leadListView] = result.filter(o => o.elemID.name === 'Lead_PartialListViewFullName')
@@ -1449,7 +1449,7 @@ describe('Custom Objects filter', () => {
           const instanceName = 'Lead_DoSomething'
           const quickActionInstance = createQuickActionInstance(instanceName, 'Lead.DoSomething')
           beforeEach(async () => {
-            await filter.onFetch([quickActionInstance, quickActionInstance.type, leadType])
+            await filter.onFetch([quickActionInstance, quickActionInstance.getType(), leadType])
           })
 
           it('should set quickAction instance path correctly', async () => {
@@ -1467,7 +1467,7 @@ describe('Custom Objects filter', () => {
           const instanceName = 'DoSomething'
           const quickActionInstance = createQuickActionInstance(instanceName, 'DoSomething')
           beforeEach(async () => {
-            await filter.onFetch([quickActionInstance, quickActionInstance.type, leadType])
+            await filter.onFetch([quickActionInstance, quickActionInstance.getType(), leadType])
           })
 
           it('should not edit quickAction instance path', async () => {
@@ -1592,19 +1592,19 @@ describe('Custom Objects filter', () => {
         elemID: new ElemID(SALESFORCE, 'Test'),
         fields: {
           MyField: {
-            type: Types.primitiveDataTypes.Text,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
             annotations: { [API_NAME]: 'Test__c.MyField__c' },
           },
           Master: {
-            type: Types.primitiveDataTypes.MasterDetail,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
             annotations: { [API_NAME]: 'Test__c.Master__c' },
           },
           SysField: {
-            type: Types.primitiveDataTypes.AutoNumber,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.AutoNumber),
             annotations: { [API_NAME]: 'Test__c.SysField' },
           },
         },
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
           [API_NAME]: BuiltinTypes.SERVICE_ID,
           [LABEL]: BuiltinTypes.STRING,
@@ -1627,7 +1627,7 @@ describe('Custom Objects filter', () => {
 
         testFieldSet = createInstanceElement(
           { fullName: 'Test__c.MyFieldSet', description: 'my field set' },
-          customObjectType.fields[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS].type as ObjectType,
+          customObjectType.fields[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS].getType() as ObjectType,
           undefined,
           parentAnnotation,
         )

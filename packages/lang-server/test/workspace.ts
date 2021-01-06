@@ -16,9 +16,22 @@
 import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
-import { Workspace, parser, errors as wsErrors, parseCache, state,
-  nacl, staticFiles, dirStore, pathIndex, loadWorkspace, EnvironmentsSources } from '@salto-io/workspace'
+import { Workspace, parser, errors as wsErrors, parseCache, state, nacl, staticFiles, dirStore, pathIndex, loadWorkspace, EnvironmentsSources } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
+
+
+//RB const { parse } = parser
+//RB const { mergeElements } = merger
+//RB const SERVICES = ['salesforce']
+
+//RB const configID = new ElemID(SERVICES[0])
+//RB const mockConfigType = new ObjectType({
+//RB   elemID: configID,
+//RB   fields: { username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+//RB })
+//RB const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
+//RB   username: 'test@test',
+//RB })
 
 export const mockErrors = (
   errors: SaltoError[], parseErrors: parser.ParseError[] = []

@@ -60,14 +60,14 @@ describe('form_field filter', () => {
   it('should add references to contactProperties at field level', () => {
     // g1 property (formfieldGroups[0].fields[0])
     expect(formInstance.value.formFieldGroups[0].fields[0].contactProperty).toBeDefined()
-    expect(formInstance.value.formFieldGroups[0].fields[0].contactProperty.elemId).toBeDefined()
-    expect(formInstance.value.formFieldGroups[0].fields[0].contactProperty.elemId)
+    expect(formInstance.value.formFieldGroups[0].fields[0].contactProperty.elemID).toBeDefined()
+    expect(formInstance.value.formFieldGroups[0].fields[0].contactProperty.elemID)
       .toEqual(g1PropInstance.elemID)
 
     // value property (formfieldGroups[1].fields[0])
     expect(formInstance.value.formFieldGroups[1].fields[0].contactProperty).toBeDefined()
-    expect(formInstance.value.formFieldGroups[1].fields[0].contactProperty.elemId).toBeDefined()
-    expect(formInstance.value.formFieldGroups[1].fields[0].contactProperty.elemId)
+    expect(formInstance.value.formFieldGroups[1].fields[0].contactProperty.elemID).toBeDefined()
+    expect(formInstance.value.formFieldGroups[1].fields[0].contactProperty.elemID)
       .toEqual(valuePropInstance.elemID)
   })
 
@@ -110,7 +110,7 @@ describe('form_field filter', () => {
     ).toBeDefined()
     expect(
       formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-        .contactProperty.elemId
+        .contactProperty.elemID
     ).toEqual(datePropInstance.elemID)
   })
 

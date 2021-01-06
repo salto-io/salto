@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values, FieldDefinition, TypeMap } from '@salto-io/adapter-api'
+import { ElemID, Values, FieldDefinition, ReferenceMap } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TOKEN_TYPES } from '../lexer'
 import { ParseContext, ConsumerReturnType } from '../types'
-import { positionAtEnd, registerRange, createFieldType, addValuePromiseWatcher, positionAtStart } from '../helpers'
+import { positionAtEnd, registerRange, createFieldRefType, addValuePromiseWatcher, positionAtStart } from '../helpers'
 import { consumeWords, consumeValue } from './values'
 import { duplicatedAttribute, invalidAttrDefinitionInAnnotationBlock, multipleAnnotationBlocks, invalidNestedBlock, invalidFieldAnnotationBlock, multiplFieldDefinitions, invalidBlockItem } from '../errors'
 
@@ -63,11 +63,11 @@ export const recoverInvalidItemDefinition = (context: ParseContext): void => {
 export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): ConsumerReturnType<{
     attrs: Values
     fields: Record<string, FieldDefinition>
-    annotationTypes: TypeMap
+    annotationRefTypes: ReferenceMap
   }> => {
   const attrs: Values = {}
   const fields: Record<string, FieldDefinition> = {}
-  let annotationTypes: TypeMap | undefined
+  let annotationRefTypes: ReferenceMap | undefined
   const attrIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('attr') : idPrefix
   const fieldIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('field') : idPrefix
   // The position of the OCurly
@@ -100,8 +100,8 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
           filename: context.filename,
         }))
       }
-      if (annotationTypes === undefined) {
-        annotationTypes = _.mapValues(consumedBlock.value.fields, fieldData => fieldData.type)
+      if (annotationRefTypes === undefined) {
+        annotationRefTypes = _.mapValues(consumedBlock.value.fields, fieldData => fieldData.refType)
       } else {
         context.errors.push(multipleAnnotationBlocks({
           ...consumedBlock.range,
@@ -122,7 +122,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
           filename: context.filename,
         }))
       }
-      if (!_.isEmpty(consumedBlock.value.annotationTypes)) {
+      if (!_.isEmpty(consumedBlock.value.annotationRefTypes)) {
         context.errors.push(invalidFieldAnnotationBlock({
           ...consumedBlock.range,
           filename: context.filename,
@@ -130,7 +130,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
       }
       if (!Object.prototype.hasOwnProperty.call(fields, fieldName)) {
         fields[fieldName] = {
-          type: createFieldType(context, fieldType),
+          refType: createFieldRefType(context, fieldType),
           annotations: consumedBlock.value.attrs,
         }
         registerRange(context, fieldID, {
@@ -154,7 +154,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
     value: {
       attrs,
       fields,
-      annotationTypes: annotationTypes || {},
+      annotationRefTypes: annotationRefTypes ?? {},
     },
     range: { start, end },
   }

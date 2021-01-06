@@ -30,7 +30,7 @@ const getUpdateErrorsForNonUpdateableFields = (
 ): ReadonlyArray<ChangeError> => {
   const beforeResolved = resolveValues(before, getLookUpName)
   const afterResolved = resolveValues(after, getLookUpName)
-  return Object.values(afterResolved.type.fields)
+  return Object.values(afterResolved.getType().fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
     .map(field => {
       if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
@@ -49,7 +49,7 @@ const getCreateErrorsForNonCreatableFields = (
   after: InstanceElement
 ): ReadonlyArray<ChangeError> => {
   const afterResolved = resolveValues(after, getLookUpName)
-  return Object.values(afterResolved.type.fields)
+  return Object.values(afterResolved.getType().fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
     .map(field => {
       if (!_.isUndefined(afterResolved.value[field.name])) {

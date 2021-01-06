@@ -20,7 +20,7 @@ import {
   ObjectType, InstanceElement, isType, isElement, isContainerType,
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
-  BuiltinTypes, TypeElement, isInstanceElement, isPrimitiveType,
+  isInstanceElement, isPrimitiveType,
 } from '@salto-io/adapter-api'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
@@ -168,7 +168,7 @@ export const deserialize = async (
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
       reviveElemID(v.elemID).name,
-      v.type,
+      v.refType,
       v.value,
       undefined,
       v.annotations,
@@ -176,7 +176,7 @@ export const deserialize = async (
     ObjectType: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
       fields: v.fields,
-      annotationTypes: v.annotationTypes,
+      annotationRefsOrTypes: v.annotationRefTypes,
       annotations: v.annotations,
       isSettings: v.isSettings,
     }),
@@ -186,29 +186,29 @@ export const deserialize = async (
     PrimitiveType: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
-      annotationTypes: v.annotationTypes,
+      annotationRefsOrTypes: v.annotationRefTypes,
       annotations: v.annotations,
     }),
     ListType: v => new ListType(
-      v.innerType
+      new ReferenceExpression(v.refInnerType.elemID),
     ),
     MapType: v => new MapType(
-      v.innerType
+      new ReferenceExpression(v.refInnerType.elemID),
     ),
     Field: v => new Field(
       new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
       v.name,
-      v.type,
+      v.refType,
       v.annotations,
     ),
     TemplateExpression: v => (
       new TemplateExpression({ parts: v.parts })
     ),
     ReferenceExpression: v => (
-      new ReferenceExpression(reviveElemID(v.elemId))
+      new ReferenceExpression(reviveElemID(v.elemID))
     ),
     VariableExpression: v => (
-      new VariableExpression(reviveElemID(v.elemId))
+      new VariableExpression(reviveElemID(v.elemID))
     ),
     StaticFile: v => {
       const staticFile = new StaticFile(
@@ -241,43 +241,14 @@ export const deserialize = async (
       ))
     )
   }
-  const elementsMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
-  const builtinMap = _(BuiltinTypes).values().keyBy(b => b.elemID.getFullName()).value()
-  const typeMap = _.merge({}, elementsMap, builtinMap)
-  const resolveType = (type: TypeElement): TypeElement | undefined => {
-    if (isContainerType(type)) {
-      const innerType = resolveType(type.innerType) ?? type.innerType
-      type.setInnerType(innerType)
-      return type
-    }
-    return typeMap[type.elemID.getFullName()]
-  }
-
   elements.forEach(element => {
-    // We use cloneDeep for the iteration but we change the objects in-place in order to preserve
-    // references between objects
-    _.cloneDeepWith(element, (value, key, object) => {
-      if (object === undefined || key === undefined) {
-        // We don't get object/key if and only if this is called on the top level element
-        if (isContainerType(value)) {
-          resolveType(value)
-          return 'stop recursion'
+    _.keys(element).forEach(k => {
+      _.set(element, k, _.cloneDeepWith(_.get(element, k), v => {
+        if (isStaticFile(v)) {
+          return staticFiles[v.filepath]
         }
         return undefined
-      }
-      if (isType(value)) {
-        const resolvedType = resolveType(value)
-        if (resolvedType !== undefined) {
-          _.set(object, key, resolvedType)
-          return 'stop recursion'
-        }
-        return undefined
-      }
-      if (isStaticFile(value)) {
-        _.set(object, key, staticFiles[value.filepath])
-        return 'stop recursion'
-      }
-      return undefined
+      }))
     })
   })
 

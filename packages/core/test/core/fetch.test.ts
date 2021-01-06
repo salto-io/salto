@@ -15,12 +15,14 @@
 */
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
+import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
   ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import * as utils from '@salto-io/adapter-utils'
+import { createRefToElmWithValue, applyInstancesDefaults } from '@salto-io/adapter-utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
@@ -38,7 +40,12 @@ describe('fetch', () => {
   const testID = new ElemID('dummy', 'elem')
   const typeWithField = new ObjectType({
     elemID: testID,
-    fields: { test: { type: BuiltinTypes.STRING, annotations: { annotation: 'value' } } },
+    fields: {
+      test: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { annotation: 'value' },
+      },
+    },
   })
   const typeWithFieldChange = typeWithField.clone()
   typeWithFieldChange.fields.test.annotations.annotation = 'changed'
@@ -47,7 +54,7 @@ describe('fetch', () => {
   const newTypeID = new ElemID('dummy', 'new')
   const newTypeBase = new ObjectType({
     elemID: newTypeID,
-    fields: { base: { type: BuiltinTypes.STRING } },
+    fields: { base: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
     path: ['path', 'base'],
   })
 
@@ -55,16 +62,18 @@ describe('fetch', () => {
   const typeWithHiddenField = new ObjectType({
     elemID: anotherTypeID,
     fields: {
-      reg: { type: BuiltinTypes.STRING },
+      reg: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
       notHidden: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       hidden: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
       hiddenValue: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
     },
@@ -83,19 +92,19 @@ describe('fetch', () => {
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
-    fields: { base: { type: new ListType(BuiltinTypes.STRING) } },
+    fields: { base: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) } },
     path: ['path', 'base'],
   })
   const newTypeExt = new ObjectType({
     elemID: newTypeID,
-    fields: { ext: { type: BuiltinTypes.STRING } },
+    fields: { ext: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
     path: ['path', 'ext'],
   })
   const newTypeMerged = new ObjectType({
     elemID: newTypeID,
     fields: {
-      base: { type: BuiltinTypes.STRING },
-      ext: { type: BuiltinTypes.STRING },
+      base: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      ext: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
 
@@ -290,7 +299,7 @@ describe('fetch', () => {
       const configElemID = new ElemID('dummy')
       const configType = new ObjectType({
         elemID: configElemID,
-        fields: { test: { type: new ListType(BuiltinTypes.STRING) } },
+        fields: { test: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) } },
       })
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
       const currentInstanceConfig = new InstanceElement('ins', configType, { test: [] })
@@ -314,7 +323,12 @@ describe('fetch', () => {
         )
         verifyPlan(
           fetchChangesResult.configChanges,
-          await getPlan({ before: [], after: [configInstance] }),
+          await getPlan({
+            before: [],
+            after: [configInstance],
+            beforeSource: new InMemoryRemoteElementSource([]),
+            afterSource: new InMemoryRemoteElementSource([configType]),
+          }),
           1,
         )
       })
@@ -329,7 +343,12 @@ describe('fetch', () => {
         )
         verifyPlan(
           fetchChangesResult.configChanges,
-          await getPlan({ before: [currentInstanceConfig], after: [configInstance] }),
+          await getPlan({
+            before: [currentInstanceConfig],
+            after: [configInstance],
+            beforeSource: new InMemoryRemoteElementSource([configType]),
+            afterSource: new InMemoryRemoteElementSource([configType]),
+          }),
           1
         )
       })
@@ -676,17 +695,20 @@ describe('fetch', () => {
       const REGULAR_FIELD_NAME = 'regular_field_name'
 
       const typeElemID = new ElemID('adapter', 'elem_id_name')
-      const serviceIdField = { name: SERVICE_ID_FIELD_NAME, type: BuiltinTypes.SERVICE_ID }
+      const serviceIdField = {
+        name: SERVICE_ID_FIELD_NAME,
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      }
       const origRegularFieldType = new PrimitiveType({
         elemID: new ElemID('adapter', 'regular'),
         primitive: PrimitiveTypes.STRING,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [SERVICE_ID_ANNOTATION]: BuiltinTypes.SERVICE_ID,
         },
       })
       const origObj = new ObjectType({
         elemID: typeElemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           [SERVICE_ID_ANNOTATION]: BuiltinTypes.SERVICE_ID,
         },
         annotations: {
@@ -696,7 +718,7 @@ describe('fetch', () => {
 
       type FieldDefinitionWithName = FieldDefinition & { name: string }
       const addField = (obj: ObjectType, field: FieldDefinitionWithName): Field => {
-        const newField = new Field(obj, field.name, field.type, field.annotations)
+        const newField = new Field(obj, field.name, field.refType, field.annotations)
         obj.fields[field.name] = newField
         return newField
       }
@@ -704,17 +726,21 @@ describe('fetch', () => {
       let regularFieldDef: Required<FieldDefinitionWithName>
       let regularFieldType: PrimitiveType
       let instance: InstanceElement
+      let elements: Element[]
+      let elementsSource: ReadOnlyElementsSource
       beforeEach(() => {
         obj = origObj.clone()
         regularFieldType = origRegularFieldType.clone()
-        regularFieldDef = { name: REGULAR_FIELD_NAME, type: regularFieldType, annotations: { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' } }
+        regularFieldDef = { name: REGULAR_FIELD_NAME, refType: createRefToElmWithValue(regularFieldType), annotations: { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' } }
         instance = new InstanceElement('instance_elem_id_name', obj, { [SERVICE_ID_FIELD_NAME]: 'serviceIdValue' })
+        elements = [obj, regularFieldType, instance]
+        elementsSource = new InMemoryRemoteElementSource(elements)
       })
 
       it('should generate for ObjectType and its fields', () => {
         const regularField = addField(obj, regularFieldDef)
 
-        const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
+        const serviceIdToStateElemId = generateServiceIdToStateElemId([obj], elementsSource)
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
@@ -731,7 +757,7 @@ describe('fetch', () => {
         delete regularFieldDef.annotations[SERVICE_ID_ANNOTATION]
         const regularField = addField(obj, regularFieldDef)
 
-        const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
+        const serviceIdToStateElemId = generateServiceIdToStateElemId([obj], elementsSource)
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
@@ -745,12 +771,12 @@ describe('fetch', () => {
       })
       it('should generate for ObjectType and its fields with no SERVICE_ID annotations & annotationType', () => {
         delete obj.annotations[SERVICE_ID_ANNOTATION]
-        delete obj.annotationTypes[SERVICE_ID_ANNOTATION]
+        delete obj.annotationRefTypes[SERVICE_ID_ANNOTATION]
         delete regularFieldDef.annotations[SERVICE_ID_ANNOTATION]
-        delete regularFieldType.annotationTypes[SERVICE_ID_ANNOTATION]
+        delete regularFieldType.annotationRefTypes[SERVICE_ID_ANNOTATION]
         const regularField = addField(obj, regularFieldDef)
 
-        const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
+        const serviceIdToStateElemId = generateServiceIdToStateElemId([obj], elementsSource)
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
@@ -766,7 +792,7 @@ describe('fetch', () => {
         addField(obj, serviceIdField)
         delete instance.value[SERVICE_ID_FIELD_NAME]
 
-        const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
+        const serviceIdToStateElemId = generateServiceIdToStateElemId([instance], elementsSource)
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
         const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
@@ -777,7 +803,7 @@ describe('fetch', () => {
       it('should generate for InstanceElement', () => {
         addField(obj, serviceIdField)
 
-        const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
+        const serviceIdToStateElemId = generateServiceIdToStateElemId([instance], elementsSource)
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
         const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
@@ -786,11 +812,11 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
       it('should generate for InstanceElement with no SERVICE_ID value & field', () => {
-        serviceIdField.type = BuiltinTypes.STRING
+        serviceIdField.refType = createRefToElmWithValue(BuiltinTypes.STRING)
         addField(obj, serviceIdField)
         delete instance.value[SERVICE_ID_FIELD_NAME]
 
-        const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
+        const serviceIdToStateElemId = generateServiceIdToStateElemId([instance], elementsSource)
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
         const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
@@ -839,7 +865,7 @@ describe('fetch', () => {
           [],
           [],
         )
-        expect(utils.applyInstancesDefaults).toHaveBeenCalledWith([hiddenInstance])
+        expect(applyInstancesDefaults).toHaveBeenCalledWith([hiddenInstance])
       })
     })
   })

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { ElemID, Element } from '@salto-io/adapter-api'
+import { ElemID, Element, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
 import { TransformFunc, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 
 type Path = readonly string[]
@@ -69,7 +69,7 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
   const pathHints = {
     [element.elemID.getFullName()]: [element.path],
   }
-  _.keys(element.annotationTypes).forEach(key => {
+  _.keys(element.annotationRefTypes).forEach(key => {
     const id = element.elemID.createNestedID('annotation').createNestedID(key)
     if (element.path) {
       pathHints[id.getFullName()] = [element.path]
@@ -81,7 +81,16 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
     }
     return _.isArrayLikeObject(value) ? undefined : value
   }
-  transformElement({ element, transformFunc, strict: false, runOnFields: true })
+  transformElement({
+    element,
+    transformFunc,
+    strict: false,
+    // This transformElement does not need to types so this can be used
+    // Long term we should replace this with not using transformElement
+    elementsSource: placeholderReadonlyElementsSource,
+    // TODO: Does this work with the above?
+    runOnFields: true,
+  })
   return wu(_.entries(pathHints))
 }
 

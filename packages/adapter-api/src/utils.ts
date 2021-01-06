@@ -14,10 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  TypeElement, Field, ObjectType, Element, PrimitiveType, isListType, isMapType,
-  isObjectType, isField, ContainerType, isContainerType,
-} from './elements'
+import { TypeElement, ObjectType, Element, PrimitiveType, ContainerType, isContainerType, Field, isObjectType, isField, isListType, isMapType, ReadOnlyElementsSource } from './elements'
 import { Values } from './values'
 
 interface AnnoRef {
@@ -32,24 +29,28 @@ type SubElementSearchResult = {
 
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
 
-export const getDeepInnerType = (containerType: ContainerType): ObjectType | PrimitiveType => {
-  const { innerType } = containerType
+export const getDeepInnerType = (
+  containerType: ContainerType,
+  elementsSource?: ReadOnlyElementsSource,
+): ObjectType | PrimitiveType => {
+  const innerType = containerType.getInnerType(elementsSource)
   if (!isContainerType(innerType)) {
     return innerType
   }
-  return getDeepInnerType(innerType)
+  return getDeepInnerType(innerType, elementsSource)
 }
 
 export const getSubElement = (
   baseType: TypeElement,
-  pathParts: ReadonlyArray<string>
+  pathParts: ReadonlyArray<string>,
+  elementsSource?: ReadOnlyElementsSource,
 ): SubElementSearchResult | undefined => {
-  const getChildElement = (source: TypeElement, key: string): Field | TypeElement| undefined => {
-    if ((isIndexPathPart(key) && isListType(source)) || isMapType(source)) {
-      return source.innerType
+  const getChildElement = (type: TypeElement, key: string): Field | TypeElement | undefined => {
+    if ((isIndexPathPart(key) && isListType(type)) || isMapType(type)) {
+      return type.getInnerType(elementsSource)
     }
-    if (source.annotationTypes[key]) return source.annotationTypes[key]
-    if (isObjectType(source)) return source.fields[key]
+    if (type.annotationRefTypes[key]) return type.getAnnotationTypes(elementsSource)?.[key]
+    if (isObjectType(type)) return type.fields[key]
     return undefined
   }
 
@@ -64,8 +65,9 @@ export const getSubElement = (
   }
 
   const fieldData = isField(nextBase)
-    ? getSubElement(nextBase.type, restOfParts)
-    : getSubElement(nextBase, restOfParts)
+    // This will fail if not called from the adapters
+    ? getSubElement(nextBase.getType(elementsSource), restOfParts, elementsSource)
+    : getSubElement(nextBase, restOfParts, elementsSource)
 
   if (_.isUndefined(fieldData)) return undefined
   if (fieldData.field) return fieldData
@@ -82,9 +84,10 @@ export const getSubElement = (
 
 const getFieldAndPath = (
   baseType: TypeElement,
-  pathParts: ReadonlyArray<string>
+  pathParts: ReadonlyArray<string>,
+  elementsSource?: ReadOnlyElementsSource,
 ): SubElementSearchResult | undefined => {
-  const fieldData = getSubElement(baseType, pathParts)
+  const fieldData = getSubElement(baseType, pathParts, elementsSource)
   if (fieldData && fieldData.field) {
     return fieldData
   }
@@ -94,12 +97,16 @@ const getFieldAndPath = (
 export const getField = (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
+  elementsSource?: ReadOnlyElementsSource,
 ): Field | undefined => (
-  getFieldAndPath(baseType, pathParts)?.field
+  getFieldAndPath(baseType, pathParts, elementsSource)?.field
 )
 
-export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
-  TypeElement | undefined => {
+export const getFieldType = (
+  baseType: TypeElement,
+  path: ReadonlyArray<string>,
+  elementsSource?: ReadOnlyElementsSource,
+): TypeElement | undefined => {
   const getFieldInternalType = (
     fieldType: TypeElement,
     pathParts: ReadonlyArray<string>
@@ -109,19 +116,25 @@ export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>)
       return fieldType
     }
     if ((isIndexPathPart(curPart) && isListType(fieldType)) || isMapType(fieldType)) {
-      return getFieldInternalType(fieldType.innerType, restOfParts)
+      return getFieldInternalType(fieldType.getInnerType(elementsSource), restOfParts)
     }
     return undefined
   }
-  const fieldData = getFieldAndPath(baseType, path)
-  return fieldData?.field && getFieldInternalType(fieldData.field.type, fieldData.path)
+  const fieldData = getFieldAndPath(baseType, path, elementsSource)
+  // This will fail if not called from the adapters
+  return fieldData?.field
+    && getFieldInternalType(fieldData.field.getType(elementsSource), fieldData.path)
 }
 
-export const getFieldNames = (refType: ObjectType, path: string[]): string[] => {
+export const getFieldNames = (
+  refType: ObjectType,
+  path: string[],
+  elementsSource?: ReadOnlyElementsSource,
+): string[] => {
   if (_.isEmpty(path)) {
     return _.keys(refType.fields)
   }
-  const fieldType = getFieldType(refType, path)
+  const fieldType = getFieldType(refType, path, elementsSource)
   if (isObjectType(fieldType)) {
     return _.keys(fieldType.fields)
   }

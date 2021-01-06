@@ -123,8 +123,8 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
 const isStandardPickList = (f: Field): boolean => {
   const apiNameResult = apiName(f)
   return apiNameResult
-    ? (f.type.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
-      || f.type.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
+    ? (f.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
+      || f.refType.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
       && !isCustom(apiNameResult)
     : false
 }

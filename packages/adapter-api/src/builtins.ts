@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
+import { ReferenceExpression } from './values'
 import { CORE_ANNOTATIONS } from './core_annotations'
 
 export { CORE_ANNOTATIONS }
@@ -52,11 +54,36 @@ const restrictionType = new ObjectType({
   elemID: new ElemID('', 'restriction'),
   fields: {
     // eslint-disable-next-line @typescript-eslint/camelcase
-    enforce_value: { type: StandardBuiltinTypes.BOOLEAN },
-    values: { type: StandardBuiltinTypes.STRING },
-    min: { type: StandardBuiltinTypes.NUMBER },
-    max: { type: StandardBuiltinTypes.NUMBER },
-    regex: { type: StandardBuiltinTypes.STRING },
+    enforce_value: {
+      refType: new ReferenceExpression(
+        StandardBuiltinTypes.BOOLEAN.elemID,
+        StandardBuiltinTypes.BOOLEAN,
+      ),
+    },
+    values: {
+      refType: new ReferenceExpression(
+        StandardBuiltinTypes.STRING.elemID,
+        StandardBuiltinTypes.STRING,
+      ),
+    },
+    min: {
+      refType: new ReferenceExpression(
+        StandardBuiltinTypes.NUMBER.elemID,
+        StandardBuiltinTypes.NUMBER,
+      ),
+    },
+    max: {
+      refType: new ReferenceExpression(
+        StandardBuiltinTypes.NUMBER.elemID,
+        StandardBuiltinTypes.NUMBER,
+      ),
+    },
+    regex: {
+      refType: new ReferenceExpression(
+        StandardBuiltinTypes.STRING.elemID,
+        StandardBuiltinTypes.STRING,
+      ),
+    },
   },
 })
 
@@ -81,12 +108,22 @@ export const BuiltinTypes = {
   HIDDEN_STRING: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_string'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: StandardCoreAnnotationTypes,
+    annotationRefsOrTypes: StandardCoreAnnotationTypes,
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
     },
   }),
 }
+
+export const BuiltinTypesByFullName: Record<string, PrimitiveType> = (_.keyBy(
+  Object.values(BuiltinTypes),
+  builtinType => builtinType.elemID.getFullName(),
+))
+
+export const BuiltinTypesRefByFullName = _.mapValues(
+  BuiltinTypesByFullName,
+  type => new ReferenceExpression(type.elemID, type)
+)
 
 export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),

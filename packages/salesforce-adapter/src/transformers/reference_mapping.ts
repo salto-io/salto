@@ -84,7 +84,7 @@ const ReferenceSerializationStrategyLookup: Record<
     },
   },
   mapKey: {
-    serialize: ({ ref }) => ref.elemId.name,
+    serialize: ({ ref }) => ref.elemID.name,
     lookup: val => val,
   },
 }

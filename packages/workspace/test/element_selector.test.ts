@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes,
-  ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes, ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { selectElementsBySelectors, createElementSelectors, createElementSelector,
   selectElementIdsByTraversal } from '../src/workspace/element_selector'
 
@@ -27,32 +27,34 @@ const mockStrType = new PrimitiveType({
 const mockElem = new ElemID('mockAdapter', 'test')
 const mockType = new ObjectType({
   elemID: mockElem,
-  annotationTypes: {
+  annotationRefsOrTypes: {
     testAnno: mockStrType,
   },
   annotations: {
     testAnno: 'TEST ANNO',
   },
   fields: {
-    bool: { type: BuiltinTypes.BOOLEAN },
-    num: { type: BuiltinTypes.NUMBER },
-    strArray: { type: new ListType(BuiltinTypes.STRING) },
-    strMap: { type: new MapType(BuiltinTypes.STRING),
+    bool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    strArray: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+    strMap: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)),
       annotations: {
         _required: true,
       } },
     obj: {
-      type: new ListType(new ObjectType({
+      refType: createRefToElmWithValue(new ListType(new ObjectType({
         elemID: mockElem,
         fields: {
-          field: { type: BuiltinTypes.STRING },
+          field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           otherField: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
           },
-          value: { type: BuiltinTypes.STRING },
-          mapOfStringList: { type: new MapType(new ListType(BuiltinTypes.STRING)) },
+          value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          mapOfStringList: {
+            refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+          },
         },
-      })),
+      }))),
     },
   },
   path: ['this', 'is', 'happening'],

@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, Variable, MapType,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType, PrimitiveTypes, Variable, TypeElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { mergeElements, DuplicateAnnotationError } from '../src/merger'
 import { ConflictingFieldTypesError, DuplicateAnnotationFieldDefinitionError,
@@ -30,8 +28,14 @@ describe('merger', () => {
   const base = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-      field2: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
+      field2: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
     },
     annotations: {
       _default: {
@@ -44,55 +48,67 @@ describe('merger', () => {
   const unrelated = new ObjectType({
     elemID: new ElemID('salto', 'unrelated'),
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
     },
   })
 
   const fieldAnnotationConflict = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'update1' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'update1' },
+      },
     },
   })
 
   const fieldTypeConflict = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field2: { type: BuiltinTypes.NUMBER },
+      field2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
 
   const fieldUpdate = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { a: 'update' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { a: 'update' },
+      },
     },
   })
 
   const fieldUpdate2 = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { b: 'update' } },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { b: 'update' },
+      },
     },
   })
 
   const newField = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field3: { type: BuiltinTypes.STRING },
+      field3: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
 
   const updateAnno = new ObjectType({
     elemID: baseElemID,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
   })
 
   const multipleUpdateAnno = new ObjectType({
     elemID: baseElemID,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
   })
@@ -111,15 +127,20 @@ describe('merger', () => {
     },
   })
 
-  const instanceElement = new InstanceElement('inst', base, {})
-  const instanceElement2 = new InstanceElement('inst2', unrelated, {})
-
   const mergedObject = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base', a: 'update', b: 'update' } },
-      field2: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-      field3: { type: BuiltinTypes.STRING },
+      field1: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base', a: 'update', b: 'update' },
+      },
+      field2: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { label: 'base' },
+      },
+      field3: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
     },
     annotations: {
       anno1: 'updated',
@@ -128,7 +149,7 @@ describe('merger', () => {
         field2: 'base2',
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
   })
@@ -222,50 +243,6 @@ describe('merger', () => {
     })
   })
 
-  describe('merging placeholders', () => {
-    it('update type pointers with the modified type', () => {
-      const elements = [
-        base,
-        unrelated,
-        fieldUpdate,
-        fieldUpdate2,
-        updateAnno,
-        updateAnnoValues,
-        instanceElement,
-        instanceElement2,
-      ]
-      const { merged, errors } = mergeElements(elements)
-      expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(4)
-    })
-
-    it('update placehoder for map types', () => {
-      const primElemID = new ElemID('salto', 'string')
-      const prim = new PrimitiveType({
-        elemID: primElemID,
-        primitive: PrimitiveTypes.STRING,
-      })
-      const objType = new ObjectType({
-        elemID: new ElemID('salto', 'obj'),
-        fields: {
-          prim: {
-            type: new MapType(new ObjectType({
-              elemID: primElemID,
-            })),
-          },
-        },
-      })
-
-      const { merged, errors } = mergeElements([prim, objType])
-      expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(2)
-      const mergedPrim = merged[0] as PrimitiveType
-      const mergedObj = merged[1] as ObjectType
-      const mapType = mergedObj.fields.prim.type as MapType
-      expect(mapType.innerType).toEqual(mergedPrim)
-    })
-  })
-
   describe('merging instances', () => {
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
@@ -276,9 +253,16 @@ describe('merger', () => {
     const nested = new ObjectType({
       elemID: nestedElemID,
       fields: {
-        field1: { type: strType, annotations: { _default: 'field1' } },
-        field2: { type: strType },
-        base: { type: base },
+        field1: {
+          refType: createRefToElmWithValue(strType),
+          annotations: { _default: 'field1' },
+        },
+        field2: {
+          refType: createRefToElmWithValue(strType),
+        },
+        base: {
+          refType: createRefToElmWithValue(base),
+        },
       },
     })
     const ins1 = new InstanceElement(
@@ -377,58 +361,36 @@ describe('merger', () => {
     })
   })
 
-  describe('replace type defs', () => {
-    const strType = new PrimitiveType({
-      elemID: new ElemID('salto', 'string'),
-      primitive: PrimitiveTypes.STRING,
-      annotations: { _default: 'type' },
-    })
-
-    const nestedElemID = new ElemID('salto', 'nested')
-
-    const nested = new ObjectType({
-      elemID: nestedElemID,
-      fields: {
-        prim: { type: typeRef(strType) },
-        base: { type: typeRef(base) },
-      },
-    })
-
-    it('should replace type refs with full types', () => {
-      const { merged, errors } = mergeElements([
-        strType,
-        base,
-        nested,
-      ])
-      expect(errors).toHaveLength(0)
-      const element = merged[2] as ObjectType
-      expect(element.fields.prim.type).toEqual(strType)
-      expect(element.fields.base.type).toEqual(base)
-    })
-  })
-
   describe('merging settings', () => {
     const settingElemID = new ElemID('salto', 'settingObj')
     const setting1 = new ObjectType({
       isSettings: true,
       elemID: settingElemID,
       fields: {
-        setting1: { type: BuiltinTypes.STRING },
+        setting1: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
     const setting2 = new ObjectType({
       isSettings: true,
       elemID: settingElemID,
       fields: {
-        setting2: { type: BuiltinTypes.STRING },
+        setting2: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
     const mergedSetting = new ObjectType({
       isSettings: true,
       elemID: settingElemID,
       fields: {
-        setting1: { type: BuiltinTypes.STRING },
-        setting2: { type: BuiltinTypes.STRING },
+        setting1: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        setting2: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
     const badSettingType = new ObjectType({
@@ -459,21 +421,19 @@ describe('merger', () => {
     const instanceElementContext = new InstanceElement('instInContext', typeRef(objectType))
     it('should replace type refs with full types in the elements that are being merged', () => {
       const elements = [instanceElementToMerge]
-      const context = _.keyBy([objectType], e => e.elemID.getFullName())
-      const { errors, merged } = mergeElements(elements, context)
+      const { errors, merged } = mergeElements(elements)
       expect(errors).toHaveLength(0)
       const mergedElement = merged.find(e => e.elemID.isEqual(instanceElementToMerge.elemID))
       expect(mergedElement).toBeDefined()
-      expect((mergedElement as InstanceElement).type).toBe(objectType)
+      expect((mergedElement as InstanceElement).refType.elemID).toBe(objectType.elemID)
     })
     it('should not replace type refs with full types in the context elements', () => {
       const elements = [instanceElementToMerge]
-      const context = _.keyBy([objectType, instanceElementContext], e => e.elemID.getFullName())
-      const { errors, merged } = mergeElements(elements, context)
+      const { errors, merged } = mergeElements(elements)
       expect(errors).toHaveLength(0)
       const mergedElement = merged.find(e => e.elemID.isEqual(instanceElementContext.elemID))
       expect(mergedElement).toBeUndefined()
-      expect(instanceElementContext.type).not.toBe(objectType)
+      expect(instanceElementContext.refType).not.toBe(objectType.elemID)
     })
   })
 })

@@ -15,6 +15,7 @@
 */
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -101,7 +102,7 @@ describe('Custom Object Instances filter', () => {
     const namespace = getNamespaceFromString(name)
     const basicFields = {
       Id: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -109,7 +110,7 @@ describe('Custom Object Instances filter', () => {
         },
       },
       Name: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'description label',
@@ -117,7 +118,7 @@ describe('Custom Object Instances filter', () => {
         },
       },
       TestField: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [LABEL]: 'Test field',
           [API_NAME]: 'TestField',
@@ -281,35 +282,35 @@ describe('Custom Object Instances filter', () => {
       describe('should add instances per configured object', () => {
         it('should not fetch for non-configured objects', () => {
           const notConfiguredObjInstances = elements.filter(
-            e => isInstanceElement(e) && e.type === notConfiguredObj
+            e => isInstanceElement(e) && e.getType() === notConfiguredObj
           ) as InstanceElement[]
           expect(notConfiguredObjInstances.length).toEqual(0)
         })
 
         it('should fetch for regex configured objects', () => {
           const includedNameSpaceObjInstances = elements.filter(
-            e => isInstanceElement(e) && e.type === includedNameSpaceObj
+            e => isInstanceElement(e) && e.getType() === includedNameSpaceObj
           ) as InstanceElement[]
           expect(includedNameSpaceObjInstances.length).toEqual(2)
         })
 
         it('should fetch for object included specifically configured', () => {
           const includedObjectInstances = elements.filter(
-            e => isInstanceElement(e) && e.type === includedObject
+            e => isInstanceElement(e) && e.getType() === includedObject
           ) as InstanceElement[]
           expect(includedObjectInstances.length).toEqual(2)
         })
 
         it('should not fetch for object from a configured regex whose excluded specifically', () => {
           const excludedObjectInstances = elements.filter(
-            e => isInstanceElement(e) && e.type === excludedObject
+            e => isInstanceElement(e) && e.getType() === excludedObject
           ) as InstanceElement[]
           expect(excludedObjectInstances.length).toEqual(0)
         })
 
         it('should not fetch for object from a configured as excluded even if it was included by object', () => {
           const excludeOverrideObjectInstances = elements.filter(
-            e => isInstanceElement(e) && e.type === excludeOverrideObject
+            e => isInstanceElement(e) && e.getType() === excludeOverrideObject
           ) as InstanceElement[]
           expect(excludeOverrideObjectInstances.length).toEqual(0)
         })
@@ -353,7 +354,7 @@ describe('Custom Object Instances filter', () => {
         elemID: new ElemID(SALESFORCE, noFieldsName),
         fields: {
           Id: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [API_NAME]: 'Id',
               queryable: false,
@@ -368,12 +369,12 @@ describe('Custom Object Instances filter', () => {
 
       const withNameName = `${testNamespace}__withCompoundName__c`
       const objWithNameField = createCustomObject(withNameName)
-      objWithNameField.fields.Name.type = Types.compoundDataTypes.Name
+      objWithNameField.fields.Name.refType = createRefToElmWithValue(Types.compoundDataTypes.Name)
 
       const withAddressName = `${testNamespace}__withAddress__c`
       const objWithAddressField = createCustomObject(withAddressName, {
         OtherAddress: {
-          type: Types.compoundDataTypes.Address,
+          refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
           annotations: {
             [LABEL]: 'Address',
             [API_NAME]: 'OtherAddress',
@@ -402,7 +403,7 @@ describe('Custom Object Instances filter', () => {
         let instances: InstanceElement[]
         beforeEach(() => {
           instances = elements.filter(
-            e => isInstanceElement(e) && e.type === simpleObject
+            e => isInstanceElement(e) && e.getType() === simpleObject
           ) as InstanceElement[]
         })
 
@@ -441,7 +442,7 @@ describe('Custom Object Instances filter', () => {
         let instances: InstanceElement[]
         beforeEach(() => {
           instances = elements.filter(
-            e => isInstanceElement(e) && e.type === objWithNoFields
+            e => isInstanceElement(e) && e.getType() === objWithNoFields
           ) as InstanceElement[]
         })
 
@@ -458,7 +459,7 @@ describe('Custom Object Instances filter', () => {
         let instances: InstanceElement[]
         beforeEach(() => {
           instances = elements.filter(
-            e => isInstanceElement(e) && e.type === objWithNameField
+            e => isInstanceElement(e) && e.getType() === objWithNameField
           ) as InstanceElement[]
         })
 
@@ -503,7 +504,7 @@ describe('Custom Object Instances filter', () => {
         let instances: InstanceElement[]
         beforeEach(() => {
           instances = elements.filter(
-            e => isInstanceElement(e) && e.type === objWithAddressField
+            e => isInstanceElement(e) && e.getType() === objWithAddressField
           ) as InstanceElement[]
         })
 
@@ -554,7 +555,7 @@ describe('Custom Object Instances filter', () => {
         refFromAndToObjectName,
         {
           Parent: {
-            type: Types.primitiveDataTypes.MasterDetail,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
             annotations: {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
@@ -562,7 +563,7 @@ describe('Custom Object Instances filter', () => {
             },
           },
           Pricebook2Id: {
-            type: Types.primitiveDataTypes.Lookup,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
             annotations: {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
@@ -577,7 +578,7 @@ describe('Custom Object Instances filter', () => {
         namespacedRefFromName,
         {
           Parent: {
-            type: Types.primitiveDataTypes.MasterDetail,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
             annotations: {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
@@ -585,7 +586,7 @@ describe('Custom Object Instances filter', () => {
             },
           },
           Pricebook2Id: {
-            type: Types.primitiveDataTypes.Lookup,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
             annotations: {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
@@ -635,7 +636,7 @@ describe('Custom Object Instances filter', () => {
       refFromObjectName,
       {
         Parent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -653,7 +654,7 @@ describe('Custom Object Instances filter', () => {
       parentObjectName,
       {
         Grandparent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -668,7 +669,7 @@ describe('Custom Object Instances filter', () => {
       pricebookEntryName,
       {
         Pricebook2Id: {
-          type: Types.primitiveDataTypes.Lookup,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
           annotations: {
             [LABEL]: 'Pricebook2Id field',
             [API_NAME]: 'Pricebook2Id',
@@ -683,7 +684,7 @@ describe('Custom Object Instances filter', () => {
       productName,
       {
         ProductCode: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             [LABEL]: 'ProductCode field',
             [API_NAME]: 'ProductCode',
@@ -697,7 +698,7 @@ describe('Custom Object Instances filter', () => {
       SBQQCustomActionName,
       {
         SBQQ__Location__c: {
-          type: Types.primitiveDataTypes.Checkbox,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Checkbox),
           annotations: {
             [LABEL]: 'Location checkbox field',
             [API_NAME]: 'SBQQ__Location__c',
@@ -711,7 +712,7 @@ describe('Custom Object Instances filter', () => {
           },
         },
         SBQQ__DisplayOrder__c: {
-          type: Types.primitiveDataTypes.Number,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
           annotations: {
             [LABEL]: 'Display order',
             [API_NAME]: 'SBQQ__DisplayOrder__c',
@@ -725,7 +726,7 @@ describe('Custom Object Instances filter', () => {
       grandsonObjectName,
       {
         Parent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -740,7 +741,7 @@ describe('Custom Object Instances filter', () => {
       orphanObjectName,
       {
         Parent: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -758,7 +759,7 @@ describe('Custom Object Instances filter', () => {
       notQueryableIdFieldsName,
       {
         NotQueryable: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             [LABEL]: 'not queryable',
             [API_NAME]: 'NotQueryable',
@@ -820,7 +821,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === grandparentObject
+          e => isInstanceElement(e) && e.getType() === grandparentObject
         ) as InstanceElement[]
       })
 
@@ -833,7 +834,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === parentObject
+          e => isInstanceElement(e) && e.getType() === parentObject
         ) as InstanceElement[]
       })
 
@@ -848,7 +849,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === grandsonObject
+          e => isInstanceElement(e) && e.getType() === grandsonObject
         ) as InstanceElement[]
       })
 
@@ -864,7 +865,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === orphanObject
+          e => isInstanceElement(e) && e.getType() === orphanObject
         ) as InstanceElement[]
       })
       it('should not create instances and suggest to add to include list', () => {
@@ -882,7 +883,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === badIdFieldsObject
+          e => isInstanceElement(e) && e.getType() === badIdFieldsObject
         ) as InstanceElement[]
       })
 
@@ -901,7 +902,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === notQueryableIdFieldsObject
+          e => isInstanceElement(e) && e.getType() === notQueryableIdFieldsObject
         ) as InstanceElement[]
       })
 
@@ -920,7 +921,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === refFromObject
+          e => isInstanceElement(e) && e.getType() === refFromObject
         ) as InstanceElement[]
       })
 
@@ -935,7 +936,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === refToObject
+          e => isInstanceElement(e) && e.getType() === refToObject
         ) as InstanceElement[]
       })
 
@@ -948,7 +949,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === pricebookEntryObject
+          e => isInstanceElement(e) && e.getType() === pricebookEntryObject
         ) as InstanceElement[]
       })
 
@@ -963,7 +964,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === productObject
+          e => isInstanceElement(e) && e.getType() === productObject
         ) as InstanceElement[]
       })
 
@@ -984,7 +985,7 @@ describe('Custom Object Instances filter', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === SBQQCustomActionObject
+          e => isInstanceElement(e) && e.getType() === SBQQCustomActionObject
         ) as InstanceElement[]
       })
 

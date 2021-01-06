@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { inspect } from 'util'
 import {
-  InstanceElement, ElemID, ObjectType,
+  InstanceElement, ElemID, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -39,7 +39,7 @@ export class DuplicateInstanceKeyError extends MergeError {
 }
 
 const mergeInstanceDefinitions = (
-  { elemID, type }: { elemID: ElemID; type: ObjectType },
+  { elemID, refType }: { elemID: ElemID; refType: ReferenceExpression },
   instanceDefs: InstanceElement[]
 ): MergeResult<InstanceElement> => {
   const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates(
@@ -59,7 +59,7 @@ const mergeInstanceDefinitions = (
 
   return {
     merged: new InstanceElement(
-      elemID.name, type, valueMergeResult.merged, undefined, annotationsMergeResults.merged,
+      elemID.name, refType, valueMergeResult.merged, undefined, annotationsMergeResults.merged,
     ),
     errors: [...valueMergeResult.errors, ...annotationsMergeResults.errors],
   }

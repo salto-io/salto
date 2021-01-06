@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ListType, ElemID, ObjectType, BuiltinTypes, TypeElement, FieldDefinition } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { Types } from '../../src/transformers/transformer'
 import { HUBSPOT } from '../../src/constants'
 
@@ -22,14 +23,14 @@ const innerObjectElemID = new ElemID(HUBSPOT, 'innerObject')
 const simpleField = (
   name: string, type: TypeElement = Types.userIdentifierType,
 ): Record<string, FieldDefinition> => (
-  { [name]: { type, annotations: { name, _readOnly: false } } }
+  { [name]: { refType: createRefToElmWithValue(type), annotations: { name, _readOnly: false } } }
 )
 
 const stringListField = (name: string): ReturnType<typeof simpleField> =>
   simpleField(name, new ListType(Types.userIdentifierType))
 
 const strField = {
-  str: { type: BuiltinTypes.STRING, annotations: { name: 'str' } },
+  str: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: { name: 'str' } },
 }
 
 const innerObject = new ObjectType(

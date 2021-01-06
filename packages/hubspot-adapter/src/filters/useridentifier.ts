@@ -35,7 +35,7 @@ const convertUserIdentifiers = (
     listType: ListType,
     listValue: Values,
   ): void => {
-    const currentLevelInnerType = listType.innerType
+    const currentLevelInnerType = listType.getInnerType()
     if (isListType(currentLevelInnerType)) {
       getValueAsArray(listValue).forEach((val: Values): void => {
         convertListTypeOfObjectType(currentLevelInnerType, val)
@@ -53,7 +53,7 @@ const convertUserIdentifiers = (
       if (_.isUndefined(currentValue)) {
         return
       }
-      const fieldType = field.type
+      const fieldType = field.getType()
       if (isUserIdentifierType(fieldType)) {
         const numVal = Number(currentValue)
         if (!Number.isNaN(numVal)) {
@@ -88,9 +88,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const ownersMap = createOwnersMap(owners)
     elements
       .filter(isInstanceElement)
-      .filter(instance => isObjectType(instance.type))
+      .filter(instance => isObjectType(instance.getType()))
       .forEach(instance => {
-        convertUserIdentifiers(instance.type, instance.value, ownersMap)
+        convertUserIdentifiers(instance.getType(), instance.value, ownersMap)
       })
   },
 })

@@ -16,19 +16,13 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-import {
-  Element, ElemID, AdapterOperations, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
-  toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange,
-} from '@salto-io/adapter-api'
-import {
-  applyInstancesDefaults, resolvePath, flattenElementStr,
-} from '@salto-io/adapter-utils'
+import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, BuiltinTypes, ObjectType, toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType, ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { applyInstancesDefaults, resolvePath, flattenElementStr } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises, types } from '@salto-io/lowerdash'
-import { merger } from '@salto-io/workspace'
+import { merger, InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
-import { getPlan, Plan, AdditionalResolveContext } from './plan'
+import { getPlan, Plan } from './plan'
 import {
   AdapterEvents,
   createAdapterProgressReporter,
@@ -75,12 +69,14 @@ export type MergeErrorWithElements = {
 export const getDetailedChanges = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-  additionalResolveContext?: AdditionalResolveContext,
+  beforeSource: ReadOnlyElementsSource,
+  afterSource: ReadOnlyElementsSource,
 ): Promise<Iterable<DetailedChange>> =>
   wu((await getPlan({
     before,
     after,
-    additionalResolveContext,
+    beforeSource,
+    afterSource,
     dependencyChangers: [],
   })).itemsByEvalOrder())
     .map(item => item.detailedChanges())
@@ -89,15 +85,16 @@ export const getDetailedChanges = async (
 const getChangeMap = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-  additionalResolveContext?: AdditionalResolveContext,
+  beforeSource: ReadOnlyElementsSource,
+  afterSource: ReadOnlyElementsSource,
 ): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
     wu(await getDetailedChanges(
       before,
       after,
-      additionalResolveContext,
-    )).map(change => [change.id.getFullName(), change])
-      .toArray(),
+      beforeSource,
+      afterSource,
+    )).map(change => [change.id.getFullName(), change]).toArray(),
   )
 
 const findNestedElementPath = (
@@ -204,7 +201,7 @@ const processMergeErrors = (
 
     // if element is an instance element add it to the type element merge error if exists
     const foundMergeErrForInstanceType = isInstanceElement(e)
-      ? mergeErrsByElemID[e.type.elemID.getFullName()]
+      ? mergeErrsByElemID[e.refType.elemID.getFullName()]
       : undefined
     if (foundMergeErrForInstanceType) {
       foundMergeErrForInstanceType.elements.push(e)
@@ -399,6 +396,9 @@ const calcFetchChanges = async (
   workspaceElements: ReadonlyArray<Element>,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
+  const serviceSource = new InMemoryRemoteElementSource(serviceElements)
+  const workspaceSource = new InMemoryRemoteElementSource(workspaceElements)
+  const stateSource = new InMemoryRemoteElementSource(stateElements)
   const serviceElementsIds = new Set(wu(serviceElements)
     .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
     .map(e => e.elemID.getFullName()))
@@ -410,25 +410,26 @@ const calcFetchChanges = async (
   const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
   const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
 
-  const shouldAddAdditionalContext = !_.isEmpty(partiallyFetchedAdapters)
-
   const serviceChanges = await log.time(() =>
     getDetailedChanges(
       filteredStateElements,
       mergedServiceElements,
-      shouldAddAdditionalContext ? { before: stateElements, after: stateElements } : undefined
+      stateSource,
+      serviceSource,
     ),
   'finished to calculate service-state changes')
   const pendingChanges = await log.time(() => getChangeMap(
     filteredStateElements,
     filteredWorkspaceElements,
-    shouldAddAdditionalContext ? { before: stateElements, after: workspaceElements } : undefined
+    stateSource,
+    workspaceSource,
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     filteredWorkspaceElements,
     mergedServiceElements,
-    shouldAddAdditionalContext ? { before: workspaceElements, after: stateElements } : undefined
+    stateSource,
+    serviceSource,
   ), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
@@ -498,9 +499,15 @@ export const fetchChanges = async (
   }
   const configs = updatedConfigs.map(c => c.config)
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
+
+  // TODO: Check if this is enough or we need all the stateElements
+  const stateSource = new InMemoryRemoteElementSource(filteredStateElements)
+  const workspaceSource = new InMemoryRemoteElementSource(workspaceElements)
   const configChanges = await getPlan({
     before: currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
     after: configs,
+    beforeSource: stateSource,
+    afterSource: workspaceSource,
   })
   const adapterNameToConfigMessage = _
     .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
@@ -524,18 +531,18 @@ export const fetchChanges = async (
 
 const id = (elemID: ElemID): string => elemID.getFullName()
 
-const getServiceIdsFromAnnotations = (annotationTypes: TypeMap, annotations: Values,
+const getServiceIdsFromAnnotations = (annotationRefTypes: ReferenceMap, annotations: Values,
   elemID: ElemID): ServiceIds =>
-  _(Object.entries(annotationTypes))
-    .filter(([_annotationName, annotationType]) =>
-      _.isEqual(annotationType, BuiltinTypes.SERVICE_ID))
+  _(Object.entries(annotationRefTypes))
+    .filter(([_annotationName, annotationRefType]) =>
+      (annotationRefType.elemID.isEqual(BuiltinTypes.SERVICE_ID.elemID)))
     .map(([annotationName, _annotationType]) =>
       [annotationName, annotations[annotationName] || id(elemID)])
     .fromPairs()
     .value()
 
 const getObjectServiceId = (objectType: ObjectType): string => {
-  const serviceIds = getServiceIdsFromAnnotations(objectType.annotationTypes,
+  const serviceIds = getServiceIdsFromAnnotations(objectType.annotationRefTypes,
     objectType.annotations, objectType.elemID)
   if (_.isEmpty(serviceIds)) {
     serviceIds[OBJECT_NAME] = id(objectType.elemID)
@@ -544,9 +551,16 @@ const getObjectServiceId = (objectType: ObjectType): string => {
   return toServiceIdsString(serviceIds)
 }
 
-const getFieldServiceId = (objectServiceId: string, field: Field): string => {
-  const serviceIds = getServiceIdsFromAnnotations(field.type.annotationTypes, field.annotations,
-    field.elemID)
+const getFieldServiceId = (
+  objectServiceId: string,
+  field: Field,
+  elementsSource: ReadOnlyElementsSource,
+): string => {
+  const serviceIds = getServiceIdsFromAnnotations(
+    field.getType(elementsSource).annotationRefTypes,
+    field.annotations,
+    field.elemID
+  )
   if (_.isEmpty(serviceIds)) {
     serviceIds[FIELD_NAME] = id(field.elemID)
   }
@@ -555,9 +569,14 @@ const getFieldServiceId = (objectServiceId: string, field: Field): string => {
   return toServiceIdsString(serviceIds)
 }
 
-const getInstanceServiceId = (instanceElement: InstanceElement): string => {
-  const serviceIds = _(Object.entries(instanceElement.type.fields))
-    .filter(([_fieldName, field]) => _.isEqual(field.type, BuiltinTypes.SERVICE_ID))
+const getInstanceServiceId = (
+  instanceElement: InstanceElement,
+  elementsSource: ReadOnlyElementsSource,
+): string => {
+  const instType = instanceElement.getType(elementsSource)
+  const serviceIds = _(Object.entries(instType.fields))
+    .filter(([_fieldName, field]) =>
+      (field.refType.elemID.isEqual(BuiltinTypes.SERVICE_ID.elemID)))
     .map(([fieldName, _field]) =>
       [fieldName, instanceElement.value[fieldName] || id(instanceElement.elemID)])
     .fromPairs()
@@ -566,28 +585,34 @@ const getInstanceServiceId = (instanceElement: InstanceElement): string => {
     serviceIds[INSTANCE_NAME] = id(instanceElement.elemID)
   }
   serviceIds[ADAPTER] = instanceElement.elemID.adapter
-  serviceIds[OBJECT_SERVICE_ID] = getObjectServiceId(instanceElement.type)
+  serviceIds[OBJECT_SERVICE_ID] = getObjectServiceId(instType)
   return toServiceIdsString(serviceIds)
 }
 
-export const generateServiceIdToStateElemId = (stateElements: Element[]): Record<string, ElemID> =>
+export const generateServiceIdToStateElemId = (
+  stateElements: Element[],
+  elementsSource: ReadOnlyElementsSource,
+): Record<string, ElemID> =>
   _(stateElements)
     .filter(elem => isInstanceElement(elem) || isObjectType(elem))
     .map(elem => {
       if (isObjectType(elem)) {
         const objectServiceId = getObjectServiceId(elem)
         const fieldPairs = Object.values(elem.fields)
-          .map(field => [getFieldServiceId(objectServiceId, field), field.elemID])
+          .map(field => [getFieldServiceId(objectServiceId, field, elementsSource), field.elemID])
         return [...fieldPairs, [objectServiceId, elem.elemID]]
       }
-      return [[getInstanceServiceId(elem as InstanceElement), elem.elemID]]
+      return [[getInstanceServiceId(elem as InstanceElement, elementsSource), elem.elemID]]
     })
     .flatten()
     .fromPairs()
     .value()
 
-export const createElemIdGetter = (stateElements: Element[]): ElemIdGetter => {
-  const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements)
+export const createElemIdGetter = (
+  stateElements: Element[],
+  elementsSource: ReadOnlyElementsSource,
+): ElemIdGetter => {
+  const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements, elementsSource)
   return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
     serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
 }

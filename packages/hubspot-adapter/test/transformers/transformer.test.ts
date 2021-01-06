@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  InstanceElement, ElemID, Values, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, Values, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
 import mockClient from '../client'
@@ -74,7 +72,7 @@ describe('Transformer', () => {
       elemID: mockSubTypeElemID,
       fields: {
         subSame: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             name: 'subSame',
             _readOnly: false,
@@ -82,7 +80,7 @@ describe('Transformer', () => {
           },
         },
         subAutoGen: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             name: 'subAutoGen',
             _readOnly: false,
@@ -96,7 +94,7 @@ describe('Transformer', () => {
       elemID: mockTypeElemID,
       fields: {
         name: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             name: 'name',
             _readOnly: false,
@@ -104,7 +102,7 @@ describe('Transformer', () => {
           },
         },
         autoGen: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             name: 'autoGen',
             _readOnly: false,
@@ -112,7 +110,7 @@ describe('Transformer', () => {
           },
         },
         subType: {
-          type: mockSubType,
+          refType: createRefToElmWithValue(mockSubType),
           annotations: {
             name: 'subType',
             _readOnly: false,
@@ -120,7 +118,7 @@ describe('Transformer', () => {
           },
         },
         listSubType: {
-          type: new ListType(mockSubType),
+          refType: createRefToElmWithValue(new ListType(mockSubType)),
           annotations: {
             name: 'listSubType',
             _readOnly: false,
@@ -128,7 +126,7 @@ describe('Transformer', () => {
           },
         },
         list: {
-          type: new ListType(BuiltinTypes.STRING),
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
           annotations: {
             name: 'list',
             _readOnly: false,
@@ -136,7 +134,7 @@ describe('Transformer', () => {
           },
         },
         diff: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             name: 'diff',
             _readOnly: false,
@@ -193,7 +191,7 @@ describe('Transformer', () => {
       elemID: mockTypeWithJSONElemID,
       fields: {
         jsonType: {
-          type: BuiltinTypes.JSON,
+          refType: createRefToElmWithValue(BuiltinTypes.JSON),
           annotations: {
             name: 'jsonType',
             _readOnly: false,
@@ -201,7 +199,7 @@ describe('Transformer', () => {
           },
         },
         jsonTypeFileValue: {
-          type: BuiltinTypes.JSON,
+          refType: createRefToElmWithValue(BuiltinTypes.JSON),
           annotations: {
             name: 'jsonTypeFileValue',
             _readOnly: false,

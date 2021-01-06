@@ -23,8 +23,8 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector } from '@salto-io/workspace'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { Workspace, ElementSelector, InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -101,6 +101,8 @@ export const preview = async (
     before: filterElementsByServices(stateElements, services),
     after: filterElementsByServices(await workspace.elements(), services),
     changeValidators: getAdapterChangeValidators(),
+    beforeSource: new InMemoryRemoteElementSource(stateElements),
+    afterSource: new InMemoryRemoteElementSource(await workspace.elements()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),
   })
@@ -164,7 +166,9 @@ export const deploy = async (
   const changes = wu(await getDetailedChanges(
     relevantWorkspaceElements,
     [...changedElements.values()],
-    { before: workspaceElements, after: workspaceElements }
+    //{ before: workspaceElements, after: workspaceElements }
+    new InMemoryRemoteElementSource(workspaceElements),
+    new InMemoryRemoteElementSource(workspaceElements),
   )).map(change => ({ change, serviceChange: change }))
     .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))
     .flatten()
@@ -205,12 +209,14 @@ export const fetch: FetchFunc = async (
   const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
     stateElements, fetchServices
   )
+  const filteredStateElementsSource = new InMemoryRemoteElementSource(filteredStateElements)
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
     workspace.serviceConfig.bind(workspace),
     buildElementsSourceFromElements(stateElements),
-    createElemIdGetter(filteredStateElements)
+    //createElemIdGetter(filteredStateElements)
+    createElemIdGetter(filteredStateElements, filteredStateElementsSource)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)
@@ -300,8 +306,13 @@ export const diff = async (
     : await workspace.elements(includeHidden, toEnv)
   const fromServiceElements = filterElementsByServices(fromElements, diffServices)
   const toServiceElements = filterElementsByServices(toElements, diffServices)
-  const diffChanges = await createDiffChanges(toServiceElements,
-    fromServiceElements, elementSelectors)
+  const diffChanges = await createDiffChanges(
+    toServiceElements,
+    fromServiceElements,
+    new InMemoryRemoteElementSource(toServiceElements),
+    new InMemoryRemoteElementSource(fromServiceElements),
+    elementSelectors,
+  )
   return diffChanges.map(change => ({ change, serviceChange: change }))
 }
 

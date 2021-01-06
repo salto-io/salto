@@ -80,7 +80,7 @@ const customTypeServiceIdsToElemIds = (instance: InstanceElement): Record<string
 }
 
 export const getInstanceServiceIdRecords = (instance: InstanceElement): Record<string, ElemID> => (
-  isCustomType(instance.type)
+  isCustomType(instance.refType.elemID)
     ? customTypeServiceIdsToElemIds(instance)
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
 )
@@ -151,7 +151,7 @@ const filterCreator: FilterCreator = () => ({
     elements.filter(isInstanceElement).forEach(instance => {
       instance.value = replaceReferenceValues(
         instance.value,
-        instance.type,
+        instance.getType(),
         fetchedElemenentsServiceIdToElemID,
         elementsSourceServiceIdToElemID
       )

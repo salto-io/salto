@@ -21,7 +21,7 @@ import { Types } from '../transformers/transformer'
 
 export const isUnknownField = (changedElement: ChangeDataType): changedElement is Field => (
   isField(changedElement)
-  && changedElement.type.elemID.isEqual(Types.primitiveDataTypes.Unknown.elemID)
+  && changedElement.refType.elemID.isEqual(Types.primitiveDataTypes.Unknown.elemID)
 )
 
 const createChangeError = (field: Field): ChangeError =>

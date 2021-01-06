@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import filterCreator,
@@ -25,7 +24,7 @@ import { Types } from '../../src/transformers/transformer'
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
   }),
   {
@@ -49,7 +48,7 @@ const createPicklistObjectType = (
 ): ObjectType => new ObjectType({
   elemID: mockElemID,
   fields: { state: {
-    type: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
+    refType: createRefToElmWithValue(Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST]),
     annotations: {
       [CORE_ANNOTATIONS.REQUIRED]: false,
       [constants.API_NAME]: apiName,

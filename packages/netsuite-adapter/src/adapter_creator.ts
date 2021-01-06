@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult,
-  AdapterOperationsContext, AdapterOperations,
-} from '@salto-io/adapter-api'
+import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult, AdapterOperationsContext, AdapterOperations } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -48,15 +46,15 @@ export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
     accountId: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       // annotations: { message: 'Account ID' },
     },
     tokenId: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       // annotations: { message: 'SDF Token ID' },
     },
     tokenSecret: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       // annotations: { message: 'SDF Token Secret' },
     },
     /**
@@ -74,7 +72,7 @@ export const defaultCredentialsType = new ObjectType({
     },
      */
   },
-  annotationTypes: {},
+  annotationRefsOrTypes: {},
   annotations: {},
 })
 

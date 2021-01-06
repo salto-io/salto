@@ -21,6 +21,7 @@ import {
   isVariable, isMapType, MapType, isContainerType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
+import { ReferenceExpression } from '../src/values'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -30,14 +31,14 @@ describe('Test elements.ts', () => {
   const primStr = new PrimitiveType({
     elemID: primID,
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
 
   const primNum = new PrimitiveType({
     elemID: primID,
     primitive: PrimitiveTypes.NUMBER,
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
 
@@ -47,11 +48,11 @@ describe('Test elements.ts', () => {
     elemID: otID,
     fields: {
       // eslint-disable-next-line @typescript-eslint/camelcase
-      num_field: { type: primNum },
+      num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
       // eslint-disable-next-line @typescript-eslint/camelcase
-      str_field: { type: primStr },
+      str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
 
@@ -68,15 +69,98 @@ describe('Test elements.ts', () => {
 
   it('should create a basic object type with all params passed to the constructor', () => {
     expect(ot.elemID).toEqual(otID)
-    expect(ot.fields.num_field.type).toBeInstanceOf(PrimitiveType)
-    expect(ot.fields.str_field.type).toBeInstanceOf(PrimitiveType)
+    expect(ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)
+    expect(ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
+  })
+
+  //added in rebase
+  it('Should test getValuesThatNotInPrevOrDifferent func', () => {
+    const prevObjType = new ObjectType({
+      elemID: new ElemID('test', 'diff'),
+      annotationRefsOrTypes: {},
+      annotations: {},
+    })
+    const prevInstance = new InstanceElement('diff', new ReferenceExpression(prevObjType.elemID, prevObjType),
+      {
+        userPermissions: [
+          {
+            enabled: false,
+            name: 'ConvertLeads',
+          },
+        ],
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: false,
+            editable: false,
+          },
+        ],
+        description: 'old unit test instance profile',
+      },)
+    const newObjType = new ObjectType({
+      elemID: new ElemID('test', 'diff'),
+      annotationRefsOrTypes: {},
+      annotations: {},
+    })
+    const newInstance = new InstanceElement('diff', new ReferenceExpression(newObjType.elemID, newObjType),
+      {
+        userPermissions: [
+          {
+            enabled: false,
+            name: 'ConvertLeads',
+          },
+        ],
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: false,
+            editable: false,
+          },
+          {
+            editable: false,
+            field: 'Account.AccountNumber',
+            readable: false,
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: false,
+            visible: true,
+          },
+        ],
+        description: 'new unit test instance profile',
+      },)
+
+    expect(newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)).toMatchObject({
+      fieldPermissions: [
+        {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+        {
+          editable: false,
+          field: 'Account.AccountNumber',
+          readable: false,
+        },
+      ],
+      applicationVisibilities: [
+        {
+          application: 'standard__ServiceConsole',
+          default: false,
+          visible: true,
+        },
+      ],
+      description: 'new unit test instance profile',
+    },)
   })
 
   describe('isEqualElements and type guards', () => {
     const objT = new ObjectType({
       elemID: new ElemID('test', 'obj'),
-      fields: { str: { type: primStr } },
-      annotationTypes: {
+      fields: { str: { refType: new ReferenceExpression(primStr.elemID, primStr) } },
+      annotationRefsOrTypes: {
         anno: primStr,
       },
       annotations: {},
@@ -85,7 +169,7 @@ describe('Test elements.ts', () => {
     const strField = new Field(objT, 'str_field', primStr)
     const lstField = new Field(objT, 'list_field', new ListType(primStr))
     const mapField = new Field(objT, 'map_field', new MapType(primStr))
-    const inst = new InstanceElement('inst', objT, { str: 'test' })
+    const inst = new InstanceElement('inst', new ReferenceExpression(objT.elemID, objT), { str: 'test' })
     const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 3)
 
     it('should identify equal primitive types', () => {
@@ -130,7 +214,7 @@ describe('Test elements.ts', () => {
     })
 
     it('should identify equal list types', () => {
-      expect(isEqualElements(lstField.type, _.cloneDeep(lstField.type))).toBeTruthy()
+      expect(isEqualElements(lstField.getType(), _.cloneDeep(lstField.getType()))).toBeTruthy()
     })
 
     it('should identify not equal for diff list types', () => {
@@ -150,7 +234,7 @@ describe('Test elements.ts', () => {
     })
 
     it('should identify equal map types', () => {
-      expect(isEqualElements(mapField.type, _.cloneDeep(mapField.type))).toBeTruthy()
+      expect(isEqualElements(mapField.getType(), _.cloneDeep(mapField.getType()))).toBeTruthy()
     })
 
     it('should identify not equal for diff map types', () => {
@@ -686,11 +770,12 @@ describe('Test elements.ts', () => {
       it('should set new innerType with correct elemID', () => {
         const newInnerType = primStr.clone()
         newInnerType.annotate({ testAnnotation: 'value' })
-        lstType.setInnerType(newInnerType)
+        lstType.setRefInnerType(newInnerType)
         expect(lstType.annotations).toEqual({ testAnnotation: 'value' })
       })
+      // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
-        expect(() => { lstType.setInnerType(ot) }).toThrow()
+        expect(() => { lstType.setRefInnerType(ot) }).toThrow()
       })
     })
   })
@@ -704,11 +789,12 @@ describe('Test elements.ts', () => {
       it('should set new innerType with correct elemID', () => {
         const newInnerType = primStr.clone()
         newInnerType.annotate({ testAnnotation: 'value' })
-        mapType.setInnerType(newInnerType)
+        mapType.setRefInnerType(newInnerType)
         expect(mapType.annotations).toEqual({ testAnnotation: 'value' })
       })
+      // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
-        expect(() => { mapType.setInnerType(ot) }).toThrow()
+        expect(() => { mapType.setRefInnerType(ot) }).toThrow()
       })
     })
   })

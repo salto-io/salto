@@ -104,10 +104,44 @@ describe('mergeWithHidden', () => {
       expect(instance?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('someUrl')
     })
   })
+
+  describe('hidden annotation in field', () => {
+    let result: MergeResult
+    beforeEach(() => {
+      const workspaceObject = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            type: BuiltinTypes.STRING,
+          },
+        },
+      })
+
+      const stateObject = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            type: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
+          },
+        },
+      })
+
+
+      result = mergeWithHidden([workspaceObject], [stateObject])
+    })
+    it('should not have merge errors', () => {
+      expect(result.errors).toHaveLength(0)
+    })
+    it('should have the hidden annotation value', () => {
+      const object = result.merged.find(isObjectType)
+      expect(object?.fields?.field?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('someUrl')
+    })
+  })
 })
 
 describe('handleHiddenChanges', () => {
-  describe('hidden_string field', () => {
+  describe('hidden_string in instance annotations', () => {
     const instance = new InstanceElement(
       'instance',
       new ObjectType({
@@ -135,6 +169,38 @@ describe('handleHiddenChanges', () => {
       expect(getChangeElement(result[0])).toBeDefined()
       expect(getChangeElement(result[0])?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL])
         .toBeUndefined()
+    })
+  })
+
+  describe('hidden annnotation of field', async () => {
+    const object = new ObjectType({
+      elemID: new ElemID('test', 'type'),
+      fields: {
+        field: {
+          type: BuiltinTypes.STRING,
+          annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
+        },
+      },
+    })
+
+    const change: DetailedChange = {
+      id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
+      action: 'add',
+      data: { after: 'someUrl' },
+    }
+
+    it('hidden annotation should be omitted', async () => {
+      const result = await handleHiddenChanges(
+        [change],
+        {
+          get: (id: ElemID) => Promise.resolve(id.isEqual(object.elemID)
+            ? object
+            : undefined),
+        } as unknown as State,
+        jest.fn().mockResolvedValue([])
+      )
+
+      expect(result.length).toBe(0)
     })
   })
 })

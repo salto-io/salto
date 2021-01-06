@@ -3623,5 +3623,30 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(childRole.value.parentRole.elemId.typeName).toEqual('Role')
       })
     })
+    describe('Deploy BusinessHoursSettings', () => {
+      let oldElement: InstanceElement
+      beforeAll(() => {
+        oldElement = result.find(
+          e => metadataType(e) === constants.BUSINESS_HOURS_METADATA_TYPE && isInstanceElement(e)
+        ) as InstanceElement
+      })
+      it('should modify BusinessHoursSettings', async () => {
+        const newElement = oldElement.clone()
+        const timeZone = newElement.value.businessHours.Default.timeZoneId
+        newElement.value.businessHours.Default.timeZoneId = (timeZone === 'America/Los_Angeles') ? 'America/Tijuana' : 'America/Los_Angeles'
+        const changes: Change[] = [{
+          action: 'modify',
+          data: { before: oldElement, after: newElement },
+        }]
+        const modificationResult = await adapter.deploy({
+          groupID: oldElement.elemID.getFullName(),
+          changes,
+        })
+
+        expect(modificationResult.errors).toHaveLength(0)
+        expect(modificationResult.appliedChanges).toEqual(changes)
+        expect(await objectExists(client, constants.BUSINESS_HOURS_METADATA_TYPE, 'BusinessHours')).toBe(true)
+      })
+    })
   })
 })

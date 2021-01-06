@@ -17,7 +17,8 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, isReferenceExpression, ReferenceExpression, CORE_ANNOTATIONS,
-  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement, Change,
+  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
+  Change, FetchOptions, ProgressReporter,
 } from '@salto-io/adapter-api'
 import {
   findElement, naclCase,
@@ -46,6 +47,8 @@ import realAdapter from './adapter'
 import {
   findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject,
   findFullCustomObject,
+  MockInterface,
+  MockFunction,
 } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
@@ -105,8 +108,12 @@ describe('Salesforce adapter E2E with real account', () => {
   ].join(constants.API_NAME_SEPARATOR)
 
   beforeAll(async () => {
+    const mockReportProgress: MockFunction<ProgressReporter['reportProgress']> = jest.fn()
+    const mockFetchOpts: MockInterface<FetchOptions> = {
+      progressReporter: { reportProgress: mockReportProgress },
+    }
     await verifyElementsExist(client)
-    result = (await adapter.fetch()).elements
+    result = (await adapter.fetch(mockFetchOpts)).elements
   })
 
   afterAll(async () => {
@@ -620,8 +627,10 @@ describe('Salesforce adapter E2E with real account', () => {
         { action: 'remove', data: { before: oldElement.fields.address } },
       ]
       const modificationResult = await adapter.deploy({
-        groupID: oldElement.elemID.getFullName(),
-        changes,
+        changeGroup: {
+          groupID: oldElement.elemID.getFullName(),
+          changes,
+        },
       })
 
       expect(modificationResult.errors).toHaveLength(0)
@@ -707,8 +716,10 @@ describe('Salesforce adapter E2E with real account', () => {
       await removeElementIfAlreadyExists(client, oldInstance)
       const post = await createElement(adapter, oldInstance)
       const updateResult = await adapter.deploy({
-        groupID: newInstance.elemID.getFullName(),
-        changes: [{ action: 'modify', data: { before: oldInstance, after: newInstance } }],
+        changeGroup: {
+          groupID: newInstance.elemID.getFullName(),
+          changes: [{ action: 'modify', data: { before: oldInstance, after: newInstance } }],
+        },
       })
 
       // Test
@@ -859,8 +870,10 @@ describe('Salesforce adapter E2E with real account', () => {
         { action: 'modify', data: { before: oldElement, after: newElement } },
       ]
       const modificationResult = await adapter.deploy({
-        groupID: newElement.elemID.getFullName(),
-        changes,
+        changeGroup: {
+          groupID: newElement.elemID.getFullName(),
+          changes,
+        },
       })
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toEqual(changes)
@@ -922,8 +935,10 @@ describe('Salesforce adapter E2E with real account', () => {
         { action: 'modify', data: { before: oldElement, after: newElement } },
       ]
       const modificationResult = await adapter.deploy({
-        groupID: newElement.elemID.getFullName(),
-        changes,
+        changeGroup: {
+          groupID: newElement.elemID.getFullName(),
+          changes,
+        },
       })
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toEqual(changes)
@@ -1702,8 +1717,10 @@ describe('Salesforce adapter E2E with real account', () => {
               const caseAfterFieldRemoval = caseObj.clone()
               delete caseAfterFieldRemoval.fields[fieldName]
               await adapter.deploy({
-                groupID: caseObj.elemID.getFullName(),
-                changes: [{ action: 'remove', data: { before: caseObj.fields[fieldName] } }],
+                changeGroup: {
+                  groupID: caseObj.elemID.getFullName(),
+                  changes: [{ action: 'remove', data: { before: caseObj.fields[fieldName] } }],
+                },
               })
               return caseAfterFieldRemoval
             }
@@ -1737,11 +1754,13 @@ describe('Salesforce adapter E2E with real account', () => {
                 }
               )
               await adapter.deploy({
-                groupID: caseAfterFieldAddition.elemID.getFullName(),
-                changes: [{
-                  action: 'add',
-                  data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] },
-                }],
+                changeGroup: {
+                  groupID: caseAfterFieldAddition.elemID.getFullName(),
+                  changes: [{
+                    action: 'add',
+                    data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] },
+                  }],
+                },
               })
               return caseAfterFieldAddition
             }
@@ -2029,12 +2048,14 @@ describe('Salesforce adapter E2E with real account', () => {
           const newCustomObject = customFieldsObject.clone()
           updateAnnotations(newCustomObject, customFieldsObject, fieldNamesToAnnotations)
           await adapter.deploy({
-            groupID: customFieldsObject.elemID.getFullName(),
-            changes: Object.keys(fieldNamesToAnnotations)
-              .map(f => ({
-                action: 'modify',
-                data: { before: customFieldsObject.fields[f], after: newCustomObject.fields[f] },
-              })),
+            changeGroup: {
+              groupID: customFieldsObject.elemID.getFullName(),
+              changes: Object.keys(fieldNamesToAnnotations)
+                .map(f => ({
+                  action: 'modify',
+                  data: { before: customFieldsObject.fields[f], after: newCustomObject.fields[f] },
+                })),
+            },
           })
           objectInfo = await getMetadata(client, constants.CUSTOM_OBJECT,
             customObjectWithFieldsName) as CustomObject
@@ -2239,8 +2260,10 @@ describe('Salesforce adapter E2E with real account', () => {
             const updatedField = updatedAccount.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
             updatedField.annotations = annotations
             await adapter.deploy({
-              groupID: account.elemID.getFullName(),
-              changes: [{ action: 'modify', data: { before: field, after: updatedField } }],
+              changeGroup: {
+                groupID: account.elemID.getFullName(),
+                changes: [{ action: 'modify', data: { before: field, after: updatedField } }],
+              },
             })
             const fieldInfo = await getMetadata(client, constants.CUSTOM_FIELD,
               fullName) as CustomField
@@ -2311,8 +2334,10 @@ describe('Salesforce adapter E2E with real account', () => {
         data: { before: oldElement.fields[fieldName], after: newElement.fields[fieldName] },
       }]
       const modificationResult = await adapter.deploy({
-        groupID: oldElement.elemID.getFullName(),
-        changes,
+        changeGroup: {
+          groupID: oldElement.elemID.getFullName(),
+          changes,
+        },
       })
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toHaveLength(1)
@@ -2412,8 +2437,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test
       const modificationResult = await adapter.deploy({
-        groupID: oldElement.elemID.getFullName(),
-        changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
+        changeGroup: {
+          groupID: oldElement.elemID.getFullName(),
+          changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
+        },
       })
 
       const updatedElement = getChangeElement(modificationResult.appliedChanges[0])
@@ -2485,8 +2512,10 @@ describe('Salesforce adapter E2E with real account', () => {
         ])
 
         await adapter.deploy({
-          groupID: before.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before, after } }],
+          changeGroup: {
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before, after } }],
+          },
         })
 
         const updatedRules = await getRulesFromClient()
@@ -2495,8 +2524,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
         // Remove the new rule
         await adapter.deploy({
-          groupID: before.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: after, after: before } }],
+          changeGroup: {
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: after, after: before } }],
+          },
         })
         const rules = await getRulesFromClient()
         expect(new Set(makeArray(rules.assignmentRule)))
@@ -2525,15 +2556,19 @@ describe('Salesforce adapter E2E with real account', () => {
         _.flatten([rule.ruleEntry[0].criteriaItems])[0].value = 'bla'
 
         await adapter.deploy({
-          groupID: before.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before, after } }],
+          changeGroup: {
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before, after } }],
+          },
         })
 
         const updatedRules = await getRulesFromClient()
         expect(updatedRules).toEqual(after.value)
         await adapter.deploy({
-          groupID: before.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: after, after: before } }],
+          changeGroup: {
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: after, after: before } }],
+          },
         })
       })
     })
@@ -2601,8 +2636,10 @@ describe('Salesforce adapter E2E with real account', () => {
             })
             : contentString
           await adapter.deploy({
-            groupID: instance.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before: instance, after } }],
+            changeGroup: {
+              groupID: instance.elemID.getFullName(),
+              changes: [{ action: 'modify', data: { before: instance, after } }],
+            },
           })
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
@@ -2764,8 +2801,10 @@ describe('Salesforce adapter E2E with real account', () => {
           const after = instance.clone()
           _.set(after.value, updatedFieldPath, updatedValue)
           const deployResult = await adapter.deploy({
-            groupID: instance.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before: instance, after } }],
+            changeGroup: {
+              groupID: instance.elemID.getFullName(),
+              changes: [{ action: 'modify', data: { before: instance, after } }],
+            },
           })
           if (deployResult.errors.length > 0) {
             if (deployResult.errors.length === 1) throw deployResult.errors[0]
@@ -3343,8 +3382,10 @@ describe('Salesforce adapter E2E with real account', () => {
         newFlow.value.decisions.rules.conditions.operator = 'NotEqualTo'
 
         const deployResult = await adapter.deploy({
-          groupID: flow.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: flow, after: newFlow } }],
+          changeGroup: {
+            groupID: flow.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: flow, after: newFlow } }],
+          },
         })
         flow = getChangeElement(deployResult.appliedChanges[0]) as InstanceElement
 
@@ -3530,8 +3571,10 @@ describe('Salesforce adapter E2E with real account', () => {
         }]
 
         const deployResult = await adapter.deploy({
-          groupID: layout.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: layout, after: newLayout } }],
+          changeGroup: {
+            groupID: layout.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: layout, after: newLayout } }],
+          },
         })
         layout = getChangeElement(deployResult.appliedChanges[0]) as InstanceElement
 
@@ -3595,12 +3638,12 @@ describe('Salesforce adapter E2E with real account', () => {
           action: 'modify',
           data: { before: oldElement, after: newElement },
         }]
-        const modificationResult = await adapter.deploy(
-          {
+        const modificationResult = await adapter.deploy({
+          changeGroup: {
             groupID: oldElement.elemID.getFullName(),
             changes,
           },
-        )
+        })
 
         expect(modificationResult.errors).toHaveLength(0)
         expect(modificationResult.appliedChanges).toEqual(changes)

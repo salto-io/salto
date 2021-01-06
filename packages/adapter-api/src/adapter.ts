@@ -34,17 +34,24 @@ export type DeployResult = {
 }
 
 export type Progress = {
-  details: string
-  completedPercents: number
+  message: string
 }
 
 export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
+export type FetchOptions = {
+  progressReporter: ProgressReporter
+}
+
+export type DeployOptions = {
+  changeGroup: ChangeGroup
+}
+
 export type AdapterOperations = {
-  fetch: (progressReporter?: ProgressReporter) => Promise<FetchResult>
-  deploy: (changeGroup: ChangeGroup) => Promise<DeployResult>
+  fetch: (opts: FetchOptions) => Promise<FetchResult>
+  deploy: (opts: DeployOptions) => Promise<DeployResult>
 }
 
 export type AdapterOperationName = keyof AdapterOperations

@@ -45,7 +45,7 @@ const resolveReferences = (
 
     const refTarget = makeArray(field.annotations[FOREIGN_KEY_DOMAIN])
       .filter(isReferenceExpression)
-      .map(ref => externalIDToElemIDs.get(ref.elemId.typeName, value))
+      .map(ref => externalIDToElemIDs.get(ref.elemID.typeName, value))
       .find(values.isDefined)
     return refTarget !== undefined ? new ReferenceExpression(refTarget) : value
   }
@@ -53,7 +53,7 @@ const resolveReferences = (
   // not using transformElement because we're editing the instance in-place
   instance.value = transformValues({
     values: instance.value,
-    type: instance.type,
+    type: instance.getType(),
     transformFunc: transformPrimitive,
     strict: false,
   }) ?? instance.value

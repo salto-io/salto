@@ -33,7 +33,7 @@ export const addTypeDependency: DependencyChanger = async changes => {
   )
 
   const addChangeTypeDependency = ([id, change]: FieldOrInstanceChange): DependencyChange[] => (
-    (typeChanges.get(getChangeElement(change).type.elemID.getFullName()) ?? [])
+    (typeChanges.get(getChangeElement(change).refType.elemID.getFullName()) ?? [])
       .filter(
         ([_id, typeChange]) => isDependentAction(change.action, typeChange.action)
       )

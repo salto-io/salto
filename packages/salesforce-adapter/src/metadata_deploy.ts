@@ -21,7 +21,7 @@ import { DeployResult, Change, getChangeElement, isRemovalChange, isModification
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
-import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement } from './transformers/transformer'
+import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement, assertMetadataObjectType } from './transformers/transformer'
 import { fullApiName } from './filters/utils'
 import { INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
@@ -51,9 +51,9 @@ const addNestedInstancesToPackageManifest = (
   )
 
   const addNestedInstancesFromField = (fieldName: string): MetadataIdsMap => {
-    const rawFieldType = changeElem.type.fields[fieldName]?.type
+    const rawFieldType = changeElem.getType().fields[fieldName]?.getType()
     // We generally expect these to be lists, handling non list types just in case of a bug
-    const fieldType = isContainerType(rawFieldType) ? rawFieldType.innerType : rawFieldType
+    const fieldType = isContainerType(rawFieldType) ? rawFieldType.getInnerType() : rawFieldType
     if (!isMetadataObjectType(fieldType)) {
       log.error(
         'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',
@@ -112,7 +112,7 @@ const addChangeToPackage = (
     : {}
 
   if (isRemovalChange(change)) {
-    pkg.delete(instance.type, apiName(instance))
+    pkg.delete(assertMetadataObjectType(instance.getType()), apiName(instance))
   } else {
     pkg.add(instance, addInstanceToManifest)
   }

@@ -169,7 +169,7 @@ export const getCredentialsFromUser = async (credentialsType: ObjectType):
   Promise<InstanceElement> => {
   const questions = Object.keys(credentialsType.fields).map(fieldName =>
     ({
-      type: getFieldInputType(credentialsType.fields[fieldName].type, fieldName),
+      type: getFieldInputType(credentialsType.fields[fieldName].getType(), fieldName),
       mask: '*',
       name: fieldName,
       message: formatConfigFieldInput(

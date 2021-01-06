@@ -75,7 +75,7 @@ const createCustomFieldsObjects = (customObject: ObjectType): ObjectType[] => {
 const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] => {
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
-    annotationTypes: customObject.annotationTypes,
+    annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
     path: [
       ...getObjectDirectoryPath(customObject),

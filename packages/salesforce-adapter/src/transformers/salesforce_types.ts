@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, IS_ATTRIBUTE, METADATA_TYPE } from '../constants'
 
 const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
@@ -24,7 +23,7 @@ const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 const lightningComponentBundleObjectType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleObject'),
   fields: {
-    object: { type: BuiltinTypes.STRING },
+    object: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
   annotations: {
     [METADATA_TYPE]: 'LightningComponentBundleObject',
@@ -36,68 +35,69 @@ const lightningComponentBundlePropertyType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleProperty'),
   fields: {
     datasource: {
-      type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
+      // SALTO-861: retrieved as string delimited by ',' but is a list
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     default: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     description: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     max: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     min: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     name: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [IS_ATTRIBUTE]: true,
       },
     },
     placeholder: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     required: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     role: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     type: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [IS_ATTRIBUTE]: true,
@@ -119,7 +119,7 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactor'),
   fields: {
     type: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
@@ -136,7 +136,11 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
 const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactors'),
   fields: {
-    supportedFormFactor: { type: new ListType(lightningComponentBundleSupportedFormFactorType) },
+    supportedFormFactor: {
+      refType: createRefToElmWithValue(
+        new ListType(lightningComponentBundleSupportedFormFactorType)
+      ),
+    },
   },
   annotations: {
     [METADATA_TYPE]: 'LightningComponentBundleSupportedFormFactors',
@@ -148,20 +152,27 @@ const lightningComponentBundleTargetConfigType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleTargetConfig'),
   fields: {
     targets: {
-      type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
+      // SALTO-861: retrieved as string delimited by ',' but is a list
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     configurationEditor: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
-    objects: { type: new ListType(lightningComponentBundleObjectType) },
-    property: { type: lightningComponentBundlePropertyType },
-    supportedFormFactors: { type: lightningComponentBundleSupportedFormFactorsType },
+    objects: {
+      refType: createRefToElmWithValue(new ListType(lightningComponentBundleObjectType)),
+    },
+    property: {
+      refType: createRefToElmWithValue(lightningComponentBundlePropertyType),
+    },
+    supportedFormFactors: {
+      refType: createRefToElmWithValue(lightningComponentBundleSupportedFormFactorsType),
+    },
   },
   annotations: {
     [METADATA_TYPE]: 'LightningComponentBundleTargetConfig',
@@ -174,7 +185,9 @@ export const allMissingSubTypes = [
     // taken from https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_configuration_tags
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {
-      targetConfig: { type: new ListType(lightningComponentBundleTargetConfigType) },
+      targetConfig: {
+        refType: createRefToElmWithValue(new ListType(lightningComponentBundleTargetConfigType)),
+      },
     },
     annotations: {
       [METADATA_TYPE]: 'TargetConfigs',

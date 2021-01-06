@@ -193,7 +193,8 @@ const isElementPossiblyParentOfSearchedElement = (
   selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
 
 export const selectElementIdsByTraversal = (
-  selectors: ElementSelector[], elements: ElementIDToValue[],
+  selectors: ElementSelector[],
+  elements: ElementIDToValue[],
   compact = false,
   validateDeterminedSelectors = false,
 ): ElemID[] => {

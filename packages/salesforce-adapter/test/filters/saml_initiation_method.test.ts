@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ObjectType, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction,
-} from '@salto-io/adapter-api'
+import { ObjectType, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import filterCreator, { CANVAS_METADATA_TYPE_ID, SAML_INIT_METHOD_FIELD_NAME }
   from '../../src/filters/saml_initiation_method'
 import { FilterWith } from '../../src/filter'
@@ -27,7 +25,7 @@ describe('saml initiation method filter', () => {
     {
       elemID: CANVAS_METADATA_TYPE_ID,
       fields: { [SAML_INIT_METHOD_FIELD_NAME]: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['None', 'IdpInitiated', 'SpInitiated'],

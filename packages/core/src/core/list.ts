@@ -15,10 +15,8 @@
 */
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import {
-  ElemID, Element, isElement, isInstanceElement, InstanceElement,
-} from '@salto-io/adapter-api'
-import { Workspace, validator } from '@salto-io/workspace'
+import { ElemID, Element, isElement, isInstanceElement, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Workspace, validator, InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 
 const { validateElements, isUnresolvedRefError } = validator
@@ -59,14 +57,17 @@ export const listUnresolvedReferences = async (
 ): Promise<UnresolvedElemIDs> => {
   const getUnresolvedElemIDs = (
     elements: ReadonlyArray<Element>,
-    additionalContext?: ReadonlyArray<Element>,
+    elementsSource: ReadOnlyElementsSource,
   ): ElemID[] => _.uniqBy(
-    validateElements(elements, additionalContext).filter(isUnresolvedRefError).map(e => e.target),
+    validateElements(elements, elementsSource).filter(isUnresolvedRefError).map(e => e.target),
     elemID => elemID.getFullName(),
   )
 
   const initialElements = [...await workspace.elements(true, workspace.currentEnv())]
-  const unresolvedElemIDs = getUnresolvedElemIDs(initialElements)
+  const unresolvedElemIDs = getUnresolvedElemIDs(
+    initialElements,
+    new InMemoryRemoteElementSource(initialElements)
+  )
 
   if (completeFromEnv === undefined) {
     return {
@@ -99,7 +100,7 @@ export const listUnresolvedReferences = async (
       if (isInstanceElement(rootElem) && !id.isTopLevel()) {
         const newInstance = new InstanceElement(
           rootElem.elemID.name,
-          rootElem.type,
+          rootElem.refType,
           {},
           rootElem.path,
         )
@@ -116,7 +117,10 @@ export const listUnresolvedReferences = async (
       Object.keys(completionRes), id => isDefined(completionRes[id])
     )
     const resolvedElements = Object.values(completionRes).filter(isDefined)
-    const unresolvedIDs = getUnresolvedElemIDs(resolvedElements, elements)
+    const unresolvedIDs = getUnresolvedElemIDs(
+      resolvedElements,
+      new InMemoryRemoteElementSource(elements),
+    )
 
     const innerRes = await addAndValidate(unresolvedIDs, [...elements, ...resolvedElements])
     return {

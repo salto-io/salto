@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { file, folder } from './types/file_cabinet_types'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
@@ -208,17 +208,17 @@ export const fileCabinetTypes: Readonly<Record<string, ObjectType>> = {
   folder,
 }
 
-export const isCustomType = (type: ObjectType): boolean =>
-  !_.isUndefined(customTypes[type.elemID.name])
+export const isCustomType = (typeElemID: ElemID): boolean =>
+  !_.isUndefined(customTypes[typeElemID.name])
 
-export const isFileCabinetType = (type: ObjectType): boolean =>
-  !_.isUndefined(fileCabinetTypes[type.elemID.name])
+export const isFileCabinetType = (typeElemID: ElemID): boolean =>
+  !_.isUndefined(fileCabinetTypes[typeElemID.name])
 
 export const isFileCabinetInstance = (element: Element): element is InstanceElement =>
-  isInstanceElement(element) && isFileCabinetType(element.type)
+  isInstanceElement(element) && isFileCabinetType(element.refType.elemID)
 
 export const isFileInstance = (element: Element): boolean =>
-  isInstanceElement(element) && element.type.elemID.name === 'file'
+  isInstanceElement(element) && element.refType.elemID.name === 'file'
 
 
 export const getAllTypes = (): TypeElement[] => [

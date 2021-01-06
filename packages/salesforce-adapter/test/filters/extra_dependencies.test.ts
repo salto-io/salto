@@ -13,11 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/extra_dependencies'
@@ -50,8 +47,8 @@ describe('extra dependencies filter', () => {
       'meta',
       {
         fields: {
-          fieldName: { type: BuiltinTypes.STRING },
-          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+          fieldName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
         },
       }
     )
@@ -64,14 +61,14 @@ describe('extra dependencies filter', () => {
       },
       fields: {
         first: {
-          type: Types.primitiveDataTypes.Text,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
           annotations: {
             [API_NAME]: 'obj__c.first__c',
             [INTERNAL_ID_ANNOTATION]: 'first field',
           },
         },
         second: {
-          type: Types.primitiveDataTypes.Number,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
           annotations: {
             [API_NAME]: 'obj__c.second__c',
             [INTERNAL_ID_ANNOTATION]: 'second field',
@@ -87,7 +84,7 @@ describe('extra dependencies filter', () => {
       },
       fields: {
         custom: {
-          type: Types.primitiveDataTypes.Text,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
           annotations: {
             [API_NAME]: 'Lead.custom__c',
             [INTERNAL_ID_ANNOTATION]: 'lead field',

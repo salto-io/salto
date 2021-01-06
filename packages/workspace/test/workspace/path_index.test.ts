@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   createPathIndex, serializedPathIndex, deserializedPathIndex, PathIndex, updatePathIndex,
   deserializedPathsIndex, serializePathIndexByService,
@@ -25,13 +26,13 @@ const nestedType = new ObjectType({
   elemID: new ElemID('salto', 'nested'),
   fields: {
     str: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
     },
     num: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
     },
     list: {
-      type: new ListType(BuiltinTypes.NUMBER),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
     },
   },
 })
@@ -40,13 +41,13 @@ const singlePathObject = new ObjectType({
   elemID: new ElemID('salto', 'singlePathObj'),
   fields: {
     simple: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
     },
     nested: {
-      type: nestedType,
+      refType: createRefToElmWithValue(nestedType),
     },
   },
-  annotationTypes: {
+  annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
   },
@@ -64,13 +65,13 @@ const singlePathObjectOtherService = new ObjectType({
   elemID: new ElemID('salto2', 'singlePathObj'),
   fields: {
     simple: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
     },
     nested: {
-      type: nestedType,
+      refType: createRefToElmWithValue(nestedType),
     },
   },
-  annotationTypes: {
+  annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
   },
@@ -88,7 +89,7 @@ const singlePathObjectOtherService = new ObjectType({
 // singlePathObject
 const multiPathAnnoObj = new ObjectType({
   elemID: new ElemID('salto', 'multiPathObj'),
-  annotationTypes: {
+  annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
   },
@@ -108,10 +109,10 @@ const multiPathFieldsObj = new ObjectType({
   elemID: new ElemID('salto', 'multiPathObj'),
   fields: {
     simple: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
     },
     nested: {
-      type: nestedType,
+      refType: createRefToElmWithValue(nestedType),
     },
   },
   path: ['salto', 'obj', 'multi', 'fields'],

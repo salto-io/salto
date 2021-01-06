@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement,
-  ReferenceExpression, isInstanceElement,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
@@ -46,7 +44,7 @@ describe('Custom Object Instances References filter', () => {
     },
     fields: {
       Id: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -64,7 +62,7 @@ describe('Custom Object Instances References filter', () => {
     },
     fields: {
       Id: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -83,7 +81,7 @@ describe('Custom Object Instances References filter', () => {
       },
       fields: {
         Id: {
-          type: stringType,
+          refType: createRefToElmWithValue(stringType),
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [LABEL]: 'Id',
@@ -91,7 +89,7 @@ describe('Custom Object Instances References filter', () => {
           },
         },
         LookupExample: {
-          type: Types.primitiveDataTypes.Lookup,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'lookup',
@@ -102,7 +100,7 @@ describe('Custom Object Instances References filter', () => {
           },
         },
         MasterDetailExample: {
-          type: Types.primitiveDataTypes.MasterDetail,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'detailfOfMaster',

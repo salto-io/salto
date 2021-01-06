@@ -318,7 +318,7 @@ describe('Netsuite adapter E2E with real account', () => {
         ?.workflowtransitions?.workflowtransition?.[0]?.tostate
         expect(toStateReference).toBeDefined()
         expect(isReferenceExpression(toStateReference)
-        && toStateReference.elemId.isEqual(
+        && toStateReference.elemID.isEqual(
           fetchedWorkflow.elemID.createNestedID('workflowstates', 'workflowstate', '1', SCRIPT_ID)
         )).toBe(true)
       })
@@ -367,7 +367,7 @@ describe('Netsuite adapter E2E with real account', () => {
         expect(fetchedTransactionColumn.value.label).toEqual(randomString)
         const { sourcefrom } = fetchedTransactionColumn.value
         expect(isReferenceExpression(sourcefrom)
-        && sourcefrom.elemId.isEqual(
+        && sourcefrom.elemID.isEqual(
           entityCustomFieldToCreate.elemID.createNestedID(SCRIPT_ID)
         )).toBe(true)
       })

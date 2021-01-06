@@ -20,13 +20,11 @@ import {
   addReferenceDependency, addParentDependency, isDependentAction, DependencyChanger, isObjectType,
   ElemID,
 } from '@salto-io/adapter-api'
-import {
-  getAllReferencedIds, getParents,
-} from '@salto-io/adapter-utils'
+import { getAllReferencedIds, getParents } from '@salto-io/adapter-utils'
 
 const getParentIds = (elem: ChangeDataType): Set<string> => new Set(
   getParents(elem).filter(isReferenceExpression)
-    .map(ref => ref.elemId.createBaseID().parent.getFullName())
+    .map(ref => ref.elemID.createBaseID().parent.getFullName())
 )
 
 const getChangeElemId = (change: Change<ChangeDataType>): string => (
@@ -46,6 +44,8 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     // Because fields are separate nodes in the graph, for object types we should only consider
     // references from the annotations
     const onlyAnnotations = isObjectType(elem)
+    // Not using ElementsSource here is legit because it's ran
+    // after resolve
     return (wu(getAllReferencedIds(elem, onlyAnnotations))
       .map(targetId => ElemID.fromFullName(targetId).createBaseID().parent.getFullName())
       .filter(targetId => targetId !== elemId) // Ignore self references

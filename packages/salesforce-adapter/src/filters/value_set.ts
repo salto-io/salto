@@ -32,7 +32,7 @@ export const isPicklistField = (changedElement: ChangeDataType): changedElement 
     && ([
       Types.primitiveDataTypes.Picklist.elemID.getFullName(),
       Types.primitiveDataTypes.MultiselectPicklist.elemID.getFullName(),
-    ]).includes(changedElement.type.elemID.getFullName())
+    ]).includes(changedElement.refType.elemID.getFullName())
 
 export const isStandardValueSetPicklistField = (field: Field): boolean =>
   field.annotations[FIELD_ANNOTATIONS.VALUE_SET] instanceof ReferenceExpression

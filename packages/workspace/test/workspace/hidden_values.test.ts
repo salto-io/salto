@@ -14,17 +14,19 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
-import { MergeResult } from '../../src/merger'
-import { handleHiddenChanges, mergeWithHidden } from '../../src/workspace/hidden_values'
 import { mockState } from '../common/state'
 import { mockFunction } from '../common/helpers'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { MergeResult } from '../../src/merger'
+import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
+import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
 
 describe('mergeWithHidden', () => {
   const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType => (
     new PrimitiveType({
       elemID: new ElemID('test', typeName),
       primitive,
-      annotationTypes: { hiddenAnno: BuiltinTypes.HIDDEN_STRING },
+      annotationRefsOrTypes: { hiddenAnno: BuiltinTypes.HIDDEN_STRING },
     })
   )
   describe('when parent value is deleted in the workspace', () => {
@@ -34,7 +36,10 @@ describe('mergeWithHidden', () => {
       const mockObjType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          f1: { type: fieldType, annotations: { hiddenAnno: 'asd' } },
+          f1: {
+            refType: createRefToElmWithValue(fieldType),
+            annotations: { hiddenAnno: 'asd' },
+          },
         },
       })
       const workspaceObjType = mockObjType.clone()
@@ -53,14 +58,17 @@ describe('mergeWithHidden', () => {
       const workspaceType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          test: { type: workspaceFieldType },
+          test: { refType: createRefToElmWithValue(workspaceFieldType) },
         },
       })
       const stateFieldType = getFieldType('text', PrimitiveTypes.STRING)
       const stateType = new ObjectType({
         ...workspaceType,
         fields: {
-          test: { type: stateFieldType, annotations: { hiddenAnno: 'asd' } },
+          test: {
+            refType: createRefToElmWithValue(stateFieldType),
+            annotations: { hiddenAnno: 'asd' },
+          },
         },
       })
       result = mergeWithHidden([workspaceFieldType, workspaceType], [stateFieldType, stateType])
@@ -113,7 +121,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
           },
         },
       })
@@ -122,7 +130,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
             annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
           },
         },
@@ -144,15 +152,17 @@ describe('mergeWithHidden', () => {
 describe('handleHiddenChanges', () => {
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
+    let instanceType: ObjectType
     beforeEach(() => {
+      instanceType = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          val: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        },
+      })
       instance = new InstanceElement(
         'instance',
-        new ObjectType({
-          elemID: new ElemID('test', 'type'),
-          fields: {
-            val: { type: BuiltinTypes.STRING },
-          },
-        }),
+        instanceType,
         { val: 'asd' },
         undefined,
         { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' }
@@ -172,7 +182,8 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState(),
-          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
+          new InMemoryRemoteElementSource([instance, instanceType])
         )
         expect(result).toHaveLength(1)
         filteredInstance = getChangeElement(result[0])
@@ -196,8 +207,9 @@ describe('handleHiddenChanges', () => {
 
         result = await handleHiddenChanges(
           [change],
-          mockState([instance.type, instance]),
-          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+          mockState([instanceType, instance]),
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
+          new InMemoryRemoteElementSource([instance, instanceType])
         )
       })
       it('should omit the whole change', () => {
@@ -211,7 +223,7 @@ describe('handleHiddenChanges', () => {
       elemID: new ElemID('test', 'type'),
       fields: {
         field: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
         },
       },
@@ -227,9 +239,9 @@ describe('handleHiddenChanges', () => {
       const result = await handleHiddenChanges(
         [change],
         mockState([object]),
-        mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+        mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
+        new InMemoryRemoteElementSource([object])
       )
-
       expect(result.length).toBe(0)
     })
   })
@@ -243,8 +255,8 @@ describe('handleHiddenChanges', () => {
         new ObjectType({
           elemID: new ElemID('test', 'type'),
           fields: {
-            val: { type: refTargetType },
-            ref: { type: refTargetType },
+            val: { refType: createRefToElmWithValue(refTargetType) },
+            ref: { refType: createRefToElmWithValue(refTargetType) },
           },
         }),
         { val: 'asd' },
@@ -266,7 +278,8 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instance]),
-          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
+          new InMemoryRemoteElementSource([instance])
         )
         expect(result).toHaveLength(1)
         filteredValue = getChangeElement(result[0])
@@ -291,7 +304,8 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instance]),
-          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
+          new InMemoryRemoteElementSource([instance])
         )
         expect(result).toHaveLength(1)
         filteredValue = getChangeElement(result[0])

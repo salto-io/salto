@@ -22,8 +22,8 @@ const getJsonValidationErrorsFromAfter = async (after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
   const resolvedAfter = resolveValues(after, getLookUpName)
   const errors = Object.values(_.pickBy(_.mapValues(resolvedAfter.value, (val, key) => {
-    const field = after.type.fields[key]
-    const fieldType = field?.type
+    const field = after.getType().fields[key]
+    const fieldType = field?.getType()
     if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
       try {
         JSON.parse(val)
@@ -46,7 +46,7 @@ const changeValidator: ChangeValidator = async changes => (
     changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
-      .map(change => getJsonValidationErrorsFromAfter(change.data.after))
+      .map(change => getJsonValidationErrorsFromAfter(change.data.after as InstanceElement))
   ))
 )
 

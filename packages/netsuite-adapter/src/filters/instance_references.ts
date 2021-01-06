@@ -81,7 +81,7 @@ const customTypeServiceIdsToElemIds = (instance: InstanceElement): Record<string
 }
 
 export const getInstanceServiceIdRecords = (instance: InstanceElement): Record<string, ElemID> => (
-  isCustomType(instance.type)
+  isCustomType(instance.refType.elemID)
     ? customTypeServiceIdsToElemIds(instance)
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
 )

@@ -26,7 +26,7 @@ import { isCustomType, isFileCabinetType } from '../types'
 // In the case of ReferenceExpression, we would want to compare using the elemID,
 // otherwise we can use the string.
 const getReferenceIdentifier = (val: unknown): unknown =>
-  (isReferenceExpression(val) ? val.elemId.getFullName() : val)
+  (isReferenceExpression(val) ? val.elemID.getFullName() : val)
 
 const changeValidator: ChangeValidator = async changes => (
   _.flatten(changes
@@ -34,20 +34,18 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .filter(change => {
       const instance = getChangeElement(change) as InstanceElement
-      return isCustomType(instance.type) || isFileCabinetType(instance.type)
+      return isCustomType(instance.refType.elemID) || isFileCabinetType(instance.refType.elemID)
     })
     .map(change => {
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
-
-      // service ids fields
-      const modifiedImmutableFields = Object.values(after.type.fields)
-        .filter(field => field.type === BuiltinTypes.SERVICE_ID)
+      const modifiedImmutableFields = Object.values(after.getType().fields)
+        .filter(field => field.getType() === BuiltinTypes.SERVICE_ID)
         .filter(field => before.value[field.name] !== after.value[field.name])
         .map(field => field.name)
 
       // parent annotations in file cabinet instances
-      if (isFileCabinetType(after.type)
+      if (isFileCabinetType(after.refType.elemID)
         && !_.isEqual(
           getParents(before).map(getReferenceIdentifier),
           getParents(after).map(getReferenceIdentifier),

@@ -23,7 +23,7 @@ import {
   TypeMap,
   Values,
 } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { LeadAttribute, Field, MarketoMetadata, CustomObject, CustomObjectResponse } from '../client/types'
 import {
   FIELD_TYPES,
@@ -121,7 +121,7 @@ const extractFields = (
   fields.map((field: LeadAttribute | Field) => {
     const name = isAttributeField(field) ? field.rest.name : field.name
     return [name, {
-      type: Types.getFieldType(field.dataType),
+      refType: createRefToElmWithValue(Types.getFieldType(field.dataType)),
       annotations: {
         [NAME]: name,
         [API_NAME]: name,

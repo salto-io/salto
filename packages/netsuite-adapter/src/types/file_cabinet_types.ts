@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 /* eslint-disable @typescript-eslint/camelcase */
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ObjectType,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../constants'
 import { fieldTypes } from './field_types'
 
@@ -29,7 +28,7 @@ export const file = new ObjectType({
   },
   fields: {
     path: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -38,37 +37,37 @@ export const file = new ObjectType({
       },
     },
     content: {
-      type: fieldTypes.fileContent,
+      refType: createRefToElmWithValue(fieldTypes.fileContent),
       annotations: {
       },
     },
     availablewithoutlogin: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },
     bundleable: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },
     description: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     generateurltimestamp: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },
     hideinbundle: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },
     isinactive: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },
@@ -84,7 +83,7 @@ export const folder = new ObjectType({
   },
   fields: {
     path: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -93,22 +92,22 @@ export const folder = new ObjectType({
       },
     },
     bundleable: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },
     description: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
     },
     isinactive: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },
     isprivate: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     },

@@ -21,7 +21,7 @@ import {
   isListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { naclCase, applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE } from '../constants'
@@ -186,17 +186,18 @@ const updateFieldTypes = (
   instanceMapFieldDef: Record<string, MapDef>,
 ): void => {
   Object.values(instanceType.fields).filter(
-    f => instanceMapFieldDef[f.name] !== undefined && !isMapType(f.type)
+    f => instanceMapFieldDef[f.name] !== undefined && !isMapType(f.getType())
   ).forEach(f => {
     const mapDef = instanceMapFieldDef[f.name]
-    let innerType = isContainerType(f.type) ? f.type.innerType : f.type
+    const fieldType = f.getType()
+    let innerType = isContainerType(fieldType) ? fieldType.getInnerType() : fieldType
     if (mapDef.mapToList || nonUniqueMapFields.includes(f.name)) {
       innerType = new ListType(innerType)
     }
     if (mapDef.nested) {
-      f.type = new MapType(new MapType(innerType))
+      f.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
     } else {
-      f.type = new MapType(innerType)
+      f.refType = createRefToElmWithValue(new MapType(innerType))
     }
   })
 }
@@ -286,14 +287,16 @@ const convertFieldTypesBackToLists = (
   instanceMapFieldDef: Record<string, MapDef>,
 ): void => {
   Object.values(instanceType.fields).filter(
-    f => instanceMapFieldDef[f.name] !== undefined && isMapType(f.type)
+    f => instanceMapFieldDef[f.name] !== undefined && isMapType(f.getType())
   ).forEach(f => {
-    if (isMapType(f.type)) {
-      f.type = f.type.innerType
+    const fieldType = f.getType()
+    if (isMapType(fieldType)) {
+      f.refType = createRefToElmWithValue(fieldType.getInnerType())
     }
     // for nested fields (not using while to avoid edge cases)
-    if (isMapType(f.type)) {
-      f.type = f.type.innerType
+    const newFieldType = f.getType()
+    if (isMapType(newFieldType)) {
+      f.refType = createRefToElmWithValue(newFieldType.getInnerType())
     }
   })
 }
@@ -325,7 +328,7 @@ const filter: FilterCreator = ({ config }) => ({
       }
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       const nonUniqueMapFields = convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
-      updateFieldTypes(instancesToConvert[0].type, nonUniqueMapFields, mapFieldDef)
+      updateFieldTypes(instancesToConvert[0].getType(), nonUniqueMapFields, mapFieldDef)
     })
   },
 
@@ -344,7 +347,7 @@ const filter: FilterCreator = ({ config }) => ({
       // so that we can convert the object back correctly in onDeploy
       convertFieldsBackToLists(instanceChanges, mapFieldDef)
 
-      const instanceType = getChangeElement(instanceChanges[0]).type
+      const instanceType = getChangeElement(instanceChanges[0]).getType()
       convertFieldTypesBackToLists(instanceType, mapFieldDef)
     })
   },
@@ -362,11 +365,11 @@ const filter: FilterCreator = ({ config }) => ({
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       convertFieldsBackToMaps(instanceChanges, mapFieldDef)
 
-      const instanceType = getChangeElement(instanceChanges[0]).type
+      const instanceType = getChangeElement(instanceChanges[0]).getType()
       // after preDeploy, the fields with lists are exactly the ones that should be converted
       // back to lists
       const nonUniqueMapFields = Object.keys(instanceType.fields).filter(
-        fieldName => isListType((instanceType.fields[fieldName].type))
+        fieldName => isListType((instanceType.fields[fieldName].getType()))
       )
       updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
     })

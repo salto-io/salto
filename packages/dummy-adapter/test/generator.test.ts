@@ -71,9 +71,9 @@ describe('elements generator', () => {
       }, mockProgressReporter)
       const [maps, lists] = _.partition(
         [...run1, ...run2].filter(isObjectType).flatMap(e => _.values(e.fields)).filter(
-          f => isContainerType(f.type)
+          f => isContainerType(f.getType())
         ),
-        f => isMapType(f.type),
+        f => isMapType(f.getType()),
       )
       expect(lists.length).toBeGreaterThan(0)
       expect(maps.length).toBeGreaterThan(0)

@@ -18,6 +18,7 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 
 export const centerInnerTypes: ObjectType[] = []
@@ -30,7 +31,7 @@ export const center = new ObjectType({
   },
   fields: {
     scriptid: {
-      type: BuiltinTypes.SERVICE_ID,
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -38,7 +39,7 @@ export const center = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcenter’. */
     label: {
-      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },

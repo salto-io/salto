@@ -76,7 +76,7 @@ describe('localParseResultCache', () => {
     sourceMap,
   }
 
-  const mockSerializedCacheFileWithoutMD5 = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
+  const mockSerializedCacheFileWithoutMD5 = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationRefTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
 []
 [["salesforce.dummy",[{"filename":"dummy.nacl","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
 

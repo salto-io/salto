@@ -13,11 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import {
-  ObjectType, isType, isObjectType, isInstanceElement, Element, ContainerType,
-  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isVariable, isContainerType,
-} from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, Element, isPrimitiveType, isVariable } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mergeObjectTypes } from './internal/object_types'
 import { mergeInstances } from './internal/instances'
@@ -30,75 +26,22 @@ export type MergeResult = InternalMergeResult<Element[]>
 
 const log = logger(module)
 
-/**
- * Replace the pointers to all the merged elements to the merged version.
- */
-export const updateMergedTypes = (
-  elements: Element[],
-  mergedTypes: TypeMap
-): Element[] => elements.map(elem => {
-  if (isType(elem)) {
-    elem.annotationTypes = _.mapValues(
-      elem.annotationTypes,
-      anno => mergedTypes[anno.elemID.getFullName()] || anno,
-    )
-  }
-  if (isObjectType(elem)) {
-    elem.fields = _.mapValues(
-      elem.fields,
-      field => {
-        field.type = mergedTypes[field.type.elemID.getFullName()] || field.type
-        const fieldType = field.type
-        if (isContainerType(fieldType)) {
-          const resolveGenericType = (containerType: ContainerType): void => {
-            if (isContainerType(containerType.innerType)) {
-              resolveGenericType(containerType.innerType)
-            } else {
-              containerType.setInnerType(mergedTypes[containerType.innerType.elemID.getFullName()]
-              || containerType.innerType)
-            }
-          }
-          resolveGenericType(fieldType)
-        }
-        return field
-      }
-    )
-  }
-  if (isInstanceElement(elem)) {
-    elem.type = mergedTypes[elem.type.elemID.getFullName()] as ObjectType || elem.type
-  }
-  return elem
-})
-
-const getContainerTypes = (containerTypes: ContainerType[]): Record<string, ListType> =>
-  _.keyBy(containerTypes, type => type.elemID.getFullName())
-
-/**
- * Merge a list of elements by applying all updates, and replacing the pointers
- * to the updated elements.
- */
-export const mergeElements = (
-  elements: ReadonlyArray<Element>, context: Record<string, Element> = {}
-): MergeResult => {
+export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => {
   log.debug('starting to merge %d elements', elements.length)
   const objects = mergeObjectTypes(elements.filter(isObjectType))
   const instances = mergeInstances(elements.filter(isInstanceElement))
-  const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]
-  const primitives = mergePrimitives(primitiveElements)
-  const containerTypes = getContainerTypes(elements.filter(isContainerType))
+  const primitives = mergePrimitives(elements.filter(isPrimitiveType))
   const variables = mergeVariables(elements.filter(isVariable))
 
-  const mergedElements = [
-    ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e) && !isVariable(e)),
+  const merged = [
+    ...elements.filter(e =>
+      !isObjectType(e) && !isInstanceElement(e)
+      && !isVariable(e) && !isPrimitiveType(e)),
     ...Object.values(objects.merged),
     ...instances.merged,
     ...variables.merged,
+    ...Object.values(primitives.merged),
   ]
-
-  const updated = updateMergedTypes(
-    mergedElements,
-    _.merge({}, context, objects.merged, primitives.merged, containerTypes)
-  )
 
   const errors = [
     ...objects.errors,
@@ -107,13 +50,13 @@ export const mergeElements = (
     ...variables.errors,
   ]
 
-  log.debug(`merged ${elements.length} elements to ${updated.length} elements [errors=${
+  log.debug(`merged ${elements.length} elements to ${merged.length} elements [errors=${
     errors.length}]`)
   if (errors.length > 0) {
     log.debug(`All merge errors:\n${errors.map(err => err.message).join('\n')}`)
   }
   return {
-    merged: updated,
+    merged,
     errors,
   }
 }

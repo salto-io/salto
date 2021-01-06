@@ -16,6 +16,7 @@
 import { isInstanceElement, getField } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
+import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { getLocations, SaltoElemLocation, getStaticLocations } from './location'
@@ -28,6 +29,7 @@ export const provideWorkspaceDefinition = async (
   context: PositionContext,
   token: Token
 ): Promise<SaltoElemLocation[]> => {
+  const elementsSource = new InMemoryRemoteElementSource(await workspace.elements)
   if (context.ref) {
     const staticFileLocation = getStaticLocations(context.ref.element, context.ref.path, token)
     if (values.isDefined<SaltoElemLocation>(staticFileLocation)) {
@@ -52,7 +54,7 @@ export const provideWorkspaceDefinition = async (
     if (isInstanceElement(context.ref.element)) {
       const refPath = context.ref.path
       if (!_.isEmpty(refPath) && _.last(refPath) === token.value) {
-        const field = getField(context.ref.element.type, refPath)
+        const field = getField(context.ref.element.getType(elementsSource), refPath, elementsSource)
         return field ? getLocations(workspace, field.elemID.getFullName()) : []
       }
     }

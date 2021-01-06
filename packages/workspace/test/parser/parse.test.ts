@@ -247,14 +247,14 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       it('should have the correct inner type', () => {
         expect(genericTypes[0]).toBeDefined()
         const listType = genericTypes[0] as ListType
-        expect(listType?.innerType.elemID).toEqual(new ElemID('salesforce', 'string'))
+        expect(listType?.refInnerType.elemID).toEqual(new ElemID('salesforce', 'string'))
       })
     })
 
     describe('map type', () => {
       it('should have the correct inner type', () => {
         const mapType = genericTypes.find(isMapType)
-        expect(mapType?.innerType.elemID).toEqual(new ElemID('salesforce', 'number'))
+        expect(mapType?.refInnerType.elemID).toEqual(new ElemID('salesforce', 'number'))
       })
     })
 
@@ -279,7 +279,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
           expect(model.fields).toHaveProperty('name')
         })
         it('should have the correct type', () => {
-          expect(model.fields.name.type.elemID).toEqual(new ElemID('salesforce', 'string'))
+          expect(model.fields.name.refType.elemID).toEqual(new ElemID('salesforce', 'string'))
         })
         it('should have annotation values', () => {
           expect(model.fields.name.annotations).toHaveProperty('label')
@@ -294,7 +294,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
           expect(model.fields).toHaveProperty('nicknames')
         })
         it('should have the correct type', () => {
-          expect(model.fields.nicknames.type.elemID).toEqual(new ElemID('', 'list<salesforce.string>'))
+          expect(model.fields.nicknames.refType.elemID).toEqual(new ElemID('', 'List<salesforce.string>'))
         })
       })
       describe('map field', () => {
@@ -302,7 +302,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
           expect(model.fields).toHaveProperty('numChildren')
         })
         it('should have the correct type', () => {
-          expect(model.fields.numChildren.type.elemID).toEqual(new ElemID('', 'map<salesforce.number>'))
+          expect(model.fields.numChildren.refType.elemID).toEqual(new ElemID('', 'Map<salesforce.number>'))
         })
       })
       describe('field annotations', () => {
@@ -341,11 +341,11 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
 
       describe('annotation types', () => {
         it('should exist', () => {
-          expect(model.annotationTypes).toHaveProperty('convertSettings')
+          expect(model.annotationRefTypes).toHaveProperty('convertSettings')
         })
         it('should have the correct type', () => {
-          expect(model.annotationTypes.convertSettings.elemID.adapter).toEqual('salesforce')
-          expect(model.annotationTypes.convertSettings.elemID.name).toEqual('LeadConvertSettings')
+          expect(model.annotationRefTypes.convertSettings.elemID.adapter).toEqual('salesforce')
+          expect(model.annotationRefTypes.convertSettings.elemID.name).toEqual('LeadConvertSettings')
         })
       })
     })
@@ -361,16 +361,12 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         expect(inst.elemID).toEqual(instType.elemID.createNestedID('instance', 'inst'))
       })
       it('should have the right type', () => {
-        expect(inst.type.elemID).toEqual(instType.elemID)
+        expect(inst.refType.elemID).toEqual(instType.elemID)
       })
       it('should have values', () => {
         expect(inst.value).toHaveProperty('name')
         expect(inst.value.name).toEqual('me')
       })
-      it('should not be setting', () => {
-        expect(inst.type.isSettings).toBeFalsy()
-      })
-
       it('should have annotations', () => {
         expect(inst.annotations).toHaveProperty('_depends_on')
         // eslint-disable-next-line no-underscore-dangle
@@ -390,14 +386,11 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         )
       })
       it('should have the right type', () => {
-        expect(config.type.elemID).toEqual(configTypeId)
+        expect(config.refType.elemID).toEqual(configTypeId)
       })
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')
         expect(config.value.username).toEqual('foo')
-      })
-      it('should not be setting', () => {
-        expect(config.type.isSettings).toBeFalsy()
       })
     })
 
@@ -406,7 +399,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         const orig = elements[7] as ObjectType
         const update = elements[8] as ObjectType
         expect(orig.elemID).toEqual(update.elemID)
-        expect(update.fields.num.type.elemID.name).toBe('update')
+        expect(update.fields.num.refType.elemID.name).toBe('update')
       })
     })
 
@@ -420,9 +413,9 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       })
 
       it('should have the correct annotations', () => {
-        expect(numberType.annotationTypes.scale.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
-        expect(numberType.annotationTypes.precision.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
-        expect(numberType.annotationTypes.unique.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
+        expect(numberType.annotationRefTypes.scale.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+        expect(numberType.annotationRefTypes.precision.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+        expect(numberType.annotationRefTypes.unique.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
       })
     })
 
@@ -456,8 +449,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         )
       })
       it('should have to correct type ID', () => {
-        expect(settingsInstance.type.elemID).toEqual(settingsType.elemID)
-        expect(settingsInstance.type.isSettings).toBeTruthy()
+        expect(settingsInstance.refType.elemID).toEqual(settingsType.elemID)
       })
     })
 

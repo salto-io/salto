@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, METADATA_TYPE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
@@ -46,7 +47,7 @@ describe('reference_annotations filter', () => {
               'something',
             ],
           },
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
         },
       },
     })
@@ -54,7 +55,9 @@ describe('reference_annotations filter', () => {
       annotations: { [METADATA_TYPE]: 'obj' },
       elemID: objTypeID,
       fields: {
-        reg: { type: BuiltinTypes.STRING },
+        reg: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
     const elements = [nestedType, objType]
@@ -70,7 +73,7 @@ describe('reference_annotations filter', () => {
         nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0]
       ).toBeInstanceOf(ReferenceExpression)
       expect(
-        nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0].elemId
+        nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0].elemID
       ).toEqual(objTypeID)
       expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][1]).toEqual('unknown')
     })
@@ -82,7 +85,7 @@ describe('reference_annotations filter', () => {
         nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0]
       ).toBeInstanceOf(ReferenceExpression)
       expect(
-        nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0].elemId
+        nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0].elemID
       ).toEqual(objTypeID)
       expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][1]).toEqual('something')
     })

@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change,
-  getChangeElement, isInstanceChange,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change, getChangeElement, isInstanceChange } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -46,11 +44,13 @@ describe('Topics for objects filter', () => {
   const mockTopic = new ObjectType({
     elemID: mockTopicElemID,
     fields: {
-      [ENABLE_TOPICS]: { type: BuiltinTypes.BOOLEAN },
-      [ENTITY_API_NAME]: { type: BuiltinTypes.STRING },
-      [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+      [ENABLE_TOPICS]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [ENTITY_API_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [constants.INSTANCE_FULL_NAME_FIELD]: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {
       [constants.METADATA_TYPE]: TOPICS_FOR_OBJECTS_METADATA_TYPE,
     },
@@ -124,7 +124,7 @@ describe('Topics for objects filter', () => {
         expect(instances.map(inst => apiName(inst))).toEqual(['Test2__c', 'Test3__c'])
         expect(instances.map(inst => inst.value.enableTopics)).toEqual([true, false])
 
-        const topicsForObjectsType = instances[0].type
+        const topicsForObjectsType = instances[0].getType()
         expect(topicsForObjectsType.annotations).toMatchObject({
           metadataType: TOPICS_FOR_OBJECTS_METADATA_TYPE,
           dirName: 'topicsForObjects',

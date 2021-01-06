@@ -49,7 +49,7 @@ export const getRecordOfInstance = async (
   uniqueField = 'Id',
 ): Promise<SalesforceRecord | undefined> => {
   const selectFieldsString = _.uniq([uniqueField].concat(additionalFields)).join(',')
-  const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.type)} WHERE ${uniqueField} = '${instance.value[uniqueField]}'`
+  const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.getType())} WHERE ${uniqueField} = '${instance.value[uniqueField]}'`
   const queryResult = await client.queryAll(queryString)
   const records = (await toArrayAsync(queryResult)).flat()
   return records[0]
@@ -154,7 +154,7 @@ const removeRecordIfAlreadyExists = async (
   instance: InstanceElement
 ): Promise<void> => {
   if (await getRecordOfInstance(client, instance) !== undefined) {
-    await client.bulkLoadOperation(apiName(instance.type), 'delete', [{ Id: instance.value.Id }])
+    await client.bulkLoadOperation(apiName(instance.getType()), 'delete', [{ Id: instance.value.Id }])
   }
 }
 

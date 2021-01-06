@@ -19,6 +19,7 @@ import {
   createRestriction,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -32,30 +33,30 @@ describe('convert types filter', () => {
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
-      strAsStr: { type: BuiltinTypes.STRING },
-      strAsNum: { type: BuiltinTypes.STRING },
-      boolAsBool: { type: BuiltinTypes.BOOLEAN },
-      boolAsStr: { type: BuiltinTypes.BOOLEAN },
-      numAsNum: { type: BuiltinTypes.NUMBER },
-      numAsStr: { type: BuiltinTypes.NUMBER },
-      nullStr: { type: BuiltinTypes.STRING },
+      strAsStr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      strAsNum: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      boolAsBool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      boolAsStr: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      numAsNum: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      numAsStr: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      nullStr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       values: {
-        type: new ListType(new ObjectType({
+        refType: createRefToElmWithValue(new ListType(new ObjectType({
           elemID: mockObjId,
           fields: {
-            field: { type: BuiltinTypes.STRING },
-            value: { type: BuiltinTypes.STRING },
+            field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           },
-        })),
+        }))),
       },
-      numArray: { type: new ListType(BuiltinTypes.NUMBER) },
+      numArray: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
       picklist: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['a', 'b', 'c'] }),
         },
       },
-      refToStr: { type: BuiltinTypes.STRING },
+      refToStr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
   type XsdValueType = { _: string; $: { 'xsi:type': string }}

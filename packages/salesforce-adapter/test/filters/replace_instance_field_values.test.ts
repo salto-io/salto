@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, ObjectType, InstanceElement, isInstanceElement,
-  Change, ChangeDataType, BuiltinTypes, ListType,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, Change, ChangeDataType, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/replace_instance_field_values'
@@ -59,7 +57,7 @@ const opportunityListFieldsSelectedSettingsType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'OpportunityListFieldsSelectedSettings'),
   fields: {
     field: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
     },
   },
 })
@@ -69,7 +67,7 @@ const opportunityListFieldsUnselectedSettingsType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'OpportunityListFieldsUnselectedSettings'),
   fields: {
     field: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
     },
   },
 })
@@ -79,10 +77,10 @@ const opportunityListFieldsLabelMappingType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'OpportunityListFieldsLabelMapping'),
   fields: {
     field: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
     },
     label: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
     },
   },
 })
@@ -92,13 +90,13 @@ const forecastingTypeSettingsType = new ListType(new ObjectType({
   elemID: new ElemID(SALESFORCE, 'ForecastingTypeSettings'),
   fields: {
     opportunityListFieldsSelectedSettings: {
-      type: opportunityListFieldsSelectedSettingsType,
+      refType: createRefToElmWithValue(opportunityListFieldsSelectedSettingsType),
     },
     opportunityListFieldsUnselectedSettings: {
-      type: opportunityListFieldsUnselectedSettingsType,
+      refType: createRefToElmWithValue(opportunityListFieldsUnselectedSettingsType),
     },
     opportunityListFieldsLabelMappings: {
-      type: new ListType(opportunityListFieldsLabelMappingType),
+      refType: createRefToElmWithValue(new ListType(opportunityListFieldsLabelMappingType)),
     },
   },
 }))
@@ -109,7 +107,7 @@ const types: Record<string, ObjectType> = {
     elemID: new ElemID(SALESFORCE, FORECASTING_METADATA_TYPE),
     fields: {
       forecastingTypeSettings: {
-        type: forecastingTypeSettingsType,
+        refType: createRefToElmWithValue(forecastingTypeSettingsType),
       },
     },
   }),
@@ -214,14 +212,14 @@ describe('replace instance field values filter', () => {
       elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
       fields: {
         [AFTER_ID_2]: {
-          type: types[CUSTOM_FIELD],
+          refType: createRefToElmWithValue(types[CUSTOM_FIELD]),
           annotations: {
             [INTERNAL_ID_FIELD]: `${BEFORE_ID_2}UAA`,
             [API_NAME]: AFTER_ID_2,
           },
         },
         [AFTER_ID_1]: {
-          type: types[CUSTOM_FIELD],
+          refType: createRefToElmWithValue(types[CUSTOM_FIELD]),
           annotations: {
             [INTERNAL_ID_FIELD]: `${BEFORE_ID_1}UAA`,
             [API_NAME]: AFTER_ID_1,

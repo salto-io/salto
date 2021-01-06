@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value,
-  isListType, isObjectType, ListType, MapType, isMapType,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value, isListType, isObjectType, ListType, MapType, isMapType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -31,13 +29,19 @@ describe('convert lists filter', () => {
   const mockTypeNoInstances = new ObjectType({
     elemID: mockObjNoInstancesId,
     fields: {
-      single: { type: BuiltinTypes.STRING },
+      single: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
     },
   })
 
   const innerFields = {
-    key: { type: BuiltinTypes.STRING },
-    list: { type: BuiltinTypes.STRING },
+    key: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    list: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
   }
 
   const mockInnerFieldType = new ObjectType({
@@ -46,17 +50,27 @@ describe('convert lists filter', () => {
   })
 
   const fieldTypeFields = {
-    key: { type: BuiltinTypes.STRING },
-    value: { type: BuiltinTypes.STRING },
-    list: { type: BuiltinTypes.STRING },
-    strMap: { type: new MapType(BuiltinTypes.STRING) },
+    key: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    value: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    list: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    strMap: {
+      refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)),
+    },
   }
 
   const mockFieldType = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'inner'),
     fields: {
       ...fieldTypeFields,
-      listOfObj: { type: mockInnerFieldType },
+      listOfObj: {
+        refType: createRefToElmWithValue(mockInnerFieldType),
+      },
     },
   })
   const mockInnerFieldTypeB = new ObjectType({
@@ -67,7 +81,9 @@ describe('convert lists filter', () => {
     elemID: new ElemID(constants.SALESFORCE, 'innerB'),
     fields: {
       ...fieldTypeFields,
-      listOfObj: { type: mockInnerFieldTypeB },
+      listOfObj: {
+        refType: createRefToElmWithValue(mockInnerFieldTypeB),
+      },
     },
   })
 
@@ -75,8 +91,12 @@ describe('convert lists filter', () => {
   const mockTypeToSort = new ObjectType({
     elemID: mockObjToSortId,
     fields: {
-      sortByMe: { type: BuiltinTypes.STRING },
-      other: { type: BuiltinTypes.STRING },
+      sortByMe: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      other: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
     },
   })
 
@@ -84,14 +104,16 @@ describe('convert lists filter', () => {
   const nestedMockTypeToSort = new ObjectType({
     elemID: nestedMockObjToSortId,
     fields: {
-      nestedAnnoToSort: { type: mockTypeToSort },
+      nestedAnnoToSort: {
+        refType: createRefToElmWithValue(mockTypeToSort),
+      },
     },
   })
 
   const mockObjWithAnnotationsId = new ElemID(constants.SALESFORCE, 'objWithAnnotations')
   const mockFieldTypeWithAnnotations = new ObjectType({
     elemID: mockObjWithAnnotationsId,
-    annotationTypes: {
+    annotationRefsOrTypes: {
       annotationToSort: mockTypeToSort,
       otherAnnotation: mockTypeToSort,
       nestedAnnoToSort: nestedMockTypeToSort,
@@ -102,7 +124,9 @@ describe('convert lists filter', () => {
   const mockProfileType = new ObjectType({
     elemID: mockObjId,
     fields: {
-      applicationVisibilities: { type: new MapType(mockFieldType) },
+      applicationVisibilities: {
+        refType: createRefToElmWithValue(new MapType(mockFieldType)),
+      },
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
@@ -111,16 +135,32 @@ describe('convert lists filter', () => {
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
-      lst: { type: BuiltinTypes.STRING },
-      mockFieldMap: { type: new MapType(mockFieldType) },
-      single: { type: BuiltinTypes.STRING },
-      ordered: { type: mockFieldType },
-      unordered: { type: mockFieldType },
-      singleHardcoded: { type: BuiltinTypes.STRING },
-      singleObjHardcoded: { type: mockFieldTypeB },
-      emptyHardcoded: { type: BuiltinTypes.STRING },
+      lst: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      mockFieldMap: {
+        refType: createRefToElmWithValue(new MapType(mockFieldType)),
+      },
+      single: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      ordered: {
+        refType: createRefToElmWithValue(mockFieldType),
+      },
+      unordered: {
+        refType: createRefToElmWithValue(mockFieldType),
+      },
+      singleHardcoded: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      singleObjHardcoded: {
+        refType: createRefToElmWithValue(mockFieldTypeB),
+      },
+      emptyHardcoded: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
       fieldWithAnnotations: {
-        type: mockFieldTypeWithAnnotations,
+        refType: createRefToElmWithValue(mockFieldTypeWithAnnotations),
         annotations: {
           annotationToSort: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
           otherAnnotation: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
@@ -130,7 +170,7 @@ describe('convert lists filter', () => {
         },
       },
     },
-    annotationTypes: {
+    annotationRefsOrTypes: {
       objAnnotationToSort: mockTypeToSort,
       otherObjAnnotation: mockTypeToSort,
       nestedObjAnnoToSort: nestedMockTypeToSort,
@@ -226,8 +266,8 @@ describe('convert lists filter', () => {
     testElements = [
       typeClone,
       typeNoInstancesClone,
-      _.assign(_.clone(mockInstanceLst), { type: typeClone }),
-      _.assign(_.clone(mockInstanceNonLst), { type: typeClone }),
+      _.assign(_.clone(mockInstanceLst), { refType: createRefToElmWithValue(typeClone) }),
+      _.assign(_.clone(mockInstanceNonLst), { refType: createRefToElmWithValue(typeClone) }),
       mockProfileType,
     ]
   })
@@ -247,13 +287,13 @@ describe('convert lists filter', () => {
     })
 
     it('should mark fields as list types', () => {
-      expect(isListType(type.fields.lst.type)).toBeTruthy()
-      expect(isListType(type.fields.single.type)).toBeFalsy()
+      expect(isListType(type.fields.lst.getType())).toBeTruthy()
+      expect(isListType(type.fields.single.getType())).toBeFalsy()
     })
 
     it('should not mark map fields as list types', () => {
-      expect(isListType(type.fields.mockFieldMap.type)).toBeFalsy()
-      expect(isMapType(type.fields.mockFieldMap.type)).toBeTruthy()
+      expect(isListType(type.fields.mockFieldMap.getType())).toBeFalsy()
+      expect(isMapType(type.fields.mockFieldMap.getType())).toBeTruthy()
     })
 
     it('should convert lists in instances', () => {
@@ -268,45 +308,46 @@ describe('convert lists filter', () => {
     })
 
     it('should sort unordered lists', () => {
-      expect(isListType(type.fields.unordered.type)).toBeTruthy()
+      expect(isListType(type.fields.unordered.getType())).toBeTruthy()
       expect(lstInst.value.unordered).toHaveLength(2)
       expect(lstInst.value.unordered.map((item: Value) => item.key)).toEqual(['a', 'b'])
     })
 
     it('should not reorder regular lists', () => {
-      expect(isListType(type.fields.ordered.type)).toBeTruthy()
+      expect(isListType(type.fields.ordered.getType())).toBeTruthy()
       expect(lstInst.value.ordered).toHaveLength(2)
       expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
     })
 
     it('should convert list inside objs in lists', () => {
-      expect(isListType(type.fields.ordered.type)).toBeTruthy()
-      const { innerType } = (type.fields.ordered.type as ListType)
+      expect(isListType(type.fields.ordered.getType())).toBeTruthy()
+      const innerType = (type.fields.ordered.getType() as ListType).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
-      expect(isListType((innerType as ObjectType).fields.list.type)).toBeTruthy()
+      expect(isListType((innerType as ObjectType).fields.list.getType())).toBeTruthy()
     })
 
     it('should convert list inside objs in list inside list of obj', () => {
-      expect(isListType(type.fields.ordered.type)).toBeTruthy()
-      const { innerType } = (type.fields.ordered.type as ListType)
+      expect(isListType(type.fields.ordered.getType())).toBeTruthy()
+      const innerType = (type.fields.ordered.getType() as ListType).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
-      expect(isListType((innerType as ObjectType).fields.listOfObj.type)).toBeTruthy()
-      const innerInnerType = ((innerType as ObjectType).fields.listOfObj.type as ListType).innerType
+      expect(isListType((innerType as ObjectType).fields.listOfObj.getType())).toBeTruthy()
+      const innerInnerType = ((innerType as ObjectType).fields.listOfObj
+        .getType() as ListType).getInnerType()
       expect(isObjectType(innerInnerType)).toBeTruthy()
-      expect(isListType((innerInnerType as ObjectType).fields.list.type)).toBeTruthy()
+      expect(isListType((innerInnerType as ObjectType).fields.list.getType())).toBeTruthy()
     })
 
     it('should convert hardcoded fields to lists', () => {
-      expect(isListType(type.fields.singleHardcoded.type)).toBeTruthy()
+      expect(isListType(type.fields.singleHardcoded.getType())).toBeTruthy()
       expect(lstInst.value.singleHardcoded).toEqual(['val'])
     })
 
     it('should convert a list inside an hardcoded field to list', () => {
-      const hardcodedObjType = type.fields.singleObjHardcoded.type
+      const hardcodedObjType = type.fields.singleObjHardcoded.getType()
       expect(isListType(hardcodedObjType)).toBeTruthy()
-      const innerObj = (hardcodedObjType as ListType).innerType
+      const innerObj = (hardcodedObjType as ListType).getInnerType()
       expect(isObjectType(innerObj)).toBeTruthy()
-      expect(isListType((innerObj as ObjectType).fields.list.type)).toBeTruthy()
+      expect(isListType((innerObj as ObjectType).fields.list.getType())).toBeTruthy()
     })
 
     it('should convert val of a list inside an hardcoded field to list', () => {
@@ -314,12 +355,12 @@ describe('convert lists filter', () => {
     })
 
     it('should convert empty hardcoded fields to empty lists', () => {
-      expect(isListType(type.fields.emptyHardcoded.type)).toBeTruthy()
+      expect(isListType(type.fields.emptyHardcoded.getType())).toBeTruthy()
       expect(lstInst.value.emptyHardcoded).toEqual([])
     })
 
     it('should convert hardcoded fields to lists even when there are no instances', () => {
-      expect(isListType(typeNoInstances.fields.single.type)).toBeTruthy()
+      expect(isListType(typeNoInstances.fields.single.getType())).toBeTruthy()
     })
 
     it('should sort unordered annotations of fields', () => {

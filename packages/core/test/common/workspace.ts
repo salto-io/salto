@@ -13,13 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  BuiltinTypes,
-  Element,
-  ElemID,
-  InstanceElement,
-  ObjectType,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import { mockState } from './state'
 
@@ -33,20 +28,20 @@ export const emptyConfigID = new ElemID(emptyMockService)
 export const mockConfigType = new ObjectType({
   elemID: configID,
   fields: {
-    username: { type: BuiltinTypes.STRING },
-    password: { type: BuiltinTypes.STRING },
-    token: { type: BuiltinTypes.STRING },
-    sandbox: { type: BuiltinTypes.BOOLEAN },
+    username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    password: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
   },
 })
 
 export const mockEmptyConfigType = new ObjectType({
   elemID: emptyConfigID,
   fields: {
-    username: { type: BuiltinTypes.STRING },
-    password: { type: BuiltinTypes.STRING },
-    token: { type: BuiltinTypes.STRING },
-    sandbox: { type: BuiltinTypes.BOOLEAN },
+    username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    password: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
   },
 })
 

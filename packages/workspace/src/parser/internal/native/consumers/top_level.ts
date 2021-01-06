@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { Keywords } from '../../../language'
 import { ParseContext, ConsumerReturnType } from '../types'
@@ -72,7 +72,7 @@ const consumePrimitive = (
     value: new PrimitiveType({
       elemID,
       primitive,
-      annotationTypes: consumedBlock.value.annotationTypes,
+      annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
     }),
     range: consumedBlock.range,
@@ -90,7 +90,7 @@ const consumeObjectType = (
     value: new ObjectType({
       elemID,
       fields: consumedBlock.value.fields,
-      annotationTypes: consumedBlock.value.annotationTypes,
+      annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
       isSettings,
     }),
@@ -110,16 +110,13 @@ const consumeInstanceElement = (
   }
   const instance = new InstanceElement(
     instanceName,
-    new ObjectType({
-      elemID: typeID,
-      isSettings: instanceName === ElemID.CONFIG_NAME && !typeID.isConfig(),
-    })
+    new ReferenceExpression(typeID)
   )
   const consumedBlockBody = consumeBlockBody(context, instance.elemID)
 
   // You can't define a block inside an instance. Blocks will be ignored.
-  const { attrs, fields, annotationTypes } = consumedBlockBody.value
-  if (!_.isEmpty(annotationTypes) || !_.isEmpty(fields)) {
+  const { attrs, fields, annotationRefTypes } = consumedBlockBody.value
+  if (!_.isEmpty(annotationRefTypes) || !_.isEmpty(fields)) {
     context.errors.push(
       invalidBlocksInInstance({ ...consumedBlockBody.range, filename: context.filename })
     )

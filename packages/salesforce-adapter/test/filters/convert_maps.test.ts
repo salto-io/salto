@@ -89,9 +89,9 @@ describe('ProfileMaps filter', () => {
 
       it('should convert object field types to maps', () => {
         expect(profileObj).toEqual(generateProfileType(true))
-        const fieldType = profileObj.fields.applicationVisibilities.type
+        const fieldType = profileObj.fields.applicationVisibilities.getType()
         expect(isMapType(fieldType)).toBeTruthy()
-        expect(isListType((fieldType as MapType).innerType)).toBeFalsy()
+        expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
       })
       it('should convert instance values to maps', () => {
         expect((instances[0] as InstanceElement).value).toEqual({
@@ -175,9 +175,9 @@ describe('ProfileMaps filter', () => {
       })
 
       it('should convert all fields with duplicates into (maps of) lists', () => {
-        const fieldType = profileObj.fields.applicationVisibilities.type
+        const fieldType = profileObj.fields.applicationVisibilities.getType()
         expect(isMapType(fieldType)).toBeTruthy()
-        expect(isListType((fieldType as MapType).innerType)).toBeTruthy()
+        expect(isListType((fieldType as MapType).getInnerType())).toBeTruthy()
         expect(Array.isArray(
           (instances[1] as InstanceElement).value.applicationVisibilities.sameApp
         )).toBeTruthy()
@@ -363,7 +363,7 @@ describe('ProfileMaps filter', () => {
       })
 
       await filter.onDeploy([{ action: 'add', data: { after: inst } }])
-      expect(inst.type).toEqual(generateProfileType())
+      expect(inst.getType()).toEqual(generateProfileType())
       expect(profileObj).toEqual(generateProfileType())
       expect(Array.isArray(inst.value.fieldPermissions)).toBeTruthy()
     })

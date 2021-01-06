@@ -28,7 +28,7 @@ const getFormInstanceFieldErrorsFromAfter = async (after: InstanceElement):
   const getErrorsFromField = (field: Value): ReadonlyArray<ChangeError> => {
     const errors = [] as ChangeError[]
     if (!isReferenceExpression(field.contactProperty)
-      || (field.contactProperty.elemId.typeName !== OBJECTS_NAMES.CONTACT_PROPERTY)) {
+      || (field.contactProperty.elemID.typeName !== OBJECTS_NAMES.CONTACT_PROPERTY)) {
       errors.push({
         elemID: after.elemID,
         severity: 'Error',

@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Value, StaticFile, calculateStaticFileHash } from '@salto-io/adapter-api'
+import { Value, StaticFile, calculateStaticFileHash, ObjectType, isObjectType, TypeElement } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
 import { StaticFilesSource } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
+
+const { isDefined } = values
 
 export class TestFuncImpl extends FunctionExpression {}
 
@@ -82,3 +85,22 @@ export const exampleStaticFileWithContent = new StaticFile({
   filepath: defaultPath,
   content: defaultBuffer,
 })
+
+export const getFieldsAndAnnoTypes = (
+  objType: ObjectType,
+  touched: string[] = []
+): TypeElement[] => {
+  const fieldTypes = Object.values(objType.fields).map(f => f.getType())
+  const annoTypes = Object.values(objType.getAnnotationTypes())
+
+  return [...fieldTypes, ...annoTypes].flatMap(type => {
+    if (touched.includes(type.elemID.getFullName())) {
+      return undefined
+    }
+    touched.push(type.elemID.getFullName())
+    if (!isObjectType(type)) {
+      return type
+    }
+    return [type, ...getFieldsAndAnnoTypes(type, touched)]
+  }).filter(isDefined)
+}

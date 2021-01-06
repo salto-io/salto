@@ -20,9 +20,7 @@ import {
   TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
   Change, FetchOptions, ProgressReporter,
 } from '@salto-io/adapter-api'
-import {
-  findElement, naclCase,
-} from '@salto-io/adapter-utils'
+import { findElement, naclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -42,6 +40,7 @@ import { UsernamePasswordCredentials } from '../src/types'
 import {
   Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataObjectType,
   createInstanceElement,
+  assertMetadataObjectType,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import {
@@ -74,7 +73,7 @@ const extractReferenceTo = (annotations: Values): (string | undefined)[] => (
   makeArray(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).map(
     (ref: ReferenceExpression | string): string | undefined => (
       isReferenceExpression(ref)
-        ? ref.elemId.typeName
+        ? ref.elemID.typeName
         : ref
     )
   )
@@ -130,13 +129,13 @@ describe('Salesforce adapter E2E with real account', () => {
         // Check few field types on lead object
         const lead = findStandardFieldsObject(result, 'Lead')
         // Test few possible types
-        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
-        expect(lead.fields.Description.type.elemID).toEqual(
+        expect(lead.fields.Address.refType.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
+        expect(lead.fields.Description.refType.elemID).toEqual(
           Types.primitiveDataTypes.LongTextArea.elemID,
         )
-        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.Name.elemID)
-        expect(lead.fields.OwnerId.type.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
-        expect(lead.fields.HasOptedOutOfEmail.type.elemID).toEqual(
+        expect(lead.fields.Name.refType.elemID).toEqual(Types.compoundDataTypes.Name.elemID)
+        expect(lead.fields.OwnerId.refType.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
+        expect(lead.fields.HasOptedOutOfEmail.refType.elemID).toEqual(
           Types.primitiveDataTypes.Unknown.elemID
         )
 
@@ -198,18 +197,18 @@ describe('Salesforce adapter E2E with real account', () => {
       describe('should fetch sobject annotations from the custom object instance', () => {
         it('should fetch relevant simple annotations for standard object', () => {
           const lead = findAnnotationsObject(result, 'Lead')
-          expect(lead.annotationTypes).toHaveProperty('enableFeeds')
+          expect(lead.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(lead.annotations.enableFeeds).toBeDefined()
 
-          expect(lead.annotationTypes).not.toHaveProperty('deploymentStatus')
+          expect(lead.getAnnotationTypes()).not.toHaveProperty('deploymentStatus')
           expect(lead.annotations.deploymentStatus).toBeUndefined()
         })
 
         it('should fetch relevant simple annotations for custom object', () => {
           const customObj = findAnnotationsObject(result, 'TestFields__c')
-          expect(customObj.annotationTypes).toHaveProperty('enableFeeds')
+          expect(customObj.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(customObj.annotations.enableFeeds).toBeDefined()
-          expect(customObj.annotationTypes).toHaveProperty('deploymentStatus')
+          expect(customObj.getAnnotationTypes()).toHaveProperty('deploymentStatus')
           expect(customObj.annotations.deploymentStatus).toBeDefined()
         })
       })
@@ -276,9 +275,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should fetch metadata type', () => {
       const flow = findElements(result, 'Flow')[0] as ObjectType
-      expect(flow.fields.description.type).toEqual(BuiltinTypes.STRING)
-      expect(flow.fields.isTemplate.type).toEqual(BuiltinTypes.BOOLEAN)
-      expect(flow.fields.actionCalls.type).toEqual(findElements(result, 'FlowActionCall')[0])
+      expect(flow.fields.description.getType()).toEqual(BuiltinTypes.STRING)
+      expect(flow.fields.isTemplate.getType()).toEqual(BuiltinTypes.BOOLEAN)
+      expect(flow.fields.actionCalls.getType()).toEqual(findElements(result, 'FlowActionCall')[0])
       expect(getRestriction(flow.fields.processType).enforce_value).toEqual(false)
     })
 
@@ -465,15 +464,15 @@ describe('Salesforce adapter E2E with real account', () => {
       const nameFieldElemID = new ElemID(constants.SALESFORCE, 'NameField')
       const element = new ObjectType({
         elemID: mockElemID,
-        annotationTypes: {
+        annotationRefsOrTypes: {
           deploymentStatus: BuiltinTypes.STRING,
           enableHistory: BuiltinTypes.BOOLEAN,
           nameField: new ObjectType({ elemID: nameFieldElemID,
             fields: {
-              [constants.LABEL]: { type: BuiltinTypes.STRING },
-              type: { type: BuiltinTypes.STRING },
-              displayFormat: { type: BuiltinTypes.STRING },
-              startingNumber: { type: BuiltinTypes.NUMBER },
+              [constants.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              type: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              displayFormat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              startingNumber: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
             } }),
         },
         annotations: {
@@ -490,7 +489,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         fields: {
           description: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
@@ -498,7 +497,7 @@ describe('Salesforce adapter E2E with real account', () => {
             },
           },
           formula: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.LABEL]: 'Test formula',
               [constants.FORMULA]: '"some text"',
@@ -549,7 +548,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         fields: {
           description: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'description__c'),
               [constants.LABEL]: 'test label',
@@ -572,13 +571,13 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
           address: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
             },
           },
           banana: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
@@ -603,13 +602,13 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
           banana: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
           },
           description: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
           },
         },
         annotations: {
@@ -784,24 +783,24 @@ describe('Salesforce adapter E2E with real account', () => {
       const nameFieldType = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'NameField'),
         fields: {
-          [constants.LABEL]: { type: BuiltinTypes.STRING },
-          type: { type: BuiltinTypes.STRING },
-          displayFormat: { type: BuiltinTypes.STRING },
-          startingNumber: { type: BuiltinTypes.NUMBER },
+          [constants.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          type: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          displayFormat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          startingNumber: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
         },
       })
       const testElement = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'test modify annotations'),
         fields: {
           address: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Address',
             },
           },
           banana: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [constants.LABEL]: 'Banana',
@@ -810,7 +809,7 @@ describe('Salesforce adapter E2E with real account', () => {
             },
           },
         },
-        annotationTypes: {
+        annotationRefsOrTypes: {
           deploymentStatus: BuiltinTypes.STRING,
           nameField: nameFieldType,
         },
@@ -905,7 +904,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
           address: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Field Label',
@@ -1223,7 +1222,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ): void => {
             expect(field).toBeDefined()
             verificationFunc(field.annotations)
-            expect(field.type.elemID).toEqual(expectedType.elemID)
+            expect(field.refType.elemID).toEqual(expectedType.elemID)
           }
 
           let fields: Record<string, Field>
@@ -1454,7 +1453,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 if (name === CUSTOM_FIELD_NAMES.MULTI_PICKLIST) {
                   annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
                 }
-                return { type: field.type, annotations }
+                return { refType: field.refType, annotations }
               })
               .value(),
             annotations: {
@@ -1462,7 +1461,7 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
             },
-            annotationTypes: { ...customFieldsObject.annotationTypes },
+            annotationRefsOrTypes: { ...customFieldsObject.annotationRefTypes },
           })
 
           // Resolve reference expression before deploy
@@ -1470,7 +1469,7 @@ describe('Salesforce adapter E2E with real account', () => {
             ref: ReferenceExpression | string | undefined
           ): string | undefined => {
             if (isReferenceExpression(ref)) {
-              const elem = findElement(result, ref.elemId)
+              const elem = findElement(result, ref.elemID)
               return elem
                 // adding fallback for partially-resolved elements
                 ? apiName(elem) || elem.elemID.typeName
@@ -2291,7 +2290,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const oldElement = new ObjectType({
         elemID: mockElemID,
         fields: { [fieldName]: {
-          type: Types.primitiveDataTypes.Lookup,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
           annotations: {
             [constants.API_NAME]: lookupFieldApiFullName,
             [constants.LABEL]: fieldName,
@@ -2598,7 +2597,7 @@ describe('Salesforce adapter E2E with real account', () => {
           const instances = await fromRetrieveResult(
             retrieveResult,
             fileProps,
-            new Set(instance.type.annotations.hasMetaFile ? [type] : []),
+            new Set(instance.getType().annotations.hasMetaFile ? [type] : []),
             new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
           )
           return instances
@@ -2610,7 +2609,7 @@ describe('Salesforce adapter E2E with real account', () => {
         const removeIfAlreadyExists = async (instance: MetadataInstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
             const pkg = createDeployPackage()
-            pkg.delete(instance.type, apiName(instance))
+            pkg.delete(assertMetadataObjectType(instance.getType()), apiName(instance))
             await client.deploy(await pkg.getZip())
           }
         }
@@ -3620,7 +3619,7 @@ describe('Salesforce adapter E2E with real account', () => {
       it('should point parentRole to a Role instance', () => {
         const childRole = findElements(result, 'Role', 'TestChildRole')[0] as InstanceElement
         expect(childRole.value.parentRole).toBeInstanceOf(ReferenceExpression)
-        expect(childRole.value.parentRole.elemId.typeName).toEqual('Role')
+        expect(childRole.value.parentRole.elemID.typeName).toEqual('Role')
       })
     })
     describe('Deploy BusinessHoursSettings', () => {

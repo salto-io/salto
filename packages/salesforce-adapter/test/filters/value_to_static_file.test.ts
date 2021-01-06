@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, ObjectType, InstanceElement, isInstanceElement,
-  BuiltinTypes, StaticFile, FieldDefinition,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, BuiltinTypes, StaticFile, FieldDefinition } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/value_to_static_file'
@@ -51,9 +49,9 @@ describe('value to static file filter', () => {
     const webLinkID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
     const anotherID = new ElemID(SALESFORCE, 'another')
     fields = {
-      [URL]: { type: BuiltinTypes.STRING },
-      [LINK_TYPE_FIELD]: { type: BuiltinTypes.STRING },
-      [NOT_URL]: { type: BuiltinTypes.STRING },
+      [URL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [LINK_TYPE_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [NOT_URL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     }
 
     const webLinkType = new ObjectType({

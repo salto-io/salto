@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
-  isAdditionOrRemovalChange, isFieldChange,
+  isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -192,7 +192,9 @@ type GetPlanParameters = {
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
-  additionalResolveContext?: AdditionalResolveContext
+  //additionalResolveContext?: AdditionalResolveContext
+  beforeSource: ReadOnlyElementsSource
+  afterSource: ReadOnlyElementsSource
 }
 export const getPlan = async ({
   before,
@@ -200,11 +202,18 @@ export const getPlan = async ({
   changeValidators = {},
   dependencyChangers = defaultDependencyChangers,
   customGroupIdFunctions = {},
-  additionalResolveContext,
+  beforeSource,
+  afterSource,
 }: GetPlanParameters): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
-  const resolvedBefore = resolve(before, additionalResolveContext?.before)
-  const resolvedAfter = resolve(after, additionalResolveContext?.after)
+  const resolvedBefore = resolve(
+    before,
+    beforeSource,
+  )
+  const resolvedAfter = resolve(
+    after,
+    afterSource,
+  )
 
   const diffGraph = await buildDiffGraph(
     addElements(resolvedBefore, 'remove'),

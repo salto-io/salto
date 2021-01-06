@@ -13,21 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Field, Element, isInstanceElement, Value, Values, isReferenceExpression,
-  ReferenceExpression, InstanceElement, ElemID, getField,
-} from '@salto-io/adapter-api'
+import { Field, Element, isInstanceElement, Value, Values, isReferenceExpression, ReferenceExpression, InstanceElement, ElemID, getField } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolvePath, getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import {
-  ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
-  generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition,
-  getLookUpName,
-} from '../transformers/reference_mapping'
+import { ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder, generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
@@ -71,10 +64,10 @@ const neighborContextFunc = ({
   }
 
   const resolveReference = (context: ReferenceExpression, path?: ElemID): string | undefined => {
-    const contextField = getField(instance.type, fieldPath.createTopLevelParentID().path)
+    const contextField = getField(instance.getType(), fieldPath.createTopLevelParentID().path)
     const refWithValue = new ReferenceExpression(
-      context.elemId,
-      context.value ?? elemByElemID[context.elemId.getFullName()],
+      context.elemID,
+      context.value ?? elemByElemID[context.elemID.getFullName()],
     )
     return getLookUpName({ ref: refWithValue, field: contextField, path })
   }
@@ -132,7 +125,7 @@ const ContextStrategyLookup: Record<
   instanceParent: ({ instance, elemByElemID }) => {
     const parent = getParents(instance)[0]
     return (isReferenceExpression(parent)
-      ? apiName(elemByElemID[parent.elemId.getFullName()])
+      ? apiName(elemByElemID[parent.elemID.getFullName()])
       : undefined)
   },
   neighborTypeLookup: neighborContextFunc({ contextFieldName: 'type' }),
@@ -217,7 +210,7 @@ const replaceReferenceValues = (
   return transformValues(
     {
       values: instance.value,
-      type: instance.type,
+      type: instance.getType(),
       transformFunc: transformPrimitive,
       strict: false,
       pathID: instance.elemID,

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, PrimitiveTypes, Field, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, 
+  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '../src/compare'
 
 describe('detailedCompare', () => {
@@ -28,7 +29,7 @@ describe('detailedCompare', () => {
     })
     const before = new InstanceElement(
       'inst',
-      instType,
+      new ReferenceExpression(instType.elemID, instType),
       {
         before: 'Before',
         modify: 'Before',
@@ -41,7 +42,7 @@ describe('detailedCompare', () => {
     )
     const after = new InstanceElement(
       'inst',
-      instType,
+      new ReferenceExpression(instType.elemID, instType),
       {
         after: 'Before',
         modify: 'After',
@@ -85,7 +86,7 @@ describe('detailedCompare', () => {
   describe('compare primitive types', () => {
     const before = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         before: BuiltinTypes.STRING,
         modify: BuiltinTypes.STRING,
       },
@@ -98,7 +99,7 @@ describe('detailedCompare', () => {
 
     const after = new PrimitiveType({
       elemID: new ElemID('salto', 'prim'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         modify: BuiltinTypes.NUMBER,
         after: BuiltinTypes.STRING,
       },
@@ -151,7 +152,7 @@ describe('detailedCompare', () => {
   describe('compare object types', () => {
     const before = new ObjectType({
       elemID: new ElemID('salto', 'prim'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         before: BuiltinTypes.STRING,
         modify: BuiltinTypes.STRING,
       },
@@ -161,14 +162,14 @@ describe('detailedCompare', () => {
       },
       fields: {
         before: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             before: 'Before',
             modify: 'Before',
           },
         },
         modify: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             before: 'Before',
             modify: 'Before',
@@ -178,7 +179,7 @@ describe('detailedCompare', () => {
     })
     const after = new ObjectType({
       elemID: new ElemID('salto', 'obj'),
-      annotationTypes: {
+      annotationRefsOrTypes: {
         after: BuiltinTypes.STRING,
         modify: BuiltinTypes.NUMBER,
       },
@@ -188,14 +189,14 @@ describe('detailedCompare', () => {
       },
       fields: {
         after: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             before: 'After',
             modify: 'After',
           },
         },
         modify: {
-          type: BuiltinTypes.STRING,
+          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
           annotations: {
             after: 'After',
             modify: 'After',
@@ -303,9 +304,10 @@ describe('detailedCompare', () => {
 describe('applyDetailedChanges', () => {
   let inst: InstanceElement
   beforeAll(() => {
+    const instType = new ObjectType({ elemID: new ElemID('test', 'test') })
     inst = new InstanceElement(
       'test',
-      new ObjectType({ elemID: new ElemID('test', 'test') }),
+      new ReferenceExpression(instType.elemID, instType),
       { val: 1, rem: 0, nested: { mod: 1 } },
     )
     const changes: DetailedChange[] = [

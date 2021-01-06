@@ -232,9 +232,8 @@ export const retrieveMetadataInstances = async ({
     fileProps: ReadonlyArray<FileProperties>
   ): Promise<InstanceElement[]> => {
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
-    const filesToRetrieve = fileProps.map(inst => (
-      { ...inst, type: getManifestTypeName(typesByName[inst.type]) }
-    ))
+    const filesToRetrieve = fileProps.map(inst =>
+      ({ ...inst, type: getManifestTypeName(typesByName[inst.type]) }))
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)
     configChanges.push(...createRetrieveConfigChange(result))

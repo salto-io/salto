@@ -30,14 +30,14 @@ const isInvalidTypeChange = (change: Change<Field>): boolean => {
   }
 
   // it's a modification change and the target type is invalid
-  return change.data.before.type.elemID.typeName !== afterFieldType
+  return change.data.before.refType.elemID.typeName !== afterFieldType
 }
 
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Warning',
-  message: `You cannot create or modify a custom field type to ${field.type.elemID.typeName}. Field: ${field.name}`,
-  detailedMessage: `You cannot create or modify a custom field type to ${field.type.elemID.typeName}. Valid types can be found at:\nhttps://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype`,
+  message: `You cannot create or modify a custom field type to ${field.refType.elemID.typeName}. Field: ${field.name}`,
+  detailedMessage: `You cannot create or modify a custom field type to ${field.refType.elemID.typeName}. Valid types can be found at:\nhttps://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype`,
 })
 
 /**

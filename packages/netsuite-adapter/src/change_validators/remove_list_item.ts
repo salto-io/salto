@@ -41,7 +41,7 @@ const getScriptIdsUnderLists = (instance: InstanceElement):
   const pathToScriptIds = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
   transformValues({
     values: instance.value,
-    type: instance.type,
+    type: instance.getType(),
     transformFunc: ({ value, path }) => {
       if (path !== undefined && Array.isArray(value)) {
         wu(value)

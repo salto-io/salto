@@ -21,7 +21,7 @@ import {
   isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
@@ -38,11 +38,11 @@ export const boolValue = (val: JSONBool):
  boolean => val === 'true' || val === true
 
 export const isMasterDetailField = (field: Field): boolean => (
-  field.type.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
+  field.refType.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
 )
 
 export const isLookupField = (field: Field): boolean => (
-  field.type.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
+  field.refType.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
 )
 
 export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
@@ -60,9 +60,9 @@ const setAnnotationDefault = (
     log.debug('setting default value on %s: %s=%s', elem.elemID.getFullName(), key, defaultValue)
     elem.annotations[key] = defaultValue
   }
-  if (elem.annotationTypes[key] === undefined) {
+  if (elem.annotationRefTypes[key] === undefined) {
     log.debug('adding annotation type %s on %s', key, elem.elemID.getFullName())
-    elem.annotationTypes[key] = type
+    elem.annotationRefTypes[key] = createRefToElmWithValue(type)
   }
 }
 
@@ -79,8 +79,8 @@ void => {
     elem.annotations[API_NAME] = fullApiName
     log.debug(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
   }
-  if (!isField(elem) && !elem.annotationTypes[API_NAME]) {
-    elem.annotationTypes[API_NAME] = BuiltinTypes.SERVICE_ID
+  if (!isField(elem) && !elem.annotationRefTypes[API_NAME]) {
+    elem.annotationRefTypes[API_NAME] = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
   }
 }
 
@@ -150,7 +150,7 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
   return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(annotationTypes)
       .concat(Object.entries(CoreAnnotationTypes))
-      .map(([name, type]) => ({ [name]: { type } }))) })
+      .map(([name, type]) => ({ [name]: { refType: createRefToElmWithValue(type) } }))) })
 }
 
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
@@ -165,7 +165,7 @@ export const parentApiName = (elem: Element): string =>
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
   const instanceDeps = getParents(instance)
-  if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemId.isEqual(objectID))) {
+  if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemID.isEqual(objectID))) {
     return
   }
   instanceDeps.push(new ReferenceExpression(objectID))
@@ -225,7 +225,7 @@ export const getDataFromChanges = <T extends Change<unknown>>(
 // if you want instances of all custom objects use isInstanceOfCustomObject
 export const isInstanceOfType = (type: string) => (
   (elem: Element): elem is InstanceElement => (
-    isInstanceElement(elem) && apiName(elem.type) === type
+    isInstanceElement(elem) && apiName(elem.getType()) === type
   )
 )
 

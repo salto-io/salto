@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, BuiltinTypes, CORE_ANNOTATIONS, getRestriction, createRestriction,
-} from '@salto-io/adapter-api'
+import { ObjectType, BuiltinTypes, CORE_ANNOTATIONS, getRestriction, createRestriction } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import filterCreator, { FLOW_METADATA_TYPE_ID } from '../../src/filters/flow'
 
 describe('flow filter', () => {
@@ -27,7 +26,7 @@ describe('flow filter', () => {
     elemID,
     fields: {
       name: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values }),
         },

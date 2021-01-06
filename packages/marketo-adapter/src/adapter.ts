@@ -18,14 +18,24 @@ import {
   AdapterOperations,
   DeployOptions,
   DeployResult,
-  InstanceElement,
-  Element, ObjectType, ElemID, BuiltinTypes,
+  Element, ObjectType, Change,
+  ChangeDataType, isObjectType, isField, FieldMap, Values,
 } from '@salto-io/adapter-api'
-import { deployInstance, resolveValues } from '@salto-io/adapter-utils'
 import MarketoClient from './client/client'
-import { createMarketoObjectType, getLookUpName, Types } from './transformers/transformer'
-import { LeadAttribute, CustomObject, MarketoMetadata } from './client/types'
-import { MARKETO, OBJECTS_NAMES, TYPES_PATH } from './constants'
+import {
+  changeDataTypeToCustomObjectFieldRequest,
+  changeDataTypeToCustomObjectRequest,
+  createMarketoCustomObjectType,
+  createMarketoObjectType, isCustomObject,
+  Types,
+} from './transformers/transformer'
+import { LeadAttribute, CustomObjectResponse } from './client/types'
+import {
+  OBJECTS_NAMES,
+  CREATE_ONLY,
+  UPDATE_ONLY,
+  API_NAME, STATE, APPROVED_STATE,
+} from './constants'
 
 
 export interface MarketoAdapterParams {
@@ -62,9 +72,9 @@ export default class MarketoAdapter implements AdapterOperations {
   private async getAllMarketoObjectTypes(type: string): Promise<ObjectType[]> {
     switch (type) {
       case OBJECTS_NAMES.CUSTOM_OBJECT:
-        return (await this.getAllCustomObjects())
-          .map((co: CustomObject) =>
-            createMarketoObjectType(co.name, co.fields))
+        return (await this.client.getCustomObjects() as CustomObjectResponse[])
+          .map((co: CustomObjectResponse) =>
+            createMarketoCustomObjectType(co))
       case OBJECTS_NAMES.LEAD:
         return [createMarketoObjectType(type,
           await this.client.describe(type) as LeadAttribute[])]
@@ -73,108 +83,162 @@ export default class MarketoAdapter implements AdapterOperations {
     }
   }
 
-  private async getAllCustomObjects(): Promise<CustomObject[]> {
-    const customObjectsMetadata = await this.client
-      .getAllInstances(OBJECTS_NAMES.CUSTOM_OBJECT) as CustomObject[]
-    if (customObjectsMetadata === undefined) {
-      return []
-    }
-    return (await Promise.all(
-      customObjectsMetadata.map(co =>
-        this.client.describe(`${OBJECTS_NAMES.CUSTOM_OBJECT}/${co.name}`))
-    )).flat() as CustomObject[]
-  }
-
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const operations = {
-      add: this.add.bind(this),
-      remove: this.remove.bind(this),
-      update: this.update.bind(this),
+    const deployResults = await Promise.all(
+      changeGroup.changes.map(async (change: Change): Promise<DeployResult> => {
+        try {
+          if (change.action === 'add') {
+            const after = await this.add(change.data.after)
+            return { appliedChanges: [{ ...change, data: { after } }], errors: [] }
+          }
+          if (change.action === 'remove') {
+            await this.remove(change.data.before)
+            return { appliedChanges: [change], errors: [] }
+          }
+          const after = await this.update(change.data.before, change.data.after)
+          return { appliedChanges: [{ ...change, data: { ...change.data, after } }], errors: [] }
+        } catch (e) {
+          return { appliedChanges: [], errors: [e] }
+        }
+      })
+    )
+    return {
+      appliedChanges: deployResults.map(d => d.appliedChanges).flat(),
+      errors: deployResults.map(d => d.errors).flat(),
     }
-    return deployInstance(operations, changeGroup)
   }
 
   /**
    * Add new instance
-   * @param instance the instance to add
+   * @param change the instance to add
    * @returns the updated element
    * @throws error in case of failure
    */
-  // TODO(Guy): Implement
-  private async add(instance: InstanceElement): Promise<InstanceElement> {
-    const resolved = resolveValues(instance, getLookUpName)
-    await this.client.createInstance(OBJECTS_NAMES.LEAD, { name: resolved.type.elemID.name })
-    return new InstanceElement('guy', new ObjectType({
-      elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),
-      fields: {
-        id: {
-          type: BuiltinTypes.NUMBER,
-        },
-      },
-      path: [MARKETO, TYPES_PATH, 'lead'],
-    }))
-    // const resolved = resolveValues(instance, getLookUpName)
-    // const resp = await this.client.createInstance(
-    //   resolved.type.elemID.name,
-    //   await createHubspotMetadataFromInstanceElement(resolved.clone(), this.client)
-    // )
-    // return restoreValues(
-    //   instance,
-    //   await transformAfterUpdateOrAdd(resolved, resp),
-    //   getLookUpName
-    // )
+  private async add(change: ChangeDataType): Promise<ObjectType> {
+    if (isObjectType(change)) {
+      return this.addObjectType(change)
+    }
+    if (isField(change) && isCustomObject(change.parent)) {
+      await this.addCustomObjectField(
+        change.parent.annotations[API_NAME], { [change.name]: change },
+      )
+      await this.approveCustomObjectIfNeeded(change.parent.annotations)
+      return createMarketoCustomObjectType(
+        await this.getCustomObjectByName(change.parent.annotations[API_NAME])
+      )
+    }
+    throw new Error('Can\'t create unsupported data type')
+  }
+
+  private async addObjectType(change: ObjectType): Promise<ObjectType> {
+    if (isCustomObject(change)) {
+      return this.createCustomObject(change)
+    }
+    throw new Error('Can\'t create unsupported object type')
   }
 
   /**
    * Remove an instance
-   * @param instance to remove
+   * @param change to remove
    * @throws error in case of failure
    */
-  // TODO(Guy): Implement
-  private async remove(instance: InstanceElement): Promise<void> {
-    const resolved = resolveValues(instance, getLookUpName)
-    await this.client.deleteInstance(
-      resolved.type.elemID.name,
-      resolved.value as MarketoMetadata
-    )
+  private async remove(change: ChangeDataType): Promise<void> {
+    if (isCustomObject(change)) {
+      await this.client.deleteCustomObject(
+        change.annotations[API_NAME],
+      )
+    }
+    if (isField(change) && isCustomObject(change.parent)) {
+      await this.client.removeCustomObjectField(
+        change.parent.annotations[API_NAME],
+        {
+          input: [change.name],
+        }
+      )
+      await this.approveCustomObjectIfNeeded(change.parent.annotations)
+    }
   }
 
   /**
    * Updates an Element
-   * @param before The metadata of the old element
+   * @param _before The metadata of the old element
    * @param after The new metadata of the element to replace
    * @returns the updated element
    */
-  // TODO(Guy): Implement
   private async update(
-    before: InstanceElement,
-    after: InstanceElement,
-  ): Promise<InstanceElement> {
-    const resolvedBefore = resolveValues(before, getLookUpName)
-    const resolvedAfter = resolveValues(after, getLookUpName)
+    _before: ChangeDataType,
+    after: ChangeDataType,
+  ): Promise<ObjectType> {
+    if (isObjectType(after)) {
+      return this.updateObjectType(after)
+    }
+    if (isField(after) && isCustomObject(after.parent)) {
+      await this.client.updateCustomObjectField(
+        after.parent.annotations[API_NAME],
+        after.annotations[API_NAME],
+        changeDataTypeToCustomObjectFieldRequest(after)
+      )
+    }
+    throw new Error('Can\'t update unsupported data type')
+  }
 
-    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedBefore.type.elemID.name })
-    await this.client.updateInstance(OBJECTS_NAMES.LEAD, { name: resolvedAfter.type.elemID.name })
-    return new InstanceElement('tish', new ObjectType({
-      elemID: new ElemID(MARKETO, OBJECTS_NAMES.LEAD),
-      fields: {
-        id: {
-          type: BuiltinTypes.NUMBER,
-        },
-      },
-      path: [MARKETO, TYPES_PATH, 'lead'],
-    }))
-    // const resolvedBefore = resolveValues(before, getLookUpName)
-    // const resolvedAfter = resolveValues(after, getLookUpName)
-    // validateFormGuid(resolvedBefore, resolvedAfter)
-    // const resp = await this.client.updateInstance(
-    //   resolvedAfter.type.elemID.name,
-    //   await createHubspotMetadataFromInstanceElement(resolvedAfter.clone(), this.client)
-    // )
-    // return restoreValues(
-    //   after,
-    //   await transformAfterUpdateOrAdd(resolvedAfter, resp),
-    //   getLookUpName
-    // )
+  private async updateObjectType(change: ObjectType): Promise<ObjectType> {
+    if (isCustomObject(change)) {
+      return this.updateCustomObject(change)
+    }
+    throw new Error('Can\'t update unsupported object type')
+  }
+
+  private async updateCustomObject(change: ObjectType): Promise<ObjectType> {
+    const apiName = change.annotations[API_NAME]
+    await this.client.createOrUpdateCustomObject({
+      action: UPDATE_ONLY,
+      ...changeDataTypeToCustomObjectRequest(change),
+    })
+    await this.approveCustomObjectIfNeeded(change.annotations)
+    return createMarketoCustomObjectType(
+      await this.getCustomObjectByName(apiName)
+    )
+  }
+
+  private async createCustomObject(change: ObjectType): Promise<ObjectType> {
+    const apiName = change.annotations[API_NAME]
+    await this.client.createOrUpdateCustomObject({
+      action: CREATE_ONLY,
+      ...changeDataTypeToCustomObjectRequest(change),
+    })
+    await this.addCustomObjectField(apiName, change.fields)
+    await this.approveCustomObjectIfNeeded(change.annotations)
+    return createMarketoCustomObjectType(
+      await this.getCustomObjectByName(apiName)
+    )
+  }
+
+  private async addCustomObjectField(apiName: string, fields: FieldMap): Promise<void> {
+    if (Object.keys(fields).length > 0) {
+      await this.client.addCustomObjectField(apiName, {
+        input: Object.keys(fields).map((name: string) =>
+          changeDataTypeToCustomObjectFieldRequest(fields[name])),
+      })
+    }
+  }
+
+  private async getCustomObjectByName(name: string): Promise<CustomObjectResponse> {
+    const customObjectTypes = await this.client.getCustomObjects(
+      { names: [name] }
+    ) as CustomObjectResponse[]
+    // get custom object with 'names' filter may return irrelevant results
+    const filteredCustomObject = customObjectTypes.filter(co =>
+      (co.approved ? co.approved.apiName : co.draft?.apiName) === name)
+    if (filteredCustomObject.length === 1) {
+      return filteredCustomObject[0]
+    }
+    throw new Error('Too many Custom Object Types')
+  }
+
+  private async approveCustomObjectIfNeeded(annotations: Values): Promise<void> {
+    if (annotations[STATE] === APPROVED_STATE) {
+      await this.client.approveCustomObject(annotations[API_NAME])
+    }
   }
 }

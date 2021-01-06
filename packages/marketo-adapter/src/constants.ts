@@ -15,6 +15,7 @@
 */
 
 export const MARKETO = 'marketo'
+export const OBJECTS_PATH = 'Objects'
 export const RECORDS_PATH = 'Records'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
@@ -39,3 +40,22 @@ export const FIELD_TYPES = {
   INTEGER: 'integer',
   FLOAT: 'float',
 }
+
+export const CREATE_ONLY = 'createOnly'
+export const UPDATE_ONLY = 'updateOnly'
+export const CREATE_OR_UPDATE = 'createOrUpdate'
+
+export const API_NAME = 'apiName'
+export const DATA_TYPE = 'dataType'
+export const OBJECT_TYPE = 'objectType'
+export const IS_FIELD = 'isField'
+
+export const STATE = 'state'
+export const DRAFT_STATE = 'draft'
+export const APPROVED_STATE = 'approved'
+export const DISPLAY_NAME = 'displayName'
+export const ID_FIELD = 'idField'
+export const PLURAL_NAME = 'pluralName'
+export const DESCRIPTION = 'description'
+export const SHOW_IN_LEAD_DETAIL = 'showInLeadDetail'
+export const IS_DEDUPE_FIELD = 'isDedupeField'

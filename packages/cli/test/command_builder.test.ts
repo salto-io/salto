@@ -20,125 +20,157 @@ import { SpinnerCreator, CliExitCode, CliError } from '../src/types'
 
 describe('Command builder', () => {
   describe('createPublicCommandDef', () => {
-    type DummyCommandArgs = {
-      bool: boolean
-      string: string
-      choices: 'a' | 'b' | 'c'
-      stringsList: string[]
-    }
+    describe('with valid command', () => {
+      type DummyCommandArgs = {
+        bool: boolean
+        string: string
+        choices: 'a' | 'b' | 'c'
+        stringsList: string[]
+      }
 
-    const action = mocks.mockFunction<CommandDefAction<DummyCommandArgs>>()
-      .mockImplementation(async ({
-        input: { bool, string, choices, stringsList },
-      }): Promise<CliExitCode> => {
-        if (bool && string && choices && stringsList) {
-          if (string === 'error') {
-            throw new Error('error')
+      const action = mocks.mockFunction<CommandDefAction<DummyCommandArgs>>()
+        .mockImplementation(async ({
+          input: { bool, string, choices, stringsList },
+        }): Promise<CliExitCode> => {
+          if (bool && string && choices && stringsList) {
+            if (string === 'error') {
+              throw new Error('error')
+            }
+            return CliExitCode.Success
           }
-          return CliExitCode.Success
-        }
-        return CliExitCode.UserInputError
+          return CliExitCode.UserInputError
+        })
+
+      const createdCommandDef = createPublicCommandDef({
+        properties: {
+          name: 'dummyCommand',
+          description: 'dummy',
+          keyedOptions: [
+            {
+              name: 'bool',
+              alias: 'b',
+              description: 'bool',
+              type: 'boolean',
+            },
+            {
+              name: 'choices',
+              alias: 'c',
+              description: 'ch',
+              choices: ['a', 'b', 'c'],
+              type: 'string',
+            },
+          ],
+          positionalOptions: [
+            {
+              name: 'string',
+              required: true,
+              description: 'string',
+              type: 'string',
+            },
+            {
+              name: 'stringsList',
+              required: false,
+              description: 'string',
+              type: 'stringsList',
+            },
+          ],
+        },
+        action,
       })
 
-    const createdCommandDef = createPublicCommandDef({
-      properties: {
-        name: 'dummyCommand',
-        description: 'dummy',
-        keyedOptions: [
-          {
-            name: 'bool',
-            alias: 'b',
-            description: 'bool',
-            type: 'boolean',
-          },
-          {
-            name: 'choices',
-            alias: 'c',
-            description: 'ch',
-            choices: ['a', 'b', 'c'],
-            type: 'string',
-          },
-        ],
-        positionalOptions: [
-          {
-            name: 'string',
-            required: true,
-            description: 'string',
-            type: 'string',
-          },
-          {
-            name: 'stringsList',
-            required: false,
-            description: 'string',
-            type: 'stringsList',
-          },
-        ],
-      },
-      action,
-    })
+      let spinnerCreator: SpinnerCreator
+      const config = { shouldCalcTotalSize: true }
+      let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+      let telemetry: mocks.MockTelemetry
 
-    let spinnerCreator: SpinnerCreator
-    const config = { shouldCalcTotalSize: true }
-    let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-    let telemetry: mocks.MockTelemetry
-
-    beforeEach(() => {
-      output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-      spinnerCreator = mocks.mockSpinnerCreator([])
-      telemetry = mocks.getMockTelemetry()
-      action.mockClear()
-    })
-    it('Should call the action with positional args mapped rightly and cliTelemetry', async () => {
-      await createdCommandDef.action({
-        output,
-        config,
-        telemetry,
-        spinnerCreator,
-        commanderInput: [
-          'str',
-          ['str2', 'str3'],
-          { bool: true, choices: 'a' },
-        ],
+      beforeEach(() => {
+        output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+        spinnerCreator = mocks.mockSpinnerCreator([])
+        telemetry = mocks.getMockTelemetry()
+        action.mockClear()
       })
-      expect(action.mock.calls[0][0].input).toEqual({ bool: true, choices: 'a', string: 'str', stringsList: ['str2', 'str3'] })
-    })
-
-    it('Should add verbose option and up the log level if called with verbose', async () => {
-      expect(createdCommandDef.properties.keyedOptions?.find(op =>
-        String(op.name) === 'verbose')).toBeTruthy()
-      const setMinLevel = jest.spyOn(logger, 'setMinLevel')
-      await createdCommandDef.action({
-        output,
-        config,
-        telemetry,
-        spinnerCreator,
-        commanderInput: [
-          'str',
-          ['str2', 'str3'],
-          { bool: true, choices: 'a', verbose: true },
-        ],
+      it('Should call the action with positional args mapped rightly and cliTelemetry', async () => {
+        await createdCommandDef.action({
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          commanderInput: [
+            'str',
+            ['str2', 'str3'],
+            { bool: true, choices: 'a' },
+          ],
+        })
+        expect(action.mock.calls[0][0].input).toEqual({ bool: true, choices: 'a', string: 'str', stringsList: ['str2', 'str3'] })
       })
-      expect(setMinLevel).toHaveBeenCalledWith('debug')
-    })
 
-    it('Should throw an error when called with wrong choice', async () => {
-      await expect(createdCommandDef.action({
-        output,
-        config,
-        telemetry,
-        spinnerCreator,
-        commanderInput: ['str', { bool: true, choices: 'wrongChoice' }],
-      })).rejects.toThrow(CliError)
-    })
+      it('Should add verbose option and up the log level if called with verbose', async () => {
+        expect(createdCommandDef.properties.keyedOptions?.find(op =>
+          String(op.name) === 'verbose')).toBeTruthy()
+        const setMinLevel = jest.spyOn(logger, 'setMinLevel')
+        await createdCommandDef.action({
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          commanderInput: [
+            'str',
+            ['str2', 'str3'],
+            { bool: true, choices: 'a', verbose: true },
+          ],
+        })
+        expect(setMinLevel).toHaveBeenCalledWith('debug')
+      })
 
-    it('Should throw CliError when action is returned with non-sucess code', async () => {
-      await expect(createdCommandDef.action({
-        output,
-        config,
-        telemetry,
-        spinnerCreator,
-        commanderInput: ['error', { bool: true, choices: 'a' }],
-      })).rejects.toThrow(CliError)
+      it('Should throw an error when called with wrong choice', async () => {
+        await expect(createdCommandDef.action({
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          commanderInput: ['str', { bool: true, choices: 'wrongChoice' }],
+        })).rejects.toThrow(CliError)
+      })
+
+      it('Should throw CliError when action is returned with non-sucess code', async () => {
+        await expect(createdCommandDef.action({
+          output,
+          config,
+          telemetry,
+          spinnerCreator,
+          commanderInput: ['error', { bool: true, choices: 'a' }],
+        })).rejects.toThrow(CliError)
+      })
+    })
+  })
+  describe('with conflicting flag definitions', () => {
+    describe('with conflicting flag name', () => {
+      it('should throw error', () => {
+        expect(() => createPublicCommandDef({
+          properties: {
+            name: 'dummy',
+            description: 'test',
+            keyedOptions: [{ name: 'test', type: 'string' }],
+            positionalOptions: [{ name: 'test', type: 'string', required: false }],
+          },
+          action: async (_args: { input: { test: string } }) => CliExitCode.Success,
+        })).toThrow()
+      })
+    })
+    describe('with conflicting flag alias', () => {
+      it('should throw error', () => {
+        expect(() => createPublicCommandDef({
+          properties: {
+            name: 'dummy',
+            description: 'test',
+            keyedOptions: [
+              { name: 'test1', type: 'string', alias: 't' },
+              { name: 'test2', type: 'string', alias: 't' },
+            ],
+          },
+          action: async (_args: { input: { test1: string; test2: string } }) => CliExitCode.Success,
+        })).toThrow()
+      })
     })
   })
 })

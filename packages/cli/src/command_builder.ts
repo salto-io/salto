@@ -149,6 +149,39 @@ const validateChoices = <T>(
   }
 }
 
+const validateCommandFlagDefinitions = <T>(
+  { name, keyedOptions, positionalOptions }: CommandOptions<T>
+): void => {
+  const allFlags = [...(keyedOptions ?? []), ...(positionalOptions ?? [])]
+  const repeatingNames = Object.keys(
+    _.pickBy(
+      _.groupBy(allFlags, opt => opt.name),
+      flags => flags.length > 1,
+    )
+  )
+  if (repeatingNames.length > 0) {
+    throw new Error(
+      `Command ${name} has multiple definitions of the following flag names ${repeatingNames.join(', ')}`
+    )
+  }
+
+  const repeatingAliases = _.pickBy(
+    _.groupBy(
+      (keyedOptions ?? []).filter(opt => opt.alias !== undefined),
+      opt => opt.alias,
+    ),
+    flags => flags.length > 1,
+  )
+
+  if (!_.isEmpty(repeatingAliases)) {
+    const aliasErrors = Object.entries(repeatingAliases)
+      .map(([alias, flags]) => `alias=${alias} flags=${flags.map(flag => flag.name).join(',')}`)
+    throw new Error(
+      `Command ${name} has multiple definitions of flags with the same alias:\n${aliasErrors.join('\n')}`
+    )
+  }
+}
+
 export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T> => {
   const {
     properties: { name, description, keyedOptions = [], positionalOptions = [] },
@@ -184,15 +217,16 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
   }
 
   // Add verbose to all commands
-  const newKeyedOptions = [
-    ...keyedOptions,
-    VERBOSE_OPTION as KeyedOption<T>,
-  ]
+  const properties = {
+    ...{ name, description, positionalOptions },
+    keyedOptions: [
+      ...keyedOptions,
+      VERBOSE_OPTION as KeyedOption<T>,
+    ],
+  }
+  validateCommandFlagDefinitions(properties)
   return {
-    properties: {
-      ...{ name, description, positionalOptions },
-      keyedOptions: newKeyedOptions,
-    },
+    properties,
     action: commanderAction,
   }
 }

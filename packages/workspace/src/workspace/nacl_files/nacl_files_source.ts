@@ -43,8 +43,6 @@ const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
 
-
-type References<T> = { referenced: T[]; referencesTo: T[] }
 export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
@@ -66,7 +64,6 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
-  getElementReferencesToFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
   setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change<Element>[]>
   removeNaclFiles: (...names: string[]) => Promise<Change<Element>[]>
@@ -89,7 +86,6 @@ export type ParsedNaclFile = {
   errors: ParseError[]
   timestamp: number
   referenced: ElemID[]
-  referencesTo: ElemID[]
 }
 
 type ParsedNaclFileMap = {
@@ -102,7 +98,6 @@ type NaclFilesState = {
   readonly mergedElements: Record<string, Element>
   readonly mergeErrors: MergeError[]
   readonly referencedIndex: Record<string, string[]>
-  readonly referencesToIndex: Record<string, string[]>
 }
 
 const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer?: string }):
@@ -116,9 +111,8 @@ const getTypeOrContainerTypeID = (typeElem: TypeElement): ElemID => (isContainer
   ? getDeepInnerType(typeElem).elemID
   : typeElem.elemID)
 
-const getElementReferenced = (element: Element): References<string> => {
+const getElementReferenced = (element: Element): Set<string> => {
   const referenced = new Set<string>()
-  const referencesTo = new Set<string>()
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {
       referenced.add(getTypeOrContainerTypeID(field.type).getFullName())
@@ -129,8 +123,8 @@ const getElementReferenced = (element: Element): References<string> => {
         value.elemId.idType,
         ...valueIDPath.slice(0, index + 1)
       ))
-      referencesTo.add(parent.getFullName())
-      nestedIds.forEach(id => referencesTo.add(id.getFullName()))
+      referenced.add(parent.getFullName())
+      nestedIds.forEach(id => referenced.add(id.getFullName()))
     }
     return value
   }
@@ -149,37 +143,27 @@ const getElementReferenced = (element: Element): References<string> => {
   if (!isContainerType(element) && !isVariable(element)) {
     transformElement({ element, transformFunc, strict: false })
   }
-  return { referenced: [...referenced], referencesTo: [...referencesTo] }
+  return referenced
 }
 
-const getElementsReferences = (elements: Element[]): References<ElemID> => {
+const getElementsReferences = (elements: Element[]): ElemID[] => {
   const referenced = new Set<string>()
-  const referencesTo = new Set<string>()
   elements.forEach(elem => {
-    const references = getElementReferenced(elem)
-    references.referenced.forEach(r => referenced.add(r))
-    references.referencesTo.forEach(r => referencesTo.add(r))
+    getElementReferenced(elem).forEach(r => referenced.add(r))
   })
-  return {
-    referenced: [...referenced].map(r => ElemID.fromFullName(r)),
-    referencesTo: [...referencesTo].map(r => ElemID.fromFullName(r)),
-  }
+  return [...referenced].map(r => ElemID.fromFullName(r))
 }
 
 export const toParsedNaclFile = (
   naclFile: NaclFile,
   parseResult: ParseResult
-): ParsedNaclFile => {
-  const { referenced, referencesTo } = getElementsReferences(parseResult.elements)
-  return {
-    timestamp: naclFile.timestamp || Date.now(),
-    filename: naclFile.filename,
-    elements: parseResult.elements,
-    errors: parseResult.errors,
-    referenced,
-    referencesTo,
-  }
-}
+): ParsedNaclFile => ({
+  timestamp: naclFile.timestamp || Date.now(),
+  filename: naclFile.filename,
+  elements: parseResult.elements,
+  errors: parseResult.errors,
+  referenced: getElementsReferences(parseResult.elements),
+})
 
 const parseNaclFile = async (
   naclFile: NaclFile, cache: ParseResultCache, functions: Functions
@@ -228,7 +212,6 @@ const buildNaclFilesState = (
 
   const elementsIndexSet: Record<string, Set<string>> = {}
   const referencedIndexSet: Record<string, Set<string>> = {}
-  const referencesToIndexSet: Record<string, Set<string>> = {}
   Object.values(allParsed).forEach(naclFile => {
     naclFile.elements.forEach(element => {
       const elementFullName = element.elemID.getFullName()
@@ -240,16 +223,9 @@ const buildNaclFilesState = (
       referencedIndexSet[elementFullName] = referencedIndexSet[elementFullName] ?? new Set<string>()
       referencedIndexSet[elementFullName].add(naclFile.filename)
     })
-    naclFile.referencesTo.forEach(elemID => {
-      const elementFullName = elemID.getFullName()
-      referencesToIndexSet[elementFullName] = referencesToIndexSet[elementFullName]
-        ?? new Set<string>()
-      referencesToIndexSet[elementFullName].add(naclFile.filename)
-    })
   })
   const elementsIndex = _.mapValues(elementsIndexSet, val => Array.from(val))
   const referencedIndex = _.mapValues(referencedIndexSet, val => Array.from(val))
-  const referencesToIndex = _.mapValues(referencesToIndexSet, val => Array.from(val))
   log.info('workspace has %d elements and %d parsed NaCl files',
     _.size(elementsIndex), _.size(allParsed))
   const newNaclFilesElements = newNaclFiles.flatMap(naclFile => naclFile.elements)
@@ -263,7 +239,6 @@ const buildNaclFilesState = (
         mergeErrors: mergeResult.errors,
         elementsIndex,
         referencedIndex,
-        referencesToIndex,
       },
       changes: [],
     }
@@ -294,7 +269,6 @@ const buildNaclFilesState = (
       mergeErrors: mergedResult.mergeErrors,
       elementsIndex,
       referencedIndex,
-      referencesToIndex,
     },
     changes: mergedResult.changes,
   }
@@ -334,14 +308,13 @@ const buildNaclFilesSource = (
     fileData: string,
   ): Promise<ParsedNaclFile> => {
     const elements = [(change as AdditionDiff<Element>).data.after]
-    const { referenced, referencesTo } = getElementsReferences(elements)
+    const referenced = getElementsReferences(elements)
     const parsed = {
       timestamp: Date.now(),
       filename,
       elements,
       errors: [],
       referenced,
-      referencesTo,
     }
     const key = cacheResultKey({ filename: parsed.filename,
       buffer: fileData,
@@ -395,15 +368,8 @@ const buildNaclFilesSource = (
 
   const getElementReferencedFiles = async (
     elemID: ElemID
-  ): Promise<string[]> => {
-    const referenced = (await getState()).referencedIndex[elemID.getFullName()] || []
-    const referencesTo = (await getState()).referencesToIndex[elemID.getFullName()] || []
-    return _.uniq([...referenced, ...referencesTo])
-  }
-
-  const getElementReferencesToFiles = async (
-    elemID: ElemID
-  ): Promise<string[]> => (await getState()).referencesToIndex[elemID.getFullName()] || []
+  ): Promise<string[]> =>
+    (await getState()).referencedIndex[elemID.getFullName()] || []
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
@@ -510,7 +476,7 @@ const buildNaclFilesSource = (
       )
       // The map is to avoid saving unnecessary fields in the state
       const res = await buildNaclFilesStateInner(
-        updatedNaclFiles.map(file => _.pick(file, ['filename', 'elements', 'errors', 'timestamp', 'referenced', 'referencesTo']))
+        updatedNaclFiles.map(file => _.pick(file, ['filename', 'elements', 'errors', 'timestamp', 'referenced']))
       )
       state = Promise.resolve(res.state)
       return res.changes
@@ -613,7 +579,6 @@ const buildNaclFilesSource = (
     getSourceMap,
     getElementNaclFiles,
     getElementReferencedFiles,
-    getElementReferencesToFiles,
     isEmpty: () => naclFilesStore.isEmpty(),
   }
 }

@@ -24,6 +24,8 @@ describe('workspace', () => {
   const validation1FileName = path.join(workspaceBaseDir, 'validation1.nacl')
   const validation2FileName = path.join(workspaceBaseDir, 'validation2.nacl')
   const validation3FileName = path.join(workspaceBaseDir, 'validation3.nacl')
+  const splitted1FileName = path.join(workspaceBaseDir, 'splitted1.nacl')
+  const splitted2FileName = path.join(workspaceBaseDir, 'splitted2.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
@@ -105,8 +107,37 @@ describe('workspace', () => {
       workspace.setNaclFiles({ filename: validation2FileName, buffer })
       await workspace.awaitAllUpdates()
       const newValidationErrors = (await workspace.errors()).validation
-      expect(newValidationErrors).toHaveLength(1)
-      expect(newValidationErrors[0]).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+      expect(newValidationErrors).toHaveLength(3)
+      newValidationErrors.forEach(ve => {
+        expect(ve).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+      })
+    })
+
+    it('should create a validation error for unresolved reference field', async () => {
+      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
+      const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      const currentValidationErrors = (await workspace.errors()).validation
+      expect(currentValidationErrors).toHaveLength(1)
+      expect(currentValidationErrors[0]).toBeInstanceOf(validator.InvalidValueTypeValidationError)
+      const buffer = `
+      vs.type inst {
+        field = "4"
+      }
+      
+      vs.type referenced {
+      }
+      
+      vs.type referencedField {
+      }
+    
+      `
+      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.awaitAllUpdates()
+      const newValidationErrors = (await workspace.errors()).validation
+      expect(newValidationErrors).toHaveLength(2)
+      newValidationErrors.forEach(ve => {
+        expect(ve).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+      })
     })
     it('should have a validation error for unresolved reference even if errors was never called', async () => {
       const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
@@ -122,8 +153,44 @@ describe('workspace', () => {
       workspace.setNaclFiles({ filename: validation2FileName, buffer })
       await workspace.awaitAllUpdates()
       const newValidationErrors = (await workspace.errors()).validation
-      expect(newValidationErrors).toHaveLength(1)
-      expect(newValidationErrors[0]).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+      expect(newValidationErrors).toHaveLength(3)
+      newValidationErrors.forEach(ve => {
+        expect(ve).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+      })
+    })
+    it('should create new unresolved reference errors when there are already errors', async () => {
+      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
+      const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      const currentValidationErrors = (await workspace.errors()).validation
+      expect(currentValidationErrors).toHaveLength(1)
+      expect(currentValidationErrors[0]).toBeInstanceOf(validator.InvalidValueTypeValidationError)
+      const buffer = `
+      vs.type inst {
+        field = "4"
+      }
+      
+      vs.type referenced {
+      }
+      `
+      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.awaitAllUpdates()
+      const firstUpdateValidationErrors = (await workspace.errors()).validation
+      expect(firstUpdateValidationErrors).toHaveLength(2)
+      firstUpdateValidationErrors.forEach(ve => {
+        expect(ve).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+      })
+      const newBuffer = `
+      vs.type inst {
+        field = "4"
+      }
+      `
+      workspace.setNaclFiles({ filename: validation2FileName, buffer: newBuffer })
+      await workspace.awaitAllUpdates()
+      const newValidationErrors = (await workspace.errors()).validation
+      expect(newValidationErrors).toHaveLength(3)
+      newValidationErrors.forEach(ve => {
+        expect(ve).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
+      })
     })
   })
 
@@ -169,7 +236,7 @@ describe('workspace', () => {
       const currentErrors = (await newWorkspace.errors()).validation
       expect(currentErrors).toHaveLength(1)
       const newErrors = await newWorkspace.validateFiles([validation2FileName])
-      expect(newErrors.validation).toHaveLength(1)
+      expect(newErrors.validation).toHaveLength(2)
       expect(await newWorkspace.errors()).toEqual(newErrors)
     })
 
@@ -179,6 +246,18 @@ describe('workspace', () => {
       const errors = await newWorkspace.validateFiles([validation1FileName])
       expect(errors.validation).toHaveLength(1)
       expect(errors.validation[0].elemID.getFullName()).toEqual('vs.type.instance.inst.field')
+    })
+
+    it('should validate all touched elements', async () => {
+      const baseWs = await mockWorkspace([splitted1FileName, splitted2FileName])
+      const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      const errors = await newWorkspace.errors()
+      expect(errors.validation).toHaveLength(0)
+      const buffer = ''
+      newWorkspace.setNaclFiles({ filename: splitted2FileName, buffer })
+      await newWorkspace.awaitAllUpdates()
+      const newErrors = await newWorkspace.errors()
+      expect(newErrors.validation).toHaveLength(1)
     })
   })
 

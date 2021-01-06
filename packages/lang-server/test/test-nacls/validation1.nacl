@@ -5,3 +5,14 @@ type vs.type {
 vs.type withReference {
     _parent = vs.type.instance.referenced
 }
+
+vs.type withFieldReference {
+    field = vs.type.instance.referencedField.field
+}
+
+type vs.withAttrReference {
+    annotations {
+        string label {}
+    }
+    label = vs.type.instance.referencedField.field
+}

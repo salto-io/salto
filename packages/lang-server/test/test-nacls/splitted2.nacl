@@ -1,0 +1,8 @@
+vs.splitted splittedInst {
+    first_name = "first"
+}
+
+vs.splitted notSplittedInst {
+    first_name = "first"
+    last_name = "last"
+}

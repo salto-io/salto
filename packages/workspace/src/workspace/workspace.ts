@@ -102,13 +102,11 @@ export type Workspace = {
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
-  getElement: (elemID: ElemID) => Promise<Element | undefined>
   setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change<Element>[]>
   removeNaclFiles: (...names: string[]) => Promise<Change<Element>[]>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
-  getElementReferencesToFiles: (id: ElemID) => Promise<string[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (selectors: ElementSelector[],
     commonOnly?: boolean) => Promise<ElemID[]>
@@ -341,8 +339,6 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       }
       return !(await envSource.naclFiles.isEmpty())
     },
-    getElement: async (elemID: ElemID) =>
-      ((await elements()).elements[elemID.getFullName()]),
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.
     // Passing direct pointer for these functions would have resulted in pointers to a nullified
@@ -357,7 +353,6 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getElementIdsBySelectors: async (selectors: ElementSelector[],
       commonOnly = false) => naclFilesSource.getElementIdsBySelectors(selectors, commonOnly),
     getElementReferencedFiles: id => naclFilesSource.getElementReferencedFiles(id),
-    getElementReferencesToFiles: id => naclFilesSource.getElementReferencesToFiles(id),
     getElementNaclFiles: id => naclFilesSource.getElementNaclFiles(id),
     getTotalSize: () => naclFilesSource.getTotalSize(),
     getNaclFile: (filename: string) => naclFilesSource.getNaclFile(filename),

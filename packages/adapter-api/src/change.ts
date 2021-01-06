@@ -19,6 +19,7 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TypeElement,
+  isType,
 } from './elements'
 import { ElemID } from './element_id'
 import { Values, Value } from './values'
@@ -84,6 +85,11 @@ export const isObjectTypeChange = <T extends Change<unknown>>(change: T):
 export const isFieldChange = <T extends Change<unknown>>(change: T):
   change is T & Change<Field> => (
     isField(getChangeElement(change))
+  )
+
+export const isTypeOrInstanceChange = <T extends Change<unknown>>(change: T):
+  change is T & Change<TypeElement | InstanceElement> => (
+    isType(getChangeElement(change)) || isInstanceElement(getChangeElement(change))
   )
 
 export type DetailedChange<T = ChangeDataType | Values | Value> =

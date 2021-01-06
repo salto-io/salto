@@ -43,20 +43,28 @@ export class InMemoryRemoteElementSource {
 
   private getContainerType(fullName: string): Value {
     if (fullName.startsWith(LIST_PREFIX) && fullName.endsWith(GENERICS_SUFFIX)) {
-      return new ListType(this.getSync(
+      const innerElem = this.getSync(
         ElemID.fromFullName(fullName.substring(
           LIST_PREFIX.length,
           fullName.length - GENERICS_SUFFIX.length
         ))
-      ))
+      )
+      if (innerElem === undefined) {
+        return undefined
+      }
+      return new ListType(innerElem)
     }
     if (fullName.startsWith(MAP_PREFIX) && fullName.endsWith(GENERICS_SUFFIX)) {
-      return new MapType(this.getSync(
+      const innerElem = this.getSync(
         ElemID.fromFullName(fullName.substring(
           MAP_PREFIX.length,
           fullName.length - GENERICS_SUFFIX.length
         ))
-      ))
+      )
+      if (innerElem === undefined) {
+        return undefined
+      }
+      return new MapType(innerElem)
     }
     throw new Error('Not a container type')
   }

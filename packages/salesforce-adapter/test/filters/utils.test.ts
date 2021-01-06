@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { addDefaults } from '../../src/filters/utils'
 import { SALESFORCE, LABEL, API_NAME, CUSTOM_FIELD, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
@@ -49,7 +50,7 @@ describe('addDefaults', () => {
       const obj = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
         fields: {
-          a: { type: Types.primitiveDataTypes.Text },
+          a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.Text) },
         },
         annotations: {
           [API_NAME]: 'test',
@@ -72,7 +73,7 @@ describe('addDefaults', () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
-            a: { type: Types.primitiveDataTypes.Text },
+            a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.Text) },
           },
         })
 
@@ -90,15 +91,15 @@ describe('addDefaults', () => {
         } as Partial<CustomObject>)
       })
       it('should add annotation types', () => {
-        expect(object.annotationTypes).toMatchObject({
-          [API_NAME]: BuiltinTypes.SERVICE_ID,
-          [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
-          [LABEL]: BuiltinTypes.STRING,
-          deploymentStatus: BuiltinTypes.STRING,
-          pluralLabel: BuiltinTypes.STRING,
-          sharingModel: BuiltinTypes.STRING,
+        expect(object.annotationRefTypes).toMatchObject({
+          [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+          [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+          [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
+          deploymentStatus: createRefToElmWithValue(BuiltinTypes.STRING),
+          pluralLabel: createRefToElmWithValue(BuiltinTypes.STRING),
+          sharingModel: createRefToElmWithValue(BuiltinTypes.STRING),
         })
-        expect(object.annotationTypes.nameField?.elemID).toEqual(
+        expect(object.annotationRefTypes.nameField?.elemID).toEqual(
           new ElemID(SALESFORCE, CUSTOM_FIELD)
         )
       })
@@ -118,7 +119,7 @@ describe('addDefaults', () => {
             [LABEL]: 'myLabel',
             nameField: { type: 'AutoNumber', label: 'Name' },
           },
-          annotationTypes: {
+          annotationRefsOrTypes: {
             sharingModel: BuiltinTypes.HIDDEN_STRING,
           },
         })
@@ -140,17 +141,17 @@ describe('addDefaults', () => {
         expect(object.annotations).toHaveProperty('pluralLabel', 'myLabels')
       })
       it('should add missing annotation types', () => {
-        expect(object.annotationTypes).toMatchObject({
-          [API_NAME]: BuiltinTypes.SERVICE_ID,
-          [LABEL]: BuiltinTypes.STRING,
+        expect(object.annotationRefTypes).toMatchObject({
+          [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+          [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
         })
-        expect(object.annotationTypes.nameField?.elemID).toEqual(
+        expect(object.annotationRefTypes.nameField?.elemID).toEqual(
           new ElemID(SALESFORCE, CUSTOM_FIELD)
         )
       })
       it('should not override existing annotation types', () => {
-        expect(object.annotationTypes).toMatchObject({
-          sharingModel: BuiltinTypes.HIDDEN_STRING,
+        expect(object.annotationRefTypes).toMatchObject({
+          sharingModel: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
         })
       })
     })
@@ -160,7 +161,7 @@ describe('addDefaults', () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
-            a: { type: Types.primitiveDataTypes.MasterDetail },
+            a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail) },
           },
         })
         addDefaults(object)
@@ -189,10 +190,10 @@ describe('addDefaults', () => {
       })
     })
     it('should add annotation types', () => {
-      expect(object.annotationTypes).toMatchObject({
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
-        [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
-        [LABEL]: BuiltinTypes.STRING,
+      expect(object.annotationRefTypes).toMatchObject({
+        [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
       })
     })
     it('should not add custom object annotations', () => {

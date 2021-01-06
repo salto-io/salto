@@ -19,6 +19,7 @@ import {
   InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
@@ -42,13 +43,13 @@ const clientConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'clientConfig'),
   fields: {
     [FETCH_ALL_TYPES_AT_ONCE]: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
       },
     },
     [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -57,7 +58,7 @@ const clientConfigType = new ObjectType({
       },
     },
     [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -66,7 +67,7 @@ const clientConfigType = new ObjectType({
       },
     },
     [SDF_CONCURRENCY_LIMIT]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -98,14 +99,14 @@ const queryConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'queryConfig'),
   fields: {
     types: {
-      type: new MapType(new ListType(BuiltinTypes.STRING)),
+      refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {},
       },
     },
 
     filePaths: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue((new ListType(BuiltinTypes.STRING))),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
@@ -118,19 +119,29 @@ export const configType = new ObjectType({
   elemID: configID,
   fields: {
     [TYPES_TO_SKIP]: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
+          // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
+          // a value for specific customers to use it for moving between envs, backup etc.
+        ],
+      },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
+      },
     },
     [DEPLOY_REFERENCED_ELEMENTS]: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       },
     },
     [CLIENT_CONFIG]: {
-      type: clientConfigType,
+      refType: createRefToElmWithValue(clientConfigType),
     },
 
     [SUITEAPP_CLIENT_CONFIG]: {
@@ -138,11 +149,11 @@ export const configType = new ObjectType({
     },
 
     [FETCH_TARGET]: {
-      type: queryConfigType,
+      refType: createRefToElmWithValue(queryConfigType),
     },
 
     [SKIP_LIST]: {
-      type: queryConfigType,
+      refType: createRefToElmWithValue(queryConfigType),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {
           types: {

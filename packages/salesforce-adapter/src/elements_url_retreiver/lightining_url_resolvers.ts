@@ -144,7 +144,7 @@ const layoutResolver: UrlResolver = async (element, baseUrl, elementIDResolver) 
   if (isInstanceOfType('Layout')(element)
       && internalId !== undefined
       && isReferenceExpression(parentRef)) {
-    const parent = await elementIDResolver(parentRef.elemId)
+    const parent = await elementIDResolver(parentRef.elemID)
     const parentIdentifier = getTypeIdentifier(parent)
     if (parentIdentifier !== undefined) {
       return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/PageLayouts/${internalId}/view`)

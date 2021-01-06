@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Workspace } from '@salto-io/workspace'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ObjectType, InstanceElement, Element, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { listUnresolvedReferences } from '../../src/api'
 import { UnresolvedElemIDs } from '../../src/core/list'
@@ -39,18 +40,18 @@ describe('listUnresolvedReferences', () => {
     const type1 = new ObjectType({
       elemID: new ElemID('salesforce', 'someType'),
       fields: {
-        f1: { type: BuiltinTypes.STRING },
-        f2: { type: BuiltinTypes.STRING },
-        f3: { type: BuiltinTypes.STRING },
+        f1: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        f2: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        f3: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
     const type2 = new ObjectType({
       elemID: new ElemID('salesforce', 'anotherType'),
       annotations: { _parent: new ReferenceExpression(type1.elemID) },
       fields: {
-        f1: { type: type1 },
-        f2: { type: BuiltinTypes.STRING },
-        f3: { type: type1 },
+        f1: { refType: createRefToElmWithValue(type1) },
+        f2: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        f3: { refType: createRefToElmWithValue(type1) },
       },
     })
     const inst1 = new InstanceElement(

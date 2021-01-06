@@ -95,7 +95,7 @@ const replaceInstanceValues = (
   instance.value = transformValues(
     {
       values,
-      type: instance.type,
+      type: instance.getType(),
       transformFunc,
       strict: false,
     }

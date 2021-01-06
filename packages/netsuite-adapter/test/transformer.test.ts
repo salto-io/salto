@@ -704,7 +704,7 @@ describe('Transformer', () => {
         const ref = new ReferenceExpression(
           new ElemID(''),
           'resolved_value',
-          workflowInstance.type
+          workflowInstance.getType(),
         )
         expect(getLookUpName({ ref })).toEqual(ref.value)
       })

@@ -34,6 +34,7 @@ import * as pathIndex from './src/workspace/path_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches,
   selectElementsBySelectors, selectElementIdsByTraversal, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
 import * as validator from './src/validator'
+import { InMemoryRemoteElementSource } from './src/workspace/elements_source'
 
 export {
   errors,
@@ -69,4 +70,5 @@ export {
   createElementSelectors,
   selectElementIdsByTraversal,
   ElementIDToValue,
+  InMemoryRemoteElementSource,
 }

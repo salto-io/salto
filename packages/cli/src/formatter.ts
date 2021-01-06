@@ -113,7 +113,7 @@ const formatValue = (value: Element | Value): string => {
     return [
       formatAnnotations(value.annotations),
       formatFields(value.fields),
-      formatAnnotationTypes(value.annotationTypes),
+      formatAnnotationTypes(value.getAnnotationTypes()),
     ].join('')
   }
   if (isPrimitiveType(value)) {
@@ -126,12 +126,12 @@ const formatValue = (value: Element | Value): string => {
     return [
       indent(`\nTYPE: ${primitiveTypeNames[value.primitive]}`, 2),
       formatAnnotations(value.annotations),
-      formatAnnotationTypes(value.annotationTypes),
+      formatAnnotationTypes(value.getAnnotationTypes()),
     ].join('')
   }
   if (isField(value)) {
     return [
-      indent(`\nTYPE: ${value.type.elemID.getFullName()}`, 2),
+      indent(`\nTYPE: ${value.refType.elemID.getFullName()}`, 2),
       formatAnnotations(value.annotations),
     ].join('')
   }
@@ -145,7 +145,7 @@ const formatValue = (value: Element | Value): string => {
     return `\n${indent(formattedKeys, 2)}`
   }
   if (value instanceof ReferenceExpression) {
-    return isElement(value.value) ? value.elemId.getFullName() : formatValue(value.value)
+    return isElement(value.value) ? value.elemID.getFullName() : formatValue(value.value)
   }
   return safeJsonStringify(value)
 }

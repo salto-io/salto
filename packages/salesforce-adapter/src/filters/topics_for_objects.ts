@@ -44,7 +44,7 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
     values,
     new ObjectType({
       elemID: new ElemID(SALESFORCE, TOPICS_FOR_OBJECTS_METADATA_TYPE),
-      annotationTypes: _.clone(metadataAnnotationTypes),
+      annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
       annotations: {
         metadataType: TOPICS_FOR_OBJECTS_METADATA_TYPE,
         dirName: 'topicsForObjects',

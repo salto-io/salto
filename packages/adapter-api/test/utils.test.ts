@@ -13,38 +13,69 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import {
-  getDeepInnerType,
-  getField,
-  getFieldType,
-} from '../src/utils'
-import {
-  ObjectType, ListType, isElement, isField, isListType, isMapType, MapType,
-} from '../src/elements'
-import {
-  ElemID,
-} from '../src/element_id'
-import {
-  BuiltinTypes,
-} from '../src/builtins'
+import { getDeepInnerType, getField, getFieldType } from '../src/utils'
+import { ObjectType, ListType, isElement, isField, isListType, isMapType, MapType, PrimitiveType, PrimitiveTypes } from '../src/elements'
+import { ElemID } from '../src/element_id'
+import { BuiltinTypes } from '../src/builtins'
+import { ReferenceExpression, Value } from '../src/values'
 
 describe('Test utils.ts & isXXX in elements.ts', () => {
   const mockElemID = new ElemID('test-utils', 'obj')
+  const listOfNum = new ListType(BuiltinTypes.NUMBER)
+  const mapOfNum = new MapType(BuiltinTypes.NUMBER)
+  const mapOfMapOfNum = new MapType(new MapType(BuiltinTypes.NUMBER))
+  const listOfListofNum = new ListType(new ListType(BuiltinTypes.NUMBER))
+  const mapOfListOfNum = new MapType(new ListType(BuiltinTypes.NUMBER))
+  const listOfMapOfNum = new ListType(new MapType(BuiltinTypes.NUMBER))
+  const primElemID = new ElemID('ad', 'prim')
+  const primitiveNum = new PrimitiveType({
+    elemID: primElemID,
+    primitive: PrimitiveTypes.NUMBER,
+  })
+  const mapOfPrimitiveNum = new MapType(primitiveNum)
+  const mapOfMapOfPrimitiveNum = new MapType(new MapType(primitiveNum))
   const mockObjectType = new ObjectType({
     elemID: mockElemID,
     fields: {
-      fieldTest: { type: BuiltinTypes.NUMBER },
-      listFieldTest: { type: new ListType(BuiltinTypes.NUMBER) },
-      mapFieldTest: { type: new MapType(BuiltinTypes.NUMBER) },
-      listOfListFieldTest: { type: new ListType(new ListType(BuiltinTypes.NUMBER)) },
-      mapOfMapFieldTest: { type: new MapType(new MapType(BuiltinTypes.NUMBER)) },
-      mapOfListFieldTest: { type: new MapType(new ListType(BuiltinTypes.NUMBER)) },
-      listOfMapFieldTest: { type: new MapType(new MapType(BuiltinTypes.NUMBER)) },
+      fieldTest: {
+        refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER),
+      },
+      listFieldTest: {
+        refType: new ReferenceExpression(listOfNum.elemID, listOfNum),
+      },
+      mapFieldTest: {
+        refType: new ReferenceExpression(mapOfNum.elemID, mapOfNum),
+      },
+      listOfListFieldTest: {
+        refType: new ReferenceExpression(listOfListofNum.elemID, listOfListofNum),
+      },
+      mapOfMapFieldTest: {
+        refType: new ReferenceExpression(mapOfMapOfNum.elemID, mapOfMapOfNum),
+      },
+      mapOfListFieldTest: {
+        refType: new ReferenceExpression(mapOfListOfNum.elemID, mapOfListOfNum),
+      },
+      listOfMapFieldTest: {
+        refType: new ReferenceExpression(listOfMapOfNum.elemID, listOfMapOfNum),
+      },
+      mapOfPrimitive: {
+        refType: new ReferenceExpression(mapOfPrimitiveNum.elemID, mapOfPrimitiveNum),
+      },
     },
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
   })
+  const elmSource = {
+    getSync(elemID: ElemID): Value {
+      if (elemID.isEqual(mockObjectType.elemID)) {
+        return mockObjectType
+      }
+      if (elemID.isEqual(mapOfPrimitiveNum.elemID)) {
+        return mapOfPrimitiveNum
+      }
+      return undefined
+    },
+  }
   describe('isElement func', () => {
     it('should return false for undefined', () => {
       expect(isElement(undefined)).toBeFalsy()
@@ -56,10 +87,10 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
       expect(isElement(mockObjectType.fields.fieldTest)).toBeTruthy()
     })
     it('should return true for primitive field type', () => {
-      expect(isElement(mockObjectType.fields.fieldTest.type)).toBeTruthy()
+      expect(isElement(mockObjectType.fields.fieldTest.getType())).toBeTruthy()
     })
     it('should return true for list field type', () => {
-      expect(isElement(mockObjectType.fields.listFieldTest.type)).toBeTruthy()
+      expect(isElement(mockObjectType.fields.listFieldTest.getType())).toBeTruthy()
     })
   })
   describe('isField func', () => {
@@ -83,82 +114,130 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
 
   describe('isListType func', () => {
     it('should recognize lists as ListType', () => {
-      expect(isListType(mockObjectType.fields.listFieldTest.type)).toBeTruthy()
-      expect(isListType(mockObjectType.fields.listOfListFieldTest.type)).toBeTruthy()
-      const mapOfListType = mockObjectType.fields.mapOfListFieldTest.type as MapType
-      expect(isListType(mapOfListType.innerType)).toBeTruthy()
+      expect(isListType(mockObjectType.fields.listFieldTest.getType())).toBeTruthy()
+      expect(isListType(mockObjectType.fields.listOfListFieldTest.getType())).toBeTruthy()
+      const mapOfListType = mockObjectType.fields.mapOfListFieldTest.getType() as MapType
+      expect(isListType(mapOfListType.getInnerType())).toBeTruthy()
     })
 
     it('should return false for non-list types', () => {
-      expect(isListType(mockObjectType.fields.fieldTest.type)).toBeFalsy()
-      expect(isListType(mockObjectType.fields.mapOfMapFieldTest.type)).toBeFalsy()
+      expect(isListType(mockObjectType.fields.fieldTest.getType())).toBeFalsy()
+      expect(isListType(mockObjectType.fields.mapOfMapFieldTest.getType())).toBeFalsy()
     })
   })
 
   describe('isMapType func', () => {
     it('should recognize maps as MapType', () => {
-      expect(isMapType(mockObjectType.fields.mapFieldTest.type)).toBeTruthy()
-      expect(isMapType(mockObjectType.fields.mapOfMapFieldTest.type)).toBeTruthy()
-      expect(isMapType(mockObjectType.fields.mapOfListFieldTest.type)).toBeTruthy()
-      const listOfMapType = mockObjectType.fields.listOfMapFieldTest.type as ListType
-      expect(isMapType(listOfMapType.innerType)).toBeTruthy()
+      expect(isMapType(mockObjectType.fields.mapFieldTest.getType())).toBeTruthy()
+      expect(isMapType(mockObjectType.fields.mapOfMapFieldTest.getType())).toBeTruthy()
+      expect(isMapType(mockObjectType.fields.mapOfListFieldTest.getType())).toBeTruthy()
+      const listOfMapType = mockObjectType.fields.listOfMapFieldTest.getType() as ListType
+      expect(isMapType(listOfMapType.getInnerType())).toBeTruthy()
     })
 
     it('should return false for non-map types', () => {
-      expect(isMapType(mockObjectType.fields.fieldTest.type)).toBeFalsy()
+      expect(isMapType(mockObjectType.fields.fieldTest.getType())).toBeFalsy()
     })
   })
 
   describe('getDeepInnerType func', () => {
     it('should recognize getDeepInnerType in a list', () => {
-      expect(getDeepInnerType(mockObjectType.fields.listFieldTest.type as ListType))
+      expect(getDeepInnerType(mockObjectType.fields.listFieldTest.getType() as ListType))
         .toEqual(BuiltinTypes.NUMBER)
     })
     it('should recognize getDeepInnerType in list of lists', () => {
-      expect(getDeepInnerType(mockObjectType.fields.listOfListFieldTest.type as ListType))
+      expect(getDeepInnerType(mockObjectType.fields.listOfListFieldTest.getType() as ListType))
         .toEqual(BuiltinTypes.NUMBER)
     })
     it('should recognize getDeepInnerType in a map', () => {
-      expect(getDeepInnerType(mockObjectType.fields.mapFieldTest.type as MapType))
+      expect(getDeepInnerType(mockObjectType.fields.mapFieldTest.getType() as MapType))
         .toEqual(BuiltinTypes.NUMBER)
     })
+
+    it('should recognize getDeepInnerType in a map with ElementsSource', () => {
+      expect(getDeepInnerType(mapOfPrimitiveNum))
+        .toEqual(primitiveNum)
+    })
+
+    it('should recognize getDeepInnerType in a map of map with ElementsSource', () => {
+      expect(getDeepInnerType(mapOfMapOfPrimitiveNum))
+        .toEqual(primitiveNum)
+    })
+
     it('should recognize getDeepInnerType in map of maps', () => {
-      expect(getDeepInnerType(mockObjectType.fields.mapOfMapFieldTest.type as MapType))
+      expect(getDeepInnerType(mockObjectType.fields.mapOfMapFieldTest.getType() as MapType))
         .toEqual(BuiltinTypes.NUMBER)
     })
     it('should recognize getDeepInnerType in map of lists', () => {
-      expect(getDeepInnerType(mockObjectType.fields.mapOfListFieldTest.type as MapType))
+      expect(getDeepInnerType(mockObjectType.fields.mapOfListFieldTest.getType() as MapType))
         .toEqual(BuiltinTypes.NUMBER)
     })
     it('should recognize getDeepInnerType in list of maps', () => {
-      expect(getDeepInnerType(mockObjectType.fields.listOfMapFieldTest.type as ListType))
+      expect(getDeepInnerType(mockObjectType.fields.listOfMapFieldTest.getType() as ListType))
         .toEqual(BuiltinTypes.NUMBER)
     })
   })
-
   describe('getField, getFieldType funcs', () => {
-    it('should succeed on a standard field', () => {
-      expect(getField(mockObjectType, ['fieldTest'])).toEqual(mockObjectType.fields.fieldTest)
-      expect(getFieldType(mockObjectType, ['fieldTest'])).toEqual(BuiltinTypes.NUMBER)
+    describe('With ElementsSource', () => {
+      it('should succeed on a standard field', () => {
+        expect(getField(mockObjectType, ['fieldTest'], elmSource)).toEqual(mockObjectType.fields.fieldTest)
+        expect(getFieldType(mockObjectType, ['fieldTest'], elmSource)).toEqual(BuiltinTypes.NUMBER)
+      })
+
+      it('should succeed on a list field', () => {
+        expect(getField(mockObjectType, ['listFieldTest'], elmSource)).toEqual(mockObjectType.fields.listFieldTest)
+        expect(getFieldType(mockObjectType, ['listFieldTest'], elmSource)).toEqual(new ListType(BuiltinTypes.NUMBER))
+        expect(getField(mockObjectType, ['listOfListFieldTest'], elmSource))
+          .toEqual(mockObjectType.fields.listOfListFieldTest)
+        expect(getFieldType(mockObjectType, ['listOfListFieldTest'], elmSource))
+          .toEqual(new ListType(new ListType(BuiltinTypes.NUMBER)))
+      })
+
+      it('should succeed on a map field', () => {
+        expect(getField(mockObjectType, ['mapFieldTest'], elmSource)).toEqual(mockObjectType.fields.mapFieldTest)
+        expect(getFieldType(mockObjectType, ['mapFieldTest'], elmSource)).toEqual(new MapType(BuiltinTypes.NUMBER))
+        expect(getField(mockObjectType, ['mapOfMapFieldTest'], elmSource))
+          .toEqual(mockObjectType.fields.mapOfMapFieldTest)
+        expect(getFieldType(mockObjectType, ['mapOfMapFieldTest'], elmSource))
+          .toEqual(new MapType(new MapType(BuiltinTypes.NUMBER)))
+        expect(getField(mockObjectType, ['mapOfPrimitive'], elmSource)).toEqual(mockObjectType.fields.mapOfPrimitive)
+        expect(getFieldType(mockObjectType, ['mapOfPrimitive'], elmSource)).toEqual(mapOfPrimitiveNum)
+      })
+
+      it('should return undefined on a nonexistent field', () => {
+        expect(getField(mockObjectType, ['nonExistentField'], elmSource)).toBeUndefined()
+        expect(getFieldType(mockObjectType, ['nonExistentField'], elmSource)).toBeUndefined()
+      })
     })
 
-    it('should succeed on a list field', () => {
-      expect(getField(mockObjectType, ['listFieldTest'])).toEqual(mockObjectType.fields.listFieldTest)
-      expect(getFieldType(mockObjectType, ['listFieldTest'])).toEqual(new ListType(BuiltinTypes.NUMBER))
-      expect(getField(mockObjectType, ['listOfListFieldTest'])).toEqual(mockObjectType.fields.listOfListFieldTest)
-      expect(getFieldType(mockObjectType, ['listOfListFieldTest'])).toEqual(new ListType(new ListType(BuiltinTypes.NUMBER)))
-    })
+    describe('Without ElementsSource', () => {
+      it('should succeed on a standard field', () => {
+        expect(getField(mockObjectType, ['fieldTest'])).toEqual(mockObjectType.fields.fieldTest)
+        expect(getFieldType(mockObjectType, ['fieldTest'])).toEqual(BuiltinTypes.NUMBER)
+      })
 
-    it('should succeed on a map field', () => {
-      expect(getField(mockObjectType, ['mapFieldTest'])).toEqual(mockObjectType.fields.mapFieldTest)
-      expect(getFieldType(mockObjectType, ['mapFieldTest'])).toEqual(new MapType(BuiltinTypes.NUMBER))
-      expect(getField(mockObjectType, ['mapOfMapFieldTest'])).toEqual(mockObjectType.fields.mapOfMapFieldTest)
-      expect(getFieldType(mockObjectType, ['mapOfMapFieldTest'])).toEqual(new MapType(new MapType(BuiltinTypes.NUMBER)))
-    })
+      it('should succeed on a list field', () => {
+        expect(getField(mockObjectType, ['listFieldTest'])).toEqual(mockObjectType.fields.listFieldTest)
+        expect(getFieldType(mockObjectType, ['listFieldTest'])).toEqual(new ListType(BuiltinTypes.NUMBER))
+        expect(getField(mockObjectType, ['listOfListFieldTest']))
+          .toEqual(mockObjectType.fields.listOfListFieldTest)
+        expect(getFieldType(mockObjectType, ['listOfListFieldTest']))
+          .toEqual(new ListType(new ListType(BuiltinTypes.NUMBER)))
+      })
 
-    it('should return undefined on a nonexistent field', () => {
-      expect(getField(mockObjectType, ['nonExistentField'])).toBeUndefined()
-      expect(getFieldType(mockObjectType, ['nonExistentField'])).toBeUndefined()
+      it('should succeed on a map field', () => {
+        expect(getField(mockObjectType, ['mapFieldTest'])).toEqual(mockObjectType.fields.mapFieldTest)
+        expect(getFieldType(mockObjectType, ['mapFieldTest'])).toEqual(new MapType(BuiltinTypes.NUMBER))
+        expect(getField(mockObjectType, ['mapOfMapFieldTest']))
+          .toEqual(mockObjectType.fields.mapOfMapFieldTest)
+        expect(getFieldType(mockObjectType, ['mapOfMapFieldTest']))
+          .toEqual(new MapType(new MapType(BuiltinTypes.NUMBER)))
+      })
+
+      it('should return undefined on a nonexistent field', () => {
+        expect(getField(mockObjectType, ['nonExistentField'])).toBeUndefined()
+        expect(getFieldType(mockObjectType, ['nonExistentField'])).toBeUndefined()
+      })
     })
   })
 })

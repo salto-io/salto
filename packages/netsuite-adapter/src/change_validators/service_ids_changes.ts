@@ -26,13 +26,13 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .filter(change => {
       const instance = getChangeElement(change) as InstanceElement
-      return isCustomType(instance.type) || isFileCabinetType(instance.type)
+      return isCustomType(instance.refType.elemID) || isFileCabinetType(instance.refType.elemID)
     })
     .map(change => {
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
-      const modifiedServiceIdsFields = Object.values(after.type.fields)
-        .filter(field => field.type === BuiltinTypes.SERVICE_ID)
+      const modifiedServiceIdsFields = Object.values(after.getType().fields)
+        .filter(field => field.getType() === BuiltinTypes.SERVICE_ID)
         .filter(field => before.value[field.name] !== after.value[field.name])
       return modifiedServiceIdsFields.map(modifiedServiceIdsField => ({
         elemID: after.elemID,

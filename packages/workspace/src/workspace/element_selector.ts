@@ -175,7 +175,8 @@ const isElementPossiblyParentOfSearchedElement = (
 )
 
 export const selectElementIdsByTraversal = (
-  selectors: ElementSelector[], elements: ElementIDToValue[],
+  selectors: ElementSelector[],
+  elements: ElementIDToValue[],
   compact = false,
   validateDeterminedSelectors = false,
 ): ElemID[] => {

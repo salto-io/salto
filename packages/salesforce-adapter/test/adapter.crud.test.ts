@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { MetadataInfo, SaveResult, Package } from 'jsforce'
 import JSZip from 'jszip'
@@ -112,12 +113,12 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: {
-            username: { type: BuiltinTypes.STRING },
-            password: { type: BuiltinTypes.STRING },
-            token: { type: BuiltinTypes.STRING },
-            sandbox: { type: BuiltinTypes.BOOLEAN },
+            username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            password: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
           },
-          annotationTypes: {},
+          annotationRefsOrTypes: {},
           annotations: { [constants.METADATA_TYPE]: 'Flow' },
         }),
         {
@@ -206,13 +207,13 @@ describe('SalesforceAdapter CRUD', () => {
         elemID: mockElemID,
         fields: {
           description: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
           formula: {
-            type: stringType,
+            refType: createRefToElmWithValue(stringType),
             annotations: {
               [constants.LABEL]: 'formula field',
               [constants.FORMULA]: 'my formula',
@@ -235,22 +236,26 @@ describe('SalesforceAdapter CRUD', () => {
         // Verify object creation
         expect(result).toBeInstanceOf(ObjectType)
         expect(result.annotations[constants.API_NAME]).toBe('Test__c')
-        expect(result.annotationTypes[constants.API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(result.annotationRefTypes[constants.API_NAME].elemID)
+          .toEqual(BuiltinTypes.SERVICE_ID.elemID)
         expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
-        expect(result.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(result.annotationRefTypes[constants.METADATA_TYPE].elemID)
+          .toEqual(BuiltinTypes.SERVICE_ID.elemID)
         const objAnnotations = result.annotations as CustomObject
         expect(objAnnotations.label).toEqual('Test')
-        expect(result.annotationTypes.label).toEqual(BuiltinTypes.STRING)
+        expect(result.annotationRefTypes.label.elemID)
+          .toEqual(BuiltinTypes.STRING.elemID)
         expect(objAnnotations.deploymentStatus).toEqual('Deployed')
-        expect(result.annotationTypes.deploymentStatus).toEqual(BuiltinTypes.STRING)
+        expect(result.annotationRefTypes.deploymentStatus.elemID)
+          .toEqual(BuiltinTypes.STRING.elemID)
         expect(objAnnotations.nameField).toEqual({ type: 'Text', label: 'Name' })
-        expect(result.annotationTypes.nameField.elemID).toEqual(
+        expect(result.annotationRefTypes.nameField.elemID).toEqual(
           new ElemID(constants.SALESFORCE, constants.CUSTOM_FIELD)
         )
         expect(objAnnotations.pluralLabel).toEqual('Tests')
-        expect(result.annotationTypes.pluralLabel).toEqual(BuiltinTypes.STRING)
+        expect(result.annotationRefTypes.pluralLabel.elemID).toEqual(BuiltinTypes.STRING.elemID)
         expect(objAnnotations.sharingModel).toEqual('ReadWrite')
-        expect(result.annotationTypes.sharingModel).toEqual(BuiltinTypes.STRING)
+        expect(result.annotationRefTypes.sharingModel.elemID).toEqual(BuiltinTypes.STRING.elemID)
         expect(
           result.fields.description.annotations[constants.API_NAME]
         ).toBe('Test__c.description__c')
@@ -269,7 +274,7 @@ describe('SalesforceAdapter CRUD', () => {
         elemID: mockElemID,
         fields: {
           currency: {
-            type: Types.primitiveDataTypes.Currency,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Currency),
             annotations: {
               [constants.LABEL]: 'Currency description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -277,35 +282,35 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           auto: {
-            type: Types.primitiveDataTypes.AutoNumber,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.AutoNumber),
             annotations: {
               [constants.LABEL]: 'Autonumber description label',
               [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
             },
           },
           date: {
-            type: Types.primitiveDataTypes.Date,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Date),
             annotations: {
               [constants.LABEL]: 'Date description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
             },
           },
           time: {
-            type: Types.primitiveDataTypes.Time,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Time),
             annotations: {
               [constants.LABEL]: 'Time description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
             },
           },
           datetime: {
-            type: Types.primitiveDataTypes.DateTime,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.DateTime),
             annotations: {
               [constants.LABEL]: 'DateTime description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
             },
           },
           email: {
-            type: Types.primitiveDataTypes.Email,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Email),
             annotations: {
               [constants.LABEL]: 'Email description label',
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
@@ -313,7 +318,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           location: {
-            type: Types.compoundDataTypes.Location,
+            refType: createRefToElmWithValue(Types.compoundDataTypes.Location),
             annotations: {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,
@@ -321,7 +326,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           multipicklist: {
-            type: Types.primitiveDataTypes.MultiselectPicklist,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.MultiselectPicklist),
             annotations: {
               [constants.LABEL]: 'Multipicklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
@@ -337,7 +342,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           percent: {
-            type: Types.primitiveDataTypes.Percent,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Percent),
             annotations: {
               [constants.LABEL]: 'Percent description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -345,33 +350,33 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           phone: {
-            type: Types.primitiveDataTypes.Phone,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Phone),
             annotations: {
               [constants.LABEL]: 'Phone description label',
             },
           },
           longtextarea: {
-            type: Types.primitiveDataTypes.LongTextArea,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.LongTextArea),
             annotations: {
               [constants.LABEL]: 'LongTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
             },
           },
           richtextarea: {
-            type: Types.primitiveDataTypes.Html,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Html),
             annotations: {
               [constants.LABEL]: 'RichTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
             },
           },
           textarea: {
-            type: Types.primitiveDataTypes.TextArea,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.TextArea),
             annotations: {
               [constants.LABEL]: 'TextArea description label',
             },
           },
           encryptedtext: {
-            type: Types.primitiveDataTypes.EncryptedText,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.EncryptedText),
             annotations: {
               [constants.LABEL]: 'EncryptedText description label',
               [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
@@ -380,13 +385,13 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           url: {
-            type: Types.primitiveDataTypes.Url,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Url),
             annotations: {
               [constants.LABEL]: 'Url description label',
             },
           },
           picklist: {
-            type: Types.primitiveDataTypes.Picklist,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
             annotations: {
               [constants.LABEL]: 'Picklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
@@ -401,7 +406,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           text: {
-            type: Types.primitiveDataTypes.Text,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
             annotations: {
               [constants.LABEL]: 'Text description label',
               [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -413,7 +418,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           number: {
-            type: Types.primitiveDataTypes.Number,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
             annotations: {
               [constants.LABEL]: 'Number description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 12,
@@ -422,7 +427,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
           },
           checkbox: {
-            type: Types.primitiveDataTypes.Checkbox,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Checkbox),
             annotations: {
               [constants.LABEL]: 'Checkbox description label',
               [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: true,
@@ -631,13 +636,15 @@ describe('SalesforceAdapter CRUD', () => {
           new ObjectType({
             elemID: mockElemID,
             fields: {
-              username: { type: BuiltinTypes.STRING },
-              password: { type: BuiltinTypes.STRING },
-              token: { type: BuiltinTypes.STRING },
-              sandbox: { type: BuiltinTypes.BOOLEAN },
-              [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+              username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              password: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+              [constants.INSTANCE_FULL_NAME_FIELD]: {
+                refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+              },
             },
-            annotationTypes: {},
+            annotationRefsOrTypes: {},
             annotations: { [constants.METADATA_TYPE]: 'Flow' },
           }),
           { [constants.INSTANCE_FULL_NAME_FIELD]: instanceName },
@@ -731,7 +738,7 @@ describe('SalesforceAdapter CRUD', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         fields: {
-          description: { type: stringType },
+          description: { refType: createRefToElmWithValue(stringType) },
         },
         annotations: {
           [constants.API_NAME]: 'Test__c',
@@ -874,20 +881,24 @@ describe('SalesforceAdapter CRUD', () => {
           const mockCustomLabelsObjectType = new ObjectType({
             elemID: mockElemID,
             fields: {
-              [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+              [constants.INSTANCE_FULL_NAME_FIELD]: {
+                refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+              },
               [customLabelsFieldName]: {
-                type: new ObjectType({
+                refType: createRefToElmWithValue(new ObjectType({
                   elemID: mockElemID,
                   fields: {
-                    [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+                    [constants.INSTANCE_FULL_NAME_FIELD]: {
+                      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+                    },
                   },
                   annotations: {
                     [constants.METADATA_TYPE]: 'CustomLabel',
                   },
-                }),
+                })),
               },
             },
-            annotationTypes: {},
+            annotationRefsOrTypes: {},
             annotations: {
               [constants.METADATA_TYPE]: 'CustomLabels',
             },
@@ -970,9 +981,15 @@ describe('SalesforceAdapter CRUD', () => {
           elemID: mockElemID,
           fields: {
             description: {
-              type: stringType, annotations: { [constants.API_NAME]: 'Test__c.description__c' },
+              refType: createRefToElmWithValue(stringType),
+              annotations: { [constants.API_NAME]: 'Test__c.description__c' },
             },
-            unchanged: { type: stringType, annotations: { [constants.API_NAME]: 'Test__c.unchanged__c' } },
+            unchanged: {
+              refType: createRefToElmWithValue(stringType),
+              annotations: {
+                [constants.API_NAME]: 'Test__c.unchanged__c',
+              },
+            },
           },
           annotations: {
             label: 'test label',
@@ -985,7 +1002,7 @@ describe('SalesforceAdapter CRUD', () => {
           elemID: mockElemID,
           fields: {
             address: {
-              type: stringType,
+              refType: createRefToElmWithValue(stringType),
               annotations: {
                 label: 'test2 label',
                 [constants.API_NAME]: 'Test__c.address__c',
@@ -1055,21 +1072,21 @@ describe('SalesforceAdapter CRUD', () => {
           elemID: mockElemID,
           fields: {
             address: {
-              type: stringType,
+              refType: createRefToElmWithValue(stringType),
               annotations: {
                 [constants.API_NAME]: 'Test__c.Address__c',
                 [constants.LABEL]: 'Address',
               },
             },
             banana: {
-              type: stringType,
+              refType: createRefToElmWithValue(stringType),
               annotations: {
                 [constants.API_NAME]: 'Test__c.Banana__c',
                 [constants.LABEL]: 'Banana',
               },
             },
             cat: {
-              type: stringType,
+              refType: createRefToElmWithValue(stringType),
               annotations: {
                 [constants.API_NAME]: 'Test__c.Cat__c',
                 [constants.LABEL]: 'Cat',
@@ -1093,7 +1110,7 @@ describe('SalesforceAdapter CRUD', () => {
             }),
             cat: oldElement.fields.cat,
             description: {
-              type: stringType,
+              refType: createRefToElmWithValue(stringType),
               annotations: {
                 [constants.API_NAME]: 'Test__c.Description__c',
                 [constants.LABEL]: 'Description',
@@ -1195,7 +1212,7 @@ describe('SalesforceAdapter CRUD', () => {
           elemID: mockElemID,
           fields: {
             banana: {
-              type: stringType,
+              refType: createRefToElmWithValue(stringType),
               annotations: {
                 [constants.API_NAME]: 'Test__c.Banana__c',
               },
@@ -1298,11 +1315,11 @@ describe('SalesforceAdapter CRUD', () => {
         elemID: mockElemID,
         fields: {
           one: {
-            type: Types.primitiveDataTypes.Text,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
             annotations: { [constants.API_NAME]: 'Test__c.one__c' },
           },
           two: {
-            type: Types.primitiveDataTypes.Number,
+            refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
             annotations: { [constants.API_NAME]: 'Test__c.two__c' },
           },
         },

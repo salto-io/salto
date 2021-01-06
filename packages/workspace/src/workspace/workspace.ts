@@ -15,10 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
-  Change, getChangeElement, isAdditionOrModificationChange, Value, isType,
-} from '@salto-io/adapter-api'
+import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change, getChangeElement, isAdditionOrModificationChange, Value, isType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -30,8 +27,7 @@ import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_f
 import { calcNewMerged, calcChanges } from './nacl_files/elements_cache'
 import { multiEnvSource, getSourceNameForFilename } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
-import { Errors, ServiceDuplicationError, EnvDuplicationError,
-  UnknownEnvError, DeleteCurrentEnvError } from './errors'
+import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
@@ -140,9 +136,11 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
-export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: ConfigSource,
-  elementsSources: EnvironmentsSources):
-  Promise<Workspace> => {
+export const loadWorkspace = async (
+  config: WorkspaceConfigSource,
+  credentials: ConfigSource,
+  elementsSources: EnvironmentsSources,
+): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
 
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -158,7 +156,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     workspaceConfig.envs
   const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
   const state = (envName?: string): State => (
-    elementsSources.sources[envName || currentEnv()].state as State
+    elementsSources.sources[envName ?? currentEnv()].state as State
   )
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
     currentEnv(), elementsSources.commonSourceName)
@@ -215,8 +213,16 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     changes: DetailedChange[],
     mode?: RoutingMode
   ): Promise<number> => {
+    const { merged } = await elements()
+    const stateElements = (await state().getAll())
     const changesAfterHiddenRemoved = await handleHiddenChanges(
-      changes, state(), naclFilesSource.getAll,
+      changes,
+      state(),
+      naclFilesSource.getAll,
+      new InMemoryRemoteElementSource([
+        ...merged,
+        ...stateElements,
+      ]),
     )
     const elementChanges = await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
     workspaceState = buildWorkspaceState({ changes: elementChanges })
@@ -290,6 +296,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
 
   const errors = async (validate = true): Promise<Errors> => {
     const resolvedElements = await elements()
+    const stateElements = await state().getAll()
     const errorsFromSource = await naclFilesSource.getErrors()
 
     const validationErrors = validate

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, ElemID, Value, TypeElement, ListType, ObjectType, PrimitiveTypes, MapType, VariableExpression } from '@salto-io/adapter-api'
+import { ReferenceExpression, ElemID, Value, ListType, PrimitiveTypes, MapType, VariableExpression } from '@salto-io/adapter-api'
 import isPromise from 'is-promise'
 import { LexerToken } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
@@ -82,31 +82,36 @@ export const replaceValuePromises = async (context: ParseContext): Promise<void>
   }))
 }
 
-export const createFieldType = (context: ParseContext, blockType: string): TypeElement => {
+export const createFieldRefType = (
+  context: ParseContext,
+  blockType: string
+): ReferenceExpression => {
   if (blockType.startsWith(Keywords.LIST_PREFIX)
         && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
-    const listType = new ListType(createFieldType(
+    const listType = new ListType(createFieldRefType(
       context,
       blockType.substring(
         Keywords.LIST_PREFIX.length,
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
+    const listRefType = new ReferenceExpression(listType.elemID)
     context.listTypes[listType.elemID.getFullName()] = listType
-    return listType
+    return listRefType
   }
   if (blockType.startsWith(Keywords.MAP_PREFIX) && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
-    const mapType = new MapType(createFieldType(
+    const mapType = new MapType(createFieldRefType(
       context,
       blockType.substring(
         Keywords.MAP_PREFIX.length,
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
+    const mapRefType = new ReferenceExpression(mapType.elemID)
     context.mapTypes[mapType.elemID.getFullName()] = mapType
-    return mapType
+    return mapRefType
   }
-  return new ObjectType({ elemID: parseElemID(blockType) })
+  return new ReferenceExpression(parseElemID(blockType))
 }
 
 export const primitiveType = (typeName: string): PrimitiveTypes | undefined => {

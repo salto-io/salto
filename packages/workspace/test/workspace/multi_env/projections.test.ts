@@ -13,11 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType,
-  DetailedChange,
-  getChangeElement,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -28,8 +25,8 @@ describe('projections', () => {
   const nestedObj = new ObjectType({
     elemID: nestedElemID,
     fields: {
-      simple1: { type: BuiltinTypes.STRING },
-      simple2: { type: BuiltinTypes.STRING },
+      simple1: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      simple2: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
   const annotationsObject = {
@@ -43,7 +40,7 @@ describe('projections', () => {
   const primitiveType = new PrimitiveType({
     elemID: new ElemID('salto', 'string'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'PRIMITIVE_1',
       list1: ['PRIMITIVE_LIST_1'],
@@ -62,7 +59,7 @@ describe('projections', () => {
   const objectTypeElemID = new ElemID('salto', 'object')
   const objectType = new ObjectType({
     elemID: objectTypeElemID,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'OBJECT_1',
       list1: ['OBJECT_LIST_1'],
@@ -77,29 +74,33 @@ describe('projections', () => {
         simple2: 'OBJECT_NESTED_2',
       },
     },
-    fields: _.mapValues(annotationsObject, (type, name) => (
-      { type: name.includes('list') ? new ListType(type) : type }
-    )),
+    fields: _.mapValues(annotationsObject, (type, name) => ({
+      refType: name.includes('list')
+        ? createRefToElmWithValue(new ListType(type))
+        : createRefToElmWithValue(type),
+    })),
   })
   const fieldParent = new ObjectType({
     elemID: new ElemID('salto', 'parent'),
-    fields: { field: {
-      type: objectType,
-      annotations: {
-        simple1: 'FIELD_1',
-        list1: ['FIELD_LIST_1'],
-        nested1: {
-          simple1: 'FIELD_NESTED_1',
-          simple2: 'FIELD_NESTED_2',
-        },
-        simple2: 'FIELD_1',
-        list2: ['FIELD_LIST_1'],
-        nested2: {
-          simple1: 'FIELD_NESTED_1',
-          simple2: 'FIELD_NESTED_2',
+    fields: {
+      field: {
+        refType: createRefToElmWithValue(objectType),
+        annotations: {
+          simple1: 'FIELD_1',
+          list1: ['FIELD_LIST_1'],
+          nested1: {
+            simple1: 'FIELD_NESTED_1',
+            simple2: 'FIELD_NESTED_2',
+          },
+          simple2: 'FIELD_1',
+          list2: ['FIELD_LIST_1'],
+          nested2: {
+            simple1: 'FIELD_NESTED_1',
+            simple2: 'FIELD_NESTED_2',
+          },
         },
       },
-    } },
+    },
   })
   const { field } = fieldParent.fields
   const instance = new InstanceElement(
@@ -124,7 +125,7 @@ describe('projections', () => {
   const partialPrimitiveType = new PrimitiveType({
     elemID: new ElemID('salto', 'string'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'PRIMITIVE_1',
       list1: ['PRIMITIVE_LIST_1'],
@@ -135,7 +136,7 @@ describe('projections', () => {
   })
   const partialObjectType = new ObjectType({
     elemID: objectTypeElemID,
-    annotationTypes: annotationsObject,
+    annotationRefsOrTypes: annotationsObject,
     annotations: {
       simple1: 'OBJECT_1',
       list1: ['OBJECT_LIST_1'],
@@ -143,15 +144,17 @@ describe('projections', () => {
         simple1: 'OBJECT_NESTED_1',
       },
     },
-    fields: _.mapValues(annotationsObject, (type, name) => (
-      { type: name.includes('list') ? new ListType(type) : type }
-    )),
+    fields: _.mapValues(annotationsObject, (type, name) => ({
+      refType: name.includes('list')
+        ? createRefToElmWithValue(new ListType(type))
+        : createRefToElmWithValue(type),
+    })),
   })
   const partialFieldObject = new ObjectType({
     elemID: new ElemID('salto', 'parent'),
     fields: {
       field: {
-        type: objectType,
+        refType: createRefToElmWithValue(objectType),
         annotations: {
           simple1: 'FIELD_1',
           list1: ['FIELD_LIST_1'],
@@ -278,7 +281,7 @@ describe('projections', () => {
   describe('project object types', () => {
     const newObjectType = new ObjectType({
       elemID: new ElemID('salto', 'new_object'),
-      annotationTypes: _.clone(objectType.annotationTypes),
+      annotationRefsOrTypes: _.clone(objectType.annotationRefTypes),
       annotations: _.clone(objectType.annotations),
     })
 
@@ -289,7 +292,7 @@ describe('projections', () => {
         objectType.annotations,
         v => (_.isString(v) ? 'MODIFIED' : undefined)
       ),
-      annotationTypes: objectType.annotationTypes,
+      annotationRefsOrTypes: objectType.annotationRefTypes,
     })
 
     it('should project an add change for a missing object type', async () => {
@@ -361,7 +364,7 @@ describe('projections', () => {
   describe('project primitive types', () => {
     const newPrimitiveType = new PrimitiveType({
       elemID: new ElemID('salto', 'new_object'),
-      annotationTypes: _.clone(primitiveType.annotationTypes),
+      annotationRefsOrTypes: _.clone(primitiveType.annotationRefTypes),
       annotations: _.clone(primitiveType.annotations),
       primitive: primitiveType.primitive,
     })
@@ -369,7 +372,7 @@ describe('projections', () => {
     const modifiedPrimitive = new PrimitiveType({
       elemID: primitiveType.elemID,
       annotations: _.cloneDeepWith(primitiveType.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
-      annotationTypes: primitiveType.annotationTypes,
+      annotationRefsOrTypes: primitiveType.annotationRefTypes,
       primitive: primitiveType.primitive,
     })
 
@@ -445,21 +448,21 @@ describe('projections', () => {
       const newField = new Field(
         parentObj,
         'new_field',
-        field.type,
+        field.getType(),
         _.clone(field.annotations),
       )
 
       const newPartialField = new Field(
         field.parent,
         'newName',
-        field.type,
+        field.getType(),
         _.omit(field.annotations, _.keys(partialField.annotations)),
       )
 
       const modifiedField = new Field(
         field.parent,
         field.name,
-        field.type,
+        field.getType(),
         _.cloneDeepWith(field.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
       )
 

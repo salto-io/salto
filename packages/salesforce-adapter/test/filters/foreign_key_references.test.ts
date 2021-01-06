@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
@@ -51,13 +52,13 @@ describe('foregin_key_references filter', () => {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
             },
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
           },
           [invalidRefFieldName]: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
             },
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
           },
         },
       }
@@ -66,25 +67,25 @@ describe('foregin_key_references filter', () => {
       'obj',
       {
         fields: {
-          reg: { type: BuiltinTypes.STRING },
+          reg: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           [parentObjFieldName]: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
             },
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
           },
           [invalidRefFieldName]: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
             },
-            type: BuiltinTypes.STRING,
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
           },
-          parentObjNested: { type: nestedType },
+          parentObjNested: { refType: createRefToElmWithValue(nestedType) },
           parentObjArr: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
             },
-            type: new ListType(BuiltinTypes.STRING),
+            refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
           },
         },
       }
@@ -139,7 +140,7 @@ describe('foregin_key_references filter', () => {
   describe('convert values to references', () => {
     it('should convert regular values to references', () => {
       expect(instanceElements[1].value.parentObj).toBeInstanceOf(ReferenceExpression)
-      expect(instanceElements[1].value.parentObj.elemId.typeName).toEqual(objTypeID.typeName)
+      expect(instanceElements[1].value.parentObj.elemID.typeName).toEqual(objTypeID.typeName)
     })
 
     it('should convert nested objects to references', () => {

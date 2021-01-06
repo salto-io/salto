@@ -24,6 +24,7 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
+  ReadOnlyElementsSource, ReferenceMap, BuiltinTypesRefByFullName,
 } from '@salto-io/adapter-api'
 
 const { isDefined } = lowerDashValues
@@ -51,6 +52,12 @@ export const applyFunctionToChangeData = <T extends Change<unknown>>(
   return change
 }
 
+export const createRefToElmWithValue = (element: Element): ReferenceExpression => (
+  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
+  BuiltinTypesRefByFullName[element.elemID.getFullName()]
+    ?? new ReferenceExpression(element.elemID, element)
+)
+
 /**
  * Generate synthetic object types for validating / transforming map type values.
  *
@@ -62,8 +69,12 @@ export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectT
     ? type
     : new ObjectType({
       elemID: type.elemID,
-      fields: Object.fromEntries(Object.keys(value).map(key => [key, { type: type.innerType }])),
-      annotationTypes: type.annotationTypes,
+      fields: Object.fromEntries(Object.keys(value).map(key =>
+        [
+          key,
+          { refType: type.refInnerType },
+        ])),
+      annotationRefsOrTypes: type.annotationRefTypes,
       annotations: type.annotations,
       path: type.path,
     })
@@ -103,6 +114,7 @@ export const transformValues = (
     transformFunc,
     strict = true,
     pathID = undefined,
+    elementsSource,
     isTopLevel = true,
   }: {
     values: Value
@@ -110,6 +122,7 @@ export const transformValues = (
     transformFunc: TransformFunc
     strict?: boolean
     pathID?: ElemID
+    elementsSource?: ReadOnlyElementsSource
     isTopLevel?: boolean
   }
 ): Values | undefined => {
@@ -131,7 +144,7 @@ export const transformValues = (
       return newVal
     }
 
-    const fieldType = field?.type
+    const fieldType = field?.getType(elementsSource)
 
     if (field && isListType(fieldType)) {
       const transformListInnerValue = (item: Value, index?: number): Value =>
@@ -141,7 +154,7 @@ export const transformValues = (
           new Field(
             field.parent,
             field.name,
-            fieldType.innerType,
+            fieldType.refInnerType,
             field.annotations
           ),
         ))
@@ -172,6 +185,7 @@ export const transformValues = (
           transformFunc,
           strict,
           pathID: keyPathID,
+          elementsSource,
           isTopLevel: false,
         }),
         _.isUndefined
@@ -201,14 +215,20 @@ export const transformValues = (
   return _.isEmpty(result) ? undefined : result
 }
 
-export const elementAnnotationTypes = (element: Element): TypeMap => {
+const elementAnnotationTypes = (
+  element: Element, 
+  elementsSource?: ReadOnlyElementsSource
+): TypeMap => {
   if (isInstanceElement(element)) {
     return InstanceAnnotationTypes
   }
 
   return {
+    ...InstanceAnnotationTypes,
     ...CoreAnnotationTypes,
-    ...(isField(element) ? element.type.annotationTypes : element.annotationTypes),
+    ...(isField(element)
+      ? element.getType(elementsSource).getAnnotationTypes(elementsSource)
+      : element.getAnnotationTypes(elementsSource)),
   }
 }
 
@@ -218,15 +238,17 @@ export const transformElementAnnotations = <T extends Element>(
     element,
     transformFunc,
     strict,
+    elementsSource,
   }: {
     element: T
     transformFunc: TransformFunc
     strict?: boolean
+    elementsSource?: ReadOnlyElementsSource
   }
 ): Values => (
     transformValues({
       values: element.annotations,
-      type: elementAnnotationTypes(element),
+      type: elementAnnotationTypes(element, elementsSource),
       transformFunc,
       strict,
       pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
@@ -239,30 +261,37 @@ export const transformElement = <T extends Element>(
     element,
     transformFunc,
     strict,
+    elementsSource,
     runOnFields,
   }: {
     element: T
     transformFunc: TransformFunc
     strict?: boolean
+    elementsSource?: ReadOnlyElementsSource
     runOnFields?: boolean
   }
 ): T => {
   let newElement: Element
-
-  const transformedAnnotations = transformElementAnnotations({ element, transformFunc, strict })
+  const transformedAnnotations = transformElementAnnotations({
+    element,
+    transformFunc,
+    strict,
+    elementsSource,
+  })
 
   if (isInstanceElement(element)) {
     const transformedValues = transformValues({
       values: element.value,
-      type: element.type,
+      type: element.getType(elementsSource),
       transformFunc,
       strict,
+      elementsSource,
       pathID: element.elemID,
     }) || {}
 
     newElement = new InstanceElement(
       element.elemID.name,
-      element.type,
+      element.refType,
       transformedValues,
       element.path,
       transformedAnnotations
@@ -283,6 +312,7 @@ export const transformElement = <T extends Element>(
               element: transformedField,
               transformFunc,
               strict,
+              elementsSource,
               runOnFields,
             })
           }
@@ -295,7 +325,7 @@ export const transformElement = <T extends Element>(
     newElement = new ObjectType({
       elemID: element.elemID,
       fields: clonedFields,
-      annotationTypes: element.annotationTypes,
+      annotationRefsOrTypes: element.annotationRefTypes,
       annotations: transformedAnnotations,
       path: element.path,
       isSettings: element.isSettings,
@@ -308,7 +338,7 @@ export const transformElement = <T extends Element>(
     newElement = new Field(
       element.parent,
       element.name,
-      element.type,
+      element.getType(elementsSource),
       transformedAnnotations,
     )
 
@@ -319,7 +349,7 @@ export const transformElement = <T extends Element>(
     newElement = new PrimitiveType({
       elemID: element.elemID,
       primitive: element.primitive,
-      annotationTypes: element.annotationTypes,
+      annotationRefsOrTypes: element.annotationRefTypes,
       path: element.path,
       annotations: transformedAnnotations,
     })
@@ -329,14 +359,26 @@ export const transformElement = <T extends Element>(
 
   if (isListType(element)) {
     newElement = new ListType(
-      transformElement({ element: element.innerType, transformFunc, strict, runOnFields })
+      transformElement({
+        element: element.getInnerType(elementsSource),
+        transformFunc,
+        strict,
+        elementsSource,
+        runOnFields,
+      })
     )
     return newElement as T
   }
 
   if (isMapType(element)) {
     newElement = new MapType(
-      transformElement({ element: element.innerType, transformFunc, strict, runOnFields })
+      transformElement({
+        element: element.getInnerType(elementsSource),
+        transformFunc,
+        strict,
+        elementsSource,
+        runOnFields,
+      })
     )
     return newElement as T
   }
@@ -470,7 +512,7 @@ export const findInstances = (
   typeID: ElemID,
 ): Iterable<InstanceElement> => {
   const instances = wu(elements).filter(isInstanceElement) as wu.WuIterable<InstanceElement>
-  return instances.filter(e => e.type.elemID.isEqual(typeID))
+  return instances.filter(e => e.refType.elemID.isEqual(typeID))
 }
 
 export const getPath = (
@@ -478,7 +520,7 @@ export const getPath = (
   fullElemID: ElemID
 ): string[] | undefined => {
   const { parent, path } = fullElemID.createTopLevelParentID()
-  if (!_.isEqual(parent, rootElement.elemID)) return undefined
+  if (!parent.isEqual(rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []
   if (fullElemID.isAttrID()) {
     return ['annotations', ...path]
@@ -497,7 +539,7 @@ export const getPath = (
   if (isType(rootElement) && fullElemID.idType === 'annotation') {
     const annoTypeName = path[0]
     const annoTypePath = path.slice(1)
-    if (_.isEmpty(annoTypePath)) return ['annotationTypes', annoTypeName]
+    if (_.isEmpty(annoTypePath)) return ['annotationRefTypes', annoTypeName]
     return undefined
   }
   return undefined
@@ -560,13 +602,13 @@ export const flattenElementStr = (element: Element): Element => {
   const flattenField = (field: Field): Field => new Field(
     field.parent,
     flatStr(field.name),
-    field.type,
+    field.refType,
     flatValues(field.annotations),
   )
 
   const flattenObjectType = (obj: ObjectType): ObjectType => new ObjectType({
     elemID: obj.elemID,
-    annotationTypes: _(obj.annotationTypes).mapKeys((_v, k) => flatStr(k)).value(),
+    annotationRefsOrTypes: _(obj.annotationRefTypes).mapKeys((_v, k) => flatStr(k)).value(),
     annotations: flatValues(obj.annotations),
     fields: _(obj.fields).mapKeys((_v, k) => flatStr(k)).mapValues(flattenField).value(),
     isSettings: obj.isSettings,
@@ -576,14 +618,14 @@ export const flattenElementStr = (element: Element): Element => {
   const flattenPrimitiveType = (prim: PrimitiveType): PrimitiveType => new PrimitiveType({
     elemID: prim.elemID,
     primitive: prim.primitive,
-    annotationTypes: _.mapKeys(prim.annotationTypes, (_v, k) => flatStr(k)),
+    annotationRefsOrTypes: _.mapKeys(prim.annotationRefTypes, (_v, k) => flatStr(k)),
     annotations: flatValues(prim.annotations),
     path: prim.path?.map(flatStr),
   })
 
   const flattenInstance = (inst: InstanceElement): InstanceElement => new InstanceElement(
     flatStr(inst.elemID.name),
-    inst.type,
+    inst.refType,
     flatValues(inst.value),
     inst.path?.map(flatStr),
     flatValues(inst.annotations)
@@ -623,8 +665,8 @@ export const filterByID = <T extends Element | Values>(
     filterByID(id.createNestedID('attr'), annotations, filterFunc)
   )
 
-  const filterAnnotationType = (annoTypes: TypeMap): TypeMap => _.pickBy(
-    _.mapValues(annoTypes, (anno, annoName) => (
+  const filterAnnotationType = (annoRefTypes: ReferenceMap): ReferenceMap => _.pickBy(
+    _.mapValues(annoRefTypes, (anno, annoName) => (
       filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
     )),
     isDefined,
@@ -639,7 +681,7 @@ export const filterByID = <T extends Element | Values>(
     return new ObjectType({
       elemID: value.elemID,
       annotations: filterAnnotations(value.annotations),
-      annotationTypes: filterAnnotationType(value.annotationTypes),
+      annotationRefsOrTypes: filterAnnotationType(value.annotationRefTypes),
       fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
       path: value.path,
       isSettings: value.isSettings,
@@ -649,7 +691,7 @@ export const filterByID = <T extends Element | Values>(
     return new PrimitiveType({
       elemID: value.elemID,
       annotations: filterAnnotations(value.annotations),
-      annotationTypes: filterAnnotationType(value.annotationTypes),
+      annotationRefsOrTypes: filterAnnotationType(value.annotationRefTypes),
       primitive: value.primitive,
       path: value.path,
     }) as Value as T
@@ -658,14 +700,14 @@ export const filterByID = <T extends Element | Values>(
     return new Field(
       value.parent,
       value.name,
-      value.type,
+      value.refType,
       filterByID(value.elemID, value.annotations, filterFunc)
     ) as Value as T
   }
   if (isInstanceElement(value)) {
     return new InstanceElement(
       value.elemID.name,
-      value.type,
+      value.refType,
       filterByID(value.elemID, value.value, filterFunc),
       value.path,
       filterInstanceAnnotations(value.annotations)
@@ -695,8 +737,12 @@ export const filterByID = <T extends Element | Values>(
 // This method iterate on types and corresponding values and run innerChange
 // on every "node".
 // This method DOESN'T SUPPORT list of lists!
-export const applyRecursive = (type: ObjectType | MapType, value: Values,
-  innerChange: (field: Field, value: Value) => Value): void => {
+export const applyRecursive = (
+  type: ObjectType | MapType,
+  value: Values,
+  innerChange: (field: Field, value: Value) => Value,
+  elementsSource?: ReadOnlyElementsSource,
+): void => {
   if (!value) return
 
   const objType = toObjectType(type, value)
@@ -704,14 +750,17 @@ export const applyRecursive = (type: ObjectType | MapType, value: Values,
   Object.keys(objType.fields).forEach(key => {
     if (value[key] === undefined) return
     value[key] = innerChange(objType.fields[key], value[key])
-    const fieldType = objType.fields[key].type
+    const fieldType = objType.fields[key].getType(elementsSource)
     if (!isContainerType(fieldType) && !isObjectType(fieldType)) return
-    const actualFieldType = isContainerType(fieldType) ? fieldType.innerType : fieldType
+    const actualFieldType = isContainerType(fieldType)
+      ? fieldType.getInnerType(elementsSource)
+      : fieldType
     if (isObjectType(actualFieldType)) {
       if (_.isArray(value[key])) {
-        value[key].forEach((val: Values) => applyRecursive(actualFieldType, val, innerChange))
+        value[key].forEach((val: Values) =>
+          applyRecursive(actualFieldType, val, innerChange, elementsSource))
       } else {
-        applyRecursive(actualFieldType, value[key], innerChange)
+        applyRecursive(actualFieldType, value[key], innerChange, elementsSource)
       }
     }
   })
@@ -737,15 +786,18 @@ export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID)
   return obj
 }
 
-const createDefaultValuesFromType = (type: TypeElement): Values => {
+const createDefaultValuesFromType = (
+  type: TypeElement,
+  elementsSrouce?: ReadOnlyElementsSource,
+): Values => {
   const createDefaultValuesFromObjectType = (object: ObjectType): Values =>
     _(object.fields).mapValues((field, _name) => {
       if (field.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined) {
         return field.annotations[CORE_ANNOTATIONS.DEFAULT]
       }
-      if (field.type.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
-        && !isContainerType(field.type)) {
-        return createDefaultValuesFromType(field.type)
+      if (field.getType(elementsSrouce).annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
+        && !isContainerType(field.getType(elementsSrouce))) {
+        return createDefaultValuesFromType(field.getType(elementsSrouce))
       }
       return undefined
     }).pickBy(v => v !== undefined).value()
@@ -755,10 +807,18 @@ const createDefaultValuesFromType = (type: TypeElement): Values => {
     : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 
-export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
+export const applyInstancesDefaults = (
+  instances: InstanceElement[],
+  elementsSrouce?: ReadOnlyElementsSource,
+): void => {
+  // TODO: This implementation is not ideal perfmance wise
+  // Grouping by type before using the elementsSource to get the actual type will be an improvement
   instances
     .forEach(inst => {
-      const defaultValues = createDefaultValuesFromType(inst.type)
+      const defaultValues = createDefaultValuesFromType(
+        inst.getType(elementsSrouce),
+        elementsSrouce
+      )
       inst.value = _.merge({}, defaultValues, inst.value)
     })
 }
@@ -766,7 +826,7 @@ export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
 export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
   InstanceElement => {
   const instance = new InstanceElement(name, objectType)
-  instance.value = createDefaultValuesFromType(instance.type)
+  instance.value = createDefaultValuesFromType(objectType)
   return instance
 }
 
@@ -775,19 +835,23 @@ export const safeJsonStringify = (value: Value,
   space?: string | number): string =>
   safeStringify(value, replacer, space)
 
-export const getAllReferencedIds = (element: Element, onlyAnnotations = false): Set<string> => {
+export const getAllReferencedIds = (
+  element: Element,
+  onlyAnnotations = false,
+  elementsSource?: ReadOnlyElementsSource,
+): Set<string> => {
   const allReferencedIds = new Set<string>()
   const transformFunc: TransformFunc = ({ value }) => {
     if (isReferenceExpression(value)) {
-      allReferencedIds.add(value.elemId.getFullName())
+      allReferencedIds.add(value.elemID.getFullName())
     }
     return value
   }
 
   if (onlyAnnotations) {
-    transformElementAnnotations({ element, transformFunc, strict: false })
+    transformElementAnnotations({ element, transformFunc, strict: false, elementsSource })
   } else {
-    transformElement({ element, transformFunc, strict: false })
+    transformElement({ element, transformFunc, strict: false, elementsSource })
   }
 
   return allReferencedIds

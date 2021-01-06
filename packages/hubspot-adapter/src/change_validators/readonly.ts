@@ -33,13 +33,14 @@ const readOnlyTypeToFields = {
 */
 const getReadonlyValidationError = async (before: InstanceElement, after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
-  const readonlyFieldNames = readOnlyTypeToFields[after.type.elemID.name]
+  const afterType = after.getType()
+  const readonlyFieldNames = readOnlyTypeToFields[afterType.elemID.name]
   if (_.isUndefined(readonlyFieldNames)) {
     return []
   }
   const afterResolved = resolveValues(after, getLookUpName)
   const beforeResolved = resolveValues(before, getLookUpName)
-  return Object.values(after.type.fields)
+  return Object.values(afterType.fields)
     .filter(field => readonlyFieldNames.includes(field.name))
     .map(field => {
       if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
@@ -57,9 +58,12 @@ const getReadonlyValidationError = async (before: InstanceElement, after: Instan
 const changeValidator: ChangeValidator = async changes => (
   _.flatten(await Promise.all(
     changes
-      .filter(isInstanceChange)
       .filter(isModificationChange)
-      .map(change => getReadonlyValidationError(change.data.before, change.data.after))
+      .filter(isInstanceChange)
+      .map(change => getReadonlyValidationError(
+        change.data.before as InstanceElement,
+        change.data.after as InstanceElement,
+      ))
   ))
 )
 

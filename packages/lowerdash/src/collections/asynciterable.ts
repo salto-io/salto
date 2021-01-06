@@ -15,7 +15,7 @@
 */
 
 type Thenable<T> = T | Promise<T>
-type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
+export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
 
 const isAsyncIterable = <T>(
   itr: ThenableIterable<T>

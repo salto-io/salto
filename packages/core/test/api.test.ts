@@ -14,25 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  AdapterOperations,
-  BuiltinTypes,
-  CORE_ANNOTATIONS,
-  Element,
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes,
-  Adapter,
-  isObjectType,
-  isEqualElements,
-  isAdditionChange,
-  ChangeDataType,
-  AdditionChange,
-  isInstanceElement,
-  isModificationChange,
-} from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
@@ -106,11 +89,11 @@ describe('api.ts', () => {
     elemID: new ElemID(mockService, 'dummyHidden'),
     fields: {
       hidden: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
       regField: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
       },
     },
@@ -310,7 +293,7 @@ describe('api.ts', () => {
         existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
         newEmployee = new InstanceElement(
           'new',
-          existingEmployee.type,
+          existingEmployee.refType,
           existingEmployee.value,
         )
         wsElements.push(newEmployee)
@@ -323,6 +306,8 @@ describe('api.ts', () => {
         const actionPlan = await plan.getPlan({
           before: stateElements,
           after: wsElements,
+          beforeSource: new workspace.InMemoryRemoteElementSource(stateElements),
+          afterSource: new workspace.InMemoryRemoteElementSource(wsElements),
           customGroupIdFunctions: {
             salto: async changes => new Map([...changes.keys()].map(key => [key, 'group'])),
           },

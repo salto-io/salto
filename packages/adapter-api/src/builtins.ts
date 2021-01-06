@@ -68,20 +68,25 @@ type RestrictionAnnotationType = Partial<{
   regex: string
 }>
 
+const StandardCoreAnnotationTypes: TypeMap = {
+  [CORE_ANNOTATIONS.DEFAULT]: StandardBuiltinTypes.STRING,
+  [CORE_ANNOTATIONS.REQUIRED]: StandardBuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.RESTRICTION]: restrictionType,
+  [CORE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.HIDDEN_VALUE]: StandardBuiltinTypes.BOOLEAN,
+}
+
 export const BuiltinTypes = {
   ...StandardBuiltinTypes,
   HIDDEN_STRING: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_string'),
     primitive: PrimitiveTypes.STRING,
-    annotationTypes: {
-      [CORE_ANNOTATIONS.HIDDEN_VALUE]: StandardBuiltinTypes.BOOLEAN,
-    },
+    annotationTypes: StandardCoreAnnotationTypes,
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
     },
   }),
 }
-
 
 export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),
@@ -93,10 +98,7 @@ export const InstanceAnnotationTypes: TypeMap = {
 
 export const CoreAnnotationTypes: TypeMap = {
   ...InstanceAnnotationTypes,
-  [CORE_ANNOTATIONS.DEFAULT]: StandardBuiltinTypes.STRING,
-  [CORE_ANNOTATIONS.REQUIRED]: StandardBuiltinTypes.BOOLEAN,
-  [CORE_ANNOTATIONS.RESTRICTION]: restrictionType,
-  [CORE_ANNOTATIONS.HIDDEN_VALUE]: StandardBuiltinTypes.BOOLEAN,
+  ...StandardCoreAnnotationTypes,
 }
 
 export const getRestriction = (

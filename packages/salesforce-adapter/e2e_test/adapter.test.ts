@@ -3639,8 +3639,10 @@ describe('Salesforce adapter E2E with real account', () => {
           data: { before: oldElement, after: newElement },
         }]
         const modificationResult = await adapter.deploy({
-          groupID: oldElement.elemID.getFullName(),
-          changes,
+          changeGroup: {
+            groupID: oldElement.elemID.getFullName(),
+            changes,
+          },
         })
 
         expect(modificationResult.errors).toHaveLength(0)

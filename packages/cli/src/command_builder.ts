@@ -149,35 +149,34 @@ const validateChoices = <T>(
   }
 }
 
-const validateCommandFlagDefinitions = <T>(
-  { name, keyedOptions, positionalOptions }: CommandOptions<T>
+const validateCommandOptionDefinitions = <T>(
+  name: string, positionalOptions: PositionalOption<T>[], keyedOptions: KeyedOption<T>[],
 ): void => {
-  const allFlags = [...(keyedOptions ?? []), ...(positionalOptions ?? [])]
   const repeatingNames = Object.keys(
     _.pickBy(
-      _.groupBy(allFlags, opt => opt.name),
-      flags => flags.length > 1,
+      _.groupBy([...keyedOptions, ...positionalOptions], option => option.name),
+      options => options.length > 1,
     )
   )
   if (repeatingNames.length > 0) {
     throw new Error(
-      `Command ${name} has multiple definitions of the following flag names ${repeatingNames.join(', ')}`
+      `Command ${name} has multiple definitions of the following option names ${repeatingNames.join(', ')}`
     )
   }
 
   const repeatingAliases = _.pickBy(
     _.groupBy(
-      (keyedOptions ?? []).filter(opt => opt.alias !== undefined),
-      opt => opt.alias,
+      keyedOptions.filter(option => option.alias !== undefined),
+      option => option.alias,
     ),
-    flags => flags.length > 1,
+    options => options.length > 1,
   )
 
   if (!_.isEmpty(repeatingAliases)) {
     const aliasErrors = Object.entries(repeatingAliases)
-      .map(([alias, flags]) => `alias=${alias} flags=${flags.map(flag => flag.name).join(',')}`)
+      .map(([alias, options]) => `alias=${alias} options=${options.map(option => option.name).join(',')}`)
     throw new Error(
-      `Command ${name} has multiple definitions of flags with the same alias:\n${aliasErrors.join('\n')}`
+      `Command ${name} has multiple definitions of options with the same alias:\n${aliasErrors.join('\n')}`
     )
   }
 }
@@ -224,7 +223,7 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
       VERBOSE_OPTION as KeyedOption<T>,
     ],
   }
-  validateCommandFlagDefinitions(properties)
+  validateCommandOptionDefinitions(name, positionalOptions, keyedOptions)
   return {
     properties,
     action: commanderAction,

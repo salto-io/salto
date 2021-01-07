@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import leveldown from 'leveldown'
 import rocksdb from 'rocksdb'
 import { promisify } from 'util'
 import LRU from 'lru-cache'
@@ -203,10 +202,5 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: RemoteMa
       await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
     },
     close: () => promisify(db.close.bind(db))(),
-    destroy: () => {
-      leveldown.destroy(mapOptions.dbLocation, _error => {
-        // no error handling atm
-      })
-    },
   }
 }

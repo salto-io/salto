@@ -25,7 +25,6 @@ export type RemoteMap<T> = {
   set: (key: string, element: T) => Promise<void>
   putAll: (elements: AsyncIterable<T>) => Promise<void>
   list: () => AsyncIterable<string>
-  destroy: () => void
   close: () => Promise<void>
   flush: () => Promise<void>
   revert: () => Promise<void>

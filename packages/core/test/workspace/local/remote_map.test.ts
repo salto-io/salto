@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import leveldown from 'leveldown'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import rocksdb from 'rocksdb'
@@ -166,5 +167,7 @@ describe('full integration', () => {
   })
 })
 afterAll(async () => {
-  remoteMap.destroy()
+  leveldown.destroy(DB_LOCATION, _error => {
+    // nothing to do with error
+  })
 })

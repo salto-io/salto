@@ -98,7 +98,7 @@ export const addElements = async <T extends InstanceElement | ObjectType>(
     groupID: elements[0].elemID.getFullName(),
     changes: elements.map(e => ({ action: 'add', data: { after: e } })),
   }
-  const deployResult = await adapter.deploy(changeGroup)
+  const deployResult = await adapter.deploy({ changeGroup })
   if (deployResult.errors.length > 0) {
     throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
   }
@@ -115,7 +115,7 @@ export const removeElements = async <T extends InstanceElement | ObjectType>(
     groupID: elements[0].elemID.getFullName(),
     changes: elements.map(e => ({ action: 'remove', data: { before: e } })),
   }
-  const deployResult = await adapter.deploy(changeGroup)
+  const deployResult = await adapter.deploy({ changeGroup })
   if (deployResult.errors.length > 0) {
     throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
   }

@@ -312,11 +312,13 @@ describe('Custom Object Instances CRUD', () => {
           }))
         connection.query = mockQuery
         result = await adapter.deploy({
-          groupID: 'add_Test_instances',
-          changes: [
-            { action: 'add', data: { after: existingSettingInstance } },
-            { action: 'add', data: { after: nonExistingSettingInstance } },
-          ],
+          changeGroup: {
+            groupID: 'add_Test_instances',
+            changes: [
+              { action: 'add', data: { after: existingSettingInstance } },
+              { action: 'add', data: { after: nonExistingSettingInstance } },
+            ],
+          },
         })
       })
       it('Should query according to instance values', () => {
@@ -391,11 +393,13 @@ describe('Custom Object Instances CRUD', () => {
               }))
             connection.query = mockQuery
             result = await adapter.deploy({
-              groupID: 'add_Test_instances',
-              changes: [
-                { action: 'add', data: { after: existingInstance } },
-                { action: 'add', data: { after: newInstanceWithRef } },
-              ],
+              changeGroup: {
+                groupID: 'add_Test_instances',
+                changes: [
+                  { action: 'add', data: { after: existingInstance } },
+                  { action: 'add', data: { after: newInstanceWithRef } },
+                ],
+              },
             })
           })
 
@@ -481,11 +485,13 @@ describe('Custom Object Instances CRUD', () => {
               }))
             connection.query = mockQuery
             result = await adapter.deploy({
-              groupID: 'add_Test_instances',
-              changes: [
-                { action: 'add', data: { after: newInstanceWithRef } },
-                { action: 'add', data: { after: anotherNewInstance } },
-              ],
+              changeGroup: {
+                groupID: 'add_Test_instances',
+                changes: [
+                  { action: 'add', data: { after: newInstanceWithRef } },
+                  { action: 'add', data: { after: anotherNewInstance } },
+                ],
+              },
             })
           })
 
@@ -540,11 +546,13 @@ describe('Custom Object Instances CRUD', () => {
               }))
             connection.query = mockQuery
             result = await adapter.deploy({
-              groupID: 'add_Test_instances',
-              changes: [
-                { action: 'add', data: { after: existingInstance } },
-                { action: 'add', data: { after: anotherExistingInstance } },
-              ],
+              changeGroup: {
+                groupID: 'add_Test_instances',
+                changes: [
+                  { action: 'add', data: { after: existingInstance } },
+                  { action: 'add', data: { after: anotherExistingInstance } },
+                ],
+              },
             })
           })
 
@@ -601,13 +609,15 @@ describe('Custom Object Instances CRUD', () => {
           connection.query = mockQuery
           connection.bulk.load = partialBulkLoad
           result = await adapter.deploy({
-            groupID: 'add_Test_instances',
-            changes: [
-              { action: 'add', data: { after: existingInstance } },
-              { action: 'add', data: { after: newInstanceWithRef } },
-              { action: 'add', data: { after: anotherExistingInstance } },
-              { action: 'add', data: { after: anotherNewInstance } },
-            ],
+            changeGroup: {
+              groupID: 'add_Test_instances',
+              changes: [
+                { action: 'add', data: { after: existingInstance } },
+                { action: 'add', data: { after: newInstanceWithRef } },
+                { action: 'add', data: { after: anotherExistingInstance } },
+                { action: 'add', data: { after: anotherNewInstance } },
+              ],
+            },
           })
         })
         it('Should query according to instance values', () => {
@@ -657,7 +667,7 @@ describe('Custom Object Instances CRUD', () => {
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
         beforeEach(async () => {
-          result = await adapter.deploy(modifyDeployGroup)
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
         })
 
         it('should return no errors and 2 fitting applied changes', async () => {
@@ -677,7 +687,7 @@ describe('Custom Object Instances CRUD', () => {
       describe('when loadBulk partially succeeds', () => {
         beforeEach(async () => {
           connection.bulk.load = partialBulkLoad
-          result = await adapter.deploy(modifyDeployGroup)
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
         })
 
         it('should return one error and one applied change', async () => {
@@ -694,7 +704,7 @@ describe('Custom Object Instances CRUD', () => {
       describe('when loadBulk fails for all', () => {
         beforeEach(async () => {
           connection.bulk.load = getBulkLoadMock('fail')
-          result = await adapter.deploy(modifyDeployGroup)
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
         })
 
         it('should return only an error', async () => {
@@ -720,7 +730,7 @@ describe('Custom Object Instances CRUD', () => {
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
         beforeEach(async () => {
-          result = await adapter.deploy(removeChangeGroup)
+          result = await adapter.deploy({ changeGroup: removeChangeGroup })
         })
 
         it('should return no errors and 2 fitting applied changes', () => {
@@ -741,7 +751,7 @@ describe('Custom Object Instances CRUD', () => {
         describe('when loadBulk succeeds for all', () => {
           beforeEach(async () => {
             connection.bulk.load = partialBulkLoad
-            result = await adapter.deploy(removeChangeGroup)
+            result = await adapter.deploy({ changeGroup: removeChangeGroup })
           })
 
           it('should return one error', () => {
@@ -761,7 +771,7 @@ describe('Custom Object Instances CRUD', () => {
         describe('when loadBulk fails for all', () => {
           beforeEach(async () => {
             connection.bulk.load = getBulkLoadMock('fail')
-            result = await adapter.deploy(removeChangeGroup)
+            result = await adapter.deploy({ changeGroup: removeChangeGroup })
           })
 
           it('should return only an error', () => {
@@ -787,33 +797,39 @@ describe('Custom Object Instances CRUD', () => {
         describe('Add group', () => {
           it('should fail', async () => {
             result = await adapter.deploy({
-              groupID: 'badGroup',
-              changes: [
-                { action: 'add', data: { after: existingInstance } },
-                { action: 'add', data: { after: instanceOfAnotherType } },
-              ],
+              changeGroup: {
+                groupID: 'badGroup',
+                changes: [
+                  { action: 'add', data: { after: existingInstance } },
+                  { action: 'add', data: { after: instanceOfAnotherType } },
+                ],
+              },
             })
           })
         })
         describe('Modify group', () => {
           it('should fail', async () => {
             result = await adapter.deploy({
-              groupID: 'badGroup',
-              changes: [
-                { action: 'modify', data: { before: existingInstance, after: existingInstance } },
-                { action: 'modify', data: { before: instanceOfAnotherType, after: instanceOfAnotherType } },
-              ],
+              changeGroup: {
+                groupID: 'badGroup',
+                changes: [
+                  { action: 'modify', data: { before: existingInstance, after: existingInstance } },
+                  { action: 'modify', data: { before: instanceOfAnotherType, after: instanceOfAnotherType } },
+                ],
+              },
             })
           })
         })
         describe('Remove group', () => {
           it('should fail', async () => {
             result = await adapter.deploy({
-              groupID: 'badGroup',
-              changes: [
-                { action: 'remove', data: { before: existingInstance } },
-                { action: 'remove', data: { before: instanceOfAnotherType } },
-              ],
+              changeGroup: {
+                groupID: 'badGroup',
+                changes: [
+                  { action: 'remove', data: { before: existingInstance } },
+                  { action: 'remove', data: { before: instanceOfAnotherType } },
+                ],
+              },
             })
           })
         })
@@ -830,10 +846,12 @@ describe('Custom Object Instances CRUD', () => {
         anotherInstanceToModify.value.Id = 'anotherModifyId'
         it('Should return error', async () => {
           result = await adapter.deploy({
-            groupID: 'invalidModifyGroup',
-            changes: [
-              { action: 'modify', data: { before: instanceToModify, after: anotherInstanceToModify } },
-            ],
+            changeGroup: {
+              groupID: 'invalidModifyGroup',
+              changes: [
+                { action: 'modify', data: { before: instanceToModify, after: anotherInstanceToModify } },
+              ],
+            },
           })
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0]).toEqual(new Error('Failed to update as api name prev=modifyId and new=anotherModifyId are different'))
@@ -843,11 +861,13 @@ describe('Custom Object Instances CRUD', () => {
       describe('When group has more than one action', () => {
         it('Should return with an error', async () => {
           result = await adapter.deploy({
-            groupID: 'multipleActionsGroup',
-            changes: [
-              { action: 'add', data: { after: existingInstance } },
-              { action: 'remove', data: { before: newInstanceWithRef } },
-            ],
+            changeGroup: {
+              groupID: 'multipleActionsGroup',
+              changes: [
+                { action: 'add', data: { after: existingInstance } },
+                { action: 'remove', data: { before: newInstanceWithRef } },
+              ],
+            },
           })
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group must have one action'))
@@ -875,10 +895,12 @@ describe('Custom Object Instances CRUD', () => {
 
     it('Should fail with trying to run an add group', async () => {
       result = await adapter.deploy({
-        groupID: 'add_Test_instances',
-        changes: [
-          { action: 'add', data: { after: existingInstance } },
-        ],
+        changeGroup: {
+          groupID: 'add_Test_instances',
+          changes: [
+            { action: 'add', data: { after: existingInstance } },
+          ],
+        },
       })
       expect(result.errors).toHaveLength(1)
       expect(result.errors[0]).toEqual(new Error('Failed to add instances of type Type due to invalid SaltoIdFields - NonExistingFields'))
@@ -898,10 +920,12 @@ describe('Custom Object Instances CRUD', () => {
     describe('Add deploy group', () => {
       it('should fail', async () => {
         result = await adapter.deploy({
-          groupID: 'add_Test_instances',
-          changes: [
-            { action: 'add', data: { after: existingInstance } },
-          ],
+          changeGroup: {
+            groupID: 'add_Test_instances',
+            changes: [
+              { action: 'add', data: { after: existingInstance } },
+            ],
+          },
         })
       })
     })
@@ -909,10 +933,12 @@ describe('Custom Object Instances CRUD', () => {
     describe('Modify deploy group', () => {
       it('should fail', async () => {
         result = await adapter.deploy({
-          groupID: 'modify_Test_instances',
-          changes: [
-            { action: 'modify', data: { before: existingInstance, after: existingInstance } },
-          ],
+          changeGroup: {
+            groupID: 'modify_Test_instances',
+            changes: [
+              { action: 'modify', data: { before: existingInstance, after: existingInstance } },
+            ],
+          },
         })
       })
     })
@@ -920,10 +946,12 @@ describe('Custom Object Instances CRUD', () => {
     describe('Remove deploy group', () => {
       it('should fail', async () => {
         result = await adapter.deploy({
-          groupID: 'remove_Test_instances',
-          changes: [
-            { action: 'remove', data: { before: existingInstance } },
-          ],
+          changeGroup: {
+            groupID: 'remove_Test_instances',
+            changes: [
+              { action: 'remove', data: { before: existingInstance } },
+            ],
+          },
         })
       })
     })

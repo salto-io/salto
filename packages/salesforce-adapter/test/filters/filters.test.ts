@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, Change } from '@salto-io/adapter-api'
+import { toChange, Change, FetchOptions } from '@salto-io/adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
 import mockAdapter from '../adapter'
@@ -28,6 +28,9 @@ describe('SalesforceAdapter filters', () => {
     let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>>
     let filterCreator: MockFunction<FilterCreator>
     let connection: ReturnType<typeof mockAdapter>['connection']
+    const mockFetchOpts: MockInterface<FetchOptions> = {
+      progressReporter: { reportProgress: jest.fn() },
+    }
 
     beforeEach(() => {
       filter = {
@@ -43,7 +46,7 @@ describe('SalesforceAdapter filters', () => {
     })
 
     it('should call inner aspects upon fetch', async () => {
-      await adapter.fetch()
+      await adapter.fetch(mockFetchOpts)
       expect(filter.onFetch).toHaveBeenCalledTimes(1)
     })
 
@@ -74,8 +77,10 @@ describe('SalesforceAdapter filters', () => {
         })
 
         await adapter.deploy({
-          groupID: instance.elemID.getFullName(),
-          changes: inputChanges,
+          changeGroup: {
+            groupID: instance.elemID.getFullName(),
+            changes: inputChanges,
+          },
         })
       })
 

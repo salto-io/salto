@@ -422,7 +422,7 @@ describe('SalesforceAdapter fetch', () => {
 
       it('should fetch complicated metadata instance', async () => {
         const { elements: result } = await adapter.fetch(mockFetchOpts)
-        const layout = findElements(result, 'Layout', 'Order_Order_Layout@bs').pop() as InstanceElement
+        const layout = findElements(result, 'Layout', 'Order_Order_Layout').pop() as InstanceElement
         expect(layout).toBeDefined()
         expect(layout.type.elemID).toEqual(LAYOUT_TYPE_ID)
         expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)

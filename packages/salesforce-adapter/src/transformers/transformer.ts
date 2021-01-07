@@ -42,6 +42,7 @@ import {
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -1282,11 +1283,14 @@ export const createInstanceElement = (
   }
 
   const typeName = pathNaclCase(type.elemID.name)
-  const { name } = Types.getElemId(
-    fullName,
-    true,
-    createInstanceServiceIds(_.pick(values, INSTANCE_FULL_NAME_FIELD), type)
-  )
+  const name = (metadataType(type) === LAYOUT_TYPE_ID_METADATA_TYPE)
+    ? pathNaclCase(naclCase(fullName)) // prettify Layout names
+    : Types.getElemId(
+      fullName,
+      true,
+      createInstanceServiceIds(_.pick(values, INSTANCE_FULL_NAME_FIELD), type)
+    ).name
+
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : name,
     type,

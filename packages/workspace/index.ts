@@ -70,7 +70,6 @@ export {
   selectElementIdsByTraversal,
   ElementIDToValue,
   InMemoryRemoteElementSource,
-  getElementIdsFromSelectorsRecursively,
   RemoteMap,
   RemoteMapOptions,
 }

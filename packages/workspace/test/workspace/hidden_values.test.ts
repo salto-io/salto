@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, ListType, MapType } from '@salto-io/adapter-api'
 import { State } from '../../src/workspace/state'
 import { MergeResult } from '../../src/merger'
 import { handleHiddenChanges, mergeWithHidden } from '../../src/workspace/hidden_values'
@@ -114,6 +114,12 @@ describe('mergeWithHidden', () => {
           field: {
             type: BuiltinTypes.STRING,
           },
+          list: {
+            type: new ListType(BuiltinTypes.STRING),
+          },
+          map: {
+            type: new MapType(BuiltinTypes.BOOLEAN),
+          },
         },
       })
 
@@ -123,6 +129,14 @@ describe('mergeWithHidden', () => {
           field: {
             type: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
+          },
+          list: {
+            type: new ListType(BuiltinTypes.STRING),
+            annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'anotherUrl' },
+          },
+          map: {
+            type: new MapType(BuiltinTypes.BOOLEAN),
+            annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'oneMoreUrl' },
           },
         },
       })
@@ -136,6 +150,8 @@ describe('mergeWithHidden', () => {
     it('should have the hidden annotation value', () => {
       const object = result.merged.find(isObjectType)
       expect(object?.fields?.field?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('someUrl')
+      expect(object?.fields?.list?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('anotherUrl')
+      expect(object?.fields?.map?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('oneMoreUrl')
     })
   })
 })
@@ -178,20 +194,37 @@ describe('handleHiddenChanges', () => {
       fields: {
         field: {
           type: BuiltinTypes.STRING,
-          annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
+        },
+        list: {
+          type: new ListType(BuiltinTypes.STRING),
+        },
+        map: {
+          type: new MapType(BuiltinTypes.BOOLEAN),
         },
       },
     })
 
-    const change: DetailedChange = {
-      id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
-      action: 'add',
-      data: { after: 'someUrl' },
-    }
+    const changes: DetailedChange[] = [
+      {
+        id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
+        action: 'add',
+        data: { after: 'someUrl' },
+      },
+      {
+        id: object.fields.list.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
+        action: 'add',
+        data: { after: 'anotherUrl' },
+      },
+      {
+        id: object.fields.map.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
+        action: 'add',
+        data: { after: 'oneMoreUrl' },
+      },
+    ]
 
     it('hidden annotation should be omitted', async () => {
       const result = await handleHiddenChanges(
-        [change],
+        changes,
         {
           get: (id: ElemID) => Promise.resolve(id.isEqual(object.elemID)
             ? object

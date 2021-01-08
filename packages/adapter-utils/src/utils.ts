@@ -206,9 +206,18 @@ export const elementAnnotationTypes = (element: Element): TypeMap => {
     return InstanceAnnotationTypes
   }
 
+  const getAnnotationTypes = (type: TypeElement): TypeMap => (
+    isContainerType(type)
+      ? {
+        ...type.annotationTypes,
+        ...type.innerType.annotationTypes,
+      }
+      : type.annotationTypes
+  )
+
   return {
     ...CoreAnnotationTypes,
-    ...(isField(element) ? element.type.annotationTypes : element.annotationTypes),
+    ...(isField(element) ? getAnnotationTypes(element.type) : element.annotationTypes),
   }
 }
 

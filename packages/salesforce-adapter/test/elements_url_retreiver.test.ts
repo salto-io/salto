@@ -39,8 +39,19 @@ describe('lightiningElementsUrlRetreiver', () => {
       }
     )
 
-    it('valid elementUrlRetreiver is returned', () => {
-      expect(elementUrlRetreiver).toBeDefined()
+    describe('lightiningElementsUrlRetreiver creation', () => {
+      it('valid baseUrl with my subdomain', () => {
+        expect(elementUrlRetreiver).toBeDefined()
+      })
+
+      it('valid baseUrl without my subdomain', () => {
+        const urlRetreiver = lightiningElementsUrlRetreiver(
+          new URL('https://salto5-dev-ed.salesforce.com'),
+          () => undefined
+        )
+
+        expect(urlRetreiver).toBeDefined()
+      })
     })
 
     describe('retreiveUrl', () => {

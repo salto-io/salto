@@ -373,7 +373,7 @@ customsegmentInnerTypes.push(customsegment_segmentapplication_transactionbody_ap
 
 const customsegment_segmentapplication_transactionbody_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionbody_applications')
 
-const customsegment_segmentapplication_transactionbody_applications = new ObjectType({
+export const customsegment_segmentapplication_transactionbody_applications = new ObjectType({
   elemID: customsegment_segmentapplication_transactionbody_applicationsElemID,
   annotations: {
   },
@@ -439,7 +439,7 @@ customsegmentInnerTypes.push(customsegment_segmentapplication_transactionline_ap
 
 const customsegment_segmentapplication_transactionline_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionline_applications')
 
-const customsegment_segmentapplication_transactionline_applications = new ObjectType({
+export const customsegment_segmentapplication_transactionline_applications = new ObjectType({
   elemID: customsegment_segmentapplication_transactionline_applicationsElemID,
   annotations: {
   },

@@ -22,12 +22,18 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { dataset_dependencies } from '../types/custom_types/dataset'
 import { savedcsvimport_filemappings } from '../types/custom_types/savedcsvimport'
+import {
+  customsegment_segmentapplication_transactionbody_applications,
+  customsegment_segmentapplication_transactionline_applications,
+} from '../types/custom_types/customsegment'
 
 type FieldFullNameToOrderBy = Map<string, string | undefined>
 
 const unorderedListFields: FieldFullNameToOrderBy = new Map([
   [dataset_dependencies.fields.dependency.elemID.getFullName(), undefined],
   [savedcsvimport_filemappings.fields.filemapping.elemID.getFullName(), 'file'],
+  [customsegment_segmentapplication_transactionbody_applications.fields.application.elemID.getFullName(), 'id'],
+  [customsegment_segmentapplication_transactionline_applications.fields.application.elemID.getFullName(), 'id'],
 ])
 
 const castAndOrderListsRecursively = (

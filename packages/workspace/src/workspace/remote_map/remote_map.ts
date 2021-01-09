@@ -13,7 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-export { default } from './src/adapter'
-export { adapter } from './src/adapter_creator'
-export { GeneratorParams, generateElements, defaultParams } from './src/generator'
+export type RemoteMapOptions = {
+  batchInterval: number
+  LRUSize: number
+  dbLocation: string
+}
+export type RemoteMap<T> = {
+  get: (key: string) => Promise<T | undefined>
+  values: () => AsyncIterable<T>
+  entries: () => AsyncIterable<{ key: string; value: T }>
+  set: (key: string, element: T) => Promise<void>
+  putAll: (elements: AsyncIterable<T>) => Promise<void>
+  list: () => AsyncIterable<string>
+  close: () => Promise<void>
+  flush: () => Promise<void>
+  revert: () => Promise<void>
+}

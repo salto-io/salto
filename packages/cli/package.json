@@ -87,6 +87,7 @@
     "jest-junit": "^12.0.0",
     "memory-streams": "^0.1.3",
     "nexe": "4.0.0-beta.6",
+    "rocksdb": "^4.1.0",
     "sinon": "^9.0.3",
     "source-map-loader": "^0.2.4",
     "supertest": "^5.0.0",

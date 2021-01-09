@@ -81,7 +81,6 @@ const shouldElementBeIncluded = (services: ReadonlyArray<string>) =>
     || element.elemID.adapter === ElemID.VARIABLES_NAMESPACE
   )
 
-
 const filterElementsByServices = (
   elements: Element[] | readonly Element[],
   services: ReadonlyArray<string>

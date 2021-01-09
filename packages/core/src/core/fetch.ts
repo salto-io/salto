@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
-import { getPlan, Plan, AdditionalResolveContext } from './plan'
+import { getPlan, Plan } from './plan'
 import {
   AdapterEvents,
   createAdapterProgressReporter,
@@ -321,38 +321,6 @@ const calcFetchChanges = async (
   workspaceElements: ReadonlyArray<Element>,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
-<<<<<<< HEAD
-  const serviceElementsIds = new Set(wu(serviceElements)
-    .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
-    .map(e => e.elemID.getFullName()))
-
-  const shouldConsiderElementInPlan = (e: Element): boolean =>
-    (!partiallyFetchedAdapters.has(e.elemID.adapter)
-      || serviceElementsIds.has(e.elemID.getFullName()))
-
-  const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
-  const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
-
-  const shouldAddAdditionalContext = !_.isEmpty(partiallyFetchedAdapters)
-
-  const serviceChanges = await log.time(() =>
-    getDetailedChanges(
-      filteredStateElements,
-      mergedServiceElements,
-      shouldAddAdditionalContext ? { before: stateElements, after: stateElements } : undefined
-    ),
-  'finished to calculate service-state changes')
-  const pendingChanges = await log.time(() => getChangeMap(
-    filteredStateElements,
-    filteredWorkspaceElements,
-    shouldAddAdditionalContext ? { before: stateElements, after: workspaceElements } : undefined
-  ), 'finished to calculate pending changes')
-
-  const workspaceToServiceChanges = await log.time(() => getChangeMap(
-    filteredWorkspaceElements,
-    mergedServiceElements,
-    shouldAddAdditionalContext ? { before: workspaceElements, after: stateElements } : undefined
-=======
   const serviceSource = new InMemoryRemoteElementSource(serviceElements)
   const workspaceSource = new InMemoryRemoteElementSource(workspaceElements)
   const stateSource = new InMemoryRemoteElementSource(stateElements)
@@ -376,7 +344,6 @@ const calcFetchChanges = async (
     mergedServiceElements,
     workspaceSource,
     serviceSource,
->>>>>>> 8e535c0a... Replace Element's Types with References (#1733)
   ), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(

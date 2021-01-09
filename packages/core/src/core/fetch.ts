@@ -438,7 +438,7 @@ const calcFetchChanges = async (
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     filteredWorkspaceElements,
     mergedServiceElements,
-    stateSource,
+    workspaceSource,
     serviceSource,
   ), 'finished to calculate service-workspace changes')
 

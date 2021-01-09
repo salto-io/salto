@@ -216,7 +216,12 @@ describe('asynciterable', () => {
 
   describe('async wrapper', () => {
     const baseIt = (): AsyncIterable<number> => toAsyncIterable([1, 2, 3])
-
+    describe('wrap an non-async iterable', () => {
+      it('should work, just like a normal ietrable wrap', async () => {
+        const iter = [1, 2, 3]
+        expect(await toArrayAsync(awu(iter))).toEqual(iter)
+      })
+    })
     describe('maintain original iterable functionality', () => {
       it('should return the same values as the original iterator when no function was invoked', async () => {
         expect(await toArrayAsync(awu(baseIt()))).toEqual([1, 2, 3])

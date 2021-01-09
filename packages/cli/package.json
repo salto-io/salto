@@ -85,6 +85,8 @@
     "nexe": "4.0.0-beta.6",
     "null-loader": "^4.0.1",
     "raw-loader": "^4.0.2",
+    "rocksdb": "^4.1.0",
+    "sinon": "^9.0.3",
     "source-map-loader": "^0.2.4",
     "supertest": "^5.0.0",
     "tmp-promise": "^2.0.2",

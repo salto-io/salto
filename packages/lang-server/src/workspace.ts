@@ -153,10 +153,11 @@ export class EditorWorkspace {
     )).flat()
   }
 
-  private async getElementsByIDs(ids: string[]): Promise<Element[]> {
-    return (await Promise.all(
-      ids.flatMap(name => this.workspace.getValue(ElemID.fromFullName(name)))
-    )).filter(values.isDefined)
+  private async validateElements(ids: Set<string>): Promise<errors.ValidationError[]> {
+    const workspaceElements = await this.workspace.elements()
+    const elementsToValidate = workspaceElements
+      .filter(elem => ids.has(elem.elemID.getFullName()))
+    return validateElements(elementsToValidate, workspaceElements)
   }
 
   private async getValidationErrors(files: string[], changes: Change<Element>[]):
@@ -176,11 +177,7 @@ export class EditorWorkspace {
         changes.map(c => getChangeElement(c).elemID)
       ).map(elemID => elemID.getFullName())
     )
-    const elementsToValidate = await this.getElementsByIDs([...elementNamesToValidate])
-    const validationErrors = validateElements(
-      elementsToValidate, await this.workspace.elements()
-    )
-
+    const validationErrors = await this.validateElements(elementNamesToValidate)
     const removalChangesOfTopLevels = changes
       .filter(isRemovalChange)
       .map(c => getChangeElement(c).elemID)
@@ -305,23 +302,24 @@ export class EditorWorkspace {
       .map(filename => this.editorFilename(filename))
   }
 
-  async validateFiles(filenames: string[]): Promise<errors.Errors> {
+  private async validateFilesImpl(filenames: string[]): Promise<errors.Errors> {
     if (_.isUndefined(this.wsErrors)) {
       return this.errors()
     }
-    const elements = (await this.elementsInFiles(filenames)).map(e => e.getFullName())
-    const currentErrors = await this.errors()
+    const currentErrors = await this.wsErrors
+    const elements = new Set((await this.elementsInFiles(filenames)).map(e => e.getFullName()))
     const validation = currentErrors.validation
-      .filter(e => !elements.includes(e.elemID.createTopLevelParentID().parent.getFullName()))
-      .concat(validateElements(
-        await this.getElementsByIDs(elements),
-        await this.workspace.elements()
-      ))
+      .filter(e => !elements.has(e.elemID.createTopLevelParentID().parent.getFullName()))
+      .concat(await this.validateElements(elements))
     this.wsErrors = Promise.resolve(new errors.Errors({
       ...currentErrors,
       validation,
     }))
     return this.wsErrors
+  }
+
+  async validateFiles(filenames: string[]): Promise<errors.Errors> {
+    return this.runOperationWithWorkspace(() => this.validateFilesImpl(filenames))
   }
 
   async validate(): Promise<errors.Errors> {

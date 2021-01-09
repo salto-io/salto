@@ -1689,6 +1689,11 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
+"@types/abstract-leveldown@*":
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/@types/abstract-leveldown/-/abstract-leveldown-5.0.1.tgz#3c7750d0186b954c7f2d2f6acc8c3c7ba0c3412e"
+  integrity sha512-wYxU3kp5zItbxKmeRYCEplS2MW7DzyBnxPGj+GJVHZEUZiK/nn5Ei1sUFgURDh+X051+zsGe28iud3oHjrYWQQ==
+
 "@types/async-lock@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@types/async-lock/-/async-lock-1.1.2.tgz#cbc26a34b11b83b28f7783a843c393b443ef8bef"
@@ -1930,10 +1935,31 @@
   dependencies:
     jszip "*"
 
+"@types/leveldown@^4.0.2":
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/@types/leveldown/-/leveldown-4.0.2.tgz#edb44a33668ae58656721bb1852345e6a2f2e42a"
+  integrity sha512-VW6QbUnPb5yLbUBcXEh93lFNphyxkBul7Ae41OCgROd76WfLM3qzAbuzErx1LtsTqwcNlbavTr9rWXHCiGVF8A==
+  dependencies:
+    "@types/abstract-leveldown" "*"
+    "@types/node" "*"
+
+"@types/levelup@^4.3.0":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@types/levelup/-/levelup-4.3.0.tgz#4f55585e05a33caa08c1439c344bbba93e947327"
+  integrity sha512-h82BoajhjU/zwLoM4BUBX/SCodCFi1ae/ZlFOYh5Z4GbHeaXj9H709fF1LYl/StrK8KSwnJOeMRPo9lnC6sz4w==
+  dependencies:
+    "@types/abstract-leveldown" "*"
+    "@types/node" "*"
+
 "@types/lodash@^4.14.133":
   version "4.14.152"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.152.tgz#7e7679250adce14e749304cdb570969f77ec997c"
   integrity sha512-Vwf9YF2x1GE3WNeUMjT5bTHa2DqgUo87ocdgTScupY2JclZ5Nn7W2RLM/N0+oreexUk8uaVugR81NnTY/jNNXg==
+
+"@types/lru-cache@^5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@types/lru-cache/-/lru-cache-5.1.0.tgz#57f228f2b80c046b4a1bd5cac031f81f207f4f03"
+  integrity sha512-RaE0B+14ToE4l6UqdarKPnXwVDuigfFv+5j9Dze/Nqr23yyuqdNvzcZi3xB+3Agvi5R4EOgAksfv3lXX4vBt9w==
 
 "@types/mime-types@^2.1.0":
   version "2.1.0"
@@ -2055,6 +2081,14 @@
   integrity sha512-8gBudvllD2A/c0CcEX/BivIDorHFt5UI5m46TsNj8DjWCCTTZT74kEe4g+QsY7P/B9WdO98d82zZgXO/RQzu2Q==
   dependencies:
     "@types/glob" "*"
+    "@types/node" "*"
+
+"@types/rocksdb@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@types/rocksdb/-/rocksdb-3.0.0.tgz#6d2cacb6809a53c7eeb09c078699e3009b2d8fe2"
+  integrity sha512-idP99dvZ0P8Q1cGXkUQhcvJrKdFJIfYQ46plfgoe8RB3/OkE88n8RmgL/LE8+gbe6mTRyvb6MOaeRZu59qL4cQ==
+  dependencies:
+    "@types/abstract-leveldown" "*"
     "@types/node" "*"
 
 "@types/rx-core-binding@*":
@@ -2532,6 +2566,14 @@ abstract-leveldown@^6.1.1, abstract-leveldown@^6.2.1:
     immediate "^3.2.3"
     level-concat-iterator "~2.0.0"
     level-supports "~1.0.0"
+    xtend "~4.0.0"
+
+abstract-leveldown@~6.1.1:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/abstract-leveldown/-/abstract-leveldown-6.1.1.tgz#f44bad5862d71c7b418110d7698ac25bedf24396"
+  integrity sha512-7fK/KySVqzKIomdhkSWzX4YBQhzkzEMbWSiaB6mSN9e+ZdV3KEeKxia/8xQzCkATA5xnnukdP88cFR0D2FsFXw==
+  dependencies:
+    level-concat-iterator "~2.0.0"
     xtend "~4.0.0"
 
 abstract-leveldown@~6.2.1:
@@ -7621,7 +7663,7 @@ level-supports@~1.0.0:
   dependencies:
     xtend "^4.0.2"
 
-leveldown@^5.2.1:
+leveldown@^5.2.1, leveldown@^5.6.0:
   version "5.6.0"
   resolved "https://registry.yarnpkg.com/leveldown/-/leveldown-5.6.0.tgz#16ba937bb2991c6094e13ac5a6898ee66d3eee98"
   integrity sha512-iB8O/7Db9lPaITU1aA2txU/cBEXAt4vWwKQRrrWuS6XDgbP4QZGj9BL2aNbwb002atoQ/lIotJkfyzz+ygQnUQ==
@@ -7630,7 +7672,7 @@ leveldown@^5.2.1:
     napi-macros "~2.0.0"
     node-gyp-build "~4.1.0"
 
-levelup@^4.3.1, levelup@^4.3.2:
+levelup@^4.3.1, levelup@^4.3.2, levelup@^4.4.0:
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/levelup/-/levelup-4.4.0.tgz#f89da3a228c38deb49c48f88a70fb71f01cafed6"
   integrity sha512-94++VFO3qN95cM/d6eBXvd894oJE0w3cInq9USsyQzzoJxmiYzPAocNcuGCPGGjoXqDVJcr3C1jzt1TSjyaiLQ==
@@ -7902,6 +7944,13 @@ lru-cache@^5.1.1:
   integrity sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==
   dependencies:
     yallist "^3.0.2"
+
+lru-cache@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-6.0.0.tgz#6d6fe6570ebd96aaf90fcad1dafa3b2566db3a94"
+  integrity sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==
+  dependencies:
+    yallist "^4.0.0"
 
 ltgt@~2.2.0:
   version "2.2.1"
@@ -10135,6 +10184,15 @@ rimraf@^3.0.0:
   dependencies:
     glob "^7.1.3"
 
+rocksdb@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/rocksdb/-/rocksdb-4.1.0.tgz#79c2cb716ffb9b317bdb48f80d1985410179ecac"
+  integrity sha512-NtjezNMuxk9NsC1kGybZ8Y9eWKqAohug88xbtxCwb5n7MhDDgtKJuL7VYUk8s8Q9U4Mzolt026k3hD8eHtoUvQ==
+  dependencies:
+    abstract-leveldown "~6.1.1"
+    napi-macros "~2.0.0"
+    node-gyp-build "~4.1.0"
+
 rsvp@^4.8.4:
   version "4.8.5"
   resolved "https://registry.yarnpkg.com/rsvp/-/rsvp-4.8.5.tgz#c8f155311d167f68f21e168df71ec5b083113734"
@@ -12211,6 +12269,11 @@ yallist@^3.0.0, yallist@^3.0.2, yallist@^3.0.3:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-3.1.1.tgz#dbb7daf9bfd8bac9ab45ebf602b8cbad0d5d08fd"
   integrity sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==
+
+yallist@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
+  integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
 
 yargs-parser@5.0.0-security.0:
   version "5.0.0-security.0"

@@ -28,7 +28,7 @@ export type ElementsUrlRetreiver = {
 
 export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementIDResolver: ElementIDResolver):
   ElementsUrlRetreiver | undefined => {
-  const suffix = baseUrl.origin.match(/my.salesforce.com$/)
+  const suffix = baseUrl.origin.match(/(my\.)?salesforce\.com$/)
   if (suffix === null) {
     log.error(`Received invalid salesforce url: '${baseUrl.origin}'`)
     return undefined

@@ -16,7 +16,7 @@
 import rocksdb from 'rocksdb'
 import { promisify } from 'util'
 import LRU from 'lru-cache'
-import { RemoteMap, RemoteMapOptions } from '@salto-io/workspace'
+import { remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 
 const { asynciterable } = collections
@@ -25,6 +25,12 @@ const NAMESPACE_SEPARATOR = '::'
 const TEMP_PREFIX = '~TEMP~'
 
 type Entry<T> = { key: string; value: T}
+type RocksDBValue = string | Buffer | undefined
+
+type CreateIteratorOpts = remoteMap.IterationOpts & {
+  keys: boolean
+  values: boolean
+}
 
 const readIteratorNext = (iterator: rocksdb
   .Iterator): Promise<Entry<string> | undefined> =>
@@ -42,9 +48,8 @@ const readIteratorNext = (iterator: rocksdb
     iterator.next(callback)
   })
 
-type RocksDBValue = string | Buffer | undefined
-
-async function *aggregatedIterable(iterators: rocksdb.Iterator[]): AsyncIterable<Entry<string>> {
+export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
+AsyncIterable<Entry<string>> {
   const latestEntries: (Entry<string> | undefined)[] = Array.from({ length: iterators.length })
   await Promise.all(iterators.map(async (iter, i) => {
     latestEntries[i] = await readIteratorNext(iter)
@@ -79,36 +84,60 @@ async function *aggregatedIterable(iterators: rocksdb.Iterator[]): AsyncIterable
 
 const dbConnections: Record<string, rocksdb> = {}
 
-export const createRemoteMap = async <T>(namespace: string, mapOptions: RemoteMapOptions,
+export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMap.RemoteMapOptions,
   serialize: (value: T) => string,
   deserialize: (s: string) => Promise<T>,
-  valueToKey: (value: T) => string): Promise<RemoteMap<T>> => {
+  valueToKey: (value: T) => string): Promise<remoteMap.RemoteMap<T>> => {
   if (!/^[a-z0-9-]+$/i.test(namespace)) {
     throw new Error(`Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`)
   }
   const cache = new LRU<string, T>({ max: mapOptions.LRUSize })
   let db: rocksdb
+
   const keyToDBKey = (key: string): string =>
     namespace.concat(NAMESPACE_SEPARATOR).concat(key)
+
   const keyToTempDBKey = (key: string): string =>
     TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR).concat(key))
+
   // We calculate a different key according to whether we're
   // looking for a temp value or a regular value
   const getAppropriateKey = (key: string, temp = false): string =>
     (temp ? keyToTempDBKey(key) : keyToDBKey(key))
+
   const getPrefixEndCondition = (prefix: string): string => prefix
     .substring(0, prefix.length - 1).concat((String
       .fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1)))
-  const createIterator = (prefix: string): rocksdb.Iterator => db.iterator({
-    keys: true,
-    values: true,
-    gte: prefix,
-    lte: getPrefixEndCondition(prefix),
-  })
-  const createTempIterator = (): rocksdb.Iterator =>
-    createIterator(TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR)))
-  const createPersistentIterator = (): rocksdb.Iterator =>
-    createIterator(namespace.concat(NAMESPACE_SEPARATOR))
+
+  const createIterator = (prefix: string, opts: CreateIteratorOpts):
+  rocksdb.Iterator =>
+    db.iterator({
+      keys: true,
+      values: true,
+      lte: getPrefixEndCondition(prefix),
+      ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
+      ...(opts.first !== undefined ? { limit: opts.first } : {}),
+    })
+
+  const createTempIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
+    const normalizedOpts = {
+      ...opts,
+      ...(opts.after ? { after: keyToTempDBKey(opts.after) } : {}),
+    }
+    return createIterator(
+      TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR)),
+      normalizedOpts
+    )
+  }
+
+  const createPersistentIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
+    const normalizedOpts = {
+      ...opts,
+      ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
+    }
+    return createIterator(namespace.concat(NAMESPACE_SEPARATOR), normalizedOpts)
+  }
+
   const putAllImpl = async (elements: AsyncIterable<T>, temp = true): Promise<void> => {
     let i = 0
     let batch = db.batch()
@@ -126,12 +155,15 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: RemoteMa
     }
   }
 
-  const valuesImpl = (tempOnly = false): AsyncIterable<T> => {
-    const tempIter = createTempIterator()
-    const iter = createPersistentIterator()
+  const valuesImpl = (tempOnly = false, iterationOpts?: remoteMap.IterationOpts):
+  AsyncIterable<T> => {
+    const opts = { ...(iterationOpts ?? {}), keys: false, values: true }
+    const tempIter = createTempIterator(opts)
+    const iter = createPersistentIterator(opts)
     return awu(aggregatedIterable(tempOnly ? [tempIter] : [tempIter, iter]))
       .map(async entry => deserialize(entry.value))
   }
+
   const clearImpl = (prefix: string): Promise<void> => new Promise<void>(resolve => {
     db.clear({
       gte: prefix,
@@ -140,6 +172,7 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: RemoteMa
       resolve()
     })
   })
+
   const createDBIfNotCreated = async (loc: string): Promise<void> => {
     if (!(loc in dbConnections)) {
       db = rocksdb(loc)
@@ -151,6 +184,7 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: RemoteMa
     }
   }
   await createDBIfNotCreated(mapOptions.dbLocation)
+
   return {
     get: async (key: string): Promise<T | undefined> => new Promise(resolve => {
       if (cache.has(key)) {
@@ -176,10 +210,12 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: RemoteMa
         })
       }
     }),
-    values: () => valuesImpl(false),
-    entries: () => {
-      const tempIter = createTempIterator()
-      const iter = createPersistentIterator()
+    values: (iterationOpts?: remoteMap.IterationOpts) =>
+      valuesImpl(false, iterationOpts),
+    entries: (iterationOpts?: remoteMap.IterationOpts) => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+      const tempIter = createTempIterator(opts)
+      const iter = createPersistentIterator(opts)
       return awu(aggregatedIterable([tempIter, iter]))
         .map(async entry => ({ key: entry.key, value: await deserialize(entry.value) }))
     },
@@ -188,9 +224,10 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: RemoteMa
       await promisify(db.put.bind(db))(keyToTempDBKey(key), serialize(element))
     },
     putAll: putAllImpl,
-    list: () => {
-      const tempKeyIter = createTempIterator()
-      const keyIter = createPersistentIterator()
+    list: (iterationOpts?: remoteMap.IterationOpts) => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
+      const tempKeyIter = createTempIterator(opts)
+      const keyIter = createPersistentIterator(opts)
       return awu(aggregatedIterable([tempKeyIter, keyIter]))
         .map(async (entry: Entry<string>) => entry.key)
     },

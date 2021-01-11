@@ -235,6 +235,7 @@ const fetchAndProcessMergeErrors = async (
     serviceElements: Element[]
     processErrorsResult: ProcessMergeErrorsResult
     updatedConfigs: UpdatedConfig[]
+    adapterToParital: Record<string, boolean>
   }> => {
   try {
     const fetchResults = await Promise.all(
@@ -251,6 +252,8 @@ const fetchAndProcessMergeErrors = async (
             updatedConfig: updatedConfig
               ? { config: flattenElementStr(updatedConfig.config), message: updatedConfig.message }
               : undefined,
+            isPartial: fetchResult.isPartial !== undefined ? fetchResult.isPartial : false,
+            adapterName,
           }
         })
     )
@@ -258,6 +261,9 @@ const fetchAndProcessMergeErrors = async (
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
       .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
+
+    const adapterToParital = Object.fromEntries(fetchResults
+      .map(results => [results.adapterName, results.isPartial]))
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
     applyInstancesDefaults(elements.filter(isInstanceElement))
@@ -280,11 +286,36 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrors.length}]`)
-    return { serviceElements: validServiceElements, processErrorsResult, updatedConfigs }
+    return {
+      serviceElements: validServiceElements,
+      processErrorsResult,
+      updatedConfigs,
+      adapterToParital,
+    }
   } catch (error) {
     getChangesEmitter.emit('failed')
     throw error
   }
+}
+
+export const getAdaptersFirstFetchPartial = (
+  elements: Element[],
+  adapterToParital: Record<string, boolean>,
+): string[] => {
+  const fetchedAdapaters = new Set<string>()
+  elements.forEach(e => {
+    fetchedAdapaters.add(e.elemID.adapter)
+  })
+
+  const firstPartialFetchAdapter: string[] = []
+  wu.entries(adapterToParital).forEach(
+    ([adapter, isPartial]) => {
+      if (isPartial && !fetchedAdapaters.has(adapter)) {
+        firstPartialFetchAdapter.push(adapter)
+      }
+    }
+  )
+  return firstPartialFetchAdapter
 }
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
@@ -333,22 +364,27 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
   const {
-    serviceElements, processErrorsResult, updatedConfigs,
+    serviceElements, processErrorsResult, updatedConfigs, adapterToParital,
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
     getChangesEmitter,
     progressEmitter
   )
+
+  const allElements = workspaceElements.concat(stateElements).filter(e => !e.elemID.isConfig())
+  getAdaptersFirstFetchPartial(allElements, adapterToParital).forEach(
+    adapter => log.warn('Received partial results from %s before full fetch. Running partial fetch before at least one full fetch is not recommended', adapter)
+  )
+
   const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
 
-  const isFirstFetch = _.isEmpty(workspaceElements.concat(stateElements)
-    .filter(e => !e.elemID.isConfig()))
-  const changes = isFirstFetch
+  const isFirstFetch = _.isEmpty(allElements)
+  const unfilteredChanges = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
     : await calcFetchChanges(
       serviceElements,
@@ -359,6 +395,10 @@ export const fetchChanges = async (
       _.isEmpty(stateElements) ? workspaceElements : stateElements,
       workspaceElements
     )
+
+  const changes = wu(unfilteredChanges).filter(
+    change => change.change.action !== 'remove' || !adapterToParital[change.change.id.adapter]
+  )
 
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {

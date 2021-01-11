@@ -22,7 +22,7 @@ import {
 import * as utils from '@salto-io/adapter-utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
-  FetchChangesResult, FetchProgressEvents,
+  FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { mockFunction } from '../common/helpers'
@@ -120,6 +120,50 @@ describe('fetch', () => {
           [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
+      })
+    })
+    describe('partial fetch results', () => {
+      it('should ignore deletions when isPartial is true', async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          { elements: [newTypeBaseModified], isPartial: true },
+        )
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          [newTypeBaseModified, typeWithField],
+          [],
+          [],
+        )
+        expect(Array.from(fetchChangesResult.changes).length).toBe(0)
+      })
+      it('should not ignore deletions when isPartial is false', async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          { elements: [newTypeBaseModified], isPartial: false },
+        )
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          [newTypeBaseModified, typeWithField],
+          [],
+          [],
+        )
+        const resultChanges = Array.from(fetchChangesResult.changes)
+        expect(resultChanges.length).toBe(1)
+        expect(resultChanges[0].change.action).toBe('remove')
+      })
+      describe('getAdaptersFirstFetchPartial', () => {
+        const elements = [
+          new ObjectType({ elemID: new ElemID('adapter1', 'type') }),
+        ]
+        const adapterToPartial = {
+          adapter1: true,
+          adapter2: false,
+          adapter3: true,
+        }
+
+        const resultAdapters = getAdaptersFirstFetchPartial(elements, adapterToPartial)
+
+        it('results should only include adapter which is first fetch is partial', () => {
+          expect(resultAdapters).toEqual(['adapter3'])
+        })
       })
     })
     describe('config changes', () => {

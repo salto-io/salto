@@ -14,18 +14,21 @@
 * limitations under the License.
 */
 import sourceMapSupport from 'source-map-support'
+import os from 'os'
 import { configFromDisk, telemetrySender } from '@salto-io/core'
+import { logger } from '@salto-io/logging'
 import { versionString, versionDetails } from './version'
 import cli from './cli'
 import { CliExitCode } from './types'
 import commandDefs from './commands'
 import oraSpinner from './ora_spinner'
 
+const EVENTS_FLUSH_WAIT_TIME = 1000
+
 sourceMapSupport.install()
 
-const {
-  stdin, stdout, stderr, argv,
-} = process
+const { stdout, stderr, argv } = process
+const log = logger(module)
 
 const args = argv.slice(2)
 
@@ -41,13 +44,29 @@ const main = async (): Promise<CliExitCode> => {
       versionString,
     }
   )
-  return cli({
-    input: { args, stdin, telemetry, config: config.command },
-    output: { stdout, stderr },
-    commandDefs,
-    spinnerCreator: oraSpinnerCreator,
-    config,
-  })
+  const [nodeExecLoc, saltoExecLoc, ...cmdLineArgs] = process.argv
+  const cmdStr = ['salto', ...cmdLineArgs].join(' ')
+  log.info(
+    'CLI started. Version: %s, Node exec location: %s, Salto exec location: %s, Current dir: %s',
+    versionString, nodeExecLoc, saltoExecLoc, process.cwd(),
+  )
+  log.debug('OS properties - platform: %s, release: %s, arch %s', os.platform(), os.release(), os.arch())
+  log.debug('Installation ID: %s', config.installationID)
+  log.info('running "%s"', cmdStr)
+  try {
+    return cli({
+      input: { args, telemetry, config: config.command },
+      output: { stdout, stderr },
+      commandDefs,
+      spinnerCreator: oraSpinnerCreator,
+      workspacePath: '.',
+    })
+  } finally {
+    await Promise.all([
+      telemetry.stop(EVENTS_FLUSH_WAIT_TIME),
+      logger.end(),
+    ])
+  }
 }
 
 main().then(exitCode => process.exit(exitCode))

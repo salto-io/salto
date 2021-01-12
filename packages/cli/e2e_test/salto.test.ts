@@ -36,12 +36,12 @@ import * as DeployCommandImpl from '../src/commands/deploy'
 import {
   editNaclFile, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
   verifyObject, runEmptyPreview, runSalesforceLogin,
-  runPreview,
   cleanup as workspaceHelpersCleanup,
   runCreateEnv,
   runDeleteEnv,
   runSetEnv,
-  runClean,
+  runCommand,
+  runPreviewGetPlan,
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
@@ -192,7 +192,7 @@ describe('cli e2e', () => {
         .toBe(true)
     })
     afterAll(async () => {
-      await runEmptyPreview(lastPlan, fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir)
     })
   })
 
@@ -206,7 +206,7 @@ describe('cli e2e', () => {
         [new RegExp(NEW_INSTANCE_BASE_ELEM_NAME, 'g'), newInstanceElemName],
         [new RegExp(NEW_INSTANCE2_BASE_ELEM_NAME, 'g'), newInstance2ElemName],
       ])
-      await runDeploy({ lastPlan, fetchOutputDir })
+      await runDeploy({ lastPlan, workspacePath: fetchOutputDir })
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should have "add" changes', async () => {
@@ -238,7 +238,7 @@ describe('cli e2e', () => {
         { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {
-      await runEmptyPreview(lastPlan, fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir)
     })
   })
 
@@ -249,7 +249,7 @@ describe('cli e2e', () => {
         ['Beta__c', 'Modified__c'],
         ['To Be Modified', 'I Am Modified'],
       ])
-      await runDeploy({ lastPlan, fetchOutputDir })
+      await runDeploy({ lastPlan, workspacePath: fetchOutputDir })
     })
     it('should have "modify" changes', async () => {
       verifyChanges(lastPlan, [
@@ -269,7 +269,7 @@ describe('cli e2e', () => {
         { description: 'I Am Modified' })).toBe(true)
     })
     afterAll(async () => {
-      await runEmptyPreview(lastPlan, fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir)
     })
   })
 
@@ -317,7 +317,7 @@ describe('cli e2e', () => {
         { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {
-      await runEmptyPreview(lastPlan, fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir)
     })
   })
 
@@ -327,10 +327,9 @@ describe('cli e2e', () => {
       await rm(fullPath(newObjectAnnotationsRelativePath))
       await rm(fullPath(newObjectStandardFieldRelativePath))
       await rm(fullPath(newObjectCustomFieldRelativePath))
-      // We have to run preview first, otherwise the last plan won't be updated
-      lastPlan.clear()
-      await runPreview(fetchOutputDir)
-      await runDeploy({ fetchOutputDir })
+      // We have to run preview before the deploy to get the plan
+      lastPlan = await runPreviewGetPlan(fetchOutputDir)
+      await runDeploy({ workspacePath: fetchOutputDir })
     })
     it('should have "remove" changes', async () => {
       verifyChanges(lastPlan, [
@@ -346,7 +345,7 @@ describe('cli e2e', () => {
       expect(await instanceExists(client, ROLE, newInstanceFullName)).toBe(false)
     })
     afterAll(async () => {
-      await runEmptyPreview(lastPlan, fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir)
     })
   })
 
@@ -396,13 +395,9 @@ describe('cli e2e', () => {
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
       expect(`${fetchOutputDir}/salesforce`).not.toExist() // not checking common folder for now
       expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
-      await runClean(fetchOutputDir, {
-        nacl: true,
-        cache: false,
-        state: false,
-        staticResources: false,
-        serviceConfig: false,
-        credentials: false,
+      await runCommand({
+        args: ['clean', '-f', '--no-state', '--no-cache', '--no-static-resources'],
+        workspacePath: fetchOutputDir,
       })
       expect(`${fetchOutputDir}/envs/default/salesforce`).not.toExist()
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
@@ -412,13 +407,9 @@ describe('cli e2e', () => {
     it('should clear out only the requested parts - state + static resources', async () => {
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
       expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
-      await runClean(fetchOutputDir, {
-        nacl: true,
-        cache: true,
-        state: true,
-        staticResources: true,
-        serviceConfig: false,
-        credentials: false,
+      await runCommand({
+        args: ['clean', '-f'],
+        workspacePath: fetchOutputDir,
       })
       expect(`${fetchOutputDir}/envs`).not.toExist()
       expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).not.toExist()
@@ -426,13 +417,9 @@ describe('cli e2e', () => {
 
     it('should clear out only the requested parts - service config', async () => {
       const salesforceConfBefore = await readFile(salesforceConfPath)
-      await runClean(fetchOutputDir, {
-        nacl: false,
-        cache: false,
-        state: false,
-        staticResources: false,
-        serviceConfig: true,
-        credentials: false,
+      await runCommand({
+        args: ['clean', '-f', '--no-nacl', '--no-state', '--no-cache', '--no-static-resources', '--service-config'],
+        workspacePath: fetchOutputDir,
       })
       expect(await readFile(salesforceConfPath)).not.toEqual(salesforceConfBefore)
     })

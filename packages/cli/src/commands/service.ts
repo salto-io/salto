@@ -14,20 +14,17 @@
 * limitations under the License.
 */
 import { AdapterAuthMethod, AdapterAuthentication, InstanceElement, ObjectType, OAuthMethod, ElemID } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { EOL } from 'os'
-import { logger } from '@salto-io/logging'
-import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, loadLocalWorkspace, getAdaptersCredentialsTypes, installAdapter } from '@salto-io/core'
+import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, getAdaptersCredentialsTypes, installAdapter } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getCredentialsFromUser } from '../callbacks'
-import { CliOutput, CliExitCode } from '../types'
-import { createCommandGroupDef, createPublicCommandDef, CommandDefAction, KeyedOption } from '../command_builder'
+import { CliOutput, CliExitCode, KeyedOption } from '../types'
+import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatConfiguredServices, formatServiceNotConfigured, formatLoginOverride } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
-import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
+import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 
-const log = logger(module)
 
 type AuthTypeArgs = {
   authType: AdapterAuthMethod
@@ -91,29 +88,20 @@ const getLoginInputFlow = async (
   outputLine(formatLoginUpdated, output)
 }
 
-const loadWorkspace = async (workspaceDir: string, inputEnvironment?: string):
-Promise<Workspace> => {
-  const workspace = await loadLocalWorkspace(workspaceDir)
-  if (!_.isUndefined(inputEnvironment)) {
-    await workspace.setCurrentEnv(inputEnvironment, false)
-  }
-  return workspace
-}
-
 // Add
 type ServiceAddArgs = {
     login: boolean
     serviceName: string
 } & AuthTypeArgs & EnvArg
 
-export const addAction: CommandDefAction<ServiceAddArgs> = async ({
+export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
   input,
   output,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running service add command on \'%s\' %o', workspacePath, input)
-  const { login, serviceName, authType, env } = input
-  const workspace = await loadWorkspace(workspacePath, env)
+  const { login, serviceName, authType } = input
+  await validateAndSetEnv(workspace, input, output)
+
   if (workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceAlreadyAdded(serviceName), output)
     return CliExitCode.UserInputError
@@ -135,7 +123,7 @@ export const addAction: CommandDefAction<ServiceAddArgs> = async ({
   return CliExitCode.Success
 }
 
-const serviceAddDef = createPublicCommandDef({
+const serviceAddDef = createWorkspaceCommand({
   properties: {
     name: 'add',
     description: 'Add a new service to the environment',
@@ -167,17 +155,15 @@ const serviceAddDef = createPublicCommandDef({
 // List
 type ServiceListArgs = {} & EnvArg
 
-export const listAction: CommandDefAction<ServiceListArgs> = async (
-  { input, output, workspacePath = '.' },
+export const listAction: WorkspaceCommandAction<ServiceListArgs> = async (
+  { input, output, workspace },
 ): Promise<CliExitCode> => {
-  log.debug('running service list command on \'%s\' %o', workspacePath, input)
-  const { env } = input
-  const workspace = await loadWorkspace(workspacePath, env)
+  await validateAndSetEnv(workspace, input, output)
   outputLine(formatConfiguredServices(workspace.services()), output)
   return CliExitCode.Success
 }
 
-const serviceListDef = createPublicCommandDef({
+const serviceListDef = createWorkspaceCommand({
   properties: {
     name: 'list',
     description: 'List all environment services',
@@ -193,14 +179,14 @@ type ServiceLoginArgs = {
     serviceName: string
 } & AuthTypeArgs & EnvArg
 
-export const loginAction: CommandDefAction<ServiceLoginArgs> = async ({
+export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   input,
   output,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running service login command on \'%s\' %o', workspacePath, input)
-  const { serviceName, authType, env } = input
-  const workspace = await loadWorkspace(workspacePath, env)
+  const { serviceName, authType } = input
+  await validateAndSetEnv(workspace, input, output)
+
   if (!workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceNotConfigured(serviceName), output)
     return CliExitCode.AppError
@@ -221,7 +207,7 @@ export const loginAction: CommandDefAction<ServiceLoginArgs> = async ({
   return CliExitCode.Success
 }
 
-const serviceLoginDef = createPublicCommandDef({
+const serviceLoginDef = createWorkspaceCommand({
   properties: {
     name: 'login',
     description: 'Set the environment service credentials',

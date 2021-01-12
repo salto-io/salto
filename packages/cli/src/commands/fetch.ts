@@ -22,15 +22,14 @@ import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
-import { createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
-import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges } from '../formatter'
+import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
-import { loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace } from '../workspace/workspace'
+import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { ENVIRONMENT_OPTION, EnvArg } from './common/env'
+import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 import { SERVICES_OPTION, ServicesArg, getAndValidateActiveServices } from './common/services'
-import { ConfigOverrideArg, getConfigOverrideChanges, CONFIG_OVERRIDE_OPTION } from './common/config_override'
 
 const log = logger(module)
 const { series } = promises.array
@@ -70,7 +69,6 @@ export const fetchCommand = async (
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-  cliTelemetry.start(workspaceTags)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('adaptersDidInitialize', () => {
     bindedOutputline(formatFetchHeader())
@@ -128,7 +126,6 @@ export const fetchCommand = async (
   )
   if (fetchResult.success === false) {
     errorOutputLine(formatFatalFetchError(fetchResult.mergeErrors), output)
-    cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
 
@@ -189,10 +186,8 @@ export const fetchCommand = async (
     })
   if (updatingWsSucceeded) {
     bindedOutputline(formatFetchFinish())
-    cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   }
-  cliTelemetry.failure(workspaceTags)
   return CliExitCode.AppError
 }
 
@@ -218,35 +213,32 @@ type FetchArgs = {
   interactive: boolean
   stateOnly: boolean
   mode: nacl.RoutingMode
-} & ServicesArg & EnvArg & ConfigOverrideArg
+} & ServicesArg & EnvArg
 
-export const action: CommandDefAction<FetchArgs> = async ({
+export const action: WorkspaceCommandAction<FetchArgs> = async ({
   input,
   cliTelemetry,
   config,
   output,
   spinnerCreator,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running fetch command on \'%s\' %o', workspacePath, input)
-  const { force, interactive, stateOnly, services, env, mode } = input
+  const { force, interactive, stateOnly, services, mode } = input
   const { shouldCalcTotalSize } = config
-  const { workspace, errored, stateRecencies } = await loadWorkspace(
-    workspacePath,
-    output,
-    {
-      force,
-      printStateRecency: true,
-      spinnerCreator,
-      sessionEnv: env,
-      configOverrides: getConfigOverrideChanges(input),
-    }
+  await validateAndSetEnv(workspace, input, output)
+  const activeServices = getAndValidateActiveServices(workspace, services)
+  const stateRecencies = await Promise.all(
+    activeServices.map(service => workspace.getStateRecency(service))
   )
-  if (errored) {
-    cliTelemetry.failure()
+  // Print state recencies
+  outputLine(formatStateRecencies(stateRecencies), output)
+
+  const validWorkspace = await isValidWorkspaceForCommand(
+    { workspace, cliOutput: output, spinnerCreator, force }
+  )
+  if (!validWorkspace) {
     return CliExitCode.AppError
   }
-  const activeServices = getAndValidateActiveServices(workspace, services)
 
   let useAlignMode = false
   if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, activeServices)) {
@@ -278,7 +270,7 @@ export const action: CommandDefAction<FetchArgs> = async ({
   })
 }
 
-const fetchDef = createPublicCommandDef({
+const fetchDef = createWorkspaceCommand({
   properties: {
     name: 'fetch',
     description: 'Update the workspace configuration elements from the upstream services',
@@ -306,7 +298,6 @@ const fetchDef = createPublicCommandDef({
       },
       SERVICES_OPTION,
       ENVIRONMENT_OPTION,
-      CONFIG_OVERRIDE_OPTION,
       {
         name: 'mode',
         alias: 'm',

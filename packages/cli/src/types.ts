@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { streams } from '@salto-io/lowerdash'
+import { streams, types } from '@salto-io/lowerdash'
 import { Telemetry, Tags, CommandConfig } from '@salto-io/core'
 
 export type WriteStream = streams.MaybeTty & {
@@ -46,7 +46,8 @@ export type CliArgs = {
   telemetry: Telemetry
   config: CommandConfig
   output: CliOutput
-  spinnerCreator?: SpinnerCreator
+  workspacePath: string
+  spinnerCreator: SpinnerCreator
 }
 
 export interface Spinner {
@@ -73,7 +74,7 @@ export interface CliOutput {
 
 export interface CliInput {
   args: string[]
-  stdin: ReadStream
+  // stdin: ReadStream
   telemetry: Telemetry
   config: CommandConfig
 
@@ -108,3 +109,38 @@ export type CliTelemetry = {
   workspaceSize(n: number, tags?: Tags): void
   stacktrace(err: Error, tags?: Tags): void
 }
+
+type OptionType = {
+  boolean: boolean
+  string: string
+  stringsList: string[]
+}
+
+type GetTypeEnumValue<T> = types.KeysOfExtendingType<OptionType, T>
+
+// TODO: Remove this when default string[] is allowed in Commander
+type GetOptionsDefaultType<T> = T extends string[] ? never : T
+
+type PossiblePositionalArgs<T> = types.KeysOfExtendingType<T, string | string[] | undefined>
+
+type ChoicesType<T> = T extends string ? string[] : never
+
+export type PositionalOption<T, Name = PossiblePositionalArgs<T>>
+  = Name extends PossiblePositionalArgs<T> ? {
+  name: Name & string
+  required: boolean
+  description?: string
+  type: Exclude<GetTypeEnumValue<T[Name]>, 'boolean'>
+  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
+  choices?: ChoicesType<T[Name]>
+} : never
+
+export type KeyedOption<T, Name extends keyof T = keyof T> = Name extends keyof T ? {
+  name: Name & string
+  required?: boolean
+  description?: string
+  alias?: string
+  type: GetTypeEnumValue<T[Name]>
+  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
+  choices?: ChoicesType<T[Name]>
+} : never

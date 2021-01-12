@@ -26,24 +26,23 @@ import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 const log = logger(module)
 
 type InitArgs = {
-    workspaceName?: string
-  }
-class WorkspaceAlreadyExistsError extends Error {
-  constructor(workspacePath: string) {
-    super(`existing salto workspace in ${workspacePath}`)
-  }
+  workspaceName?: string
 }
 
 export const action: CommandDefAction<InitArgs> = async (
-  { input: { workspaceName }, cliTelemetry, output },
+  { input: { workspaceName }, cliTelemetry, output, workspacePath },
 ): Promise<CliExitCode> => {
   log.debug('running env init command on \'%s\'', workspaceName)
   cliTelemetry.start()
   try {
-    const baseDir = path.resolve('.')
-    const workspacePath = await locateWorkspaceRoot(baseDir)
-    if (workspacePath) {
-      throw new WorkspaceAlreadyExistsError(workspacePath)
+    const baseDir = path.resolve(workspacePath)
+    const existingWorkspacePath = await locateWorkspaceRoot(baseDir)
+    if (existingWorkspacePath !== undefined) {
+      errorOutputLine(
+        Prompts.initFailed(`existing salto workspace in ${existingWorkspacePath}`),
+        output,
+      )
+      return CliExitCode.AppError
     }
     const defaultEnvName = await getEnvName()
     const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)

@@ -15,15 +15,13 @@
 */
 import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
 import {
-  LoginStatus, updateCredentials, loadLocalWorkspace, addAdapter, installAdapter,
+  LoginStatus, updateCredentials, addAdapter, installAdapter,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { getCliTelemetry } from '../../src/telemetry'
 import { loginAction, addAction, listAction } from '../../src/commands/service'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
-import { CliTelemetry } from '../../src/types'
 
 jest.mock('../../src/cli_oauth_authenticator', () => ({
   processOauthCredentials: jest.fn().mockResolvedValue({
@@ -80,15 +78,13 @@ jest.mock('@salto-io/core', () => ({
     })
     return loginStatuses
   }),
-  loadLocalWorkspace: jest.fn(),
   installAdapter: jest.fn(),
 }))
 
 describe('service command group', () => {
-  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  const config = { shouldCalcTotalSize: true }
-  let telemetry: mocks.MockTelemetry
-  let cliTelemetry: CliTelemetry
+  let cliArgs: mocks.MockCliArgs
+  let output: mocks.MockCliOutput
+  let workspace: mocks.MockWorkspace
   const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
     username: 'test@test',
     password: 'test',
@@ -99,47 +95,26 @@ describe('service command group', () => {
     port: 8888,
     consumerKey: 'test',
   })
-  const currentEnv = 'env'
-  const mockLoadWorkspace = loadLocalWorkspace as jest.Mock
-  mockLoadWorkspace.mockImplementation(() => {
-    let services = ['salesforce', 'oauthAdapter']
-    let env = currentEnv
-    return {
-      services: () => services,
-      hasErrors: () => false,
-      setCurrentEnv: (newEnv: string) => {
-        env = newEnv
-        services = ['netsuite']
-      },
-      currentEnv: () => env,
-    }
-  })
 
   beforeEach(() => {
-    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    telemetry = mocks.getMockTelemetry()
-    cliTelemetry = getCliTelemetry(telemetry, 'service')
+    cliArgs = mocks.mockCliArgs()
+    output = cliArgs.output
+    workspace = mocks.mockWorkspace({ services: ['salesforce', 'hubspot', 'oauthAdapter'] })
   })
 
   describe('list command', () => {
-    beforeEach(async () => {
-      mockLoadWorkspace.mockClear()
+    let cliCommandArgs: mocks.MockCommandArgs
+    beforeEach(() => {
+      cliCommandArgs = mocks.mockCliCommandArgs('list', cliArgs)
     })
     describe('when the workspace loads successfully', () => {
-      describe('When Enviorment option not used', () => {
+      describe('When Environment option not used', () => {
         beforeEach(async () => {
-          await listAction(
-            {
-              input: {},
-              output,
-              config,
-              cliTelemetry,
-            }
-          )
-        })
-
-        it('should load the workspace', () => {
-          expect(mockLoadWorkspace).toHaveBeenCalled()
+          await listAction({
+            ...cliCommandArgs,
+            input: {},
+            workspace,
+          })
         })
 
         it('should print configured services', () => {
@@ -148,31 +123,30 @@ describe('service command group', () => {
         })
 
         it('should use current env', () => {
-          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(output.stdout.content).toContain('salesforce')
+          expect(workspace.setCurrentEnv).not.toHaveBeenCalled()
         })
       })
 
-      describe('When Enviorment option used', () => {
+      describe('When Environment option used', () => {
         it('should use provided env', async () => {
-          const injectedEnv = 'injected'
-          await listAction(
-            {
-              input: {
-                env: injectedEnv,
-              },
-              output,
-              config,
-              cliTelemetry,
-            }
-          )
-          expect(output.stdout.content).toContain('netsuite')
+          await listAction({
+            ...cliCommandArgs,
+            input: {
+              env: mocks.withEnvironmentParam,
+            },
+            workspace,
+          })
+          expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
         })
       })
     })
   })
 
   describe('add command', () => {
+    let cliCommandArgs: mocks.MockCommandArgs
+    beforeEach(() => {
+      cliCommandArgs = mocks.mockCliCommandArgs('add', cliArgs)
+    })
     beforeAll((() => {
       jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
         Promise.resolve(mockGetCredentialsFromUser(obj)))
@@ -181,96 +155,77 @@ describe('service command group', () => {
       describe('when called with already configured service', () => {
         beforeEach(async () => {
           await addAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'salesforce',
               authType: 'basic',
               login: true,
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
         })
 
-        it('should print already added', async () => {
+        it('should print already added', () => {
           expect(output.stderr.content).toContain('salesforce was already added to this environment')
         })
       })
 
       describe('when called with a new service', () => {
-        const installAdapterMock = installAdapter as jest.Mock
-        beforeEach(async () => {
-          await addAction({
-            input: {
-              serviceName: 'newAdapter',
-              authType: 'basic',
-              login: true,
-            },
-            output,
-            config,
-            cliTelemetry,
-          })
-        })
-
-        it('should print please enter credentials', async () => {
-          expect(output.stdout.content).toContain('Please enter your Newadapter credentials:')
-        })
-
-        it('should invoke the adapter install method', async () => {
-          expect(installAdapterMock).toHaveBeenCalled()
-        })
-
-        it('should throw an error if the adapter failed to install', async () => {
-          (installAdapterMock).mockImplementationOnce(() => {
-            throw new Error('Failed to install Adapter!')
-          })
-          await expect(
-            addAction({
-              input: {
-                serviceName: 'newAdapter',
-                authType: 'basic',
-                login: true,
-              },
-              output,
-              config,
-              cliTelemetry,
-            })
-          ).rejects.toThrow()
-        })
-
         describe('when called with valid credentials', () => {
           beforeEach(async () => {
             await addAction({
+              ...cliCommandArgs,
               input: {
                 serviceName: 'newAdapter',
                 authType: 'basic',
                 login: true,
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })
           })
-          it('should print login information updated', async () => {
+          it('should print login information updated', () => {
             expect(output.stdout.content).toContain('Login information successfully updated!')
           })
 
-          it('should print added', async () => {
+          it('should print added', () => {
             expect(output.stdout.content).toContain('added to the environment')
           })
+
+          it('should print please enter credentials', () => {
+            expect(output.stdout.content).toContain('Please enter your Newadapter credentials:')
+          })
+
+          it('should invoke the adapter install method', () => {
+            expect(installAdapter).toHaveBeenCalled()
+          })
+        })
+
+        it('should throw an error if the adapter failed to install', async () => {
+          const installAdapterMock = installAdapter as jest.Mock
+          installAdapterMock.mockRejectedValueOnce(new Error('Failed to install Adapter!'))
+          await expect(
+            addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceName: 'newAdapter',
+                authType: 'basic',
+                login: true,
+              },
+              workspace,
+            })
+          ).rejects.toThrow()
         })
 
         describe('when add called with unsupported auth type', () => {
           beforeEach(async () => {
             await addAction({
+              ...cliCommandArgs,
               input: {
                 serviceName: 'newAdapter',
                 authType: 'oauth',
                 login: true,
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })
           })
 
@@ -281,105 +236,90 @@ describe('service command group', () => {
 
         describe('when called with invalid credentials', () => {
           beforeEach(async () => {
-            output = {
-              stdout: new mocks.MockWriteStream(),
-              stderr: new mocks.MockWriteStream(),
-            };
-            (updateCredentials as jest.Mock).mockRejectedValue('Rejected!')
+            (updateCredentials as jest.Mock).mockRejectedValue(new Error('Rejected!'))
             await addAction({
+              ...cliCommandArgs,
               input: {
                 serviceName: 'newAdapter',
                 authType: 'basic',
                 login: true,
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })
           })
           afterEach(() => {
             (updateCredentials as jest.Mock).mockResolvedValue(true)
           })
 
-          it('should print login error', async () => {
+          it('should print login error', () => {
             expect(output.stderr.content).toContain('Could not login to newAdapter')
           })
 
-          it('should print try again text', async () => {
+          it('should print try again text', () => {
             expect(output.stderr.content).toContain('To try again run: `salto service add newAdapter`')
           })
 
-          it('should not print login information updated', async () => {
+          it('should not print login information updated', () => {
             expect(output.stdout.content).not.toContain('Login information successfully updated!')
           })
 
-          it('should not print added', async () => {
+          it('should not print added', () => {
             expect(output.stdout.content).not.toContain('added to the environment')
           })
         })
 
         describe('no-login flag', () => {
           beforeEach(async () => {
-            output = {
-              stdout: new mocks.MockWriteStream(),
-              stderr: new mocks.MockWriteStream(),
-            }
             await addAction({
+              ...cliCommandArgs,
               input: {
                 serviceName: 'newAdapter',
                 authType: 'basic',
                 login: false,
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })
           })
-          it('should add without login', async () => {
+          it('should add without login', () => {
             expect(output.stdout.content).toContain('added to the environment')
             expect(output.stdout.content).not.toContain(
               'Please enter your Newadapter credentials:'
             )
           })
-          it('should invoke the adapter install method', async () => {
-            expect(installAdapterMock).toHaveBeenCalled()
+          it('should invoke the adapter install method', () => {
+            expect(installAdapter).toHaveBeenCalled()
           })
         })
 
         describe('Environment flag', () => {
           const mockAddAdapter = addAdapter as jest.Mock
           beforeEach(async () => {
-            mockLoadWorkspace.mockClear()
             mockAddAdapter.mockClear()
           })
           it('should use current env when env is not provided', async () => {
             await addAction({
+              ...cliCommandArgs,
               input: {
                 login: true,
                 serviceName: 'hubspot',
                 authType: 'basic',
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })
-            expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-            expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual(currentEnv)
+            expect(workspace.setCurrentEnv).not.toHaveBeenCalled()
           })
           it('should use provided env', async () => {
             await addAction({
+              ...cliCommandArgs,
               input: {
                 login: true,
                 serviceName: 'hubspot',
                 authType: 'basic',
-                env: 'injected',
+                env: mocks.withEnvironmentParam,
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })
-            expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-            expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual('injected')
+            expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
           })
         })
       })
@@ -388,28 +328,26 @@ describe('service command group', () => {
         describe('with login', () => {
           it('should throw an error', async () => {
             await expect(addAction({
+              ...cliCommandArgs,
               input: {
                 login: true,
                 serviceName: 'noAdapter',
                 authType: 'basic',
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })).rejects.toThrow()
           })
         })
         describe('without login', () => {
           it('should throw an error', async () => {
             await expect(addAction({
+              ...cliCommandArgs,
               input: {
                 serviceName: 'noAdapter',
                 authType: 'basic',
                 login: false,
               },
-              output,
-              config,
-              cliTelemetry,
+              workspace,
             })).rejects.toThrow()
           })
         })
@@ -418,6 +356,10 @@ describe('service command group', () => {
   })
 
   describe('login command', () => {
+    let cliCommandArgs: mocks.MockCommandArgs
+    beforeEach(() => {
+      cliCommandArgs = mocks.mockCliCommandArgs('login', cliArgs)
+    })
     beforeAll((() => {
       jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
         Promise.resolve(mockGetCredentialsFromUser(obj)))
@@ -426,13 +368,12 @@ describe('service command group', () => {
       describe('when called with already logged in service', () => {
         beforeEach(async () => {
           await loginAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'salesforce',
               authType: 'basic',
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
         })
         it('should print login override', () => {
@@ -455,13 +396,12 @@ describe('service command group', () => {
       describe('when called with not configured service', () => {
         beforeEach(async () => {
           await loginAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'notConfigured',
               authType: 'basic',
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
         })
 
@@ -475,13 +415,12 @@ describe('service command group', () => {
           jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
             Promise.resolve(mockGetOAuthCredentialsFromUser(obj)))
           await loginAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'salesforce',
               authType: 'oauth',
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
         })
 
@@ -495,13 +434,12 @@ describe('service command group', () => {
           jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
             Promise.resolve(mockGetOAuthCredentialsFromUser(obj)))
           await loginAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'oauthAdapter',
               authType: 'oauth',
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
         })
         it('should process oauth credentials', () => {
@@ -511,72 +449,60 @@ describe('service command group', () => {
           expect(mockGetOAuthCredentialsFromUser).toHaveBeenCalled()
         })
 
-        it('should call update config', async () => {
+        it('should call update config', () => {
           expect(updateCredentials).toHaveBeenCalled()
         })
 
-        it('should print it logged in', async () => {
+        it('should print it logged in', () => {
           expect(output.stdout.content).toContain('Login information successfully updated')
         })
       })
       describe('when called with configured but not logged in service', () => {
         beforeEach(async () => {
           await loginAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'salesforce',
               authType: 'basic',
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
         })
         it('should get config from user', () => {
           expect(mockGetCredentialsFromUser).toHaveBeenCalled()
         })
 
-        it('should call update config', async () => {
+        it('should call update config', () => {
           expect(updateCredentials).toHaveBeenCalled()
         })
 
-        it('should print it logged in', async () => {
+        it('should print it logged in', () => {
           expect(output.stdout.content).toContain('Login information successfully updated')
         })
       })
       describe('Environment flag', () => {
-        const mockupdateCredentials = updateCredentials as jest.Mock
-        beforeEach(async () => {
-          mockLoadWorkspace.mockClear()
-          mockupdateCredentials.mockClear()
-        })
         it('should use current env when env is not provided', async () => {
           await loginAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'salesforce',
               authType: 'basic',
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
-          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect((mockupdateCredentials.mock.calls[0][0] as Workspace).currentEnv())
-            .toEqual(currentEnv)
+          expect(workspace.setCurrentEnv).not.toHaveBeenCalled()
         })
         it('should use provided env', async () => {
           await loginAction({
+            ...cliCommandArgs,
             input: {
               serviceName: 'netsuite',
               authType: 'basic',
-              env: 'injected',
+              env: mocks.withEnvironmentParam,
             },
-            output,
-            config,
-            cliTelemetry,
+            workspace,
           })
-          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect((mockupdateCredentials.mock.calls[0][0] as Workspace).currentEnv())
-            .toEqual('injected')
+          expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
         })
       })
     })

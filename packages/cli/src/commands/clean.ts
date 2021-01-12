@@ -13,31 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
-import { loadLocalWorkspace, cleanWorkspace } from '@salto-io/core'
+import { cleanWorkspace } from '@salto-io/core'
 import { WorkspaceComponents } from '@salto-io/workspace'
-import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { errorOutputLine, outputLine } from '../outputer'
 import { getUserBooleanInput } from '../callbacks'
 import { formatCleanWorkspace, formatCancelCommand, header, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
 import Prompts from '../prompts'
 import { CliExitCode } from '../types'
-import { createPublicCommandDef, CommandDefAction } from '../command_builder'
-
-const log = logger(module)
+import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 
 type CleanArgs = {
   force: boolean
 } & WorkspaceComponents
 
-export const action: CommandDefAction<CleanArgs> = async ({
+export const action: WorkspaceCommandAction<CleanArgs> = async ({
   input: { force, ...cleanArgs },
-  cliTelemetry,
   output,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running clean command on \'%s\', force=%s, args=%o', workspacePath, force, cleanArgs)
   const shouldCleanAnything = Object.values(cleanArgs).some(shouldClean => shouldClean)
   if (!shouldCleanAnything) {
     outputLine(header(Prompts.EMPTY_PLAN), output)
@@ -50,9 +44,6 @@ export const action: CommandDefAction<CleanArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  const workspace = await loadLocalWorkspace(workspacePath)
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-
   outputLine(header(
     formatCleanWorkspace(cleanArgs)
   ), output)
@@ -62,23 +53,20 @@ export const action: CommandDefAction<CleanArgs> = async ({
   }
 
   outputLine(formatStepStart(Prompts.CLEAN_STARTED), output)
-  cliTelemetry.start(workspaceTags)
 
   try {
     await cleanWorkspace(workspace, cleanArgs)
   } catch (e) {
     errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
-    cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
 
   outputLine(formatStepCompleted(Prompts.CLEAN_FINISHED), output)
   outputLine(EOL, output)
-  cliTelemetry.success(workspaceTags)
   return CliExitCode.Success
 }
 
-const cleanDef = createPublicCommandDef({
+const cleanDef = createWorkspaceCommand({
   properties: {
     name: 'clean',
     description: 'Maintenance command for cleaning workspace data. This operation cannot be undone, it\'s highly recommended to backup the workspace data before executing it.',

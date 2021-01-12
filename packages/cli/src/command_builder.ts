@@ -14,24 +14,34 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import { logger, compareLogLevels, LogLevel } from '@salto-io/logging'
-import { CommandConfig } from '@salto-io/core'
-import { CliOutput, SpinnerCreator, CliExitCode, CliTelemetry, CliError, CliArgs } from './types'
-import { VERBOSE_OPTION } from './commands/common/options'
+import { Workspace } from '@salto-io/workspace'
+import { loadLocalWorkspace } from '@salto-io/core'
+import { CliOutput, CliExitCode, CliError, PositionalOption, KeyedOption, CliArgs, CliTelemetry } from './types'
 import { getCliTelemetry } from './telemetry'
+import { getWorkspaceTelemetryTags } from './workspace/workspace'
+import { VERBOSE_OPTION } from './commands/common/options'
+import { CONFIG_OVERRIDE_OPTION, ConfigOverrideArg, getConfigOverrideChanges } from './commands/common/config_override'
 
 const { isDefined } = values
+const log = logger(module)
 
 const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
 type BasicCommandProperties = {
   name: string
   description: string
 }
+
+export type CommandOptions<T> = BasicCommandProperties & {
+  aliases?: string[]
+  keyedOptions?: KeyedOption<T>[]
+  positionalOptions?: PositionalOption<T>[]
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+type CommandAction = (args: CliArgs & { commanderInput: any[] }) => Promise<void>
 
 export type CommandsGroupDef = {
   properties: BasicCommandProperties
@@ -39,21 +49,16 @@ export type CommandsGroupDef = {
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-type CommandAction = (args: CliArgs & { commanderInput: any[] }) => Promise<void>
+export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
 export type CommandDef<T> = {
   properties: CommandOptions<T>
   action: CommandAction
 }
 
-type DefActionInput<T> = {
-  input: T
-  output: CliOutput
-  cliTelemetry: CliTelemetry
-  config: CommandConfig
-  spinnerCreator?: SpinnerCreator
-  workspacePath?: string
-}
+export type CommandArgs = Omit<CliArgs, 'telemetry'> & { cliTelemetry: CliTelemetry }
+
+type DefActionInput<T> = CommandArgs & { input: T }
 
 export type CommandDefAction<T> = (args: DefActionInput<T>) => Promise<CliExitCode>
 
@@ -62,49 +67,20 @@ type CommandInnerDef<T> = {
   action: CommandDefAction<T>
 }
 
+type WorkspaceCommandArgs<T> = (
+  Omit<DefActionInput<T>, 'workspacePath'>
+  & { workspace: Workspace }
+)
+
+export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promise<CliExitCode>
+
+type WorkspaceCommandDef<T> = {
+  properties: CommandOptions<T>
+  action: WorkspaceCommandAction<T>
+}
+
 export const isCommand = (c?: CommandOrGroupDef): c is CommandDef<unknown> =>
   (c !== undefined && 'action' in c)
-
-type CommandOptions<T> = BasicCommandProperties & {
-  aliases?: string[]
-  keyedOptions?: KeyedOption<T>[]
-  positionalOptions?: PositionalOption<T>[]
-}
-
-type OptionType = {
-  boolean: boolean
-  string: string
-  stringsList: string[]
-}
-
-type GetTypeEnumValue<T> = types.KeysOfExtendingType<OptionType, T>
-
-// TODO: Remove this when default string[] is allowed in Commander
-type GetOptionsDefaultType<T> = T extends string[] ? never : T
-
-type PossiblePositionalArgs<T> = types.KeysOfExtendingType<T, string | string[] | undefined>
-
-type ChoicesType<T> = T extends string ? string[] : never
-
-export type PositionalOption<T, Name = PossiblePositionalArgs<T>>
-  = Name extends PossiblePositionalArgs<T> ? {
-  name: Name & string
-  required: boolean
-  description?: string
-  type: Exclude<GetTypeEnumValue<T[Name]>, 'boolean'>
-  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
-  choices?: ChoicesType<T[Name]>
-} : never
-
-export type KeyedOption<T, Name extends keyof T = keyof T> = Name extends keyof T ? {
-  name: Name & string
-  required?: boolean
-  description?: string
-  alias?: string
-  type: GetTypeEnumValue<T[Name]>
-  default?: GetOptionsDefaultType<T[Name]> & (string | boolean)
-  choices?: ChoicesType<T[Name]>
-} : never
 
 const createPositionalOptionsMapping = <T>(
   positionalOptions: PositionalOption<T>[],
@@ -192,6 +168,7 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
     output,
     spinnerCreator,
     telemetry,
+    workspacePath,
   }): Promise<void> => {
     const indexOfKeyedOptions = commanderInput.findIndex(o => _.isPlainObject(o))
     const keyedOptionsObj = commanderInput[indexOfKeyedOptions]
@@ -207,8 +184,12 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
     }
     validateChoices(positionalOptions, keyedOptions, output, input)
     const cliTelemetry = getCliTelemetry(telemetry, def.properties.name)
+    log.debug(
+      'Running command %s in path %s with arguments %o',
+      def.properties.name, workspacePath, input,
+    )
     const actionResult = await action({
-      input, cliTelemetry, config, output, spinnerCreator,
+      input, cliTelemetry, config, output, spinnerCreator, workspacePath,
     })
     if (actionResult !== CliExitCode.Success) {
       throw new CliError(actionResult)
@@ -228,6 +209,51 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
     properties,
     action: commanderAction,
   }
+}
+
+export const createWorkspaceCommand = <T>(
+  def: WorkspaceCommandDef<T>
+): CommandDef<T & ConfigOverrideArg> => {
+  const { properties, action } = def
+
+  const workspaceAction: CommandDefAction<T & ConfigOverrideArg> = async args => {
+    const workspace = await loadLocalWorkspace(
+      args.workspacePath,
+      getConfigOverrideChanges(args.input),
+    )
+
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    args.cliTelemetry.start(workspaceTags)
+
+    const result = await action({ ...args, workspace })
+
+    if (result === CliExitCode.Success) {
+      args.cliTelemetry.success(workspaceTags)
+    } else {
+      args.cliTelemetry.failure(workspaceTags)
+    }
+    return result
+  }
+
+  // Add common options
+  const keyedOptions = [
+    CONFIG_OVERRIDE_OPTION,
+    ...properties.keyedOptions ?? [],
+  ] as KeyedOption<T & ConfigOverrideArg>[]
+
+  // We need this cast because the compiler cannot validate the generic value with a new type
+  const positionalOptions = (
+    properties.positionalOptions as PositionalOption<T & ConfigOverrideArg>[] | undefined
+  )
+
+  return createPublicCommandDef({
+    properties: {
+      ...properties,
+      positionalOptions,
+      keyedOptions,
+    },
+    action: workspaceAction,
+  })
 }
 
 export const createCommandGroupDef = (def: CommandsGroupDef): CommandsGroupDef => def

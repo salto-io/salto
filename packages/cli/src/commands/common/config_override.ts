@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { DetailedChange, Value, ElemID } from '@salto-io/adapter-api'
-import { KeyedOption } from '../../command_builder'
+import { KeyedOption } from '../../types'
 
 export type ConfigOverrideArg = {
   config?: string[]

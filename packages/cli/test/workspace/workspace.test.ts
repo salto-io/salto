@@ -14,13 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import moment from 'moment'
-import inquirer from 'inquirer'
-import semver from 'semver'
 import { Workspace, state } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
-import { Spinner } from '../../src/types'
-import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly, applyChangesToWorkspace } from '../../src/workspace/workspace'
+import { validateWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly, applyChangesToWorkspace } from '../../src/workspace/workspace'
 import { MockWriteStream, dummyChanges, detailedChange, mockErrors,
   mockFunction, getMockTelemetry } from '../mocks'
 import { getCliTelemetry } from '../../src/telemetry'
@@ -92,125 +88,6 @@ describe('workspace', () => {
         const wsValid = (await validateWorkspace(mockWs)).status
         expect(wsValid).toBe('Error')
       })
-    })
-  })
-
-  describe('loadWorkspace', () => {
-    let spinner: Spinner
-    let now: number
-    const mockPrompt = inquirer.prompt as jest.Mock
-    beforeEach(() => {
-      now = Date.now()
-      jest.spyOn(Date, 'now').mockImplementation(() => now)
-      // Clear to reset the function calls count
-      mockPrompt.mockClear()
-      spinner = {
-        fail: jest.fn(),
-        succeed: jest.fn(),
-      }
-    })
-    it('marks spinner as success in case there are no errors', async () => {
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
-
-      expect(cliOutput.stdout.content).toBe('')
-      expect(cliOutput.stderr.content).toBe('')
-      expect(spinner.succeed).toHaveBeenCalled()
-    })
-
-    it('marks spinner as success in case of warning', async () => {
-      mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
-        { message: 'Error BLA', severity: 'Warning' },
-      ]))
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
-
-      expect(cliOutput.stdout.content).toContain('Error BLA')
-      expect(spinner.succeed).toHaveBeenCalled()
-    })
-
-    it('marks spinner as failed in case of error', async () => {
-      mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
-        { message: 'Error BLA', severity: 'Error' },
-      ]))
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
-
-      expect(cliOutput.stderr.content).toContain('Error BLA')
-      expect(spinner.fail).toHaveBeenCalled()
-    })
-
-    it('prints the state recency when told to do so', async () => {
-      const durationAfterLastModificationMs = 1000 * 60 * 60 * 8 // 8 hours
-      mockWsFunctions.getStateRecency.mockResolvedValueOnce({
-        date: new Date(now - durationAfterLastModificationMs),
-        status: 'Valid',
-        serviceName: 'salesforce',
-      })
-      await loadWorkspace('', cliOutput, { force: true, printStateRecency: true, spinnerCreator: () => spinner })
-      expect(cliOutput.stdout.content).toContain(
-        moment.duration(durationAfterLastModificationMs).humanize()
-      )
-    })
-
-    it('prints that the state does not exist', async () => {
-      mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: undefined, status: 'Nonexistent', serviceName: 'salesforce' }
-      )
-      await loadWorkspace('', cliOutput, { force: true, printStateRecency: true, spinnerCreator: () => spinner })
-      expect(cliOutput.stdout.content).toContain('unknown')
-    })
-
-    it('does not always print the state recency', async () => {
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
-      expect(cliOutput.stdout.content).toBe('')
-    })
-
-    it('Should fail when sessionEnv does not exist in workspace', async () => {
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true, sessionEnv: 'badEnv' })
-      expect(spinner.fail).toHaveBeenCalled()
-    })
-
-    it('prompts user when the state is too old and recommend recency is enabled', async () => {
-      mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: new Date(now), status: 'Old', serviceName: 'salesforce' }
-      )
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
-      expect(mockPrompt).toHaveBeenCalledTimes(1)
-    })
-
-    it('prompts user when the state doesn\'t exist and recommend recency is enabled', async () => {
-      mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: new Date(now), status: 'Nonexistent', serviceName: 'salesforce' }
-      )
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
-      expect(mockPrompt).toHaveBeenCalledTimes(1)
-    })
-
-    it('does not prompt user when the state is valid and recommend recency is enabled', async () => {
-      mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: new Date(now), status: 'Valid', serviceName: 'salesforce' }
-      )
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
-      expect(mockPrompt).not.toHaveBeenCalled()
-    })
-
-    it('does not prompt the user if the state version is valid', async () => {
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
-      expect(mockPrompt).not.toHaveBeenCalled()
-    })
-
-    it('propmts the user if the state version is older than the current installed salto version', async () => {
-      mockWsFunctions.state.mockReturnValueOnce({
-        getStateSaltoVersion: () => Promise.resolve('0.0.1'),
-      } as state.State)
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
-      expect(mockPrompt).toHaveBeenCalled()
-    })
-
-    it('prompts the user if the state version is newer than the current installed salto version', async () => {
-      mockWsFunctions.state.mockReturnValueOnce({
-        getStateSaltoVersion: () => Promise.resolve(semver.inc(version, 'patch')),
-      } as state.State)
-      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateStatus: true })
-      expect(mockPrompt).toHaveBeenCalled()
     })
   })
 

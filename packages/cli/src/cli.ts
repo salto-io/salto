@@ -19,43 +19,35 @@ import { logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'
 import { CliInput, CliOutput, CliExitCode, SpinnerCreator, CliError } from './types'
 import { CommandOrGroupDef } from './command_builder'
-import { versionString } from './version'
-import { AppConfig } from '../../core/src/app_config'
 import { registerCommands, createProgramCommand, COMMANDER_ERROR_NAME, VERSION_CODE, HELP_DISPLAYED_CODE } from './command_register'
-
-const EVENTS_FLUSH_WAIT_TIME = 1000
 
 const log = logger(module)
 const exceptionEvent = 'workspace.error'
 const ERROR_STYLE = 'red'
 
 export default async (
-  { input, output, commandDefs, spinnerCreator, config }: {
+  { input, output, commandDefs, spinnerCreator, workspacePath }: {
     input: CliInput
     output: CliOutput
     commandDefs: CommandOrGroupDef[]
     spinnerCreator: SpinnerCreator
-    config: AppConfig
+    workspacePath: string
   }
 ): Promise<CliExitCode> => {
-  const [nodeExecLoc, saltoExecLoc, ...cmdLineArgs] = process.argv
-  const cmdStr = ['salto', ...cmdLineArgs].join(' ')
   const startTime = new Date()
-  log.info(
-    'CLI started. Version: %s, Node exec location: %s, Salto exec location: %s, Current dir: %s',
-    versionString, nodeExecLoc, saltoExecLoc, process.cwd(),
-  )
-  log.debug('OS properties - platform: %s, release: %s, arch %s', os.platform(), os.release(), os.arch())
-  log.debug('Installation ID: %s', config.installationID)
-  log.info('running "%s"', cmdStr)
   try {
     const program = createProgramCommand()
-    registerCommands(program, commandDefs, {
-      telemetry: input.telemetry,
-      config: input.config,
-      output,
-      spinnerCreator,
-    })
+    registerCommands(
+      program,
+      commandDefs,
+      {
+        telemetry: input.telemetry,
+        config: input.config,
+        output,
+        spinnerCreator,
+        workspacePath,
+      },
+    )
     await program.parseAsync(input.args, { from: 'user' })
     return CliExitCode.Success
   } catch (err) {
@@ -81,8 +73,6 @@ export default async (
     errorStream.write(os.EOL)
     return CliExitCode.AppError
   } finally {
-    await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)
-    log.info('ran "%s" in %d ms', cmdStr, (new Date().getTime()) - startTime.getTime())
-    await logger.end()
+    log.info('ran "%s" in %d ms', input.args.join(' '), (new Date().getTime()) - startTime.getTime())
   }
 }

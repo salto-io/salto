@@ -14,9 +14,20 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+import { loadLocalWorkspace } from '@salto-io/core'
 import * as mocks from './mocks'
-import { createPublicCommandDef, CommandDefAction } from '../src/command_builder'
+import { createPublicCommandDef, CommandDefAction, WorkspaceCommandAction, createWorkspaceCommand, CommandDef } from '../src/command_builder'
 import { SpinnerCreator, CliExitCode, CliError } from '../src/types'
+import { CONFIG_OVERRIDE_OPTION, ConfigOverrideArg, getConfigOverrideChanges } from '../src/commands/common/config_override'
+import { buildEventName } from '../src/telemetry'
+
+jest.mock('@salto-io/core', () => {
+  const actual = jest.requireActual('@salto-io/core')
+  return {
+    ...actual,
+    loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
+  }
+})
 
 describe('Command builder', () => {
   describe('createPublicCommandDef', () => {
@@ -93,6 +104,7 @@ describe('Command builder', () => {
         await createdCommandDef.action({
           output,
           config,
+          workspacePath: '.',
           telemetry,
           spinnerCreator,
           commanderInput: [
@@ -111,6 +123,7 @@ describe('Command builder', () => {
         await createdCommandDef.action({
           output,
           config,
+          workspacePath: '.',
           telemetry,
           spinnerCreator,
           commanderInput: [
@@ -126,50 +139,144 @@ describe('Command builder', () => {
         await expect(createdCommandDef.action({
           output,
           config,
+          workspacePath: '.',
           telemetry,
           spinnerCreator,
           commanderInput: ['str', { bool: true, choices: 'wrongChoice' }],
         })).rejects.toThrow(CliError)
       })
 
-      it('Should throw CliError when action is returned with non-sucess code', async () => {
+      it('Should throw CliError when action is returned with non-success code', async () => {
         await expect(createdCommandDef.action({
           output,
           config,
+          workspacePath: '.',
           telemetry,
           spinnerCreator,
           commanderInput: ['error', { bool: true, choices: 'a' }],
         })).rejects.toThrow(CliError)
       })
     })
-  })
-  describe('with conflicting flag definitions', () => {
-    describe('with conflicting flag name', () => {
-      it('should throw error', () => {
-        expect(() => createPublicCommandDef({
-          properties: {
-            name: 'dummy',
-            description: 'test',
-            keyedOptions: [{ name: 'test', type: 'string' }],
-            positionalOptions: [{ name: 'test', type: 'string', required: false }],
-          },
-          action: async (_args: { input: { test: string } }) => CliExitCode.Success,
-        })).toThrow()
+    describe('with conflicting flag definitions', () => {
+      describe('with conflicting flag name', () => {
+        it('should throw error', () => {
+          expect(() => createPublicCommandDef({
+            properties: {
+              name: 'dummy',
+              description: 'test',
+              keyedOptions: [{ name: 'test', type: 'string' }],
+              positionalOptions: [{ name: 'test', type: 'string', required: false }],
+            },
+            action: async (_: { input: { test: string } }) => CliExitCode.Success,
+          })).toThrow()
+        })
+      })
+      describe('with conflicting flag alias', () => {
+        it('should throw error', () => {
+          expect(() => createPublicCommandDef({
+            properties: {
+              name: 'dummy',
+              description: 'test',
+              keyedOptions: [
+                { name: 'test1', type: 'string', alias: 't' },
+                { name: 'test2', type: 'string', alias: 't' },
+              ],
+            },
+            action: async (_: { input: { test1: string; test2: string } }) => CliExitCode.Success,
+          })).toThrow()
+        })
       })
     })
-    describe('with conflicting flag alias', () => {
-      it('should throw error', () => {
-        expect(() => createPublicCommandDef({
-          properties: {
-            name: 'dummy',
-            description: 'test',
-            keyedOptions: [
-              { name: 'test1', type: 'string', alias: 't' },
-              { name: 'test2', type: 'string', alias: 't' },
-            ],
-          },
-          action: async (_args: { input: { test1: string; test2: string } }) => CliExitCode.Success,
-        })).toThrow()
+  })
+  describe('createWorkspaceCommand', () => {
+    let dummyAction: jest.MockedFunction<WorkspaceCommandAction<{}>>
+    let command: CommandDef<unknown>
+    beforeEach(() => {
+      dummyAction = mocks.mockFunction<typeof dummyAction>().mockResolvedValue(CliExitCode.Success)
+      command = createWorkspaceCommand({
+        properties: {
+          name: 'dummy',
+          description: 'test',
+        },
+        action: dummyAction,
+      }) as CommandDef<unknown>
+    })
+    describe('command', () => {
+      it('should have config override option', () => {
+        expect(command.properties.keyedOptions).toContainEqual(CONFIG_OVERRIDE_OPTION)
+      })
+    })
+    describe('action', () => {
+      let cliArgs: mocks.MockCliArgs
+      let workspace: mocks.MockWorkspace
+      beforeEach(() => {
+        cliArgs = mocks.mockCliArgs()
+        workspace = mocks.mockWorkspace({ uid: 'test' })
+
+        const loadWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
+        loadWorkspace.mockClear()
+        loadWorkspace.mockResolvedValue(workspace)
+      })
+      describe('when called with config overrides', () => {
+        let configOverrides: ConfigOverrideArg
+        beforeEach(async () => {
+          configOverrides = { config: ['salesforce.override=1'] }
+          await command.action({
+            ...cliArgs,
+            workspacePath: 'test_path',
+            commanderInput: [configOverrides],
+          })
+        })
+        it('should pass workspace path and config overrides to the workspace', () => {
+          const expectedChanges = getConfigOverrideChanges(configOverrides)
+          expect(loadLocalWorkspace).toHaveBeenCalledWith('test_path', expectedChanges)
+        })
+      })
+      describe('when action is successful', () => {
+        beforeEach(async () => {
+          await command.action({
+            ...cliArgs,
+            workspacePath: 'test_path',
+            commanderInput: [{}],
+          })
+        })
+        it('should send start and success telemetry', () => {
+          const events = cliArgs.telemetry.getEvents()
+          expect(events).toContainEqual(expect.objectContaining({
+            name: buildEventName('dummy', 'start'),
+            tags: { workspaceID: 'test' },
+          }))
+          expect(events).toContainEqual(expect.objectContaining({
+            name: buildEventName('dummy', 'success'),
+            tags: { workspaceID: 'test' },
+          }))
+        })
+      })
+      describe('when action fails', () => {
+        let result: Promise<void>
+        beforeEach(async () => {
+          dummyAction.mockResolvedValue(CliExitCode.UserInputError)
+          result = command.action({
+            ...cliArgs,
+            workspacePath: 'test_path',
+            commanderInput: [{}],
+          })
+          await result.catch(() => undefined)
+        })
+        it('should fail with a cli error', async () => {
+          await expect(result).rejects.toThrow(new CliError(CliExitCode.UserInputError))
+        })
+        it('should send start and failure telemetry', () => {
+          const events = cliArgs.telemetry.getEvents()
+          expect(events).toContainEqual(expect.objectContaining({
+            name: buildEventName('dummy', 'start'),
+            tags: { workspaceID: 'test' },
+          }))
+          expect(events).toContainEqual(expect.objectContaining({
+            name: buildEventName('dummy', 'failure'),
+            tags: { workspaceID: 'test' },
+          }))
+        })
       })
     })
   })

@@ -14,42 +14,27 @@
 * limitations under the License.
 */
 import * as core from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
-import { CliExitCode, CliTelemetry } from '../../src/types'
+import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
-import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/clean'
 
 const commandName = 'clean'
-const eventsNames = {
-  success: buildEventName(commandName, 'success'),
-  start: buildEventName(commandName, 'start'),
-  failure: buildEventName(commandName, 'failure'),
-}
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   getDefaultAdapterConfig: jest.fn().mockImplementation(service => ({ a: 'a', serviceName: service })),
-  loadLocalWorkspace: jest.fn(),
   cleanWorkspace: jest.fn(),
 }))
 
 describe('clean command', () => {
-  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  let telemetry: mocks.MockTelemetry
-  let cliTelemetry: CliTelemetry
-  const config = { shouldCalcTotalSize: false }
-  let lastWorkspace: Workspace
+  let output: mocks.MockCliOutput
+  let cliCommandArgs: mocks.MockCommandArgs
 
   beforeEach(async () => {
-    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    telemetry = mocks.getMockTelemetry()
-    cliTelemetry = getCliTelemetry(telemetry, commandName)
-    jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(baseDir => {
-      lastWorkspace = mocks.mockLoadWorkspace(baseDir)
-      return Promise.resolve(lastWorkspace)
-    })
+    const cliArgs = mocks.mockCliArgs()
+    cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
+    output = cliArgs.output
     jest.spyOn(callbacks, 'getUserBooleanInput').mockResolvedValue(true)
   })
 
@@ -60,6 +45,7 @@ describe('clean command', () => {
   describe('with no clean args', () => {
     it('should do nothing and return error', async () => {
       expect(await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           nacl: false,
@@ -69,12 +55,9 @@ describe('clean command', () => {
           credentials: false,
           serviceConfig: false,
         },
-        config,
-        cliTelemetry,
-        output,
+        workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.UserInputError)
       expect(output.stdout.content.search('Nothing to do.')).toBeGreaterThan(0)
-      expect(core.loadLocalWorkspace).not.toHaveBeenCalled()
     })
   })
 
@@ -82,6 +65,7 @@ describe('clean command', () => {
     it('should prompt user and exit if no', async () => {
       jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
       expect(await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           nacl: true,
@@ -91,17 +75,15 @@ describe('clean command', () => {
           credentials: true,
           serviceConfig: true,
         },
-        config,
-        cliTelemetry,
-        output,
+        workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.Success)
-      expect(core.loadLocalWorkspace).toHaveBeenCalled()
       expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
       expect(output.stdout.content.search('Canceling...')).toBeGreaterThan(0)
     })
 
     it('should fail if trying to clean static resources without all dependent components', async () => {
       expect(await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           nacl: true,
@@ -111,17 +93,16 @@ describe('clean command', () => {
           credentials: true,
           serviceConfig: true,
         },
-        config,
-        cliTelemetry,
-        output,
+        workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.UserInputError)
-      expect(core.loadLocalWorkspace).not.toHaveBeenCalled()
       expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
       expect(output.stderr.content.search('Cannot clear static resources without clearing the state, cache and nacls')).toBeGreaterThanOrEqual(0)
     })
 
     it('should prompt user and continue if yes', async () => {
+      const workspace = mocks.mockWorkspace({})
       expect(await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           nacl: true,
@@ -131,13 +112,10 @@ describe('clean command', () => {
           credentials: true,
           serviceConfig: true,
         },
-        config,
-        cliTelemetry,
-        output,
+        workspace,
       })).toBe(CliExitCode.Success)
-      expect(core.loadLocalWorkspace).toHaveBeenCalled()
       expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
-      expect(core.cleanWorkspace).toHaveBeenCalledWith(lastWorkspace, {
+      expect(core.cleanWorkspace).toHaveBeenCalledWith(workspace, {
         nacl: true,
         state: true,
         cache: true,
@@ -145,11 +123,6 @@ describe('clean command', () => {
         credentials: true,
         serviceConfig: true,
       })
-
-      expect(telemetry.getEvents()).toHaveLength(2)
-      expect(telemetry.getEventsMap()[eventsNames.start]).toBeDefined()
-      expect(telemetry.getEventsMap()[eventsNames.success]).toBeDefined()
-      expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
 
       expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
       expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
@@ -160,6 +133,7 @@ describe('clean command', () => {
         () => { throw new Error('something bad happened') }
       )
       expect(await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           nacl: true,
@@ -169,13 +143,8 @@ describe('clean command', () => {
           credentials: true,
           serviceConfig: true,
         },
-        config,
-        cliTelemetry,
-        output,
+        workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.AppError)
-      expect(telemetry.getEvents()).toHaveLength(2)
-      expect(telemetry.getEventsMap()[eventsNames.start]).toBeDefined()
-      expect(telemetry.getEventsMap()[eventsNames.failure]).toBeDefined()
 
       expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
       expect(output.stderr.content.search('Error encountered while cleaning')).toBeGreaterThan(0)
@@ -187,7 +156,9 @@ describe('clean command', () => {
       jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(
         () => Promise.resolve(false)
       )
+      const workspace = mocks.mockWorkspace({})
       expect(await action({
+        ...cliCommandArgs,
         input: {
           force: true,
           nacl: true,
@@ -197,13 +168,10 @@ describe('clean command', () => {
           credentials: true,
           serviceConfig: true,
         },
-        config,
-        cliTelemetry,
-        output,
+        workspace,
       })).toBe(CliExitCode.Success)
-      expect(core.loadLocalWorkspace).toHaveBeenCalled()
       expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
-      expect(core.cleanWorkspace).toHaveBeenCalledWith(lastWorkspace, {
+      expect(core.cleanWorkspace).toHaveBeenCalledWith(workspace, {
         nacl: true,
         state: true,
         cache: true,

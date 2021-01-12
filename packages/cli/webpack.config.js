@@ -15,7 +15,7 @@
 */
 const path = require('path');
 const webpack = require('webpack');
-
+require.resolve(path.resolve('../../node_modules/rocksdb'))
 module.exports = {
   mode: 'development', // production minifaction results in bad error stacks
   target: 'node',
@@ -39,12 +39,16 @@ module.exports = {
         test: /\.xml$/i,
         use: 'raw-loader',
       },
-      {
+     {
         test: /@oracle\/suitecloud-cli-localserver-command/i,
         use: 'null-loader'
-      }
+      },
+      {
+        test: /\.node$/,
+	loader: 'node-loader',
+      },
     ],
-  },
+ },
   node: {
     __dirname: true,
     __filename: true,

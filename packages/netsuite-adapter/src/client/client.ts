@@ -114,7 +114,7 @@ export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
 }
 
-export interface InstanceID {
+export interface ObjectID {
   type: string
   scriptId: string
 }
@@ -206,6 +206,13 @@ export type GetCustomObjectsResult = {
 export type ImportFileCabinetResult = {
   elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
   failedPaths: string[]
+}
+
+type ObjectsChunk = {
+  type: string
+  ids: string[]
+  index: number
+  total: number
 }
 
 export default class NetsuiteClient {
@@ -434,17 +441,17 @@ export default class NetsuiteClient {
     const instancesIds = await this.listInstances(executor, typeNames)
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
     const idsChunks = wu.entries(instancesIdsByType).map(
-      ([type, ids]: [string, InstanceID[]]) =>
+      ([type, ids]: [string, ObjectID[]]) =>
         wu(ids)
           .map(id => id.scriptId)
           .chunk(this.maxItemsInImportObjectsRequest)
           .enumerate()
-          .map(([chunk, index]) => [
+          .map(([chunk, index]) => ({
             type,
-            chunk,
-            index + 1,
-            Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
-          ])
+            ids: chunk,
+            index: index + 1,
+            total: Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
+          }))
           .toArray()
     ).flatten(true).toArray()
 
@@ -452,7 +459,7 @@ export default class NetsuiteClient {
     const failedTypes = new Set<string>()
     log.debug('Fetching custom objects one by one')
     await withLimitedConcurrency( // limit the number of open promises
-      idsChunks.map(([type, ids, index, total]: [string, string[], number, number]) => async () => {
+      idsChunks.map(({ type, ids, index, total }: ObjectsChunk) => async () => {
         if (failedTypes.has(type)) {
           return
         }
@@ -495,7 +502,7 @@ export default class NetsuiteClient {
   async listInstances(
     executor: CommandActionExecutor,
     types: string[],
-  ): Promise<InstanceID[]> {
+  ): Promise<ObjectID[]> {
     const results = await this.executeProjectAction(
       COMMANDS.LIST_OBJECTS,
       {

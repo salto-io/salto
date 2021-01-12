@@ -15,7 +15,6 @@
 */
 const path = require('path');
 const webpack = require('webpack');
-require.resolve(path.resolve('../../node_modules/rocksdb'))
 module.exports = {
   mode: 'development', // production minifaction results in bad error stacks
   target: 'node',

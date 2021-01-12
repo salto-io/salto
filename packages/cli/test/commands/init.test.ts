@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { Workspace } from '@salto-io/workspace'
-import { loadLocalWorkspace } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/init'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -33,12 +32,10 @@ jest.mock('@salto-io/core', () => ({
       } as unknown as Workspace
     }
   ),
-  loadLocalWorkspace: jest.fn(),
 }))
-const { loadLocalWorkspace: loadLocalWorkspaceOriginalImpel } = jest.requireActual('@salto-io/core')
 
 const mockGetEnv = mocks.createMockEnvNameGetter()
-const mockLoadLocalWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
+
 jest.mock('../../src/callbacks', () => ({
   ...jest.requireActual('../../src/callbacks'),
   getEnvName: () => mockGetEnv(),
@@ -58,7 +55,6 @@ describe('init command', () => {
   const config = { shouldCalcTotalSize: false }
 
   beforeEach(async () => {
-    mockLoadLocalWorkspace.mockImplementation((...args) => loadLocalWorkspaceOriginalImpel(args))
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
     cliTelemetry = getCliTelemetry(telemetry, 'init')
@@ -94,23 +90,5 @@ describe('init command', () => {
     expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
     expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
-  })
-
-  it('should avoid initiating a workspace which already exists', async () => {
-    const errorMessage = 'existing salto workspace'
-    const workspaceName = 'initiatedWorkspace'
-    mockLoadLocalWorkspace.mockImplementation(() => Promise.resolve(
-      ({ name: workspaceName, uid: 'id' }) as unknown as Workspace
-    ))
-    await action({
-      input: {
-        workspaceName,
-      },
-      config,
-      cliTelemetry,
-      output,
-    })
-    expect(output.stderr.content).toEqual(`Could not initiate workspace: ${errorMessage}\n`)
-    expect(output.stdout.content).toEqual('')
   })
 })

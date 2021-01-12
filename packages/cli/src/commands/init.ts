@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { initLocalWorkspace, loadLocalWorkspace } from '@salto-io/core'
+import { initLocalWorkspace } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
@@ -29,25 +29,14 @@ type InitArgs = {
     workspaceName?: string
   }
 
-class WorkspaceAlreadyExistsError extends Error {
-  constructor() {
-    super('existing salto workspace')
-  }
-}
-
 export const action: CommandDefAction<InitArgs> = async (
   { input: { workspaceName }, cliTelemetry, output },
 ): Promise<CliExitCode> => {
   log.debug('running env init command on \'%s\'', workspaceName)
   cliTelemetry.start()
   try {
-    const baseDir = path.resolve('.')
-    const doesWorkspaceExists: boolean = await loadLocalWorkspace(baseDir)
-      .then(() => true).catch(() => false)
-    if (doesWorkspaceExists) {
-      throw new WorkspaceAlreadyExistsError()
-    }
     const defaultEnvName = await getEnvName()
+    const baseDir = path.resolve('.')
     const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     cliTelemetry.success(workspaceTags)

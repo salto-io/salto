@@ -20,7 +20,7 @@ import * as file from '@salto-io/file'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, COMMON_ENV_PREFIX, CREDENTIALS_CONFIG_PATH,
-  loadLocalElementsSources,
+  loadLocalElementsSources, locateWorkspaceRoot,
 } from '../../../src/local-workspace/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
@@ -78,6 +78,24 @@ describe('local workspace', () => {
   }
 
   beforeEach(() => jest.clearAllMocks())
+
+  describe('locateWorkspaceRoot', () => {
+    it('should return undefined if no workspaceRoot exists in path', async () => {
+      mockExists.mockResolvedValue(false)
+      const workspacePath = await locateWorkspaceRoot('/some/path')
+      expect(workspacePath).toEqual(undefined)
+    })
+    it('should return current folder if salto.config exists in it', async () => {
+      mockExists.mockResolvedValue(true)
+      const workspacePath = await locateWorkspaceRoot('/some/path')
+      await expect(workspacePath).toEqual('/some/path')
+    })
+    it('should find the corret folder in which salto.config exists in path', async () => {
+      mockExists.mockImplementationOnce(() => false).mockImplementationOnce(() => true)
+      const workspacePath = await locateWorkspaceRoot('/some/path')
+      await expect(workspacePath).toEqual('/some')
+    })
+  })
 
   describe('load elements  sources', () => {
     it('should build the appropriate nacl source', () => {

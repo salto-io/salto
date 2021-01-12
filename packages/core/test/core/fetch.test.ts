@@ -153,16 +153,12 @@ describe('fetch', () => {
         const elements = [
           new ObjectType({ elemID: new ElemID('adapter1', 'type') }),
         ]
-        const adapterToPartial = {
-          adapter1: true,
-          adapter2: false,
-          adapter3: true,
-        }
+        const partiallyFetchedAdapters = new Set(['adapter1', 'adapter3'])
 
-        const resultAdapters = getAdaptersFirstFetchPartial(elements, adapterToPartial)
+        const resultAdapters = getAdaptersFirstFetchPartial(elements, partiallyFetchedAdapters)
 
         it('results should only include adapter which is first fetch is partial', () => {
-          expect(resultAdapters).toEqual(['adapter3'])
+          expect(resultAdapters).toEqual(new Set(['adapter3']))
         })
       })
     })

@@ -64,7 +64,7 @@ export default class Prompts {
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static initFailed(msg: string): string {
-    return `Could not initiate workspace: ${msg}\n`
+    return `Could not initiate workspace: ${msg}`
   }
 
   private static readonly SERVICE_ADD_HELP = 'Use `salto service add <service-name>` to add services to the environment'

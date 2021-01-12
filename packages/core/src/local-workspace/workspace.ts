@@ -148,7 +148,7 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
   },
 })
 
-const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
+export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
   if (await exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
     return lookupDir
   }

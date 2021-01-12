@@ -90,9 +90,10 @@ export const getDetailedChanges = async (
 const getChangeMap = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
+  additionalResolveContext: ReadonlyArray<Element>
 ): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
-    wu(await getDetailedChanges(before, after))
+    wu(await getDetailedChanges(before, after, additionalResolveContext))
       .map(change => [change.id.getFullName(), change])
       .toArray(),
   )
@@ -317,19 +318,22 @@ const calcFetchChanges = async (
   serviceElements: ReadonlyArray<Element>,
   mergedServiceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
-  workspaceElements: ReadonlyArray<Element>
+  workspaceElements: ReadonlyArray<Element>,
+  additionalResolveContext: ReadonlyArray<Element>
 ): Promise<Iterable<FetchChange>> => {
   const serviceChanges = await log.time(() =>
-    getDetailedChanges(stateElements, mergedServiceElements),
+    getDetailedChanges(stateElements, mergedServiceElements, additionalResolveContext),
   'finished to calculate service-state changes')
   const pendingChanges = await log.time(() => getChangeMap(
     stateElements,
-    workspaceElements
+    workspaceElements,
+    additionalResolveContext,
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     workspaceElements,
-    mergedServiceElements
+    mergedServiceElements,
+    additionalResolveContext
   ), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
@@ -367,7 +371,7 @@ export const fetchChanges = async (
 
   const allElements = workspaceElements.concat(stateElements).filter(e => !e.elemID.isConfig())
   getAdaptersFirstFetchPartial(allElements, partiallyFetchedAdapters).forEach(
-    adapter => log.warn('Received partial results from %s before full fetch. Running partial fetch before at least one full fetch is not recommended', adapter)
+    adapter => log.warn('Received partial results from %s before full fetch', adapter)
   )
 
   const calculateDiffEmitter = new StepEmitter()
@@ -396,7 +400,8 @@ export const fetchChanges = async (
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
       _.isEmpty(filteredStateElements) ? filteredWorkspaceElements : filteredStateElements,
-      filteredWorkspaceElements
+      filteredWorkspaceElements,
+      workspaceElements
     )
 
   log.debug('finished to calculate fetch changes')

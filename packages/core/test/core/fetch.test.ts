@@ -149,6 +149,36 @@ describe('fetch', () => {
         expect(resultChanges.length).toBe(1)
         expect(resultChanges[0].change.action).toBe('remove')
       })
+
+      describe('multiple adapters', async () => {
+        const adapters = {
+          dummy1: {
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: true }),
+            deploy: mockFunction<AdapterOperations['deploy']>(),
+          },
+          dummy2: {
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: false }),
+            deploy: mockFunction<AdapterOperations['deploy']>(),
+          },
+        }
+
+        it('should ignore deletions only for adapter with partial results', async () => {
+          const fetchChangesResult = await fetchChanges(
+            adapters,
+            [
+              new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
+              new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
+            ],
+            [],
+            [],
+          )
+          const resultChanges = Array.from(fetchChangesResult.changes)
+          expect(resultChanges.length).toBe(1)
+          expect(resultChanges[0].change.action).toBe('remove')
+          expect(getChangeElement(resultChanges[0].change).elemID.adapter).toBe('dummy2')
+        })
+      })
+
       describe('getAdaptersFirstFetchPartial', () => {
         const elements = [
           new ObjectType({ elemID: new ElemID('adapter1', 'type') }),

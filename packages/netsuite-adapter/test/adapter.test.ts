@@ -80,6 +80,7 @@ describe('Adapter', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    client.listInstances = jest.fn().mockResolvedValue([])
     client.getCustomObjects = jest.fn().mockResolvedValue({
       elements: [],
       failedTypes: [],

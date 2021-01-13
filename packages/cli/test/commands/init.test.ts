@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Workspace } from '@salto-io/workspace'
+import { locateWorkspaceRoot } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/init'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -32,10 +33,12 @@ jest.mock('@salto-io/core', () => ({
       } as unknown as Workspace
     }
   ),
+  locateWorkspaceRoot: jest.fn(),
 }))
 
 const mockGetEnv = mocks.createMockEnvNameGetter()
-
+const mockLocateWorkspaceRoot = locateWorkspaceRoot as
+  jest.MockedFunction<typeof locateWorkspaceRoot>
 jest.mock('../../src/callbacks', () => ({
   ...jest.requireActual('../../src/callbacks'),
   getEnvName: () => mockGetEnv(),
@@ -55,6 +58,7 @@ describe('init command', () => {
   const config = { shouldCalcTotalSize: false }
 
   beforeEach(async () => {
+    mockLocateWorkspaceRoot.mockResolvedValue(undefined)
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
     cliTelemetry = getCliTelemetry(telemetry, 'init')
@@ -90,5 +94,20 @@ describe('init command', () => {
     expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
     expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+  })
+
+  it('should avoid initiating a workspace which already exists', async () => {
+    const path = '/some/path/to/workspace'
+    mockLocateWorkspaceRoot.mockResolvedValue(path)
+    await action({
+      input: {
+        workspaceName: 'test',
+      },
+      config,
+      cliTelemetry,
+      output,
+    })
+    expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n\n`)
+    expect(output.stdout.content).toEqual('')
   })
 })

@@ -17,7 +17,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
-  ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
+  ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import {
@@ -148,6 +148,45 @@ describe('fetch', () => {
         const resultChanges = Array.from(fetchChangesResult.changes)
         expect(resultChanges.length).toBe(1)
         expect(resultChanges[0].change.action).toBe('remove')
+      })
+
+      it('should use the whole workspace to resolve elements when calculcating changes', async () => {
+        const beforeElement = new InstanceElement(
+          'name',
+          new ObjectType({
+            elemID: new ElemID('dummy', 'type'),
+            fields: {
+              field: { type: BuiltinTypes.NUMBER },
+            },
+          }),
+          { field: new ReferenceExpression(new ElemID('dummy', 'type', 'instance', 'referenced', 'field')) }
+        )
+
+        const referencedElement = new InstanceElement(
+          'referenced',
+          new ObjectType({
+            elemID: new ElemID('dummy', 'type'),
+            fields: {
+              field: { type: BuiltinTypes.NUMBER },
+            },
+          }),
+          { field: 5 }
+        )
+
+        const afterElement = beforeElement.clone()
+        afterElement.value.field = 5
+
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          { elements: [afterElement], isPartial: true },
+        )
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          [beforeElement, referencedElement],
+          [],
+          [],
+        )
+
+        expect(Array.from(fetchChangesResult.changes).length).toBe(0)
       })
 
       describe('multiple adapters', async () => {

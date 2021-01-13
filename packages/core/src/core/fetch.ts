@@ -265,7 +265,7 @@ const fetchAndProcessMergeErrors = async (
       .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
 
     const partiallyFetchedAdapters = new Set(
-      wu(fetchResults)
+      fetchResults
         .filter(result => result.isPartial)
         .map(result => result.adapterName)
     )
@@ -401,7 +401,8 @@ export const fetchChanges = async (
       // should be calculated with them in mind.
       _.isEmpty(filteredStateElements) ? filteredWorkspaceElements : filteredStateElements,
       filteredWorkspaceElements,
-      workspaceElements
+      // additionalResolveContext is only required when there is a partial fetch
+      !_.isEmpty(partiallyFetchedAdapters) ? workspaceElements : []
     )
 
   log.debug('finished to calculate fetch changes')

@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { listUnresolvedReferences, Tags } from '@salto-io/core'
+import open from 'open'
+import { getLoginStatuses, listUnresolvedReferences, LoginStatus, Tags } from '@salto-io/core'
+import { CORE_ANNOTATIONS, isElement, Element, ElemID, isField } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
@@ -340,6 +342,132 @@ const listUnresolvedDef = createPublicCommandDef({
   action: listUnresolvedAction,
 })
 
+// Open
+
+type OpenActionArgs = {
+  elementId: string
+} & EnvArg
+
+const isServiceDefined = (workspace: Workspace, serviceName: string): boolean =>
+  workspace.services().includes(serviceName)
+
+const isServiceLoggedIn = async (workspace: Workspace, serviceName: string): Promise<boolean> => {
+  const serviceLoginStatus = (await getLoginStatuses(
+    workspace,
+    [serviceName]
+  ))[serviceName] as LoginStatus
+  return serviceLoginStatus.isLoggedIn
+}
+
+const isValidElementId = (maybeElementIdPath: string):
+  boolean => {
+  try {
+    ElemID.fromFullName(maybeElementIdPath)
+    return true
+  } catch (e) {
+    return false
+  }
+}
+type NoElementsFound = {
+  type: 'NoElementsFoundError'
+}
+type ElementUrl = {
+  type: 'ElementUrlFound'
+  url: string| undefined
+}
+type FindServiceUrlResponse = NoElementsFound | ElementUrl
+
+const getServiceUrlAnnotation = (element: Element):
+  string|undefined => element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+
+const findServiceUrlAnnotation = async (elementId: ElemID, workspace: Workspace):
+  Promise<FindServiceUrlResponse> => {
+  const elementValue = await workspace.getValue(elementId)
+  if (elementValue && isField(elementValue)) {
+    return { type: 'ElementUrlFound', url: getServiceUrlAnnotation(elementValue) }
+  }
+  const parentElement = await workspace.getValue(elementId.createTopLevelParentID().parent)
+  if (!isElement(parentElement)) {
+    return { type: 'NoElementsFoundError' }
+  }
+  return { type: 'ElementUrlFound', url: getServiceUrlAnnotation(parentElement) }
+}
+
+function assertUnreachable(_x: never): never {
+  throw new Error("Didn't expect to get here")
+}
+
+export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliTelemetry, output, workspacePath = '.' }): Promise<CliExitCode> => {
+  log.debug('running element open command on \'%s\' %o', workspacePath, input)
+  const { elementId, env } = input
+  const { errored, workspace } = await loadWorkspace(workspacePath, output)
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  const reportUserError = (error: string): CliExitCode => {
+    errorOutputLine(error, output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.UserInputError
+  }
+  const reportAppError = (error?: string): CliExitCode => {
+    if (error) {
+      errorOutputLine(error, output)
+    }
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.AppError
+  }
+  const processFindServiceUrlResponse = async (response: FindServiceUrlResponse):
+    Promise<CliExitCode> => {
+    switch (response.type) {
+      case 'NoElementsFoundError':
+        return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
+      case 'ElementUrlFound':
+        if (!response.url) {
+          return reportAppError(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId))
+        }
+        await open(response.url)
+        cliTelemetry.success(workspaceTags)
+        return CliExitCode.Success
+      default:
+        return assertUnreachable(response)
+    }
+  }
+  if (errored) {
+    return reportAppError()
+  }
+  const envName = env || workspace.currentEnv()
+  if (!isValidElementId(elementId)) {
+    return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
+  }
+  const elemId = ElemID.fromFullName(elementId)
+  const serviceName = elemId.adapter
+  if (!isServiceDefined(workspace, serviceName)) {
+    return reportUserError(Prompts.SERVICE_IS_NOT_CONFIGURED_FOR_ENV(serviceName, envName))
+  }
+  if (!await isServiceLoggedIn(workspace, serviceName)) {
+    return reportUserError(Prompts.SERVICE_IS_NOT_LOGGED_IN(serviceName, envName))
+  }
+  const response = await findServiceUrlAnnotation(elemId, workspace)
+  return processFindServiceUrlResponse(response)
+}
+
+const elementOpenDef = createPublicCommandDef({
+  properties: {
+    name: 'open',
+    description: 'Opens a logged-in session of the element UI',
+    keyedOptions: [
+      ENVIRONMENT_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'elementId',
+        type: 'string',
+        description: 'an ElementId',
+        required: true,
+      },
+    ],
+  },
+  action: openAction,
+})
+
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
@@ -350,6 +478,7 @@ const elementGroupDef = createCommandGroupDef({
     moveToEnvsDef,
     cloneDef,
     listUnresolvedDef,
+    elementOpenDef,
   ],
 })
 

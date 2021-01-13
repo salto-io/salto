@@ -283,4 +283,16 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly CLEAN_FAILED = (
     err: string
   ): string => `Error encountered while cleaning the workspace: ${err}.`
+
+  public static readonly SERVICE_IS_NOT_CONFIGURED_FOR_ENV =
+    (serviceName: string, env: string): string => `Service ${serviceName} is not configured for env ${env}. Use 'salto service add <service-name>'`
+
+  public static readonly SERVICE_IS_NOT_LOGGED_IN =
+    (serviceName: string, env: string): string => `Service ${serviceName} in env ${env} is not logged. Please run 'salto service login'`
+
+  public static readonly NO_MATCHES_FOUND_FOR_ELEMENT =
+    (elementId: string): string => `Did not find any matches for element ${elementId}`
+
+  public static readonly GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT =
+    (elementId: string): string => `Go to service is not supported for element ${elementId}`
 }

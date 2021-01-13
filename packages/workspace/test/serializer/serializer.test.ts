@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression, StaticFile, MapType,
+  VariableExpression, StaticFile, MapType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { TestFuncImpl } from '../utils'
 
@@ -30,6 +30,14 @@ describe('State/cache serialization', () => {
   const strType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'string'),
     primitive: PrimitiveTypes.STRING,
+    annotationTypes: {
+      anno: BuiltinTypes.STRING,
+      hiddenAnno: BuiltinTypes.HIDDEN_STRING,
+    },
+    annotations: {
+      anno: 'type annotation',
+      hiddenAnno: 'hidden',
+    },
   })
 
   const numType = new PrimitiveType({
@@ -223,7 +231,6 @@ describe('State/cache serialization', () => {
   })
 
   describe('functions', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let funcElement: InstanceElement
     beforeAll(async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')

@@ -19,7 +19,7 @@ import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType, MapType,
   ObjectType, InstanceElement, isType, isElement, isContainerType,
   ReferenceExpression, TemplateExpression, VariableExpression,
-  isInstanceElement, isReferenceExpression, Variable, StaticFile, isStaticFile,
+  isInstanceElement, isReferenceExpression, Variable, StaticFile, isStaticFile, TypeElement,
 } from '@salto-io/adapter-api'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
@@ -229,17 +229,40 @@ export const deserialize = async (
   const elementsMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
   const builtinMap = _(BuiltinTypes).values().keyBy(b => b.elemID.getFullName()).value()
   const typeMap = _.merge({}, elementsMap, builtinMap)
+  const resolveType = (type: TypeElement): TypeElement | undefined => {
+    if (isContainerType(type)) {
+      const innerType = resolveType(type.innerType) ?? type.innerType
+      type.setInnerType(innerType)
+      return type
+    }
+    return typeMap[type.elemID.getFullName()]
+  }
+
   elements.forEach(element => {
-    _.keys(element).forEach(k => {
-      _.set(element, k, _.cloneDeepWith(_.get(element, k), v => {
-        if (isType(v)) {
-          return typeMap[v.elemID.getFullName()]
-        }
-        if (isStaticFile(v)) {
-          return staticFiles[v.filepath]
+    // We use cloneDeep for the iteration but we change the objects in-place in order to preserve
+    // references between objects
+    _.cloneDeepWith(element, (value, key, object) => {
+      if (object === undefined || key === undefined) {
+        // We don't get object/key if and only if this is called on the top level element
+        if (isContainerType(value)) {
+          resolveType(value)
+          return 'stop recursion'
         }
         return undefined
-      }))
+      }
+      if (isType(value)) {
+        const resolvedType = resolveType(value)
+        if (resolvedType !== undefined) {
+          _.set(object, key, resolvedType)
+          return 'stop recursion'
+        }
+        return undefined
+      }
+      if (isStaticFile(value)) {
+        _.set(object, key, staticFiles[value.filepath])
+        return 'stop recursion'
+      }
+      return undefined
     })
   })
 

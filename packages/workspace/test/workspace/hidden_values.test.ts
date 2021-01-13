@@ -172,7 +172,7 @@ describe('handleHiddenChanges', () => {
     })
   })
 
-  describe('hidden annnotation of field', async () => {
+  describe('hidden annotation of field', () => {
     const object = new ObjectType({
       elemID: new ElemID('test', 'type'),
       fields: {

@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
-  AdapterFailureInstallResult, AdapterSuccessInstallResult, ElemID, InstanceElement,
-  isAdapterSuccessInstallResult, ObjectType,
+  AdapterFailureInstallResult, AdapterSuccessInstallResult,
+  ElemID, InstanceElement, isAdapterSuccessInstallResult, ObjectType,
 } from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
@@ -82,7 +83,11 @@ describe('NetsuiteAdapter creator', () => {
 
   describe('client creation', () => {
     it('should create the client correctly', () => {
-      adapter.operations({ credentials, config })
+      adapter.operations({
+        credentials,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       expect(NetsuiteClient).toHaveBeenCalledWith({
         credentials: credentials.value,
         config: clientConfig,
@@ -92,7 +97,12 @@ describe('NetsuiteAdapter creator', () => {
 
   describe('adapter creation', () => {
     it('should create the adapter correctly', () => {
-      adapter.operations({ credentials, config, getElemIdFunc: mockGetElemIdFunc })
+      adapter.operations({
+        credentials,
+        config,
+        getElemIdFunc: mockGetElemIdFunc,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
@@ -106,7 +116,11 @@ describe('NetsuiteAdapter creator', () => {
     })
 
     it('should create the adapter correctly when not having config', () => {
-      adapter.operations({ credentials, getElemIdFunc: mockGetElemIdFunc })
+      adapter.operations({
+        credentials,
+        getElemIdFunc: mockGetElemIdFunc,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
@@ -130,6 +144,7 @@ describe('NetsuiteAdapter creator', () => {
           credentials,
           config: invalidConfig,
           getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
         })
       ).toThrow()
     })

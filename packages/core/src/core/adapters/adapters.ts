@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication,
+  Adapter, AdapterAuthentication, Element,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, safeJsonStringify, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import adapterCreators from './creators'
 
@@ -66,24 +66,37 @@ export const getAdaptersCreatorConfigs = async (
   adapters: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
   config: Readonly<Record<string, InstanceElement>>,
+  workspaceElements: ReadonlyArray<Element>,
   elemIdGetter?: ElemIdGetter,
-): Promise<Record<string, AdapterOperationsContext>> =>
-  (_
+): Promise<Record<string, AdapterOperationsContext>> => {
+  const adapterToElements = _.groupBy(workspaceElements, e => e.elemID.adapter)
+  return _
     .fromPairs(await Promise.all(adapters.map(
       async adapter => {
         const adapterConfig = config[adapter]
         return ([adapter, {
           credentials: credentials[adapter],
           config: adapterConfig ?? getDefaultAdapterConfig(adapter),
+          elementsSource: buildElementsSourceFromElements(
+            adapterToElements[adapter] !== undefined ? adapterToElements[adapter] : []
+          ),
           getElemIdFunc: elemIdGetter,
         }])
       }
-    ))))
+    )))
+}
 
 export const getAdapters = async (
   adapters: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
   config: Readonly<Record<string, InstanceElement>>,
+  workspaceElements: ReadonlyArray<Element>,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperations>> =>
-  initAdapters(await getAdaptersCreatorConfigs(adapters, credentials, config, elemIdGetter))
+  initAdapters(await getAdaptersCreatorConfigs(
+    adapters,
+    credentials,
+    config,
+    workspaceElements,
+    elemIdGetter
+  ))

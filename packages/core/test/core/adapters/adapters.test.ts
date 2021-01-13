@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { adapter } from '@salto-io/salesforce-adapter'
 import {
@@ -71,15 +71,17 @@ describe('adapters.ts', () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
-        {}
+        {},
+        []
       )
-      expect(result).toEqual({
-        [serviceName]: {
+      expect(result[serviceName]).toEqual(
+        expect.objectContaining({
           credentials: sfConfig,
           config: getDefaultAdapterConfig(serviceName),
           getElemIdFunc: undefined,
-        },
-      })
+        })
+      )
+      expect(Object.keys(result)).toEqual([serviceName])
     })
 
     it('should return adapter config when there is config', async () => {
@@ -87,33 +89,67 @@ describe('adapters.ts', () => {
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
         { [sfConfig.elemID.adapter]: sfConfig },
+        [],
       )
-      expect(result).toEqual({
-        [serviceName]: {
+      expect(result[serviceName]).toEqual(
+        expect.objectContaining({
           credentials: sfConfig,
           config: sfConfig,
           getElemIdFunc: undefined,
-        },
-      })
+        })
+      )
+      expect(Object.keys(result)).toEqual([serviceName])
+    })
+
+    it('should return an ReadOnlyElementsSource with only the adapter elements', async () => {
+      const result = await getAdaptersCreatorConfigs(
+        [serviceName],
+        { [sfConfig.elemID.adapter]: sfConfig },
+        { [sfConfig.elemID.adapter]: sfConfig },
+        [
+          new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
+          new ObjectType({ elemID: new ElemID('dummy', 'type2') }),
+        ],
+      )
+      const elementsSource = result[serviceName]?.elementsSource
+      expect(elementsSource).toBeDefined()
+      expect(await elementsSource.has(new ElemID(serviceName, 'type1'))).toBeTruthy()
+      expect(await elementsSource.has(new ElemID('dummy', 'type2'))).toBeFalsy()
     })
   })
 
   describe('init adapter', () => {
     it('should return adapter when config is defined', () => {
-      const adapters = initAdapters({ salesforce: { credentials: sfConfig, config: undefined } })
+      const adapters = initAdapters({
+        salesforce: {
+          credentials: sfConfig,
+          config: undefined,
+          elementsSource: utils.buildElementsSourceFromElements([]),
+        },
+      })
       expect(adapters.salesforce).toBeDefined()
     })
 
     it('should throw an error when no proper config exists', async () => {
       const credentials: InstanceElement | undefined = undefined
       expect(() => initAdapters(
-        { [services[0]]: { credentials: (credentials as unknown as InstanceElement) } }
+        {
+          [services[0]]: {
+            credentials: (credentials as unknown as InstanceElement),
+            elementsSource: utils.buildElementsSourceFromElements([]),
+          },
+        }
       )).toThrow()
     })
 
     it('should throw an error when no proper creator exists', async () => {
       expect(() => initAdapters(
-        { notExist: { credentials: sfConfig } }
+        {
+          notExist: {
+            credentials: sfConfig,
+            elementsSource: utils.buildElementsSourceFromElements([]),
+          },
+        }
       )).toThrow()
     })
   })

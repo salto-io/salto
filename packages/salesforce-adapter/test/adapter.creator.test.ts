@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ElemID, ObjectType, OAuthMethod } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
@@ -121,7 +122,11 @@ describe('SalesforceAdapter creator', () => {
 
   describe('when passed config elements', () => {
     it('creates the client correctly', () => {
-      adapter.operations({ credentials, config })
+      adapter.operations({
+        credentials,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       expect(SalesforceClient).toHaveBeenCalledWith({
         credentials: new UsernamePasswordCredentials({
           username: 'myUser',
@@ -141,7 +146,11 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('creates the adapter correctly', () => {
-      adapter.operations({ credentials, config })
+      adapter.operations({
+        credentials,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           metadataTypesSkippedList: ['test1'],
@@ -166,7 +175,11 @@ describe('SalesforceAdapter creator', () => {
         adapter.configType as ObjectType,
         { instancesRegexSkippedList: ['\\'] },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow()
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.includeObjects', () => {
@@ -180,7 +193,11 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.includeObjects value. The following regular expressions are invalid: \\')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('Failed to load config due to an invalid dataManagement.includeObjects value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.excludeObjects', () => {
@@ -195,7 +212,11 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.excludeObjects value. The following regular expressions are invalid: \\')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('Failed to load config due to an invalid dataManagement.excludeObjects value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.allowReferenceTo', () => {
@@ -210,7 +231,11 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.allowReferenceTo value. The following regular expressions are invalid: \\')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('Failed to load config due to an invalid dataManagement.allowReferenceTo value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.saltoIDSettings.overrides objectsRegex', () => {
@@ -227,7 +252,11 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('Failed to load config due to an invalid dataManagement.saltoIDSettings.overrides value. The following regular expressions are invalid: \\')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('Failed to load config due to an invalid dataManagement.saltoIDSettings.overrides value. The following regular expressions are invalid: \\')
     })
 
 
@@ -244,7 +273,11 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('includeObjects is required when dataManagement is configured')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('includeObjects is required when dataManagement is configured')
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings', () => {
@@ -255,7 +288,11 @@ describe('SalesforceAdapter creator', () => {
           includeObjects: ['obj'],
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings is required when dataManagement is configured')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('saltoIDSettings is required when dataManagement is configured')
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings.defaultIdFields', () => {
@@ -271,7 +308,11 @@ describe('SalesforceAdapter creator', () => {
           },
         } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
     })
 
     it('should throw an error when creating adapter with invalid rate limits in client.maxConcurrentApiRequests', () => {
@@ -289,7 +330,11 @@ describe('SalesforceAdapter creator', () => {
           },
         },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('client.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: read')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('client.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: read')
     })
     it('should not throw an error when all rate limits client.maxConcurrentApiRequests are valid', () => {
       const validConfig = new InstanceElement(
@@ -305,7 +350,11 @@ describe('SalesforceAdapter creator', () => {
           },
         },
       )
-      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      expect(() => adapter.operations({
+        credentials,
+        config: validConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).not.toThrow()
     })
 
     it('should not throw an error when maxConcurrentApiRequests is not set', () => {
@@ -314,7 +363,11 @@ describe('SalesforceAdapter creator', () => {
         adapter.configType as ObjectType,
         {},
       )
-      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      expect(() => adapter.operations({
+        credentials,
+        config: validConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).not.toThrow()
     })
 
     it('should not throw an error when a valid retry strategy is set', () => {
@@ -331,13 +384,18 @@ describe('SalesforceAdapter creator', () => {
           },
         },
       )
-      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      const adapterContext = {
+        credentials,
+        config: validConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      }
+      expect(() => adapter.operations(adapterContext)).not.toThrow()
       validConfig.value.client.retry.retryStrategy = 'HTTPOrNetworkError'
-      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      expect(() => adapter.operations(adapterContext)).not.toThrow()
       validConfig.value.client.retry.retryStrategy = 'NetworkError'
-      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      expect(() => adapter.operations(adapterContext)).not.toThrow()
       validConfig.value.client.retry.retryStrategy = undefined
-      expect(() => adapter.operations({ credentials, config: validConfig })).not.toThrow()
+      expect(() => adapter.operations(adapterContext)).not.toThrow()
     })
 
     it('should throw an error when an invalid retry strategy is set', () => {
@@ -346,11 +404,18 @@ describe('SalesforceAdapter creator', () => {
         adapter.configType as ObjectType,
         { client: { retry: { retryStrategy: 'somethingElse' } } },
       )
-      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow('client.clientConfig.retry.retryStrategy value \'somethingElse\' is not supported')
+      expect(() => adapter.operations({
+        credentials,
+        config: invalidConfig,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('client.clientConfig.retry.retryStrategy value \'somethingElse\' is not supported')
     })
 
     it('should not throw an error when no config is passed', () => {
-      expect(() => adapter.operations({ credentials })).not.toThrow()
+      expect(() => adapter.operations({
+        credentials,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).not.toThrow()
     })
   })
 })

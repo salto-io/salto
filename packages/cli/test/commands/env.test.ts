@@ -56,7 +56,6 @@ describe('env command group', () => {
         jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(
           () => Promise.resolve(false)
         )
-        jest.spyOn(core, 'envFolderExists').mockImplementation(() => Promise.resolve(false))
       })
 
       afterEach(() => {
@@ -163,7 +162,11 @@ describe('env command group', () => {
       })
 
       it('should not prompt on 2nd environment creation if env1 folder exists', async () => {
-        jest.spyOn(core, 'envFolderExists').mockImplementationOnce(() => Promise.resolve(true))
+        jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(baseDir => {
+          lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1'])
+          lastWorkspace.hasElementsInEnv = jest.fn().mockResolvedValue(true)
+          return Promise.resolve(lastWorkspace)
+        })
 
         await createAction({
           input: {

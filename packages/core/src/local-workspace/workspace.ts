@@ -117,10 +117,6 @@ const getLocalEnvName = (env: string): string => (env === COMMON_ENV_PREFIX
   ? env
   : path.join(ENVS_PREFIX, env))
 
-const getEnvPath = (baseDir: string, env: string): string => (
-  path.resolve(baseDir, getLocalEnvName(env))
-)
-
 export const loadLocalElementsSources = (baseDir: string, localStorage: string,
   envs: ReadonlyArray<string>): EnvironmentsSources => ({
   commonSourceName: COMMON_ENV_PREFIX,
@@ -154,11 +150,6 @@ export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|und
   }
   const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
   return parentDir ? locateWorkspaceRoot(parentDir) : undefined
-}
-
-export const envFolderExists = async (workspaceDir: string, env: string): Promise<boolean> => {
-  const baseDir = await locateWorkspaceRoot(path.resolve(workspaceDir))
-  return (baseDir !== undefined) && exists(getEnvPath(baseDir, env))
 }
 
 const credentialsSource = (localStorage: string): cs.ConfigSource =>

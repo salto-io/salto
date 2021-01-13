@@ -13,5 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { Plan, getPlan } from './plan'
+export { Plan, getPlan, AdditionalResolveContext } from './plan'
 export { PlanItem, PlanItemId } from './plan_item'

@@ -161,7 +161,7 @@ export const deploy = async (
   const changes = wu(await getDetailedChanges(
     relevantWorkspaceElements,
     [...changedElements.values()],
-    workspaceElements
+    { before: workspaceElements, after: workspaceElements }
   )).map(change => ({ change, serviceChange: change }))
     .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))
     .flatten()

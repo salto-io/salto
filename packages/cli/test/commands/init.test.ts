@@ -58,7 +58,7 @@ describe('init command', () => {
   const config = { shouldCalcTotalSize: false }
 
   beforeEach(async () => {
-    mockLocateWorkspaceRoot.mockImplementation(() => Promise.resolve(undefined))
+    mockLocateWorkspaceRoot.mockResolvedValue(undefined)
     output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     telemetry = mocks.getMockTelemetry()
     cliTelemetry = getCliTelemetry(telemetry, 'init')
@@ -98,8 +98,7 @@ describe('init command', () => {
 
   it('should avoid initiating a workspace which already exists', async () => {
     const path = '/some/path/to/workspace'
-    const errorMessage = `existing salto workspace in ${path}`
-    mockLocateWorkspaceRoot.mockImplementation(() => Promise.resolve(path))
+    mockLocateWorkspaceRoot.mockResolvedValue(path)
     await action({
       input: {
         workspaceName: 'test',
@@ -108,7 +107,7 @@ describe('init command', () => {
       cliTelemetry,
       output,
     })
-    expect(output.stderr.content).toEqual(`Could not initiate workspace: ${errorMessage}\n\n`)
+    expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n\n`)
     expect(output.stdout.content).toEqual('')
   })
 })

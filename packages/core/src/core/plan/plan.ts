@@ -181,13 +181,19 @@ const removeRedundantFieldChanges = (
   )
 )
 
+export type AdditionalResolveContext = {
+  before: ReadonlyArray<Element>
+  after: ReadonlyArray<Element>
+}
+
 type GetPlanParameters = {
   before: ReadonlyArray<Element>
   after: ReadonlyArray<Element>
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
-  additionalResolveContext?: ReadonlyArray<Element>
+  beforeAdditionalResolveContext?: ReadonlyArray<Element>
+  additionalResolveContext?: AdditionalResolveContext
 }
 export const getPlan = async ({
   before,
@@ -198,8 +204,8 @@ export const getPlan = async ({
   additionalResolveContext,
 }: GetPlanParameters): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
-  const resolvedBefore = resolve(before, additionalResolveContext)
-  const resolvedAfter = resolve(after, additionalResolveContext)
+  const resolvedBefore = resolve(before, additionalResolveContext?.before)
+  const resolvedAfter = resolve(after, additionalResolveContext?.after)
 
   const diffGraph = await buildDiffGraph(
     addElements(resolvedBefore, 'remove'),

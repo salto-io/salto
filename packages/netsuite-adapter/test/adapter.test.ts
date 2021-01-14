@@ -18,13 +18,14 @@ import {
   ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
-  FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
@@ -34,6 +35,7 @@ import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
+import { buildNetsuiteQuery } from '../src/query'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual('../src/config'),
@@ -73,6 +75,7 @@ describe('Adapter', () => {
   }
   const netsuiteAdapter = new NetsuiteAdapter({
     client,
+    elementsSource: buildElementsSourceFromElements([]),
     filtersCreators: [firstDummyFilter, secondDummyFilter],
     config,
     getElemIdFunc: mockGetElemIdFunc,
@@ -123,11 +126,18 @@ describe('Adapter', () => {
         failedTypes: [],
         failedToFetchAllAtOnce: false,
       })
-      const { elements } = await netsuiteAdapter.fetch()
-      expect(client.getCustomObjects).toHaveBeenCalledWith(
-        _.pull(Object.keys(customTypes), SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION),
-      )
-      expect(client.importFileCabinetContent).toHaveBeenCalledWith([new RegExp(filePathRegexStr)])
+      const { elements, isPartial } = await netsuiteAdapter.fetch()
+      expect(isPartial).toBeFalsy()
+      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][0]
+      const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
+      expect(_.pull(Object.keys(customTypes), ...typesToSkip).every(customObjectsQuery.isTypeMatch))
+        .toBeTruthy()
+      expect(typesToSkip.some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+
+      const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
+      expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
+      expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
+
       expect(elements).toHaveLength(getAllTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
@@ -140,6 +150,50 @@ describe('Adapter', () => {
       expect(elements).toContainEqual(
         createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER], mockGetElemIdFunc)
       )
+    })
+
+    describe('fetchTarget', async () => {
+      const conf = {
+        [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+        [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
+        [FETCH_TARGET]: buildNetsuiteQuery({
+          types: {
+            [SAVED_SEARCH]: ['.*'],
+            addressForm: ['.*'],
+          },
+          filePaths: ['Some/File/.*'],
+        }),
+      }
+      const adapter = new NetsuiteAdapter({
+        client,
+        elementsSource: buildElementsSourceFromElements([]),
+        filtersCreators: [firstDummyFilter, secondDummyFilter],
+        config: conf,
+        getElemIdFunc: mockGetElemIdFunc,
+      })
+
+      it('isPartial should be true', async () => {
+        const { isPartial } = await adapter.fetch()
+        expect(isPartial).toBeTruthy()
+      })
+
+      it('should match the types that match fetchTarget and not in typesToSkip', async () => {
+        await adapter.fetch()
+
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][0]
+        expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
+        expect(_.pull(Object.keys(customTypes), 'addressForm').some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+        expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
+      })
+
+      it('should match the files that match fetchTarget and not in filePathRegexSkipList', async () => {
+        await adapter.fetch()
+
+        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
+        expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
+        expect(fileCabinetQuery.isFileMatch('Some/AnotherFile/another')).toBeFalsy()
+        expect(fileCabinetQuery.isFileMatch('Some/File/another')).toBeTruthy()
+      })
     })
 
     it('should fail when getCustomObjects fails', async () => {
@@ -190,12 +244,11 @@ describe('Adapter', () => {
       expect(onFetchMock).toHaveBeenNthCalledWith(2, 2)
     })
 
-    it('should call getCustomObjects only with types that are not in typesToSkip', async () => {
+    it('should call getCustomObjects with query that only matches types that are not in typesToSkip', async () => {
       await netsuiteAdapter.fetch()
-      expect(client.getCustomObjects)
-        .toHaveBeenCalledWith(expect.arrayContaining([ENTITY_CUSTOM_FIELD]))
-      expect(client.getCustomObjects)
-        .not.toHaveBeenCalledWith(expect.arrayContaining([SAVED_SEARCH]))
+      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][0]
+      expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
+      expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
     })
 
     it('should return only the elements when having no config changes', async () => {
@@ -421,6 +474,7 @@ describe('Adapter', () => {
       }
       const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
         client,
+        elementsSource: buildElementsSourceFromElements([]),
         filtersCreators: [firstDummyFilter, secondDummyFilter],
         config: configWithDeployReferencedElements,
         getElemIdFunc: mockGetElemIdFunc,

@@ -15,6 +15,7 @@
 */
 import {
   Element, isInstanceElement, Values, ObjectType, ElemID, ReferenceExpression, InstanceElement,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
@@ -77,18 +78,24 @@ const customTypeServiceIdsToElemIds = (instance: InstanceElement): Record<string
   return serviceIdsToElemIds
 }
 
+const getInstanceServiceIdRecords = (element: InstanceElement): Record<string, ElemID> => (
+  isCustomType(element.type)
+    ? customTypeServiceIdsToElemIds(element)
+    : { [serviceId(element)]: element.elemID.createNestedID(PATH) }
+)
+
 const generateServiceIdToElemID = (elements: Element[]): Record<string, ElemID> =>
-  _.assign({},
+  _.assign(
+    {},
     ...elements.filter(isInstanceElement)
-      .map(instance => (
-        isCustomType(instance.type)
-          ? customTypeServiceIdsToElemIds(instance)
-          : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) })))
+      .map(getInstanceServiceIdRecords)
+  )
 
 const replaceReferenceValues = (
   values: Values,
   refElement: ObjectType,
-  serviceIdToElemID: Record<string, ElemID>
+  fetchedElementsServiceIdToElemID: Record<string, ElemID>,
+  elementsSourceServiceIdToElemID: Record<string, ElemID>,
 ): Values => {
   const replacePrimitive: TransformFunc = ({ value }) => {
     if (!_.isString(value)) {
@@ -98,7 +105,9 @@ const replaceReferenceValues = (
     if (_.isUndefined(capturedServiceId)) {
       return value
     }
-    const elemID = serviceIdToElemID[capturedServiceId]
+    const elemID = fetchedElementsServiceIdToElemID[capturedServiceId]
+      ?? elementsSourceServiceIdToElemID[capturedServiceId]
+
     if (_.isUndefined(elemID)) {
       return value
     }
@@ -113,14 +122,44 @@ const replaceReferenceValues = (
   }) || values
 }
 
+const createElementsSourceServiceIdToElemID = async (
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean,
+): Promise<Record<string, ElemID>> => {
+  let elementsSourceServiceIdToElemID: Record<string, ElemID> = {}
+
+  if (!isPartial) {
+    return elementsSourceServiceIdToElemID
+  }
+
+  for await (const element of await elementsSource.getAll()) {
+    if (isInstanceElement(element)) {
+      elementsSourceServiceIdToElemID = _.assign(
+        elementsSourceServiceIdToElemID,
+        getInstanceServiceIdRecords(element)
+      )
+    }
+  }
+  return elementsSourceServiceIdToElemID
+}
+
 const filterCreator: FilterCreator = () => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
-    const serviceIdToElemID = generateServiceIdToElemID(elements)
+  onFetch: async ({
+    elements,
+    elementsSource,
+    isPartial,
+  }): Promise<void> => {
+    const fetchedElemenentsServiceIdToElemID = generateServiceIdToElemID(elements)
+    const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
+      elementsSource,
+      isPartial
+    )
     elements.filter(isInstanceElement).forEach(instance => {
       instance.value = replaceReferenceValues(
         instance.value,
         instance.type,
-        serviceIdToElemID
+        fetchedElemenentsServiceIdToElemID,
+        elementsSourceServiceIdToElemID
       )
     })
   },

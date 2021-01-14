@@ -64,6 +64,7 @@ export const MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 'maxItemsInImportObjectsReque
 export const DEPLOY_REFERENCED_ELEMENTS = 'deployReferencedElements'
 export const SDF_CONCURRENCY_LIMIT = 'sdfConcurrencyLimit'
 export const CLIENT_CONFIG = 'client'
+export const FETCH_TARGET = 'fetchTarget'
 
 export const CAPTURE = 'capture'
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'

@@ -26,8 +26,9 @@ import {
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
-import { getPlan, Plan } from './plan'
+import { getPlan, Plan, AdditionalResolveContext } from './plan'
 import {
   AdapterEvents,
   createAdapterProgressReporter,
@@ -75,7 +76,7 @@ export type MergeErrorWithElements = {
 export const getDetailedChanges = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-  additionalResolveContext?: ReadonlyArray<Element>,
+  additionalResolveContext?: AdditionalResolveContext,
 ): Promise<Iterable<DetailedChange>> =>
   wu((await getPlan({
     before,
@@ -89,10 +90,14 @@ export const getDetailedChanges = async (
 const getChangeMap = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
+  additionalResolveContext?: AdditionalResolveContext,
 ): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
-    wu(await getDetailedChanges(before, after))
-      .map(change => [change.id.getFullName(), change])
+    wu(await getDetailedChanges(
+      before,
+      after,
+      additionalResolveContext,
+    )).map(change => [change.id.getFullName(), change])
       .toArray(),
   )
 
@@ -235,6 +240,7 @@ const fetchAndProcessMergeErrors = async (
     serviceElements: Element[]
     processErrorsResult: ProcessMergeErrorsResult
     updatedConfigs: UpdatedConfig[]
+    partiallyFetchedAdapters: Set<string>
   }> => {
   try {
     const fetchResults = await Promise.all(
@@ -251,6 +257,8 @@ const fetchAndProcessMergeErrors = async (
             updatedConfig: updatedConfig
               ? { config: flattenElementStr(updatedConfig.config), message: updatedConfig.message }
               : undefined,
+            isPartial: fetchResult.isPartial ?? false,
+            adapterName,
           }
         })
     )
@@ -258,6 +266,13 @@ const fetchAndProcessMergeErrors = async (
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
       .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
+
+    const partiallyFetchedAdapters = new Set(
+      fetchResults
+        .filter(result => result.isPartial)
+        .map(result => result.adapterName)
+    )
+
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
     applyInstancesDefaults(elements.filter(isInstanceElement))
@@ -280,11 +295,27 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrors.length}]`)
-    return { serviceElements: validServiceElements, processErrorsResult, updatedConfigs }
+    return {
+      serviceElements: validServiceElements,
+      processErrorsResult,
+      updatedConfigs,
+      partiallyFetchedAdapters,
+    }
   } catch (error) {
     getChangesEmitter.emit('failed')
     throw error
   }
+}
+
+export const getAdaptersFirstFetchPartial = (
+  elements: Element[],
+  partiallyFetchedAdapters: Set<string>,
+): Set<string> => {
+  if (_.isEmpty(partiallyFetchedAdapters)) {
+    return new Set()
+  }
+  const adaptersWithElements = new Set(wu(elements).map(e => e.elemID.adapter))
+  return collections.set.difference(partiallyFetchedAdapters, adaptersWithElements)
 }
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
@@ -293,19 +324,27 @@ const calcFetchChanges = async (
   serviceElements: ReadonlyArray<Element>,
   mergedServiceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
-  workspaceElements: ReadonlyArray<Element>
+  workspaceElements: ReadonlyArray<Element>,
+  additionalWorkspaceResolveContext: ReadonlyArray<Element>,
+  additionalStateResolveContext: ReadonlyArray<Element>,
 ): Promise<Iterable<FetchChange>> => {
   const serviceChanges = await log.time(() =>
-    getDetailedChanges(stateElements, mergedServiceElements),
+    getDetailedChanges(
+      stateElements,
+      mergedServiceElements,
+      { before: additionalStateResolveContext, after: additionalStateResolveContext }
+    ),
   'finished to calculate service-state changes')
   const pendingChanges = await log.time(() => getChangeMap(
     stateElements,
-    workspaceElements
+    workspaceElements,
+    { before: additionalStateResolveContext, after: additionalWorkspaceResolveContext },
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     workspaceElements,
-    mergedServiceElements
+    mergedServiceElements,
+    { before: additionalWorkspaceResolveContext, after: additionalWorkspaceResolveContext }
   ), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
@@ -333,21 +372,36 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
   const {
-    serviceElements, processErrorsResult, updatedConfigs,
+    serviceElements, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
     getChangesEmitter,
     progressEmitter
   )
+
+  const allElements = workspaceElements.concat(stateElements).filter(e => !e.elemID.isConfig())
+  getAdaptersFirstFetchPartial(allElements, partiallyFetchedAdapters).forEach(
+    adapter => log.warn('Received partial results from %s before full fetch', adapter)
+  )
+
   const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
 
-  const isFirstFetch = _.isEmpty(workspaceElements.concat(stateElements)
-    .filter(e => !e.elemID.isConfig()))
+  const isFirstFetch = _.isEmpty(allElements)
+
+  const serviceElementsIds = new Set(serviceElements.map(e => e.elemID.getFullName()))
+
+  const shouldConsiderElementInPlan = (e: Element): boolean =>
+    (!partiallyFetchedAdapters.has(e.elemID.adapter)
+      || serviceElementsIds.has(e.elemID.getFullName()))
+
+  const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
+  const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
+
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
     : await calcFetchChanges(
@@ -356,8 +410,12 @@ export const fetchChanges = async (
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
-      _.isEmpty(stateElements) ? workspaceElements : stateElements,
-      workspaceElements
+      _.isEmpty(filteredStateElements) ? filteredWorkspaceElements : filteredStateElements,
+      filteredWorkspaceElements,
+      // additionalWorkspaceResolveContext is only required when there is a partial fetch
+      !_.isEmpty(partiallyFetchedAdapters) ? workspaceElements : [],
+      // additionalStateResolveContext is only required when there is a partial fetch
+      !_.isEmpty(partiallyFetchedAdapters) ? stateElements : []
     )
 
   log.debug('finished to calculate fetch changes')

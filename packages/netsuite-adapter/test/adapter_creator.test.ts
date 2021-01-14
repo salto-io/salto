@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
-  AdapterFailureInstallResult, AdapterSuccessInstallResult, ElemID, InstanceElement,
-  isAdapterSuccessInstallResult, ObjectType,
+  AdapterFailureInstallResult, AdapterSuccessInstallResult,
+  ElemID, InstanceElement, isAdapterSuccessInstallResult, ObjectType,
 } from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
@@ -25,6 +26,7 @@ import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
   DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES, CLIENT_CONFIG,
   MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
+  FETCH_TARGET,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 
@@ -36,6 +38,10 @@ const mockDownload = cli.SdkDownloadService.download as jest.Mock
 mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })
 
 describe('NetsuiteAdapter creator', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks()
+  })
+
   const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
     adapter.authenticationMethods.basic.credentialsType,
@@ -69,10 +75,6 @@ describe('NetsuiteAdapter creator', () => {
   )
 
   describe('validateCredentials', () => {
-    beforeEach(async () => {
-      jest.clearAllMocks()
-    })
-
     it('should call validateCredentials with the correct credentials', async () => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
       await adapter.validateCredentials(credentials)
@@ -82,7 +84,11 @@ describe('NetsuiteAdapter creator', () => {
 
   describe('client creation', () => {
     it('should create the client correctly', () => {
-      adapter.operations({ credentials, config })
+      adapter.operations({
+        credentials,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       expect(NetsuiteClient).toHaveBeenCalledWith({
         credentials: credentials.value,
         config: clientConfig,
@@ -91,8 +97,15 @@ describe('NetsuiteAdapter creator', () => {
   })
 
   describe('adapter creation', () => {
+    const elementsSource = buildElementsSourceFromElements([])
+
     it('should create the adapter correctly', () => {
-      adapter.operations({ credentials, config, getElemIdFunc: mockGetElemIdFunc })
+      adapter.operations({
+        credentials,
+        config,
+        getElemIdFunc: mockGetElemIdFunc,
+        elementsSource,
+      })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
@@ -101,18 +114,59 @@ describe('NetsuiteAdapter creator', () => {
           [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: clientConfig,
         },
+        elementsSource,
+        getElemIdFunc: mockGetElemIdFunc,
+      })
+    })
+
+    it('should override FETCH_ALL_TYPES_AT_ONCE if received FETCH_TARGET', () => {
+      const conf = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          [CLIENT_CONFIG]: {
+            [FETCH_ALL_TYPES_AT_ONCE]: true,
+          },
+          [FETCH_TARGET]: {
+            filePaths: ['aaa'],
+          },
+        }
+      )
+
+      adapter.operations({
+        credentials,
+        config: conf,
+        getElemIdFunc: mockGetElemIdFunc,
+        elementsSource,
+      })
+      expect(NetsuiteAdapter).toHaveBeenCalledWith({
+        client: expect.any(Object),
+        config: {
+          [TYPES_TO_SKIP]: [],
+          [FILE_PATHS_REGEX_SKIP_LIST]: [],
+          [CLIENT_CONFIG]: {
+            [FETCH_ALL_TYPES_AT_ONCE]: false,
+          },
+          [FETCH_TARGET]: expect.any(Object),
+        },
+        elementsSource,
         getElemIdFunc: mockGetElemIdFunc,
       })
     })
 
     it('should create the adapter correctly when not having config', () => {
-      adapter.operations({ credentials, getElemIdFunc: mockGetElemIdFunc })
+      adapter.operations({
+        credentials,
+        getElemIdFunc: mockGetElemIdFunc,
+        elementsSource,
+      })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
           [TYPES_TO_SKIP]: [],
           [FILE_PATHS_REGEX_SKIP_LIST]: [],
         },
+        elementsSource,
         getElemIdFunc: mockGetElemIdFunc,
       })
     })
@@ -130,6 +184,7 @@ describe('NetsuiteAdapter creator', () => {
           credentials,
           config: invalidConfig,
           getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
         })
       ).toThrow()
     })

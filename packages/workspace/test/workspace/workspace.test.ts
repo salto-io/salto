@@ -1756,6 +1756,37 @@ describe('workspace', () => {
       expect(attrRefFiles).toContain('unmerged.nacl')
     })
   })
+
+  describe('hasElementsInEnv', () => {
+    let workspace: Workspace
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        undefined, undefined, undefined, undefined, undefined,
+        {
+          '': {
+            naclFiles: naclFilesSource(mockDirStore(), mockParseCache(), mockStaticFilesSource()),
+          },
+          empty: {
+            naclFiles: createMockNaclFileSource([]),
+            state: createState([]),
+          },
+          full: {
+            naclFiles: createMockNaclFileSource([new ObjectType({ elemID: new ElemID('test', 'type') })]),
+            state: createState([]),
+          },
+        }
+      )
+    })
+    it('should return false for empty env', async () => {
+      await expect(workspace.hasElementsInEnv('empty')).resolves.toBeFalsy()
+    })
+    it('should return true for non empty env', async () => {
+      await expect(workspace.hasElementsInEnv('full')).resolves.toBeTruthy()
+    })
+    it('should return false for environments that do no exist', async () => {
+      await expect(workspace.hasElementsInEnv('noSuchEnv')).resolves.toBeFalsy()
+    })
+  })
 })
 
 describe('getElementNaclFiles', () => {

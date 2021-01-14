@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
-import { loadLocalWorkspace, envFolderExists, diff } from '@salto-io/core'
+import { loadLocalWorkspace, diff } from '@salto-io/core'
 import { Workspace, createElementSelectors } from '@salto-io/workspace'
 import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { CliOutput, CliExitCode } from '../types'
@@ -45,13 +45,12 @@ const setEnvironment = async (
 
 const shouldRecommendToIsolateCurrentEnv = async (
   workspace: Workspace,
-  workspaceDir: string,
 ): Promise<boolean> => {
   const envNames = workspace.envs()
   return (
     envNames.length === 1
     && !await workspace.isEmpty(true)
-    && !await envFolderExists(workspaceDir, envNames[0])
+    && !await workspace.hasElementsInEnv(envNames[0])
   )
 }
 
@@ -63,13 +62,12 @@ const isolateExistingEnvironments = async (workspace: Workspace): Promise<void> 
 const maybeIsolateExistingEnv = async (
   output: CliOutput,
   workspace: Workspace,
-  workspaceDir: string,
   force?: boolean,
   acceptSuggestions?: boolean,
 ): Promise<void> => {
   if (
     (!force || acceptSuggestions)
-    && await shouldRecommendToIsolateCurrentEnv(workspace, workspaceDir)
+    && await shouldRecommendToIsolateCurrentEnv(workspace)
   ) {
     const existingEnv = workspace.envs()[0]
     outputLine(formatApproveIsolateCurrentEnvPrompt(existingEnv), output)
@@ -213,13 +211,13 @@ const envRenameDef = createPublicCommandDef({
       {
         name: 'oldName',
         required: true,
-        description: 'The current enviorment name',
+        description: 'The current environment name',
         type: 'string',
       },
       {
         name: 'newName',
         required: true,
-        description: 'The new enviorment name',
+        description: 'The new environment name',
         type: 'string',
       },
     ],
@@ -251,7 +249,7 @@ const envDeleteDef = createPublicCommandDef({
       {
         name: 'envName',
         required: true,
-        description: 'The enviorment name',
+        description: 'The environment name',
         type: 'string',
       },
     ],
@@ -279,7 +277,7 @@ const envSetDef = createPublicCommandDef({
       {
         name: 'envName',
         required: true,
-        description: 'The enviorment name',
+        description: 'The environment name',
         type: 'string',
       },
     ],
@@ -343,7 +341,7 @@ export const createAction: CommandDefAction<EnvCreateArgs> = async ({
   log.debug('running env create command on \'%s\' %o', workspacePath, input)
   const { force, yesAll, envName } = input
   const workspace = await loadLocalWorkspace(workspacePath)
-  await maybeIsolateExistingEnv(output, workspace, workspacePath, force, yesAll)
+  await maybeIsolateExistingEnv(output, workspace, force, yesAll)
 
   await workspace.addEnvironment(envName)
   await setEnvironment(envName, output, workspace)
@@ -354,7 +352,7 @@ export const createAction: CommandDefAction<EnvCreateArgs> = async ({
 const envCreateDef = createPublicCommandDef({
   properties: {
     name: 'create',
-    description: 'Create a new environemnt in the workspace',
+    description: 'Create a new environment in the workspace',
     keyedOptions: [
       {
         name: 'force',
@@ -373,7 +371,7 @@ const envCreateDef = createPublicCommandDef({
       {
         name: 'envName',
         required: true,
-        description: 'The new enviorment name',
+        description: 'The new environment name',
         type: 'string',
       },
     ],

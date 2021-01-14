@@ -86,6 +86,7 @@ export type Workspace = {
 
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
   hasElementsInServices(serviceNames: string[]): Promise<boolean>
+  hasElementsInEnv(envName: string): Promise<boolean>
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
@@ -308,6 +309,13 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         elemId => serviceNames.includes(elemId.adapter)
       )
     ),
+    hasElementsInEnv: async envName => {
+      const envSource = elementsSources.sources[envName]
+      if (envSource === undefined) {
+        return false
+      }
+      return !(await envSource.naclFiles.isEmpty())
+    },
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.
     // Passing direct pointer for these functions would have resulted in pointers to a nullified

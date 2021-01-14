@@ -192,7 +192,6 @@ type GetPlanParameters = {
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
-  beforeAdditionalResolveContext?: ReadonlyArray<Element>
   additionalResolveContext?: AdditionalResolveContext
 }
 export const getPlan = async ({

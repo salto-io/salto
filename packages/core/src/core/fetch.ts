@@ -308,7 +308,7 @@ const fetchAndProcessMergeErrors = async (
 }
 
 export const getAdaptersFirstFetchPartial = (
-  elements: Element[],
+  elements: readonly Element[],
   partiallyFetchedAdapters: Set<string>,
 ): Set<string> => {
   if (_.isEmpty(partiallyFetchedAdapters)) {
@@ -325,26 +325,38 @@ const calcFetchChanges = async (
   mergedServiceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
   workspaceElements: ReadonlyArray<Element>,
-  additionalWorkspaceResolveContext: ReadonlyArray<Element>,
-  additionalStateResolveContext: ReadonlyArray<Element>,
+  partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
+  const serviceElementsIds = new Set(wu(serviceElements)
+    .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
+    .map(e => e.elemID.getFullName()))
+
+  const shouldConsiderElementInPlan = (e: Element): boolean =>
+    (!partiallyFetchedAdapters.has(e.elemID.adapter)
+      || serviceElementsIds.has(e.elemID.getFullName()))
+
+  const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
+  const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
+
+  const shouldAddAdditionalContext = !_.isEmpty(partiallyFetchedAdapters)
+
   const serviceChanges = await log.time(() =>
     getDetailedChanges(
-      stateElements,
+      filteredStateElements,
       mergedServiceElements,
-      { before: additionalStateResolveContext, after: additionalStateResolveContext }
+      shouldAddAdditionalContext ? { before: stateElements, after: stateElements } : undefined
     ),
   'finished to calculate service-state changes')
   const pendingChanges = await log.time(() => getChangeMap(
-    stateElements,
-    workspaceElements,
-    { before: additionalStateResolveContext, after: additionalWorkspaceResolveContext },
+    filteredStateElements,
+    filteredWorkspaceElements,
+    shouldAddAdditionalContext ? { before: stateElements, after: workspaceElements } : undefined
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
-    workspaceElements,
+    filteredWorkspaceElements,
     mergedServiceElements,
-    { before: additionalWorkspaceResolveContext, after: additionalWorkspaceResolveContext }
+    shouldAddAdditionalContext ? { before: workspaceElements, after: stateElements } : undefined
   ), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
@@ -380,8 +392,7 @@ export const fetchChanges = async (
     progressEmitter
   )
 
-  const allElements = workspaceElements.concat(stateElements).filter(e => !e.elemID.isConfig())
-  getAdaptersFirstFetchPartial(allElements, partiallyFetchedAdapters).forEach(
+  getAdaptersFirstFetchPartial(stateElements, partiallyFetchedAdapters).forEach(
     adapter => log.warn('Received partial results from %s before full fetch', adapter)
   )
 
@@ -391,16 +402,8 @@ export const fetchChanges = async (
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
 
-  const isFirstFetch = _.isEmpty(allElements)
-
-  const serviceElementsIds = new Set(serviceElements.map(e => e.elemID.getFullName()))
-
-  const shouldConsiderElementInPlan = (e: Element): boolean =>
-    (!partiallyFetchedAdapters.has(e.elemID.adapter)
-      || serviceElementsIds.has(e.elemID.getFullName()))
-
-  const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
-  const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
+  const isFirstFetch = _.isEmpty(workspaceElements.concat(stateElements)
+    .filter(e => !e.elemID.isConfig()))
 
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
@@ -410,12 +413,9 @@ export const fetchChanges = async (
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
-      _.isEmpty(filteredStateElements) ? filteredWorkspaceElements : filteredStateElements,
-      filteredWorkspaceElements,
-      // additionalWorkspaceResolveContext is only required when there is a partial fetch
-      !_.isEmpty(partiallyFetchedAdapters) ? workspaceElements : [],
-      // additionalStateResolveContext is only required when there is a partial fetch
-      !_.isEmpty(partiallyFetchedAdapters) ? stateElements : []
+      _.isEmpty(stateElements) ? workspaceElements : stateElements,
+      workspaceElements,
+      partiallyFetchedAdapters,
     )
 
   log.debug('finished to calculate fetch changes')

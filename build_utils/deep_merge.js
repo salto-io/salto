@@ -21,5 +21,5 @@ const customizer = (objValue, srcValue) => {
   }
 }
 
-module.exports = (object, sources) => _.mergeWith(_.cloneDeep(object), sources, customizer)
+module.exports = (object, ...sources) => _.mergeWith(_.cloneDeep(object), ...sources, customizer)
 

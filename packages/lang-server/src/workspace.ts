@@ -20,7 +20,7 @@ import { Workspace, nacl, errors, parser, validator } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType, Value, isModificationChange, isTypeOrInstanceChange } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { transformElement, TransformFuncArgs, detailedCompare } from '@salto-io/adapter-utils'
+import { transformElement, detailedCompare, TransformFunc } from '@salto-io/adapter-utils'
 
 const { validateElements } = validator
 export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
@@ -108,29 +108,29 @@ export class EditorWorkspace {
       .map(e => e.elemID)
   }
 
-  private async getUnresolvedRefOfFile(filename: string, references: ElemID[]):
+  private async getUnresolvedRefOfFile(filename: string, elements: ElemID[]):
   Promise<errors.UnresolvedReferenceValidationError[]> {
-    const elements = (await this.workspace.getParsedNaclFile(
+    const fileElements = (await this.workspace.getParsedNaclFile(
       this.workspaceFilename(filename)
     ))?.elements ?? []
     const validationErrors: errors.UnresolvedReferenceValidationError[] = []
-    const getReferenceExpressions = ({ value, path: elemPath }: TransformFuncArgs): Value => {
+    const getReferenceExpressions: TransformFunc = ({ value, path: elemPath }): Value => {
       if (isReferenceExpression(value) && elemPath) {
-        references.forEach(ref => {
-          if (ref.isEqual(value.elemId) || ref.isParentOf(value.elemId)) {
+        elements.forEach(elem => {
+          if (elem.isEqual(value.elemId) || elem.isParentOf(value.elemId)) {
             validationErrors.push(new errors.UnresolvedReferenceValidationError(
-              { elemID: elemPath, target: ref }
+              { elemID: elemPath, target: value.elemId }
             ))
           }
         })
       }
       return value
     }
-    elements.forEach(element => {
-      if (!isContainerType(element)) {
+    fileElements
+      .filter(e => !isContainerType(e))
+      .forEach(element => {
         transformElement({ element, transformFunc: getReferenceExpressions, strict: false })
-      }
-    })
+      })
     return validationErrors
   }
 
@@ -139,7 +139,7 @@ export class EditorWorkspace {
     const fileToReferencedIds = _(
       await Promise.all(
         ids.map(async id =>
-          (await this.getElementReferencedFiles(id.createTopLevelParentID().parent))
+          (await this.getElementReferencedFiles(id))
             .map(file => ({ id, file })))
       )
     ).flatten()
@@ -212,7 +212,7 @@ export class EditorWorkspace {
         : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opNaclFiles))
-        ? await this.workspace.setNaclFiles(..._.values(opNaclFiles))
+        ? await this.workspace.setNaclFiles(...Object.values(opNaclFiles))
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(

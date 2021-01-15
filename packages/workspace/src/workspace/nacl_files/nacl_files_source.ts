@@ -120,7 +120,7 @@ const getElementReferenced = (element: Element): Set<string> => {
     if (isReferenceExpression(value)) {
       const { parent, path: valueIDPath } = value.elemId.createTopLevelParentID()
       const nestedIds = valueIDPath.map((_p, index) => parent.createNestedID(
-        value.elemId.idType,
+        ...(value.elemId.idType !== parent.idType ? [value.elemId.idType] : []),
         ...valueIDPath.slice(0, index + 1)
       ))
       referenced.add(parent.getFullName())
@@ -366,10 +366,10 @@ const buildNaclFilesSource = (
     }))).filter(values.isDefined)
   }
 
-  const getElementReferencedFiles = async (
-    elemID: ElemID
-  ): Promise<string[]> =>
-    (await getState()).referencedIndex[elemID.getFullName()] || []
+  const getElementReferencedFiles = async (elemID: ElemID): Promise<string[]> => {
+    const ref = (await getState()).referencedIndex
+    return ref[elemID.getFullName()] || []
+  }
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]

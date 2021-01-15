@@ -26,7 +26,7 @@ import { Token } from './token'
 const getElemIDUsages = async (
   element: Element,
   id: ElemID
-): Promise<ElemID[]> => {
+): Promise<string[]> => {
   const pathsToAdd = new Set<string>()
   if (isObjectType(element)) {
     _(element.fields)
@@ -54,7 +54,7 @@ const getElemIDUsages = async (
   if (!isContainerType(element)) {
     transformElement({ element, transformFunc, strict: false })
   }
-  return [...pathsToAdd].map(pathToAdd => ElemID.fromFullName(pathToAdd))
+  return [...pathsToAdd]
 }
 
 const isTokenElemID = (token: string): boolean => {
@@ -101,9 +101,9 @@ export const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
   id: ElemID
-): Promise<ElemID[]> => _((await Promise.all(
+): Promise<string[]> => _((await Promise.all(
   (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id))
-))).flatten().uniqBy(e => e.getFullName()).value()
+))).flatten().uniq().value()
 
 export const getWorkspaceReferences = async (
   workspace: EditorWorkspace,
@@ -118,7 +118,7 @@ export const getWorkspaceReferences = async (
   const usages = _.flatten(await Promise.all(
     referencedByFiles.map(async filename =>
       (await getUsageInFile(workspace, filename, id))
-        .flatMap(elemID => ({ filename, fullname: elemID.getFullName() })))
+        .flatMap(elemID => ({ filename, fullname: elemID })))
   ))
   const selfReferences = (await workspace.getElementNaclFiles(id))
     .map(filename => ({ filename, fullname: id.getFullName() }))

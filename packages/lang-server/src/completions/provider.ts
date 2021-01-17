@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 
+import { collections } from '@salto-io/lowerdash'
 import {
   isInsertText, Suggestions, SuggestionsResolver, keywordSuggestions, typesSuggestions,
   isSuggestions, inheritanceSuggestions, annoSuggestions, eqSuggestions,
@@ -24,6 +25,8 @@ import {
 import { PositionContext, EditorPosition } from '../context'
 import { EditorWorkspace } from '../workspace'
 
+const MAX_NUM_OF_SUGGESTIONS = 100
+const { awu } = collections.asynciterable
 type LineType = 'empty'|'type'|'typeBody'|'field'
   |'annotation'|'instance'|'attr'|'fieldList'|'annoList'
 export interface SaltoCompletion {
@@ -126,7 +129,7 @@ const removeLinePrefix = (line: string): string => {
 
 const createCompletionItems = (
   suggestions: Suggestions,
-): SaltoCompletion[] => suggestions.map(suggestion => {
+): Promise<SaltoCompletion[]> => awu(suggestions).map(suggestion => {
   const label = isInsertText(suggestion) ? suggestion.label : suggestion
   const insertText = isInsertText(suggestion) ? suggestion.insertText : suggestion
   const filterText = isInsertText(suggestion) && suggestion.filterText
@@ -135,7 +138,7 @@ const createCompletionItems = (
   return {
     label, insertText, filterText,
   }
-})
+}).take(MAX_NUM_OF_SUGGESTIONS).toArray()
 
 // Returns a list of suggestions for the current line.
 // Note - line includes all of the characters in the line *before* the cursor
@@ -160,6 +163,6 @@ export const provideWorkspaceCompletionItems = async (
   }
   const lineSuggestions = LINE_SUGGESTIONS[lineType]
   const tokenSuggestions = lineSuggestions[tokens.length - 1]
-  const suggestions = (tokenSuggestions) ? tokenSuggestions(suggestionsParams) : []
+  const suggestions = (tokenSuggestions) ? await tokenSuggestions(suggestionsParams) : awu([])
   return createCompletionItems(suggestions)
 }

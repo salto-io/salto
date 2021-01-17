@@ -16,9 +16,13 @@
 import { ElemID, Element, Change } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { NaclFilesSource } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
+import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+
+const { awu } = collections.asynciterable
 
 export const createMockNaclFileSource = (
   elements: Element[],

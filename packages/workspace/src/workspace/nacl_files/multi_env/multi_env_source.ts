@@ -17,10 +17,11 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 
-import { Element, ElemID, getChangeElement, isInstanceElement, Value,
+import { Element, ElemID, getChangeElement, Value,
   DetailedChange, Change, isRemovalChange } from '@salto-io/adapter-api'
+import { promises, values, collections } from '@salto-io/lowerdash'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
-import { promises, values } from '@salto-io/lowerdash'
+import { RemoteMap, RemoteMapCreator, InMemoryRemoteMap } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal, ElementIDToValue } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
@@ -29,8 +30,9 @@ import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } f
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
 import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
-import { InMemoryRemoteElementSource } from '../../elements_source'
+import { InMemoryRemoteElementSource, ElementsSource } from '../../elements_source'
 
+const { awu } = collections.asynciterable
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
 
@@ -65,24 +67,26 @@ export class UnsupportedNewEnvChangeError extends Error {
 }
 
 type MultiEnvState = {
-  elements: Record<string, Element>
-  mergeErrors: MergeError[]
+  elements: ElementsSource
+  mergeErrors: RemoteMap<MergeError[]>
 }
 
-type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
-  getAll: (env?: string) => Promise<Element[]>
+type MultiEnvSource = Omit<NaclFilesSource, 'getAll' | 'getElementsSource'> & {
+  getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<void>
   getElementIdsBySelectors: (selectors: ElementSelector[],
     commonOnly?: boolean, validateDeterminedSelectors?: boolean) => Promise<ElemID[]>
   demote: (ids: ElemID[]) => Promise<void>
   demoteAll: () => Promise<void>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
+  getElementsSource: (env?: string) => Promise<ElementsSource>
 }
 
 const buildMultiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
+  createRemoteMap: RemoteMapCreator<Value>,
   initState?: Promise<MultiEnvState>
 ): MultiEnvSource => {
   const primarySource = (): NaclFilesSource => sources[primarySourceName]
@@ -90,6 +94,10 @@ const buildMultiEnvSource = (
   const secondarySources = (): Record<string, NaclFilesSource> => (
     _.omit(sources, [primarySourceName, commonSourceName])
   )
+
+  const getRemoteMapNameSpace = (
+    namespace: string, env?: string
+  ): string => `multi_env:${env || primarySourceName}:${namespace}`
 
   const getActiveSources = (env?: string): Record<string, NaclFilesSource> => ({
     [primarySourceName]: env === undefined ? sources[primarySourceName] : sources[env],
@@ -107,26 +115,26 @@ const buildMultiEnvSource = (
 
   const getRelevantElems = async (
     envElemIDsToElems: Record<string, Record<string, Element | undefined>>,
-    relevantElementIDs: string[],
+    relevantElementIDs: ElemID[],
   ): Promise<Element[]> => (await Promise.all(
     Object.entries(envElemIDsToElems).flatMap(([envName, elemIDToElems]) =>
       relevantElementIDs.map(async id =>
-        (id in elemIDToElems
-          ? elemIDToElems[id]
-          : sources[envName].get(ElemID.fromFullName(id)))))
+        (id.getFullName() in elemIDToElems
+          ? elemIDToElems[id.getFullName()]
+          : sources[envName].get(id))))
   )).filter(values.isDefined)
 
   const buildState = async (env?: string): Promise<MultiEnvState> => {
-    const allActiveElements = _.flatten(await Promise.all(
-      _.values(getActiveSources(env)).map(s => (s ? s.getAll() : []))
+    const allActiveElements = awu(_.values(getActiveSources(env)))
+      .flatMap(async s => (s ? s.getAll() : awu([])))
+    const { errors, merged } = await mergeElements(allActiveElements)
+    const elements = new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged')))
+    await elements.setAll(applyInstancesDefaults(
+      merged.values(),
+      new InMemoryRemoteElementSource(merged)
     ))
-    const { errors, merged } = mergeElements(allActiveElements)
-    applyInstancesDefaults(
-      merged.filter(isInstanceElement),
-      new InMemoryRemoteElementSource(allActiveElements),
-    )
     return {
-      elements: _.keyBy(merged, e => e.elemID.getFullName()),
+      elements,
       mergeErrors: errors,
     }
   }
@@ -137,29 +145,29 @@ const buildMultiEnvSource = (
     changes?: Record<string, Change[]>
   }): Promise<{ state: MultiEnvState; changes: Change[] }> => {
     const primaryEnv = env ?? primarySourceName
-    if (state === undefined || primaryEnv !== primarySourceName) {
+    if (primaryEnv !== primarySourceName) {
       return { state: await buildState(env), changes: [] }
     }
-    const current = await state
-    const relevantElementIDs = _.uniq(
-      Object.values(changes).flat().map(getChangeElement).map(e => e.elemID.getFullName())
-    )
+    const current = state !== undefined ? await state : await buildState(env)
     const envs = [commonSourceName, primaryEnv]
+    const relevantElementIDs = Object.values(_.pick(changes, envs))
+      .flat().map(getChangeElement).map(e => e.elemID)
     const changedElementsByEnv = _.mapValues(
       _.pick(changes, envs),
       envChanges => Object.fromEntries(envChanges.map(getAfterFromChange))
     )
     envs.forEach(name => { changedElementsByEnv[name] = changedElementsByEnv[name] ?? {} })
     const newElements = (await getRelevantElems(changedElementsByEnv, relevantElementIDs)).flat()
-    const mergeResult = buildNewMergedElementsAndErrors({
-      newElements,
+    const mergeChanges = await buildNewMergedElementsAndErrors({
+      newElements: awu(newElements),
       currentElements: current.elements,
-      currentMergeErrors: current.mergeErrors,
-      relevantElementIDs,
+      currentErrors: current.mergeErrors,
+      relevantElementIDs: awu(relevantElementIDs),
+      mergeFunc: elements => mergeElements(elements),
     })
     return {
-      state: { elements: mergeResult.mergedElements, mergeErrors: mergeResult.mergeErrors },
-      changes: mergeResult.changes,
+      state: current,
+      changes: mergeChanges,
     }
   }
 
@@ -232,13 +240,15 @@ const buildMultiEnvSource = (
     return buildRes.changes
   }
 
-  const getElementsFromSource = async (source: NaclFilesSource): Promise<ElementIDToValue[]> =>
-    (await source.getAll()).map(elem => ({ elemID: elem.elemID, element: elem }))
+  const getElementsFromSource = async (
+    source: NaclFilesSource
+  ): Promise<AsyncIterable<ElementIDToValue>> =>
+    awu((await source.getAll())).map(elem => ({ elemID: elem.elemID, element: elem }))
 
   const getElementIdsBySelectors = async (selectors: ElementSelector[],
     commonOnly = false, validateDeterminedSelectors = false): Promise<ElemID[]> =>
-    selectElementIdsByTraversal(selectors, await getElementsFromSource(commonOnly
-      ? commonSource() : primarySource()), false, validateDeterminedSelectors)
+    selectElementIdsByTraversal(selectors, await awu(await getElementsFromSource(commonOnly
+      ? commonSource() : primarySource())).toArray(), false, validateDeterminedSelectors)
 
   const promote = async (ids: ElemID[]): Promise<void> => {
     const routedChanges = await routePromote(
@@ -275,7 +285,7 @@ const buildMultiEnvSource = (
   const demoteAll = async (): Promise<void> => {
     const commonFileSource = commonSource()
     const routedChanges = await routeDemote(
-      await commonFileSource.list(),
+      await awu(await commonFileSource.list()).toArray(),
       primarySource(),
       commonFileSource,
       secondarySources(),
@@ -297,6 +307,13 @@ const buildMultiEnvSource = (
     )).every(e => e)
   )
 
+  const load = async (): Promise<Change<Element>[]> => {
+    const changes = await mapValuesAsync(getActiveSources(), src => src.load())
+    const buildRes = await buildMultiEnvState({ changes })
+    state = Promise.resolve(buildRes.state)
+    return buildRes.changes
+  }
+
   return {
     getNaclFile,
     updateNaclFiles,
@@ -306,16 +323,31 @@ const buildMultiEnvSource = (
     demote,
     demoteAll,
     copyTo,
-    list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
+    list: async (): Promise<AsyncIterable<ElemID>> => (await getState()).elements.list(),
     isEmpty,
     get: async (id: ElemID): Promise<Element | Value> => (
-      (await getState()).elements[id.getFullName()]
+      (await getState()).elements.get(id)
     ),
-    getAll: async (env?: string): Promise<Element[]> => (
+    has: async (id: ElemID): Promise<boolean> => (
+      (await getState()).elements.has(id)
+    ),
+    delete: async (id: ElemID): Promise<void> => (
+      (await getState()).elements.delete(id)
+    ),
+    set: async (elem: Element): Promise<void> => (
+      (await getState()).elements.set(elem)
+    ),
+    getAll: async (env?: string): Promise<AsyncIterable<Element>> => (
       env === undefined || env === primarySourceName
-        ? _.values((await getState()).elements)
+        ? (await getState()).elements.getAll()
         // When we get an env override we don't want to keep that state
-        : _.values((await buildMultiEnvState({ env })).state.elements)
+        : (await buildMultiEnvState({ env })).state.elements.getAll()
+    ),
+    getElementsSource: async (env?: string) => (
+      env === undefined || env === primarySourceName
+        ? (await getState()).elements
+      // When we get an env override we don't want to keep that state
+        : (await buildMultiEnvState({ env })).state.elements
     ),
     listNaclFiles: async (): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())
@@ -390,7 +422,7 @@ const buildMultiEnvSource = (
         merge: [...acc.merge, ...errors.merge],
       }),
       {
-        merge: mergeErrors,
+        merge: await awu(mergeErrors.values()).flat().toArray(),
         parse: [] as ParseError[],
         validation: [] as ValidationError[],
       }))
@@ -423,8 +455,10 @@ const buildMultiEnvSource = (
       _.mapValues(sources, source => source.clone()),
       primarySourceName,
       commonSourceName,
+      createRemoteMap,
       state
     ),
+    load,
   }
 }
 
@@ -432,4 +466,10 @@ export const multiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-): MultiEnvSource => buildMultiEnvSource(sources, primarySourceName, commonSourceName)
+  createRemoteMap: RemoteMapCreator<Value> = _name => new InMemoryRemoteMap(),
+): MultiEnvSource => buildMultiEnvSource(
+  sources,
+  primarySourceName,
+  commonSourceName,
+  createRemoteMap
+)

@@ -13,10 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, isInstanceElement, InstanceElement, getChangeElement, Change, Field, ObjectType,
-  ReadOnlyElementsSource,
-} from '@salto-io/adapter-api'
+import { Element, isInstanceElement, InstanceElement, getChangeElement, Change, Field, ReadOnlyElementsSource, isObjectType } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -26,8 +23,9 @@ import { apiName, metadataType, isCustomObject } from '../transformers/transform
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
 import { getInternalId, hasInternalId, buildElementsSourceForFetch } from './utils'
 
+const { awu } = collections.asynciterable
+
 const log = logger(module)
-const { flatMapAsync, filterAsync } = collections.asynciterable
 
 /*
 The keys represent metadataTypes of the instances to change.
@@ -48,39 +46,39 @@ const toShortId = (longId: string): string => (longId.slice(0, -3))
 
 type GetRelevantFieldMappingParams = {
   elementsSource: ReadOnlyElementsSource
-  key: (field: Field) => [string]
-  value: (field: Field) => string
+  key: (field: Field) => [string] | Promise<[string]>
+  value: (field: Field) => string | Promise<string>
 }
 const getRelevantFieldMapping = async (
   { elementsSource, key, value }: GetRelevantFieldMappingParams
 ): Promise<multiIndex.Index<[string], string>> => {
-  const isReferencedCustomObject = (elem: Element): elem is ObjectType => (
+  const isReferencedCustomObject = async (elem: Element): Promise<boolean> => (
     isCustomObject(elem)
-    && Object.values(metadataTypeToInstanceName).includes(apiName(elem))
+    && Object.values(metadataTypeToInstanceName).includes(await apiName(elem))
   )
 
   return multiIndex.keyByAsync({
-    iter: flatMapAsync(
-      filterAsync(await elementsSource.getAll(), isReferencedCustomObject),
-      obj => Object.values(obj.fields)
-    ),
+    iter: awu(await elementsSource.getAll())
+      .filter(isObjectType)
+      .filter(isReferencedCustomObject)
+      .flatMap(obj => Object.values(obj.fields)),
     filter: hasInternalId,
     key,
     map: value,
   })
 }
 
-const shouldReplace = (field: Field): boolean => {
+const shouldReplace = async (field: Field): Promise<boolean> => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
-  return resolverFinder(field).length > 0
+  return (await resolverFinder(field)).length > 0
 }
 
-const replaceInstanceValues = (
+const replaceInstanceValues = async (
   instance: InstanceElement,
   nameLookup: multiIndex.Index<[string], string>
-): void => {
-  const transformFunc: TransformFunc = ({ value, field }) => {
-    if (_.isUndefined(field) || !shouldReplace(field)) {
+): Promise<void> => {
+  const transformFunc: TransformFunc = async ({ value, field }) => {
+    if (_.isUndefined(field) || !(await shouldReplace(field))) {
       return value
     }
 
@@ -92,26 +90,26 @@ const replaceInstanceValues = (
   }
 
   const values = instance.value
-  instance.value = transformValues(
+  instance.value = await transformValues(
     {
       values,
-      type: instance.getType(),
+      type: await instance.getType(),
       transformFunc,
       strict: false,
     }
   ) ?? values
 }
 
-const replaceInstancesValues = (
+const replaceInstancesValues = async (
   elements: Element[],
   nameLookUp: multiIndex.Index<[string], string>
-): void => {
-  elements
+): Promise<void> => {
+  await awu(elements)
     .filter(isInstanceElement)
-    .filter(e => Object.keys(metadataTypeToInstanceName).includes(metadataType(e)))
-    .forEach(e => {
-      replaceInstanceValues(e, nameLookUp)
-      log.debug(`replaced values of instance ${apiName(e)}`)
+    .filter(async e => Object.keys(metadataTypeToInstanceName).includes(await metadataType(e)))
+    .forEach(async e => {
+      await replaceInstanceValues(e, nameLookUp)
+      log.debug(`replaced values of instance ${await apiName(e)}`)
     })
 }
 
@@ -124,17 +122,17 @@ const filter: FilterCreator = ({ config }) => ({
     const idToApiNameLookUp = await getRelevantFieldMapping({
       elementsSource: referenceElements,
       key: field => [toShortId(getInternalId(field))],
-      value: apiName,
+      value: async field => apiName(field),
     })
-    replaceInstancesValues(elements, idToApiNameLookUp)
+    await replaceInstancesValues(elements, idToApiNameLookUp)
   },
   preDeploy: async (changes: ReadonlyArray<Change>): Promise<void> => {
     const apiNameToIdLookup = await getRelevantFieldMapping({
       elementsSource: config.elementsSource,
-      key: field => [apiName(field)],
+      key: async field => [await apiName(field)],
       value: field => toShortId(getInternalId(field)),
     })
-    replaceInstancesValues(
+    await replaceInstancesValues(
       changes.map(getChangeElement),
       apiNameToIdLookup
     )
@@ -145,7 +143,7 @@ const filter: FilterCreator = ({ config }) => ({
       key: field => [toShortId(getInternalId(field))],
       value: apiName,
     })
-    replaceInstancesValues(
+    await replaceInstancesValues(
       changes.map(getChangeElement),
       idToApiNameLookUp
     )

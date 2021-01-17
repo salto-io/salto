@@ -13,10 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Field, Element, isInstanceElement, Value, Values, isReferenceExpression, isField,
-  ReferenceExpression, InstanceElement, ElemID, getField, ReadOnlyElementsSource,
-} from '@salto-io/adapter-api'
+import { Field, Element, isInstanceElement, Value, Values, isReferenceExpression, isField, ReferenceExpression, InstanceElement, ElemID, getField, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolvePath, getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -32,6 +29,7 @@ import {
 } from '../constants'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 const { isDefined } = lowerDashValues
 const { flatMapAsync } = collections.asynciterable
@@ -41,7 +39,7 @@ type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
   elemByElemID: multiIndex.Index<[string], Element>
   field: Field
   fieldPath?: ElemID
-}) => string | undefined
+}) => Promise<string | undefined>
 
 const noop = (val: string): string => val
 
@@ -66,8 +64,14 @@ const neighborContextFunc = ({
     return undefined
   }
 
-  const resolveReference = (context: ReferenceExpression, path?: ElemID): string | undefined => {
-    const contextField = getField(instance.getType(), fieldPath.createTopLevelParentID().path)
+  const resolveReference = async (
+    context: ReferenceExpression,
+    path?: ElemID
+  ): Promise<string | undefined> => {
+    const contextField = await getField(
+      await instance.getType(),
+      fieldPath.createTopLevelParentID().path
+    )
     const refWithValue = new ReferenceExpression(
       context.elemID,
       context.value ?? elemByElemID.get(context.elemID.getFullName()),
@@ -124,8 +128,8 @@ const flowActionCallMapper: ContextValueMapperFunc = (val: string) => {
 const ContextStrategyLookup: Record<
   ReferenceContextStrategyName, ContextFunc
 > = {
-  none: () => undefined,
-  instanceParent: ({ instance, elemByElemID }) => {
+  none: async () => undefined,
+  instanceParent: async ({ instance, elemByElemID }) => {
     const parentRef = getParents(instance)[0]
     const parent = isReferenceExpression(parentRef)
       ? elemByElemID.get(parentRef.elemID.getFullName())
@@ -146,16 +150,16 @@ const ContextStrategyLookup: Record<
   neighborPicklistObjectLookup: neighborContextFunc({ contextFieldName: 'picklistObject' }),
 }
 
-const replaceReferenceValues = (
+const replaceReferenceValues = async (
   instance: InstanceElement,
   resolverFinder: ReferenceResolverFinder,
   elemLookupMap: multiIndex.Index<[string, string], Element>,
   fieldsWithResolvedReferences: Set<string>,
   elemByElemID: multiIndex.Index<[string], Element>,
-): Values => {
-  const getRefElem = (
+): Promise<Values> => {
+  const getRefElem = async (
     val: string, target: ExtendedReferenceTargetDefinition, field: Field, path?: ElemID
-  ): Element | undefined => {
+  ): Promise<Element | undefined> => {
     const findElem = (value: string, targetType?: string): Element | undefined => (
       targetType !== undefined ? elemLookupMap.get(targetType, value) : undefined
     )
@@ -165,10 +169,10 @@ const replaceReferenceValues = (
     if (parentContextFunc === undefined || typeContextFunc === undefined) {
       return undefined
     }
-    const elemParent = target.parent ?? parentContextFunc(
+    const elemParent = target.parent ?? await parentContextFunc(
       { instance, elemByElemID, field, fieldPath: path }
     )
-    const elemType = target.type ?? typeContextFunc({
+    const elemType = target.type ?? await typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })
     return findElem(
@@ -177,15 +181,15 @@ const replaceReferenceValues = (
     )
   }
 
-  const replacePrimitive = (val: string, field: Field, path?: ElemID): Value => {
-    const toValidatedReference = (
+  const replacePrimitive = async (val: string, field: Field, path?: ElemID): Promise<Value> => {
+    const toValidatedReference = async (
       serializer: ReferenceSerializationStrategy,
       elem: Element | undefined,
-    ): ReferenceExpression | undefined => {
+    ): Promise<ReferenceExpression | undefined> => {
       if (elem === undefined) {
         return undefined
       }
-      const res = (serializer.serialize({
+      const res = (await serializer.serialize({
         ref: new ReferenceExpression(elem.elemID, elem),
         field,
       }) === val) ? new ReferenceExpression(elem.elemID) : undefined
@@ -195,14 +199,14 @@ const replaceReferenceValues = (
       return res
     }
 
-    const reference = resolverFinder(field)
+    const reference = await awu(await resolverFinder(field))
       .filter(refResolver => refResolver.target !== undefined)
-      .map(refResolver => toValidatedReference(
+      .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
-        getRefElem(val, refResolver.target as ExtendedReferenceTargetDefinition, field, path),
+        await getRefElem(val, refResolver.target as ExtendedReferenceTargetDefinition, field, path),
       ))
       .filter(isDefined)
-      .pop()
+      .peek()
 
     return reference ?? val
   }
@@ -211,10 +215,10 @@ const replaceReferenceValues = (
     (!_.isUndefined(field) && _.isString(value)) ? replacePrimitive(value, field, path) : value
   )
 
-  return transformValues(
+  return await transformValues(
     {
       values: instance.value,
-      type: instance.getType(),
+      type: await instance.getType(),
       transformFunc: transformPrimitive,
       strict: false,
       pathID: instance.elemID,
@@ -239,7 +243,7 @@ export const addReferences = async (
     .addIndex({
       name: 'elemLookup',
       filter: hasApiName,
-      key: elem => [metadataType(elem), apiName(elem)],
+      key: async elem => [await metadataType(elem), await apiName(elem)],
     })
     .addIndex({
       name: 'elemByElemID',
@@ -249,8 +253,8 @@ export const addReferences = async (
     .process(elementsWithFields)
 
   const fieldsWithResolvedReferences = new Set<string>()
-  elements.filter(isInstanceElement).forEach(instance => {
-    instance.value = replaceReferenceValues(
+  awu(elements).filter(isInstanceElement).forEach(async instance => {
+    instance.value = await replaceReferenceValues(
       instance,
       resolverFinder,
       elemLookup,

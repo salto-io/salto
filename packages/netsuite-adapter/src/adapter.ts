@@ -16,13 +16,13 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, Element, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers, InstanceElement, getChangeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  createInstanceElement,
+  createInstanceElement, getLookUpName, toCustomizationInfo,
 } from './transformer'
 import {
   customTypes, getAllTypes, fileCabinetTypes,
@@ -34,10 +34,8 @@ import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
 import { FilterCreator } from './filter'
-import {
-  getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-  DEFAULT_USE_CHANGES_DETECTION,
-} from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
+import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -47,8 +45,10 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { LazyElementsSourceIndex } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
+import { resolveValues } from '@salto-io/lowerdash/dist/src/promises/object'
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -181,13 +181,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       })
 
     const customizationInfos = [...customObjects, ...fileCabinetContent]
-    const instances = customizationInfos.map(customizationInfo => {
+    const instances = await awu(customizationInfos).map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]
         ?? fileCabinetTypes[customizationInfo.typeName]
       return type
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
         : undefined
     }).filter(isInstanceElement)
+      .toArray()
     const elements = [...getAllTypes(), ...instances, ...serverTimeElements]
 
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
@@ -245,8 +246,28 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
+  private async getAllRequiredReferencedInstances(
+    changedInstances: ReadonlyArray<InstanceElement>
+  ): Promise<ReadonlyArray<InstanceElement>> {
+    if (this.deployReferencedElements) {
+      return getAllReferencedInstances(changedInstances)
+    }
+    return getRequiredReferencedInstances(changedInstances)
+  }
+
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    return this.client.deploy(changeGroup, this.deployReferencedElements)
+    const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
+    const customizationInfosToDeploy = await awu(
+      await this.getAllRequiredReferencedInstances(changedInstances)
+    ).map(async instance => resolveValues(instance, getLookUpName))
+      .map(toCustomizationInfo)
+      .toArray()
+    try {
+      await this.client.deploy(customizationInfosToDeploy, this.deployReferencedElements)
+    } catch (e) {
+      return { errors: [e], appliedChanges: [] }
+    }
+    return { errors: [], appliedChanges: changeGroup.changes }
   }
 
   private async runFiltersOnFetch(

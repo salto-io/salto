@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import { Value, StaticFile, calculateStaticFileHash, ObjectType, isObjectType, TypeElement } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
 import { StaticFilesSource } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
 
+const { awu } = collections.asynciterable
 const { isDefined } = values
 
 export class TestFuncImpl extends FunctionExpression {}
@@ -86,21 +87,22 @@ export const exampleStaticFileWithContent = new StaticFile({
   content: defaultBuffer,
 })
 
-export const getFieldsAndAnnoTypes = (
+export const getFieldsAndAnnoTypes = async (
   objType: ObjectType,
   touched: string[] = []
-): TypeElement[] => {
-  const fieldTypes = Object.values(objType.fields).map(f => f.getType())
-  const annoTypes = Object.values(objType.getAnnotationTypes())
+): Promise<TypeElement[]> => {
+  const fieldTypes = await awu(Object.values(objType.fields)).map(f => f.getType()).toArray()
+  const annoTypes = Object.values(await objType.getAnnotationTypes())
 
-  return [...fieldTypes, ...annoTypes].flatMap(type => {
+  return awu([...fieldTypes, ...annoTypes]).flatMap(async type => {
     if (touched.includes(type.elemID.getFullName())) {
-      return undefined
+      return [undefined]
     }
     touched.push(type.elemID.getFullName())
     if (!isObjectType(type)) {
-      return type
+      return [type]
     }
-    return [type, ...getFieldsAndAnnoTypes(type, touched)]
+    return [type, ...await getFieldsAndAnnoTypes(type, touched)]
   }).filter(isDefined)
+    .toArray()
 }

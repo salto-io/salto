@@ -13,17 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { lightningElementsUrlRetriever } from '../elements_url_retreiver/elements_url_retreiver'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
 
+const { awu } = collections.asynciterable
+
 const log = logger(module)
 
-const getRelevantElements = (elements: Element[]): wu.WuIterable<Element> =>
-  wu(elements).map(extractFlatCustomObjectFields).flatten(true)
+const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
+  awu(elements)
+    .flatMap(extractFlatCustomObjectFields)
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
@@ -49,8 +52,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       }
     }
 
-    await Promise.all(
-      getRelevantElements(elements).map(element => updateElementUrl(element))
+    await awu(getRelevantElements(elements)).forEach(
+      async element => updateElementUrl(element)
     )
   },
 })

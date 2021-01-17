@@ -20,14 +20,18 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipString } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state } from '@salto-io/workspace'
-import { hash } from '@salto-io/lowerdash'
+import { serialization, pathIndex, state, elementSource } from '@salto-io/workspace'
+import { hash, collections } from '@salto-io/lowerdash'
 import origGlob from 'glob'
 import semver from 'semver'
 import { promisify } from 'util'
+
 import { adapterCreators } from '../core/adapters'
 
+
 import { version } from '../generated/version.json'
+
+const { awu } = collections.asynciterable
 
 const { serialize, deserialize } = serialization
 const { toMD5 } = hash
@@ -80,7 +84,7 @@ const flattenStateData = async (elementsData: string[], pathIndexData: string[],
   const deserializedElements = _.flatten(await Promise.all(
     elementsData.map((d: string) => deserializeAndFlatten(d))
   ))
-  const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
+  const elements = elementSource.createInMemoryElementSource(deserializedElements)
   const index = pathIndexData ? pathIndex.deserializedPathsIndex(pathIndexData)
     : new pathIndex.PathIndex()
   const updateDatesByService = updateDateData.map(
@@ -118,7 +122,7 @@ export const localState = (filePrefix: string): state.State => {
       versions = [version]
     } else {
       return {
-        elements: {},
+        elements: elementSource.createInMemoryElementSource(),
         servicesUpdateDate: {},
         pathIndex: new pathIndex.PathIndex(),
         saltoVersion: version,
@@ -132,7 +136,7 @@ export const localState = (filePrefix: string): state.State => {
   const inMemState = state.buildInMemState(loadFromFile)
 
   const createStateTextPerService = async (): Promise<Record<string, string>> => {
-    const elements = await inMemState.getAll()
+    const elements = await awu(await inMemState.getAll()).toArray()
     const elementsByService = _.groupBy(elements, element => element.elemID.adapter)
     const serviceToElementStrings = _.mapValues(elementsByService,
       serviceElements => serialize(serviceElements))
@@ -156,8 +160,8 @@ export const localState = (filePrefix: string): state.State => {
       await inMemState.remove(id)
       dirty = true
     },
-    override: async (element: Element | Element[]): Promise<void> => {
-      await inMemState.override(element)
+    override: async (element: AsyncIterable<Element>, services?: string[]): Promise<void> => {
+      await inMemState.override(element, services)
       dirty = true
     },
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {

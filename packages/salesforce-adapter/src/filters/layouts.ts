@@ -15,15 +15,17 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  Element, InstanceElement, ObjectType, ElemID,
+  Element, InstanceElement, ObjectType, ElemID, isInstanceElement,
 } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { promises, multiIndex } from '@salto-io/lowerdash'
+import { naclCase, pathNaclCase, findInstances } from '@salto-io/adapter-utils'
+import { promises, multiIndex, collections } from '@salto-io/lowerdash'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { addObjectParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 const { series } = promises.array
@@ -37,18 +39,18 @@ export const specialLayoutObjects = new Map([
 ])
 
 // Layout full name starts with related sobject and then '-'
-const layoutObjAndName = (layout: InstanceElement): [string, string] => {
-  const [obj, ...name] = apiName(layout).split('-')
+const layoutObjAndName = async (layout: InstanceElement): Promise<[string, string]> => {
+  const [obj, ...name] = (await apiName(layout)).split('-')
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
 
-const fixLayoutPath = (
+const fixLayoutPath = async (
   layout: InstanceElement,
   customObject: ObjectType,
   layoutName: string,
-): void => {
+): Promise<void> => {
   layout.path = [
-    ...getObjectDirectoryPath(customObject),
+    ...await getObjectDirectoryPath(customObject),
     layout.elemID.typeName,
     pathNaclCase(naclCase(layoutName)),
   ]
@@ -66,35 +68,46 @@ const filterCreator: FilterCreator = ({ config }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const layouts = elements.filter(isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE))
-    if (layouts.length === 0) {
+    const layouts = awu(elements)
+      .filter(isInstanceElement)
+      .filter(isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE))
+    if (await layouts.isEmpty()) {
       return
     }
+
+    // const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
+    // const apiNameToCustomObject = await generateApiNameToCustomObject(elements)
+
+    // await awu(layouts).forEach(async layout => {
+    //   const [layoutObjName, layoutName] = await layoutObjAndName(layout)
+    //   const layoutObj = apiNameToCustomObject.get(layoutObjName)
+    //   if (layoutObj === undefined) {
+    //     log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
+    //     return
+    //   }
 
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
       filter: isCustomObject,
-      key: obj => [apiName(obj)],
+      key: async obj => [await apiName(obj)],
       map: obj => obj.elemID,
     })
 
-    await series(
-      layouts.map(layout => async () => {
-        const [layoutObjName, layoutName] = layoutObjAndName(layout)
-        const layoutObjId = apiNameToCustomObject.get(layoutObjName)
-        const layoutObj = layoutObjId !== undefined
-          ? await referenceElements.get(layoutObjId)
-          : undefined
-        if (layoutObj === undefined || !isCustomObject(layoutObj)) {
-          log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
-          return
-        }
+    awu(layouts).map(layout => async () => {
+      const [layoutObjName, layoutName] = await layoutObjAndName(layout)
+      const layoutObjId = apiNameToCustomObject.get(layoutObjName)
+      const layoutObj = layoutObjId !== undefined
+        ? await referenceElements.get(layoutObjId)
+        : undefined
+      if (layoutObj === undefined || !isCustomObject(layoutObj)) {
+        log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
+        return
+      }
 
-        addObjectParentReference(layout, layoutObj)
-        fixLayoutPath(layout, layoutObj, layoutName)
-      })
-    )
+      addObjectParentReference(layout, layoutObj)
+      await fixLayoutPath(layout, layoutObj, layoutName)
+    })
   },
 })
 

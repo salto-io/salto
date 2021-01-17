@@ -17,9 +17,13 @@ import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObje
 import { mockState } from '../common/state'
 import { mockFunction } from '../common/helpers'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+import { State } from '../../src/workspace/state'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
-import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
+import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+
+const { awu } = collections.asynciterable
 
 describe('mergeWithHidden', () => {
   const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType => (
@@ -31,7 +35,7 @@ describe('mergeWithHidden', () => {
   )
   describe('when parent value is deleted in the workspace', () => {
     let result: MergeResult
-    beforeEach(() => {
+    beforeEach(async () => {
       const fieldType = getFieldType('text', PrimitiveTypes.STRING)
       const mockObjType = new ObjectType({
         elemID: new ElemID('test', 'type'),
@@ -44,16 +48,20 @@ describe('mergeWithHidden', () => {
       })
       const workspaceObjType = mockObjType.clone()
       delete workspaceObjType.fields.f1
-      result = mergeWithHidden([fieldType, workspaceObjType], [fieldType, mockObjType])
+      result = await mergeWithHidden(
+        awu([fieldType, workspaceObjType]),
+        createInMemoryElementSource([fieldType, mockObjType])
+      )
     })
-    it('should omit the hidden value', () => {
-      const mergedWorkspaceObj = result.merged.find(isObjectType)
+    it('should omit the hidden value', async () => {
+      const mergedWorkspaceObj = (await awu(result.merged.values())
+        .find(isObjectType)) as ObjectType
       expect(mergedWorkspaceObj?.fields).not.toHaveProperty('f1')
     })
   })
   describe('when field type is changed in the workspace', () => {
     let result: MergeResult
-    beforeEach(() => {
+    beforeEach(async () => {
       const workspaceFieldType = getFieldType('num', PrimitiveTypes.NUMBER)
       const workspaceType = new ObjectType({
         elemID: new ElemID('test', 'type'),
@@ -71,20 +79,23 @@ describe('mergeWithHidden', () => {
           },
         },
       })
-      result = mergeWithHidden([workspaceFieldType, workspaceType], [stateFieldType, stateType])
+      result = await mergeWithHidden(
+        awu([workspaceFieldType, workspaceType]),
+        createInMemoryElementSource([stateFieldType, stateType])
+      )
     })
-    it('should not have merge errors', () => {
-      expect(result.errors).toHaveLength(0)
+    it('should not have merge errors', async () => {
+      expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
     })
-    it('should still add hidden annotations to the field', () => {
-      const type = result.merged.find(isObjectType)
+    it('should still add hidden annotations to the field', async () => {
+      const type = (await awu(result.merged.values()).find(isObjectType)) as ObjectType
       expect(type?.fields.test.annotations).toHaveProperty('hiddenAnno', 'asd')
     })
   })
 
   describe('hidden_string in instance annotation', () => {
     let result: MergeResult
-    beforeEach(() => {
+    beforeEach(async () => {
       const workspaceInstance = new InstanceElement(
         'instance',
         new ObjectType({
@@ -103,13 +114,16 @@ describe('mergeWithHidden', () => {
       )
 
 
-      result = mergeWithHidden([workspaceInstance], [stateInstance])
+      result = await mergeWithHidden(
+        awu([workspaceInstance]),
+        createInMemoryElementSource([stateInstance])
+      )
     })
-    it('should not have merge errors', () => {
-      expect(result.errors).toHaveLength(0)
+    it('should not have merge errors', async () => {
+      expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
     })
-    it('should have the hidden_string value', () => {
-      const instance = result.merged.find(isInstanceElement)
+    it('should have the hidden_string value', async () => {
+      const instance = await awu(result.merged.values()).find(isInstanceElement)
       expect(instance?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('someUrl')
     })
   })
@@ -137,7 +151,7 @@ describe('mergeWithHidden', () => {
       })
 
 
-      result = mergeWithHidden([workspaceObject], [stateObject])
+      result = await mergeWithHidden([workspaceObject], [stateObject])
     })
     it('should not have merge errors', () => {
       expect(result.errors).toHaveLength(0)

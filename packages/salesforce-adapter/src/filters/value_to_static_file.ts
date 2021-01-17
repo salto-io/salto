@@ -19,10 +19,13 @@ import {
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { WEBLINK_METADATA_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
 import { apiName, metadataType } from '../transformers/transformer'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -36,15 +39,22 @@ const hasCodeField = (instance: InstanceElement): boolean => (
   instance.value[LINK_TYPE_FIELD] === JAVASCRIPT
 )
 
-const shouldReplace = (field: Field, value: Value, instance: InstanceElement): boolean => {
+const shouldReplace = async (
+  field: Field,
+  value: Value,
+  instance: InstanceElement
+): Promise<boolean> => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
-  return _.isString(value) && hasCodeField(instance) && resolverFinder(field).length > 0
+  return _.isString(value) && hasCodeField(instance) && (await resolverFinder(field)).length > 0
 }
 
 
-const createStaticFile = (instance: InstanceElement, value: string): StaticFile | undefined => {
+const createStaticFile = async (
+  instance: InstanceElement,
+  value: string
+): Promise<StaticFile | undefined> => {
   if (instance.path === undefined) {
-    log.error(`could not extract value of instance ${apiName(instance)} to static file, instance path is undefined`)
+    log.error(`could not extract value of instance ${await apiName(instance)} to static file, instance path is undefined`)
     return undefined
   }
   return new StaticFile({
@@ -55,19 +65,19 @@ const createStaticFile = (instance: InstanceElement, value: string): StaticFile 
 }
 
 
-const extractToStaticFile = (instance: InstanceElement): void => {
-  const transformFunc: TransformFunc = ({ value, field }) => {
-    if (field === undefined || !shouldReplace(field, value, instance)) {
+const extractToStaticFile = async (instance: InstanceElement): Promise<void> => {
+  const transformFunc: TransformFunc = async ({ value, field }) => {
+    if (field === undefined || !(await shouldReplace(field, value, instance))) {
       return value
     }
-    return createStaticFile(instance, value) ?? value
+    return (await createStaticFile(instance, value)) ?? value
   }
 
   const values = instance.value
-  instance.value = transformValues(
+  instance.value = await transformValues(
     {
       values,
-      type: instance.getType(),
+      type: await instance.getType(),
       transformFunc,
       strict: false,
     }
@@ -80,9 +90,9 @@ const extractToStaticFile = (instance: InstanceElement): void => {
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
-      .filter(e => metadataType(e) === WEBLINK_METADATA_TYPE)
+      .filter(async e => await metadataType(e) === WEBLINK_METADATA_TYPE)
       .forEach(inst => extractToStaticFile(inst))
   },
 })

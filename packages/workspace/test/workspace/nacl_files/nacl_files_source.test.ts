@@ -13,15 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, DetailedChange, StaticFile } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource, ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { ParseResultCache } from '../../../src/workspace/cache'
 
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
+import { createInMemoryElementSource } from '../../../src/workspace/elements_source'
+import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
+import { ParsedNaclFileDataKeys } from '../../../src/workspace/nacl_files/nacl_files_source'
+
+const { awu } = collections.asynciterable
 
 jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
   ...jest.requireActual<{}>('../../../src/workspace/nacl_files/nacl_file_update'),
@@ -40,6 +46,20 @@ jest.mock('../../../src/parser', () => ({
   parse: jest.fn().mockResolvedValue({ elements: [], errors: [] }),
 }))
 
+const validateParsedNaclFile = async (
+  parsed: ParsedNaclFile | undefined,
+  filename: string,
+  elements: Element[],
+  errors: SaltoError[],
+): Promise<void> => {
+  if (parsed) {
+    const parsedElements = await awu(await parsed.elements.getAll()).toArray()
+    expect(parsedElements).toEqual(elements)
+    expect(await parsed.data.get('errors')).toEqual(errors)
+    expect(parsed.filename).toEqual(filename)
+  }
+}
+
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
   let mockCache: ParseResultCache
@@ -54,6 +74,8 @@ describe('Nacl Files Source', () => {
       flush: () => Promise.resolve(),
       clear: () => Promise.resolve(),
       rename: () => Promise.resolve(),
+      delete: () => Promise.resolve(),
+      list: () => Promise.resolve([]),
     }
     mockDirStore = {
       list: () => Promise.resolve([]),
@@ -80,7 +102,7 @@ describe('Nacl Files Source', () => {
       mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
-      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).clear()
+      await ((await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource))).clear()
       expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
       expect(mockCache.clear).toHaveBeenCalledTimes(1)
       expect(mockedStaticFilesSource.clear).toHaveBeenCalledTimes(1)
@@ -90,7 +112,7 @@ describe('Nacl Files Source', () => {
       mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
-      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).clear(
+      await (await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)).clear(
         { nacl: true, staticResources: false, cache: true }
       )
       expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
@@ -102,7 +124,7 @@ describe('Nacl Files Source', () => {
       mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
-      await expect(naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).clear(
+      await expect((await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)).clear(
         { nacl: false, staticResources: true, cache: true }
       )).rejects.toThrow('Cannot clear static resources without clearing the cache and nacls')
       expect(mockDirStore.clear as jest.Mock).not.toHaveBeenCalled()
@@ -114,7 +136,7 @@ describe('Nacl Files Source', () => {
   describe('isEmpty', () => {
     it('should use store\'s isEmpty', async () => {
       mockDirStore.isEmpty = jest.fn().mockResolvedValue(Promise.resolve())
-      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).isEmpty()
+      await (await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)).isEmpty()
       expect(mockDirStore.isEmpty as jest.Mock).toHaveBeenCalledTimes(1)
     })
   })
@@ -125,7 +147,11 @@ describe('Nacl Files Source', () => {
       mockDirStore.rename = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.rename = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.rename = jest.fn().mockResolvedValue(Promise.resolve())
-      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).rename(newName)
+      await (await naclFilesSource(
+        mockDirStore,
+        mockCache,
+        mockedStaticFilesSource
+      )).rename(newName)
       expect(mockDirStore.rename).toHaveBeenCalledTimes(1)
       expect(mockDirStore.rename).toHaveBeenCalledWith(newName)
       expect(mockCache.rename).toHaveBeenCalledTimes(1)
@@ -139,8 +165,9 @@ describe('Nacl Files Source', () => {
     it('should calc getTotalSize', async () => {
       mockDirStore.getTotalSize = jest.fn().mockResolvedValue(Promise.resolve(100))
       mockedStaticFilesSource.getTotalSize = jest.fn().mockResolvedValue(Promise.resolve(200))
-      const totalSize = await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
-        .getTotalSize()
+      const totalSize = await (
+        await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
+      ).getTotalSize()
       expect(totalSize).toEqual(300)
       expect(mockDirStore.getTotalSize).toHaveBeenCalledTimes(1)
       expect(mockedStaticFilesSource.getTotalSize).toHaveBeenCalledTimes(1)
@@ -160,8 +187,9 @@ describe('Nacl Files Source', () => {
       path: ['new', 'file'],
     } as DetailedChange
     it('should not parse file when updating single add changes in a new file', async () => {
-      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
-        .updateNaclFiles([change])
+      const naclSrc = await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
+      await naclSrc.load()
+      await naclSrc.updateNaclFiles([change])
       expect(mockParse).not.toHaveBeenCalled()
     })
   })
@@ -172,7 +200,8 @@ describe('Nacl Files Source', () => {
     const sfile = new StaticFile({ filepath, hash: 'XI' })
     let src: NaclFilesSource
     beforeEach(async () => {
-      src = naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
+      src = await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
+      await src.load()
     })
     it('should not parse file when updating single add changes in a new file', async () => {
       const change = {
@@ -191,12 +220,25 @@ describe('Nacl Files Source', () => {
       const filename = 'mytest.nacl'
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = [elem]
-      const parsedFiles = [{ filename, elements, errors: [], timestamp: 0, referenced: [], buffer: '' }]
+      const elements = createInMemoryElementSource([elem])
+      const parsedFiles = [
+        {
+          filename,
+          elements,
+          buffer: '',
+          data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
+            ['errors', []], ['timestamp', 0], ['referenced', []],
+          ]),
+        },
+      ]
       const naclSource = naclFilesSource(
-        mockDirStore, mockCache, mockedStaticFilesSource, parsedFiles
+        mockDirStore, mockCache, mockedStaticFilesSource, undefined, parsedFiles
       )
-      expect((await naclSource.getParsedNaclFile(filename))?.elements).toEqual([elem])
+      const parsed = await (await naclSource).getParsedNaclFile(filename)
+      expect(parsed).toBeDefined()
+      expect(
+        await awu(await (parsed as ParsedNaclFile).elements.getAll()).toArray()
+      ).toEqual([elem])
     })
   })
 
@@ -204,8 +246,8 @@ describe('Nacl Files Source', () => {
     let naclSource: NaclFilesSource
     const mockFileData = { buffer: 'someData {}', filename: 'somefile.nacl' }
 
-    beforeEach(() => {
-      naclSource = naclFilesSource(
+    beforeEach(async () => {
+      naclSource = await naclFilesSource(
         mockDirStore, mockCache, mockedStaticFilesSource
       )
     })
@@ -220,9 +262,12 @@ describe('Nacl Files Source', () => {
       (mockCache.get as jest.Mock).mockResolvedValueOnce(undefined);
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
       mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
-      expect(
-        await naclSource.getParsedNaclFile(mockFileData.filename)
-      ).toMatchObject({ elements, errors: [], filename: mockFileData.filename })
+      await validateParsedNaclFile(
+        await naclSource.getParsedNaclFile(mockFileData.filename),
+        mockFileData.filename,
+        elements,
+        [],
+      )
     })
     it('should return cached result if updated', async () => {
       mockParse.mockClear()
@@ -231,8 +276,11 @@ describe('Nacl Files Source', () => {
       const elements = [elem];
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData);
       (mockCache.get as jest.Mock).mockResolvedValue({ elements, errors: [] })
-      expect(await naclSource.getParsedNaclFile(mockFileData.filename)).toMatchObject(
-        { elements, errors: [], filename: mockFileData.filename }
+      await validateParsedNaclFile(
+        await naclSource.getParsedNaclFile(mockFileData.filename),
+        mockFileData.filename,
+        elements,
+        [],
       )
       expect(mockParse).not.toHaveBeenCalled()
     })

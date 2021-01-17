@@ -25,6 +25,8 @@ import { FOREIGN_KEY_DOMAIN } from '../constants'
 import { metadataType, apiName } from '../transformers/transformer'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
 
+const { awu } = collections.asynciterable
+
 const { makeArray } = collections.array
 const { flatMapAsync } = collections.asynciterable
 
@@ -34,10 +36,10 @@ const { flatMapAsync } = collections.asynciterable
  * @param instance                The current instance being modified
  * @param externalIDToElemIDs     Known element ids, mapped by API name and metadata type
  */
-const resolveReferences = (
+const resolveReferences = async (
   instance: InstanceElement,
   externalIDToElemIDs: multiIndex.Index<[string, string], ElemID>,
-): void => {
+): Promise<void> => {
   const transformPrimitive: TransformFunc = ({ value, field }) => {
     if (field === undefined || value === undefined || !_.isString(value)) {
       return value
@@ -51,9 +53,9 @@ const resolveReferences = (
   }
 
   // not using transformElement because we're editing the instance in-place
-  instance.value = transformValues({
+  instance.value = await transformValues({
     values: instance.value,
-    type: instance.getType(),
+    type: await instance.getType(),
     transformFunc: transformPrimitive,
     strict: false,
   }) ?? instance.value
@@ -73,12 +75,14 @@ const filter: FilterCreator = ({ config }) => ({
     const elementIndex = await multiIndex.keyByAsync({
       iter: elementsWithFields,
       filter: hasApiName,
-      key: elem => [metadataType(elem), apiName(elem)],
+      key: async elem => [await metadataType(elem), await apiName(elem)],
       map: elem => elem.elemID,
     })
-    elements.filter(isInstanceElement).forEach(instance => {
-      resolveReferences(instance, elementIndex)
-    })
+    await awu(elements)
+      .filter(isInstanceElement)
+      .forEach(async instance => {
+        await resolveReferences(instance, elementIndex)
+      })
   },
 })
 

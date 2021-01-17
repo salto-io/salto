@@ -19,11 +19,14 @@ import {
   Field, getChangeElement, isField, isModificationChange, ChangeDataType, ReferenceExpression,
   InstanceElement, isInstanceChange, ModificationChange, isFieldChange,
 } from '@salto-io/adapter-api'
+
 import { FilterWith } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import { PicklistValue } from '../client/types'
 import { Types, metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET, CUSTOM_VALUE } from './global_value_sets'
+
+const { awu } = collections.asynciterable
 
 const { makeArray } = collections.array
 
@@ -53,10 +56,10 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
       isPicklistField(changedElement)
       && Boolean(changedElement.annotations[FIELD_ANNOTATIONS.RESTRICTED])
 
-    const isGlobalValueSetInstanceChange = (
+    const isGlobalValueSetInstanceChange = async (
       change: ModificationChange<ChangeDataType>
-    ): change is ModificationChange<InstanceElement> => (
-      isInstanceChange(change) && metadataType(getChangeElement(change)) === GLOBAL_VALUE_SET
+    ): Promise<boolean> => (
+      isInstanceChange(change) && await metadataType(getChangeElement(change)) === GLOBAL_VALUE_SET
     )
 
     const withRemovedCustomValues = (beforeValues: PicklistValue[], afterValues: PicklistValue[]):
@@ -75,13 +78,14 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
     }
 
     // Handle global value set instances
-    changes
+    await awu(changes)
       .filter(isModificationChange)
       .filter(isGlobalValueSetInstanceChange)
       .forEach(change => {
-        const beforeCustomValues = makeArray(change.data.before.value[CUSTOM_VALUE])
-        const afterCustomValues = makeArray(change.data.after.value[CUSTOM_VALUE])
-        change.data.after.value[CUSTOM_VALUE] = withRemovedCustomValues(
+        const instChange = change as ModificationChange<InstanceElement>
+        const beforeCustomValues = makeArray(instChange.data.before.value[CUSTOM_VALUE])
+        const afterCustomValues = makeArray(instChange.data.after.value[CUSTOM_VALUE])
+        instChange.data.after.value[CUSTOM_VALUE] = withRemovedCustomValues(
           beforeCustomValues, afterCustomValues
         )
       })

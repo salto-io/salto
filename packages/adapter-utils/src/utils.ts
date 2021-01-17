@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
@@ -27,25 +27,27 @@ import {
   ReadOnlyElementsSource, ReferenceMap, BuiltinTypesRefByFullName,
 } from '@salto-io/adapter-api'
 
+const { mapValuesAsync } = promises.object
+const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
-export const applyFunctionToChangeData = <T extends Change<unknown>>(
-  change: T, func: (arg: ChangeData<T>) => ChangeData<T>,
-): T => {
+export const applyFunctionToChangeData = async <T extends Change<unknown>>(
+  change: T, func: (arg: ChangeData<T>) => Promise<ChangeData<T>> | ChangeData<T>,
+): Promise<T> => {
   if (isAdditionChange(change)) {
-    return { ...change, data: { after: func(change.data.after) } }
+    return { ...change, data: { after: await func(change.data.after) } }
   }
   if (isRemovalChange(change)) {
-    return { ...change, data: { before: func(change.data.before) } }
+    return { ...change, data: { before: await func(change.data.before) } }
   }
   if (isModificationChange(change)) {
     return {
       ...change,
       data: {
-        before: func(change.data.before),
-        after: func(change.data.after),
+        before: await func(change.data.before),
+        after: await func(change.data.after),
       },
     }
   }
@@ -105,9 +107,9 @@ export type TransformFuncArgs = {
   path?: ElemID
   field?: Field
 }
-export type TransformFunc = (args: TransformFuncArgs) => Value | undefined
+export type TransformFunc = (args: TransformFuncArgs) => Promise<Value> | Value | undefined
 
-export const transformValues = (
+export const transformValues = async (
   {
     values,
     type,
@@ -116,6 +118,7 @@ export const transformValues = (
     pathID = undefined,
     elementsSource,
     isTopLevel = true,
+    allowEmpty = false,
   }: {
     values: Value
     type: ObjectType | TypeMap | MapType
@@ -124,9 +127,12 @@ export const transformValues = (
     pathID?: ElemID
     elementsSource?: ReadOnlyElementsSource
     isTopLevel?: boolean
+    allowEmpty?: boolean
   }
-): Values | undefined => {
-  const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): Value => {
+): Promise<Values | undefined> => {
+  const transformValue = async (
+    value: Value,
+    keyPathID?: ElemID, field?: Field): Promise<Value> => {
     if (field === undefined && strict) {
       return undefined
     }
@@ -135,7 +141,7 @@ export const transformValues = (
       return transformFunc({ value, path: keyPathID, field })
     }
 
-    const newVal = transformFunc({ value, path: keyPathID, field })
+    const newVal = await transformFunc({ value, path: keyPathID, field })
     if (newVal === undefined) {
       return undefined
     }
@@ -144,10 +150,10 @@ export const transformValues = (
       return newVal
     }
 
-    const fieldType = field?.getType(elementsSource)
+    const fieldType = await field?.getType(elementsSource)
 
     if (field && isListType(fieldType)) {
-      const transformListInnerValue = (item: Value, index?: number): Value =>
+      const transformListInnerValue = async (item: Value, index?: number): Promise<Value> =>
         (transformValue(
           item,
           !_.isUndefined(index) ? keyPathID?.createNestedID(String(index)) : keyPathID,
@@ -164,22 +170,29 @@ export const transformValues = (
         }
         return transformListInnerValue(newVal)
       }
-      const transformed = newVal
+      const transformed = await awu(newVal)
         .map(transformListInnerValue)
         .filter((val: Value) => !_.isUndefined(val))
-      return transformed.length === 0 ? undefined : transformed
+        .toArray()
+      return transformed.length === 0 && (newVal.length > 0 || !allowEmpty)
+        ? undefined
+        : transformed
     }
     if (_.isArray(newVal)) {
       // Even fields that are not defined as ListType can have array values
-      const transformed = newVal
+      const transformed = await awu(newVal)
         .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))
-      return transformed.length === 0 ? undefined : transformed
+        .toArray()
+      return transformed.length === 0 && (newVal.length > 0 || !allowEmpty)
+        ? undefined
+        : transformed
     }
 
-    if (isObjectType(fieldType) || isMapType(fieldType)) {
+    if ((_.isPlainObject(newVal) || !allowEmpty)
+      && (isObjectType(fieldType) || isMapType(fieldType))) {
       const transformed = _.omitBy(
-        transformValues({
+        await transformValues({
           values: newVal,
           type: fieldType,
           transformFunc,
@@ -187,56 +200,42 @@ export const transformValues = (
           pathID: keyPathID,
           elementsSource,
           isTopLevel: false,
+          allowEmpty,
         }),
         _.isUndefined
       )
-      return _.isEmpty(transformed) ? undefined : transformed
+      return _.isEmpty(transformed) && (!_.isEmpty(newVal) || !allowEmpty) ? undefined : transformed
     }
     if (_.isPlainObject(newVal) && !strict) {
       const transformed = _.omitBy(
-        _.mapValues(
-          newVal,
+        await mapValuesAsync(
+          newVal ?? {},
           (val, key) => transformValue(val, keyPathID?.createNestedID(key)),
         ),
         _.isUndefined,
       )
-      return _.isEmpty(transformed) ? undefined : transformed
+      return _.isEmpty(transformed) && (!allowEmpty || !_.isEmpty(newVal)) ? undefined : transformed
     }
     return newVal
   }
 
   const fieldMapper = fieldMapperGenerator(type, values)
 
-  const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
-  if (!_.isPlainObject(newVal)) {
+  const newVal = isTopLevel ? await transformFunc({ value: values, path: pathID }) : values
+  if (!_.isPlainObject(newVal)) { //REBASE Possible rebase issue
     return newVal
   }
-  const result = _(newVal)
-    .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key)))
-    .omitBy(_.isUndefined)
-    .value()
+  const result = _.omitBy(
+    await mapValuesAsync(
+      newVal ?? {},
+      (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))
+    ),
+    _.isUndefined
+  )
   return _.isEmpty(result) ? undefined : result
 }
 
-const elementAnnotationTypes = (
-  element: Element, 
-  elementsSource?: ReadOnlyElementsSource
-): TypeMap => {
-  if (isInstanceElement(element)) {
-    return InstanceAnnotationTypes
-  }
-
-  return {
-    ...InstanceAnnotationTypes,
-    ...CoreAnnotationTypes,
-    ...(isField(element)
-      ? element.getType(elementsSource).getAnnotationTypes(elementsSource)
-      : element.getAnnotationTypes(elementsSource)),
-  }
-}
-
-
-export const transformElementAnnotations = <T extends Element>(
+export const transformElementAnnotations = async <T extends Element>(
   {
     element,
     transformFunc,
@@ -248,18 +247,33 @@ export const transformElementAnnotations = <T extends Element>(
     strict?: boolean
     elementsSource?: ReadOnlyElementsSource
   }
-): Values => (
-    transformValues({
-      values: element.annotations,
-      type: elementAnnotationTypes(element, elementsSource),
-      transformFunc,
-      strict,
-      pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
-      isTopLevel: false,
-    }) || {}
-  )
+): Promise<Values> => {
+  const elementAnnotationTypes = async (): Promise<TypeMap> => {
+    if (isInstanceElement(element)) {
+      return InstanceAnnotationTypes
+    }
 
-export const transformElement = <T extends Element>(
+    return {
+      ...InstanceAnnotationTypes,
+      ...CoreAnnotationTypes,
+      ...(isField(element)
+        ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
+        : await element.getAnnotationTypes(elementsSource)),
+    }
+  }
+
+  return await transformValues({
+    values: element.annotations,
+    type: await elementAnnotationTypes(),
+    transformFunc,
+    strict,
+    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+    elementsSource,
+    isTopLevel: false,
+  }) || {}
+}
+
+export const transformElement = async <T extends Element>(
   {
     element,
     transformFunc,
@@ -273,9 +287,9 @@ export const transformElement = <T extends Element>(
     elementsSource?: ReadOnlyElementsSource
     runOnFields?: boolean
   }
-): T => {
+): Promise<T> => {
   let newElement: Element
-  const transformedAnnotations = transformElementAnnotations({
+  const transformedAnnotations = await transformElementAnnotations({
     element,
     transformFunc,
     strict,
@@ -283,9 +297,9 @@ export const transformElement = <T extends Element>(
   })
 
   if (isInstanceElement(element)) {
-    const transformedValues = transformValues({
+    const transformedValues = await transformValues({
       values: element.value,
-      type: element.getType(elementsSource),
+      type: await element.getType(elementsSource),
       transformFunc,
       strict,
       elementsSource,
@@ -304,11 +318,11 @@ export const transformElement = <T extends Element>(
 
   if (isObjectType(element)) {
     const clonedFields = _.pickBy(
-      _.mapValues(
+      await mapValuesAsync(
         element.fields,
-        field => {
+        async field => {
           const transformedField = (runOnFields
-            ? transformFunc({ value: field, path: field.elemID })
+            ? await transformFunc({ value: field, path: field.elemID })
             : field)
           if (transformedField !== undefined) {
             return transformElement({
@@ -341,7 +355,7 @@ export const transformElement = <T extends Element>(
     newElement = new Field(
       element.parent,
       element.name,
-      element.getType(elementsSource),
+      await element.getType(elementsSource),
       transformedAnnotations,
     )
 
@@ -362,8 +376,8 @@ export const transformElement = <T extends Element>(
 
   if (isListType(element)) {
     newElement = new ListType(
-      transformElement({
-        element: element.getInnerType(elementsSource),
+      await transformElement({
+        element: await element.getInnerType(elementsSource),
         transformFunc,
         strict,
         elementsSource,
@@ -375,8 +389,8 @@ export const transformElement = <T extends Element>(
 
   if (isMapType(element)) {
     newElement = new MapType(
-      transformElement({
-        element: element.getInnerType(elementsSource),
+      await transformElement({
+        element: await element.getInnerType(elementsSource),
         transformFunc,
         strict,
         elementsSource,
@@ -386,7 +400,11 @@ export const transformElement = <T extends Element>(
     return newElement as T
   }
 
-  throw Error('received unsupported (subtype) Element')
+  if (strict) {
+    throw new Error('unsupported subtype yhingy')
+  }
+
+  return element
 }
 
 export type GetLookupNameFuncArgs = {
@@ -394,14 +412,14 @@ export type GetLookupNameFuncArgs = {
   field?: Field
   path?: ElemID
 }
-export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Value
+export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Promise<Value>
 
 export type ResolveValuesFunc = <T extends Element>(
   element: T,
   getLookUpName: GetLookupNameFunc
-) => T
+) => Promise<T>
 
-export const resolveValues: ResolveValuesFunc = (element, getLookUpName) => {
+export const resolveValues: ResolveValuesFunc = async (element, getLookUpName) => {
   const valuesReplacer: TransformFunc = ({ value, field, path }) => {
     if (isReferenceExpression(value)) {
       return getLookUpName({
@@ -428,9 +446,9 @@ export type RestoreValuesFunc = <T extends Element>(
   source: T,
   targetElement: T,
   getLookUpName: GetLookupNameFunc
-) => T
+) => Promise<T>
 
-export const restoreValues: RestoreValuesFunc = (source, targetElement, getLookUpName) => {
+export const restoreValues: RestoreValuesFunc = async (source, targetElement, getLookUpName) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
   const createPathMapCallback: TransformFunc = ({ value, path }) => {
@@ -443,20 +461,20 @@ export const restoreValues: RestoreValuesFunc = (source, targetElement, getLookU
     return value
   }
 
-  transformElement({
+  await transformElement({
     element: source,
     transformFunc: createPathMapCallback,
     strict: false,
   })
 
-  const restoreValuesFunc: TransformFunc = ({ value, field, path }) => {
+  const restoreValuesFunc: TransformFunc = async ({ value, field, path }) => {
     if (path === undefined) {
       return value
     }
 
     const ref = allReferencesPaths.get(path.getFullName())
     if (ref !== undefined
-      && _.isEqual(getLookUpName({ ref, field, path }), value)) {
+      && _.isEqual(await getLookUpName({ ref, field, path }), value)) {
       return ref
     }
     const file = allStaticFilesPaths.get(path.getFullName())
@@ -476,12 +494,12 @@ export const restoreValues: RestoreValuesFunc = (source, targetElement, getLookU
   })
 }
 
-export const restoreChangeElement = (
+export const restoreChangeElement = async (
   change: Change,
   sourceElements: Record<string, ChangeDataType>,
   getLookUpName: GetLookupNameFunc,
   restoreValuesFunc = restoreValues,
-): Change => applyFunctionToChangeData(
+): Promise<Change> => applyFunctionToChangeData(
   change,
   changeData => restoreValuesFunc(
     sourceElements[changeData.elemID.getFullName()], changeData, getLookUpName,
@@ -492,7 +510,7 @@ export const resolveChangeElement = (
   change: Change,
   getLookUpName: GetLookupNameFunc,
   resolveValuesFunc = resolveValues,
-): Change => applyFunctionToChangeData(
+): Promise<Change> => applyFunctionToChangeData(
   change,
   changeData => resolveValuesFunc(changeData, getLookUpName)
 )
@@ -520,7 +538,7 @@ export const findInstances = (
 
 export const getPath = (
   rootElement: Element,
-  fullElemID: ElemID
+  fullElemID: ElemID,
 ): string[] | undefined => {
   const { parent, path } = fullElemID.createTopLevelParentID()
   if (!parent.isEqual(rootElement.elemID)) return undefined
@@ -740,30 +758,30 @@ export const filterByID = <T extends Element | Values>(
 // This method iterate on types and corresponding values and run innerChange
 // on every "node".
 // This method DOESN'T SUPPORT list of lists!
-export const applyRecursive = (
+export const applyRecursive = async (
   type: ObjectType | MapType,
   value: Values,
-  innerChange: (field: Field, value: Value) => Value,
+  innerChange: (field: Field, value: Value) => Value | Promise<Value>,
   elementsSource?: ReadOnlyElementsSource,
-): void => {
+): Promise<void> => {
   if (!value) return
 
   const objType = toObjectType(type, value)
 
-  Object.keys(objType.fields).forEach(key => {
+  await awu(Object.keys(objType.fields)).forEach(async key => {
     if (value[key] === undefined) return
-    value[key] = innerChange(objType.fields[key], value[key])
-    const fieldType = objType.fields[key].getType(elementsSource)
+    value[key] = await innerChange(objType.fields[key], value[key])
+    const fieldType = await objType.fields[key].getType(elementsSource)
     if (!isContainerType(fieldType) && !isObjectType(fieldType)) return
     const actualFieldType = isContainerType(fieldType)
-      ? fieldType.getInnerType(elementsSource)
+      ? await fieldType.getInnerType(elementsSource)
       : fieldType
     if (isObjectType(actualFieldType)) {
       if (_.isArray(value[key])) {
-        value[key].forEach((val: Values) =>
+        await awu(value[key] as Values[]).forEach((val: Values) =>
           applyRecursive(actualFieldType, val, innerChange, elementsSource))
       } else {
-        applyRecursive(actualFieldType, value[key], innerChange, elementsSource)
+        await applyRecursive(actualFieldType, value[key], innerChange, elementsSource)
       }
     }
   })
@@ -789,21 +807,26 @@ export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID)
   return obj
 }
 
-const createDefaultValuesFromType = (
+const createDefaultValuesFromType = async (
   type: TypeElement,
   elementsSrouce?: ReadOnlyElementsSource,
-): Values => {
-  const createDefaultValuesFromObjectType = (object: ObjectType): Values =>
-    _(object.fields).mapValues((field, _name) => {
-      if (field.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined) {
-        return field.annotations[CORE_ANNOTATIONS.DEFAULT]
-      }
-      if (field.getType(elementsSrouce).annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
-        && !isContainerType(field.getType(elementsSrouce))) {
-        return createDefaultValuesFromType(field.getType(elementsSrouce))
-      }
-      return undefined
-    }).pickBy(v => v !== undefined).value()
+): Promise<Values> => {
+  const createDefaultValuesFromObjectType = async (object: ObjectType): Promise<Values> =>
+    _.pickBy(
+      await mapValuesAsync(object.fields, async (field, _name) => {
+        if (field.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined) {
+          return field.annotations[CORE_ANNOTATIONS.DEFAULT]
+        }
+        if ((await field.getType(elementsSrouce))
+          .annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
+            && !isContainerType(field.getType(elementsSrouce))) {
+          return createDefaultValuesFromType(await field.getType(elementsSrouce))
+        }
+        return undefined
+      }),
+      v => v !== undefined
+    )
+
 
   return (type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && isObjectType(type)
     ? createDefaultValuesFromObjectType(type)
@@ -811,25 +834,24 @@ const createDefaultValuesFromType = (
 }
 
 export const applyInstancesDefaults = (
-  instances: InstanceElement[],
+  elements: AsyncIterable<Element>,
   elementsSrouce?: ReadOnlyElementsSource,
-): void => {
-  // TODO: This implementation is not ideal perfmance wise
-  // Grouping by type before using the elementsSource to get the actual type will be an improvement
-  instances
-    .forEach(inst => {
-      const defaultValues = createDefaultValuesFromType(
-        inst.getType(elementsSrouce),
+): AsyncIterable<Element> => awu(elements)
+  .map(async element => {
+    if (isInstanceElement(element)) {
+      const defaultValues = await createDefaultValuesFromType(
+        await element.getType(elementsSrouce),
         elementsSrouce
       )
-      inst.value = _.merge({}, defaultValues, inst.value)
-    })
-}
+      element.value = { ...defaultValues, ...element.value }
+    }
+    return element
+  })
 
-export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
-  InstanceElement => {
+export const createDefaultInstanceFromType = async (name: string, objectType: ObjectType):
+  Promise<InstanceElement> => {
   const instance = new InstanceElement(name, objectType)
-  instance.value = createDefaultValuesFromType(objectType)
+  instance.value = await createDefaultValuesFromType(objectType)
   return instance
 }
 
@@ -838,11 +860,11 @@ export const safeJsonStringify = (value: Value,
   space?: string | number): string =>
   safeStringify(value, replacer, space)
 
-export const getAllReferencedIds = (
+export const getAllReferencedIds = async (
   element: Element,
   onlyAnnotations = false,
   elementsSource?: ReadOnlyElementsSource,
-): Set<string> => {
+): Promise<Set<string>> => {
   const allReferencedIds = new Set<string>()
   const transformFunc: TransformFunc = ({ value }) => {
     if (isReferenceExpression(value)) {
@@ -852,9 +874,9 @@ export const getAllReferencedIds = (
   }
 
   if (onlyAnnotations) {
-    transformElementAnnotations({ element, transformFunc, strict: false, elementsSource })
+    await transformElementAnnotations({ element, transformFunc, strict: false, elementsSource })
   } else {
-    transformElement({ element, transformFunc, strict: false, elementsSource })
+    await transformElement({ element, transformFunc, strict: false, elementsSource })
   }
 
   return allReferencedIds

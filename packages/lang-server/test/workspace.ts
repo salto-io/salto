@@ -18,7 +18,10 @@ import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors, parseCache, state, nacl, staticFiles, dirStore, pathIndex, loadWorkspace, EnvironmentsSources } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
+import { createInMemoryElementSource } from '@salto-io/workspace/dist/src/workspace/elements_source'
+import { collections } from '@salto-io/lowerdash'
 
+const { awu } = collections.asynciterable
 
 //RB const { parse } = parser
 //RB const { mergeElements } = merger
@@ -79,6 +82,8 @@ const mockParseCache = (): parseCache.ParseResultCache => ({
   clear: () => Promise.resolve(),
   rename: () => Promise.resolve(),
   clone: () => mockParseCache(),
+  delete: () => Promise.resolve(),
+  list: () => Promise.resolve([])
 })
 
 const buildMockWorkspace = async (files: Record<string, string>, staticFileNames: string[]):
@@ -93,7 +98,7 @@ Promise<Workspace> => {
   }
 
   const mockedDirStore = mockDirStore(files)
-  const commonNaclFilesSource = nacl.naclFilesSource(
+  const commonNaclFilesSource = await nacl.naclFilesSource(
     mockedDirStore,
     mockParseCache(),
     staticFiles.buildStaticFilesSource(
@@ -108,7 +113,7 @@ Promise<Workspace> => {
         naclFiles: commonNaclFilesSource,
       },
       default: {
-        naclFiles: nacl.naclFilesSource(
+        naclFiles: await nacl.naclFilesSource(
           mockDirStore({}),
           mockParseCache(),
           staticFiles.buildStaticFilesSource(
@@ -117,14 +122,14 @@ Promise<Workspace> => {
           )
         ),
         state: state.buildInMemState(async () => ({
-          elements: _.keyBy(await commonNaclFilesSource.getAll(), e => e.elemID.getFullName()),
+          elements: createInMemoryElementSource(await awu(await commonNaclFilesSource.getAll()).toArray()),
           pathIndex: new pathIndex.PathIndex(),
           servicesUpdateDate: {},
           saltoVersion: '0.0.1',
         })),
       },
       inactive: {
-        naclFiles: nacl.naclFilesSource(
+        naclFiles: await nacl.naclFilesSource(
           mockDirStore({}),
           mockParseCache(),
           staticFiles.buildStaticFilesSource(
@@ -133,7 +138,7 @@ Promise<Workspace> => {
           )
         ),
         state: state.buildInMemState(async () => ({
-          elements: {},
+          elements: createInMemoryElementSource([]),
           pathIndex: new pathIndex.PathIndex(),
           servicesUpdateDate: {},
           saltoVersion: '0.0.1',

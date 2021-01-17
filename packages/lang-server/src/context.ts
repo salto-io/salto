@@ -18,12 +18,12 @@ import wu from 'wu'
 import {
   Element, isField, isType, isObjectType, ElemID,
 } from '@salto-io/adapter-api'
-import {
-  findElement, resolvePath,
-} from '@salto-io/adapter-utils'
-import { parser } from '@salto-io/workspace'
+import { resolvePath } from '@salto-io/adapter-utils'
+import { parser, elementSource } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { EditorWorkspace } from './workspace'
 
+const { awu } = collections.asynciterable
 type PositionContextType = 'global'|'instance'|'type'|'field'
 
 export interface EditorPosition {
@@ -178,9 +178,12 @@ export const buildDefinitionsTree = (
   )
 }
 
-const getFullElement = (elements: ReadonlyArray<Element>, partial: Element): Element => {
+const getFullElement = async (
+  elements: elementSource.ElementsSource,
+  partial: Element
+): Promise<Element> => {
   const { parent } = partial.elemID.createTopLevelParentID()
-  const topLevelElement = findElement(elements, parent)
+  const topLevelElement = await elements.get(parent)
   return (topLevelElement && resolvePath(topLevelElement, partial.elemID)) || partial
 }
 
@@ -202,13 +205,13 @@ export const getPositionContext = async (
     // TODO: check what to do if buffer is undefined
     (await workspace.getNaclFile(filename))?.buffer as string,
     await workspace.getSourceMap(filename),
-    await workspace.getElements(filename),
+    await awu(await workspace.getElements(filename)).toArray(),
   )
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)
-    ? { ...partialContext.ref,
-      element: getFullElement(await workspace.elements,
-        partialContext.ref.element) }
-    : undefined
+    ? {
+      ...partialContext.ref,
+      element: await getFullElement(await workspace.elements, partialContext.ref.element),
+    } : undefined
   return { ...partialContext, ref: fullRef }
 }

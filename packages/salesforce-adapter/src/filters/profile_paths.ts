@@ -13,14 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+
 import { FilterCreator, FilterWith } from '../filter'
 import { apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { getInternalId, isInstanceOfType } from './utils'
 import { PROFILE_METADATA_TYPE } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const { toArrayAsync } = collections.asynciterable
 
@@ -33,11 +36,11 @@ const generateProfileInternalIdToName = async (
   )
 }
 
-const replacePath = (
+const replacePath = async (
   profile: InstanceElement,
   profileInternalIdToName: Map<string, string>
-): void => {
-  const name = apiName(profile) === 'PlatformPortal'
+): Promise<void> => {
+  const name = await apiName(profile) === 'PlatformPortal'
     // Both 'PlatformPortal' & 'AuthenticatedWebsite' profiles have 'Authenticated Website'
     // display name in SF UI. Since we wouldn't like them to be placed under the same nacl,
     // We modify 'PlatformPortal' filename manually so we'll have Authenticated_Website and
@@ -61,7 +64,9 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     const profiles = elements.filter(isInstanceOfType(PROFILE_METADATA_TYPE))
     if (profiles.length > 0) {
       const profileInternalIdToName = await generateProfileInternalIdToName(client)
-      profiles.forEach(inst => replacePath(inst, profileInternalIdToName))
+      await awu(profiles)
+        .filter(isInstanceElement)
+        .forEach(async inst => replacePath(inst, profileInternalIdToName))
     }
   },
 })

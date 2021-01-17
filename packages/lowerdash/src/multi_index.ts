@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { forEachAsync } from './collections/asynciterable'
-import { TypeGuard, Predicate } from './types'
+import { forEachAsync, awu } from './collections/asynciterable'
+import { TypeGuard, Predicate, AsyncPredicate } from './types'
 
 
 // The '0' key is used to "nudge" typescript to infer a tuple type instead of an array
@@ -34,9 +34,9 @@ type IndexFunction<
   IndexName extends string = string,
 > = {
   name: IndexName
-  filter?: TypeGuard<InputType, FilteredType> | Predicate<InputType>
-  key: (item: FilteredType) => Key
-  map?: (item: FilteredType) => ResultType
+  filter?: TypeGuard<InputType, FilteredType> | Predicate<InputType> | AsyncPredicate<InputType>
+  key: (item: FilteredType) => Key | Promise<Key>
+  map?: (item: FilteredType) => ResultType | Promise<ResultType>
 }
 
 type MultiIndexBuilder<InputType, Result extends object = {}> = {
@@ -73,16 +73,16 @@ export const buildMultiIndex = <InputType, Result extends object = {}>(
 ): MultiIndexBuilder<InputType, Result> => {
   const indexDefinitions: IndexFunction[] = []
 
-  const processItem = (item: InputType, index: Record<string, unknown>): void => {
-    indexDefinitions
+  const processItem = async (item: InputType, index: Record<string, unknown>): Promise<void> => {
+    awu(indexDefinitions)
       .filter(indexDef => indexDef.filter === undefined || indexDef.filter(item))
-      .forEach(indexDef => {
-        const keyParts = indexDef.key(item)
+      .forEach(async indexDef => {
+        const keyParts = await indexDef.key(item)
         if (keyParts.some(part => part === undefined)) {
           // If key function type is correct this will never happen but just in case it does...
           return
         }
-        const value = indexDef.map === undefined ? item : indexDef.map(item)
+        const value = indexDef.map === undefined ? item : await indexDef.map(item)
         _.set(index, [indexDef.name, ...keyParts], value)
       })
   }
@@ -99,7 +99,7 @@ export const buildMultiIndex = <InputType, Result extends object = {}>(
       FilteredType extends InputType,
       ResultType,
       Key extends KeyType,
-      IndexName extends string
+      IndexName extends string,
     >(
       func: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>
     ) => {

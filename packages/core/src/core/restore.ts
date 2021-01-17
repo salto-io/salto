@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ElemID, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, DetailedChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { pathIndex, ElementSelector, InMemoryRemoteElementSource } from '@salto-io/workspace'
+import { pathIndex, ElementSelector, elementSource } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 
 type PathIndex = pathIndex.PathIndex
@@ -29,12 +29,12 @@ const splitChangeByPath = async (
   if (_.isEmpty(changeHints)) {
     return [change]
   }
-  return changeHints.map(hint => {
+  return Promise.all(changeHints.map(async hint => {
     const filterByPathHint = (id: ElemID): boolean => {
       const idHints = index.get(id.getFullName()) as string[][]
       return _.some(idHints, idHint => _.isEqual(idHint, hint))
     }
-    const filteredChange = applyFunctionToChangeData(
+    const filteredChange = await applyFunctionToChangeData(
       change,
       changeData => filterByID(change.id, changeData, filterByPathHint),
     )
@@ -42,23 +42,21 @@ const splitChangeByPath = async (
       ...filteredChange,
       path: hint,
     }
-  })
+  }))
 }
 
 export const createRestoreChanges = async (
-  workspaceElements: readonly Element[],
-  stateElements: Element[],
+  workspaceElements: elementSource.ElementsSource,
+  state: elementSource.ElementsSource,
   index: PathIndex,
   elementSelectors: ElementSelector[] = [],
+  services?: readonly string[]
 ): Promise<DetailedChange[]> => {
-  const workspaceSource = new InMemoryRemoteElementSource(workspaceElements)
-  const stateSource = new InMemoryRemoteElementSource(stateElements)
   const changes = await createDiffChanges(
     workspaceElements,
-    stateElements,
-    workspaceSource,
-    stateSource,
-    elementSelectors
+    state,
+    elementSelectors,
+    [id => (services?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE]
   )
   const detailedChanges = _.flatten(await Promise.all(
     changes.map(change => splitChangeByPath(change, index))

@@ -175,18 +175,15 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
       .map(async entry => ({ key: entry.key, value: await deserialize(entry.value) }))
   }
 
-  const clearImpl = (prefix: string): Promise<void> => new Promise<void>(resolve => {
-    db.clear({
-      gte: prefix,
-      lte: getPrefixEndCondition(prefix),
-    }, () => {
-      resolve()
+  const clearImpl = (prefix: string, suffix?: string): Promise<void> =>
+    new Promise<void>(resolve => {
+      db.clear({
+        gte: prefix,
+        lte: suffix ?? getPrefixEndCondition(prefix),
+      }, () => {
+        resolve()
+      })
     })
-  })
-
-  const getValueByKey = async <T>(key: string): Promise<T | undefined> => {
-    const bla = await promisify(db.get)(key)
-  }
 
   const createDBIfNotCreated = async (loc: string): Promise<void> => {
     if (!(loc in dbConnections)) {
@@ -244,13 +241,35 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
       await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
     },
     revert: async () => {
+      cache.reset()
       await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
+    },
+    clear: async () => {
+      cache.reset()
+      await clearImpl(namespace.concat(NAMESPACE_SEPARATOR))
+      await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
+    },
+    delete: async (key: string) => {
+      cache.del(key)
+      const dbKey = namespace.concat(NAMESPACE_SEPARATOR).concat(key)
+      const tmpDBKey = TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR).concat(key)
+      await clearImpl(dbKey, dbKey)
+      await clearImpl(tmpDBKey, tmpDBKey)
     },
     close: () => promisify(db.close.bind(db))(),
 
-    // TODO: implement this
-    delete: async () => Promise.resolve(true),
-    clear: () => promisify(db.close.bind(db))(),
-    has: async () => Promise.resolve(true),
+    has: async (key: string): Promise<boolean> => {
+      if (cache.has(key)) {
+        return true
+      }
+      const hasKeyImpl = (k: string): boolean => {
+        let val: rocksdb.Bytes | undefined
+        db.get(k, async (error, value) => {
+          val = error ? undefined : value
+        })
+        return val !== undefined
+      }
+      return hasKeyImpl(keyToTempDBKey(key)) || hasKeyImpl(keyToDBKey(key))
+    },
   }
 }

@@ -107,7 +107,7 @@ export class InMemoryRemoteElementSource implements ElementsSource {
     await this.elements.setAll(
       awu(elements)
         .filter(element => !isContainerType(element))
-        .map(e => [e.elemID.getFullName(), e])
+        .map(e => ({ key: e.elemID.getFullName(), value: e }))
     )
   }
 

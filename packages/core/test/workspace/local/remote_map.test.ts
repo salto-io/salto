@@ -18,11 +18,13 @@ import leveldown from 'leveldown'
 import rocksdb from 'rocksdb'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm } from '@salto-io/workspace'
 import { createRemoteMap } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
+const { awu } = collections.asynciterable
 
 const createElements = async (): Promise<Element[]> => {
   const params = Object.assign(defaultParams)
@@ -49,12 +51,12 @@ const createMap = async (namespace:
     },
     elem => serialize([elem]),
     async elemStr => (await deserialize(elemStr))[0],
-    elem => elem.elemID.getFullName()
   )
 
-async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<[string, Element]> {
+async function *createAsyncIterable(iterable: Element[]):
+AsyncGenerator<rm.RemoteMapEntry<Element, string>> {
   for (const elem of iterable) {
-    yield [elem.elemID.getFullName(), elem]
+    yield { key: elem.elemID.getFullName(), value: elem }
   }
 }
 
@@ -86,6 +88,36 @@ describe('test operations on remote db', () => {
       const id = 'not.exist'
       const element = await remoteMap.get(id)
       expect(element).toBeUndefined()
+    })
+  })
+
+  describe('delete', () => {
+    it('should delete item and do not find it no more', async () => {
+      const elemID = elements[0].elemID.getFullName()
+      await remoteMap.set(elemID, elements[0])
+      expect(await remoteMap.get(elemID)).toBeDefined()
+      await remoteMap.delete(elemID)
+      expect(await remoteMap.get(elemID)).toBeUndefined()
+    })
+  })
+
+  describe('clear', () => {
+    it('should clear the remote map', async () => {
+      await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+      expect(await awu(remoteMap.keys()).toArray()).not.toHaveLength(0)
+      await remoteMap.clear()
+      expect(await awu(remoteMap.keys()).toArray()).toHaveLength(0)
+    })
+  })
+
+  describe('has', () => {
+    it('should return true if key exists', async () => {
+      await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+      expect(await remoteMap.has(elements[0].elemID.getFullName())).toEqual(true)
+    })
+
+    it('should return false if key does not exist', async () => {
+      expect(await remoteMap.has('not-exist')).toEqual(false)
     })
   })
 

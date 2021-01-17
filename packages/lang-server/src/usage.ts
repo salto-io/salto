@@ -15,13 +15,15 @@
 */
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value, isContainerType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
+import wu from 'wu'
+import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { Token } from './token'
 
+const { awu } = collections.asynciterable
 
 const getElemIDUsages = async (
   element: Element,
@@ -30,12 +32,11 @@ const getElemIDUsages = async (
 ): Promise<string[]> => {
   const pathesToAdd = new Set<string>()
   if (isObjectType(element)) {
-    _(element.fields)
-      .values()
-      .filter(f => {
-        const fieldType = f.getType(elementsSource)
+    await awu(Object.values(element.fields))
+      .filter(async f => {
+        const fieldType = await f.getType(elementsSource)
         const nonGenericType = isContainerType(fieldType)
-          ? getDeepInnerType(fieldType, elementsSource) : fieldType
+          ? await getDeepInnerType(fieldType, elementsSource) : fieldType
         return id.isEqual(nonGenericType.elemID)
       }).forEach(f => pathesToAdd.add(f.elemID.getFullName()))
   }
@@ -54,7 +55,7 @@ const getElemIDUsages = async (
     return value
   }
   if (!isContainerType(element)) {
-    transformElement({ element, transformFunc, strict: false, elementsSource })
+    await transformElement({ element, transformFunc, strict: false, elementsSource })
   }
   return [...pathesToAdd]
 }
@@ -102,18 +103,17 @@ export const getReferencingFiles = async (
 export const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
-  id: ElemID,
-  elementsSource: ReadOnlyElementsSource,
-): Promise<string[]> => _.flatten((await Promise.all(
-  (await workspace.getElements(filename)).map(e => getElemIDUsages(e, id, elementsSource))
-)))
+  id: ElemID
+): Promise<ElemID[]> =>
+  awu(await workspace.getElements(filename))
+    .flatMap(async e => getElemIDUsages(e, id, await workspace.elements))
+    .toArray()
 
 export const getWorkspaceReferences = async (
   workspace: EditorWorkspace,
   tokenValue: string,
   context: PositionContext
 ): Promise<SaltoElemFileLocation[]> => {
-  const elementsSource = new InMemoryRemoteElementSource(await workspace.elements)
   const id = getSearchElementFullName(context, tokenValue)
   if (id === undefined) {
     return []
@@ -121,8 +121,8 @@ export const getWorkspaceReferences = async (
   const referencedByFiles = await getReferencingFiles(workspace, id.getFullName())
   const usages = _.flatten(await Promise.all(
     referencedByFiles.map(async filename =>
-      (await getUsageInFile(workspace, filename, id, elementsSource))
-        .flatMap(fullname => ({ filename, fullname })))
+      (await getUsageInFile(workspace, filename, id))
+        .flatMap(elemID => ({ filename, fullname: elemID.getFullName() })))
   ))
   const selfReferences = (await workspace.getElementNaclFiles(id))
     .map(filename => ({ filename, fullname: id.getFullName() }))

@@ -27,6 +27,7 @@
     "references": [
       { "path": "../core" },
       { "path": "../lang-server" },
+      { "path": "../lowerdash" },
       { "path": "../file" },
       { "path": "../workspace" },
     ]

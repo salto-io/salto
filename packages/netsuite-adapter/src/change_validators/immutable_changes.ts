@@ -18,8 +18,11 @@ import {
   isInstanceChange, isModificationChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isCustomType, isFileCabinetType } from '../types'
+
+const { awu } = collections.asynciterable
 
 // In netsuite, a reference can be either a ReferenceExpression
 // or a string of the form [/some/path] or [scriptid=someid] if no reference was found.
@@ -28,21 +31,23 @@ import { isCustomType, isFileCabinetType } from '../types'
 const getReferenceIdentifier = (val: unknown): unknown =>
   (isReferenceExpression(val) ? val.elemID.getFullName() : val)
 
+
 const changeValidator: ChangeValidator = async changes => (
-  _.flatten(changes
+  awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
     .filter(change => {
       const instance = getChangeElement(change) as InstanceElement
       return isCustomType(instance.refType.elemID) || isFileCabinetType(instance.refType.elemID)
     })
-    .map(change => {
+    .flatMap(async change => {
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
-      const modifiedImmutableFields = Object.values(after.getType().fields)
-        .filter(field => field.getType() === BuiltinTypes.SERVICE_ID)
+      const modifiedImmutableFields = await awu(Object.values((await after.getType()).fields))
+        .filter(async field => await field.getType() === BuiltinTypes.SERVICE_ID)
         .filter(field => before.value[field.name] !== after.value[field.name])
         .map(field => field.name)
+        .toArray()
 
       // parent annotations in file cabinet instances
       if (isFileCabinetType(after.refType.elemID)
@@ -58,7 +63,8 @@ const changeValidator: ChangeValidator = async changes => (
         message: 'Attempting to modify an immutable field',
         detailedMessage: `Field (${modifiedField}) is immutable`,
       } as ChangeError))
-    }))
+    })
+    .toArray()
 )
 
 export default changeValidator

@@ -61,7 +61,7 @@ describe('SalesforceAdapter filters', () => {
         )
         connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
           componentSuccess: [mockDeployMessage(
-            { fullName: apiName(instance), componentType: metadataType(instance) }
+            { fullName: await apiName(instance), componentType: await metadataType(instance) }
           )],
         }))
 

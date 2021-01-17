@@ -52,35 +52,35 @@ describe('profile paths filter', () => {
   })
 
   it('should replace profile instance path', async () => {
+    (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
-    instance.getType().annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.path)
       .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'System_Administrator'])
   })
 
   it('should replace instance path for PlatformPortal Profile', async () => {
+    (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
     instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
-    instance.getType().annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     await filter.onFetch([instance])
     expect(instance.path)
       .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'Authenticated_Website2'])
   })
 
   it('should not replace instance path for other metadataTypes', async () => {
+    (await instance.getType()).annotations[METADATA_TYPE] = 'some other metadataType'
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
-    instance.getType().annotations[METADATA_TYPE] = 'some other metadataType'
     await filter.onFetch([instance])
     expect(instance.path).toEqual(origInstance.path)
   })
 
   it('should not replace instance path if it has no path', async () => {
+    (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
-    instance.getType().annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.path = undefined
     await filter.onFetch([instance])
     expect(instance.path).toBeUndefined()

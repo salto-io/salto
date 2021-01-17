@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, Element, Field, ReferenceExpression, ObjectType,
+  ElemID, Element, Field, ReferenceExpression, ObjectType, isObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, multiIndex } from '@salto-io/lowerdash'
@@ -25,8 +25,9 @@ import { buildElementsSourceForFetch } from './utils'
 
 const { makeArray } = collections.array
 const { REFERENCE_TO } = FIELD_ANNOTATIONS
+const { awu } = collections.asynciterable
 
-const isMetadataTypeOrCustomObject = (elem: Element): elem is ObjectType => (
+const isMetadataTypeOrCustomObject = async (elem: Element): Promise<boolean> => (
   isMetadataObjectType(elem) || isCustomObject(elem)
 )
 
@@ -53,7 +54,8 @@ const convertAnnotationsToReferences = (
     return ref
   }
 
-  elements
+  awu(elements)
+    .filter(isObjectType)
     .filter(isMetadataTypeOrCustomObject)
     .flatMap((obj: ObjectType) => Object.values(obj.fields))
     .filter((field: Field) => annotationNames.some(name => field.annotations[name] !== undefined))
@@ -73,7 +75,7 @@ const filter: FilterCreator = ({ config }) => ({
     const typeToElemID = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
       filter: isMetadataTypeOrCustomObject,
-      key: obj => [metadataType(obj), apiName(obj)],
+      key: async obj => [await metadataType(obj), await apiName(obj)],
       map: obj => obj.elemID,
     })
     convertAnnotationsToReferences(elements, typeToElemID, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])

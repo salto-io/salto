@@ -17,11 +17,13 @@ import _ from 'lodash'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { InstanceElement, DetailedChange, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { parse, dumpElements } from '../parser'
 
 import { FILE_EXTENSION } from './nacl_files'
 import { DirectoryStore } from './dir_store'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export interface ConfigSource {

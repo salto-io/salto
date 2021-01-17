@@ -15,13 +15,16 @@
 */
 import wu from 'wu'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
-import { hash } from '@salto-io/lowerdash'
+import { hash, collections } from '@salto-io/lowerdash'
 import each from 'jest-each'
+
 import { mockDirStore } from '../common/nacl_file_store'
 import { parseResultCache } from '../../src/workspace/cache'
 import * as serializer from '../../src/serializer/elements'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import { SourceMap } from '../../src/parser'
+
+const { awu } = collections.asynciterable
 
 describe('parseResultCache', () => {
   const mockedStaticFilesSource = { clone: jest.fn() } as unknown as StaticFilesSource
@@ -106,7 +109,7 @@ describe('parseResultCache', () => {
         .get({ filename: 'blabla/blurprint3.nacl', buffer: 'buffer', lastModified: 0 })
       expect(parseResultFromCache).toBeDefined()
       if (parseResultFromCache !== undefined) {
-        expect(parseResultFromCache.elements[0].elemID.name).toBe(
+        expect((await awu(parseResultFromCache.elements).toArray())[0].elemID.name).toBe(
           parseResult.elements[0].elemID.name
         )
         expect(parseResultFromCache.errors).toEqual([])

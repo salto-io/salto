@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement,
+  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
@@ -22,7 +22,7 @@ import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
+import { collections, values, promises } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
@@ -72,6 +72,8 @@ import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 
+const { awu } = collections.asynciterable
+const { partition } = promises.array
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -361,20 +363,19 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const resolvedChanges = changeGroup.changes
+    const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
+      .toArray()
 
-    resolvedChanges.filter(isAdditionChange).map(getChangeElement).forEach(addDefaults)
-
+    await awu(resolvedChanges).filter(isAdditionChange).map(getChangeElement).forEach(addDefaults)
     await this.filtersRunner.preDeploy(resolvedChanges)
 
-    const result = isCustomObjectInstanceChanges(resolvedChanges)
+    const result = await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
-        resolvedChanges, this.client, this.fetchProfile.dataManagement,
+        resolvedChanges as Change<InstanceElement>[], this.client, this.fetchProfile.dataManagement,
       )
       : await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)
-
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...result.appliedChanges]
     await this.filtersRunner.onDeploy(appliedChangesBeforeRestore)
@@ -383,9 +384,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       changeGroup.changes.map(getChangeElement),
       elem => elem.elemID.getFullName(),
     )
-    const appliedChanges = appliedChangesBeforeRestore
-      .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
 
+    const appliedChanges = await awu(appliedChangesBeforeRestore)
+      .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
+      .toArray()
     return {
       appliedChanges,
       errors: result.errors,
@@ -404,7 +406,9 @@ export default class SalesforceAdapter implements AdapterOperations {
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(
-      knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
+      await awu(knownMetadataTypes).map(
+        async mdType => [await apiName(mdType), mdType] as [string, TypeElement]
+      ).toArray()
     )
     const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
     const childTypeNames = new Set(
@@ -422,9 +426,13 @@ export default class SalesforceAdapter implements AdapterOperations {
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
-      const result = await Promise.all(metadataTypesToRead
-        .filter(type => !this.metadataTypesOfInstancesFetchedInFilters.includes(apiName(type)))
-        .map(async type => this.createMetadataInstances(type)))
+      const result = await awu(metadataTypesToRead)
+        // Just fetch metadata instances of the types that we receive from the describe call
+        .filter(
+          async type => !this.metadataTypesOfInstancesFetchedInFilters
+            .includes(await apiName(type))
+        ).map(type => this.createMetadataInstances(type))
+        .toArray()
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),
@@ -433,15 +441,17 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const typeInfos = await typeInfoPromise
     const topLevelTypeNames = typeInfos.map(info => info.xmlName)
-    const topLevelTypes = (await types)
+    const topLevelTypes = await awu(await types)
       .filter(isMetadataObjectType)
-      .filter(t => (
-        topLevelTypeNames.includes(apiName(t))
+      .filter(async t => (
+        topLevelTypeNames.includes(await apiName(t))
         || t.annotations.folderContentType !== undefined
       ))
-    const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(
+      .toArray()
+
+    const [metadataTypesToRetrieve, metadataTypesToRead] = await partition(
       topLevelTypes,
-      t => this.metadataToRetrieve.includes(apiName(t)),
+      async t => this.metadataToRetrieve.includes(await apiName(t)),
     )
 
     const allInstances = await Promise.all([
@@ -465,7 +475,7 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   private async createMetadataInstances(type: ObjectType):
   Promise<FetchElements<InstanceElement[]>> {
-    const typeName = apiName(type)
+    const typeName = await apiName(type)
     const { elements: fileProps, configChanges } = await listMetadataObjects(
       this.client, typeName, [],
     )

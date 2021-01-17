@@ -27,14 +27,16 @@ import {
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises, types } from '@salto-io/lowerdash'
-import { merger, InMemoryRemoteElementSource } from '@salto-io/workspace'
+import { merger, InMemoryRemoteElementSource, elementSource } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import {
   AdapterEvents,
   createAdapterProgressReporter,
 } from './adapters/progress'
+import { IDFilter } from './plan/plan'
 
+const { awu } = collections.asynciterable
 const { mergeElements } = merger
 const log = logger(module)
 
@@ -78,33 +80,27 @@ export type MergeErrorWithElements = {
 }
 
 export const getDetailedChanges = async (
-  before: ReadonlyArray<Element>,
-  after: ReadonlyArray<Element>,
-  beforeSource: ReadOnlyElementsSource,
-  afterSource: ReadOnlyElementsSource,
+  before: elementSource.ElementsSource,
+  after: elementSource.ElementsSource,
+  topLevelFilters: IDFilter[] = []
 ): Promise<Iterable<DetailedChange>> =>
   wu((await getPlan({
     before,
     after,
-    beforeSource,
-    afterSource,
     dependencyChangers: [],
+    topLevelFilters,
   })).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 
 const getChangeMap = async (
-  before: ReadonlyArray<Element>,
-  after: ReadonlyArray<Element>,
-  beforeSource: ReadOnlyElementsSource,
-  afterSource: ReadOnlyElementsSource,
+  before: elementSource.ElementsSource,
+  after: elementSource.ElementsSource,
 ): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
     wu(await getDetailedChanges(
       before,
       after,
-      beforeSource,
-      afterSource,
     )).map(change => [change.id.getFullName(), change]).toArray(),
   )
 
@@ -115,16 +111,16 @@ const findNestedElementPath = (
   originalParentElements.find(e => !_.isUndefined(resolvePath(e, changeElemID)))?.path
 )
 
-type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]
+type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChange[]>
 export const toChangesWithPath = (
-  serviceElementByFullName: (fullName: string) => Element[]
+  serviceElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]
 ): ChangeTransformFunction => (
-  change => {
+  async change => {
     const changeID: ElemID = change.change.id
     if (!changeID.isTopLevel() && change.change.action === 'add') {
       const path = findNestedElementPath(
         changeID,
-        serviceElementByFullName(changeID.createTopLevelParentID().parent.getFullName())
+        await serviceElementByFullName(changeID.createTopLevelParentID().parent)
       )
       log.debug(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
 
@@ -132,7 +128,7 @@ export const toChangesWithPath = (
         ? [_.merge({}, change, { change: { path } })]
         : [change]
     }
-    const originalElements = serviceElementByFullName(changeID.getFullName())
+    const originalElements = await serviceElementByFullName(changeID)
     if (originalElements.length === 0) {
       log.debug(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
@@ -179,10 +175,11 @@ type ProcessMergeErrorsResult = {
   errorsWithDroppedElements: MergeErrorWithElements[]
 }
 
-const processMergeErrors = (
-  elements: Element[],
+const processMergeErrors = async (
+  elements: AsyncIterable<Element>,
   errors: merger.MergeError[],
-): ProcessMergeErrorsResult => log.time(() => {
+  stateElements: elementSource.ElementsSource
+): Promise<ProcessMergeErrorsResult> => log.time(async () => {
   const mergeErrsByElemID = _(errors)
     .map(me => ([
       me.elemID.createTopLevelParentID().parent.getFullName(),
@@ -191,10 +188,14 @@ const processMergeErrors = (
     .value() as Record<string, MergeErrorWithElements>
 
   const errorsWithDroppedElements: MergeErrorWithElements[] = []
-  const keptElements = elements.filter(e => {
+  const errorsWithStateElements: MergeErrorWithElements[] = []
+  const keptElements = await awu(elements).filter(async e => {
     const foundMergeErr = mergeErrsByElemID[e.elemID.getFullName()]
     if (foundMergeErr) {
       foundMergeErr.elements.push(e)
+      if (await stateElements.has(e.elemID)) {
+        errorsWithStateElements.push(foundMergeErr)
+      }
       errorsWithDroppedElements.push(foundMergeErr)
     }
 
@@ -207,13 +208,17 @@ const processMergeErrors = (
     }
 
     return !foundMergeErr && !foundMergeErrForInstanceType
-  })
+  }).toArray()
+  if (!_.isEmpty(errorsWithStateElements)) {
+    throw new FatalFetchMergeError(
+      errorsWithStateElements
+    )
+  }
   return {
     keptElements,
     errorsWithDroppedElements,
   }
-}, 'process merge errors for %o elements with %o error',
-elements.length, errors.length)
+}, 'process merge errors for %o errors', errors.length)
 
 type UpdatedConfig = {
   config: InstanceElement
@@ -372,7 +377,7 @@ const fetchAndProcessMergeErrors = async (
       .filter(e => !droppedElements.has(e.elemID.getFullName()))
 
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
-      mergeErrors.length}]`)
+      mergeErrorsArr.length}]`)
     return {
       serviceElements: validServiceElements,
       errors: fetchErrors,
@@ -401,14 +406,11 @@ export const getAdaptersFirstFetchPartial = (
 // o/w all service elements should be consider as "add" changes.
 const calcFetchChanges = async (
   serviceElements: ReadonlyArray<Element>,
-  mergedServiceElements: ReadonlyArray<Element>,
-  stateElements: ReadonlyArray<Element>,
-  workspaceElements: ReadonlyArray<Element>,
+  mergedServiceElements: elementSource.ElementsSource,
+  stateElements: elementSource.ElementsSource,
+  workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
-  const serviceSource = new InMemoryRemoteElementSource(serviceElements)
-  const workspaceSource = new InMemoryRemoteElementSource(workspaceElements)
-  const stateSource = new InMemoryRemoteElementSource(stateElements)
   const serviceElementsIds = new Set(wu(serviceElements)
     .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
     .map(e => e.elemID.getFullName()))
@@ -424,40 +426,31 @@ const calcFetchChanges = async (
     getDetailedChanges(
       filteredStateElements,
       mergedServiceElements,
-      stateSource,
-      serviceSource,
     ),
   'finished to calculate service-state changes')
   const pendingChanges = await log.time(() => getChangeMap(
     filteredStateElements,
     filteredWorkspaceElements,
-    stateSource,
-    workspaceSource,
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     filteredWorkspaceElements,
     mergedServiceElements,
-    workspaceSource,
-    serviceSource,
   ), 'finished to calculate service-workspace changes')
 
-  const serviceElementsMap: Record<string, Element[]> = _.groupBy(
-    serviceElements,
-    se => se.elemID.getFullName()
-  )
+  const serviceElementsSource = elementSource.createInMemoryElementSource(serviceElements)
 
-  return wu(serviceChanges)
-    .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
-    .flatten()
-    .map(toChangesWithPath(fullName => serviceElementsMap[fullName] || []))
-    .flatten()
+  return awu(serviceChanges)
+    .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges))
+    .flatMap(toChangesWithPath(
+      async name => collections.array.makeArray(await serviceElementsSource.get(name))
+    )).toArray()
 }
 
 export const fetchChanges = async (
   adapters: Record<string, AdapterOperations>,
-  workspaceElements: ReadonlyArray<Element>,
-  filteredStateElements: ReadonlyArray<Element>,
+  workspaceElements: elementSource.ElementsSource,
+  stateElements: elementSource.ElementsSource,
   otherStateElements: ReadonlyArray<Element>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
@@ -471,7 +464,7 @@ export const fetchChanges = async (
     serviceElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
     adapters,
-    filteredStateElements,
+    stateElements,
     otherStateElements,
     getChangesEmitter,
     progressEmitter
@@ -487,14 +480,15 @@ export const fetchChanges = async (
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
 
-  const isFirstFetch = _.isEmpty(workspaceElements.concat(filteredStateElements)
-    .filter(e => !e.elemID.isConfig()))
-
+  const isFirstFetch = await awu(await workspaceElements.getAll())
+    .concat(await stateElements.getAll())
+    .filter(e => !e.elemID.isConfig())
+    .isEmpty()
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
     : await calcFetchChanges(
       serviceElements,
-      processErrorsResult.keptElements,
+      elementSource.createInMemoryElementSource(processErrorsResult.keptElements),
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
@@ -509,15 +503,11 @@ export const fetchChanges = async (
   }
   const configs = updatedConfigs.map(c => c.config)
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
-
-  // TODO: Check if this is enough or we need all the stateElements
-  const stateSource = new InMemoryRemoteElementSource(filteredStateElements)
-  const workspaceSource = new InMemoryRemoteElementSource(workspaceElements)
   const configChanges = await getPlan({
-    before: currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
-    after: configs,
-    beforeSource: stateSource,
-    afterSource: workspaceSource,
+    before: elementSource.createInMemoryElementSource(
+      currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName()))
+    ),
+    after: elementSource.createInMemoryElementSource(configs),
   })
   const adapterNameToConfigMessage = _
     .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
@@ -562,13 +552,13 @@ const getObjectServiceId = (objectType: ObjectType): string => {
   return toServiceIdsString(serviceIds)
 }
 
-const getFieldServiceId = (
+const getFieldServiceId = async (
   objectServiceId: string,
   field: Field,
   elementsSource: ReadOnlyElementsSource,
-): string => {
+): Promise<string> => {
   const serviceIds = getServiceIdsFromAnnotations(
-    field.getType(elementsSource).annotationRefTypes,
+    (await field.getType(elementsSource)).annotationRefTypes,
     field.annotations,
     field.elemID
   )
@@ -580,11 +570,11 @@ const getFieldServiceId = (
   return toServiceIdsString(serviceIds)
 }
 
-const getInstanceServiceId = (
+const getInstanceServiceId = async (
   instanceElement: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-): string => {
-  const instType = instanceElement.getType(elementsSource)
+): Promise<string> => {
+  const instType = await instanceElement.getType(elementsSource)
   const serviceIds = _(Object.entries(instType.fields))
     .filter(([_fieldName, field]) =>
       (field.refType.elemID.isEqual(BuiltinTypes.SERVICE_ID.elemID)))
@@ -600,30 +590,31 @@ const getInstanceServiceId = (
   return toServiceIdsString(serviceIds)
 }
 
-export const generateServiceIdToStateElemId = (
+export const generateServiceIdToStateElemId = async (
   stateElements: Element[],
   elementsSource: ReadOnlyElementsSource,
-): Record<string, ElemID> =>
-  _(stateElements)
+): Promise<Record<string, ElemID>> =>
+  Object.fromEntries(await awu(stateElements)
     .filter(elem => isInstanceElement(elem) || isObjectType(elem))
-    .map(elem => {
+    .flatMap(async elem => {
       if (isObjectType(elem)) {
         const objectServiceId = getObjectServiceId(elem)
-        const fieldPairs = Object.values(elem.fields)
-          .map(field => [getFieldServiceId(objectServiceId, field, elementsSource), field.elemID])
+        const fieldPairs = await Promise.all(Object.values(elem.fields)
+          .map(async field => [
+            await getFieldServiceId(objectServiceId, field, elementsSource),
+            field.elemID,
+          ])) as [string, ElemID][]
         return [...fieldPairs, [objectServiceId, elem.elemID]]
       }
-      return [[getInstanceServiceId(elem as InstanceElement, elementsSource), elem.elemID]]
+      return [[await getInstanceServiceId(elem as InstanceElement, elementsSource), elem.elemID]]
     })
-    .flatten()
-    .fromPairs()
-    .value()
+    .toArray())
 
-export const createElemIdGetter = (
+export const createElemIdGetter = async (
   stateElements: Element[],
   elementsSource: ReadOnlyElementsSource,
-): ElemIdGetter => {
-  const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements, elementsSource)
+): Promise<ElemIdGetter> => {
+  const serviceIdToStateElemId = await generateServiceIdToStateElemId(stateElements, elementsSource)
   return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
     serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
 }

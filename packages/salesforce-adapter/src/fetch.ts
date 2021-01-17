@@ -29,6 +29,7 @@ import { MetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
+const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
 export const fetchMetadataType = async (
@@ -114,7 +115,7 @@ export const fetchMetadataInstances = async ({
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
   }
-  const metadataTypeName = apiName(metadataType)
+  const metadataTypeName = await apiName(metadataType)
 
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
@@ -158,16 +159,22 @@ export const fetchMetadataInstances = async ({
   }
 }
 
-const getTypesWithContent = (types: ReadonlyArray<ObjectType>): Set<string> => new Set(
-  types
+const getTypesWithContent = async (
+  types: ReadonlyArray<ObjectType>
+): Promise<Set<string>> => new Set(
+  await awu(types)
     .filter(t => Object.keys(t.fields).includes(METADATA_CONTENT_FIELD))
     .map(t => apiName(t))
+    .toArray()
 )
 
-const getTypesWithMetaFile = (types: ReadonlyArray<MetadataObjectType>): Set<string> => new Set(
-  types
+const getTypesWithMetaFile = async (
+  types: ReadonlyArray<MetadataObjectType>
+): Promise<Set<string>> => new Set(
+  await awu(types)
     .filter(t => t.annotations.hasMetaFile === true)
     .map(t => apiName(t))
+    .toArray()
 )
 
 type RetrieveMetadataInstancesArgs = {
@@ -216,7 +223,7 @@ export const retrieveMetadataInstances = async ({
     const folders = await getFolders(type)
     const folderNames = folders.map(folder => (folder === undefined ? folder : folder.fullName))
     const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
-      client, apiName(type), folderNames.filter(isDefined)
+      client, await apiName(type), folderNames.filter(isDefined)
     )
     configChanges.push(...listObjectsConfigChanges)
     return [
@@ -225,9 +232,9 @@ export const retrieveMetadataInstances = async ({
     ]
   }
 
-  const typesByName = _.keyBy(types, t => apiName(t))
-  const typesWithMetaFile = getTypesWithMetaFile(types)
-  const typesWithContent = getTypesWithContent(types)
+  const typesByName = await keyByAsync(types, t => apiName(t))
+  const typesWithMetaFile = await getTypesWithMetaFile(types)
+  const typesWithContent = await getTypesWithContent(types)
 
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>

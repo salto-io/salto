@@ -16,6 +16,9 @@
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 export type ElementSelector = {
   adapterSelector: RegExp
@@ -75,22 +78,22 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
   }
 }
 
-export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>(
+export const selectElementsBySelectors = async <T extends ElementIDContainer | ElemID>(
   {
     elementIds, selectors, validateSelectors = true, includeNested = false,
   }: {
-    elementIds: Iterable<T>
+    elementIds: AsyncIterable<T>
     selectors: ElementSelector[]
     validateSelectors?: boolean
     includeNested?: boolean
   }
-):
-    { elements: T[]; matches: Record<string, boolean> } => {
+):Promise<{ elements: AsyncIterable<T>; matches: Record<string, boolean> }> => {
   const matches: Record<string, boolean> = { }
   if (selectors.length === 0) {
-    return { elements: Array.from(elementIds), matches }
+    return { elements: elementIds, matches }
   }
-  const elements = Array.from(elementIds).filter(obj => selectors.some(
+
+  const elements = await awu(elementIds).filter(obj => selectors.some(
     selector => {
       const result = match(
         isElementContainer(obj) ? obj.elemID : obj as ElemID,
@@ -100,11 +103,11 @@ export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
       matches[selector.origin] = matches[selector.origin] || result
       return result
     }
-  ))
+  )).toArray()
   if (validateSelectors) {
     validateSelectorsMatches(selectors, matches)
   }
-  return { elements, matches }
+  return { elements: awu(elements), matches }
 }
 
 const getIDType = (adapterSelector: string, idTypeSelector?: string): ElemIDType =>
@@ -192,12 +195,12 @@ const isElementPossiblyParentOfSearchedElement = (
 ): boolean =>
   selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
 
-export const selectElementIdsByTraversal = (
+export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[],
   elements: ElementIDToValue[],
   compact = false,
   validateDeterminedSelectors = false,
-): ElemID[] => {
+): Promise<ElemID[]> => {
   const [selectorsToDetermine, determinedSelectors] = validateDeterminedSelectors ? [selectors, []]
     : _.partition(selectors, selector => selector.origin.includes('*'))
   const determinedIds = determinedSelectors.map(selector => selector.origin)
@@ -208,20 +211,22 @@ export const selectElementIdsByTraversal = (
   const [topLevelSelectors, subElementSelectors] = _.partition(selectorsToDetermine,
     isTopLevelSelector)
   if (topLevelSelectors.length !== 0) {
-    const { elements: topLevelElements } = selectElementsBySelectors({
-      elementIds: elements, selectors: topLevelSelectors, validateSelectors: false,
+    const { elements: topLevelElements } = await selectElementsBySelectors({
+      elementIds: awu(elements), selectors: topLevelSelectors, validateSelectors: false,
     })
-    topLevelElements.forEach(element => ids.add(element.elemID.getFullName()))
+    await awu(topLevelElements).forEach(element => ids.add(element.elemID.getFullName()))
     if (subElementSelectors.length === 0) {
       return [...ids].map(id => ElemID.fromFullName(id))
     }
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentElements = selectElementsBySelectors({
-    elementIds: elements, selectors: possibleParentSelectors, validateSelectors: false,
-  }).elements
-  const stillRelevantElements = compact ? possibleParentElements
-    .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements
+  const possibleParentElements = (await selectElementsBySelectors({
+    elementIds: awu(elements), selectors: possibleParentSelectors, validateSelectors: false,
+  })
+  ).elements
+  const stillRelevantElements = await awu(compact ? awu(possibleParentElements)
+    .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements)
+    .toArray()
   if (stillRelevantElements.length === 0) {
     return [...ids].map(id => ElemID.fromFullName(id))
   }
@@ -251,7 +256,7 @@ export const selectElementIdsByTraversal = (
     }
     return undefined
   }
-  stillRelevantElements.forEach(elemContainer => transformElement({
+  await awu(stillRelevantElements).forEach(elemContainer => transformElement({
     element: elemContainer.element, transformFunc: selectFromSubElements, runOnFields: true,
   }))
   return [...ids].map(id => ElemID.fromFullName(id))

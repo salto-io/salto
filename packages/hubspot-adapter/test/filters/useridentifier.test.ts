@@ -37,7 +37,7 @@ describe('useridentifier filter test', () => {
     }]) as unknown as RequestPromise
   let objectInstance: InstanceElement
   let instanceValues: Values
-  beforeEach(() => {
+  beforeEach(async () => {
     instanceValues = {
       str: '12',
       simple: '12',
@@ -120,7 +120,7 @@ describe('useridentifier filter test', () => {
     const { client } = mockClient()
     client.getOwners = jest.fn().mockImplementation(getOwners)
     filter = filterCreator({ client })
-    filter.onFetch([objectInstance])
+    await filter.onFetch([objectInstance])
   })
 
   describe('should convert on top level', () => {

@@ -23,14 +23,16 @@ import {
 import _ from 'lodash'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { parser, merger } from '@salto-io/workspace'
 
+const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
+const { awu } = collections.asynciterable
 
 export type GeneratorParams = {
     seed: number
@@ -247,15 +249,18 @@ export const generateElements = async (
     return name.replace(/\W/g, '')
   }
 
-  const getMaxRank = (elements: Element[]): number => (elements.length > 0
-    ? Math.max(...elements
+  const getMaxRank = async (elements: Element[]): Promise<number> => (elements.length > 0
+    ? Math.max(...await awu(elements)
       .map(e => (isContainerType(e) ? getDeepInnerType(e) : e))
-      .map(e => elementRanks[e.elemID.getFullName()] || 0)) : 0)
+      .map(e => elementRanks[e.elemID.getFullName()] || 0).toArray()) : 0)
 
-  const updateElementRank = (element: TypeElement): void => {
-    const maxAnnotationRank = getMaxRank(Object.values(element.getAnnotationTypes()))
+  const updateElementRank = async (element: TypeElement): Promise<void> => {
+    const maxAnnotationRank = await getMaxRank(Object.values(await element.getAnnotationTypes()))
     const maxFieldsRank = isObjectType(element)
-      ? getMaxRank(Object.values(element.fields).map(field => field.getType()))
+      ? await getMaxRank(
+        await Promise.all(Object.values(element.fields)
+          .map(field => field.getType()))
+      )
       : 0
     const rank = Math.max(maxAnnotationRank, maxFieldsRank)
     elementRanks[element.elemID.getFullName()] = rank + 1
@@ -290,7 +295,7 @@ export const generateElements = async (
     weightedRandomSelect(objByRank.filter(rank => rank.length > 0))
   ) || defaultObj
 
-  const generateValue = (ref: TypeElement): Value => {
+  const generateValue = async (ref: TypeElement): Promise<Value> => {
     if (staticFileIds.has(ref.elemID.getFullName())) {
       const content = generateFileContent()
       return new StaticFile({
@@ -311,14 +316,14 @@ export const generateElements = async (
       }
     }
     if (isObjectType(ref)) {
-      return _.mapValues(ref.fields, field => generateValue(field.getType()))
+      return mapValuesAsync(ref.fields, async field => generateValue(await field.getType()))
     }
     if (isListType(ref)) {
-      return arrayOf(getListLength(), () => generateValue(ref.getInnerType()))
+      return arrayOf(getListLength(), async () => generateValue(await ref.getInnerType()))
     }
     if (isMapType(ref)) {
       return Object.fromEntries(
-        arrayOf(getListLength(), () => generateValue(ref.getInnerType())).map(
+        arrayOf(getListLength(), async () => generateValue(await ref.getInnerType())).map(
           (val, index) => [`k${index}`, val]
         )
       )
@@ -327,18 +332,18 @@ export const generateElements = async (
     return undefined
   }
 
-  const generateAnnotations = (annoTypes: TypeMap, hidden = false): Values => {
-    const anno = _.mapValues(annoTypes, type => generateValue(type))
+  const generateAnnotations = async (annoTypes: TypeMap, hidden = false): Promise<Values> => {
+    const anno = await mapValuesAsync(annoTypes, type => generateValue(type))
     if (hidden) {
       anno[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     }
     return anno
   }
 
-  const generateFields = (): Record<string, FieldDefinition> => Object.fromEntries(
-    arrayOf(
-      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd) + 1,
-      () => {
+  const generateFields = async (): Promise<Record<string, FieldDefinition>> => Object.fromEntries(
+    await Promise.all(arrayOf(
+      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd),
+      async () => {
         const name = getName()
         const fieldType = getFieldType(true)
         return [name, {
@@ -346,11 +351,11 @@ export const generateElements = async (
           annotations: generateAnnotations(
             // don't generate random annotations for builtin types, even if they
             // support additional annotation types
-            fieldType === BuiltinTypes.HIDDEN_STRING ? {} : fieldType.getAnnotationTypes()
+            fieldType === BuiltinTypes.HIDDEN_STRING ? {} : await fieldType.getAnnotationTypes()
           ),
         }]
       }
-    )
+    ))
   )
 
 
@@ -359,86 +364,90 @@ export const generateElements = async (
   )
 
   // Note that this has side effects tracking the static fields and reference fields
-  const generatePrimitiveTypes = (): PrimitiveType[] => arrayOf(params.numOfPrimitiveTypes, () => {
-    const name = getName()
-    const annotationRefsOrTypes = generateAnnotationTypes(
-      normalRandom(defaultParams.primAnnoMean, defaultParams.primAnnoStd)
-    )
-    const element = new PrimitiveType({
-      elemID: new ElemID(DUMMY_ADAPTER, name),
-      primitive: weightedRandomSelect([
-        PrimitiveTypes.BOOLEAN,
-        PrimitiveTypes.STRING,
-        PrimitiveTypes.NUMBER,
-      ]),
-      annotationRefsOrTypes,
-      annotations: generateAnnotations(annotationRefsOrTypes, true),
-      path: [DUMMY_ADAPTER, 'Types', name],
-    })
-    updateElementRank(element)
-    if (element.primitive === PrimitiveTypes.STRING
+  const generatePrimitiveTypes = (): Promise<PrimitiveType[]> => (
+    Promise.all(arrayOf(params.numOfPrimitiveTypes, async () => {
+      const name = getName()
+      const annotationRefsOrTypes = generateAnnotationTypes(
+        normalRandom(defaultParams.primAnnoMean, defaultParams.primAnnoStd)
+      )
+      const element = new PrimitiveType({
+        elemID: new ElemID(DUMMY_ADAPTER, name),
+        primitive: weightedRandomSelect([
+          PrimitiveTypes.BOOLEAN,
+          PrimitiveTypes.STRING,
+          PrimitiveTypes.NUMBER,
+        ]),
+        annotationRefsOrTypes,
+        annotations: generateAnnotations(annotationRefsOrTypes, true),
+        path: [DUMMY_ADAPTER, 'Types', name],
+      })
+      await updateElementRank(element)
+      if (element.primitive === PrimitiveTypes.STRING
         && Math.random() < 1) { // defaultParams.staticFileFreq) {
-      staticFileIds.add(element.elemID.getFullName())
-    } else if (Math.random() < defaultParams.staticFileFreq) {
-      referenceFields.add(element.elemID.getFullName())
-    }
-    return element
-  })
+        staticFileIds.add(element.elemID.getFullName())
+      } else if (Math.random() < defaultParams.staticFileFreq) {
+        referenceFields.add(element.elemID.getFullName())
+      }
+      return element
+    }))
+  )
 
 
-  const generateTypes = (): ObjectType[] => arrayOf(params.numOfTypes, () => {
-    const name = getName()
-    const annotationRefsOrTypes = generateAnnotationTypes(
-      normalRandom(defaultParams.typetAnnoMean, defaultParams.typetAnnoStd)
-    )
-    const objType = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, name),
-      fields: generateFields(),
-      annotationRefsOrTypes,
-      annotations: generateAnnotations(annotationRefsOrTypes, true),
-      path: [DUMMY_ADAPTER, 'Types', name],
-    })
-    updateElementRank(objType)
-    return objType
-  })
+  const generateTypes = async (): Promise<ObjectType[]> => (
+    Promise.all(arrayOf(params.numOfTypes, async () => {
+      const name = getName()
+      const annotationRefsOrTypes = generateAnnotationTypes(
+        normalRandom(defaultParams.typetAnnoMean, defaultParams.typetAnnoStd)
+      )
+      const objType = new ObjectType({
+        elemID: new ElemID(DUMMY_ADAPTER, name),
+        fields: await generateFields(),
+        annotationRefsOrTypes,
+        annotations: generateAnnotations(annotationRefsOrTypes, true),
+        path: [DUMMY_ADAPTER, 'Types', name],
+      })
+      await updateElementRank(objType)
+      return objType
+    })))
 
 
-  const generateObjects = (): ObjectType[] => arrayOf(params.numOfObjs, () => {
-    const name = getName()
-    const annotationRefsOrTypes = generateAnnotationTypes(
-      normalRandom(defaultParams.objectAnnoMean, defaultParams.objectAnnoStd)
-    )
-    const fullObjType = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, name),
-      fields: generateFields(),
-      annotationRefsOrTypes,
-      annotations: generateAnnotations(annotationRefsOrTypes),
-    })
-    const fieldsObjType = new ObjectType({
-      elemID: fullObjType.elemID,
-      fields: fullObjType.fields,
-      path: [DUMMY_ADAPTER, 'Objects', name, `${name}Fields`],
-    })
-    const annoTypesObjType = new ObjectType({
-      elemID: fullObjType.elemID,
-      annotationRefsOrTypes: fullObjType.getAnnotationTypes(),
-      annotations: fullObjType.annotations,
-      path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
-    })
-    updateElementRank(fullObjType)
-    return [fieldsObjType, annoTypesObjType]
-  }).flat()
+  const generateObjects = async (): Promise<ObjectType[]> => (
+    await Promise.all(arrayOf(params.numOfObjs, async () => {
+      const name = getName()
+      const annotationRefsOrTypes = generateAnnotationTypes(
+        normalRandom(defaultParams.objectAnnoMean, defaultParams.objectAnnoStd)
+      )
+      const fullObjType = new ObjectType({
+        elemID: new ElemID(DUMMY_ADAPTER, name),
+        fields: await generateFields(),
+        annotationRefsOrTypes,
+        annotations: generateAnnotations(annotationRefsOrTypes),
+      })
+      const fieldsObjType = new ObjectType({
+        elemID: fullObjType.elemID,
+        fields: fullObjType.fields,
+        path: [DUMMY_ADAPTER, 'Objects', name, `${name}Fields`],
+      })
+      const annoTypesObjType = new ObjectType({
+        elemID: fullObjType.elemID,
+        annotationRefsOrTypes: await fullObjType.getAnnotationTypes(),
+        annotations: fullObjType.annotations,
+        path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
+      })
+      await updateElementRank(fullObjType)
+      return [fieldsObjType, annoTypesObjType]
+    }))).flat()
 
 
-  const generateRecords = (
-  ): InstanceElement[] => arrayOf(params.numOfRecords, () => {
+  const generateRecords = async (
+  ): Promise<InstanceElement[]> => Promise.all(arrayOf(params.numOfRecords, async () => {
     const objectTypes = objByRank.flat()
     const name = getName()
     const instanceType = weightedRandomSelect(objectTypes)
     const record = new InstanceElement(
       name,
       new ReferenceExpression(instanceType.elemID, instanceType),
-      generateValue(instanceType),
+      await generateValue(instanceType),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
     if (Math.random() < defaultParams.parentFreq) {
@@ -447,7 +456,7 @@ export const generateElements = async (
       )
     }
     return record
-  })
+  }))
 
   const generateProfileLike = (useOldProfile = false): InstanceElement[] => {
     const objects = objByRank.flat()
@@ -668,13 +677,13 @@ export const generateElements = async (
 
   const defaultTypes = [defaultObj, permissionsType, profileType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
-  const primtiveTypes = generatePrimitiveTypes()
+  const primtiveTypes = await generatePrimitiveTypes()
   progressReporter.reportProgress({ message: 'Generating types' })
-  const types = generateTypes()
+  const types = await generateTypes()
   progressReporter.reportProgress({ message: 'Generating objects' })
-  const objects = generateObjects()
+  const objects = await generateObjects()
   progressReporter.reportProgress({ message: 'Generating records' })
-  const records = generateRecords()
+  const records = await generateRecords()
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
   progressReporter.reportProgress({ message: 'Generation done' })

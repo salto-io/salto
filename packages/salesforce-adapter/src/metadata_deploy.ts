@@ -19,12 +19,15 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DeployResult, Change, getChangeElement, isRemovalChange, isModificationChange, isInstanceChange, isContainerType, isAdditionChange } from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
+
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
 import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement, assertMetadataObjectType } from './transformers/transformer'
 import { fullApiName } from './filters/utils'
 import { INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
+
+const { awu } = collections.asynciterable
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -36,24 +39,26 @@ export const DEPLOY_WRAPPER_INSTANCE_MARKER = '_magic_constant_that_means_this_i
 // Mapping of metadata type to fullNames
 type MetadataIdsMap = Record<string, Set<string>>
 
-const addNestedInstancesToPackageManifest = (
+const addNestedInstancesToPackageManifest = async (
   pkg: DeployPackage,
   nestedTypeInfo: NestedMetadataTypeInfo,
   change: Change<MetadataInstanceElement>,
   addNestedAfterInstances: boolean,
-): MetadataIdsMap => {
+): Promise<MetadataIdsMap> => {
   const changeElem = getChangeElement(change)
 
-  const getNestedInstanceApiName = (name: string): string => (
+  const getNestedInstanceApiName = async (name: string): Promise<string> => (
     nestedTypeInfo.isNestedApiNameRelative
-      ? fullApiName(apiName(changeElem), name)
+      ? fullApiName(await apiName(changeElem), name)
       : name
   )
 
-  const addNestedInstancesFromField = (fieldName: string): MetadataIdsMap => {
-    const rawFieldType = changeElem.getType().fields[fieldName]?.getType()
+  const addNestedInstancesFromField = async (fieldName: string): Promise<MetadataIdsMap> => {
+    const rawFieldType = await (await changeElem.getType()).fields[fieldName]?.getType()
     // We generally expect these to be lists, handling non list types just in case of a bug
-    const fieldType = isContainerType(rawFieldType) ? rawFieldType.getInnerType() : rawFieldType
+    const fieldType = isContainerType(rawFieldType)
+      ? await rawFieldType.getInnerType()
+      : rawFieldType
     if (!isMetadataObjectType(fieldType)) {
       log.error(
         'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',
@@ -74,54 +79,53 @@ const addNestedInstancesToPackageManifest = (
 
     const removedNestedInstances = nestedBefore.filter(instName => !nestedAfter.has(instName))
 
-    const idsToDelete = removedNestedInstances
-      .map(getNestedInstanceApiName)
+    const idsToDelete = await Promise.all(removedNestedInstances
+      .map(getNestedInstanceApiName))
 
     idsToDelete.forEach(nestedInstName => {
       pkg.delete(fieldType, nestedInstName)
     })
 
     const idsToAdd = addNestedAfterInstances
-      ? [...nestedAfter].map(getNestedInstanceApiName)
+      ? await Promise.all([...nestedAfter].map(getNestedInstanceApiName))
       : []
 
     idsToAdd.forEach(nestedInstName => {
       pkg.addToManifest(fieldType, nestedInstName)
     })
 
-    return { [metadataType(fieldType)]: new Set([...idsToDelete, ...idsToAdd]) }
+    return { [await metadataType(fieldType)]: new Set([...idsToDelete, ...idsToAdd]) }
   }
 
   return Object.assign(
     {},
-    ...nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField)
+    ...await Promise.all(nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField))
   )
 }
 
-const addChangeToPackage = (
+const addChangeToPackage = async (
   pkg: DeployPackage,
   change: Change<MetadataInstanceElement>,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-): MetadataIdsMap => {
+): Promise<MetadataIdsMap> => {
   const instance = getChangeElement(change)
   const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
 
   const addInstanceToManifest = !isWrapperInstance
   const addedIds = addInstanceToManifest
-    ? { [metadataType(instance)]: new Set([apiName(instance)]) }
+    ? { [await metadataType(instance)]: new Set([await apiName(instance)]) }
     : {}
-
   if (isRemovalChange(change)) {
-    pkg.delete(assertMetadataObjectType(instance.getType()), apiName(instance))
+    pkg.delete(assertMetadataObjectType(await instance.getType()), await apiName(instance))
   } else {
-    pkg.add(instance, addInstanceToManifest)
+    await pkg.add(instance, addInstanceToManifest)
   }
 
   // Handle child xml instances
-  const nestedTypeInfo = nestedMetadataTypes[metadataType(instance)]
+  const nestedTypeInfo = nestedMetadataTypes[await metadataType(instance)]
   if (nestedTypeInfo !== undefined) {
     const addChildInstancesToManifest = isWrapperInstance
-    const nestedInstanceIds = addNestedInstancesToPackageManifest(
+    const nestedInstanceIds = await addNestedInstancesToPackageManifest(
       pkg,
       nestedTypeInfo,
       change,
@@ -206,28 +210,33 @@ export type NestedMetadataTypeInfo = {
   isNestedApiNameRelative: boolean
 }
 
-const getChangeError = (change: Change): string | undefined => {
+const getChangeError = async (change: Change): Promise<string | undefined> => {
   const changeElem = getChangeElement(change)
-  if (apiName(changeElem) === undefined) {
+  if (await apiName(changeElem) === undefined) {
     return `Cannot ${change.action} element because it has no api name`
   }
   if (isModificationChange(change)) {
-    const beforeName = apiName(change.data.before)
-    const afterName = apiName(change.data.after)
+    const beforeName = await apiName(change.data.before)
+    const afterName = await apiName(change.data.after)
     if (beforeName !== afterName) {
       return `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`
     }
   }
-  if (!isInstanceChange(change) || !isMetadataInstanceElement(changeElem)) {
+  if (!isInstanceChange(change) || !await isMetadataInstanceElement(changeElem)) {
     return 'Cannot deploy because it is not a metadata instance'
   }
   return undefined
 }
 
-const validateChanges = (
+const validateChanges = async (
   changes: ReadonlyArray<Change>
-): { validChanges: ReadonlyArray<Change<MetadataInstanceElement>>; errors: Error[] } => {
-  const changesAndValidation = changes.map(change => ({ change, error: getChangeError(change) }))
+): Promise<{
+    validChanges: ReadonlyArray<Change<MetadataInstanceElement>>
+    errors: Error[]
+  }> => {
+  const changesAndValidation = await awu(changes)
+    .map(async change => ({ change, error: await getChangeError(change) }))
+    .toArray()
 
   const [invalidChanges, validChanges] = _.partition(
     changesAndValidation,
@@ -256,16 +265,15 @@ export const deployMetadata = async (
 ): Promise<DeployResult> => {
   const pkg = createDeployPackage(deleteBeforeUpdate)
 
-  const { validChanges, errors: validationErrors } = validateChanges(changes)
-
+  const { validChanges, errors: validationErrors } = await validateChanges(changes)
   if (validChanges.length === 0) {
     // Skip deploy if there are no valid changes
     return { appliedChanges: [], errors: validationErrors }
   }
 
   const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
-  validChanges.forEach(change => {
-    const deployedIds = addChangeToPackage(pkg, change, nestedMetadataTypes)
+  await awu(validChanges).forEach(async change => {
+    const deployedIds = await addChangeToPackage(pkg, change, nestedMetadataTypes)
     changeToDeployedIds[getChangeElement(change).elemID.getFullName()] = deployedIds
   })
 

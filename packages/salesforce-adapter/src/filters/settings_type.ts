@@ -13,15 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { Element, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { FilterResult } from '../types'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -88,7 +90,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     elements.push(...settingsTypes)
 
     // Create settings instances
-    const settingsTypeByName = _.keyBy(settingsTypes, type => apiName(type))
+    const settingsTypeByName = await awu(settingsTypes).keyBy(type => apiName(type))
     const settingsInstanceCreateResults = await Promise.all(
       settingsTypeInfos
         .map(info => ({ info, type: settingsTypeByName[getSettingsTypeName(info.fullName)] }))

@@ -24,18 +24,23 @@ import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH } from '../constants'
 import { isLookupField, isMasterDetailField } from './utils'
 import { FilterResult } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
+import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
+import { keyByAsync } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
+import { removeAsync } from '@salto-io/lowerdash/dist/src/promises/array'
 
 const { makeArray } = collections.array
 const { isDefined } = lowerdashValues
 const { DefaultMap } = collections.map
-
-const log = logger(module)
 
 type RefOrigin = { type: string; id: string; field?: string }
 type MissingRef = {
   origin: RefOrigin
   targetId: string
 }
+const { groupByAsync, awu } = collections.asynciterable
+
+const log = logger(module)
+
 
 const INTERNAL_ID_SEPARATOR = '$'
 const MAX_BREAKDOWN_ELEMENTS = 10
@@ -44,8 +49,8 @@ const MAX_BREAKDOWN_DETAILS_ELEMENTS = 3
 const serializeInternalID = (typeName: string, id: string): string =>
   (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
 
-const serializeInstanceInternalID = (instance: InstanceElement): string =>
-  serializeInternalID(apiName(instance.type, true), apiName(instance))
+const serializeInstanceInternalID = async (instance: InstanceElement): Promise<string> =>
+  serializeInternalID(await apiName(await instance.getType(), true), await apiName(instance))
 
 const deserializeInternalID = (internalID: string): RefOrigin => {
   const splitInternalID = internalID.split(INTERNAL_ID_SEPARATOR)
@@ -57,16 +62,16 @@ const deserializeInternalID = (internalID: string): RefOrigin => {
   }
 }
 
-const groupInstancesByTypeAndElemID = (
+const groupInstancesByTypeAndElemID = async (
   instances: InstanceElement[],
-): Record<string, Record<string, InstanceElement[]>> =>
+): Promise<Record<string, Record<string, InstanceElement[]>>> =>
   (_.mapValues(
-    _.groupBy(instances, instance => apiName(instance.type, true)),
+    await groupByAsync(instances, async instance => await apiName(await instance.getType(), true)),
     typeInstances => _.groupBy(typeInstances, instance => instance.elemID.name)
   ))
 
-const logInstancesWithCollidingElemID = (instances: InstanceElement[]): void => {
-  const typeToElemIDtoInstances = groupInstancesByTypeAndElemID(instances)
+const logInstancesWithCollidingElemID = async (instances: InstanceElement[]): Promise<void> => {
+  const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instances)
   Object.entries(typeToElemIDtoInstances).forEach(([type, elemIDtoInstances]) => {
     const instancesCount = Object.values(elemIDtoInstances).flat().length
     log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
@@ -101,18 +106,18 @@ const getInstancesDetailsMsg = (instanceIds: string[], baseUrl?: string): string
   ].map(msg => `\t* ${msg}`).join('\n')
 }
 
-const createWarnings = (
+const createWarnings = async (
   instancesWithCollidingElemID: InstanceElement[],
   missingRefs: MissingRef[],
   illegalRefSources: Set<string>,
   customObjectPrefixKeyMap: Record<string, string>,
   dataManagement: DataManagement,
   baseUrl?: string,
-): SaltoError[] => {
-  const typeToElemIDtoInstances = groupInstancesByTypeAndElemID(instancesWithCollidingElemID)
+): Promise<SaltoError[]> => {
+  const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instancesWithCollidingElemID)
 
-  const collisionWarnings = Object.entries(typeToElemIDtoInstances)
-    .map(([type, elemIDtoInstances]) => {
+  const collisionWarnings = await Promise.all(Object.entries(typeToElemIDtoInstances)
+    .map(async ([type, elemIDtoInstances]) => {
       const numInstances = Object.values(elemIDtoInstances)
         .flat().length
       const header = `Omitted ${numInstances} instances of ${type} due to Salto ID collisions. 
@@ -120,9 +125,9 @@ Current Salto ID configuration for ${type} is defined as [${dataManagement.getOb
 
       const collisionsHeader = 'Breakdown per colliding Salto ID:'
       const collisionsToDisplay = Object.entries(elemIDtoInstances).slice(0, MAX_BREAKDOWN_ELEMENTS)
-      const collisionMsgs = collisionsToDisplay
-        .map(([elemID, instances]) => `- ${elemID}:
-${getInstancesDetailsMsg(instances.map(instance => apiName(instance)), baseUrl)}`)
+      const collisionMsgs = await Promise.all(collisionsToDisplay
+        .map(async ([elemID, instances]) => `- ${elemID}:
+${getInstancesDetailsMsg(await Promise.all(instances.map(instance => apiName(instance))), baseUrl)}`))
       const epilogue = `To resolve these collisions please take one of the following actions and fetch again:
 \t1. Change ${type}'s saltoIDSettings to include all fields that uniquely identify the type's instances.
 \t2. Delete duplicate instances from your Salesforce account.
@@ -139,7 +144,7 @@ Alternatively, you can exclude ${type} from the data management configuration in
         '',
         epilogue,
       ].join('\n'))
-    })
+    }))
 
   const typeToInstanceIdToMissingRefs = _.mapValues(
     _.groupBy(
@@ -191,19 +196,19 @@ const isReferenceField = (field?: Field): boolean => (
   isDefined(field) && (isLookupField(field) || isMasterDetailField(field))
 )
 
-const replaceLookupsWithRefsAndCreateRefMap = (
+const replaceLookupsWithRefsAndCreateRefMap = async (
   instances: InstanceElement[],
   internalToInstance: Record<string, InstanceElement>,
-): {
+): Promise<{
   reverseReferencesMap: collections.map.DefaultMap<string, Set<string>>
   missingRefs: MissingRef[]
-} => {
+}> => {
   const reverseReferencesMap = new DefaultMap<string, Set<string>>(() => new Set())
   const missingRefs: MissingRef[] = []
-  const replaceLookups = (
+  const replaceLookups = async (
     instance: InstanceElement
-  ): Values => {
-    const transformFunc: TransformFunc = ({ value, field }) => {
+  ): Promise<Values> => {
+    const transformFunc: TransformFunc = async ({ value, field }) => {
       if (!isReferenceField(field)) {
         return value
       }
@@ -217,8 +222,8 @@ const replaceLookupsWithRefsAndCreateRefMap = (
             || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])) {
           missingRefs.push({
             origin: {
-              type: apiName(instance.type, true),
-              id: apiName(instance),
+              type: await apiName(await instance.getType(), true),
+              id: await apiName(instance),
               field: field.name,
             },
             targetId: instance.value[field.name],
@@ -227,23 +232,23 @@ const replaceLookupsWithRefsAndCreateRefMap = (
 
         return value
       }
-      reverseReferencesMap.get(serializeInstanceInternalID(refTarget))
-        .add(serializeInstanceInternalID(instance))
+      reverseReferencesMap.get(await serializeInstanceInternalID(refTarget))
+        .add(await serializeInstanceInternalID(instance))
       return new ReferenceExpression(refTarget.elemID)
     }
 
     return transformValues(
       {
         values: instance.value,
-        type: instance.type,
+        type: await instance.getType(),
         transformFunc,
         strict: false,
       }
     ) ?? instance.value
   }
 
-  instances.forEach((instance, index) => {
-    instance.value = replaceLookups(instance)
+  awu(instances).forEach(async (instance, index) => {
+    instance.value = await replaceLookups(instance)
     if (index > 0 && index % 500 === 0) {
       log.debug(`Replaced lookup with references for ${index} instances`)
     }
@@ -274,7 +279,7 @@ const getIllegalRefSources = (
   return illegalRefSources
 }
 
-const buildCustomObjectPrefixKeyMap = (elements: Element[]): Record<string, string> => {
+const buildCustomObjectPrefixKeyMap = async (elements: Element[]): Promise<Record<string, string>> => {
   const customObjects = elements
     .filter(isCustomObject)
     .filter(customObject => isDefined(customObject.annotations[KEY_PREFIX]))
@@ -282,7 +287,7 @@ const buildCustomObjectPrefixKeyMap = (elements: Element[]): Record<string, stri
     customObjects,
     customObject => customObject.annotations[KEY_PREFIX] as string,
   )
-  return _.mapValues(
+  return mapValuesAsync(
     keyPrefixToCustomObject,
     // Looking at Salesforce's keyPrefix results duplicate types with
     // the same prefix exist but are not relevant/important to differentiate between
@@ -296,9 +301,10 @@ const filter: FilterCreator = ({ client, config }) => ({
     if (dataManagement === undefined) {
       return {}
     }
-    const customObjectInstances = elements.filter(isInstanceOfCustomObject)
-    const internalToInstance = _.keyBy(customObjectInstances, serializeInstanceInternalID)
-    const { reverseReferencesMap, missingRefs } = replaceLookupsWithRefsAndCreateRefMap(
+    const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
+      .toArray() as InstanceElement[]
+    const internalToInstance = await keyByAsync(customObjectInstances, serializeInstanceInternalID)
+    const { reverseReferencesMap, missingRefs } = await replaceLookupsWithRefsAndCreateRefMap(
       customObjectInstances,
       internalToInstance,
     )
@@ -314,7 +320,7 @@ const filter: FilterCreator = ({ client, config }) => ({
         .map(missingRef => serializeInternalID(missingRef.origin.type, missingRef.origin.id))
     )
     const instWithDupElemIDInterIDs = new Set(
-      instancesWithCollidingElemID.map(serializeInstanceInternalID)
+      await Promise.all(instancesWithCollidingElemID.map(serializeInstanceInternalID))
     )
     const illegalRefTargets = new Set(
       [
@@ -328,17 +334,17 @@ const filter: FilterCreator = ({ client, config }) => ({
         ...illegalRefTargets,
       ]
     )
-    _.remove(
+    await removeAsync(
       elements,
-      element =>
+      async element =>
         (isInstanceOfCustomObject(element)
-        && invalidInstances.has(serializeInstanceInternalID(element))),
+        && invalidInstances.has(await serializeInstanceInternalID(element as InstanceElement))),
     )
     const baseUrl = await client.getUrl()
-    const customObjectPrefixKeyMap = buildCustomObjectPrefixKeyMap(elements)
+    const customObjectPrefixKeyMap = await buildCustomObjectPrefixKeyMap(elements)
     logInstancesWithCollidingElemID(instancesWithCollidingElemID)
     return {
-      errors: createWarnings(
+      errors: await createWarnings(
         instancesWithCollidingElemID,
         missingRefs,
         illegalRefSources,

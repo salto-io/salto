@@ -27,10 +27,10 @@ import {
 describe('form_field filter', () => {
   let filter: OnFetchFilter
 
-  beforeEach(() => {
+  beforeEach(async () => {
     const { client } = mockClient()
     filter = filterCreator({ client })
-    filter.onFetch([formInstance, valuePropInstance, datePropInstance, g1PropInstance])
+    await filter.onFetch([formInstance, valuePropInstance, datePropInstance, g1PropInstance])
   })
 
   it('should not effect non-formFieldGroups fields', () => {

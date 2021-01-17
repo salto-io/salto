@@ -17,17 +17,19 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression, StaticFile, MapType, BuiltinTypes,
+  VariableExpression, StaticFile, MapType, BuiltinTypes, isContainerType, isObjectType,
 } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { LazyStaticFile } from '../../src/workspace/static_files/source'
 import { SyncDirectoryStore } from '../../src/workspace/dir_store'
-import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
+import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 
+const { awu } = collections.asynciterable
 describe('State/cache serialization', () => {
   const strType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'string'),
@@ -192,11 +194,48 @@ describe('State/cache serialization', () => {
     expect(serialized).not.toMatch(subInstance.constructor.name)
   })
 
+
+  it('should not serialize resolved values', async () => {
+    // TemplateExpressions are discarded
+    const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
+    const resolved = await resolve(
+      awu(elementsToSerialize),
+      createInMemoryElementSource(elementsToSerialize)
+    )
+    const serialized = serialize(await awu(resolved).toArray(), 'keepRef')
+    const deserialized = await deserialize(serialized)
+    const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
+    const sortedElementsWithoutRefs = sortedElements
+    // we need to make sure the types are empty as well... Not just the refs
+      .map(e => {
+        if (isInstanceElement(e)) {
+          e.refType = new ReferenceExpression(e.refType.elemID)
+        }
+        if (isContainerType(e)) {
+          e.refInnerType = new ReferenceExpression(e.refInnerType.elemID)
+        }
+        if (isObjectType(e)) {
+          Object.values(e.fields).forEach(field => {
+            field.refType = new ReferenceExpression(field.refType.elemID)
+          })
+        }
+        e.annotationRefTypes = _.mapValues(
+          e.annotationRefTypes,
+          refType => new ReferenceExpression(refType.elemID)
+        )
+        return e
+      })
+    expect(deserialized[5]).toEqual(sortedElementsWithoutRefs[5])
+  })
+
   // Serializing our nacls to the state file should be the same as serializing the result of fetch
   it('should serialize resolved values to state', async () => {
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
     const serialized = serialize(
-      resolve(elementsToSerialize, new InMemoryRemoteElementSource(elementsToSerialize))
+      await awu(await resolve(
+        awu(elementsToSerialize),
+        createInMemoryElementSource(elementsToSerialize)
+      )).toArray()
     )
     const deserialized = await deserialize(serialized)
     const refInst = deserialized.find(

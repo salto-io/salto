@@ -17,12 +17,9 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import {
   MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
-
-const log = logger(module)
 
 export abstract class FieldDefinitionMergeError extends MergeError {
   readonly cause: string
@@ -165,15 +162,4 @@ const mergeObjectDefinitions = (
  */
 export const mergeObjectTypes = (
   objectTypes: ObjectType[]
-): MergeResult<Record<string, ObjectType>> => {
-  const mergeResults = _(objectTypes)
-    .groupBy(o => o.elemID.getFullName())
-    .mapValues(group => mergeObjectDefinitions(group[0], group))
-    .value()
-  const merged = _.mapValues(mergeResults, r => r.merged)
-  const errors = _.flatten(Object.values(mergeResults).map(r => r.errors))
-
-  log.debug(`merged ${objectTypes.length} objects to ${_.size(merged)} elements [errors=${
-    errors.length}]`)
-  return { merged, errors }
-}
+): MergeResult<ObjectType> => mergeObjectDefinitions(objectTypes[0], objectTypes)

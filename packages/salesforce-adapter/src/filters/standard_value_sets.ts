@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import {
-  Element, ObjectType, InstanceElement, Field, ReferenceExpression,
+  Element, ObjectType, InstanceElement, Field, ReferenceExpression, isObjectType, isInstanceElement,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
+
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
@@ -28,8 +29,9 @@ import { extractFullNamesFromValueList, isInstanceOfType } from './utils'
 import { ConfigChangeSuggestion, FilterResult } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
+const { mapValuesAsync } = promises.object
+const { awu } = collections.asynciterable
 const { makeArray } = collections.array
-const { filterAsync, toArrayAsync } = collections.asynciterable
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standardValue'
@@ -120,8 +122,8 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
     })
 )
 
-const isStandardPickList = (f: Field): boolean => {
-  const apiNameResult = apiName(f)
+const isStandardPickList = async (f: Field): Promise<boolean> => {
+  const apiNameResult = await apiName(f)
   return apiNameResult
     ? (f.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
       || f.refType.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
@@ -129,11 +131,12 @@ const isStandardPickList = (f: Field): boolean => {
     : false
 }
 
-const calculatePicklistFieldsToUpdate = (
+const calculatePicklistFieldsToUpdate = async (
   custObjectFields: Record<string, Field>,
   svsValuesToName: StandartValueSetsLookup
-): Record<string, Field> => _.mapValues(custObjectFields, field => {
-  if (!isStandardPickList(field) || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
+): Promise<Record<string, Field>> => mapValuesAsync(custObjectFields, async field => {
+  if (!await isStandardPickList(field)
+    || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
     return field
   }
 
@@ -151,17 +154,22 @@ const calculatePicklistFieldsToUpdate = (
   return newField
 })
 
-const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =>
-  _.find(
-    elements,
-    (element: Element) => metadataType(element) === STANDARD_VALUE_SET
-  ) as ObjectType | undefined
+const findStandardValueSetType = async (elements: Element[]): Promise<ObjectType | undefined> =>
+  awu(elements).find(
+    async (element: Element) => await metadataType(element) === STANDARD_VALUE_SET
+  ) as Promise<ObjectType | undefined>
 
-const updateSVSReferences = (elements: ObjectType[], svsInstances: InstanceElement[]): void => {
+const updateSVSReferences = async (
+  objects: AsyncIterable<ObjectType>,
+  svsInstances: InstanceElement[],
+): Promise<void> => {
   const svsValuesToName = svsValuesToRef(svsInstances)
 
-  elements.forEach(customObjType => {
-    const fieldsToUpdate = calculatePicklistFieldsToUpdate(customObjType.fields, svsValuesToName)
+  await awu(objects).forEach(async customObjType => {
+    const fieldsToUpdate = await calculatePicklistFieldsToUpdate(
+      customObjType.fields,
+      svsValuesToName,
+    )
     _.assign(customObjType, { fields: fieldsToUpdate })
   })
 }
@@ -195,7 +203,7 @@ export const makeFilter = (
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
-    const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
+    const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
     let configChanges: ConfigChangeSuggestion[] = []
     let fetchedSVSInstances: InstanceElement[] | undefined
     if (svsMetadataType !== undefined) {
@@ -211,15 +219,17 @@ export const makeFilter = (
       fetchedSVSInstances = svsInstances.elements
     }
 
-    const customObjectTypeElements = elements.filter(isCustomObject)
+    const customObjectTypeElements = awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomObject)
 
-    if (customObjectTypeElements.length > 0) {
+    if (!await customObjectTypeElements.isEmpty()) {
       const svsInstances = fetchedSVSInstances !== undefined
         ? fetchedSVSInstances
-        : await toArrayAsync(
-          filterAsync(await config.elementsSource.getAll(), isInstanceOfType(STANDARD_VALUE_SET))
-        )
-      updateSVSReferences(customObjectTypeElements, svsInstances)
+        : await awu(await config.elementsSource.getAll())
+          .filter(isInstanceElement)
+          .filter(isInstanceOfType(STANDARD_VALUE_SET)).toArray()
+      await updateSVSReferences(customObjectTypeElements, svsInstances)
     }
 
     return {

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, hash, strings } from '@salto-io/lowerdash'
+import { collections, hash, strings, promises } from '@salto-io/lowerdash'
 import {
   getChangeElement, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
@@ -34,6 +34,8 @@ import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
 
 const { toArrayAsync, flatMapAsync, toAsyncIterable } = collections.asynciterable
+const { partition } = promises.array
+const { awu, keyByAsync } = collections.asynciterable
 const { toMD5 } = hash
 const log = logger(module)
 
@@ -91,11 +93,11 @@ const getActionResult = (instancesAndResults: InstanceAndResult[]): ActionResult
 const escapeWhereStr = (str: string): string =>
   str.replace(/(\\)|(')/g, escaped => `\\${escaped}`)
 
-const formatValueForWhere = (field: Field, value: Value): string => {
+const formatValueForWhere = async (field: Field, value: Value): Promise<string> => {
   if (value === undefined) {
     return 'null'
   }
-  const fieldType = field.getType()
+  const fieldType = await field.getType()
   if (isPrimitiveType(fieldType)) {
     if (fieldType.primitive === PrimitiveTypes.STRING) {
       return `'${escapeWhereStr(value)}'`
@@ -121,14 +123,42 @@ const getRecordsBySaltoIds = async (
   const getFieldNamesToValues = async (instance: InstanceElement, field: Field): Promise<[string, string][]> => {
     const fieldType = await field.getType()
     if (isCompoundFieldType(fieldType)) {
-      return Object.values(fieldType.fields)
-        .map(innerField => [
+      return Promise.all(Object.values(fieldType.fields)
+        .map(async innerField => [
           strings.capitalizeFirstLetter(innerField.name),
-          formatValueForWhere(innerField, instance.value[field.name]?.[innerField.name]),
-        ])
+          await formatValueForWhere(innerField, instance.value[field.name]?.[innerField.name]),
+        ])) as Promise<[string, string][]>
     }
-    return [[apiName(field, true), formatValueForWhere(field, instance.value[field.name])]]
-  }
+    return [[await apiName(field, true), await formatValueForWhere(field, instance.value[field.name])]]
+}
+  // Possible rebase issue
+  // const computeWhereConditions = async (field: Field): Promise<string | string[]> => {
+  //   const fieldType = await field.getType()
+  //   if (isObjectType(fieldType)) {
+  //     const compoundFieldType = Object.values(Types.compoundDataTypes)
+  //       .find(compoundType => compoundType.isEqual(fieldType))
+  //     if (compoundFieldType !== undefined) {
+  //       return awu(Object.entries(compoundFieldType.fields))
+  //         .map(async ([compoundFieldName, compoundField]) => {
+  //           const compoundFieldValues = [
+  //             ...new Set(
+  //               await awu(instances).map(instance => formatValueForWhere(
+  //                 compoundField,
+  //                 instance.value[field.name]?.[compoundFieldName]
+  //               )).toArray()
+  //             ),
+  //           ]
+  //           return `${strings.capitalizeFirstLetter(compoundFieldName)} IN (${compoundFieldValues.join(',')})`
+  //         }).toArray()
+  //     }
+  //   }
+  //   const instancesFieldValues = [...new Set(await awu(instances)
+  //     .map(async instance => (
+  //       formatValueForWhere(
+  //         (await instance.getType()).fields[field.name], instance.value[field.name]
+  //       ))).toArray())]
+  //   return `${await apiName(field, true)} IN (${instancesFieldValues.join(',')})`
+  // }
 
   const instanceIdValues = await  Promise.all(instances.map(async inst => {
     const idFieldsNameToValue = await Promise.all(
@@ -143,20 +173,28 @@ const getRecordsBySaltoIds = async (
     ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
 
   const queries = buildSelectQueries(
-    apiName(type),
+    await apiName(type),
     saltoIdFieldsWithIdField,
     instanceIdValues,
   )
-  const recordsIterable = await flatMapAsync(
+  const recordsIterable = flatMapAsync(
     toAsyncIterable(queries),
     query => client.queryAll(query)
   )
+  // Possible REBASE issue
+  // const selectStr = await buildSelectStr(saltoIdFieldsWithIdField)
+  // const fieldsWheres = await awu(saltoIdFields)
+  //   .flatMap(async e => makeArray(await computeWhereConditions(e)))
+  //   .toArray()
+  // const whereStr = fieldsWheres.join(' AND ')
+  // const query = `SELECT ${selectStr} FROM ${await apiName(type)} WHERE ${whereStr}`
+  // const recordsIterable = await client.queryAll(query)
   return (await toArrayAsync(recordsIterable)).flat()
 }
 
-const getDataManagementFromCustomSettings = (instances: InstanceElement[]):
-  DataManagement => buildDataManagement({
-  includeObjects: [`^${apiName(instances[0].getType())}`],
+const getDataManagementFromCustomSettings = async (instances: InstanceElement[]):
+  Promise<DataManagement> => buildDataManagement({
+  includeObjects: [`^${await apiName(await instances[0].getType())}`],
   saltoIDSettings: {
     defaultIdFields: ['Name'],
   },
@@ -173,7 +211,7 @@ const insertInstances = async (
   const results = await client.bulkLoadOperation(
     typeName,
     'insert',
-    instancesToCreateRecords(instances)
+    await instancesToCreateRecords(instances)
   )
   const instancesAndResults = groupInstancesAndResultsByIndex(results, instances)
 
@@ -201,7 +239,7 @@ const updateInstances = async (
   const results = await client.bulkLoadOperation(
     typeName,
     'update',
-    instancesToUpdateRecords(instances)
+    await instancesToUpdateRecords(instances)
   )
   return getActionResult(groupInstancesAndResultsByIndex(results, instances))
 }
@@ -232,8 +270,8 @@ const deployAddInstances = async (
   idFields: Field[],
   client: SalesforceClient,
 ): Promise<DeployResult> => {
-  const type = instances[0].getType()
-  const typeName = apiName(type)
+  const type = await instances[0].getType()
+  const typeName = await apiName(type)
   const idFieldsNames = idFields.map(field => field.name)
   const computeSaltoIdHash = (vals: Values): string => {
     // Building the object this way because order of keys is important
@@ -242,13 +280,13 @@ const deployAddInstances = async (
     )
     return toMD5(safeJsonStringify(idFieldsValues))
   }
-  const computeRecordSaltoIdHash = (record: SalesforceRecord): string => {
-    const recordValues = transformRecordToValues(type, record)
+  const computeRecordSaltoIdHash = async (record: SalesforceRecord): Promise<string> => {
+    const recordValues = await transformRecordToValues(type, record)
     // Remove null values from the record result to compare it to instance values
     const recordValuesWithoutNulls = cloneWithoutNulls(recordValues)
     return computeSaltoIdHash(recordValuesWithoutNulls)
   }
-  const existingRecordsLookup = _.keyBy(
+  const existingRecordsLookup = await keyByAsync(
     await getRecordsBySaltoIds(type, instances, idFields, client),
     computeRecordSaltoIdHash,
   )
@@ -274,7 +312,7 @@ const deployAddInstances = async (
     successInstances: successUpdateInstances,
     errorMessages: updateErrorMessages,
   } = await updateInstances(
-    apiName(type),
+    await apiName(type),
     existingInstances,
     client
   )
@@ -290,7 +328,7 @@ const deployRemoveInstances = async (
   client: SalesforceClient,
 ): Promise<DeployResult> => {
   const { successInstances, errorMessages } = await deleteInstances(
-    apiName(instances[0].getType()),
+    await apiName(await instances[0].getType()),
     instances,
     client
   )
@@ -306,19 +344,19 @@ const deployModifyChanges = async (
 ): Promise<DeployResult> => {
   const changesData = changes
     .map(change => change.data)
-  const instancesType = apiName(changesData[0].after.getType())
-  const [validData, diffApiNameData] = _.partition(
+  const instancesType = await apiName(await changesData[0].after.getType())
+  const [validData, diffApiNameData] = await partition(
     changesData,
-    changeData => apiName(changeData.before) === apiName(changeData.after)
+    async changeData => await apiName(changeData.before) === await apiName(changeData.after)
   )
   const afters = validData.map(data => data.after)
   const { successInstances, errorMessages } = await updateInstances(instancesType, afters, client)
   const successData = validData
     .filter(changeData =>
       successInstances.find(instance => instance.isEqual(changeData.after)))
-  const diffApiNameErrors = diffApiNameData.map(data => new Error(`Failed to update as api name prev=${apiName(
+  const diffApiNameErrors = await awu(diffApiNameData).map(async data => new Error(`Failed to update as api name prev=${await apiName(
     data.before
-  )} and new=${apiName(data.after)} are different`))
+  )} and new=${await apiName(data.after)} are different`)).toArray()
   const errors = errorMessages.map(error => new Error(error)).concat(diffApiNameErrors)
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
@@ -326,16 +364,16 @@ const deployModifyChanges = async (
   }
 }
 
-export const isInstanceOfCustomObjectChange = (
+export const isInstanceOfCustomObjectChange = async (
   change: Change
-): change is Change<InstanceElement> => (
+): Promise<boolean> => (
   isInstanceOfCustomObject(getChangeElement(change))
 )
 
 export const isCustomObjectInstanceChanges = (
   changes: Change[]
-): changes is Change<InstanceElement>[] =>
-  changes.every(isInstanceOfCustomObjectChange)
+): Promise<boolean> =>
+  awu(changes).every(isInstanceOfCustomObjectChange)
 
 const isModificationChangeList = <T>(
   changes: ReadonlyArray<Change<T>>
@@ -350,17 +388,20 @@ export const deployCustomObjectInstancesGroup = async (
 ): Promise<DeployResult> => {
   try {
     const instances = changes.map(change => getChangeElement(change))
-    const instanceTypes = [...new Set(instances.map(inst => apiName(inst.getType())))]
+    const instanceTypes = [...new Set(await awu(instances)
+      .map(async inst => apiName(await inst.getType())).toArray())]
     if (instanceTypes.length > 1) {
       throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
     }
-    const actualDataManagement = isListCustomSettingsObject(instances[0].getType())
-      ? getDataManagementFromCustomSettings(instances) : dataManagement
+    const actualDataManagement = isListCustomSettingsObject(await instances[0].getType())
+      ? await getDataManagementFromCustomSettings(instances) : dataManagement
     if (actualDataManagement === undefined) {
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
     if (changes.every(isAdditionChange)) {
-      const { idFields, invalidFields } = getIdFields(instances[0].getType(), actualDataManagement)
+      const { idFields, invalidFields } = await getIdFields(
+        await instances[0].getType(), actualDataManagement
+      )
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }

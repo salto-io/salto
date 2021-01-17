@@ -41,6 +41,8 @@ export const displayHTML = (html: string, extensionPath: string): void => {
 }
 
 export const displayError = (errMsg: string): void => {
+  // We really do *not* want to await on this.
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   vscode.window.showErrorMessage(errMsg)
 }
 
@@ -65,6 +67,8 @@ export const handleErrors = (msgErrs: string[]): void => {
   if (msgErrs) {
     msgErrs.forEach(msgErr => outputChannel.appendLine(msgErr))
     outputChannel.show()
+    // We really do *not* want to await on this.
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     vscode.window.showErrorMessage('Deploy Failed', 'OK')
   }
 }

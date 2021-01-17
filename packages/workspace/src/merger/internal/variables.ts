@@ -13,13 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-
-import { logger } from '@salto-io/logging'
 import { ElemID, Variable } from '@salto-io/adapter-api'
 import { MergeError, MergeResult } from './common'
-
-const log = logger(module)
 
 export class DuplicateVariableNameError extends MergeError {
   constructor({ elemID }: { elemID: ElemID }) {
@@ -38,15 +33,4 @@ const mergeVariableDefinitions = (
 
 export const mergeVariables = (
   variables: Variable[]
-): MergeResult<Variable[]> => {
-  const mergeResults = _(variables)
-    .groupBy(i => i.elemID.getFullName())
-    .map(variableGroup => mergeVariableDefinitions(variableGroup))
-    .value()
-
-  const merged = mergeResults.map(r => r.merged)
-  const errors = _.flatten(mergeResults.map(r => r.errors))
-  log.debug(`merged ${variables.length} variables to ${merged.length} elements [errors=${
-    errors.length}]`)
-  return { merged, errors }
-}
+): MergeResult<Variable> => mergeVariableDefinitions(variables)

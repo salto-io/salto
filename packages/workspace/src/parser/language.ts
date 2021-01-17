@@ -13,24 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export enum Keywords {
-  TYPE_DEFINITION = 'type',
-  VARIABLES_DEFINITION = 'vars',
-  SETTINGS_DEFINITION = 'settings',
-  LIST_DEFINITION = 'list',
-  TYPE_INHERITANCE_SEPARATOR = 'is',
-  ANNOTATIONS_DEFINITION = 'annotations',
-  NAMESPACE_SEPARATOR = '.',
+import { LIST_ID_PREFIX, MAP_ID_PREFIX, GENERIC_ID_SUFFIX, GENERIC_ID_PREFIX } from '@salto-io/adapter-api'
+
+export const Keywords = {
+  TYPE_DEFINITION: 'type',
+  VARIABLES_DEFINITION: 'vars',
+  SETTINGS_DEFINITION: 'settings',
+  TYPE_INHERITANCE_SEPARATOR: 'is',
+  ANNOTATIONS_DEFINITION: 'annotations',
+  NAMESPACE_SEPARATOR: '.',
 
   // Primitive types
-  TYPE_STRING = 'string',
-  TYPE_NUMBER = 'number',
-  TYPE_BOOL = 'boolean',
-  TYPE_OBJECT = 'object',
-  TYPE_UNKNOWN = 'unknown',
+  TYPE_STRING: 'string',
+  TYPE_NUMBER: 'number',
+  TYPE_BOOL: 'boolean',
+  TYPE_OBJECT: 'object',
+  TYPE_UNKNOWN: 'unknown',
 
   // Generics Types
-  LIST_PREFIX = 'List<',
-  MAP_PREFIX = 'Map<',
-  GENERICS_SUFFIX = '>'
+  GENERICS_SUFFIX: `${GENERIC_ID_SUFFIX}`,
+  LIST_PREFIX: `${LIST_ID_PREFIX}${GENERIC_ID_PREFIX}`,
+  MAP_PREFIX: `${MAP_ID_PREFIX}${GENERIC_ID_PREFIX}`,
 }

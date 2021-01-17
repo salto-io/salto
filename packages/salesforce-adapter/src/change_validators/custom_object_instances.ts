@@ -18,19 +18,22 @@ import {
   ChangeValidator, getChangeElement, isModificationChange,
   InstanceElement, ChangeError, isAdditionChange,
 } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
+
 import { FIELD_ANNOTATIONS } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 
-const getUpdateErrorsForNonUpdateableFields = (
+const { awu } = collections.asynciterable
+
+const getUpdateErrorsForNonUpdateableFields = async (
   before: InstanceElement,
   after: InstanceElement
-): ReadonlyArray<ChangeError> => {
-  const beforeResolved = resolveValues(before, getLookUpName)
-  const afterResolved = resolveValues(after, getLookUpName)
-  return Object.values(afterResolved.getType().fields)
+): Promise<ReadonlyArray<ChangeError>> => {
+  const beforeResolved = await resolveValues(before, getLookUpName)
+  const afterResolved = await resolveValues(after, getLookUpName)
+  return Object.values((await afterResolved.getType()).fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
     .map(field => {
       if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
@@ -45,11 +48,11 @@ const getUpdateErrorsForNonUpdateableFields = (
     }).filter(values.isDefined)
 }
 
-const getCreateErrorsForNonCreatableFields = (
+const getCreateErrorsForNonCreatableFields = async (
   after: InstanceElement
-): ReadonlyArray<ChangeError> => {
-  const afterResolved = resolveValues(after, getLookUpName)
-  return Object.values(afterResolved.getType().fields)
+): Promise<ReadonlyArray<ChangeError>> => {
+  const afterResolved = await resolveValues(after, getLookUpName)
+  return awu(Object.values((await afterResolved.getType()).fields))
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
     .map(field => {
       if (!_.isUndefined(afterResolved.value[field.name])) {
@@ -62,20 +65,28 @@ const getCreateErrorsForNonCreatableFields = (
       }
       return undefined
     }).filter(values.isDefined)
+    .toArray()
 }
 
 
 const changeValidator: ChangeValidator = async changes => {
-  const updateChangeErrors = changes
+  const updateChangeErrors = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .filter(isModificationChange)
     .flatMap(change =>
-      getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after))
+      getUpdateErrorsForNonUpdateableFields(
+        change.data.before as InstanceElement,
+        change.data.after as InstanceElement
+      ))
+    .toArray()
 
-  const createChangeErrors = changes
+  const createChangeErrors = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .filter(isAdditionChange)
-    .flatMap(change => getCreateErrorsForNonCreatableFields(getChangeElement(change)))
+    .flatMap(change => getCreateErrorsForNonCreatableFields(
+      getChangeElement(change) as InstanceElement
+    ))
+    .toArray()
 
   return [
     ...updateChangeErrors,

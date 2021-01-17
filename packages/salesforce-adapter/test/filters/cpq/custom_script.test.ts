@@ -107,13 +107,13 @@ describe('cpq custom script filter', () => {
       await filter.onFetch(elements)
     })
 
-    it('Should change fieldsRefList fields type to list of text', () => {
+    it('Should change fieldsRefList fields type to list of text', async () => {
       const customScriptObj = elements
         .find(element => element.elemID.isEqual(mockCustomScriptObject.elemID)) as ObjectType
       expect(customScriptObj).toBeDefined()
-      expect(customScriptObj.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
+      expect(await customScriptObj.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
         .toEqual(new ListType(Types.primitiveDataTypes.Text))
-      expect(customScriptObj.fields[CPQ_GROUP_FIELDS].getType())
+      expect(await customScriptObj.fields[CPQ_GROUP_FIELDS].getType())
         .toEqual(new ListType(Types.primitiveDataTypes.Text))
     })
 
@@ -143,16 +143,16 @@ describe('cpq custom script filter', () => {
         await filter.onDeploy(changes)
       })
 
-      it('Should change fieldsRefList fields type to list of text', () => {
+      it('Should change fieldsRefList fields type to list of text', async () => {
         const cpqCustomScriptObjAddChange = changes
           .find(change =>
             (isAdditionChange(change) && isObjectTypeChange(change)
               && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
         expect(cpqCustomScriptObjAddChange).toBeDefined()
         const object = getChangeElement(cpqCustomScriptObjAddChange as AdditionChange<ObjectType>)
-        expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
+        expect(await object.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(object.fields[CPQ_GROUP_FIELDS].getType())
+        expect(await object.fields[CPQ_GROUP_FIELDS].getType())
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
@@ -197,23 +197,23 @@ describe('cpq custom script filter', () => {
         await filter.onDeploy(changes)
       })
 
-      it('should change field type to list of text for modified fields', () => {
+      it('should change field type to list of text for modified fields', async () => {
         const cpqFieldChange = changes.find(isFieldChange) as ModificationChange<Field>
         expect(cpqFieldChange).toBeDefined()
-        expect(cpqFieldChange.data.before.getType())
+        expect(await cpqFieldChange.data.before.getType())
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
-        expect(cpqFieldChange.data.after.getType())
+        expect(await cpqFieldChange.data.after.getType())
           .toEqual(new ListType(Types.primitiveDataTypes.Text))
       })
 
-      it('should not change field types in object modification', () => {
+      it('should not change field types in object modification', async () => {
         const cpqTypeChange = changes.find(isObjectTypeChange) as ModificationChange<ObjectType>
         expect(cpqTypeChange).toBeDefined()
-        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
-          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
+        expect(await cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          await mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
-        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
-          mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
+        expect(await cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          await mockCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
       })
 
@@ -275,21 +275,23 @@ describe('cpq custom script filter', () => {
         await filter.preDeploy(changes)
       })
 
-      it('Should change fieldRefList fields type to long text', () => {
+      it('Should change fieldRefList fields type to long text', async () => {
         const cpqFieldChange = changes.find(isFieldChange) as ModificationChange<Field>
         expect(cpqFieldChange).toBeDefined()
-        expect(cpqFieldChange.data.before.getType()).toEqual(Types.primitiveDataTypes.LongTextArea)
-        expect(cpqFieldChange.data.after.getType()).toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(await cpqFieldChange.data.before.getType())
+          .toEqual(Types.primitiveDataTypes.LongTextArea)
+        expect(await cpqFieldChange.data.after.getType())
+          .toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 
-      it('Should not change field types in the object type modification', () => {
+      it('Should not change field types in the object type modification', async () => {
         const cpqTypeChange = changes.find(isObjectTypeChange) as ModificationChange<ObjectType>
         expect(cpqTypeChange).toBeDefined()
-        expect(cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
-          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
+        expect(await cpqTypeChange.data.before.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          await mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
-        expect(cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
-          mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
+        expect(await cpqTypeChange.data.after.fields[CPQ_GROUP_FIELDS].getType()).toEqual(
+          await mockAfterOnFetchCustomScriptObject.fields[CPQ_GROUP_FIELDS].getType()
         )
       })
 
@@ -329,16 +331,16 @@ describe('cpq custom script filter', () => {
         await filter.preDeploy(changes)
       })
 
-      it('Should change fieldsRefList fields type to long text on addition change', () => {
+      it('Should change fieldsRefList fields type to long text on addition change', async () => {
         const cpqCustomScriptObjAddChange = changes
           .find(change =>
             (isAdditionChange(change) && isObjectTypeChange(change)
               && getChangeElement(change).elemID.isEqual(mockCustomScriptObject.elemID)))
         expect(cpqCustomScriptObjAddChange).toBeDefined()
         const object = getChangeElement(cpqCustomScriptObjAddChange as AdditionChange<ObjectType>)
-        expect(object.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
+        expect(await object.fields[CPQ_CONSUMPTION_RATE_FIELDS].getType())
           .toEqual(Types.primitiveDataTypes.LongTextArea)
-        expect(object.fields[CPQ_GROUP_FIELDS].getType())
+        expect(await object.fields[CPQ_GROUP_FIELDS].getType())
           .toEqual(Types.primitiveDataTypes.LongTextArea)
       })
 

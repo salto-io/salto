@@ -218,20 +218,29 @@ describe('cli e2e', () => {
         { description: 'To Be Modified' })).toBe(true)
     })
     it('should update the object in the Nacl file', async () => {
-      const newObject = verifyObject(await workspace.elements(), SALESFORCE, newObjectElemName,
-        { [API_NAME]: BuiltinTypes.SERVICE_ID, [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
+      const newObject = await verifyObject(
+        await (await workspace.elements()).getAll(),
+        SALESFORCE,
+        newObjectElemName,
+        {
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
+          [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
+        },
         { [API_NAME]: newObjectApiName, [METADATA_TYPE]: CUSTOM_OBJECT },
         {
           Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
           Beta: apiNameAnno(newObjectApiName, 'Beta__c'),
-        })
+        }
+      )
       await verifyTmpNaclFileObjectSourceMap(
         await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Beta']
       )
     })
     it('should update the instance in the Nacl file', async () => {
-      verifyInstance(await workspace.elements(), SALESFORCE, ROLE, newInstanceElemName,
-        { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
+      await verifyInstance(
+        await (await workspace.elements()).getAll(), SALESFORCE, ROLE, newInstanceElemName,
+        { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName }
+      )
     })
     afterAll(async () => {
       await runEmptyPreview(fetchOutputDir)
@@ -278,7 +287,10 @@ describe('cli e2e', () => {
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should fetch the new object standard fields and annotations to the correct files', async () => {
-      const newObject = verifyObject(await workspace.elements(), SALESFORCE, newObjectElemName,
+      const newObject = await verifyObject(
+        await (await workspace.elements()).getAll(),
+        SALESFORCE,
+        newObjectElemName,
         {
           [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
@@ -289,7 +301,8 @@ describe('cli e2e', () => {
           Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
           Modified: apiNameAnno(newObjectApiName, 'Modified__c'),
           IsDeleted: apiNameAnno(newObjectApiName, 'IsDeleted'),
-        })
+        }
+      )
 
       await verifyTmpNaclFileObjectSourceMap(
         await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Modified']
@@ -311,8 +324,11 @@ describe('cli e2e', () => {
         .getFullName())).toBeTruthy()
     })
     it('should have no change in the instance', async () => {
-      verifyInstance((await workspace.elements()), SALESFORCE, ROLE, newInstanceElemName,
-        { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
+      await verifyInstance(
+        (await (await workspace.elements()).getAll()),
+        SALESFORCE, ROLE, newInstanceElemName,
+        { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName }
+      )
     })
     afterAll(async () => {
       await runEmptyPreview(fetchOutputDir)

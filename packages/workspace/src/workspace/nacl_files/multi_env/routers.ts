@@ -16,7 +16,7 @@
 import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
-import { promises, values } from '@salto-io/lowerdash'
+import { promises, values, collections } from '@salto-io/lowerdash'
 import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 import {
@@ -25,6 +25,8 @@ import {
 import { wrapAdditions, DetailedAddition, wrapNestedValues } from '../addition_wrapper'
 import { NaclFilesSource, RoutingMode } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
+
+const { awu } = collections.asynciterable
 
 export interface RoutedChanges {
   primarySource?: DetailedChange[]
@@ -92,8 +94,10 @@ const separateChangeByFiles = async (
     (await source.getSourceRanges(change.id))
       .map(range => range.filename)
       .map(async filename => {
-        const fileElements = (await source.getParsedNaclFile(filename))?.elements || []
-        const filteredChange = applyFunctionToChangeData(
+        const fileElements = await awu(
+          await (await source.getParsedNaclFile(filename))?.elements.getAll() ?? []
+        ).toArray()
+        const filteredChange = await applyFunctionToChangeData(
           change,
           changeData => filterByFile(change.id, changeData, fileElements),
         )
@@ -327,18 +331,19 @@ const addToSource = async ({
         topLevelElement as ChangeDataType,
       ))
     }
-    const mergeResult = mergeElements([
+
+    const mergeResult = await mergeElements(awu([
       before,
       wrappedElement,
-    ])
-    if (mergeResult.errors.length > 0) {
+    ]))
+    if (!(await awu(mergeResult.errors.values()).flat().isEmpty())) {
       // If either the origin or the target source is the common folder, all elements should be
       // mergeable and we shouldn't see merge errors
       throw new Error(
         `Failed to add ${gids.map(id => id.getFullName())} - unmergable element fragments.`
       )
     }
-    const after = mergeResult.merged[0] as ChangeDataType
+    const after = await awu(mergeResult.merged.values()).peek() as ChangeDataType
     return detailedCompare(before, after, true)
   })))
   return (await Promise.all(fullChanges.map(change => separateChangeByFiles(

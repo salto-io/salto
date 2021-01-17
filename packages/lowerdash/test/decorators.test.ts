@@ -55,8 +55,8 @@ describe('decorators', () => {
     describe('the originalCall argument', () => {
       let originalCall: decorators.OriginalCall
 
-      beforeEach(() => {
-        m.bar(14, 'world');
+      beforeEach(async () => {
+        await m.bar(14, 'world');
         [[originalCall]] = ensureFooIsCalled.mock.calls
       })
 

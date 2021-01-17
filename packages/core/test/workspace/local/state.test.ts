@@ -18,11 +18,13 @@ import { replaceContents, exists, readZipFile, rm, rename, generateZipString } f
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization, pathIndex } from '@salto-io/workspace'
-import { hash } from '@salto-io/lowerdash'
+import { hash, collections } from '@salto-io/lowerdash'
 import { localState, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
 import { version } from '../../../src/generated/version.json'
 
+
+const { awu } = collections.asynciterable
 const { serialize } = serialization
 const { toMD5 } = hash
 jest.mock('glob', () => (query: string, f: (_err: Error | null, files: string[]) => void) => {
@@ -108,7 +110,7 @@ describe('local state', () => {
     })
 
     it('reads all from both files but not from files with an additional suffix', async () => {
-      const elements = await state.getAll()
+      const elements = await awu(await state.getAll()).toArray()
       expect(elements).toHaveLength(4)
       const salesforceState = findReadZipFileCall('multiple_files.salesforce.jsonl.zip')
       const netsuiteState = findReadZipFileCall('multiple_files.netsuite.jsonl.zip')
@@ -169,15 +171,15 @@ describe('local state', () => {
     })
 
     it('should return an empty array if there is no saved state', async () => {
-      const result = await state.getAll()
+      const result = await awu(await state.getAll()).toArray()
       expect(result.length).toBe(0)
     })
 
     it('should override state successfully, retrieve it and get the same result', async () => {
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
-      state.set(newElem)
-      await state.override([mockElement])
-      const retrievedState = await state.getAll()
+      await state.set(newElem)
+      await state.override(awu([mockElement]))
+      const retrievedState = await awu(await state.getAll()).toArray()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType
       expect(retrievedStateObjectType.isEqual(mockElement)).toBe(true)
@@ -185,7 +187,7 @@ describe('local state', () => {
 
     it('should set state successfully, retrieve it and get the same result', async () => {
       await state.set(mockElement)
-      const retrievedState = await state.getAll()
+      const retrievedState = await awu(await state.getAll()).toArray()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType
       expect(retrievedStateObjectType.isEqual(mockElement)).toBe(true)
@@ -197,7 +199,7 @@ describe('local state', () => {
       const newField = Object.values(mockElement.fields)[0]
       newField.name = 'new_field'
       clone.fields.newfield = newField
-      state.set(clone)
+      await state.set(clone)
 
       const fromState = await state.get(mockElement.elemID) as ObjectType
       expect(fromState.fields.newfield).toBeDefined()
@@ -206,34 +208,34 @@ describe('local state', () => {
     it('should add to state', async () => {
       await state.set(mockElement)
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
-      state.set(newElem)
+      await state.set(newElem)
 
-      const fromState = await state.getAll()
+      const fromState = await awu(await state.getAll()).toArray()
       expect(fromState.length).toBe(2)
       expect(fromState[1].elemID.name).toBe('new')
     })
 
     it('should remove from state', async () => {
       await state.set(mockElement)
-      let fromState = await state.getAll()
+      let fromState = await awu(await state.getAll()).toArray()
       expect(fromState.length).toBe(1)
 
       await state.remove(mockElement.elemID)
-      fromState = await state.getAll()
+      fromState = await awu(await state.getAll()).toArray()
       expect(fromState.length).toBe(0)
     })
   })
 
   it('should read valid state file', async () => {
     const state = localState('full')
-    const elements = await state.getAll()
+    const elements = await awu(await state.getAll()).toArray()
     expect(elements).toHaveLength(2)
     expect(await state.getStateSaltoVersion()).toBe('0.0.1')
   })
 
   it('should override path index when asked to', async () => {
     const state = localState('full')
-    state.overridePathIndex([mockElement])
+    await state.overridePathIndex([mockElement])
     expect(await state.getPathIndex()).toEqual(await pathIndex.createPathIndex([mockElement]))
   })
 
@@ -241,7 +243,7 @@ describe('local state', () => {
     const state = localState('full')
     // This doesn't fully test the update functionality. That should be tested in path index test.
     // This just tests that we reach the function.
-    state.updatePathIndex([mockElement], [])
+    await state.updatePathIndex([mockElement], [])
     expect(await state.getPathIndex()).toEqual(await pathIndex.createPathIndex([mockElement]))
   })
 
@@ -353,7 +355,7 @@ describe('local state', () => {
       const beforeOverrideDate = await state.getServicesUpdateDates()
       expect(beforeOverrideDate.salto).toEqual(saltoModificationDate)
       expect(beforeOverrideDate.hubspot).toEqual(hubspotModificationDate)
-      await state.override([mockElement])
+      await state.override(awu([mockElement]))
       const overrideDate = await state.getServicesUpdateDates()
       expect(overrideDate.salto.getTime()).toBe(now)
       expect(beforeOverrideDate.hubspot).toEqual(hubspotModificationDate)

@@ -61,8 +61,9 @@ describe('instance_references filter', () => {
         refToNonExistingPath: '[/Templates/non.existing]',
       },
     )
-
-    filterCreator().onFetch([fileInstance, workflowInstance, instanceWithRefs])
+    beforeAll(async () => {
+      await filterCreator().onFetch([fileInstance, workflowInstance, instanceWithRefs])
+    })
 
     it('should replace path references', () => {
       expect(instanceWithRefs.value.refToFilePath)

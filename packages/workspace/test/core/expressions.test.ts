@@ -16,9 +16,12 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
-import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
+import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+
+const { awu } = collections.asynciterable
 
 describe('Test Salto Expressions', () => {
   const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
@@ -161,10 +164,13 @@ describe('Test Salto Expressions', () => {
       simpleRefType,
     ]
 
-    const resolved = resolve(
-      elements,
-      new InMemoryRemoteElementSource(elements)
-    )
+    let resolved: Element[]
+
+    beforeAll(async () => {
+      resolved = await awu(
+        await resolve(awu(elements), createInMemoryElementSource(elements))
+      ).toArray()
+    })
 
     const findResolved = <T extends Element>(
       target: Element): T => resolved.filter(
@@ -263,80 +269,76 @@ describe('Test Salto Expressions', () => {
       expect(element.value.test.value).toEqual('simple')
     })
 
-    it('should detect reference cycles', () => {
+    it('should detect reference cycles', async () => {
       const firstRef = new InstanceElement('first', simpleRefType, {})
       const secondRef = new InstanceElement('second', simpleRefType, {})
       firstRef.value.test = refTo(secondRef, 'test')
       secondRef.value.test = refTo(firstRef, 'test')
       const chained = [firstRef, secondRef]
-      const inst = resolve(chained, new InMemoryRemoteElementSource([
+      const inst = (await awu(await resolve(awu(chained), createInMemoryElementSource([
         ...chained,
         simpleRefType,
-        ...getFieldsAndAnnoTypes(simpleRefType),
-      ]))[0] as InstanceElement
+        ...await getFieldsAndAnnoTypes(simpleRefType),
+      ]))).toArray())[0] as InstanceElement
       expect(inst.value.test.value).toBeInstanceOf(CircularReference)
     })
 
-    it('should fail on unresolvable', () => {
+    it('should fail on unresolvable', async () => {
       const firstRef = new InstanceElement('first', simpleRefType, {})
       const secondRef = new InstanceElement('second', simpleRefType, {
         test: refTo(firstRef, 'test'),
       })
       const bad = [firstRef, secondRef]
-      const res = resolve(
-        bad,
-        new InMemoryRemoteElementSource([
-          ...bad,
-          simpleRefType,
-          ...getFieldsAndAnnoTypes(simpleRefType),
-        ])
-      )[1] as InstanceElement
+      const res = (await awu(await resolve(awu(bad), createInMemoryElementSource([
+        ...bad,
+        simpleRefType,
+        ...await getFieldsAndAnnoTypes(simpleRefType),
+      ]))).toArray())[1] as InstanceElement
       expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
     })
 
-    it('should fail on unresolvable roots', () => {
+    it('should fail on unresolvable roots', async () => {
       const target = new ElemID('noop', 'test')
       const firstRef = new InstanceElement(
         'first',
         simpleRefType,
         { test: new ReferenceExpression(target) },
       )
-      const res = resolve([firstRef], new InMemoryRemoteElementSource([
+      const bad = awu([firstRef])
+      const res = (await awu(await resolve(bad, createInMemoryElementSource([
         firstRef,
         simpleRefType,
-        ...getFieldsAndAnnoTypes(simpleRefType),
-      ]))[0] as InstanceElement
+        ...await getFieldsAndAnnoTypes(simpleRefType),
+      ]))).toArray())[0] as InstanceElement
       expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
       expect(res.value.test.value.target).toEqual(target)
     })
 
-    it('should use additional context', () => {
+    it('should use additional context', async () => {
       const context = new InstanceElement('second', simpleRefType, {})
       const firstRef = new InstanceElement(
         'first',
         simpleRefType,
         { test: refTo(context) },
       )
-      const res = resolve(
-        [firstRef],
-        new InMemoryRemoteElementSource([
-          firstRef,
-          simpleRefType,
-          ...getFieldsAndAnnoTypes(simpleRefType),
-          context,
-        ])
-      )[0] as InstanceElement
-      const noContextRes = resolve([firstRef], new InMemoryRemoteElementSource([
+      const bad = awu([firstRef])
+      const res = (await awu(await resolve(bad, createInMemoryElementSource([
         firstRef,
         simpleRefType,
-        ...getFieldsAndAnnoTypes(simpleRefType),
-      ]))[0] as InstanceElement
+        ...await getFieldsAndAnnoTypes(simpleRefType),
+        context,
+      ]))).toArray())[0] as InstanceElement
+      const noContextRes = (await awu(await resolve(bad, createInMemoryElementSource([
+        firstRef,
+        simpleRefType,
+        ...await getFieldsAndAnnoTypes(simpleRefType),
+      ]))).toArray())[0] as InstanceElement
       expect(noContextRes.value.test.value).toBeInstanceOf(UnresolvedReference)
       expect(res.value.test.value).toBeInstanceOf(InstanceElement)
       expect(res.value.test.value).toEqual(context)
     })
 
-    it('should not resolve additional context', () => {
+    it('should not resolve additional context', async () => {
       const inst = new InstanceElement('second', simpleRefType, {})
       const refToInst = new ReferenceExpression(inst.elemID)
       const context = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'),
@@ -347,17 +349,17 @@ describe('Test Salto Expressions', () => {
         { test: new VariableExpression(context.elemID) },
       )
       const contextElements = [context, inst]
-      const res = resolve([refInst], new InMemoryRemoteElementSource([
+      const res = (await awu(await resolve(awu([refInst]), createInMemoryElementSource([
         refInst,
         simpleRefType,
-        ...getFieldsAndAnnoTypes(simpleRefType),
+        ...await getFieldsAndAnnoTypes(simpleRefType),
         ...contextElements,
-      ]))
+      ]))).toArray())
       expect(res).toHaveLength(1)
       expect((res[0] as InstanceElement).value.test.value).toEqual(inst)
     })
 
-    it('should use elements over additional context', () => {
+    it('should use elements over additional context', async () => {
       const context = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 'a')
       const inputElem = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 'b')
       const refInst = new InstanceElement(
@@ -366,19 +368,16 @@ describe('Test Salto Expressions', () => {
         { test: new VariableExpression(context.elemID) },
       )
       const elementsToResolve = [refInst, inputElem]
-      const res = resolve(
-        elementsToResolve,
-        new InMemoryRemoteElementSource([
-          ...elementsToResolve,
-          simpleRefType,
-          ...getFieldsAndAnnoTypes(simpleRefType),
-          context,
-        ])
-      )
+      const res = (await awu(await resolve(awu([refInst, inputElem]), createInMemoryElementSource([
+        ...elementsToResolve,
+        simpleRefType,
+        ...await getFieldsAndAnnoTypes(simpleRefType),
+        context,
+      ]))).toArray())
       expect((res[0] as InstanceElement).value.test.value).toEqual('b')
     })
 
-    it('should not create copies of types', () => {
+    it('should not create copies of types', async () => {
       const primType = new PrimitiveType(
         { elemID: new ElemID('test', 'prim'), primitive: PrimitiveTypes.NUMBER }
       )
@@ -388,16 +387,17 @@ describe('Test Salto Expressions', () => {
         annotationRefsOrTypes: { a: primType },
       })
       const inst = new InstanceElement('test', newObjType, { f: 1 })
-      const elms = [inst, newObjType, primType]
-      const [resInst, resObj, resPrim] = resolve(
-        elms,
-        new InMemoryRemoteElementSource(
+      const elems = [inst, newObjType, primType]
+      const all = (await awu(await resolve(
+        awu(elems),
+        createInMemoryElementSource(
           [
-            ...elms,
-            ...getFieldsAndAnnoTypes(newObjType),
+            ...elems,
+            ...await getFieldsAndAnnoTypes(newObjType),
           ]
         )
-      ) as [InstanceElement, ObjectType, PrimitiveType]
+      )).toArray()) as [InstanceElement, ObjectType, PrimitiveType]
+      const [resInst, resObj, resPrim] = all
       expect(resObj.fields.f.refType.elemID).toBe(resPrim.elemID)
       expect(resObj.annotationRefTypes.a.elemID).toBe(resPrim.elemID)
       expect(resInst.refType.elemID).toBe(resObj.elemID)
@@ -405,7 +405,7 @@ describe('Test Salto Expressions', () => {
   })
 
   describe('Template Expression', () => {
-    it('Should evaluate a template with reference', () => {
+    it('Should evaluate a template with reference', async () => {
       const refType = new ObjectType({
         elemID: new ElemID('salto', 'simple'),
       })
@@ -430,17 +430,16 @@ describe('Test Salto Expressions', () => {
         }
       )
       const elements = [firstRef, secondRef]
-      const element = resolve(
-        elements,
-        new InMemoryRemoteElementSource(
+      const element = (await awu(
+        await resolve(awu(elements), createInMemoryElementSource(
           [
             firstRef,
             secondRef,
             refType,
-            ...getFieldsAndAnnoTypes(refType),
+            ...await getFieldsAndAnnoTypes(refType),
           ]
-        )
-      )[1] as InstanceElement
+        ))
+      ).toArray())[1] as InstanceElement
       expect(element.value.into).toEqual(
         'Well, you made a long journey from Milano to Minsk, Rochelle Rochelle'
       )

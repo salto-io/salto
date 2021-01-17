@@ -17,49 +17,52 @@ import {
   isObjectType, Element, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
+
+const { awu } = collections.asynciterable
 
 const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([
   ['Profile', ['tabVisibilities']],
 ])
 
-const removeFieldsFromTypes = (
+const removeFieldsFromTypes = async (
   elements: Element[],
   typeNameToFieldRemovals: Map<string, string[]>
-): void => {
-  elements
+): Promise<void> => {
+  await awu(elements)
     .filter(isObjectType)
-    .forEach(type => {
-      const fieldsToRemove = typeNameToFieldRemovals.get(metadataType(type)) ?? []
+    .forEach(async type => {
+      const fieldsToRemove = typeNameToFieldRemovals.get(await metadataType(type)) ?? []
       fieldsToRemove.forEach(fieldName => { delete type.fields[fieldName] })
     })
 }
 
 
-const removeValuesFromInstances = (
+const removeValuesFromInstances = async (
   elements: Element[],
   typeNameToFieldRemovals: Map<string, string[]>
-): void => {
-  const removeValuesFunc: TransformFunc = ({ value, field }) => {
+): Promise<void> => {
+  const removeValuesFunc: TransformFunc = async ({ value, field }) => {
     if (!field) return value
     const fieldParent = field.parent
-    const fieldsToRemove = typeNameToFieldRemovals.get(metadataType(fieldParent)) ?? []
+    const fieldsToRemove = typeNameToFieldRemovals.get(await metadataType(fieldParent)) ?? []
     if (fieldsToRemove.includes(field.name)) {
       return undefined
     }
     return value
   }
 
-  elements
+  await awu(elements)
     .filter(isInstanceElement)
     // The below filter is temporary optimization to save calling transformValues for all instances
     // since TYPE_NAME_TO_FIELD_REMOVALS contains currently only top level types
-    .filter(inst => typeNameToFieldRemovals.has(metadataType(inst)))
-    .forEach(inst => {
-      inst.value = transformValues({
+    .filter(async inst => typeNameToFieldRemovals.has(await metadataType(inst)))
+    .forEach(async inst => {
+      inst.value = await transformValues({
         values: inst.value,
-        type: inst.getType(),
+        type: await inst.getType(),
         transformFunc: removeValuesFunc,
         strict: false,
         pathID: inst.elemID,
@@ -75,8 +78,8 @@ export const makeFilter = (
   typeNameToFieldRemovals: Map<string, string[]>,
 ): FilterCreator => () => ({
   onFetch: async (elements: Element[]) => {
-    removeValuesFromInstances(elements, typeNameToFieldRemovals)
-    removeFieldsFromTypes(elements, typeNameToFieldRemovals)
+    await removeValuesFromInstances(elements, typeNameToFieldRemovals)
+    await removeFieldsFromTypes(elements, typeNameToFieldRemovals)
   },
 })
 

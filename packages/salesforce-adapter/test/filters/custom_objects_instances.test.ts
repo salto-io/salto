@@ -15,6 +15,7 @@
 */
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
@@ -27,6 +28,8 @@ import {
   OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
+
+const { awu } = collections.asynciterable
 
 jest.mock('../../src/constants', () => ({
   ...jest.requireActual('../../src/constants'),
@@ -152,7 +155,7 @@ describe('Custom Object Instances filter', () => {
   const refFromAndToObjectName = 'RefFromAndTo'
   const emptyRefToObjectName = 'EmptyRefTo'
 
-  beforeEach(() => {
+  beforeEach(async () => {
     ({ connection, client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
@@ -171,7 +174,7 @@ describe('Custom Object Instances filter', () => {
     const excludeObject = createCustomObject(excludeObjectName)
     const refToObject = createCustomObject(refToObjectName)
     let elements: Element[]
-    beforeEach(() => {
+    beforeEach(async () => {
       filter = filterCreator(
         {
           client,
@@ -223,7 +226,7 @@ describe('Custom Object Instances filter', () => {
   })
 
   describe('Without nameBasedID', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       filter = filterCreator(
         {
           client,
@@ -275,38 +278,38 @@ describe('Custom Object Instances filter', () => {
       })
 
       describe('should add instances per configured object', () => {
-        it('should not fetch for non-configured objects', () => {
-          const notConfiguredObjInstances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === notConfiguredObj
-          ) as InstanceElement[]
+        it('should not fetch for non-configured objects', async () => {
+          const notConfiguredObjInstances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === notConfiguredObj
+          ).toArray() as InstanceElement[]
           expect(notConfiguredObjInstances.length).toEqual(0)
         })
 
-        it('should fetch for regex configured objects', () => {
-          const includedNameSpaceObjInstances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === includedNameSpaceObj
-          ) as InstanceElement[]
+        it('should fetch for regex configured objects', async () => {
+          const includedNameSpaceObjInstances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === includedNameSpaceObj
+          ).toArray() as InstanceElement[]
           expect(includedNameSpaceObjInstances.length).toEqual(2)
         })
 
-        it('should fetch for object included specifically configured', () => {
-          const includedObjectInstances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === includedObject
-          ) as InstanceElement[]
+        it('should fetch for object included specifically configured', async () => {
+          const includedObjectInstances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === includedObject
+          ).toArray() as InstanceElement[]
           expect(includedObjectInstances.length).toEqual(2)
         })
 
-        it('should not fetch for object from a configured regex whose excluded specifically', () => {
-          const excludedObjectInstances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === excludedObject
-          ) as InstanceElement[]
+        it('should not fetch for object from a configured regex whose excluded specifically', async () => {
+          const excludedObjectInstances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === excludedObject
+          ).toArray() as InstanceElement[]
           expect(excludedObjectInstances.length).toEqual(0)
         })
 
-        it('should not fetch for object from a configured as excluded even if it was included by object', () => {
-          const excludeOverrideObjectInstances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === excludeOverrideObject
-          ) as InstanceElement[]
+        it('should not fetch for object from a configured as excluded even if it was included by object', async () => {
+          const excludeOverrideObjectInstances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === excludeOverrideObject
+          ).toArray() as InstanceElement[]
           expect(excludeOverrideObjectInstances.length).toEqual(0)
         })
       })
@@ -388,18 +391,18 @@ describe('Custom Object Instances filter', () => {
         await filter.onFetch(elements)
       })
 
-      it('should add instances per catched by regex object with fields', () => {
+      it('should add instances per catched by regex object with fields', async () => {
         // 2 new instances per namespaced object because of TestCustomRecords's length
         expect(elements.length).toEqual(11)
-        expect(elements.filter(e => isInstanceElement(e)).length).toEqual(6)
+        expect((await awu(elements).filter(e => isInstanceElement(e)).toArray()).length).toEqual(6)
       })
 
       describe('simple object', () => {
         let instances: InstanceElement[]
-        beforeEach(() => {
-          instances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === simpleObject
-          ) as InstanceElement[]
+        beforeEach(async () => {
+          instances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === simpleObject
+          ).toArray() as InstanceElement[]
         })
 
         it('should call query with the object fields', () => {
@@ -435,10 +438,10 @@ describe('Custom Object Instances filter', () => {
 
       describe('object with no queryable fields', () => {
         let instances: InstanceElement[]
-        beforeEach(() => {
-          instances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === objWithNoFields
-          ) as InstanceElement[]
+        beforeEach(async () => {
+          instances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === objWithNoFields
+          ).toArray() as InstanceElement[]
         })
 
         it('should not try to query for object', () => {
@@ -452,10 +455,10 @@ describe('Custom Object Instances filter', () => {
 
       describe('object with compound Name', () => {
         let instances: InstanceElement[]
-        beforeEach(() => {
-          instances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === objWithNameField
-          ) as InstanceElement[]
+        beforeEach(async () => {
+          instances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === objWithNameField
+          ).toArray() as InstanceElement[]
         })
 
         it('should call query with the object fields', () => {
@@ -497,10 +500,10 @@ describe('Custom Object Instances filter', () => {
 
       describe('object with compound Address', () => {
         let instances: InstanceElement[]
-        beforeEach(() => {
-          instances = elements.filter(
-            e => isInstanceElement(e) && e.getType() === objWithAddressField
-          ) as InstanceElement[]
+        beforeEach(async () => {
+          instances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === objWithAddressField
+          ).toArray() as InstanceElement[]
         })
 
         it('should call query with the object fields', () => {
@@ -599,10 +602,10 @@ describe('Custom Object Instances filter', () => {
         await filter.onFetch(elements)
       })
 
-      it('should add instances per configured object', () => {
+      it('should add instances per configured object', async () => {
         // 5 object + 2 new instances per needed instances (all by empty ref)
         expect(elements.length).toEqual(13)
-        expect(elements.filter(e => isInstanceElement(e)).length).toEqual(8)
+        expect((await awu(elements).filter(e => isInstanceElement(e)).toArray()).length).toEqual(8)
       })
 
       it('should query refTo by ids according to references values', () => {
@@ -804,18 +807,20 @@ describe('Custom Object Instances filter', () => {
       changeSuggestions = ((await filter.onFetch(elements)) ?? []) as ConfigChangeSuggestion[]
     })
 
-    it('should add instances per configured object', () => {
+    it('should add instances per configured object', async () => {
       // 2 new instances per configured object because of TestCustomRecords's length
       expect(elements.length).toEqual(27)
-      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(16)
+      expect((await await awu(elements).filter(
+        e => isInstanceElement(e)
+      ).toArray()).length).toEqual(16)
     })
 
     describe('grandparent object (no master)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === grandparentObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === grandparentObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on record name only', () => {
@@ -825,10 +830,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('parent object (master is grandparent)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === parentObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === parentObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on grandparentName + parent', () => {
@@ -840,10 +845,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('grandson object (master is parent who has grandparent as master)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === grandsonObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === grandsonObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on grandparentName + parent + grandson if all exist', () => {
@@ -856,10 +861,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('orphan object (master non-existance)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === orphanObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === orphanObject
+        ).toArray() as InstanceElement[]
       })
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
@@ -873,10 +878,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('badIdFields object', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === badIdFieldsObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === badIdFieldsObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should not create instances and suggest to add to include list', () => {
@@ -891,10 +896,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('notQueryableIdFields object', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === notQueryableIdFieldsObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === notQueryableIdFieldsObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should not create instances and suggest to add to include list', () => {
@@ -909,10 +914,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('ref from object (with master that is defined as ref to and not "base" object)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === refFromObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === refFromObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on refTo name as "parent" and refFrom as "child"', () => {
@@ -924,10 +929,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('ref to object (not base object, only fetched cause of ref to it)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === refToObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === refToObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on record name', () => {
@@ -937,10 +942,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('PricebookEntry object (special case - Lookup)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === pricebookEntryObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === pricebookEntryObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on Pricebook2Id lookup name + the entry', () => {
@@ -952,10 +957,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('Product2 object - checking case of non-existing values', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === productObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === productObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on name only because value of other field is null', () => {
@@ -973,10 +978,10 @@ describe('Custom Object Instances filter', () => {
 
     describe('SBQQ__CustomAction__c object (special case - base on record values besides name)', () => {
       let instances: InstanceElement[]
-      beforeEach(() => {
-        instances = elements.filter(
-          e => isInstanceElement(e) && e.getType() === SBQQCustomActionObject
-        ) as InstanceElement[]
+      beforeEach(async () => {
+        instances = await awu(elements).filter(
+          async e => isInstanceElement(e) && await e.getType() === SBQQCustomActionObject
+        ).toArray() as InstanceElement[]
       })
 
       it('should base elemID on Name + displayOrder + location', () => {

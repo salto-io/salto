@@ -49,5 +49,5 @@ const main = async (): Promise<CliExitCode> => {
     config,
   })
 }
-
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 main().then(exitCode => process.exit(exitCode))

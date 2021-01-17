@@ -19,41 +19,44 @@ import {
   isListType, getDeepInnerType, Value, ListType, isMapType,
 } from '@salto-io/adapter-api'
 import { toObjectType } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { Owner } from '../client/types'
 import { isUserIdentifierType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 
+const { awu } = collections.asynciterable
+
 const getValueAsArray = (value: Values): Values[] =>
   (_.isArray(value) ? value : [value])
 
-const convertUserIdentifiers = (
+const convertUserIdentifiers = async (
   objectType: ObjectType,
   values: Values,
   ownersMap: Map<number, string>
-): void => {
-  const convertListTypeOfObjectType = (
+): Promise<void> => {
+  const convertListTypeOfObjectType = async (
     listType: ListType,
     listValue: Values,
-  ): void => {
-    const currentLevelInnerType = listType.getInnerType()
+  ): Promise<void> => {
+    const currentLevelInnerType = await listType.getInnerType()
     if (isListType(currentLevelInnerType)) {
-      getValueAsArray(listValue).forEach((val: Values): void => {
-        convertListTypeOfObjectType(currentLevelInnerType, val)
+      await awu(getValueAsArray(listValue)).forEach(async (val: Values): Promise<void> => {
+        await convertListTypeOfObjectType(currentLevelInnerType, val)
       })
     }
     if (isObjectType(currentLevelInnerType) || isMapType(currentLevelInnerType)) {
-      getValueAsArray(listValue).forEach((val: Values): void => {
-        convertUserIdentifiers(toObjectType(currentLevelInnerType, val), val, ownersMap)
+      await awu(getValueAsArray(listValue)).forEach(async (val: Values): Promise<void> => {
+        await convertUserIdentifiers(toObjectType(currentLevelInnerType, val), val, ownersMap)
       })
     }
   }
-  _.values(objectType.fields)
-    .forEach(field => {
+  await awu(Object.values(objectType.fields))
+    .forEach(async field => {
       const currentValue = values[field.name]
       if (_.isUndefined(currentValue)) {
         return
       }
-      const fieldType = field.getType()
+      const fieldType = await field.getType()
       if (isUserIdentifierType(fieldType)) {
         const numVal = Number(currentValue)
         if (!Number.isNaN(numVal)) {
@@ -61,10 +64,10 @@ const convertUserIdentifiers = (
         }
       }
       if (isObjectType(fieldType) || isMapType(fieldType)) {
-        convertUserIdentifiers(toObjectType(fieldType, currentValue), currentValue, ownersMap)
+        await convertUserIdentifiers(toObjectType(fieldType, currentValue), currentValue, ownersMap)
       }
       if (isListType(fieldType)) {
-        const deepInnerType = getDeepInnerType(fieldType)
+        const deepInnerType = await getDeepInnerType(fieldType)
         if (isUserIdentifierType(deepInnerType)) {
           // Currently all array are represented as a string in HubSpot
           // If there will be "real" array ones we need to support it
@@ -73,7 +76,7 @@ const convertUserIdentifiers = (
               .map(v => ownersMap.get(Number(v)) || v) : undefined))
         }
         if (isObjectType(deepInnerType)) {
-          convertListTypeOfObjectType(fieldType, currentValue)
+          await convertListTypeOfObjectType(fieldType, currentValue)
         }
       }
     })
@@ -86,11 +89,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const owners = await client.getOwners()
     const ownersMap = createOwnersMap(owners)
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
-      .filter(instance => isObjectType(instance.getType()))
-      .forEach(instance => {
-        convertUserIdentifiers(instance.getType(), instance.value, ownersMap)
+      .filter(async instance => isObjectType(await instance.getType()))
+      .forEach(async instance => {
+        await convertUserIdentifiers(await instance.getType(), instance.value, ownersMap)
       })
   },
 })

@@ -16,9 +16,9 @@
 import wu from 'wu'
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isField } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import * as mock from './elements'
 import { getPlan, Plan } from '../../src/core/plan'
+import { createElementSource } from './helpers'
 
 export type PlanGenerators = {
   planWithTypeChanges: () => Promise<[Plan, ObjectType]>
@@ -39,10 +39,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     saltoOffice.annotations.label = 'new label'
     saltoOffice.annotations.new = 'new annotation'
     const plan = await getPlan({
-      before: allElements,
-      after: afterElements,
-      beforeSource: new InMemoryRemoteElementSource(allElements),
-      afterSource: new InMemoryRemoteElementSource(afterElements),
+      before: createElementSource(allElements),
+      after: createElementSource(afterElements),
     })
     return [plan, saltoOffice]
   },
@@ -55,10 +53,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     // Sub element change
     saltoOffice.fields.location.annotations.label = 'new label'
     const plan = await getPlan({
-      before: allElements,
-      after: afterElements,
-      beforeSource: new InMemoryRemoteElementSource(allElements),
-      afterSource: new InMemoryRemoteElementSource(afterElements),
+      before: createElementSource(allElements),
+      after: createElementSource(afterElements),
     })
     return [plan, saltoOffice]
   },
@@ -69,10 +65,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       primitive: PrimitiveTypes.STRING,
     })
     const plan = await getPlan({
-      before: allElements,
-      after: [...allElements, newElement],
-      beforeSource: new InMemoryRemoteElementSource(allElements),
-      afterSource: new InMemoryRemoteElementSource([...allElements, newElement]),
+      before: createElementSource(allElements),
+      after: createElementSource([...allElements, newElement]),
     })
     return [plan, newElement]
   },
@@ -83,10 +77,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     updatedEmployee.value.nicknames[1] = 'new'
     delete updatedEmployee.value.office.name
     const plan = await getPlan({
-      before: allElements,
-      after: afterElements,
-      beforeSource: new InMemoryRemoteElementSource(allElements),
-      afterSource: new InMemoryRemoteElementSource(afterElements),
+      before: createElementSource(allElements),
+      after: createElementSource(afterElements),
     })
     return [plan, updatedEmployee]
   },
@@ -96,10 +88,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const updatedEmployee = afterElements[4]
     updatedEmployee.value.nicknames.push('new')
     const plan = await getPlan({
-      before: allElements,
-      after: afterElements,
-      beforeSource: new InMemoryRemoteElementSource(allElements),
-      afterSource: new InMemoryRemoteElementSource(afterElements),
+      before: createElementSource(allElements),
+      after: createElementSource(afterElements),
     })
     return [plan, updatedEmployee]
   },
@@ -114,10 +104,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       saltoAddress.clone({ label: 'test label' })
     )
     const plan = await getPlan({
-      before: allElements,
-      after: afterElements,
-      beforeSource: new InMemoryRemoteElementSource(allElements),
-      afterSource: new InMemoryRemoteElementSource(afterElements),
+      before: createElementSource(allElements),
+      after: createElementSource(afterElements),
     })
     return [plan, saltoOffice]
   },
@@ -130,10 +118,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     )
     saltoOffice.fields.rooms.refType = createRefToElmWithValue(BuiltinTypes.STRING)
     const plan = await getPlan({
-      before: allElements,
-      after: afterElements,
-      beforeSource: new InMemoryRemoteElementSource(allElements),
-      afterSource: new InMemoryRemoteElementSource(afterElements),
+      before: createElementSource(allElements),
+      after: createElementSource(afterElements),
     })
     return [plan, saltoOffice]
   },
@@ -162,22 +148,16 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       }
       return []
     }
-    const afterSource = new InMemoryRemoteElementSource(allElements)
-    const emptySource = new InMemoryRemoteElementSource([])
     const plan = isAdd
       ? await getPlan({
-        before: [],
-        after: afterElements,
+        before: createElementSource([]),
+        after: createElementSource(afterElements),
         dependencyChangers: [depChanger],
-        beforeSource: emptySource,
-        afterSource,
       })
       : await getPlan({
-        before: afterElements,
-        after: [],
+        before: createElementSource(afterElements),
+        after: createElementSource([]),
         dependencyChangers: [depChanger],
-        beforeSource: emptySource,
-        afterSource,
       })
     return [plan, saltoOffice]
   },
@@ -200,11 +180,9 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       ]
     }
     return getPlan({
-      before: [],
-      after: afterElements,
+      before: createElementSource([]),
+      after: createElementSource(afterElements),
       dependencyChangers: [depChanger],
-      beforeSource: new InMemoryRemoteElementSource([]),
-      afterSource: new InMemoryRemoteElementSource(allElements),
       changeValidators: withValidator ? { salto: async () => [] } : {},
     })
   },

@@ -18,7 +18,9 @@ import { collections } from '../../src'
 const { asynciterable } = collections
 const {
   findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
-  filterAsync, flattenAsync, awu,
+  filterAsync, flattenAsync, awu, isEmptyAsync, peekAsync, takeAsync,
+  zipSortedAsync, someAsync, everyAsync, forEachAsync, groupByAsync,
+  keyByAsync,
 } = asynciterable
 
 describe('asynciterable', () => {
@@ -77,6 +79,42 @@ describe('asynciterable', () => {
         const array = [1, 2, 3, 4, 5]
         expect(await toArrayAsync(toAsyncIterable(array))).toEqual(array)
       })
+    })
+  })
+
+  describe('isEmptyAsync', () => {
+    it('should return true if the it is empty', async () => {
+      expect(await isEmptyAsync(toAsyncIterable([]))).toBeTruthy()
+    })
+
+    it('should return false if the it is not empty', async () => {
+      expect(await isEmptyAsync(toAsyncIterable([1]))).toBeFalsy()
+    })
+  })
+
+  describe('peekAsync', () => {
+    it('should return the first value in an it if its not empty', async () => {
+      expect(await peekAsync(toAsyncIterable([1, 2, 3]))).toBe(1)
+    })
+
+    it('should return undefined if the it is empty', async () => {
+      expect(await peekAsync(toAsyncIterable([]))).toBeUndefined()
+    })
+  })
+
+  describe('takeAsync', () => {
+    it('should return the first n values', async () => {
+      expect(await toArrayAsync(takeAsync(
+        toAsyncIterable(['A', 'B', 'C', 'D']), 2
+      ))).toEqual(['A', 'B'])
+    })
+
+    it('should return all of the itr elements if n is greated then the it size', async () => {
+      expect(await toArrayAsync(takeAsync(['A', 'B'], 4))).toEqual(['A', 'B'])
+    })
+
+    it('should return nothing on an empty iterator', async () => {
+      expect(await toArrayAsync(takeAsync([], 4))).toEqual([])
     })
   })
 
@@ -207,8 +245,92 @@ describe('asynciterable', () => {
         toAsyncIterable([[4], [5, 6]]),
         [toAsyncIterable([7, 8])],
         toAsyncIterable([[], toAsyncIterable([9])]),
+        [10]
       ))
-      expect(flattened).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+      expect(flattened).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    })
+  })
+
+  describe('zipSortedAsync', () => {
+    it('should return a sorted iterable of multiple sorted iterables', async () => {
+      const iterables = [
+        toAsyncIterable([1, 4, 5, 12]),
+        [3, 4, 6],
+        [1, 2, 10],
+        [],
+        [40],
+      ]
+      const shouldBeSorted = await toArrayAsync(zipSortedAsync(v => v, ...iterables))
+      expect(shouldBeSorted).toEqual([1, 1, 2, 3, 4, 4, 5, 6, 10, 12, 40])
+    })
+
+    it('should throe an error if one of the iterables is unordered', async () => {
+      const iterables = [
+        [1, 4, 5, 12],
+        [1, 3, 2],
+      ]
+      return expect(toArrayAsync(zipSortedAsync(v => v, ...iterables))).rejects.toThrow()
+    })
+  })
+
+  describe('someAsync', () => {
+    it('should return true of one of the elements is truthy', async () => {
+      expect(
+        await someAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n === 2))
+      ).toBe(true)
+    })
+    it('should return false if none of the elements are truthy', async () => {
+      expect(
+        await someAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n === 5))
+      ).toBe(false)
+    })
+  })
+
+  describe('everyAsync', () => {
+    it('should return true of all of the elements is truthy', async () => {
+      expect(
+        await everyAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n !== 5))
+      ).toBe(true)
+    })
+    it('should return false if at least one of the elements are falsy', async () => {
+      expect(
+        await everyAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n !== 3))
+      ).toBe(false)
+    })
+  })
+
+  describe('forEachAsync', () => {
+    it('should run the callback on all elements', async () => {
+      let counter = 0
+      const itr = toAsyncIterable(
+        [1, 2, 3]
+      )
+      await forEachAsync(itr, async n => {
+        counter += n
+      })
+      expect(counter).toEqual(6)
+    })
+  })
+
+  describe('groupByAsync', () => {
+    it('should group according to key function', async () => {
+      const itr = toAsyncIterable([1, 2, 3, 4])
+      const res = await groupByAsync(itr, async v => (v % 2 === 0 ? 'even' : 'odd'))
+      expect(res).toEqual({
+        odd: [1, 3],
+        even: [2, 4],
+      })
+    })
+  })
+
+  describe('keyByAsync', () => {
+    it('should create a key according to the key function', async () => {
+      const itr = toAsyncIterable([{ key: 'A', val: 1 }, { key: 'B', val: 1 }])
+      const res = await keyByAsync(itr, async v => v.key)
+      expect(res).toEqual({
+        A: { key: 'A', val: 1 },
+        B: { key: 'B', val: 1 },
+      })
     })
   })
 
@@ -247,6 +369,41 @@ describe('asynciterable', () => {
       })
       it('should forward the toArray function to asyncToArray', async () => {
         expect(await awu(toAsyncIterable([1, 2, 3])).toArray()).toEqual([1, 2, 3])
+      })
+      it('should forward the forEach function to forEachAsync', async () => {
+        let counter = 0
+        await awu(toAsyncIterable([1, 2, 3])).forEach(n => {
+          counter += n
+        })
+        expect(counter).toEqual(6)
+      })
+      it('should forward the isEmpty function to isEmptyAsync', async () => {
+        expect(await awu([]).isEmpty()).toBe(true)
+      })
+      it('should forward the peek function to peekAsync', async () => {
+        expect(await awu([1, 2, 3]).peek()).toBe(1)
+      })
+      it('should forward the take function to takeAsync', async () => {
+        expect(await awu([1, 2, 3]).take(2).toArray()).toEqual([1, 2])
+      })
+      it('should forward the flat function to flatAsync', async () => {
+        expect(await awu([[1, 2], [3]]).flat().toArray()).toEqual([1, 2, 3])
+      })
+      it('should forward the some function to someAsync', async () => {
+        expect(await awu([true, false]).some(i => i)).toBeTruthy()
+      })
+      it('should forward the every function to everyAsync', async () => {
+        expect(await awu([true, false]).every(i => i)).toBeFalsy()
+      })
+      it('should forward the keyBy function to keyByAsync', async () => {
+        expect(await awu([{ key: 'A' }]).keyBy(o => o.key)).toEqual({
+          A: { key: 'A' },
+        })
+      })
+      it('should forward the groupBy function to groupByAsync', async () => {
+        expect(await awu([{ key: 'A' }]).groupBy(o => o.key)).toEqual({
+          A: [{ key: 'A' }],
+        })
       })
     })
     describe('function chaining', () => {

@@ -15,27 +15,30 @@
 */
 import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isContainerType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { generateElements } from '../src/generator'
 import testParams from './test_params'
 
+const { awu } = collections.asynciterable
+const { partition } = promises.array
 
 describe('elements generator', () => {
   describe('consistency', () => {
-    it('should create the same set of elements when invoked with the same seed and params', () => {
-      const run1 = generateElements(testParams)
-      const run2 = generateElements(testParams)
+    it('should create the same set of elements when invoked with the same seed and params', async () => {
+      const run1 = await generateElements(testParams)
+      const run2 = await generateElements(testParams)
       expect(run1).toEqual(run2)
     })
-    it('should create different results when invoked with different seeds', () => {
-      const run1 = generateElements(testParams)
-      const run2 = generateElements({
+    it('should create different results when invoked with different seeds', async () => {
+      const run1 = await generateElements(testParams)
+      const run2 = await generateElements({
         ...testParams,
         seed: 3.14,
       })
       expect(run1).not.toEqual(run2)
     })
-    it('should create the amount of elements as the params specified', () => {
-      const elements = generateElements(testParams)
+    it('should create the amount of elements as the params specified', async () => {
+      const elements = await generateElements(testParams)
       const primitives = elements.filter(isPrimitiveType)
       const [types, objects] = _.partition(
         elements.filter(isObjectType),
@@ -56,28 +59,31 @@ describe('elements generator', () => {
       )
       expect(records).toHaveLength(testParams.numOfRecords)
     })
-    it('should create list and map types', () => {
-      const run1 = generateElements({
+    it('should create list and map types', async () => {
+      const run1 = await generateElements({
         ...testParams,
         listFieldFreq: 1,
         mapFieldFreq: 0,
       })
-      const run2 = generateElements({
+      const run2 = await generateElements({
         ...testParams,
         listFieldFreq: 0,
         mapFieldFreq: 1,
       })
-      const [maps, lists] = _.partition(
-        [...run1, ...run2].filter(isObjectType).flatMap(e => _.values(e.fields)).filter(
-          f => isContainerType(f.getType())
-        ),
-        f => isMapType(f.getType()),
+      const [maps, lists] = await partition(
+        await awu([...run1, ...run2])
+          .filter(isObjectType)
+          .flatMap(e => _.values(e.fields)).filter(
+            async f => isContainerType(await f.getType())
+          )
+          .toArray(),
+        async f => isMapType(await f.getType()),
       )
       expect(lists.length).toBeGreaterThan(0)
       expect(maps.length).toBeGreaterThan(0)
     })
-    it('should support old profiles', () => {
-      const elements = generateElements({
+    it('should support old profiles', async () => {
+      const elements = await generateElements({
         ...testParams,
         useOldProfiles: true,
       })

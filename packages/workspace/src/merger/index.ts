@@ -13,50 +13,77 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, Element, isPrimitiveType, isVariable } from '@salto-io/adapter-api'
+import {
+  isObjectType, isInstanceElement, Element, isPrimitiveType, isVariable,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { mergeObjectTypes } from './internal/object_types'
 import { mergeInstances } from './internal/instances'
 import { mergeVariables } from './internal/variables'
 import { mergePrimitives } from './internal/primitives'
-import { MergeResult as InternalMergeResult } from './internal/common'
+import { MergeError, MergeResult as InternalMergeResult } from './internal/common'
+import { RemoteMap, InMemoryRemoteMap } from '../workspace/remote_map'
+
+const { awu } = collections.asynciterable
 
 export { MergeError, DuplicateAnnotationError } from './internal/common'
-export type MergeResult = InternalMergeResult<Element[]>
+export type MergeResult = {
+  merged: RemoteMap<Element>
+  errors: RemoteMap<MergeError[]>
+}
 
 const log = logger(module)
 
-export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => {
-  log.debug('starting to merge %d elements', elements.length)
-  const objects = mergeObjectTypes(elements.filter(isObjectType))
-  const instances = mergeInstances(elements.filter(isInstanceElement))
-  const primitives = mergePrimitives(elements.filter(isPrimitiveType))
-  const variables = mergeVariables(elements.filter(isVariable))
-
-  const merged = [
-    ...elements.filter(e =>
-      !isObjectType(e) && !isInstanceElement(e)
-      && !isVariable(e) && !isPrimitiveType(e)),
-    ...Object.values(objects.merged),
-    ...instances.merged,
-    ...variables.merged,
-    ...Object.values(primitives.merged),
-  ]
-
-  const errors = [
-    ...objects.errors,
-    ...instances.errors,
-    ...primitives.errors,
-    ...variables.errors,
-  ]
-
-  log.debug(`merged ${elements.length} elements to ${merged.length} elements [errors=${
-    errors.length}]`)
-  if (errors.length > 0) {
-    log.debug(`All merge errors:\n${errors.map(err => err.message).join('\n')}`)
+const mergeElement = (
+  newElement: Element,
+  existingElement?: Element
+): InternalMergeResult<Element> => {
+  if (isPrimitiveType(newElement) && isPrimitiveType(existingElement)) {
+    return mergePrimitives([newElement, existingElement])
+  }
+  if (isObjectType(newElement) && isObjectType(existingElement)) {
+    return mergeObjectTypes([newElement, existingElement])
+  }
+  if (isInstanceElement(newElement) && isInstanceElement(existingElement)) {
+    return mergeInstances([newElement, existingElement])
+  }
+  if (isVariable(newElement) && isVariable(existingElement)) {
+    return mergeVariables([newElement, existingElement])
   }
   return {
-    merged,
-    errors,
+    merged: newElement,
+    errors: [],
   }
+}
+
+export const mergeElements = async (
+  elements: AsyncIterable<Element>
+): Promise<MergeResult> => {
+  let elementsCounter = 0
+  let mergedCounter = 0
+  let errorsCounter = 0
+  const merged = new InMemoryRemoteMap<Element>()
+  const errors = new InMemoryRemoteMap<MergeError[]>()
+  await awu(elements).forEach(async element => {
+    const existingElement = await merged.get(element.elemID.getFullName())
+    if (existingElement === undefined) {
+      mergedCounter += 1
+    }
+    const mergeResult = mergeElement(element, existingElement)
+    elementsCounter += 1
+    errorsCounter += mergeResult.errors.length
+    await merged.set(element.elemID.getFullName(), mergeResult.merged)
+    await errors.set(element.elemID.getFullName(), mergeResult.errors)
+  })
+
+  log.debug(`merged ${elementsCounter} elements to ${mergedCounter} elements [errors=${
+    errorsCounter}]`)
+  if (errorsCounter > 0) {
+    log.debug(`All merge errors:\n${(await awu(errors.values())
+      .flatMap(elemErrs => elemErrs.map(e => e.message)).toArray())
+      .join('\n')}`)
+  }
+
+  return { merged, errors }
 }

@@ -14,15 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, isObjectType, isInstanceElement, Value, ReferenceExpression, TemplateExpression, isVariable, isReferenceExpression, isVariableExpression, isElement, Field, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { resolvePath, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, Field, TypeElement } from '@salto-io/adapter-api'
+import { resolvePath, TransformFunc, createRefToElmWithValue, transformValues } from '@salto-io/adapter-utils'
+import { collections, promises } from '@salto-io/lowerdash'
 
+const { mapValuesAsync } = promises.object
+
+const { awu } = collections.asynciterable
 type Resolver<T> = (
   v: T,
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited?: Set<string>,
-) => Value
+) => Promise<Value>
 
 export class UnresolvedReference {
   constructor(public target: ElemID) {}
@@ -32,20 +36,20 @@ export class CircularReference {
   constructor(public ref: string) {}
 }
 
-const getResolvedElement = (
+const getResolvedElement = async (
   elemID: ElemID, elementsSource: ReadOnlyElementsSource, resolvedElements: Record<string, Element>
-): Element | undefined =>
-  (resolvedElements[elemID.getFullName()] ?? elementsSource.getSync(elemID))
+): Promise<Element | undefined> =>
+  (resolvedElements[elemID.getFullName()] ?? elementsSource.get(elemID))
 
 let resolveReferenceExpression: Resolver<ReferenceExpression>
 let resolveTemplateExpression: Resolver<TemplateExpression>
 
-const resolveMaybeExpression: Resolver<Value> = (
+const resolveMaybeExpression: Resolver<Value> = async (
   value: Value,
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
-): Value => {
+): Promise<Value> => {
   if (isReferenceExpression(value)) {
     return resolveReferenceExpression(value, elementsSource, resolvedElements, visited)
   }
@@ -53,23 +57,22 @@ const resolveMaybeExpression: Resolver<Value> = (
   if (value instanceof TemplateExpression) {
     return resolveTemplateExpression(value, elementsSource, resolvedElements, visited)
   }
-
   // We do not want to recurse into elements because we can assume they will also be resolved
   // at some point (because we are calling resolve on all elements), so if we encounter an element
-  // all we need to do is make it point to the element from the context
+  // all we need to do is make it point to the element from the context. If the element is not in
+  // the context or the source - we'll keep it as it is.
   if (isElement(value)) {
-    return getResolvedElement(value.elemID, elementsSource, resolvedElements)
+    return (await getResolvedElement(value.elemID, elementsSource, resolvedElements)) ?? value
   }
-
-  return undefined
+  return value
 }
 
-resolveReferenceExpression = (
+resolveReferenceExpression = async (
   expression: ReferenceExpression,
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
-): ReferenceExpression => {
+): Promise<ReferenceExpression> => {
   const { traversalParts } = expression
   const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
 
@@ -81,7 +84,7 @@ resolveReferenceExpression = (
   const fullElemID = ElemID.fromFullName(traversal)
   const { parent } = fullElemID.createTopLevelParentID()
   // Validation should throw an error if there is no match
-  const rootElement = resolvedElements[parent.getFullName()] ?? elementsSource.getSync(parent)
+  const rootElement = resolvedElements[parent.getFullName()] ?? await elementsSource.get(parent)
 
   if (!rootElement) {
     return expression.createWithValue(new UnresolvedReference(fullElemID))
@@ -101,82 +104,117 @@ resolveReferenceExpression = (
   if (isVariableExpression(expression)) {
     // Replace the Variable element by its value.
     return expression.createWithValue(
-      resolveMaybeExpression(value.value, elementsSource, resolvedElements, visited) ?? value.value,
+      await resolveMaybeExpression(
+        value.value,
+        elementsSource,
+        resolvedElements,
+        visited
+      ) ?? value.value,
       rootElement,
     )
   }
   return (expression as ReferenceExpression).createWithValue(
-    resolveMaybeExpression(value, elementsSource, resolvedElements, visited) ?? value,
+    await resolveMaybeExpression(value, elementsSource, resolvedElements, visited) ?? value,
     rootElement,
   )
 }
 
-resolveTemplateExpression = (
+resolveTemplateExpression = async (
   expression: TemplateExpression,
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
-): Value => expression.parts
-  .map(p => {
-    const res = resolveMaybeExpression(p, elementsSource, resolvedElements, visited)
+): Promise<Value> => (await awu(expression.parts)
+  .map(async p => {
+    const res = await resolveMaybeExpression(p, elementsSource, resolvedElements, visited)
     return res ? res?.value ?? res : p
-  })
+  }).toArray())
   .join('')
 
-const resolveElement = (
+const resolveElement = async (
   element: Element,
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
-): void => {
+): Promise<void> => {
   // Create a ReadonlyElementSource (ElementsGetter) with the proper context
   // to be used to resolve types. If it was already resolved use the reolsved and if not
   // fallback to the elementsSource
   const contextedElementsGetter = {
-    getSync: (id: ElemID): Value =>
+    get: (id: ElemID): Promise<Value> =>
       (getResolvedElement(id, elementsSource, resolvedElements)),
   }
-  const referenceCloner = (v: Value): Value => resolveMaybeExpression(
-    v,
+  const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
+    value,
     elementsSource,
     resolvedElements
   )
+  const elementAnnoTypes = await element.getAnnotationTypes(contextedElementsGetter)
+  element.annotationRefTypes = _.mapValues(
+    elementAnnoTypes,
+    type => createRefToElmWithValue(type)
+  )
+
+  element.annotations = (await transformValues({
+    values: element.annotations,
+    transformFunc: referenceCloner,
+    type: elementAnnoTypes,
+    elementsSource,
+    strict: false,
+    allowEmpty: true,
+  }) ?? {})
+
   if (isInstanceElement(element)) {
-    element.value = _.cloneDeepWith(element.value, referenceCloner)
-    element.refType = createRefToElmWithValue(element.getType(contextedElementsGetter))
+    element.refType = createRefToElmWithValue(await element.getType(contextedElementsGetter))
+    element.value = (await transformValues({
+      transformFunc: referenceCloner,
+      values: element.value,
+      elementsSource,
+      strict: false,
+      type: await element.getType(),
+      allowEmpty: true,
+    })) ?? {}
   }
 
   if (isObjectType(element)) {
-    element.fields = _.mapValues(
+    element.fields = await mapValuesAsync(
       element.fields,
-      field => (new Field(
-        element,
-        field.name,
-        field.getType(contextedElementsGetter),
-        _.cloneDeepWith(field.annotations, referenceCloner),
-      )),
+      async field => {
+        const fieldType = await field.getType(contextedElementsGetter) as TypeElement
+        return new Field(
+          element,
+          field.name,
+          fieldType,
+          // _.cloneDeepWith(field.annotations, referenceCloner),
+          (await transformValues({
+            transformFunc: referenceCloner,
+            values: field.annotations,
+            elementsSource,
+            strict: false,
+            type: await field.getAnnotationTypes(),
+            allowEmpty: true,
+          })) ?? {}
+        )
+      },
     )
   }
 
   if (isVariable(element)) {
-    element.value = _.cloneWith(element.value, referenceCloner)
+    element.value = await resolveMaybeExpression(element.value, elementsSource, resolvedElements)
   }
-  element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
-  element.annotationRefTypes = _.mapValues(
-    element.getAnnotationTypes(contextedElementsGetter),
-    type => createRefToElmWithValue(type)
-  )
+
+  resolvedElements[element.elemID.getFullName()] = element
 }
 
-export const resolve = (
-  elements: ReadonlyArray<Element>,
+export const resolve = async (
+  elements: AsyncIterable<Element>,
   elementsSource: ReadOnlyElementsSource,
-): Element[] => {
+): Promise<AsyncIterable<Element>> => {
   // intentionally shallow clone because in resolve element we replace only top level properties
-  const clonedElements = elements.map(_.clone)
+  const clonedElements = await awu(elements).map(_.clone).toArray()
   const resolvedElements = _.keyBy(
     clonedElements,
     elm => elm.elemID.getFullName()
   )
-  clonedElements.forEach(e => resolveElement(e, elementsSource, resolvedElements))
-  return clonedElements
+  await awu(clonedElements).forEach(e => resolveElement(e, elementsSource, resolvedElements))
+  return awu(clonedElements)
 }

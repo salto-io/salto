@@ -23,6 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
+import { collections, promises } from '@salto-io/lowerdash'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
@@ -30,6 +31,8 @@ import {
 import { JSONBool, CustomObject } from '../client/types'
 import { isCustomObject, metadataType, apiName, defaultApiName, Types, isCustomSettingsObject } from '../transformers/transformer'
 
+const { awu } = collections.asynciterable
+const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 export const id = (elem: Element): string => elem.elemID.getFullName()
@@ -45,10 +48,10 @@ export const isLookupField = (field: Field): boolean => (
   field.refType.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
 )
 
-export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
- InstanceElement[] =>
-  elements.filter(isInstanceElement)
-    .filter(element => metadataType(element) === metadataTypeName)
+export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):
+ Promise<InstanceElement[]> => awu(elements).filter(isInstanceElement)
+  .filter(async element => await metadataType(element) === metadataTypeName)
+  .toArray()
 
 const setAnnotationDefault = (
   elem: Element,
@@ -88,23 +91,23 @@ export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJ
   setAnnotationDefault(elem, METADATA_TYPE, metadataTypeValue, BuiltinTypes.SERVICE_ID)
 }
 
-export const addDefaults = (element: ChangeDataType): void => {
+export const addDefaults = async (element: ChangeDataType): Promise<void> => {
   const addInstanceDefaults = (elem: InstanceElement): void => {
     if (elem.value[INSTANCE_FULL_NAME_FIELD] === undefined) {
       elem.value[INSTANCE_FULL_NAME_FIELD] = defaultApiName(elem)
     }
   }
 
-  const addFieldDefaults = (field: Field): void => {
-    addApiName(field, undefined, apiName(field.parent))
+  const addFieldDefaults = async (field: Field): Promise<void> => {
+    addApiName(field, undefined, await apiName(field.parent))
     addLabel(field)
   }
 
-  const addCustomObjectDefaults = (elem: ObjectType): void => {
+  const addCustomObjectDefaults = async (elem: ObjectType): Promise<void> => {
     addApiName(elem)
     addMetadataType(elem)
     addLabel(elem)
-    Object.values(elem.fields).forEach(addFieldDefaults)
+    await awu(Object.values(elem.fields)).forEach(addFieldDefaults)
     if (!isCustomSettingsObject(elem)) {
       const defaults: Partial<CustomObject> = {
         deploymentStatus: 'Deployed',
@@ -126,9 +129,9 @@ export const addDefaults = (element: ChangeDataType): void => {
   if (isInstanceElement(element)) {
     addInstanceDefaults(element)
   } else if (isObjectType(element)) {
-    addCustomObjectDefaults(element)
+    await addCustomObjectDefaults(element)
   } else if (isField(element)) {
-    addFieldDefaults(element)
+    await addFieldDefaults(element)
   }
 }
 
@@ -137,8 +140,10 @@ export const getNamespaceFromString = (name: string): string | undefined => {
   return nameParts.length === 3 ? nameParts[0] : undefined
 }
 
-export const getNamespace = (customElement: Field | ObjectType): string | undefined =>
-  getNamespaceFromString(apiName(customElement, true))
+export const getNamespace = async (
+  customElement: Field | ObjectType
+): Promise<string | undefined> =>
+  getNamespaceFromString(await apiName(customElement, true))
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
@@ -153,14 +158,20 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
       .map(([name, type]) => ({ [name]: { refType: createRefToElmWithValue(type) } }))) })
 }
 
-export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
-  new Map(elements.filter(isCustomObject).map(obj => [apiName(obj), obj]))
+export const generateApiNameToCustomObject = async (
+  elements: Element[]
+): Promise<Map<string, ObjectType>> =>
+  new Map(await awu(elements)
+    .filter(isCustomObject)
+    .filter(isObjectType)
+    .map(async obj => ([await apiName(obj), obj] as [string, ObjectType]))
+    .toArray())
 
-export const apiNameParts = (elem: Element): string[] =>
-  apiName(elem).split(/\.|-/g)
+export const apiNameParts = async (elem: Element): Promise<string[]> =>
+  (await apiName(elem)).split(/\.|-/g)
 
-export const parentApiName = (elem: Element): string =>
-  apiNameParts(elem)[0]
+export const parentApiName = async (elem: Element): Promise<string> =>
+  (await apiNameParts(elem))[0]
 
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
@@ -199,15 +210,22 @@ export const setInternalId = (elem: Element, val: string): void => {
 // ApiName -> MetadataType -> ElemID
 export type ApiNameMapping = Record<string, Record<string, ElemID>>
 
-const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> =>
-  (Object.fromEntries(elements.map(e => [metadataType(e), e.elemID])))
+const mapElemTypeToElemID = async (elements: Element[]): Promise<Record<string, ElemID>> => (
+  Object.fromEntries(
+    await awu(elements).map(async e => [await metadataType(e), e.elemID]).toArray()
+  )
+)
 
-export const groupByAPIName = (elements: Element[]): ApiNameMapping => (
-  _(elements)
-    .flatMap(e => (isCustomObject(e) ? [e, ...Object.values(e.fields)] : [e]))
-    .groupBy(apiName)
-    .mapValues(mapElemTypeToElemID)
-    .value()
+export const groupByAPIName = async (elements: Element[]): Promise<ApiNameMapping> => (
+  mapValuesAsync(
+    await awu(elements)
+      .flatMap(async e => (await isCustomObject(e) && isObjectType(e)
+        ? [e, ...Object.values(e.fields)]
+        : [e]
+      ))
+      .groupBy(e => apiName(e)),
+    mapElemTypeToElemID
+  )
 )
 
 export const getDataFromChanges = <T extends Change<unknown>>(
@@ -224,13 +242,13 @@ export const getDataFromChanges = <T extends Change<unknown>>(
 // note that for instances of custom objects this will check the specific type (i.e Lead)
 // if you want instances of all custom objects use isInstanceOfCustomObject
 export const isInstanceOfType = (type: string) => (
-  (elem: Element): elem is InstanceElement => (
-    isInstanceElement(elem) && apiName(elem.getType()) === type
+  async (elem: Element): Promise<boolean> => (
+    isInstanceElement(elem) && await apiName(await elem.getType()) === type
   )
 )
 
 export const isInstanceOfTypeChange = (type: string) => (
-  (change: Change): change is Change<InstanceElement> => (
+  (change: Change): Promise<boolean> => (
     isInstanceOfType(type)(getChangeElement(change))
   )
 )

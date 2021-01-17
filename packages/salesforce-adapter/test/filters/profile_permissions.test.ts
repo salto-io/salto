@@ -81,10 +81,10 @@ describe('Object Permissions filter', () => {
         beforeAll(() => {
           adminProfile = getChangeElement(changes[2]) as InstanceElement
         })
-        it('should be a profile instance', () => {
+        it('should be a profile instance', async () => {
           expect(adminProfile).toBeInstanceOf(InstanceElement)
-          expect(metadataType(adminProfile)).toEqual(constants.PROFILE_METADATA_TYPE)
-          expect(apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
+          expect(await metadataType(adminProfile)).toEqual(constants.PROFILE_METADATA_TYPE)
+          expect(await apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
         })
         it('should have object permission for new object', () => {
           expect(adminProfile.value.objectPermissions).toContainEqual({
@@ -176,10 +176,10 @@ describe('Object Permissions filter', () => {
         beforeAll(() => {
           adminProfile = getChangeElement(changes[2]) as InstanceElement
         })
-        it('should be a profile instance', () => {
+        it('should be a profile instance', async () => {
           expect(adminProfile).toBeInstanceOf(InstanceElement)
-          expect(metadataType(adminProfile)).toEqual(constants.PROFILE_METADATA_TYPE)
-          expect(apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
+          expect(await metadataType(adminProfile)).toEqual(constants.PROFILE_METADATA_TYPE)
+          expect(await apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
         })
         it('should not change permissions that already exist in the updated profile', () => {
           expect(adminProfile.value.objectPermissions).toContainEqual(presetObjectPermission)

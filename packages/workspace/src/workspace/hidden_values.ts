@@ -14,58 +14,60 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField, DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values, isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { InMemoryRemoteElementSource } from './elements_source'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
+import { ElementsSource } from './elements_source'
 
+
+const { pickAsync } = promises.object
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const hasHiddenValueAnnotation = (element?: Element): boolean =>
   (element?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true)
 
-const isHiddenValue = (
+const isHiddenValue = async (
   element?: Element,
   elementsSource?: ReadOnlyElementsSource,
-): boolean => (
+): Promise<boolean> => (
   hasHiddenValueAnnotation(element)
-  || (isField(element) && hasHiddenValueAnnotation(element.getType(elementsSource)))
+  || (isField(element) && hasHiddenValueAnnotation(await element.getType(elementsSource)))
 )
 
-const isHidden = (
+const isHidden = async (
   element?: Element,
   elementsSource?: ReadOnlyElementsSource,
-): boolean => (
+): Promise<boolean> => (
   element?.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true
   || ((isInstanceElement(element) || isField(element))
-    && isHiddenValue(element.getType(elementsSource), elementsSource))
+    // eslint-disable-next-line no-return-await
+    && await isHiddenValue(await element.getType(elementsSource), elementsSource))
 )
 
-const getElementHiddenParts = <T extends Element>(
+const getElementHiddenParts = async <T extends Element>(
   stateElement: T,
   elementsSource: ReadOnlyElementsSource,
   workspaceElement?: T,
-): T | undefined => {
-  if (isHidden(stateElement, elementsSource)) {
+): Promise<T | undefined> => {
+  if (await isHidden(stateElement, elementsSource)) {
     // The whole element is hidden
     return stateElement
   }
-
   const hiddenPaths = new Set<string>()
   const ancestorsOfHiddenPaths = new Set<string>()
-
   // There are two "hidden" annotations - _hidden, and _hidden_value.
   // If this is an instance, the field belongs to the type so we want to check if
   // the field is marked as _hidden_value.
   // Otherwise, we're looking for either a _hidden annotation on the element,
   // or a _hidden_value annotation on its type definition.
   const hiddenFunc = isInstanceElement(stateElement) ? isHiddenValue : isHidden
-  const storeHiddenPaths: TransformFunc = ({ value, field, path }) => {
-    if (hiddenFunc(field, elementsSource)) {
+  const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
+    if (await hiddenFunc(field, elementsSource)) {
       if (path !== undefined) {
         hiddenPaths.add(path.getFullName())
         let ancestor = path.createParentID()
@@ -78,13 +80,12 @@ const getElementHiddenParts = <T extends Element>(
     }
     return value
   }
-  transformElement({
+  await transformElement({
     element: stateElement,
     transformFunc: storeHiddenPaths,
     strict: false,
     elementsSource,
   })
-
   if (hiddenPaths.size === 0) {
     // The whole element is visible
     return undefined
@@ -107,7 +108,7 @@ const getElementHiddenParts = <T extends Element>(
     return false
   }
 
-  const hidden = transformElement({
+  const hidden = await transformElement({
     element: stateElement,
     transformFunc: ({ value, path }) => (
       // Keep traversing as long as we might reach nested hidden parts.
@@ -120,19 +121,20 @@ const getElementHiddenParts = <T extends Element>(
     strict: true,
     elementsSource,
   })
+
   // remove all annotation types from the hidden element so they don't cause merge conflicts
   hidden.annotationRefTypes = {}
 
   if (isObjectType(hidden) && isObjectType(workspaceElement)) {
     // filter out fields that were deleted in the workspace (unless the field itself is hidden)
     const workspaceFields = new Set(Object.keys(workspaceElement.fields))
-    hidden.fields = _.pickBy(
+    hidden.fields = await pickAsync(
       hidden.fields,
       (field, key) => workspaceFields.has(key) || isHidden(field, elementsSource)
     )
     // Keep field types from the workspace element to avoid merge conflicts
-    Object.values(hidden.fields)
-      .filter(field => !isHidden(field, elementsSource))
+    await awu(Object.values(hidden.fields))
+      .filter(async field => !(await isHidden(field, elementsSource)))
       .forEach(field => {
         const workspaceField = workspaceElement.fields[field.name]
         if (!field.refType.elemID.isEqual(workspaceField.refType.elemID)) {
@@ -149,37 +151,41 @@ const getElementHiddenParts = <T extends Element>(
   return hidden
 }
 
-export const mergeWithHidden = (
-  workspaceElements: ReadonlyArray<Element>,
-  stateElements: ReadonlyArray<Element>,
-): MergeResult => {
-  const workspaceElementsMap = _.keyBy(workspaceElements, e => e.elemID.getFullName())
-  const stateElementsSource = new InMemoryRemoteElementSource(stateElements)
-  const hiddenElements = stateElements
-    .filter(elem => isHidden(elem, stateElementsSource)
-      || workspaceElementsMap[elem.elemID.getFullName()] !== undefined)
-    .map(elem => (
-      getElementHiddenParts(
-        elem,
-        stateElementsSource,
-        workspaceElementsMap[elem.elemID.getFullName()]
-      )))
+export const mergeWithHidden = async (
+  workspaceElements: AsyncIterable<Element>,
+  state: ElementsSource,
+  partial = false,
+  hiddenChangedElemIDs: ElemID[] = []
+): Promise<MergeResult> => {
+  const hiddenStateElements = partial
+    ? awu(hiddenChangedElemIDs).map(id => state.get(id))
+    : awu(await state.getAll())
+      .filter(async element => isHidden(element, state))
+  const workspaceElementsWithHiddenParts = awu(workspaceElements)
+    .flatMap(async (elem): Promise<Element[]> => {
+      const stateElement = await state.get(elem.elemID)
+      return stateElement !== undefined
+        ? [elem, await getElementHiddenParts(stateElement, state, elem)]
+        : [elem]
+    })
     .filter(values.isDefined)
-  return mergeElements([...workspaceElements, ...hiddenElements])
+  return mergeElements(
+    awu(hiddenStateElements).concat(workspaceElementsWithHiddenParts)
+  )
 }
 
 const removeHidden = (elementsSource: ReadOnlyElementsSource): TransformFunc =>
-  ({ value, field }) => (
-    isHiddenValue(field, elementsSource) ? undefined : value)
+  async ({ value, field }) => (
+    await isHiddenValue(field, elementsSource) ? undefined : value)
 
 const removeHiddenValue = (elementsSource: ReadOnlyElementsSource): TransformFunc =>
-  ({ value, field }) => (
-    isHiddenValue(field, elementsSource) ? undefined : value)
+  async ({ value, field }) => (
+    await isHiddenValue(field, elementsSource) ? undefined : value)
 
 const removeHiddenFromElement = <T extends Element>(
   element: T,
   elementsSource: ReadOnlyElementsSource,
-): T => (
+): Promise<T> => (
     transformElement({
       element,
       transformFunc: isInstanceElement(element)
@@ -194,7 +200,7 @@ const removeHiddenFromValues = (
   value: Values,
   pathID: ElemID,
   elementsSource: ReadOnlyElementsSource,
-): Values | undefined => (
+): Promise<Values | undefined> => (
   transformValues({
     values: value,
     type,
@@ -262,7 +268,7 @@ const getHiddenTypeChanges = async (
 const getHiddenFieldAndAnnotationValueChanges = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<Element[]>,
+  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
 ): Promise<DetailedChange[]> => {
   // TODO hide fields marked with _hidden=true
 
@@ -309,19 +315,21 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   // by only iterating the state elements and creating remove changes for values that are
   // newly hidden, some of these remove changes may be redundant (if the value we
   // are trying to hide was already removed manually from the workspace element)
+  log.info('Handling hidden changes')
   const workspaceElementIds = new Set(
-    (await getWorkspaceElements()).map(element => element.elemID.getFullName())
+    await awu(await getWorkspaceElements()).map(element => element.elemID.getFullName()).toArray()
   )
-  const stateElements = await state.getAll()
-  const stateElementsSource = new InMemoryRemoteElementSource(stateElements)
-  stateElements
+  const stateInstances = await state.getAll()
+  await awu(stateInstances)
     .filter(element => workspaceElementIds.has(element.elemID.getFullName()))
-    .forEach(element => transformElement({
-      element,
-      transformFunc: createHiddenValueChangeIfNeeded,
-      strict: true,
-      elementsSource: stateElementsSource,
-    }))
+    .forEach(async element => {
+      await transformElement({
+        element,
+        transformFunc: createHiddenValueChangeIfNeeded,
+        strict: true,
+        elementsSource: state,
+      })
+    })
 
   return hiddenValueChanges
 }
@@ -357,7 +365,7 @@ const removeDuplicateChanges = (
 const mergeWithHiddenChangeSideEffects = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<Element[]>,
+  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
 ): Promise<DetailedChange[]> => {
   const additionalChanges = [
     ...await getHiddenTypeChanges(changes, state),
@@ -370,23 +378,22 @@ const mergeWithHiddenChangeSideEffects = async (
     : removeDuplicateChanges(changes, additionalChanges)
 }
 
-const isHiddenField = (
+const isHiddenField = async (
   baseType: TypeElement,
   fieldPath: ReadonlyArray<string>,
   hiddenValue: boolean,
   elementsSource: ReadOnlyElementsSource,
-): boolean => {
+): Promise<boolean> => {
   const hiddenFunc = hiddenValue ? isHiddenValue : isHidden
   return fieldPath.length === 0
     ? false
-    : hiddenFunc(getField(baseType, fieldPath, elementsSource), elementsSource)
+    : await hiddenFunc(await getField(baseType, fieldPath, elementsSource), elementsSource)
       || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue, elementsSource)
 }
 
 const filterOutHiddenChanges = async (
   changes: DetailedChange[],
   state: State,
-  elementsSource: ReadOnlyElementsSource,
 ): Promise<DetailedChange[]> => {
   const filterOutHidden = async (change: DetailedChange): Promise<DetailedChange | undefined> => {
     if (isRemovalChange(change)) {
@@ -403,7 +410,7 @@ const filterOutHiddenChanges = async (
       return change
     }
 
-    if ((isType(baseElem) || isInstanceElement(baseElem)) && isHidden(baseElem, elementsSource)) {
+    if ((isType(baseElem) || isInstanceElement(baseElem)) && await isHidden(baseElem, state)) {
       // A change of a hidden type or instance should be omitted completely
       return undefined
     }
@@ -412,56 +419,61 @@ const filterOutHiddenChanges = async (
       // Remove nested hidden parts of instances, object types and fields
       return applyFunctionToChangeData(
         change,
-        element => removeHiddenFromElement(element, elementsSource),
+        // Should be fetched data?
+        element => removeHiddenFromElement(element, state),
       )
     }
 
     if (isInstanceElement(baseElem)
       || (isObjectType(baseElem) && ['field', 'attr'].includes(change.id.idType))) {
       // Instance values and annotation values in fields and objects can be hidden
-      const getChangeTypeAndPath = (): {
+      const getChangeTypeAndPath = async (): Promise<{
         changeType: TypeElement
         changePath: ReadonlyArray<string>
-      } => {
+      }> => {
         if (isInstanceElement(baseElem)) {
           return {
-            changeType: baseElem.getType(elementsSource),
+            changeType: await baseElem.getType(state),
             changePath: path,
           }
         }
         if (change.id.idType === 'attr') {
           return {
-            changeType: baseElem.getAnnotationTypes(elementsSource)[path[0]],
+            changeType: (await baseElem.getAnnotationTypes(state))[path[0]],
             changePath: path.slice(1),
           }
         }
         // idType === 'field'
         return {
           // changeType will be undefined if the path is too short
-          changeType: baseElem.fields[path[0]].getType(elementsSource)
-            .getAnnotationTypes(elementsSource)[path[1]],
+          changeType: (await (await baseElem.fields[path[0]].getType(state))
+            .getAnnotationTypes(state))[path[1]],
           changePath: path.slice(2),
         }
       }
 
-      const { changeType, changePath } = getChangeTypeAndPath()
+      const { changeType, changePath } = await getChangeTypeAndPath()
       if (changeType === undefined) {
         // a value without a type cannot be hidden
         return change
       }
 
-      if (isHiddenValue(changeType, elementsSource)) {
+      if (await isHiddenValue(changeType, state)) {
         // The change is in a hidden annotation, omit it
         return undefined
       }
 
-      if (isHiddenField(changeType, changePath, isInstanceElement(baseElem), elementsSource)) {
+      if (await isHiddenField(
+        changeType,
+        changePath,
+        isInstanceElement(baseElem), state
+      )) {
         // The change is inside a hidden field value, omit the change
         return undefined
       }
 
       const fieldType = changeType
-        && getField(changeType, changePath, elementsSource)?.getType(elementsSource)
+        && await (await getField(changeType, changePath, state))?.getType(state)
       if (isObjectType(fieldType)) {
         return applyFunctionToChangeData(
           change,
@@ -469,7 +481,7 @@ const filterOutHiddenChanges = async (
             fieldType,
             value,
             change.id,
-            elementsSource,
+            state,
           ),
         )
       }
@@ -484,11 +496,10 @@ const filterOutHiddenChanges = async (
 export const handleHiddenChanges = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<Element[]>,
-  elementsSource: ReadOnlyElementsSource,
+  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
 ): Promise<DetailedChange[]> => {
   const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
     changes, state, getWorkspaceElements,
   )
-  return filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state, elementsSource)
+  return filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)
 }

@@ -20,8 +20,10 @@ import { DataNodeMap, DiffGraph, DiffNode, WalkError } from '@salto-io/dag'
 import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { elementSource } from '@salto-io/workspace'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type FilterResult = {
   changeErrors: ChangeError[]
@@ -31,8 +33,8 @@ type FilterResult = {
 type TopLevelElement = InstanceElement | TypeElement
 
 export const filterInvalidChanges = async (
-  beforeElementsMap: ElementMap,
-  afterElementsMap: ElementMap,
+  beforeElements: elementSource.ElementsSource,
+  afterElements: elementSource.ElementsSource,
   diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
 ): Promise<FilterResult> => {
@@ -84,28 +86,28 @@ export const filterInvalidChanges = async (
     })
   }
 
-  const createValidAfterElementsMap = (invalidChanges: ChangeError[]): ElementMap => {
+  const createValidAfterElementsMap = async (
+    invalidChanges: ChangeError[]
+  ): Promise<ElementMap> => {
     const topLevelNodeIdToInvalidElemIds = _(invalidChanges)
       .map(c => c.elemID)
       .groupBy(elemId => elemId.createTopLevelParentID().parent.getFullName())
 
-    const beforeElementNames = Object.keys(beforeElementsMap)
-    const afterElementNames = Object.keys(afterElementsMap)
-    const allElementNames = [...new Set([...beforeElementNames, ...afterElementNames])]
-    return _(allElementNames)
-      .map(name => {
-        const beforeElem = beforeElementsMap[name]
-        const afterElem = afterElementsMap[name]
-        const { elemID } = afterElem ?? beforeElem
+    const validChangeElements = await awu(invalidChanges)
+      .map(async change => {
+        const elemID = change.elemID.createTopLevelParentID().parent
+        const beforeElem = await beforeElements.get(elemID)
+        const afterElem = await afterElements.get(elemID)
         const validElement = topLevelNodeIdToInvalidElemIds.has(elemID.getFullName())
           ? createValidTopLevelElem(beforeElem as TopLevelElement, afterElem as TopLevelElement,
             topLevelNodeIdToInvalidElemIds.get(elemID.getFullName()))
           : afterElem
-        return validElement === undefined ? undefined : [name, validElement]
+        return validElement
       })
       .filter(values.isDefined)
-      .fromPairs()
-      .value()
+      .toArray()
+
+    return _.keyBy(validChangeElements, e => e.elemID.getFullName())
   }
 
   const buildValidDiffGraph = (nodeIdsToOmit: Set<string>, validAfterElementsMap: ElementMap):
@@ -168,7 +170,7 @@ export const filterInvalidChanges = async (
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
   const nodeIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))
-  const validAfterElementsMap = createValidAfterElementsMap(invalidChanges)
+  const validAfterElementsMap = await createValidAfterElementsMap(invalidChanges)
   const validDiffGraph = buildValidDiffGraph(nodeIdsToOmit, validAfterElementsMap)
   return { changeErrors, validDiffGraph }
 }

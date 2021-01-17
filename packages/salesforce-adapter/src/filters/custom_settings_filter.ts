@@ -16,21 +16,25 @@
 import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { isCustomSettingsObject, apiName } from '../transformers/transformer'
 import { ConfigChangeSuggestion } from '../types'
 import { getAllInstances, getCustomObjectsFetchSettings, CustomObjectFetchSetting } from './custom_objects_instances'
 import { CUSTOM_SETTINGS_TYPE, LIST_CUSTOM_SETTINGS_TYPE } from '../constants'
 
+const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
 export const isListCustomSettingsObject = (obj: ObjectType):
   boolean => (isCustomSettingsObject(obj)
     && obj.annotations[CUSTOM_SETTINGS_TYPE] === LIST_CUSTOM_SETTINGS_TYPE)
 
-const logInvalidCustomSettings = (invalidCustomSettings: CustomObjectFetchSetting[]): void => (
-  invalidCustomSettings.forEach(settings =>
-    (log.debug(`Did not fetch instances for Custom Setting - ${apiName(settings.objectType)} cause ${settings.invalidIdFields} do not exist or are not queryable`)))
+const logInvalidCustomSettings = async (
+  invalidCustomSettings: CustomObjectFetchSetting[]
+): Promise<void> => (
+  awu(invalidCustomSettings).forEach(async settings =>
+    (log.debug(`Did not fetch instances for Custom Setting - ${await apiName(settings.objectType)} cause ${settings.invalidIdFields} do not exist or are not queryable`)))
 )
 
 const filterCreator: FilterCreator = ({ client }) => ({
@@ -38,9 +42,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const customSettingsObjects = elements
       .filter(isObjectType)
       .filter(isListCustomSettingsObject)
-    const customSettingsObjectNames = customSettingsObjects
+    const customSettingsObjectNames = await awu(customSettingsObjects)
       .map(customSetting => apiName(customSetting))
-    const customSettingsFetchSettings = getCustomObjectsFetchSettings(
+      .toArray()
+    const customSettingsFetchSettings = await getCustomObjectsFetchSettings(
       customSettingsObjects,
       {
         includeObjects: customSettingsObjectNames,
@@ -53,8 +58,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       customSettingsFetchSettings,
       setting => setting.invalidIdFields === undefined
     )
-    logInvalidCustomSettings(invalidFetchSettings)
-    const customSettingsMap = _.keyBy(validFetchSettings, obj => apiName(obj.objectType))
+    await logInvalidCustomSettings(invalidFetchSettings)
+    const customSettingsMap = await keyByAsync(validFetchSettings, obj => apiName(obj.objectType))
     const { instances, configChangeSuggestions } = await getAllInstances(client, customSettingsMap)
     elements.push(...instances)
     return [...configChangeSuggestions]

@@ -52,30 +52,31 @@ describe('getNestedStaticFiles', () => {
     ['yes', 'this', 'is', 'path'],
   )
 
-  it('should detect all files when starting with an element', () => {
-    expect(getNestedStaticFiles(mockInstanceWithFiles).map(f => f.filepath)).toEqual([
+  it('should detect all files when starting with an element', async () => {
+    expect((await getNestedStaticFiles(mockInstanceWithFiles))
+      .map(f => f.filepath).sort()).toEqual([
       'arr',
       'plain',
       'obj',
-    ])
+    ].sort())
   })
 
-  it('should detect all files when starting with an object', () => {
-    expect(getNestedStaticFiles(mockInstanceWithFiles.value.obj[0]).map(f => f.filepath))
+  it('should detect all files when starting with an object', async () => {
+    expect((await getNestedStaticFiles(mockInstanceWithFiles.value.obj[0])).map(f => f.filepath))
       .toEqual([
         'obj',
       ])
   })
 
-  it('should detect all files when starting with an array', () => {
-    expect(getNestedStaticFiles(mockInstanceWithFiles.value.numArray).map(f => f.filepath))
+  it('should detect all files when starting with an array', async () => {
+    expect((await getNestedStaticFiles(mockInstanceWithFiles.value.numArray)).map(f => f.filepath))
       .toEqual([
         'arr',
       ])
   })
 
-  it('should detect the file when starting with a plain attribute', () => {
-    expect(getNestedStaticFiles(mockInstanceWithFiles.value.file).map(f => f.filepath))
+  it('should detect the file when starting with a plain attribute', async () => {
+    expect((await getNestedStaticFiles(mockInstanceWithFiles.value.file)).map(f => f.filepath))
       .toEqual([
         'plain',
       ])

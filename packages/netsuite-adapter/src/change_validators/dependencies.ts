@@ -14,42 +14,47 @@
 * limitations under the License.
 */
 import {
-  Change, ChangeError, getChangeElement, InstanceElement, isInstanceElement,
+  Change, ChangeError, getChangeElement, InstanceElement, isInstanceElement, SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { findDependingInstancesFromRefs } from '../reference_dependencies'
+
+const { awu } = collections.asynciterable
 
 type ValidityStatus = 'valid' | 'invalid' | 'unknown'
 
-export const validateDependsOnInvalidElement = (
+export const validateDependsOnInvalidElement = async (
   inputInvalidElementIds: string[],
   changes: ReadonlyArray<Change>,
-): ReadonlyArray<ChangeError> => {
+): Promise<ReadonlyArray<ChangeError>> => {
   const elemValidity = new Map<string, ValidityStatus>(
     inputInvalidElementIds.map(id => [id, 'invalid'])
   )
 
-  const isInvalid = (instance: InstanceElement): boolean => {
+  const isInvalid = async (instance: InstanceElement): Promise<boolean> => {
     const status = elemValidity.get(instance.elemID.getFullName())
     if (status !== undefined) {
       return status === 'invalid'
     }
     // Mark validity unknown to avoid reference loops
     elemValidity.set(instance.elemID.getFullName(), 'unknown')
-    const elemIsInvalid = findDependingInstancesFromRefs(instance).some(isInvalid)
+    const elemIsInvalid = await awu((await findDependingInstancesFromRefs(instance)))
+      .some(isInvalid)
     // Remember final validity decision to avoid checking this instance again
     elemValidity.set(instance.elemID.getFullName(), elemIsInvalid ? 'invalid' : 'valid')
     return elemIsInvalid
   }
 
-  return changes
+  return awu(changes)
     .map(getChangeElement)
     .filter(isInstanceElement)
     .filter(instance => !inputInvalidElementIds.includes(instance.elemID.getFullName()))
     .filter(isInvalid)
     .map(instance => ({
       elemID: instance.elemID,
-      severity: 'Error',
+      severity: 'Error' as SaltoErrorSeverity,
       message: 'Depends on an element that has errors',
       detailedMessage: `(${instance.elemID.getFullName()}) depends on an element that has errors`,
     }))
+    .toArray()
 }

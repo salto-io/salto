@@ -17,11 +17,13 @@ import _ from 'lodash'
 import { setPath } from '@salto-io/adapter-utils'
 import { InstanceElement, DetailedChange, isInstanceElement, getChangeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { parse, dumpElements } from '../parser'
 
 import { FILE_EXTENSION } from './nacl_files'
 import { DirectoryStore } from './dir_store'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export interface ConfigSource {
@@ -54,20 +56,23 @@ export const configSource = (
         return undefined
       }
       const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
+      const elements = await awu(parseResult.elements).take(2).toArray()
       if (!_.isEmpty(parseResult.errors)) {
         log.error('failed to parse %s due to %o', name, parseResult.errors)
         throw new ConfigParseError(name)
       }
-      if (parseResult.elements.length > 1) {
+      if (elements.length > 1) {
         log.warn('%s has more than a single element in the config file; returning the first element',
           name)
       }
-      const configInstance = parseResult.elements.find(isInstanceElement)
+      const configInstance = await awu(parseResult.elements)
+        .find(isInstanceElement) as InstanceElement | undefined
       if (configInstance === undefined) {
         log.warn(
           'failed to find config instance for %s, found the following elements: %s',
           name,
-          parseResult.elements.map(elem => elem.elemID.getFullName()).join(','),
+          (await awu(parseResult.elements).map(elem => elem.elemID.getFullName()).toArray())
+            .join(','),
         )
         return undefined
       }

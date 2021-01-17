@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { ElemID, Element, isElement, isInstanceElement, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { Workspace, validator, InMemoryRemoteElementSource } from '@salto-io/workspace'
+import { ElemID, Element, isElement, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import { Workspace, validator } from '@salto-io/workspace'
+import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 
+
+const { awu } = collections.asynciterable
 const { validateElements, isUnresolvedRefError } = validator
 const { isDefined } = lowerDashValues
 
@@ -55,19 +57,22 @@ export const listUnresolvedReferences = async (
   workspace: Workspace,
   completeFromEnv?: string,
 ): Promise<UnresolvedElemIDs> => {
-  const getUnresolvedElemIDs = (
+  const getUnresolvedElemIDsFromErrors = async (): Promise<ElemID[]> => {
+    const errors = (await workspace.errors())
+      .validation.filter(isUnresolvedRefError)
+      .map(e => e.target)
+    return _.uniqBy(errors, elemID => elemID.getFullName())
+  }
+
+  const getUnresolvedElemIDs = async (
     elements: ReadonlyArray<Element>,
-    elementsSource: ReadOnlyElementsSource,
-  ): ElemID[] => _.uniqBy(
-    validateElements(elements, elementsSource).filter(isUnresolvedRefError).map(e => e.target),
+  ): Promise<ElemID[]> => _.uniqBy(
+    (await validateElements(elements, await workspace.elements()))
+      .filter(isUnresolvedRefError).map(e => e.target),
     elemID => elemID.getFullName(),
   )
 
-  const initialElements = [...await workspace.elements(true, workspace.currentEnv())]
-  const unresolvedElemIDs = getUnresolvedElemIDs(
-    initialElements,
-    new InMemoryRemoteElementSource(initialElements)
-  )
+  const unresolvedElemIDs = await getUnresolvedElemIDsFromErrors()
 
   if (completeFromEnv === undefined) {
     return {
@@ -76,20 +81,16 @@ export const listUnresolvedReferences = async (
     }
   }
 
-  const elemCompletionLookup: Record<string, Element> = _.keyBy(
-    await workspace.elements(true, completeFromEnv),
-    e => e.elemID.getFullName(),
-  )
-
   const addAndValidate = async (
-    ids: ElemID[], elements: Element[],
+    ids: ElemID[], elements: Element[] = [],
   ): Promise<{ completed: string[]; missing: string[] }> => {
     if (ids.length === 0) {
       return { completed: [], missing: [] }
     }
 
-    const getCompletionElem = (id: ElemID): Element | undefined => {
-      const rootElem = elemCompletionLookup[id.createTopLevelParentID().parent.getFullName()]
+    const getCompletionElem = async (id: ElemID): Promise<Element | undefined> => {
+      const rootElem = await (await workspace.elements(true, completeFromEnv))
+        .get(id.createTopLevelParentID().parent)
       if (!rootElem) {
         return undefined
       }
@@ -111,25 +112,29 @@ export const listUnresolvedReferences = async (
     }
 
     const completionRes = Object.fromEntries(
-      ids.map(id => ([id.getFullName(), getCompletionElem(id)]))
-    )
+      await awu(ids).map(async id => ([
+        id.getFullName(),
+        await getCompletionElem(id),
+      ])).toArray()
+    ) as Record<string, Element | undefined>
+
     const [completed, missing] = _.partition(
       Object.keys(completionRes), id => isDefined(completionRes[id])
     )
     const resolvedElements = Object.values(completionRes).filter(isDefined)
-    const unresolvedIDs = getUnresolvedElemIDs(
-      resolvedElements,
-      new InMemoryRemoteElementSource(elements),
-    )
+    const unresolvedIDs = await getUnresolvedElemIDs(resolvedElements)
 
-    const innerRes = await addAndValidate(unresolvedIDs, [...elements, ...resolvedElements])
+    const innerRes = await addAndValidate(
+      unresolvedIDs,
+      [...elements, ...resolvedElements]
+    )
     return {
       completed: [...completed, ...innerRes.completed],
       missing: [...missing, ...innerRes.missing],
     }
   }
 
-  const { completed, missing } = await addAndValidate(unresolvedElemIDs, initialElements)
+  const { completed, missing } = await addAndValidate(unresolvedElemIDs)
 
   return {
     found: compact(completed.sort().map(ElemID.fromFullName)),

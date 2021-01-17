@@ -34,8 +34,8 @@ describe('flow filter', () => {
     },
   })
 
-  it('remove restriction values from flow_metadata_value.name', () => {
-    filter.onFetch([mockFlow])
+  it('remove restriction values from flow_metadata_value.name', async () => {
+    await filter.onFetch([mockFlow])
     expect(getRestriction(mockFlow.fields.name).values).toEqual(values)
     expect(getRestriction(mockFlow.fields.name).enforce_value).toBe(false)
   })

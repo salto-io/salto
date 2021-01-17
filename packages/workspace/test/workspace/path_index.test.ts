@@ -138,14 +138,18 @@ const multiPathInstance2 = new InstanceElement('multiPathInst', singlePathObject
 ['salto', 'inst', 'nested', '2'],)
 
 describe('create path index', () => {
-  const pathIndex = createPathIndex([
-    singlePathObject,
-    singlePathInstance,
-    multiPathAnnoObj,
-    multiPathFieldsObj,
-    multiPathInstance1,
-    multiPathInstance2,
-  ])
+  let pathIndex: PathIndex
+  beforeAll(async () => {
+    pathIndex = await createPathIndex([
+      singlePathObject,
+      singlePathInstance,
+      multiPathAnnoObj,
+      multiPathFieldsObj,
+      multiPathInstance1,
+      multiPathInstance2,
+    ])
+  })
+
   describe('elements which are defined in a single fragment', () => {
     it('should return the proper path for top level elements', () => {
       const instPath = pathIndex.get(singlePathInstance.elemID.getFullName())
@@ -240,8 +244,8 @@ describe('create path index', () => {
   })
   describe('path index multiple serialization', () => {
     let multipleServicePathIndex: PathIndex
-    beforeEach(() => {
-      multipleServicePathIndex = createPathIndex([
+    beforeEach(async () => {
+      multipleServicePathIndex = await createPathIndex([
         singlePathObject,
         singlePathObjectOtherService,
         singlePathInstance,
@@ -268,9 +272,9 @@ describe('create path index', () => {
 })
 
 describe('updatePathIndex', () => {
-  const pathIndex = createPathIndex([singlePathObject])
-  it('should add new elements and maintain old ones', () => {
-    const newPathIndex = updatePathIndex(pathIndex, [multiPathAnnoObj], ['salto'])
+  it('should add new elements and maintain old ones', async () => {
+    const pathIndex = await createPathIndex([singlePathObject])
+    const newPathIndex = await updatePathIndex(pathIndex, [multiPathAnnoObj], ['salto'])
     let path = newPathIndex.get(singlePathObject.elemID.getFullName())
     expect(path).toEqual([singlePathObject.path])
     path = newPathIndex.get(multiPathAnnoObj.elemID.getFullName())

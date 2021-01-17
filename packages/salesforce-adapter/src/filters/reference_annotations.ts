@@ -24,6 +24,7 @@ import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 const { REFERENCE_TO } = FIELD_ANNOTATIONS
+const { awu } = collections.asynciterable
 
 /**
  * Convert annotations to reference expressions using the known metadata types.
@@ -58,11 +59,12 @@ const convertAnnotationsToReferences = (
     })
 }
 
-export const apiNameToElemID = (elements: Element[]): Record<string, ElemID> => (
+export const apiNameToElemID = async (elements: Element[]): Promise<Record<string, ElemID>> => (
   Object.fromEntries(
-    elements
+    await awu(elements)
       .filter(isObjectType)
-      .map(e => [apiName(e), e.elemID])
+      .map(async e => [await apiName(e), e.elemID])
+      .toArray()
   )
 )
 
@@ -71,7 +73,7 @@ export const apiNameToElemID = (elements: Element[]): Record<string, ElemID> => 
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const typeToElemID = apiNameToElemID(elements)
+    const typeToElemID = await apiNameToElemID(elements)
     convertAnnotationsToReferences(elements, typeToElemID, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
   },
 })

@@ -14,12 +14,21 @@
 * limitations under the License.
 */
 
+import _ from 'lodash'
+import * as values from '../values'
+
 type Thenable<T> = T | Promise<T>
 export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
 
 const isAsyncIterable = <T>(
-  itr: ThenableIterable<T>
-): itr is AsyncIterable<T> => Symbol.asyncIterator in itr
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  itr: any
+): itr is AsyncIterable<T> => itr[Symbol.asyncIterator] !== undefined
+
+const isIterable = <T>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  itr: any
+): itr is Iterable<T> => itr[Symbol.iterator] !== undefined
 
 export const toAsyncIterable = <T>(i: Iterable<T>): AsyncIterable<T> => {
   const iter = i[Symbol.iterator]()
@@ -32,7 +41,7 @@ export const toAsyncIterable = <T>(i: Iterable<T>): AsyncIterable<T> => {
 
 export const findAsync = async <T>(
   i: ThenableIterable<T>,
-  pred: (value: T, index: number) => Thenable<boolean>,
+  pred: (value: T, index: number) => Thenable<unknown>,
 ): Promise<T | undefined> => {
   let index = 0
   for await (const v of i) {
@@ -51,6 +60,17 @@ export async function *mapAsync<T, U>(
   let index = 0
   for await (const curr of itr) {
     yield mapFunc(curr, index)
+    index += 1
+  }
+}
+
+export const forEachAsync = async <T>(
+  itr: ThenableIterable<T>,
+  mapFunc: (t: T, index: number) => Thenable<unknown>,
+): Promise<void> => {
+  let index = 0
+  for await (const curr of itr) {
+    await mapFunc(curr, index)
     index += 1
   }
 }
@@ -75,10 +95,17 @@ export async function *concatAsync<T>(
     }
   }
 }
-
-export async function *filterAsync<T>(
+export function filterAsync<T, S extends T>(
+  itr: ThenableIterable<T>,
+  filterFunc: (t: T, index: number) => t is S
+): AsyncIterable<S>
+export function filterAsync<T>(
   itr: ThenableIterable<T>,
   filterFunc: (t: T, index: number) => Thenable<boolean>
+): AsyncIterable<T>
+export async function *filterAsync<T>(
+  itr: ThenableIterable<T>,
+  filterFunc: (t: T, index: number) => unknown
 ): AsyncIterable<T> {
   let index = 0
   for await (const item of itr) {
@@ -90,35 +117,163 @@ export async function *filterAsync<T>(
 }
 
 export async function *flattenAsync<T>(
-  ...iterables: ThenableIterable<ThenableIterable<T>>[]
+  ...iterables: ThenableIterable<ThenableIterable<T> | T>[]
 ): AsyncIterable<T> {
   for (const itr of iterables) {
     // eslint-disable-next-line no-await-in-loop
     for await (const nestedItr of itr) {
-      for await (const item of nestedItr) {
-        yield item
+      if (isAsyncIterable(nestedItr) || isIterable(nestedItr)) {
+        for await (const item of nestedItr) {
+          yield item
+        }
+      } else {
+        yield nestedItr
       }
     }
   }
 }
 
+export const peekAsync = async <T>(itr: ThenableIterable<T>): Promise<T | undefined> => {
+  for await (const item of itr) {
+    return item
+  }
+  return undefined
+}
+
+export const isEmptyAsync = async <T>(
+  itr: ThenableIterable<T>
+): Promise<boolean> => (await peekAsync(itr)) === undefined
+
+export async function *takeAsync<T>(
+  itr: ThenableIterable<T>,
+  maxItems: number
+): AsyncIterable<T> {
+  let counter = 0
+  const it = isAsyncIterable(itr) ? itr[Symbol.asyncIterator]() : itr[Symbol.iterator]()
+  let item: IteratorResult<T>
+  // eslint-disable-next-line
+  while (!(item = await it.next()).done && counter < maxItems) {
+    yield item.value
+    counter += 1
+  }
+}
+
+export async function *zipSortedAsync<T, V>(
+  keyBy: (value: T) => V,
+  ...iterables: ThenableIterable<T>[]
+): AsyncIterable<T> {
+  let item: T | undefined
+  const itrs = iterables.map(itr => (isAsyncIterable(itr)
+    ? itr[Symbol.asyncIterator]()
+    : itr[Symbol.iterator]()
+  ))
+
+  const popItem = async (itr: AsyncIterator<T> | Iterator<T>): Promise<T | undefined> => {
+    const res = await itr.next()
+    if (res.done) {
+      return undefined
+    }
+    return res.value
+  }
+  const poppedItems = await toArrayAsync(mapAsync(itrs, itr => popItem(itr)))
+
+  const popLowestItem = async (): Promise<T | undefined> => {
+    const minValue = _.minBy(poppedItems.filter(values.isDefined), keyBy)
+    const minIndex = poppedItems.findIndex(
+      v => values.isDefined(v) && minValue && keyBy(v) === keyBy(minValue)
+    )
+    if (!values.isDefined(minValue) || !values.isDefined(minIndex)) {
+      return undefined
+    }
+    if (item !== undefined && keyBy(minValue) < keyBy(item)) {
+      throw new Error(`Can not zip unsorted iterables. ${keyBy(minValue)} is greater than ${keyBy(item)}`)
+    }
+    const nextItem = await popItem(itrs[minIndex])
+    poppedItems[minIndex] = nextItem
+    return minValue
+  }
+  // eslint-disable-next-line
+  while ((item = await popLowestItem()) !== undefined) {
+    yield item
+  }
+}
+
+export const groupByAsync = async <T>(
+  itr: ThenableIterable<T>,
+  groupFunc: (t: T) => Thenable<string>
+): Promise<Record<string, T[]>> => {
+  const res: Record<string, T[]> = {}
+  for await (const t of itr) {
+    const key = await groupFunc(t)
+    res[key] = res[key] || []
+    res[key].push(t)
+  }
+  return res
+}
+
+export const keyByAsync = async<T>(
+  itr: ThenableIterable<T>,
+  keyFunc: (t: T) => Thenable<string>
+): Promise<Record<string, T>> => Object.fromEntries(
+  await toArrayAsync(mapAsync(itr, async t => [await keyFunc(t), t]))
+)
+
+export const someAsync = async<T>(
+  itr: ThenableIterable<T>,
+  func: (t: T) => Thenable<unknown>
+): Promise<boolean> => await findAsync(mapAsync(itr, func), res => res) !== undefined
+
+export const everyAsync = async<T>(
+  itr: ThenableIterable<T>,
+  func: (t: T) => Thenable<unknown>
+): Promise<boolean> => !(await someAsync(itr, async t => !(await func(t))))
+
+
 export type AwuIterable<T> = AsyncIterable<T> & {
+  filter<S extends T>(filterFunc: (t: T, index: number) => t is S): AwuIterable<S>
   filter(filterFunc: (t: T, index: number) => Thenable<boolean>): AwuIterable<T>
   concat(...iterables: ThenableIterable<T>[]): AwuIterable<T>
   toArray(): Promise<Array<T>>
   map<U>(mapFunc: (t: T, index: number) => Thenable<U>): AwuIterable<U>
   find(pred: (value: T, index: number) => Thenable<boolean>): Promise<T | undefined>
   flatMap<U>(mapFunc: (t: T, index: number) => Thenable<ThenableIterable<U>>): AwuIterable<U>
+  forEach(mapFunc: (t: T, index: number) => Thenable<unknown>): Promise<void>
+  isEmpty(): Promise<boolean>
+  peek(): Promise<T | undefined>
+  take(maxItems: number): AwuIterable<T>
+  // This is the way wu handles the flat function types as well...
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  flat(): AwuIterable<any>
+  some(func: (t: T) => Thenable<unknown>): Promise<boolean>
+  every(func: (t: T) => Thenable<unknown>): Promise<boolean>
+  keyBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T>>
+  groupBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T[]>>
 }
 
-export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => ({
-  [Symbol.asyncIterator]: () => (isAsyncIterable(itr)
-    ? itr[Symbol.asyncIterator]()
-    : toAsyncIterable(itr)[Symbol.asyncIterator]()),
-  filter: filterFunc => awu(filterAsync(itr, filterFunc)),
-  concat: (...iterables) => awu(concatAsync(itr, ...iterables)),
-  toArray: () => toArrayAsync(itr),
-  find: pred => findAsync(itr, pred),
-  map: mapFunc => awu(mapAsync(itr, mapFunc)),
-  flatMap: mapFunc => awu(flattenAsync(mapAsync(itr, mapFunc))),
-})
+export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
+  function awuFilter<S extends T>(filterFunc: (t: T, index: number) => t is S): AwuIterable<S>
+  function awuFilter(filterFunc: (t: T, index: number) => Thenable<boolean>): AwuIterable<T> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return awu(filterAsync(itr, filterFunc as any))
+  }
+  return {
+    [Symbol.asyncIterator]: () => (isAsyncIterable(itr)
+      ? itr[Symbol.asyncIterator]()
+      : toAsyncIterable(itr)[Symbol.asyncIterator]()),
+    filter: awuFilter,
+    concat: (...iterables) => awu(concatAsync(itr, ...iterables)),
+    toArray: () => toArrayAsync(itr),
+    find: pred => findAsync(itr, pred),
+    map: mapFunc => awu(mapAsync(itr, mapFunc)),
+    flatMap: mapFunc => awu(flattenAsync(mapAsync(itr, mapFunc))),
+    forEach: mapFunc => forEachAsync(itr, mapFunc),
+    isEmpty: () => isEmptyAsync(itr),
+    peek: () => peekAsync(itr),
+    take: maxItems => awu(takeAsync(itr, maxItems)),
+    flat: () => awu(flattenAsync(itr)),
+    some: func => someAsync(itr, func),
+    every: func => everyAsync(itr, func),
+    keyBy: keyFunc => keyByAsync(itr, keyFunc),
+    groupBy: keyFunc => groupByAsync(itr, keyFunc),
+  }
+}

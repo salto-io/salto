@@ -309,7 +309,7 @@ describe('Salto Dump', () => {
       expect(nonListElements[2]).toEqual(boolType)
       TestHelpers.expectTypesToMatch(nonListElements[3] as TypeElement, fieldType)
       TestHelpers.expectTypesToMatch(nonListElements[4] as TypeElement, model)
-      TestHelpers.expectTypesToMatch(listTypes[0] as ListType, model.fields.list.getType())
+      TestHelpers.expectTypesToMatch(listTypes[0] as ListType, await model.fields.list.getType())
       TestHelpers
         .expectInstancesToMatch(nonListElements[5] as InstanceElement, instance)
       TestHelpers

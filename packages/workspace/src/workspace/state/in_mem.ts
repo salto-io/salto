@@ -13,13 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { Element, ElemID, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { Element, ElemID } from '@salto-io/adapter-api'
+import wu from 'wu'
 import { PathIndex, createPathIndex, updatePathIndex } from '../path_index'
 import { State, StateData } from './state'
-
-const { makeArray } = collections.array
+import { createInMemoryElementSource } from '../elements_source'
 
 export const buildInMemState = (loadData: () => Promise<StateData>): State => {
   let innerStateData: Promise<StateData>
@@ -30,27 +28,20 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     return innerStateData
   }
   return {
-    getAll: async (): Promise<Element[]> => Object.values((await stateData()).elements),
-    list: async (): Promise<ElemID[]> =>
-      Object.keys((await stateData()).elements).map(n => ElemID.fromFullName(n)),
-    get: async (id: ElemID): Promise<Element> => ((await stateData()).elements[id.getFullName()]),
-    set: async (element: Element): Promise<void> => {
-      (await stateData()).elements[element.elemID.getFullName()] = element
-    },
-    remove: async (id: ElemID): Promise<void> => {
-      delete (await stateData()).elements[id.getFullName()]
-    },
-    override: async (element: Element | Element[]): Promise<void> => {
-      const elements = makeArray(element)
-      const newServices = _(elements).map(e => e.elemID.adapter)
-        .uniq()
-        .filter(adapter => adapter !== GLOBAL_ADAPTER)
-        .value()
+    getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
+    list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
+    get: async (id: ElemID): Promise<Element | undefined> => (await stateData()).elements.get(id),
+    has: async (id: ElemID): Promise<boolean> => (await stateData()).elements.has(id),
+    delete: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
+    set: async (element: Element): Promise<void> => (await stateData()).elements.set(element),
+    remove: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
+    override: async (elements: AsyncIterable<Element>, services?: string[]): Promise<void> => {
       const data = await stateData()
-      data.elements = _.keyBy(elements, e => e.elemID.getFullName())
+      const newServices = services ?? Object.keys(data.servicesUpdateDate)
+      await data.elements.overide(elements)
       data.servicesUpdateDate = {
         ...data.servicesUpdateDate,
-        ...newServices.reduce((acc, service) => {
+        ...wu(newServices.values()).toArray().reduce((acc, service) => {
           acc[service] = new Date(Date.now())
           return acc
         }, {} as Record<string, Date>),
@@ -63,19 +54,19 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     existingServices: async (): Promise<string[]> =>
       Object.keys((await stateData()).servicesUpdateDate),
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
-      (await stateData()).pathIndex = createPathIndex(unmergedElements)
+      (await stateData()).pathIndex = await createPathIndex(unmergedElements)
     },
     updatePathIndex: async (unmergedElements: Element[], servicesNotToChange: string[]):
       Promise<void> => {
       const currentStateData = await stateData()
-      currentStateData.pathIndex = updatePathIndex(
+      currentStateData.pathIndex = await updatePathIndex(
         currentStateData.pathIndex, unmergedElements, servicesNotToChange
       )
     },
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     clear: async () => {
       innerStateData = Promise.resolve({
-        elements: {},
+        elements: createInMemoryElementSource(),
         pathIndex: new PathIndex(),
         servicesUpdateDate: {},
       })

@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import {
-  Element, ObjectType, InstanceElement, Field, ReferenceExpression,
+  Element, ObjectType, InstanceElement, Field, ReferenceExpression, isObjectType,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
+
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
@@ -28,6 +29,8 @@ import { extractFullNamesFromValueList } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
+const { mapValuesAsync } = promises.object
+const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
@@ -119,8 +122,8 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
     })
 )
 
-const isStandardPickList = (f: Field): boolean => {
-  const apiNameResult = apiName(f)
+const isStandardPickList = async (f: Field): Promise<boolean> => {
+  const apiNameResult = await apiName(f)
   return apiNameResult
     ? (f.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
       || f.refType.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
@@ -128,11 +131,12 @@ const isStandardPickList = (f: Field): boolean => {
     : false
 }
 
-const calculatePicklistFieldsToUpdate = (
+const calculatePicklistFieldsToUpdate = async (
   custObjectFields: Record<string, Field>,
   svsValuesToName: StandartValueSetsLookup
-): Record<string, Field> => _.mapValues(custObjectFields, field => {
-  if (!isStandardPickList(field) || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
+): Promise<Record<string, Field>> => mapValuesAsync(custObjectFields, async field => {
+  if (!await isStandardPickList(field)
+    || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
     return field
   }
 
@@ -150,18 +154,25 @@ const calculatePicklistFieldsToUpdate = (
   return newField
 })
 
-const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =>
-  _.find(
-    elements,
-    (element: Element) => metadataType(element) === STANDARD_VALUE_SET
-  ) as ObjectType | undefined
+const findStandardValueSetType = async (elements: Element[]): Promise<ObjectType | undefined> =>
+  awu(elements).find(
+    async (element: Element) => await metadataType(element) === STANDARD_VALUE_SET
+  ) as Promise<ObjectType | undefined>
 
-const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[]): void => {
+const updateSVSReferences = async (
+  elements: Element[],
+  svsInstances: InstanceElement[]
+): Promise<void> => {
   const svsValuesToName = svsValuesToRef(svsInstances)
-  const customObjectTypeElements = elements.filter(isCustomObject)
+  const customObjectTypeElements = awu(elements).filter(
+    async e => isObjectType(e) && isCustomObject(e)
+  ) as AsyncIterable<ObjectType>
 
-  customObjectTypeElements.forEach((custObjType: ObjectType) => {
-    const fieldsToUpdate = calculatePicklistFieldsToUpdate(custObjType.fields, svsValuesToName)
+  await awu(customObjectTypeElements).forEach(async (custObjType: ObjectType) => {
+    const fieldsToUpdate = await calculatePicklistFieldsToUpdate(
+      custObjType.fields,
+      svsValuesToName
+    )
     _.assign(custObjType, { fields: fieldsToUpdate })
   })
 }
@@ -194,7 +205,7 @@ export const makeFilter = (
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
-    const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
+    const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
     if (svsMetadataType !== undefined) {
       const svsInstances = await fetchMetadataInstances({
         client,
@@ -203,7 +214,7 @@ export const makeFilter = (
         instancesRegexSkippedList: config.instancesRegexSkippedList,
       })
       elements.push(...svsInstances.elements)
-      updateSVSReferences(elements, svsInstances.elements)
+      await updateSVSReferences(elements, svsInstances.elements)
       return svsInstances.configChanges
     }
     // [GF] No StandardValueSet MetadataType was found.

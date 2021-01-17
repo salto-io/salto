@@ -17,8 +17,11 @@ import {
   ChangeError, Field, getChangeElement,
   ChangeValidator, isModificationChange, ModificationChange, Change, isFieldChange,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { isCustom, isFieldOfCustomObject } from '../transformers/transformer'
 import { LABEL } from '../constants'
+
+const { awu } = collections.asynciterable
 
 
 const isStandardFieldChange = (change: Change<Field>): boolean =>
@@ -43,7 +46,7 @@ const createChangeError = (field: Field): ChangeError => ({
  * It is forbidden to modify a label of a standard field.
  */
 const changeValidator: ChangeValidator = async changes => (
-  changes
+  awu(changes)
     .filter(isModificationChange)
     .filter(isFieldChange)
     .filter(change => isFieldOfCustomObject(getChangeElement(change)))
@@ -51,6 +54,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isLabelModification)
     .map(getChangeElement)
     .map(createChangeError)
+    .toArray()
 )
 
 export default changeValidator

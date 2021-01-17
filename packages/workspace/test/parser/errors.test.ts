@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import { PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { parse, ParseResult } from '../../src/parser'
 import { IllegalReference } from '../../src/parser/internal/types'
 import { MISSING_VALUE } from '../../src/parser/internal/native/consumers/values'
+
+const { awu } = collections.asynciterable
 
 describe('parsing errors', () => {
   describe('general element block structure', () => {
@@ -48,9 +51,9 @@ describe('parsing errors', () => {
           .toBe('Ambigious block definition')
       })
 
-      it('should continue parsing other blocks and ignore the labeless block', () => {
-        expect(res.elements).toHaveLength(1)
-        expect(res.elements[0]).toEqual(new ObjectType({ elemID: new ElemID('nowhere', 'man') }))
+      it('should continue parsing other blocks and ignore the labeless block', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        expect((await awu(res.elements).toArray())[0]).toEqual(new ObjectType({ elemID: new ElemID('nowhere', 'man') }))
       })
     })
     describe('no wrapper block', () => {
@@ -104,9 +107,9 @@ describe('parsing errors', () => {
             .toBe('Unknown primitive type amazing.')
           expect(res.errors[0].summary).toBe('unknown primitive type')
         })
-        it('should use unknown type as the primitive type primitive', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as PrimitiveType
+        it('should use unknown type as the primitive type primitive', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as PrimitiveType
           expect(element.primitive).toBe(PrimitiveTypes.UNKNOWN)
         })
       })
@@ -119,15 +122,15 @@ describe('parsing errors', () => {
         beforeAll(async () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
-        it('should create an error', () => {
+        it('should create an error', async () => {
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].message)
             .toBe('Expected a primitive type definition.')
           expect(res.errors[0].summary).toBe('unknown primitive type')
-          expect(res.elements).toHaveLength(1)
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
         })
-        it('should use unknown as the primitvie type primitive', () => {
-          const element = res.elements[0] as PrimitiveType
+        it('should use unknown as the primitvie type primitive', async () => {
+          const element = (await awu(res.elements).toArray())[0] as PrimitiveType
           expect(element.primitive).toBe(PrimitiveTypes.UNKNOWN)
         })
       })
@@ -142,7 +145,7 @@ describe('parsing errors', () => {
         beforeAll(async () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
-        it('should create errors', () => {
+        it('should create errors', async () => {
           expect(res.errors).toHaveLength(2)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 9, col: 9, line: 2 },
@@ -160,10 +163,10 @@ describe('parsing errors', () => {
           expect(res.errors[1].message)
             .toBe('Expected a primitive type definition.')
           expect(res.errors[1].summary).toBe('unknown primitive type')
-          expect(res.elements).toHaveLength(1)
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
         })
-        it('should use unknown as the primitive type', () => {
-          const element = res.elements[0] as PrimitiveType
+        it('should use unknown as the primitive type', async () => {
+          const element = (await awu(res.elements).toArray())[0] as PrimitiveType
           expect(element.primitive).toBe(PrimitiveTypes.UNKNOWN)
         })
       })
@@ -187,8 +190,8 @@ describe('parsing errors', () => {
             .toBe('Expected inheritance operator \'is\' found tanananana instead')
           expect(res.errors[0].summary).toBe('invalid type definition')
         })
-        it('should still create the element', () => {
-          const element = res.elements[0] as PrimitiveType
+        it('should still create the element', async () => {
+          const element = (await awu(res.elements).toArray())[0] as PrimitiveType
           expect(element.primitive).toBe(PrimitiveTypes.STRING)
         })
       })
@@ -217,8 +220,8 @@ describe('parsing errors', () => {
             .toBe('Unexpected field definition(s) in a primitive type. Expected no fields.')
           expect(res.errors[0].summary).toBe('invalid fields in primitive type')
         })
-        it('should create the element without the fields', () => {
-          const element = res.elements[0] as PrimitiveType
+        it('should create the element without the fields', async () => {
+          const element = (await awu(res.elements).toArray())[0] as PrimitiveType
           expect(element.primitive).toBe(PrimitiveTypes.STRING)
           expect(element.elemID.getFullName()).toEqual('helter.skater')
         })
@@ -250,9 +253,9 @@ describe('parsing errors', () => {
           .toBe('Unexpected field or annotation type definition(s) in a primitive type. Expected only values.')
         expect(res.errors[0].summary).toBe('invalid blocks in an instance')
       })
-      it('should parse the rest of the instance correctly', () => {
-        expect(res.elements).toHaveLength(1)
-        const inst = res.elements[0] as InstanceElement
+      it('should parse the rest of the instance correctly', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const inst = (await awu(res.elements).toArray())[0] as InstanceElement
         expect(inst.value).toEqual({ only: 'to find' })
       })
     })
@@ -280,9 +283,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Invalid variable definition')
           expect(res.errors[0].summary).toBe('Invalid variable definition')
         })
-        it('should recover and parse other vars', () => {
-          expect(res.elements).toHaveLength(1)
-          expect(res.elements[0].elemID).toEqual(new ElemID('var', 'lucy'))
+        it('should recover and parse other vars', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('var', 'lucy'))
         })
       })
       describe('when there are multiple tokens in the var def', () => {
@@ -306,9 +309,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Invalid variable definition')
           expect(res.errors[0].summary).toBe('Invalid variable definition')
         })
-        it('should recover and parse other vars', () => {
-          expect(res.elements).toHaveLength(1)
-          expect(res.elements[0].elemID).toEqual(new ElemID('var', 'sky'))
+        it('should recover and parse other vars', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('var', 'sky'))
         })
       })
     })
@@ -333,9 +336,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Invalid variable definition')
         expect(res.errors[0].summary).toBe('Invalid variable definition')
       })
-      it('should recover and parse other vars', () => {
-        expect(res.elements).toHaveLength(1)
-        expect(res.elements[0].elemID).toEqual(new ElemID('var', 'sky'))
+      it('should recover and parse other vars', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('var', 'sky'))
       })
     })
     describe('when a block is defined instead of an attribute', () => {
@@ -361,9 +364,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Invalid variable definition')
         expect(res.errors[0].summary).toBe('Invalid variable definition')
       })
-      it('should recover and parse other vars', () => {
-        expect(res.elements).toHaveLength(1)
-        expect(res.elements[0].elemID).toEqual(new ElemID('var', 'sky'))
+      it('should recover and parse other vars', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('var', 'sky'))
       })
     })
     describe('when there are consecutive invalid defs', () => {
@@ -390,9 +393,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].summary).toBe('Invalid variable definition')
         expect(res.errors[1].message).toBe('Invalid variable definition')
       })
-      it('should recover and parse other items', () => {
-        expect(res.elements).toHaveLength(1)
-        expect(res.elements[0].elemID).toEqual(new ElemID('var', 'ahhhhh'))
+      it('should recover and parse other items', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('var', 'ahhhhh'))
       })
     })
   })
@@ -421,9 +424,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Invalid nested block definition')
         expect(res.errors[0].summary).toBe('Invalid nested block definition')
       })
-      it('should still create the element properly', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should still create the element properly', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
         expect(element.fields.my).toBeDefined()
       })
@@ -452,9 +455,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')
         expect(res.errors[0].summary).toBe('Invalid annotations block')
       })
-      it('should still create the element properly', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should still create the element properly', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
         expect(Object.keys(element.annotationRefTypes)).toEqual(['my'])
       })
@@ -487,9 +490,9 @@ describe('parsing errors', () => {
           .toBe('Invalid annotations block, only one annotation block can be defined in a fragment.')
         expect(res.errors[0].summary).toBe('Invalid annotations block')
       })
-      it('should use annotation for the all defined annotation types block', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should use annotation for the all defined annotation types block', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
         expect(Object.keys(element.annotationRefTypes)).toEqual(['my'])
       })
@@ -520,9 +523,9 @@ describe('parsing errors', () => {
           .toBe('Duplicated field name mycar, a field can only be defined once in a source fragment.')
         expect(res.errors[0].summary).toBe('Duplicated field name')
       })
-      it('should use the first definition of the field', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should use the first definition of the field', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
         expect(element.fields.mycar.refType.elemID.getFullName()).toEqual('can.drive')
       })
@@ -548,9 +551,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Duplicated attribute candrive')
         expect(res.errors[0].summary).toBe('Duplicated attribute')
       })
-      it('should use the first definition of the field', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should use the first definition of the field', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.elemID.getFullName()).toEqual('baby.you')
         expect(element.annotations.candrive).toEqual('my car')
       })
@@ -579,10 +582,10 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('Invalid block item')
           expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
         })
-        it('should recover and parse other items', () => {
-          expect(res.elements).toHaveLength(1)
-          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
-          expect(res.elements[0].annotations.take).toEqual('you')
+        it('should recover and parse other items', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('let', 'me'))
+          expect((await awu(res.elements).toArray())[0].annotations.take).toEqual('you')
         })
       })
       describe('when more than two labels are used to define a block', () => {
@@ -608,10 +611,10 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('Invalid block item')
           expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
         })
-        it('should recover and parse other items', () => {
-          expect(res.elements).toHaveLength(1)
-          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
-          expect(res.elements[0].annotations.take).toEqual('you')
+        it('should recover and parse other items', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('let', 'me'))
+          expect((await awu(res.elements).toArray())[0].annotations.take).toEqual('you')
         })
       })
       describe('when an attribute is defined without a key', () => {
@@ -637,10 +640,10 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('Invalid block item')
           expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
         })
-        it('should recover and parse other items', () => {
-          expect(res.elements).toHaveLength(1)
-          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
-          expect(res.elements[0].annotations.take).toEqual('you')
+        it('should recover and parse other items', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('let', 'me'))
+          expect((await awu(res.elements).toArray())[0].annotations.take).toEqual('you')
         })
       })
       describe('only 1 label (can be both attr or field def) are used', () => {
@@ -663,9 +666,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('Invalid block item')
           expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
         })
-        it('should recover and parse the block', () => {
-          expect(res.elements).toHaveLength(1)
-          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
+        it('should recover and parse the block', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('let', 'me'))
         })
       })
       describe('more then 1 label is used', () => {
@@ -688,9 +691,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('Invalid block item')
           expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
         })
-        it('should recover and parse the block', () => {
-          expect(res.elements).toHaveLength(1)
-          expect(res.elements[0].elemID).toEqual(new ElemID('let', 'me'))
+        it('should recover and parse the block', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          expect((await awu(res.elements).toArray())[0].elemID).toEqual(new ElemID('let', 'me'))
         })
       })
     })
@@ -720,9 +723,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Invalid attribute definition, expected an equal sign')
           expect(res.errors[0].summary).toBe('Invalid attribute definition')
         })
-        it('should still parse the element, and create the object value without that key', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('should still parse the element, and create the object value without that key', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
           expect(element.annotations.is).toEqual({ in: 'my ears' })
         })
@@ -750,9 +753,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Invalid attribute key')
           expect(res.errors[0].summary).toBe('Invalid attribute key')
         })
-        it('should still parse the element, and create the object value without that key', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('should still parse the element, and create the object value without that key', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
           expect(element.annotations.is).toEqual({ in: 'my ears' })
         })
@@ -781,9 +784,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Duplicated attribute in')
           expect(res.errors[0].summary).toBe('Duplicated attribute')
         })
-        it('should still parse the element and use the first time the key was defined', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('should still parse the element and use the first time the key was defined', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
           expect(element.annotations.is).toEqual({ there: 'beneath the blue suburban sky', in: 'my ears' })
         })
@@ -813,9 +816,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Expected a value')
           expect(res.errors[0].summary).toBe('Expected a value')
         })
-        it('parse the missing value as dynanmic value', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('parse the missing value as dynanmic value', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
           expect(element.annotations.is).toEqual({
             there: 'beneath the blue suburban sky',
@@ -848,9 +851,9 @@ describe('parsing errors', () => {
           expect(res.errors[0].message).toBe('Expected a new line')
           expect(res.errors[0].summary).toBe('Expected a new line')
         })
-        it('parse the rest of the attributes', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('parse the rest of the attributes', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.elemID).toEqual(new ElemID('penny', 'lane'))
           expect(element.annotations.is).toEqual({
             there: 'beneath the blue suburban sky',
@@ -881,14 +884,14 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('Expected a comma')
           expect(res.errors[0].message).toBe('Expected a comma or an array termination')
         })
-        it('should recover and parse other items', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('should recover and parse other items', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.annotations.take).toEqual('a sad song')
         })
-        it('should parse the rest of the array item and replace the faulty item with missing value', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('should parse the rest of the array item and replace the faulty item with missing value', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.annotations.dont).toEqual(['dont', 'make', 'bad'])
         })
       })
@@ -913,14 +916,14 @@ describe('parsing errors', () => {
           expect(res.errors[0].summary).toBe('Expected a value')
           expect(res.errors[0].message).toBe('Expected a value')
         })
-        it('should recover and parse other items', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('should recover and parse other items', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.annotations.take).toEqual('a sad song')
         })
-        it('should parse all array items and add a missing value', () => {
-          expect(res.elements).toHaveLength(1)
-          const element = res.elements[0] as ObjectType
+        it('should parse all array items and add a missing value', async () => {
+          expect(await awu(res.elements).toArray()).toHaveLength(1)
+          const element = (await awu(res.elements).toArray())[0] as ObjectType
           expect(element.annotations.dont).toEqual(['dont', 'make', MISSING_VALUE, 'it', 'bad'])
         })
       })
@@ -948,9 +951,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Unterminated string literal')
         expect(res.errors[0].summary).toBe('Unterminated string literal')
       })
-      it('should parse items after the unterminated array', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should parse items after the unterminated array', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.annotations.making).toEqual('all his nowhere plans')
       })
     })
@@ -973,9 +976,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Invalid string template expression')
         expect(res.errors[0].summary).toBe('Invalid string template expression')
       })
-      it('should treat the template as a regular part of the string', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should treat the template as a regular part of the string', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         // eslint-disable-next-line no-template-curly-in-string
         expect(element.elemID.getFullName()).toEqual('nowhere.${man}')
       })
@@ -1001,9 +1004,9 @@ describe('parsing errors', () => {
         expect(res.errors[0].message).toBe('Invalid string character')
         expect(res.errors[0].summary).toBe('Invalid string character')
       })
-      it('should parse items after the unterminated array', () => {
+      it('should parse items after the unterminated array', async () => {
         expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.annotations.making).toEqual('all his nowhere plans')
       })
     })
@@ -1072,9 +1075,9 @@ describe('parsing errors', () => {
       it('should not create errors', () => {
         expect(res.errors).toHaveLength(0)
       })
-      it('should parse the reference as an invalid reference', () => {
-        expect(res.elements).toHaveLength(1)
-        const element = res.elements[0] as ObjectType
+      it('should parse the reference as an invalid reference', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
         expect(element.annotations.the).toBeInstanceOf(IllegalReference)
       })
     })
@@ -1098,9 +1101,9 @@ describe('parsing errors', () => {
       expect(res.errors[0].message).toEqual('Unexpected end of file')
       expect(res.errors[0].summary).toEqual('Unexpected end of file')
     })
-    it('should return a result of all of the parsed elements before the unfinished element', () => {
-      expect(res.elements).toHaveLength(1)
-      expect(res.elements[0].elemID.getFullName()).toEqual('I.am')
+    it('should return a result of all of the parsed elements before the unfinished element', async () => {
+      expect(await awu(res.elements).toArray()).toHaveLength(1)
+      expect((await awu(res.elements).toArray())[0].elemID.getFullName()).toEqual('I.am')
     })
   })
 })

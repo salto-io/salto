@@ -18,12 +18,15 @@ import path from 'path'
 import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, ReferenceExpression, isReferenceExpression, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { SourceRange, SourceMap } from '../../parser'
 
 import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../parser/dump'
 import { Functions } from '../../parser/functions'
+
+const { awu } = collections.asynciterable
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
@@ -321,7 +324,7 @@ export const getChangesToUpdate = (
   return groupAnnotationTypeChanges(_.concat(otherChanges, wrappedNestedAdditions), sourceMap)
 }
 
-export const getNestedStaticFiles = (value: Value): StaticFile[] => {
+export const getNestedStaticFiles = async (value: Value): Promise<StaticFile[]> => {
   if (isElement(value)) {
     const allStaticFiles = new Set<StaticFile>()
     const transformFunc: TransformFunc = ({ value: val }) => {
@@ -330,7 +333,7 @@ export const getNestedStaticFiles = (value: Value): StaticFile[] => {
       }
       return val
     }
-    transformElement({
+    await transformElement({
       element: value,
       transformFunc,
       strict: false,
@@ -341,10 +344,10 @@ export const getNestedStaticFiles = (value: Value): StaticFile[] => {
     return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {
-    return value.flatMap(getNestedStaticFiles)
+    return awu(value).flatMap(getNestedStaticFiles).toArray()
   }
   if (_.isPlainObject(value)) {
-    return Object.values(value).flatMap(getNestedStaticFiles)
+    return awu(Object.values(value)).flatMap(getNestedStaticFiles).toArray()
   }
   if (isStaticFile(value)) {
     return [value]

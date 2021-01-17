@@ -20,12 +20,15 @@ import {
 import {
   findInstances, naclCase, pathNaclCase,
 } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
   addObjectParentReference, generateApiNameToCustomObject,
 } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -38,8 +41,8 @@ export const specialLayoutObjects = new Map([
 ])
 
 // Layout full name starts with related sobject and then '-'
-const layoutObjAndName = (layout: InstanceElement): [string, string] => {
-  const [obj, ...name] = apiName(layout).split('-')
+const layoutObjAndName = async (layout: InstanceElement): Promise<[string, string]> => {
+  const [obj, ...name] = (await apiName(layout)).split('-')
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
 
@@ -71,10 +74,10 @@ const filterCreator: FilterCreator = () => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
-    const apiNameToCustomObject = generateApiNameToCustomObject(elements)
+    const apiNameToCustomObject = await generateApiNameToCustomObject(elements)
 
-    layouts.forEach(layout => {
-      const [layoutObjName, layoutName] = layoutObjAndName(layout)
+    await awu(layouts).forEach(async layout => {
+      const [layoutObjName, layoutName] = await layoutObjAndName(layout)
       const layoutObj = apiNameToCustomObject.get(layoutObjName)
       if (layoutObj === undefined) {
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)

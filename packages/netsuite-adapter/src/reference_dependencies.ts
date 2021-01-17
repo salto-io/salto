@@ -18,36 +18,45 @@ import {
   isReferenceExpression, Value,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, NETSUITE, TRANSACTION_COLUMN_CUSTOM_FIELD,
   TRANSACTION_BODY_CUSTOM_FIELD, WORKBOOK,
 } from './constants'
 
+const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
-export const findDependingInstancesFromRefs = (instance: InstanceElement): InstanceElement[] => {
+export const findDependingInstancesFromRefs = async (
+  instance: InstanceElement
+): Promise<InstanceElement[]> => {
   const visitedIdToInstance = new Map<string, InstanceElement>()
-  const isRefToServiceId = (topLevelParent: InstanceElement, elemId: ElemID): boolean => {
-    const fieldType = getFieldType(topLevelParent.getType(), elemId.createTopLevelParentID().path)
+  const isRefToServiceId = async (
+    topLevelParent: InstanceElement,
+    elemId: ElemID
+  ): Promise<boolean> => {
+    const fieldType = await getFieldType(
+      await topLevelParent.getType(),
+      elemId.createTopLevelParentID().path
+    )
     return isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.SERVICE_ID)
   }
 
-  const createDependingElementsCallback: TransformFunc = ({ value }) => {
+  const createDependingElementsCallback: TransformFunc = async ({ value }) => {
     if (isReferenceExpression(value)) {
       const { topLevelParent, elemID } = value
       if (isInstanceElement(topLevelParent)
         && !visitedIdToInstance.has(topLevelParent.elemID.getFullName())
         && elemID.adapter === NETSUITE
-        && isRefToServiceId(topLevelParent, elemID)) {
+        && await isRefToServiceId(topLevelParent, elemID)) {
         visitedIdToInstance.set(topLevelParent.elemID.getFullName(), topLevelParent)
       }
     }
     return value
   }
 
-  transformElement({
+  await transformElement({
     element: instance,
     transformFunc: createDependingElementsCallback,
     strict: true,
@@ -60,19 +69,24 @@ export const findDependingInstancesFromRefs = (instance: InstanceElement): Insta
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add automatically all of the referenced instances.
  */
-export const getAllReferencedInstances = (
+export const getAllReferencedInstances = async (
   sourceInstances: ReadonlyArray<InstanceElement>
-): ReadonlyArray<InstanceElement> => {
+): Promise<ReadonlyArray<InstanceElement>> => {
   const visited = new Set<string>(sourceInstances.map(inst => inst.elemID.getFullName()))
-  const getNewReferencedInstances = (instance: InstanceElement): InstanceElement[] => {
-    const newInstances = findDependingInstancesFromRefs(instance)
+  const getNewReferencedInstances = async (
+    instance: InstanceElement
+  ): Promise<InstanceElement[]> => {
+    const newInstances = (await findDependingInstancesFromRefs(instance))
       .filter(inst => !visited.has(inst.elemID.getFullName()))
     newInstances.forEach(inst => visited.add(inst.elemID.getFullName()))
-    return [...newInstances, ...newInstances.flatMap(getNewReferencedInstances)]
+    return [
+      ...newInstances,
+      ...await awu(newInstances).flatMap(getNewReferencedInstances).toArray(),
+    ]
   }
   return [
     ...sourceInstances,
-    ...sourceInstances.flatMap(getNewReferencedInstances),
+    ...await awu(sourceInstances).flatMap(getNewReferencedInstances).toArray(),
   ]
 }
 

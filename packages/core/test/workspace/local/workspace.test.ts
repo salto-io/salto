@@ -80,9 +80,9 @@ describe('local workspace', () => {
   beforeEach(() => jest.clearAllMocks())
 
   describe('load elements  sources', () => {
-    it('should build the appropriate nacl source', () => {
+    it('should build the appropriate nacl source', async () => {
       mockExists.mockResolvedValue(true)
-      const elemSources = loadLocalElementsSources('.', path.join(getSaltoHome(), 'local'), ['env1', 'env2'])
+      const elemSources = await loadLocalElementsSources('.', path.join(getSaltoHome(), 'local'), ['env1', 'env2'])
       expect(Object.keys(elemSources.sources)).toHaveLength(3)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])

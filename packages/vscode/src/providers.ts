@@ -19,10 +19,13 @@ import wu from 'wu'
 import { provider, context as ctx, token, definitions,
   usage, workspace as ws, location } from '@salto-io/lang-server'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import {
   saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems,
   buildVSSymbol, toVSFileName, sourceRangeToFoldRange,
 } from './adapters'
+
+const { awu } = collections.asynciterable
 
 export const createDocumentSymbolsProvider = (
   workspace: ws.EditorWorkspace
@@ -33,7 +36,11 @@ export const createDocumentSymbolsProvider = (
     const sourceMap = await workspace.getSourceMap(doc.fileName)
     const elements = await workspace.getElements(doc.fileName)
     if (sourceMap && elements) {
-      const defTree = ctx.buildDefinitionsTree(doc.getText(), sourceMap, elements)
+      const defTree = ctx.buildDefinitionsTree(
+        doc.getText(),
+        sourceMap,
+        await awu(elements).toArray()
+      )
       return (defTree.children || []).map(c => buildVSDefinitions(c))
     }
     return []

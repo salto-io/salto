@@ -63,6 +63,6 @@ export const processOauthCredentials = async (
 ): Promise<OauthAccessTokenResponse> => {
   const accessTokenPromise = createLocalOauthServer(port, accessTokenField)
   outputLine(formatGoToBrowser(url), output)
-  open(url)
+  await open(url)
   return accessTokenPromise
 }

@@ -60,21 +60,21 @@ describe('Change Validator', () => {
     toChange({ after: fileInstance }),
     toChange({ after: customFieldInstance })]
 
-  it('should return no change errors when there are no invalid elements from other change validators', () => {
-    expect(validateDependsOnInvalidElement([], changes)).toEqual([])
+  it('should return no change errors when there are no invalid elements from other change validators', async () => {
+    expect(await validateDependsOnInvalidElement([], changes)).toEqual([])
   })
 
-  it('should return no change errors if no other change depends on an invalid element', () => {
+  it('should return no change errors if no other change depends on an invalid element', async () => {
     expect(
-      validateDependsOnInvalidElement(
+      await validateDependsOnInvalidElement(
         [instanceWithManyRefs.elemID.getFullName(), customFieldInstance.elemID.getFullName()],
         changes
       )
     ).toEqual([])
   })
 
-  it('should return change errors for all changes that depend on an invalid element including deep dependency', () => {
-    expect(validateDependsOnInvalidElement([fileInstance.elemID.getFullName()], changes))
+  it('should return change errors for all changes that depend on an invalid element including deep dependency', async () => {
+    expect(await validateDependsOnInvalidElement([fileInstance.elemID.getFullName()], changes))
       .toEqual(expect.arrayContaining([
         expect.objectContaining({
           elemID: dependsOn1Instance.elemID,
@@ -84,9 +84,9 @@ describe('Change Validator', () => {
         })]))
   })
 
-  it('should return change error for change that depends on an invalid element', () => {
+  it('should return change error for change that depends on an invalid element', async () => {
     expect(
-      validateDependsOnInvalidElement([dependsOn1Instance.elemID.getFullName()], changes)
+      await validateDependsOnInvalidElement([dependsOn1Instance.elemID.getFullName()], changes)
     ).toEqual(expect.arrayContaining([
       expect.objectContaining({
         elemID: instanceWithManyRefs.elemID,

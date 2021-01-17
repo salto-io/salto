@@ -336,7 +336,7 @@ const addToSource = async ({
       before,
       wrappedElement,
     ]))
-    if (await awu(mergeResult.errors.values()).flat().peek() !== undefined) {
+    if (!(await awu(mergeResult.errors.values()).flat().isEmpty())) {
       // If either the origin or the target source is the common folder, all elements should be
       // mergeable and we shouldn't see merge errors
       throw new Error(

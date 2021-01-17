@@ -145,10 +145,7 @@ export const getQueryLocations = async (
   return awu(getAllElementIDs(await (await workspace.elements).getAll()))
     .filter(e => lastIDPartContains(e, sensitive))
     .take(MAX_LOCATION_SEARCH_RESULT)
-    .flatMap(id => {
-      const r = createFileLocations(workspace, id)
-      return r
-    })
+    .flatMap(id => createFileLocations(workspace, id))
     .toArray()
 }
 

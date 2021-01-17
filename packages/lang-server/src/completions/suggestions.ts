@@ -62,8 +62,8 @@ const getAllInstances = (
   refID: ElemID
 ): ThenableIterable<string> => awu(elemIDs)
   .filter(e => e.idType === 'instance')
-  .filter(e => !refID || e.adapter === refID.adapter)
-  .filter(e => !refID || e.typeName === refID.typeName)
+  .filter(e => e.adapter === refID.adapter)
+  .filter(e => e.typeName === refID.typeName)
   .map(e => e.name)
 
 const getAllTypes = (

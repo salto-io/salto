@@ -56,7 +56,6 @@ export class ElemID {
   static fromFullName(fullName: string): ElemID {
     const containerNameParts = getContainerPrefix(fullName)
     if (containerNameParts !== undefined) {
-      // const innerID = ElemID.fromFullName(containerNameParts.innerName)
       return new ElemID('', fullName)
     }
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)

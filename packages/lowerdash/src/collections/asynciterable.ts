@@ -23,12 +23,12 @@ export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
 const isAsyncIterable = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   itr: any
-): itr is AsyncIterable<T> => Symbol.asyncIterator in itr
+): itr is AsyncIterable<T> => itr[Symbol.asyncIterator] !== undefined
 
 const isIterable = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   itr: any
-): itr is Iterable<T> => Symbol.iterator in itr
+): itr is Iterable<T> => itr[Symbol.iterator] !== undefined
 
 export const toAsyncIterable = <T>(i: Iterable<T>): AsyncIterable<T> => {
   const iter = i[Symbol.iterator]()

@@ -161,7 +161,7 @@ export const mergeWithHidden = async (
     ? awu(hiddenChangedElemIDs).map(id => state.get(id))
     : awu(await state.getAll())
       .filter(async element => isHidden(element, state))
-  const arr = awu(workspaceElements)
+  const workspaceElementsWithHiddenParts = awu(workspaceElements)
     .flatMap(async (elem): Promise<Element[]> => {
       const stateElement = await state.get(elem.elemID)
       return stateElement !== undefined
@@ -170,7 +170,7 @@ export const mergeWithHidden = async (
     })
     .filter(values.isDefined)
   return mergeElements(
-    awu(hiddenStateElements).concat(arr)
+    awu(hiddenStateElements).concat(workspaceElementsWithHiddenParts)
   )
 }
 

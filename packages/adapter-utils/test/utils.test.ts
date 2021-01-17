@@ -1714,7 +1714,7 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('await applyInstancesDefaults', () => {
+  describe('applyInstancesDefaults', () => {
     const baseElemID = new ElemID('salto', 'base')
     const base = new ObjectType({
       elemID: baseElemID,

@@ -105,7 +105,7 @@ export const filterInvalidChanges = async (
         return validElement
       })
       .filter(values.isDefined)
-      .toArray() as Element[]
+      .toArray()
 
     return _.keyBy(validChangeElements, e => e.elemID.getFullName())
   }

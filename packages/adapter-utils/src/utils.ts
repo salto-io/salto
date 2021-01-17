@@ -834,7 +834,7 @@ export const applyInstancesDefaults = (
         await element.getType(elementsSrouce),
         elementsSrouce
       )
-      element.value = _.merge({}, defaultValues, element.value)
+      element.value = { ...defaultValues, ...element.value }
     }
     return element
   })

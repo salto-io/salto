@@ -65,10 +65,10 @@ export const buildNewMergedElementsAndErrors = async ({
           await currentElements.delete(id)
         }
         changes.push(toChange({ before, after: mergedItem }))
-      }
-      const mergeErrors = await newMergedElementsResult.errors.get(fullname)
-      if (mergeErrors !== undefined) {
-        await currentErrors.set(fullname, mergeErrors)
+        const mergeErrors = await newMergedElementsResult.errors.get(fullname)
+        if (mergeErrors !== undefined) {
+          await currentErrors.set(fullname, mergeErrors)
+        }
       }
     }
   })

@@ -190,7 +190,6 @@ export const fetch: FetchFunc = async (
     fetchServices,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
-    // Not loving this - Will have to create a JIRA task to fix this...
     await createElemIdGetter(
       await awu(await workspace.state().getAll())
         .filter(element => !fetchElementsFilter(element.elemID)).toArray(),

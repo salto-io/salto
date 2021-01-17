@@ -65,9 +65,7 @@ export const mergeElements = async (
   let errorsCounter = 0
   const merged = new InMemoryRemoteMap<Element>()
   const errors = new InMemoryRemoteMap<MergeError[]>()
-  const eee: string[] = []
   await awu(elements).forEach(async element => {
-    eee.push(element.elemID.getFullName())
     const existingElement = await merged.get(element.elemID.getFullName())
     if (existingElement === undefined) {
       mergedCounter += 1

@@ -82,7 +82,7 @@ export const listUnresolvedReferences = async (
   }
 
   const addAndValidate = async (
-    ids: ElemID[], elements?: Element[],
+    ids: ElemID[], elements: Element[] = [],
   ): Promise<{ completed: string[]; missing: string[] }> => {
     if (ids.length === 0) {
       return { completed: [], missing: [] }
@@ -126,7 +126,7 @@ export const listUnresolvedReferences = async (
 
     const innerRes = await addAndValidate(
       unresolvedIDs,
-      [...elements ?? [], ...resolvedElements]
+      [...elements, ...resolvedElements]
     )
     return {
       completed: [...completed, ...innerRes.completed],

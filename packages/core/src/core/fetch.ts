@@ -177,7 +177,7 @@ type ProcessMergeErrorsResult = {
 const processMergeErrors = (
   elements: Element[],
   errors: merger.MergeError[],
-  stateElementIDs: string[]
+  stateElementIDs: Set<string>
 ): ProcessMergeErrorsResult => log.time(() => {
   const mergeErrsByElemID = _(errors)
     .map(me => ([
@@ -192,7 +192,7 @@ const processMergeErrors = (
     const foundMergeErr = mergeErrsByElemID[e.elemID.getFullName()]
     if (foundMergeErr) {
       foundMergeErr.elements.push(e)
-      if (stateElementIDs.includes(e.elemID.getFullName())) {
+      if (stateElementIDs.has(e.elemID.getFullName())) {
         errorsWithStateElements.push(foundMergeErr)
       }
       errorsWithDroppedElements.push(foundMergeErr)
@@ -218,7 +218,7 @@ const processMergeErrors = (
     errorsWithDroppedElements,
   }
 }, 'process merge errors for %o elements with %o errors and %o state elements',
-elements.length, errors.length, stateElementIDs.length)
+elements.length, errors.length, stateElementIDs.size)
 
 type UpdatedConfig = {
   config: InstanceElement
@@ -267,7 +267,7 @@ const fetchAndProcessMergeErrors = async (
     const processErrorsResult = processMergeErrors(
       elements,
       mergeErrors,
-      stateElements.map(e => e.elemID.getFullName())
+      new Set(stateElements.map(e => e.elemID.getFullName()))
     )
 
     const droppedElements = new Set(

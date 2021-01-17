@@ -19,8 +19,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { ElementIDResolver, resolvers } from './lightining_url_resolvers'
 
 const log = logger(module)
-
-const { findAsync, mapAsync, toAsyncIterable } = collections.asynciterable
+const { awu } = collections.asynciterable
 
 export type ElementsUrlRetriever = {
   retrieveUrl(element: Element): Promise<URL | undefined>
@@ -36,15 +35,10 @@ export const lightningElementsUrlRetriever = (baseUrl: URL, elementIDResolver: E
   }
   const lightningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
 
-  const retrieveUrl = (element: Element): Promise<URL | undefined> => (
-    findAsync(
-      mapAsync(
-        toAsyncIterable(resolvers),
-        resolver => resolver(element, lightningUrl, elementIDResolver)
-      ),
-      values.isDefined,
-    )
-  )
+  const retrieveUrl = async (element: Element): Promise<URL | undefined> =>
+    awu(resolvers)
+      .map(resolver => resolver(element, lightningUrl, elementIDResolver))
+      .find(values.isDefined)
 
   return {
     retrieveUrl,

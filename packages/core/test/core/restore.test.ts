@@ -13,11 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { merger, pathIndex } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { createRestoreChanges } from '../../src/core/restore'
+import { createElementSource } from '../common/helpers'
 
+const { awu } = collections.asynciterable
 const { mergeElements } = merger
 const { createPathIndex } = pathIndex
 
@@ -119,49 +122,63 @@ describe('restore', () => {
     multiPathInstace2,
     nestedType,
   ]
-  const { merged: allElement } = mergeElements([singlePathObject, ...elementfragments])
-  const singlePathObjMerged = allElement
-    .find(e => e.elemID.isEqual(singlePathObject.elemID)) as ObjectType
-  const multiPathObjMerged = allElement
-    .find(e => e.elemID.isEqual(multiPathAnnoObj.elemID)) as ObjectType
-  const singlePathInstMerged = allElement
-    .find(e => e.elemID.isEqual(singlePathInstance.elemID)) as InstanceElement
-  const multiPathInstMerged = allElement
-    .find(e => e.elemID.isEqual(multiPathInstace2.elemID)) as InstanceElement
-
-  const index = createPathIndex(elementfragments)
+  let allElement: Element[]
+  let singlePathObjMerged: Element
+  let multiPathObjMerged: Element
+  let singlePathInstMerged: Element
+  let multiPathInstMerged: Element
+  let index: pathIndex.PathIndex
+  beforeAll(async () => {
+    const { merged } = await mergeElements(awu([singlePathObject, ...elementfragments]))
+    allElement = await awu(merged.values()).toArray()
+    // singlePathObjMerged = allElement[0].clone()
+    // multiPathObjMerged = allElement[1].clone()
+    // singlePathInstMerged = allElement[2].clone()
+    // multiPathInstMerged = allElement[3].clone()
+    singlePathObjMerged = allElement[0].clone()
+    multiPathObjMerged = allElement[2].clone()
+    singlePathInstMerged = allElement[1].clone()
+    multiPathInstMerged = allElement[3].clone()
+    index = await createPathIndex(elementfragments)
+  })
 
   describe('with no changes', () => {
     it('should not create changes ws and the state are the same', async () => {
       const changes = await createRestoreChanges(
-        allElement,
-        allElement,
-        index,
+        await createElementSource(allElement),
+        await createElementSource(allElement),
+        index
       )
       expect(changes).toHaveLength(0)
     })
   })
 
   describe('with changes', () => {
-    const singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
-    const wsElements = [
-      singlePathObjMerged,
-      multiPathInstMerged,
-      singlePathInstMerged,
-    ]
-    singlePathInstMergedAfter.value.nested.str = 'modified'
-    const stateElements = [
-      multiPathObjMerged,
-      singlePathInstMergedAfter,
-      multiPathInstMerged,
-    ]
+    let wsElements: Element[]
+    let stateElements: Element[]
+    let singlePathInstMergedAfter: InstanceElement
+    beforeAll(async () => {
+      singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
+      wsElements = [
+        singlePathObjMerged,
+        multiPathInstMerged,
+        singlePathInstMerged,
+      ]
+      singlePathInstMergedAfter.value.nested.str = 'modified'
+      stateElements = [
+        multiPathObjMerged,
+        singlePathInstMergedAfter,
+        multiPathInstMerged,
+      ]
+    })
+
     describe('without filters', () => {
       let changes: DetailedChange[]
       beforeAll(async () => {
         changes = await createRestoreChanges(
-          [...wsElements, nestedType],
-          [...stateElements, nestedType],
-          index,
+          await createElementSource([...wsElements, nestedType]),
+          await createElementSource([...stateElements, nestedType]),
+          index
         )
       })
 

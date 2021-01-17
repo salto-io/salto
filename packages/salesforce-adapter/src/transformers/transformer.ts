@@ -16,9 +16,10 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, ReferenceExpression, isContainerType } from '@salto-io/adapter-api'
+import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
+
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
@@ -39,12 +40,14 @@ import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
 
+const { mapValuesAsync, pickAsync } = promises.object
+const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
 
-export const metadataType = (element: Readonly<Element>): string => {
+export const metadataType = async (element: Readonly<Element>): Promise<string> => {
   if (isInstanceElement(element)) {
-    return metadataType(element.getType())
+    return metadataType(await element.getType())
   }
   if (isField(element)) {
     // We expect to reach to this place only with field of CustomObject
@@ -53,15 +56,16 @@ export const metadataType = (element: Readonly<Element>): string => {
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
 
-export const isCustomObject = (element: Readonly<Element>): element is ObjectType => (
-  isObjectType(element)
-  && metadataType(element) === CUSTOM_OBJECT
+export const isCustomObject = async (element: Readonly<Element>): Promise<boolean> => {
+  const res = isObjectType(element)
+  && await metadataType(element) === CUSTOM_OBJECT
   // The last part is so we can tell the difference between a custom object
   // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
   && element.annotations[API_NAME] !== undefined
-)
+  return res
+}
 
-export const isFieldOfCustomObject = (field: Field): boolean =>
+export const isFieldOfCustomObject = async (field: Field): Promise<boolean> =>
   isCustomObject(field.parent)
 
 // This function checks whether an element is an instance of any custom object type.
@@ -69,8 +73,8 @@ export const isFieldOfCustomObject = (field: Field): boolean =>
 // for instances of Lead, but it will not be true for Lead itself when it is still an instance
 // (before the custom objects filter turns it into a type).
 // To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
-export const isInstanceOfCustomObject = (element: Readonly<Element>): element is InstanceElement =>
-  isInstanceElement(element) && isCustomObject(element.getType())
+export const isInstanceOfCustomObject = async (element: Readonly<Element>): Promise<boolean> =>
+  isInstanceElement(element) && isCustomObject(await element.getType())
 
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
@@ -88,9 +92,9 @@ export const defaultApiName = (element: Readonly<Element>): string => {
     : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
 }
 
-const fullApiName = (elem: Readonly<Element>): string => {
+const fullApiName = async (elem: Readonly<Element>): Promise<string> => {
   if (isInstanceElement(elem)) {
-    return isCustomObject(elem.getType())
+    return (await isCustomObject(await elem.getType()))
       ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
@@ -100,8 +104,8 @@ export const relativeApiName = (name: string): string => (
   _.last(name.split(API_NAME_SEPARATOR)) as string
 )
 
-export const apiName = (elem: Readonly<Element>, relative = false): string => {
-  const name = fullApiName(elem)
+export const apiName = async (elem: Readonly<Element>, relative = false): Promise<string> => {
+  const name = await fullApiName(elem)
   return name && relative ? relativeApiName(name) : name
 }
 
@@ -825,27 +829,27 @@ export class Types {
   }
 }
 
-export const isNameField = (field: Field): boolean =>
-  (isObjectType(field.getType())
+export const isNameField = async (field: Field): Promise<boolean> =>
+  (isObjectType(await field.getType())
     && (field.refType.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
     || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
 
-const transformCompoundValues = (
+const transformCompoundValues = async (
   record: SalesforceRecord,
   instance: InstanceElement
-): SalesforceRecord => {
+): Promise<SalesforceRecord> => {
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
-  const relevantCompoundFields = _.pickBy(instance.getType().fields,
+  const relevantCompoundFields = _.pickBy((await instance.getType()).fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
     && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
   if (_.isEmpty(relevantCompoundFields)) {
     return record
   }
-  const transformedCompoundValues = _.mapValues(
+  const transformedCompoundValues = await mapValuesAsync(
     relevantCompoundFields,
-    (compoundField, compoundFieldKey) => {
+    async (compoundField, compoundFieldKey) => {
       // Name fields are without a prefix
-      if (isNameField(compoundField)) {
+      if (await isNameField(compoundField)) {
         return record[compoundFieldKey]
       }
       // Other compound fields are added a prefix according to the field name
@@ -863,33 +867,38 @@ const transformCompoundValues = (
   )
 }
 
-const toRecord = (
+const toRecord = async (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
-): SalesforceRecord => {
+): Promise<SalesforceRecord> => {
+  const instanceType = await instance.getType()
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
       instance.value,
-      (_v, k) => instance.getType().fields[k]?.annotations[fieldAnnotationToFilterBy]
+      (_v, k) => (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
   return transformCompoundValues(filteredRecordValues, instance)
 }
 
-export const instancesToUpdateRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
-  instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE))
+export const instancesToUpdateRecords = async (
+  instances: InstanceElement[]
+): Promise<SalesforceRecord[]> =>
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE)))
 
-export const instancesToCreateRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
-  instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE))
+export const instancesToCreateRecords = (
+  instances: InstanceElement[]
+): Promise<SalesforceRecord[]> =>
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE)))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
 
-export const toCustomField = (field: Field): CustomField => {
+export const toCustomField = async (field: Field): Promise<CustomField> => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
-    apiName(field, true),
+    await apiName(field, true),
     fieldTypeName(field.refType.elemID.name),
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
@@ -938,16 +947,16 @@ export const toCustomField = (field: Field): CustomField => {
     ...annotationsHandledInCtor,
     ...internalUseAnnotations,
     // We cannot deploy labels on standard fields
-    ...isCustom(apiName(field)) ? [] : [LABEL],
+    ...isCustom(await apiName(field)) ? [] : [LABEL],
   ]
-  const isAllowed = (annotationName: string): boolean => (
-    Object.keys(field.getType().annotationRefTypes).includes(annotationName)
+  const isAllowed = async (annotationName: string): Promise<boolean> => (
+    Object.keys((await field.getType()).annotationRefTypes).includes(annotationName)
     && !annotationsToSkip.includes(annotationName)
   )
   // Convert the annotations' names to the required API name
   _.assign(
     newField,
-    _.pickBy(field.annotations, (_val, annotationName) => isAllowed(annotationName)),
+    await pickAsync(field.annotations, (_val, annotationName) => isAllowed(annotationName)),
   )
   return newField
 }
@@ -958,16 +967,17 @@ export const isLocalOnly = (field?: Field): boolean => (
 
 const getCustomFields = (
   element: ObjectType, skipFields: string[]
-): CustomField[] =>
-  Object.values(element.fields)
+): Promise<CustomField[]> =>
+  awu(Object.values(element.fields))
     .filter(field => !isLocalOnly(field))
     .map(field => toCustomField(field))
     .filter(field => !skipFields.includes(field.fullName))
     .filter(field => CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(field.type))
+    .toArray()
 
-export const toCustomProperties = (
+export const toCustomProperties = async (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
-): CustomObject => {
+): Promise<CustomObject> => {
   // Skip the assignment of the following annotations that are defined as annotationType
   const annotationsToSkip = [
     API_NAME, // we use it as fullName
@@ -980,9 +990,9 @@ export const toCustomProperties = (
     && !annotationsToSkip.includes(annotationName)
   )
   return {
-    fullName: apiName(element),
+    fullName: await apiName(element),
     label: element.annotations[LABEL],
-    ...includeFields ? { fields: getCustomFields(element, skipFields) } : {},
+    ...includeFields ? { fields: await getCustomFields(element, skipFields) } : {},
     ..._.pickBy(element.annotations, (_val, name) => isAllowed(name)),
   }
 }
@@ -1041,19 +1051,25 @@ const isNull = (value: Value): boolean =>
     && (_.get(value, ['$', 'xsi:nil']) === 'true'
       || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))
 
-export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
+export const transformPrimitive: TransformFunc = async ({ value, path, field }) => {
   if (isNull(value)) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
     return undefined
   }
+
   // (Salto-394) Salesforce returns objects like:
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
   if (_.isObject(value) && Object.keys(value).includes('_')) {
     const convertFunc = convertXsdTypeFuncMap[_.get(value, ['$', 'xsi:type'])] || (v => v)
     return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
   }
-  const fieldType = field?.getType()
+  const fieldType = await field?.getType()
+
+  if (isContainerType(fieldType) && _.isEmpty(value)) {
+    return undefined
+  }
+
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
@@ -1236,13 +1252,12 @@ export const getSObjectFieldElement = (
   return new Field(parent, fieldName, naclFieldType, annotations)
 }
 
-export const toDeployableInstance = (element: InstanceElement): InstanceElement => {
+export const toDeployableInstance = async (element: InstanceElement): Promise<InstanceElement> => {
   const removeLocalOnly: TransformFunc = ({ value, field }) => (
     (isLocalOnly(field))
       ? undefined
       : value
   )
-
   return transformElement({
     element,
     transformFunc: removeLocalOnly,
@@ -1252,11 +1267,11 @@ export const toDeployableInstance = (element: InstanceElement): InstanceElement 
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => info
 
-export const toMetadataInfo = (instance: InstanceElement):
-  MetadataInfo =>
+export const toMetadataInfo = async (instance: InstanceElement):
+  Promise<MetadataInfo> =>
   ({
-    fullName: apiName(instance),
-    ...toDeployableInstance(instance).value,
+    fullName: await apiName(instance),
+    ...(await toDeployableInstance(instance)).value,
   })
 
 export const createInstanceServiceIds = (
@@ -1322,11 +1337,11 @@ export const assertMetadataObjectType = (type: ObjectType): MetadataObjectType =
   return type
 }
 
-export const isMetadataInstanceElement = (
+export const isMetadataInstanceElement = async (
   elem?: Element
-): elem is MetadataInstanceElement => (
+): Promise<boolean> => (
   isInstanceElement(elem)
-  && isMetadataObjectType(elem.getType())
+  && isMetadataObjectType(await elem.getType())
   && elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
 )
 

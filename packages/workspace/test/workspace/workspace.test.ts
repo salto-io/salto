@@ -23,6 +23,7 @@ import {
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
 import { METADATA_TYPE, INTERNAL_ID_ANNOTATION } from '@salto-io/salesforce-adapter/dist/src/constants'
+import { collections } from '@salto-io/lowerdash'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
@@ -34,13 +35,15 @@ import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
-import { InMemoryRemoteElementSource } from '../../src/workspace/elements_source'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { PathIndex } from '../../src/workspace/path_index'
 import { resolve } from '../../src/expressions'
+import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
+
+const { awu } = collections.asynciterable
 
 const changedNaclFile = {
   filename: 'file.nacl',
@@ -81,7 +84,7 @@ const mockCredentialsSource = (): ConfigSource => ({
 })
 
 const createState = (elements: Element[]): State => buildInMemState(async () => ({
-  elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
+  elements: createInMemoryElementSource(elements),
   pathIndex: new PathIndex(),
   servicesUpdateDate: {},
   saltoVersion: '0.0.1',
@@ -100,7 +103,7 @@ const createWorkspace = async (
       commonSourceName: '',
       sources: elementSources || {
         '': {
-          naclFiles: naclFilesSource(
+          naclFiles: await naclFilesSource(
             dirStore || mockDirStore(), mockParseCache(),
             staticFilesSource || mockStaticFilesSource(),
           ),
@@ -112,8 +115,13 @@ const createWorkspace = async (
       },
     })
 
-const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =>
-  _.keyBy(elements, elem => elem.elemID.getFullName())
+const getElemMap = async (
+  elements: ElementsSource
+): Promise<Record<string, Element>> => Object.fromEntries(
+  await awu(await elements.getAll())
+    .map(e => [e.elemID.getFullName(), e])
+    .toArray()
+)
 
 describe('workspace', () => {
   describe('loadWorkspace', () => {
@@ -155,7 +163,7 @@ describe('workspace', () => {
     })
     describe('with hidden values and types', () => {
       beforeAll(async () => {
-        elemMap = getElemMap(await workspace.elements())
+        elemMap = await getElemMap(await workspace.elements())
       })
       it('should contain types from all files', () => {
         expect(elemMap).toHaveProperty(['salesforce.lead'])
@@ -169,7 +177,7 @@ describe('workspace', () => {
     })
     describe('loaded elements without hidden types', () => {
       beforeAll(async () => {
-        elemMap = getElemMap(await workspace.elements(false))
+        elemMap = await getElemMap(await workspace.elements(false))
       })
       it('should contain types from all files', () => {
         expect(elemMap).toHaveProperty(['salesforce.lead'])
@@ -330,8 +338,12 @@ describe('workspace', () => {
         }),
         state,
       )
-      const elements = await workspace.elements(false)
-      state.override(resolve(elements, new InMemoryRemoteElementSource(elements)))
+      await state.override(
+        await resolve(
+          await (await workspace.elements(false)).getAll(),
+          await workspace.elements(false)
+        )
+      )
 
       const wsErrors = await workspace.errors()
       expect(wsErrors.merge).toHaveLength(1)
@@ -361,7 +373,7 @@ describe('workspace', () => {
 
     it('should update elements to not include fields from removed Nacl files', async () => {
       await workspace.removeNaclFiles(...removedPaths)
-      const elemMap = getElemMap(await workspace.elements())
+      const elemMap = await getElemMap(await workspace.elements())
       expect(Object.keys(elemMap).sort())
         .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
       const lead = elemMap['salesforce.lead'] as ObjectType
@@ -370,7 +382,7 @@ describe('workspace', () => {
 
     it('should modify element to not include fields from removed Nacl files', async () => {
       const changes = await workspace.removeNaclFiles('subdir/file.nacl')
-      const elemMap = getElemMap(await workspace.elements())
+      const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
       expect(changes.map(getChangeElement).map(c => c.elemID.getFullName()))
@@ -386,7 +398,7 @@ describe('workspace', () => {
     it('should also work if we do not call elements in advance', async () => {
       const newWorkspace = await createWorkspace(mockDirStore())
       await newWorkspace.removeNaclFiles(...removedPaths)
-      const elemMap = getElemMap(await newWorkspace.elements())
+      const elemMap = await getElemMap(await newWorkspace.elements())
       expect(Object.keys(elemMap).sort())
         .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
       const lead = elemMap['salesforce.lead'] as ObjectType
@@ -418,7 +430,8 @@ describe('workspace', () => {
       workspace = await createWorkspace(naclFileStore)
       await workspace.elements()
       changes = await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
-      elemMap = getElemMap(await workspace.elements())
+      await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
+      elemMap = await getElemMap(await workspace.elements())
     })
 
     it('should update elements', () => {
@@ -469,7 +482,9 @@ describe('workspace', () => {
       {},
     )
     const newField = oldField.clone()
-    newField.refType = createRefToElmWithValue(new ListType(newField.getType()))
+    beforeAll(async () => {
+      newField.refType = createRefToElmWithValue(new ListType(await newField.getType()))
+    })
     const anotherNewField = new Field(
       fieldsParent,
       'lala',
@@ -550,7 +565,7 @@ describe('workspace', () => {
         numHidden: new Field(
           queueSobjectHiddenSubType,
           'numHidden',
-          BuiltinTypes.STRING,
+          BuiltinTypes.NUMBER,
           {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
@@ -958,7 +973,6 @@ describe('workspace', () => {
     let elemMap: Record<string, Element>
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
-    let elementsSource: InMemoryRemoteElementSource
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -970,18 +984,9 @@ describe('workspace', () => {
       // The call to resolve is the only safe way to clone elements while keeping all
       // the inner references between elements correct, we then apply all the changes to the copied
       // elements and set them along with the hidden types as the state elements
-      const elements = await workspace.elements()
-      // const elementsWithInnerTypes = elements.flatMap(e => {
-      //   if (isObjectType(e)) {
-      //     return [e, ...getFieldsAndAnnoTypes(e)]
-      //   }
-      //   if (isInstanceElement(e)) {
-      //     return [e, e.getType(), ...getFieldsAndAnnoTypes(e.getType())]
-      //   }
-      //   return e
-      // })
-      elementsSource = new InMemoryRemoteElementSource(elements)
-      const stateElements = resolve(elements, elementsSource)
+      const stateElements = await awu(
+        await resolve(await (await workspace.elements()).getAll(), await workspace.elements())
+      ).toArray()
       const stateElementsById = _.keyBy(stateElements, elem => elem.elemID.getFullName())
       const changesByElem = _.groupBy(
         changes,
@@ -993,15 +998,21 @@ describe('workspace', () => {
           applyDetailedChanges(elem, elemChanges)
         }
       })
-      state.override([
-        ...stateElements, accountInsightsSettingsType, queueHiddenType,
-      ])
+      await state.override(
+        awu([
+          ...Object.values(BuiltinTypes),
+          ...stateElements,
+          accountInsightsSettingsType,
+          queueHiddenType,
+          queueHiddenInstance,
+          queueSobjectHiddenSubType,
+        ])
+      )
 
       clonedChanges = _.cloneDeep(changes)
       await workspace.updateNaclFiles(clonedChanges)
-
-      elemMap = getElemMap(await workspace.elements(false))
-      elemMapWithHidden = getElemMap(await workspace.elements())
+      elemMap = await getElemMap(await workspace.elements(false))
+      elemMapWithHidden = await getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
 
       // New types (first time returned from service)
@@ -1099,10 +1110,11 @@ describe('workspace', () => {
       expect(changedInstance.refType.elemID.isEqual(changedType.elemID)).toBeTruthy()
     })
 
-    it('should change inner type inside containers types if type was changed', () => {
+    it('should change inner type inside containers types if type was changed', async () => {
       const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
       const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlockListNested'] as ObjectType
-      expect((changedInstance.fields.noAnno.getType(elementsSource) as ContainerType)
+      expect((await changedInstance.fields.noAnno
+        .getType(await workspace.elements()) as ContainerType)
         .refInnerType.elemID.isEqual(changedType.elemID)).toBeTruthy()
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
@@ -1250,7 +1262,10 @@ describe('workspace', () => {
       }
 
       await workspace.updateNaclFiles([change1, change2])
-      lead = findElement(await workspace.elements(), new ElemID('salesforce', 'lead')) as ObjectType
+      lead = findElement(
+        await awu(await (await workspace.elements()).getAll()).toArray(),
+        new ElemID('salesforce', 'lead')
+      ) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
 
@@ -1266,7 +1281,17 @@ describe('workspace', () => {
     })
     it('should init workspace configuration', async () => {
       const workspace = await initWorkspace('ws-name', 'uid', 'default', workspaceConf,
-        mockCredentialsSource(), { commonSourceName: '', sources: {} })
+        mockCredentialsSource(), { commonSourceName: '',
+          sources: {
+            default: {
+              naclFiles: createMockNaclFileSource([]),
+              state: createState([]),
+            },
+            '': {
+              naclFiles: createMockNaclFileSource([]),
+              state: createState([]),
+            },
+          } })
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
         { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }], currentEnv: 'default' }
       )
@@ -1318,7 +1343,11 @@ describe('workspace', () => {
   describe('flush', () => {
     it('should flush all data sources', async () => {
       const mockFlush = jest.fn()
-      const flushable = { flush: mockFlush }
+      const flushable = {
+        flush: mockFlush,
+        list: jest.fn().mockResolvedValue([]),
+        getAll: jest.fn().mockResolvedValue([]),
+      }
       const workspace = await createWorkspace(flushable as unknown as DirectoryStore<string>,
         flushable as unknown as State)
       await workspace.flush()
@@ -1345,6 +1374,7 @@ describe('workspace', () => {
       workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
         undefined,
         {
+          '': { naclFiles: createMockNaclFileSource([]) },
           default: { naclFiles: defNaclFiles, state },
           inactive: { naclFiles: inactiveNaclFiles, state },
         })
@@ -1370,10 +1400,12 @@ describe('workspace', () => {
     })
 
     it('should return the elements of the new current envs after set', async () => {
-      const defaultElemIDs = (await workspace.elements()).map(e => e.elemID.getFullName())
+      const defaultElemIDs = await awu(await (await workspace.elements()).getAll())
+        .map(e => e.elemID.getFullName()).toArray()
       expect(defaultElemIDs).toHaveLength(0)
       await workspace.setCurrentEnv('inactive')
-      const inactiveElemIDs = (await workspace.elements()).map(e => e.elemID.getFullName())
+      const inactiveElemIDs = await awu(await (await workspace.elements()).getAll())
+        .map(e => e.elemID.getFullName()).toArray()
       expect(inactiveElemIDs).toHaveLength(1)
       expect(inactiveElemIDs).toEqual(['salto.inactive'])
     })
@@ -1421,8 +1453,18 @@ describe('workspace', () => {
         const state = createState([])
         stateClear = jest.spyOn(state, 'clear')
         naclFiles = createMockNaclFileSource([])
-        workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
-          undefined, { inactive: { naclFiles, state } })
+        workspace = await createWorkspace(
+          undefined,
+          undefined,
+          workspaceConf,
+          credSource,
+          undefined,
+          {
+            inactive: { naclFiles, state },
+            '': { naclFiles: createMockNaclFileSource([]) },
+            default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+          }
+        )
         await workspace.deleteEnvironment(envName)
       })
 
@@ -1577,7 +1619,7 @@ describe('workspace', () => {
         const newEnvName = 'new-default'
         beforeEach(async () => {
           workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
-            undefined, { [envName]: { naclFiles, state } })
+            undefined, { [envName]: { naclFiles, state }, '': { naclFiles: createMockNaclFileSource([]) } })
           await workspace.renameEnvironment(envName, newEnvName)
         })
         it('should change workspace state', async () => {
@@ -1602,7 +1644,11 @@ describe('workspace', () => {
         const newEnvName = 'new-inactive'
         beforeEach(async () => {
           workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
-            undefined, { [envName]: { naclFiles, state } })
+            undefined, {
+              [envName]: { naclFiles, state },
+              '': { naclFiles: createMockNaclFileSource([]) },
+              default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+            })
           await workspace.renameEnvironment(envName, newEnvName)
         })
         it('should change workspace state', async () => {
@@ -1951,7 +1997,6 @@ describe('getElementNaclFiles', () => {
   beforeAll(async () => {
     workspace = await createWorkspace(naclFileStore)
   })
-
   it('should find all files for a top level id', async () => {
     const id = ElemID.fromFullName('salesforce.lead')
     const res = await workspace.getElementNaclFiles(id)

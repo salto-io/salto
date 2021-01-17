@@ -13,17 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
-import { values } from '@salto-io/lowerdash'
-import { Change, ChangeGroupIdFunction, getChangeElement, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
+import { values, collections } from '@salto-io/lowerdash'
+import { Change, ChangeGroupIdFunction, getChangeElement, ChangeGroupId, ChangeId, InstanceElement } from '@salto-io/adapter-api'
 import { apiName } from './transformers/transformer'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
 
-type ChangeIdFunction = (change: Change) => string | undefined
+const { awu } = collections.asynciterable
 
-const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = change => (
-  isInstanceOfCustomObjectChange(change)
-    ? `${change.action}_${apiName(getChangeElement(change).getType())}_instances`
+type ChangeIdFunction = (change: Change) => Promise<string | undefined> | string | undefined
+
+const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => (
+  await isInstanceOfCustomObjectChange(change)
+    ? `${change.action}_${await apiName(await (getChangeElement(change) as InstanceElement).getType())}_instances`
     : undefined
 )
 
@@ -37,13 +38,14 @@ const changeIdProviders: ChangeIdFunction[] = [
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
   new Map(
-    wu(changes.entries())
-      .map(([id, change]) => {
-        const groupId = changeIdProviders
+    await awu(changes.entries())
+      .map(async ([id, change]) => {
+        const groupId = await awu(changeIdProviders)
           .map(provider => provider(change))
           .find(values.isDefined)
         return groupId === undefined ? undefined : [id, groupId] as [ChangeId, ChangeGroupId]
       })
       .filter(values.isDefined)
+      .toArray()
   )
 )

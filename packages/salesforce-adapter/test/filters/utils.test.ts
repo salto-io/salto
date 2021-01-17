@@ -25,9 +25,9 @@ import { createCustomObjectType } from '../utils'
 describe('addDefaults', () => {
   describe('when called with instance', () => {
     let instance: InstanceElement
-    beforeEach(() => {
+    beforeEach(async () => {
       instance = new InstanceElement('test', mockTypes.Profile)
-      addDefaults(instance)
+      await addDefaults(instance)
     })
     it('should add api name', () => {
       expect(instance.value).toHaveProperty(INSTANCE_FULL_NAME_FIELD, 'test')
@@ -46,7 +46,7 @@ describe('addDefaults', () => {
   })
   describe('when called with field', () => {
     let field: Field
-    beforeEach(() => {
+    beforeEach(async () => {
       const obj = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
         fields: {
@@ -57,7 +57,7 @@ describe('addDefaults', () => {
         },
       })
       field = obj.fields.a
-      addDefaults(field)
+      await addDefaults(field)
     })
     it('should add api name', () => {
       expect(field.annotations).toHaveProperty(API_NAME, 'test.a__c')
@@ -69,7 +69,7 @@ describe('addDefaults', () => {
   describe('when called with custom object', () => {
     describe('when object has no annotations', () => {
       let object: ObjectType
-      beforeEach(() => {
+      beforeEach(async () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
@@ -77,7 +77,7 @@ describe('addDefaults', () => {
           },
         })
 
-        addDefaults(object)
+        await addDefaults(object)
       })
       it('should add annotation values', () => {
         expect(object.annotations).toMatchObject({
@@ -112,7 +112,7 @@ describe('addDefaults', () => {
     })
     describe('when object already has annotations', () => {
       let object: ObjectType
-      beforeEach(() => {
+      beforeEach(async () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           annotations: {
@@ -123,7 +123,7 @@ describe('addDefaults', () => {
             sharingModel: BuiltinTypes.HIDDEN_STRING,
           },
         })
-        addDefaults(object)
+        await addDefaults(object)
       })
       it('should add missing annotations', () => {
         expect(object.annotations).toMatchObject({
@@ -157,14 +157,14 @@ describe('addDefaults', () => {
     })
     describe('when object has a master detail field', () => {
       let object: ObjectType
-      beforeEach(() => {
+      beforeEach(async () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
             a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail) },
           },
         })
-        addDefaults(object)
+        await addDefaults(object)
       })
       it('should set sharing model to controlled by parent', () => {
         expect(object.annotations).toHaveProperty('sharingModel', 'ControlledByParent')
@@ -173,14 +173,14 @@ describe('addDefaults', () => {
   })
   describe('when called with custom settings', () => {
     let object: ObjectType
-    beforeEach(() => {
+    beforeEach(async () => {
       object = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
         annotations: {
           [CUSTOM_SETTINGS_TYPE]: 'Hierarchical',
         },
       })
-      addDefaults(object)
+      await addDefaults(object)
     })
     it('should add annotation values', () => {
       expect(object.annotations).toMatchObject({

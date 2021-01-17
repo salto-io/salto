@@ -22,21 +22,21 @@ const mockProgressReporter = { reportProgress: jest.fn() }
 
 describe('elements generator', () => {
   describe('consistency', () => {
-    it('should create the same set of elements when invoked with the same seed and params', () => {
-      const run1 = generateElements(testParams, mockProgressReporter)
-      const run2 = generateElements(testParams, mockProgressReporter)
+    it('should create the same set of elements when invoked with the same seed and params', async () => {
+      const run1 = await generateElements(testParams, mockProgressReporter)
+      const run2 = await generateElements(testParams, mockProgressReporter)
       expect(run1).toEqual(run2)
     })
-    it('should create different results when invoked with different seeds', () => {
-      const run1 = generateElements(testParams, mockProgressReporter)
-      const run2 = generateElements({
+    it('should create different results when invoked with different seeds', async () => {
+      const run1 = await generateElements(testParams, mockProgressReporter)
+      const run2 = await generateElements({
         ...testParams,
         seed: 3.14,
       }, mockProgressReporter)
       expect(run1).not.toEqual(run2)
     })
-    it('should create the amount of elements as the params specified', () => {
-      const elements = generateElements(testParams, mockProgressReporter)
+    it('should create the amount of elements as the params specified', async () => {
+      const elements = await generateElements(testParams, mockProgressReporter)
       const primitives = elements.filter(isPrimitiveType)
       const [types, objects] = _.partition(
         elements.filter(isObjectType),
@@ -57,13 +57,13 @@ describe('elements generator', () => {
       )
       expect(records).toHaveLength(testParams.numOfRecords)
     })
-    it('should create list and map types', () => {
-      const run1 = generateElements({
+    it('should create list and map types', async () => {
+      const run1 = await generateElements({
         ...testParams,
         listFieldFreq: 1,
         mapFieldFreq: 0,
       }, mockProgressReporter)
-      const run2 = generateElements({
+      const run2 = await generateElements({
         ...testParams,
         listFieldFreq: 0,
         mapFieldFreq: 1,
@@ -77,8 +77,8 @@ describe('elements generator', () => {
       expect(lists.length).toBeGreaterThan(0)
       expect(maps.length).toBeGreaterThan(0)
     })
-    it('should support old profiles', () => {
-      const elements = generateElements({
+    it('should support old profiles', async () => {
+      const elements = await generateElements({
         ...testParams,
         useOldProfiles: true,
       }, mockProgressReporter)

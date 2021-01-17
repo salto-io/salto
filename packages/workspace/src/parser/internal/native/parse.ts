@@ -49,7 +49,6 @@ export const parseBuffer = async (
     valuePromiseWatchers: [],
   }
   const elements: Element[] = []
-
   while (context.lexer.peek()) {
     try {
       if (isVariableDef(context)) {

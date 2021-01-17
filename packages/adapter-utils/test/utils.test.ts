@@ -23,6 +23,7 @@ import {
   ContainerType,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
+import { collections } from '@salto-io/lowerdash'
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
@@ -32,6 +33,8 @@ import {
   transformElement, toObjectType, getParents, extendGeneratedDependencies, createRefToElmWithValue,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
+
+const { awu } = collections.asynciterable
 
 describe('Test utils.ts', () => {
   const mockStrType = new PrimitiveType({
@@ -224,9 +227,9 @@ describe('Test utils.ts', () => {
       }))
     })
 
-    it('should support complex types', () => {
+    it('should support complex types', async () => {
       // TODO: Replace this with refType when handling mapType
-      const mapType = new MapType(mockType.fields.obj.getType())
+      const mapType = new MapType(await mockType.fields.obj.getType())
       const instance = {
         a: 'this is ignored',
         b: 'so is this',
@@ -247,8 +250,8 @@ describe('Test utils.ts', () => {
     const defaultFieldParent = new ObjectType({ elemID: new ElemID('') })
 
     describe('with empty values', () => {
-      it('should return undefined', () => {
-        expect(transformValues({
+      it('should return undefined', async () => {
+        expect(await transformValues({
           values: {},
           transformFunc: () => undefined,
           type: mockType,
@@ -265,7 +268,7 @@ describe('Test utils.ts', () => {
 
       describe('when called with objectType as type parameter', () => {
         beforeEach(async () => {
-          const result = transformValues({
+          const result = await transformValues({
             values: mockInstance.value,
             type: mockType,
             transformFunc,
@@ -301,89 +304,89 @@ describe('Test utils.ts', () => {
           })
         })
 
-        it('should call transform on non-list types even for list types', () => {
-          expect(isListType(mockType.fields.strArray.getType())).toBeTruthy()
+        it('should call transform on non-list types even for list types', async () => {
+          expect(isListType(await mockType.fields.strArray.getType())).toBeTruthy()
           expect(transformFunc).toHaveBeenCalledWith({
             value: mockInstance.value.strArray,
             path: undefined,
             field: new Field(
               mockType.fields.strArray.parent,
               mockType.fields.strArray.name,
-              (mockType.fields.strArray.getType() as ListType).getInnerType(),
+              await (await mockType.fields.strArray.getType() as ListType).getInnerType(),
               mockType.fields.strArray.annotations,
             ),
           })
         })
 
-        it('should call transform on map types', () => {
-          expect(isMapType(mockType.fields.strMap.getType())).toBeTruthy()
+        it('should call transform on map types', async () => {
+          expect(isMapType(await mockType.fields.strMap.getType())).toBeTruthy()
           expect(transformFunc).toHaveBeenCalledWith({
             value: mockInstance.value.strMap,
             path: undefined,
             field: new Field(
               mockType.fields.strMap.parent,
               mockType.fields.strMap.name,
-              mockType.fields.strMap.getType(),
+              await mockType.fields.strMap.getType(),
               mockType.fields.strMap.annotations,
             ),
           })
         })
 
-        it('should call transform on array elements', () => {
-          const numArrayFieldType = mockType.fields.numArray.getType()
+        it('should call transform on array elements', async () => {
+          const numArrayFieldType = await mockType.fields.numArray.getType()
           expect(isListType(numArrayFieldType)).toBeTruthy()
           const numArrayValues = (mockInstance.value.numArray as string[])
-          numArrayValues.forEach(
-            value => expect(transformFunc).toHaveBeenCalledWith({
+          await awu(numArrayValues).forEach(
+            async value => expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
               field: new Field(
                 mockType.fields.numArray.parent,
                 mockType.fields.numArray.name,
-                (numArrayFieldType as ListType).getInnerType(),
+                await (numArrayFieldType as ListType).getInnerType(),
                 mockType.fields.numArray.annotations,
               ),
             })
           )
         })
 
-        it('should call transform on map value elements', () => {
-          const numMapFieldType = mockType.fields.numMap.getType()
+        it('should call transform on map value elements', async () => {
+          const numMapFieldType = await mockType.fields.numMap.getType()
           expect(isMapType(numMapFieldType)).toBeTruthy()
           const numMapValues = (mockInstance.value.numMap as Map<string, number>)
-          Object.entries(numMapValues).forEach(
-            ([key, value]) => {
+          await awu(Object.entries(numMapValues)).forEach(
+            async ([key, value]) => {
               const calls = transformFunc.mock.calls.map(c => c[0]).filter(
                 c => c.field && c.field.name === key
               )
               expect(calls).toHaveLength(1)
               expect(calls[0].value).toEqual(value)
               expect(calls[0].path).toBeUndefined()
-              expect(calls[0].field.getType()).toEqual(BuiltinTypes.NUMBER)
+              expect(await calls[0].field.getType()).toEqual(BuiltinTypes.NUMBER)
               expect(calls[0].field.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
             }
           )
         })
 
-        it('should call transform on primitive types in nested objects', () => {
-          const getField = (
+        it('should call transform on primitive types in nested objects', async () => {
+          const getField = async (
             type: ObjectType | ContainerType,
             path: (string | number)[],
             value: Values,
-          ): Field => {
+          ): Promise<Field> => {
             if (typeof path[0] === 'number' && isListType(type)) {
               return getField(
-                (type.getInnerType() as ObjectType | ContainerType),
+                (await type.getInnerType() as ObjectType | ContainerType),
                 path.slice(1),
                 value[path[0]],
               )
             }
             const field = isMapType(type)
-              ? new Field(toObjectType(type, value), String(path[0]), type.getInnerType())
+              ? new Field(toObjectType(type, value), String(path[0]), await type.getInnerType())
               : type.fields[path[0]]
             return path.length === 1 ? field
               : getField(
-                field.getType() as ObjectType | ContainerType, path.slice(1), value[path[0]]
+                await field.getType() as ObjectType | ContainerType, path.slice(1), value[path[0]]
               )
           }
           const nestedPrimitivePaths = [
@@ -396,9 +399,9 @@ describe('Test utils.ts', () => {
             ['obj', 0, 'mapOfStringList', 'l1'],
             ['obj', 1, 'mapOfStringList', 'something'],
           ]
-          nestedPrimitivePaths.forEach(
-            path => {
-              const field = getField(mockType, path, mockInstance.value)
+          await awu(nestedPrimitivePaths).forEach(
+            async path => {
+              const field = await getField(mockType, path, mockInstance.value)
               const calls = transformFunc.mock.calls.map(c => c[0]).filter(
                 c => c.field && c.field.name === field.name
                   && c.value === _.get(mockInstance.value, path)
@@ -437,7 +440,7 @@ describe('Test utils.ts', () => {
 
       describe('when called with instance annotations', () => {
         beforeEach(async () => {
-          const result = transformValues({
+          const result = await transformValues({
             values: mockInstance.annotations,
             type: InstanceAnnotationTypes,
             transformFunc,
@@ -462,7 +465,7 @@ describe('Test utils.ts', () => {
       describe('when called with type map', () => {
         let origValue: Values
         let typeMap: TypeMap
-        beforeEach(() => {
+        beforeEach(async () => {
           origValue = {
             str: 'asd',
             num: '10',
@@ -478,7 +481,7 @@ describe('Test utils.ts', () => {
             nums: new ListType(BuiltinTypes.NUMBER),
             numMap: new MapType(BuiltinTypes.NUMBER),
           }
-          const result = transformValues({
+          const result = await transformValues({
             values: origValue,
             type: typeMap,
             transformFunc,
@@ -531,14 +534,14 @@ describe('Test utils.ts', () => {
     })
     const MAGIC_VAL = 'magix'
     const MOD_MAGIC_VAL = 'BIRD'
-    const transformTest: TransformFunc = ({ value, field }) => {
+    const transformTest: TransformFunc = async ({ value, field }) => {
       if (value === MAGIC_VAL) {
         return MOD_MAGIC_VAL
       }
       if (isReferenceExpression(value)) {
         return value.value
       }
-      const fieldType = field?.getType()
+      const fieldType = await field?.getType()
       if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
         return value
       }
@@ -557,7 +560,7 @@ describe('Test utils.ts', () => {
     describe('when transformPrimitives and transformReference was received', () => {
       describe('when called with instance values', () => {
         beforeEach(async () => {
-          const result = transformValues({
+          const result = await transformValues({
             values: mockInstance.value,
             type: mockType,
             transformFunc: transformTest,
@@ -590,7 +593,7 @@ describe('Test utils.ts', () => {
         },
       }
       beforeEach(async () => {
-        const result = transformValues(
+        const result = await transformValues(
           {
             values: {
               ...mockInstance.value,
@@ -641,8 +644,8 @@ describe('Test utils.ts', () => {
         return value
       }
 
-      beforeAll(() => {
-        transformValues(
+      beforeAll(async () => {
+        await transformValues(
           {
             values: mockInstance.value,
             type: mockType,
@@ -723,8 +726,8 @@ describe('Test utils.ts', () => {
     })
     describe('with PrimitiveType', () => {
       let result: PrimitiveType
-      beforeEach(() => {
-        result = transformElement({ element: primType, transformFunc, strict: false })
+      beforeEach(async () => {
+        result = await transformElement({ element: primType, transformFunc, strict: false })
       })
       it('should return new primitive type', () => {
         expect(isPrimitiveType(result)).toBeTruthy()
@@ -737,8 +740,8 @@ describe('Test utils.ts', () => {
     })
     describe('with ListType', () => {
       let result: ListType
-      beforeEach(() => {
-        result = transformElement({ element: listType, transformFunc, strict: false })
+      beforeEach(async () => {
+        result = await transformElement({ element: listType, transformFunc, strict: false })
       })
       it('should return new list type', () => {
         expect(isListType(result)).toBeTruthy()
@@ -751,8 +754,8 @@ describe('Test utils.ts', () => {
     })
     describe('with MapType', () => {
       let result: MapType
-      beforeEach(() => {
-        result = transformElement({ element: mapType, transformFunc, strict: false })
+      beforeEach(async () => {
+        result = await transformElement({ element: mapType, transformFunc, strict: false })
       })
       it('should return new map type', () => {
         expect(isMapType(result)).toBeTruthy()
@@ -765,8 +768,8 @@ describe('Test utils.ts', () => {
     })
     describe('with ObjectType', () => {
       let result: ObjectType
-      beforeEach(() => {
-        result = transformElement({ element: objType, transformFunc, strict: false })
+      beforeEach(async () => {
+        result = await transformElement({ element: objType, transformFunc, strict: false })
       })
       it('should return new object type', () => {
         expect(isObjectType(result)).toBeTruthy()
@@ -798,8 +801,8 @@ describe('Test utils.ts', () => {
     })
     describe('with ObjectType and runOnFields', () => {
       let result: ObjectType
-      beforeEach(() => {
-        result = transformElement({
+      beforeEach(async () => {
+        result = await transformElement({
           element: objType, transformFunc, strict: false, runOnFields: true,
         })
       })
@@ -830,9 +833,9 @@ describe('Test utils.ts', () => {
           path: objType.fields.f4.elemID,
         })
       })
-      it('should not run on annotations if transformFunc returned undefined on the field', () => {
+      it('should not run on annotations if transformFunc returned undefined on the field', async () => {
         const otherFunc = mockFunction<TransformFunc>().mockImplementation(() => undefined)
-        transformElement({
+        await transformElement({
           element: objType, transformFunc: otherFunc, strict: false, runOnFields: true,
         })
         expect(otherFunc).toHaveBeenCalledWith({
@@ -854,8 +857,8 @@ describe('Test utils.ts', () => {
     })
     describe('with InstanceElement', () => {
       let result: InstanceElement
-      beforeEach(() => {
-        result = transformElement({ element: inst, transformFunc, strict: false })
+      beforeEach(async () => {
+        result = await transformElement({ element: inst, transformFunc, strict: false })
       })
       it('should return a new instance', () => {
         expect(isInstanceElement(result)).toBeTruthy()
@@ -990,7 +993,7 @@ describe('Test utils.ts', () => {
 
       beforeAll(async () => {
         sourceElementCopy = sourceElement.clone()
-        resolvedElement = resolveValues(sourceElement, getName)
+        resolvedElement = await resolveValues(sourceElement, getName)
       })
 
       it('should not modify the source element', () => {
@@ -1009,11 +1012,11 @@ describe('Test utils.ts', () => {
         expect(resolvedElement.fields.field.annotations.reg).toEqual(regValue)
       })
 
-      it('should transform back to sourceElement value', () => {
-        expect(restoreValues(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
+      it('should transform back to sourceElement value', async () => {
+        expect(await restoreValues(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
       })
 
-      it('should maintain new values when transforming back to orig value', () => {
+      it('should maintain new values when transforming back to orig value', async () => {
         const after = resolvedElement.clone()
         after.annotations.new = newValue
         after.annotationRefTypes.new = createRefToElmWithValue(BuiltinTypes.STRING)
@@ -1022,7 +1025,7 @@ describe('Test utils.ts', () => {
         after.annotationRefTypes.regValue = createRefToElmWithValue(BuiltinTypes.STRING)
         after.fields.field.annotations.regValue = newValue
 
-        const restored = restoreValues(sourceElement, after, getName)
+        const restored = await restoreValues(sourceElement, after, getName)
         expect(restored.annotations.new).toEqual(newValue)
         expect(restored.annotations.regValue).toEqual(newValue)
 
@@ -1035,7 +1038,7 @@ describe('Test utils.ts', () => {
       let resolvedInstance: InstanceElement
 
       beforeAll(async () => {
-        resolvedInstance = resolveValues(instance, getName)
+        resolvedInstance = await resolveValues(instance, getName)
       })
 
       it('should transform instanceElement', () => {
@@ -1053,8 +1056,8 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.annotations[CORE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
       })
 
-      it('should transform back to instance', () => {
-        const restoredInstance = restoreValues(instance, resolvedInstance, getName)
+      it('should transform back to instance', async () => {
+        const restoredInstance = await restoreValues(instance, resolvedInstance, getName)
         expect(restoredInstance).toEqual(instance)
         // toEqual does not check types so we have to check them explicitly
         expect(restoredInstance.value.refValue).toBeInstanceOf(ReferenceExpression)
@@ -1085,7 +1088,7 @@ describe('Test utils.ts', () => {
       let resolvedPrim: PrimitiveType
 
       beforeAll(async () => {
-        resolvedPrim = resolveValues(prim, getName)
+        resolvedPrim = await resolveValues(prim, getName)
       })
 
 
@@ -1101,8 +1104,8 @@ describe('Test utils.ts', () => {
         expect(resolvedPrim.annotations.refAnno).toEqual(regValue)
       })
 
-      it('should transform back to primitive', () => {
-        expect(restoreValues(prim, resolvedPrim, getName)).toEqual(prim)
+      it('should transform back to primitive', async () => {
+        expect(await restoreValues(prim, resolvedPrim, getName)).toEqual(prim)
       })
     })
 
@@ -1127,7 +1130,7 @@ describe('Test utils.ts', () => {
       let resolvedField: Field
 
       beforeAll(async () => {
-        resolvedField = resolveValues(field, getName)
+        resolvedField = await resolveValues(field, getName)
       })
 
 
@@ -1145,8 +1148,8 @@ describe('Test utils.ts', () => {
         expect(resolvedField.annotations.testAnno).toEqual(field.annotations.testAnno)
       })
 
-      it('should transform back to field', () => {
-        expect(restoreValues(field, resolvedField, getName)).toEqual(field)
+      it('should transform back to field', async () => {
+        expect(await restoreValues(field, resolvedField, getName)).toEqual(field)
       })
     })
   })
@@ -1172,17 +1175,17 @@ describe('Test utils.ts', () => {
             targetElement
         )
       })
-      it('should call restore func on after data when add change', () => {
-        restoreChangeElement(additionChange, sourceElements, getName, mockRestore)
+      it('should call restore func on after data when add change', async () => {
+        await restoreChangeElement(additionChange, sourceElements, getName, mockRestore)
         expect(mockRestore).toHaveBeenCalledWith(sourceAfterData, afterData, getName)
       })
-      it('should call restore func for both before and after if modify change', () => {
-        restoreChangeElement(modificationChange, sourceElements, getName, mockRestore)
+      it('should call restore func for both before and after if modify change', async () => {
+        await restoreChangeElement(modificationChange, sourceElements, getName, mockRestore)
         expect(mockRestore).toHaveBeenCalledWith(sourceAfterData, afterData, getName)
         expect(mockRestore).toHaveBeenCalledWith(sourceBeforeData, beforeData, getName)
       })
-      it('should call restore func on before if removal change', () => {
-        restoreChangeElement(removalChange, sourceElements, getName, mockRestore)
+      it('should call restore func on before if removal change', async () => {
+        await restoreChangeElement(removalChange, sourceElements, getName, mockRestore)
         expect(mockRestore).toHaveBeenCalledWith(sourceBeforeData, beforeData, getName)
       })
     })
@@ -1194,19 +1197,19 @@ describe('Test utils.ts', () => {
           <T extends Element>(element: T, _getLookUpName: GetLookupNameFunc) => element
         )
       })
-      it('should call resolve func on after data when add change', () => {
-        resolveChangeElement(additionChange, getName, mockResolve)
+      it('should call resolve func on after data when add change', async () => {
+        await resolveChangeElement(additionChange, getName, mockResolve)
         expect(mockResolve).toHaveBeenCalledWith(afterData, getName)
       })
 
-      it('should call resolve func on before and after data when modification change', () => {
-        resolveChangeElement(modificationChange, getName, mockResolve)
+      it('should call resolve func on before and after data when modification change', async () => {
+        await resolveChangeElement(modificationChange, getName, mockResolve)
         expect(mockResolve).toHaveBeenCalledWith(beforeData, getName)
         expect(mockResolve).toHaveBeenCalledWith(afterData, getName)
       })
 
-      it('should call resolve func on before data when removal change', () => {
-        resolveChangeElement(removalChange, getName, mockResolve)
+      it('should call resolve func on before data when removal change', async () => {
+        await resolveChangeElement(removalChange, getName, mockResolve)
         expect(mockResolve).toHaveBeenCalledWith(beforeData, getName)
       })
     })
@@ -1216,8 +1219,8 @@ describe('Test utils.ts', () => {
     const transformFunc = (): string => 'changed'
     describe('with addition change', () => {
       let transformedChange: AdditionChange<string>
-      beforeEach(() => {
-        transformedChange = applyFunctionToChangeData(
+      beforeEach(async () => {
+        transformedChange = await applyFunctionToChangeData(
           { action: 'add', data: { after: 'orig' }, path: ['path'] },
           transformFunc,
         )
@@ -1231,8 +1234,8 @@ describe('Test utils.ts', () => {
     })
     describe('with removal change', () => {
       let transformedChange: RemovalChange<string>
-      beforeEach(() => {
-        transformedChange = applyFunctionToChangeData(
+      beforeEach(async () => {
+        transformedChange = await applyFunctionToChangeData(
           { action: 'remove', data: { before: 'orig' } },
           transformFunc,
         )
@@ -1243,8 +1246,8 @@ describe('Test utils.ts', () => {
     })
     describe('with modification change', () => {
       let transformedChange: ModificationChange<string>
-      beforeEach(() => {
-        transformedChange = applyFunctionToChangeData(
+      beforeEach(async () => {
+        transformedChange = await applyFunctionToChangeData(
           { action: 'modify', data: { before: 'orig', after: 'orig' } },
           transformFunc,
         )
@@ -1768,11 +1771,11 @@ describe('Test utils.ts', () => {
       }
     )
 
-    it('should use field defaults', () => {
+    it('should use field defaults', async () => {
       const elements = [shouldUseFieldDef.clone()]
-      applyInstancesDefaults(elements)
-      const ins = elements[0] as InstanceElement
-      expect(ins.value).toEqual({
+      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
+        .toArray() as [InstanceElement]
+      expect(transformed.value).toEqual({
         field1: 'field1',
         field2: 'ins1',
         base: {
@@ -1782,7 +1785,7 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should use type defaults', () => {
+    it('should use type defaults', async () => {
       const shouldUseTypeDef = new InstanceElement(
         'ins',
         nestedTypeRef,
@@ -1792,8 +1795,9 @@ describe('Test utils.ts', () => {
         }
       )
       const elements = [shouldUseTypeDef]
-      applyInstancesDefaults(elements)
-      expect(shouldUseTypeDef.value).toEqual({
+      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
+        .toArray() as [InstanceElement]
+      expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'type',
         base: {
@@ -1803,10 +1807,11 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should use object defaults', () => {
+    it('should use object defaults', async () => {
       const elements = [ins1.clone()]
-      applyInstancesDefaults(elements)
-      expect(elements[0].value).toEqual({
+      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
+        .toArray() as [InstanceElement]
+      expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
         base: {
@@ -1816,12 +1821,13 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should not remove values that have no corresponding field', () => {
+    it('should not remove values that have no corresponding field', async () => {
       const instanceWithAdditionalValues = ins1.clone()
       instanceWithAdditionalValues.value.hasNoCorrespondingField = 'hasNoCorrespondingField'
       const elements = [instanceWithAdditionalValues]
-      applyInstancesDefaults(elements)
-      expect(elements[0].value).toEqual({
+      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
+        .toArray() as [InstanceElement]
+      expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
         base: {
@@ -1832,19 +1838,20 @@ describe('Test utils.ts', () => {
       })
     })
 
-    it('should use the existing value in case it does not match the field type', () => {
+    it('should use the existing value in case it does not match the field type', async () => {
       const instanceWithAdditionalValues = ins1.clone()
       instanceWithAdditionalValues.value.base = 'differentType'
       const elements = [instanceWithAdditionalValues]
-      applyInstancesDefaults(elements)
-      expect(elements[0].value).toEqual({
+      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
+        .toArray() as [InstanceElement]
+      expect(transformed.value).toEqual({
         field1: 'ins1',
         field2: 'ins1',
         base: 'differentType',
       })
     })
 
-    it('should not use defaults for inner fields when its value is undefined', () => {
+    it('should not use defaults for inner fields when its value is undefined', async () => {
       const typeWithNestedDefaultsElemID = new ElemID('salto', 'typeWithNestedDefaults')
       const typeWithNestedDefaults = new ObjectType({
         elemID: typeWithNestedDefaultsElemID,
@@ -1860,15 +1867,16 @@ describe('Test utils.ts', () => {
       )
 
       const elements = [instanceWithNoValues]
-      applyInstancesDefaults(elements)
-      expect(instanceWithNoValues.value).toEqual({
+      const [transformed] = await awu(applyInstancesDefaults(awu(elements)))
+        .toArray() as [InstanceElement]
+      expect(transformed.value).toEqual({
         withDefault: 'default val',
       })
     })
   })
 
   describe('createDefaultInstanceFromType', () => {
-    it('should create default instance from type', () => {
+    it('should create default instance from type', async () => {
       const mockElemID = new ElemID('test')
       const configType = new ObjectType({
         elemID: mockElemID,
@@ -1879,12 +1887,12 @@ describe('Test utils.ts', () => {
           },
         },
       })
-      expect(createDefaultInstanceFromType('test', configType).isEqual(new InstanceElement(
+      expect((await createDefaultInstanceFromType('test', configType)).isEqual(new InstanceElement(
         'test',
         configType,
         { val1: 'test' }
       ))).toBeTruthy()
-      expect(createDefaultInstanceFromType('test', configType))
+      expect(await createDefaultInstanceFromType('test', configType))
         .toEqual(new InstanceElement(
           'test',
           configType,
@@ -1956,12 +1964,12 @@ describe('Test utils.ts', () => {
   })
 
   describe('getAllReferencedIds', () => {
-    it('should find referenced ids', () => {
-      const res = getAllReferencedIds(mockInstance)
+    it('should find referenced ids', async () => {
+      const res = await getAllReferencedIds(mockInstance)
       expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
     })
-    it('should find referenced ids only in annotations', () => {
-      const res = getAllReferencedIds(mockInstance, true)
+    it('should find referenced ids only in annotations', async () => {
+      const res = await getAllReferencedIds(mockInstance, true)
       expect(res).toEqual(new Set(['mockAdapter.test']))
     })
   })

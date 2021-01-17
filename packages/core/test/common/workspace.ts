@@ -16,6 +16,7 @@
 import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
+import { elementSource } from '@salto-io/workspace'
 import { mockState } from './state'
 
 const mockService = 'salto'
@@ -74,7 +75,9 @@ export const mockWorkspace = ({
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
-    elements: jest.fn().mockImplementation(async () => elements),
+    elements: jest.fn().mockImplementation(
+      async () => elementSource.createInMemoryElementSource(elements)
+    ),
     name,
     envs: () => ['default'],
     currentEnv: () => 'default',

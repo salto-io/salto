@@ -161,8 +161,8 @@ describe('SalesforceAdapter CRUD', () => {
           mockDeploy.mockReturnValueOnce(mockDeployResult({
             success: false,
             componentFailure: [{
-              fullName: apiName(newInst),
-              componentType: metadataType(newInst),
+              fullName: await apiName(newInst),
+              componentType: await metadataType(newInst),
               problem: 'Some error',
             }],
           }))
@@ -575,12 +575,12 @@ describe('SalesforceAdapter CRUD', () => {
       let instance: InstanceElement
       let deployResultParams: Parameters<typeof mockDeployResult>[0]
       let deployChangeGroup: ChangeGroup
-      beforeEach(() => {
+      beforeEach(async () => {
         instance = createInstanceElement(mockDefaultValues.ApexClass, mockTypes.ApexClass)
         deployResultParams = {
           success: false,
           componentSuccess: [
-            { fullName: apiName(instance), componentType: metadataType(instance) },
+            { fullName: await apiName(instance), componentType: await metadataType(instance) },
           ],
           runTestResult: { failures: [mockRunTestFailure({ message: 'Test failed' })] },
         }
@@ -1162,13 +1162,13 @@ describe('SalesforceAdapter CRUD', () => {
             deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
           })
           describe('package manifest', () => {
-            it('should contain the new and modified fields', () => {
+            it('should contain the new and modified fields', async () => {
               expect(deployedPackage.manifest?.types).toContainEqual({
                 name: constants.CUSTOM_FIELD,
-                members: changes
+                members: await Promise.all(changes
                   .filter(isAdditionOrModificationChange)
                   .map(getChangeElement)
-                  .map(field => apiName(field)),
+                  .map(field => apiName(field))),
               })
             })
             it('should contain the deleted field in the delete manifest', () => {

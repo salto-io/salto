@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, ReferenceExpression, ElemID, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues, promises, multiIndex } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { getAllReferencedIds, buildElementsSourceFromElements, extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -25,9 +25,8 @@ import { metadataType, apiName, isCustomObject } from '../transformers/transform
 import SalesforceClient from '../client/client'
 import { getInternalId, buildElementsSourceForFetch, extractFlatCustomObjectFields, hasInternalId } from './utils'
 
+const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
-const { flatMapAsync } = collections.asynciterable
-const { series } = promises.array
 const log = logger(module)
 
 const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
@@ -99,12 +98,12 @@ const getDependencies = async (client: SalesforceClient): Promise<DependencyGrou
  * @param elem        The element to modify
  * @param refElemIDs  The reference ids to add
  */
-const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => {
+const addGeneratedDependencies = async (elem: Element, refElemIDs: ElemID[]): Promise<void> => {
   if (refElemIDs.length === 0) {
     return
   }
 
-  const existingReferences = getAllReferencedIds(elem)
+  const existingReferences = await getAllReferencedIds(elem)
   const newDependencies = refElemIDs
     .filter(elemId => !existingReferences.has(elemId.getFullName()))
     .map(elemId => new ReferenceExpression(elemId))
@@ -148,36 +147,37 @@ const addExtraReferences = async (
       : undefined
   }
 
-  await series(
-    groupedDeps.map(edge => async () => {
-      const elemId = getElemId(edge.from)
-      if (elemId === undefined) {
-        log.debug(
-          'Element %s:%s (%s) no found, skipping %d dependencies',
-          edge.from.type, edge.from.id, edge.from.name, edge.to.length,
-        )
-        return
-      }
-      const elem = await getFetchedElement(elemId)
-      if (elem === undefined) {
-        log.debug(
-          'Element %s was not fetched in this operation, skipping %d dependencies',
-          elemId.getFullName(), edge.to.length,
-        )
-        return
-      }
-      const dependencies = edge.to.map(dst => ({ dep: dst, elemId: getElemId(dst) }))
-      const missingDeps = dependencies
-        .filter(item => item.elemId === undefined)
-        .map(item => item.dep)
-      missingDeps.forEach(dep => {
-        log.debug(`Referenced element ${dep.type}:${dep.id} (${dep.name}) not found for ${
-          elem.elemID.getFullName()}`)
-      })
-
-      addGeneratedDependencies(elem, dependencies.map(item => item.elemId).filter(isDefined))
+  await awu(groupedDeps).forEach(edge => async () => {
+    const elemId = getElemId(edge.from)
+    if (elemId === undefined) {
+      log.debug(
+        'Element %s:%s (%s) no found, skipping %d dependencies',
+        edge.from.type, edge.from.id, edge.from.name, edge.to.length,
+      )
+      return
+    }
+    const elem = await getFetchedElement(elemId)
+    if (elem === undefined) {
+      log.debug(
+        'Element %s was not fetched in this operation, skipping %d dependencies',
+        elemId.getFullName(), edge.to.length,
+      )
+      return
+    }
+    const dependencies = edge.to.map(dst => ({ dep: dst, elemId: getElemId(dst) }))
+    const missingDeps = dependencies
+      .filter(item => item.elemId === undefined)
+      .map(item => item.dep)
+    missingDeps.forEach(dep => {
+      log.debug(`Referenced element ${dep.type}:${dep.id} (${dep.name}) not found for ${
+        elem.elemID.getFullName()}`)
     })
-  )
+
+    await addGeneratedDependencies(
+      elem,
+      dependencies.map(item => item.elemId).filter(isDefined),
+    )
+  })
 }
 
 /**
@@ -193,16 +193,16 @@ const creator: FilterCreator = ({ client, config }) => ({
       .addIndex({
         name: 'elemLookup',
         filter: hasInternalId,
-        key: elem => [metadataType(elem), getInternalId(elem)],
+        key: async elem => [await metadataType(elem), getInternalId(elem)],
         map: elem => elem.elemID,
       })
       .addIndex({
         name: 'customObjectLookup',
-        filter: isCustomObject,
-        key: elem => [apiName(elem)],
+        filter: async elem => isCustomObject(elem),
+        key: async elem => [await apiName(elem)],
         map: elem => elem.elemID,
       })
-      .process(flatMapAsync(await allElements.getAll(), extractFlatCustomObjectFields))
+      .process(awu(await allElements.getAll()).flatMap(extractFlatCustomObjectFields))
 
     await addExtraReferences(groupedDeps, fetchedElements, elemLookup, customObjectLookup)
   },

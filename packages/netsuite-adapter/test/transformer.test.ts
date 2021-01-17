@@ -112,7 +112,7 @@ describe('Transformer', () => {
   }
 
   describe('createInstanceElement', () => {
-    const transformCustomFieldRecord = (xmlContent: string): InstanceElement => {
+    const transformCustomFieldRecord = (xmlContent: string): Promise<InstanceElement> => {
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       return createInstanceElement(
         convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id'),
@@ -121,24 +121,24 @@ describe('Transformer', () => {
       )
     }
 
-    it('should create instance name correctly', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
+    it('should create instance name correctly', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
       expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}custentity_my_script_id`)
     })
 
-    it('should create instance path correctly for custom type instance', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
+    it('should create instance path correctly for custom type instance', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
       expect(result.path).toEqual([NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, result.elemID.name])
     })
 
-    it('should transform attributes', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
+    it('should transform attributes', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
       expect(result.value[SCRIPT_ID]).toEqual('custentity_my_script_id')
     })
 
-    it('should transform nested attributes', () => {
+    it('should transform nested attributes', async () => {
       const customRecordTypeXmlContent = XML_TEMPLATES.WITH_NESTED_ATTRIBUTE
-      const result = createInstanceElement(
+      const result = await createInstanceElement(
         convertToCustomTypeInfo(customRecordTypeXmlContent, 'customrecord_my_script_id'),
         customTypes[CUSTOM_RECORD_TYPE],
         mockGetElemIdFunc
@@ -150,38 +150,38 @@ describe('Transformer', () => {
       expect(customrecordcustomfield[SCRIPT_ID]).toEqual('custrecord_my_nested_script_id')
     })
 
-    it('should ignore unknown attribute', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_ATTRIBUTE)
+    it('should ignore unknown attribute', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_ATTRIBUTE)
       expect(result.value.unknownattr).toBeUndefined()
     })
 
-    it('should transform boolean primitive field when is true', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_TRUE_FIELD)
+    it('should transform boolean primitive field when is true', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_TRUE_FIELD)
       expect(result.value.checkspelling).toEqual(true)
     })
 
-    it('should transform boolean primitive field when is false', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_FALSE_FIELD)
+    it('should transform boolean primitive field when is false', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_FALSE_FIELD)
       expect(result.value.checkspelling).toEqual(false)
     })
 
-    it('should transform number primitive field', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_NUMBER_FIELD)
+    it('should transform number primitive field', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_NUMBER_FIELD)
       expect(result.value.displayheight).toEqual(123)
     })
 
-    it('should transform string primitive field', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_STRING_FIELD)
+    it('should transform string primitive field', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_STRING_FIELD)
       expect(result.value.label).toEqual('elementName')
     })
 
-    it('should ignore undefined primitive field', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_PRIMITIVE_FIELD)
+    it('should ignore undefined primitive field', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_PRIMITIVE_FIELD)
       expect(result.value.description).toBeUndefined()
     })
 
-    it('should transform list field', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LIST_OF_OBJECTS)
+    it('should transform list field', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_LIST_OF_OBJECTS)
       expect(result.value.roleaccesses.roleaccess).toEqual(
         [{
           accesslevel: '1',
@@ -196,8 +196,8 @@ describe('Transformer', () => {
       )
     })
 
-    it('should not transform list field that contains a single object as it will be done in a dedicated filter', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LIST_OF_SINGLE_OBJECT)
+    it('should not transform list field that contains a single object as it will be done in a dedicated filter', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_LIST_OF_SINGLE_OBJECT)
       expect(result.value.roleaccesses.roleaccess).toEqual(
         {
           accesslevel: '1',
@@ -207,33 +207,35 @@ describe('Transformer', () => {
       )
     })
 
-    it('should ignore undefined list field', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_LIST_FIELD)
+    it('should ignore undefined list field', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_LIST_FIELD)
       expect(result.value.roleaccesses).toBeUndefined()
     })
 
-    it('should ignore undefined object type field', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_OBJECT_FIELD)
+    it('should ignore undefined object type field', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_OBJECT_FIELD)
       expect(result.value.roleaccesses).toBeUndefined()
     })
 
-    it('should ignore undefined object type inner fields', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_OBJECT_INNER_FIELDS)
+    it('should ignore undefined object type inner fields', async () => {
+      const result = await transformCustomFieldRecord(
+        XML_TEMPLATES.WITH_UNDEFINED_OBJECT_INNER_FIELDS
+      )
       expect(result.value.roleaccesses).toBeUndefined()
     })
 
-    it('should ignore unknown fields', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_FIELD)
+    it('should ignore unknown fields', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_FIELD)
       expect(result.value.unknownfield).toBeUndefined()
     })
 
-    it('should decode html chars', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_HTML_CHARS)
+    it('should decode html chars', async () => {
+      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_HTML_CHARS)
       // There is ZeroWidthSpace char between element and Name
       expect(result.value.label).toEqual('Golf & Co’Co element​Name')
     })
 
-    it('should add content value with fileContent as static file', () => {
+    it('should add content value with fileContent as static file', async () => {
       const emailTemplateContent = Buffer.from('Email template content')
       const emailTemplateCustomizationInfo = {
         typeName: EMAIL_TEMPLATE,
@@ -245,7 +247,7 @@ describe('Transformer', () => {
         fileContent: emailTemplateContent,
         fileExtension: 'html',
       } as TemplateCustomTypeInfo
-      const result = createInstanceElement(emailTemplateCustomizationInfo,
+      const result = await createInstanceElement(emailTemplateCustomizationInfo,
         customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
       expect(result.value).toEqual({
         name: 'email template name',
@@ -257,7 +259,7 @@ describe('Transformer', () => {
       })
     })
 
-    it('should not add content value when there is no fileContent', () => {
+    it('should not add content value when there is no fileContent', async () => {
       const emailTemplateCustomizationInfo = {
         typeName: EMAIL_TEMPLATE,
         scriptId: 'custemailtmpl_my_script_id',
@@ -266,7 +268,7 @@ describe('Transformer', () => {
           [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         },
       } as CustomTypeInfo
-      const result = createInstanceElement(emailTemplateCustomizationInfo,
+      const result = await createInstanceElement(emailTemplateCustomizationInfo,
         customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
       expect(result.value).toEqual({
         name: 'email template name',
@@ -292,56 +294,59 @@ describe('Transformer', () => {
         path: ['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder'],
       }
 
-      it('should create instance name correctly for file instance', () => {
-        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+      it('should create instance name correctly for file instance', async () => {
+        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
           mockGetElemIdFunc)
         expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${naclCase(fileCustomizationInfo.path.join('/'))}`)
       })
 
-      it('should create instance path correctly for file instance', () => {
-        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+      it('should create instance path correctly for file instance', async () => {
+        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
           mockGetElemIdFunc)
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
             'Inner EmailTemplates Folder', 'content.html'])
       })
 
-      it('should create instance path correctly for file instance when it has . prefix', () => {
+      it('should create instance path correctly for file instance when it has . prefix', async () => {
         const fileCustomizationInfoWithDotPrefix = _.clone(fileCustomizationInfo)
         fileCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder', '..hiddenFile.xml']
-        const result = createInstanceElement(fileCustomizationInfoWithDotPrefix,
+        const result = await createInstanceElement(fileCustomizationInfoWithDotPrefix,
           fileCabinetTypes[FILE], mockGetElemIdFunc)
         expect(result.path).toEqual(
           [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFile.xml']
         )
       })
 
-      it('should create instance path correctly for folder instance', () => {
-        const result = createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER],
-          mockGetElemIdFunc)
+      it('should create instance path correctly for folder instance', async () => {
+        const result = await createInstanceElement(
+          folderCustomizationInfo,
+          fileCabinetTypes[FOLDER],
+          mockGetElemIdFunc
+        )
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
             'Inner EmailTemplates Folder'])
       })
 
-      it('should create instance path correctly for folder instance when it has . prefix', () => {
+      it('should create instance path correctly for folder instance when it has . prefix', async () => {
         const folderCustomizationInfoWithDotPrefix = _.clone(folderCustomizationInfo)
         folderCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder']
-        const result = createInstanceElement(folderCustomizationInfoWithDotPrefix,
+        const result = await createInstanceElement(folderCustomizationInfoWithDotPrefix,
           fileCabinetTypes[FOLDER], mockGetElemIdFunc)
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder'])
       })
 
-      it('should transform path field correctly', () => {
-        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+      it('should transform path field correctly', async () => {
+        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
           mockGetElemIdFunc)
         expect(result.value[PATH])
           .toEqual('/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html')
       })
 
-      it('should set file content in the content field for file instance', () => {
-        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+      it('should set file content in the content field for file instance', async () => {
+        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
           mockGetElemIdFunc)
         expect(result.value.content).toEqual(new StaticFile({
           filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
@@ -361,41 +366,41 @@ describe('Transformer', () => {
       instance = origInstance.clone()
     })
 
-    it('should transform string primitive field', () => {
+    it('should transform string primitive field', async () => {
       instance.value.label = 'elementName'
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_STRING_FIELD))
     })
 
-    it('should transform boolean primitive field when is true', () => {
+    it('should transform boolean primitive field when is true', async () => {
       instance.value.checkspelling = true
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_TRUE_FIELD))
     })
 
-    it('should transform boolean primitive field when is false', () => {
+    it('should transform boolean primitive field when is false', async () => {
       instance.value.checkspelling = false
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_FALSE_FIELD))
     })
 
-    it('should transform number primitive field', () => {
+    it('should transform number primitive field', async () => {
       instance.value.displayheight = 123
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_NUMBER_FIELD))
     })
 
-    it('should transform cdata primitive field', () => {
+    it('should transform cdata primitive field', async () => {
       const addressFormInstance = new InstanceElement('elementName',
         customTypes[ADDRESS_FORM], {
           name: 'elementName',
           addressTemplate: '<myCdata><field>whoohoo',
         })
-      const customizationInfo = toCustomizationInfo(addressFormInstance)
+      const customizationInfo = await toCustomizationInfo(addressFormInstance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks('<addressForm>\n'
         + '  <name>elementName</name>\n'
@@ -403,7 +408,7 @@ describe('Transformer', () => {
         + '</addressForm>\n'))
     })
 
-    it('should transform fileContent primitive field', () => {
+    it('should transform fileContent primitive field', async () => {
       const fileContent = Buffer.from('file content')
       const fileInstance = new InstanceElement('elementName',
         fileCabinetTypes[FILE], {
@@ -411,30 +416,30 @@ describe('Transformer', () => {
           [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           content: fileContent,
         })
-      const customizationInfo = toCustomizationInfo(fileInstance)
+      const customizationInfo = await toCustomizationInfo(fileInstance)
       expect(isFileCustomizationInfo(customizationInfo)).toEqual(true)
       expect((customizationInfo as FileCustomizationInfo).fileContent).toEqual(fileContent)
     })
 
-    it('should transform when cdata primitive field is undefined', () => {
+    it('should transform when cdata primitive field is undefined', async () => {
       const addressFormInstance = new InstanceElement('elementName',
         customTypes[ADDRESS_FORM], {
           name: 'elementName',
         })
-      const customizationInfo = toCustomizationInfo(addressFormInstance)
+      const customizationInfo = await toCustomizationInfo(addressFormInstance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks('<addressForm>\n'
         + '  <name>elementName</name>\n'
         + '</addressForm>\n'))
     })
 
-    it('should transform attribute field', () => {
-      const customizationInfo = toCustomizationInfo(instance)
+    it('should transform attribute field', async () => {
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
-    it('should transform nested attribute field', () => {
+    it('should transform nested attribute field', async () => {
       const customRecordTypeInstance = new InstanceElement('elementName',
         customTypes[CUSTOM_RECORD_TYPE], {
           [SCRIPT_ID]: 'customrecord_my_script_id',
@@ -444,19 +449,19 @@ describe('Transformer', () => {
             }],
           },
         })
-      const customizationInfo = toCustomizationInfo(customRecordTypeInstance)
+      const customizationInfo = await toCustomizationInfo(customRecordTypeInstance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_NESTED_ATTRIBUTE))
     })
 
-    it('should ignore unknown field', () => {
+    it('should ignore unknown field', async () => {
       instance.value.unknownfield = 'unknownValue'
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
-    it('should transform list field', () => {
+    it('should transform list field', async () => {
       instance.value.roleaccesses = {
         roleaccess: [{
           accesslevel: '1',
@@ -469,53 +474,53 @@ describe('Transformer', () => {
           searchlevel: '1',
         }],
       }
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LIST_OF_OBJECTS))
     })
 
-    it('should transform empty list field', () => {
+    it('should transform empty list field', async () => {
       instance.value.roleaccesses = {
         roleaccess: [],
       }
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
-    it('should transform empty object field', () => {
+    it('should transform empty object field', async () => {
       instance.value.roleaccesses = {}
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
-    it('should ignore list field with incompatible type', () => {
+    it('should ignore list field with incompatible type', async () => {
       instance.value.roleaccesses = {
         roleaccess: 'not a list',
       }
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
-    it('should ignore object field with incompatible type', () => {
+    it('should ignore object field with incompatible type', async () => {
       instance.value.roleaccesses = ['not an object']
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
-    it('should encode to html chars', () => {
+    it('should encode to html chars', async () => {
       instance.value.label = 'Golf & Co’Co element​Name' // There is ZeroWidthSpace char between element and Name
-      const customizationInfo = toCustomizationInfo(instance)
+      const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       // We use here === instead of expect.toEqual() since jest treats html encoding as equal to
       // the decoded value
       expect(xmlContent === removeLineBreaks(XML_TEMPLATES.WITH_HTML_CHARS)).toBeTruthy()
     })
 
-    it('should transform ordered values for forms', () => {
+    it('should transform ordered values for forms', async () => {
       const transactionFormInstance = new InstanceElement('elementName',
         customTypes[TRANSACTION_FORM], {
           address: 'my address',
@@ -546,7 +551,7 @@ describe('Transformer', () => {
           [SCRIPT_ID]: 'custform_my_script_id',
         })
 
-      const customizationInfo = toCustomizationInfo(transactionFormInstance)
+      const customizationInfo = await toCustomizationInfo(transactionFormInstance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks('<transactionForm scriptid="custform_my_script_id" standard="STANDARDESTIMATE">\n'
         + '  <name>Form Name</name>\n'
@@ -574,7 +579,7 @@ describe('Transformer', () => {
         + '</transactionForm>\n'))
     })
 
-    it('should transform TemplateCustomTypeInfo EMAIL_TEMPLATE', () => {
+    it('should transform TemplateCustomTypeInfo EMAIL_TEMPLATE', async () => {
       const emailTemplateContent = 'email template content'
       const elementName = 'elementName'
       const emailTemplateInstance = new InstanceElement(elementName,
@@ -582,7 +587,7 @@ describe('Transformer', () => {
           name: elementName,
           content: emailTemplateContent,
         })
-      const customizationInfo = toCustomizationInfo(emailTemplateInstance)
+      const customizationInfo = await toCustomizationInfo(emailTemplateInstance)
       expect(customizationInfo).toEqual({
         typeName: EMAIL_TEMPLATE,
         values: {
@@ -593,13 +598,13 @@ describe('Transformer', () => {
       })
     })
 
-    it('should transform CustomizationInfo EMAIL_TEMPLATE', () => {
+    it('should transform CustomizationInfo EMAIL_TEMPLATE', async () => {
       const elementName = 'elementName'
       const emailTemplateInstance = new InstanceElement(elementName,
         customTypes[EMAIL_TEMPLATE], {
           name: elementName,
         })
-      const customizationInfo = toCustomizationInfo(emailTemplateInstance)
+      const customizationInfo = await toCustomizationInfo(emailTemplateInstance)
       expect(customizationInfo).toEqual({
         typeName: EMAIL_TEMPLATE,
         values: {
@@ -609,13 +614,13 @@ describe('Transformer', () => {
     })
 
     describe('file cabinet types', () => {
-      it('should transform file instance', () => {
+      it('should transform file instance', async () => {
         const fileInstance = new InstanceElement('elementName', fileCabinetTypes[FILE], {
           [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           content: 'dummy file content',
           description: 'file description',
         })
-        const customizationInfo = toCustomizationInfo(fileInstance)
+        const customizationInfo = await toCustomizationInfo(fileInstance)
         expect(isFileCustomizationInfo(customizationInfo)).toBe(true)
         const fileCustomizationInfo = customizationInfo as FileCustomizationInfo
         expect(fileCustomizationInfo.typeName).toEqual(FILE)
@@ -625,12 +630,12 @@ describe('Transformer', () => {
         expect(fileCustomizationInfo.fileContent).toEqual('dummy file content')
       })
 
-      it('should transform folder instance', () => {
+      it('should transform folder instance', async () => {
         const folder = new InstanceElement('elementName', fileCabinetTypes[FOLDER], {
           [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder',
           description: 'folder description',
         })
-        const customizationInfo = toCustomizationInfo(folder)
+        const customizationInfo = await toCustomizationInfo(folder)
         expect(isFolderCustomizationInfo(customizationInfo)).toBe(true)
         const folderCustomizationInfo = customizationInfo as FolderCustomizationInfo
         expect(folderCustomizationInfo.typeName).toEqual(FOLDER)
@@ -672,7 +677,7 @@ describe('Transformer', () => {
       },
     })
 
-    it('should resolve to netsuite path reference representation', () => {
+    it('should resolve to netsuite path reference representation', async () => {
       const ref = new ReferenceExpression(
         fileInstance.elemID.createNestedID(PATH),
         fileInstance.value[PATH],
@@ -681,7 +686,7 @@ describe('Transformer', () => {
       expect(getLookUpName({ ref })).toEqual('[/Templates/file.name]')
     })
 
-    it('should resolve to netsuite scriptid reference representation', () => {
+    it('should resolve to netsuite scriptid reference representation', async () => {
       const ref = new ReferenceExpression(
         workflowInstance.elemID.createNestedID(SCRIPT_ID),
         workflowInstance.value[PATH],
@@ -690,7 +695,7 @@ describe('Transformer', () => {
       expect(getLookUpName({ ref })).toEqual('[scriptid=top_level]')
     })
 
-    it('should resolve to netsuite scriptid reference representation with nesting levels', () => {
+    it('should resolve to netsuite scriptid reference representation with nesting levels', async () => {
       const ref = new ReferenceExpression(
         workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID),
         'two_nesting',
@@ -700,16 +705,16 @@ describe('Transformer', () => {
     })
 
     describe('when the resolved value should be returned', () => {
-      it('should return value when topLevelParent is not an instance', () => {
+      it('should return value when topLevelParent is not an instance', async () => {
         const ref = new ReferenceExpression(
           new ElemID(''),
           'resolved_value',
-          workflowInstance.getType(),
+          await workflowInstance.getType(),
         )
         expect(getLookUpName({ ref })).toEqual(ref.value)
       })
 
-      it('should return value when reference is on FileCabinetType but not on PATH field', () => {
+      it('should return value when reference is on FileCabinetType but not on PATH field', async () => {
         const ref = new ReferenceExpression(
           fileInstance.elemID.createNestedID(description),
           fileInstance.value[description],
@@ -718,7 +723,7 @@ describe('Transformer', () => {
         expect(getLookUpName({ ref })).toEqual(ref.value)
       })
 
-      it('should return value when reference is on CustomType but not on SCRIPT_ID field', () => {
+      it('should return value when reference is on CustomType but not on SCRIPT_ID field', async () => {
         const ref = new ReferenceExpression(
           workflowInstance.elemID.createNestedID('workflowstates'),
           workflowInstance.value.workflowstates,

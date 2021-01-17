@@ -23,6 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
+import { collections, promises } from '@salto-io/lowerdash'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
@@ -31,6 +32,8 @@ import { JSONBool, CustomObject } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomSettingsObject, isCustomObject } from '../transformers/transformer'
 import { FilterContext } from '../filter'
 
+const { awu } = collections.asynciterable
+const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 export const id = (elem: Element): string => elem.elemID.getFullName()
@@ -46,10 +49,10 @@ export const isLookupField = (field: Field): boolean => (
   field.refType.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
 )
 
-export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
- InstanceElement[] =>
-  elements.filter(isInstanceElement)
-    .filter(element => metadataType(element) === metadataTypeName)
+export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):
+ Promise<InstanceElement[]> => awu(elements).filter(isInstanceElement)
+  .filter(async element => await metadataType(element) === metadataTypeName)
+  .toArray()
 
 const setAnnotationDefault = (
   elem: Element,
@@ -89,23 +92,24 @@ export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJ
   setAnnotationDefault(elem, METADATA_TYPE, metadataTypeValue, BuiltinTypes.SERVICE_ID)
 }
 
-export const addDefaults = (element: ChangeDataType): void => {
-  const addInstanceDefaults = (inst: InstanceElement): void => {
-    if (inst.value[INSTANCE_FULL_NAME_FIELD] === undefined && !isCustomObject(inst.type)) {
+export const addDefaults = async (element: ChangeDataType): Promise<void> => {
+  const addInstanceDefaults = async (inst: InstanceElement): Promise<void> => {
+    if (inst.value[INSTANCE_FULL_NAME_FIELD] === undefined
+        && !(await isCustomObject(await inst.getType()))) {
       inst.value[INSTANCE_FULL_NAME_FIELD] = defaultApiName(inst)
     }
   }
 
-  const addFieldDefaults = (field: Field): void => {
-    addApiName(field, undefined, apiName(field.parent))
+  const addFieldDefaults = async (field: Field): Promise<void> => {
+    addApiName(field, undefined, await apiName(field.parent))
     addLabel(field)
   }
 
-  const addCustomObjectDefaults = (elem: ObjectType): void => {
+  const addCustomObjectDefaults = async (elem: ObjectType): Promise<void> => {
     addApiName(elem)
     addMetadataType(elem)
     addLabel(elem)
-    Object.values(elem.fields).forEach(addFieldDefaults)
+    await awu(Object.values(elem.fields)).forEach(addFieldDefaults)
     if (!isCustomSettingsObject(elem)) {
       const defaults: Partial<CustomObject> = {
         deploymentStatus: 'Deployed',
@@ -125,11 +129,11 @@ export const addDefaults = (element: ChangeDataType): void => {
   }
 
   if (isInstanceElement(element)) {
-    addInstanceDefaults(element)
+    await addInstanceDefaults(element)
   } else if (isObjectType(element)) {
-    addCustomObjectDefaults(element)
+    await addCustomObjectDefaults(element)
   } else if (isField(element)) {
-    addFieldDefaults(element)
+    await addFieldDefaults(element)
   }
 }
 
@@ -138,8 +142,10 @@ export const getNamespaceFromString = (name: string): string | undefined => {
   return nameParts.length === 3 ? nameParts[0] : undefined
 }
 
-export const getNamespace = (customElement: Field | ObjectType): string | undefined =>
-  getNamespaceFromString(apiName(customElement, true))
+export const getNamespace = async (
+  customElement: Field | ObjectType
+): Promise<string | undefined> =>
+  getNamespaceFromString(await apiName(customElement, true))
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
@@ -154,11 +160,11 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
       .map(([name, type]) => ({ [name]: { refType: createRefToElmWithValue(type) } }))) })
 }
 
-export const apiNameParts = (elem: Element): string[] =>
-  apiName(elem).split(/\.|-/g)
+export const apiNameParts = async (elem: Element): Promise<string[]> =>
+  (await apiName(elem)).split(/\.|-/g)
 
-export const parentApiName = (elem: Element): string =>
-  apiNameParts(elem)[0]
+export const parentApiName = async (elem: Element): Promise<string> =>
+  (await apiNameParts(elem))[0]
 
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
@@ -202,8 +208,10 @@ export const hasApiName = (elem: Element): boolean => (
   apiName(elem) !== undefined
 )
 
-export const extractFlatCustomObjectFields = (elem: Element): Element[] => (
-  isCustomObject(elem) ? [elem, ...Object.values(elem.fields)] : [elem]
+export const extractFlatCustomObjectFields = async (elem: Element): Promise<Element[]> => (
+  await isCustomObject(elem) && isObjectType(elem)
+    ? [elem, ...Object.values(elem.fields)]
+    : [elem]
 )
 
 export const buildElementsSourceForFetch = (
@@ -230,13 +238,13 @@ export const getDataFromChanges = <T extends Change<unknown>>(
 // note that for instances of custom objects this will check the specific type (i.e Lead)
 // if you want instances of all custom objects use isInstanceOfCustomObject
 export const isInstanceOfType = (type: string) => (
-  (elem: Element): elem is InstanceElement => (
-    isInstanceElement(elem) && apiName(elem.getType()) === type
+  async (elem: Element): Promise<boolean> => (
+    isInstanceElement(elem) && await apiName(await elem.getType()) === type
   )
 )
 
 export const isInstanceOfTypeChange = (type: string) => (
-  (change: Change): change is Change<InstanceElement> => (
+  (change: Change): Promise<boolean> => (
     isInstanceOfType(type)(getChangeElement(change))
   )
 )

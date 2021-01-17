@@ -892,7 +892,7 @@ export const mapreducescript = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING), /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,

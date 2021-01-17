@@ -17,10 +17,10 @@ import { SalesforceClient, testHelpers as salesforceTestHelpers, UsernamePasswor
 import path from 'path'
 import { Plan } from '@salto-io/core'
 import { parser } from '@salto-io/workspace'
-import { strings } from '@salto-io/lowerdash'
+import { strings, collections } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
-import { isObjectType, ObjectType, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { isObjectType, ObjectType, Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
 import * as callbacks from '../src/callbacks'
@@ -39,6 +39,8 @@ import {
 } from './helpers/workspace'
 import * as templates from './helpers/templates'
 
+
+const { awu } = collections.asynciterable
 const { dumpElements } = parser
 
 describe('multi env tests', () => {
@@ -301,8 +303,12 @@ describe('multi env tests', () => {
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
         const workspace = await loadValidWorkspace(baseDir)
-        visibleElements = (await workspace.elements(false))
-        elementsWithHidden = (await workspace.elements(true))
+        visibleElements = await awu(await (await workspace.elements(false)).getAll())
+          .filter(isInstanceElement)
+          .toArray() as InstanceElement[]
+        elementsWithHidden = await awu(await (await workspace.elements(true)).getAll())
+          .filter(isInstanceElement)
+          .toArray() as InstanceElement[]
       })
 
       it('not have internalId in visible elements', async () => {

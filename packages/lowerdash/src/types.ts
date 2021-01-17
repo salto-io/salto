@@ -41,6 +41,7 @@ export type PickyRequired<T, K extends keyof T> = T & Required<Pick<T, K>>
 
 export type TypeGuard<T, S extends T> = (item: T) => item is S
 export type Predicate<T> = (item: T) => boolean
+export type AsyncPredicate<T> = (item: T) => Promise<boolean>
 
 /*
 

@@ -13,64 +13,64 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { Element, Change, isEqualElements, toChange } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, ElemID, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
-import { mergeElements, MergeError } from '../../merger'
+import { collections } from '@salto-io/lowerdash'
 
+import { MergeResult } from '../../merger'
+import { ElementsSource } from '../elements_source'
+import { RemoteMap } from '../remote_map'
+
+const { awu } = collections.asynciterable
 const log = logger(module)
 
-export const calcChanges = (
-  fullNames: string[],
-  currentElements: Record<string, Element>,
-  newElements: Record<string, Element>,
-): Change[] => fullNames.map(fullName => {
-  const before = currentElements[fullName]
-  const after = newElements[fullName]
-  if (before === undefined && after === undefined) {
-    return undefined
-  }
-  const change = toChange({ before, after })
-  return isEqualElements(before, after) ? undefined : change
-}).filter(values.isDefined) as Change[]
-
-export const calcNewMerged = <T extends MergeError | Element>(
-  currentMerged: T[], newMerged: T[], relevantElementIDs: Set<string>
-): T[] => currentMerged
-    .filter(e =>
-      !relevantElementIDs.has(e.elemID.createTopLevelParentID().parent.getFullName()))
-    .concat(newMerged)
-
-export const buildNewMergedElementsAndErrors = ({
-  newElements, currentElements = {}, currentMergeErrors = [], relevantElementIDs,
+export const buildNewMergedElementsAndErrors = async ({
+  newElements,
+  currentElements,
+  currentErrors,
+  relevantElementIDs,
+  mergeFunc,
 }: {
-  newElements: Element[]
-  currentElements?: Record<string, Element>
-  currentMergeErrors?: MergeError[]
-  relevantElementIDs: string[]
-}): {
-  mergedElements: Record<string, Element>
-  mergeErrors: MergeError[]
-  changes: Change[]
-} => {
-  log.info('going to merge %d new elements to the existing %d elements',
-    newElements.length, Object.keys(currentElements))
-  const currentMergedElementsWithoutRelevants = _.omit(currentElements, relevantElementIDs)
-  const newMergedElementsResult = mergeElements(newElements)
-  const mergeErrors = calcNewMerged(
-    currentMergeErrors, newMergedElementsResult.errors, new Set(relevantElementIDs)
-  )
-  const mergedElements = {
-    ...currentMergedElementsWithoutRelevants,
-    ..._.keyBy(newMergedElementsResult.merged, e => e.elemID.getFullName()),
-  } as Record<string, Element>
+  newElements: AsyncIterable<Element>
+  currentElements: ElementsSource
+  currentErrors: RemoteMap<SaltoError[]>
+  relevantElementIDs: AsyncIterable<ElemID>
+  mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
+}): Promise<Change<Element>[]> => {
+  log.info('going to merge new elements to the existing elements')
+  const changes: Change<Element>[] = []
+  const newMergedElementsResult = await mergeFunc(newElements)
+  const hasCurrentElements = !(await awu(await currentElements.getAll()).isEmpty())
+  const hasCurrentErrors = !(await awu(currentErrors.values()).flat().isEmpty())
+  if (!hasCurrentElements && !hasCurrentErrors) {
+    await awu(newMergedElementsResult.merged.values()).forEach(async element => {
+      changes.push(toChange({ after: element }))
+      await currentElements.set(element)
+    })
+    await currentErrors.setAll(newMergedElementsResult.errors.entries())
+    return changes
+  }
+  const sieve = new Set<string>()
 
-  const mergedElementsUpdated = _.keyBy(
-    mergedElements,
-    elem => elem.elemID.getFullName(),
-  )
-  const changes = calcChanges(relevantElementIDs, currentElements, mergedElementsUpdated)
-  log.info('%d changes resulted from the merge', changes.length)
-  return { mergeErrors, mergedElements: mergedElementsUpdated, changes }
+  await awu(relevantElementIDs).forEach(async id => {
+    const fullname = id.getFullName()
+    if (!sieve.has(fullname)) {
+      sieve.add(fullname)
+      const before = await currentElements.get(id)
+      const mergedItem = await newMergedElementsResult.merged.get(fullname)
+      if (!isEqualElements(before, mergedItem)) {
+        if (mergedItem !== undefined) {
+          await currentElements.set(mergedItem)
+        } else if (before !== undefined) {
+          await currentElements.delete(id)
+        }
+        changes.push(toChange({ before, after: mergedItem }))
+        const mergeErrors = await newMergedElementsResult.errors.get(fullname)
+        if (mergeErrors !== undefined) {
+          await currentErrors.set(fullname, mergeErrors)
+        }
+      }
+    }
+  })
+  return changes
 }

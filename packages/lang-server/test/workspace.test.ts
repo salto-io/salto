@@ -15,9 +15,11 @@
 */
 import * as path from 'path'
 import { validator } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { EditorWorkspace } from '../src/workspace'
 import { mockWorkspace } from './workspace'
 
+const { awu } = collections.asynciterable
 describe('workspace', () => {
   const workspaceBaseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
   const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
@@ -30,7 +32,7 @@ describe('workspace', () => {
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
-    expect(wsElements && wsElements.length).toBe(elements)
+    expect(wsElements && (await awu(await wsElements.getAll()).toArray()).length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace([naclFileName]))
@@ -49,7 +51,7 @@ describe('workspace', () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
     const filename = 'new'
     const buffer = 'test'
-    workspace.setNaclFiles({ filename, buffer })
+    await workspace.setNaclFiles({ filename, buffer })
     await workspace.awaitAllUpdates()
     expect((await workspace.getNaclFile(filename))?.buffer).toEqual(buffer)
   })
@@ -58,7 +60,7 @@ describe('workspace', () => {
     const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
     baseWs.hasErrors = jest.fn().mockResolvedValue(true)
-    workspace.setNaclFiles({ filename: 'error', buffer: 'error content' })
+    await workspace.setNaclFiles({ filename: 'error', buffer: 'error content' })
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
@@ -68,7 +70,7 @@ describe('workspace', () => {
   it('should support file removal', async () => {
     const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-    workspace.removeNaclFiles(naclFileName)
+    await workspace.removeNaclFiles(naclFileName)
     await workspace.awaitAllUpdates()
     expect(await workspace.getNaclFile(naclFileName)).toEqual(undefined)
   })

@@ -27,14 +27,15 @@ import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD } from '../constants'
 import { isLookupField, isMasterDetailField } from './utils'
 
 const { makeArray } = collections.array
+const { groupByAsync, awu } = collections.asynciterable
 
 const log = logger(module)
 
-const replaceReferenceValues = (
+const replaceReferenceValues = async (
   values: Values,
   type: ObjectType,
   instancesByType: Record<string, Record<string, InstanceElement>>
-): Values => {
+): Promise<Values> => {
   const shouldReplace = (field: Field): boolean => (
     isLookupField(field) || isMasterDetailField(field)
   )
@@ -51,7 +52,7 @@ const replaceReferenceValues = (
     return refTarget === undefined ? value : new ReferenceExpression(refTarget.elemID)
   }
 
-  return transformValues(
+  return await transformValues(
     {
       values,
       type,
@@ -61,12 +62,14 @@ const replaceReferenceValues = (
   ) ?? values
 }
 
-const replaceLookupsWithReferences = (elements: Element[]): void => {
-  const customObjectInstances = elements.filter(isInstanceOfCustomObject)
+const replaceLookupsWithReferences = async (elements: Element[]): Promise<void> => {
+  const customObjectInstances = await awu(elements)
+    .filter(isInstanceOfCustomObject)
+    .toArray() as InstanceElement[]
   const instancesByType = _.mapValues(
-    _.groupBy(
+    await groupByAsync(
       customObjectInstances,
-      instance => apiName(instance.getType(), true)
+      async instance => apiName(await instance.getType(), true)
     ),
     typeInstances =>
       _.keyBy(
@@ -74,10 +77,10 @@ const replaceLookupsWithReferences = (elements: Element[]): void => {
         inst => inst.value[CUSTOM_OBJECT_ID_FIELD]
       )
   ) as Record<string, Record<string, InstanceElement>>
-  customObjectInstances.forEach((instance, index) => {
-    instance.value = replaceReferenceValues(
+  await awu(customObjectInstances).forEach(async (instance, index) => {
+    instance.value = await replaceReferenceValues(
       instance.value,
-      instance.getType(),
+      await instance.getType(),
       instancesByType,
     )
     if (index % 500 === 0) {
@@ -88,7 +91,7 @@ const replaceLookupsWithReferences = (elements: Element[]): void => {
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    replaceLookupsWithReferences(elements)
+    await replaceLookupsWithReferences(elements)
   },
 })
 

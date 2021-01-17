@@ -73,8 +73,8 @@ describe('SalesforceAdapter creator', () => {
     }
   )
   describe('when validateCredentials is called with username/password credentials', () => {
-    beforeEach(() => {
-      adapter.validateCredentials(credentials)
+    beforeEach(async () => {
+      await adapter.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', () => {
@@ -88,8 +88,8 @@ describe('SalesforceAdapter creator', () => {
   })
 
   describe('when validateCredentials is called with oauth credentials', () => {
-    beforeEach(() => {
-      adapter.validateCredentials(oauthCredentials)
+    beforeEach(async () => {
+      await adapter.validateCredentials(oauthCredentials)
     })
 
     it('should call validateCredentials with the correct credentials', () => {

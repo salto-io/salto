@@ -16,11 +16,14 @@
 import {
   ChangeDataType, ChangeError, Field, getChangeElement, isModificationChange, ChangeValidator,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
 import { isPicklistField, isStandardValueSetPicklistField } from '../filters/value_set'
 
-const shouldCreateChangeError = (changeElement: ChangeDataType): changeElement is Field =>
-  isPicklistField(changeElement) && !isCustom(apiName(changeElement))
+const { awu } = collections.asynciterable
+
+const shouldCreateChangeError = async (changeElement: ChangeDataType): Promise<boolean> =>
+  isPicklistField(changeElement) && !isCustom(await apiName(changeElement))
   && !isStandardValueSetPicklistField(changeElement)
 
 const createChangeError = (field: Field): ChangeError =>
@@ -35,11 +38,13 @@ const createChangeError = (field: Field): ChangeError =>
  * It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed.
  */
 const changeValidator: ChangeValidator = async changes => (
-  changes
+  awu(changes)
     .filter(isModificationChange)
     .map(getChangeElement)
     .filter(shouldCreateChangeError)
-    .map(createChangeError)
+    // We can cast since shouldCreateChangeError only return true to fields
+    .map(field => createChangeError(field as Field))
+    .toArray()
 )
 
 export default changeValidator

@@ -15,16 +15,14 @@
 */
 import _ from 'lodash'
 import { InstanceElement, getChangeElement, isInstanceElement, ChangeGroupIdFunction } from '@salto-io/adapter-api'
-import { InMemoryRemoteElementSource } from '@salto-io/workspace'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
-import { mockFunction } from '../../common/helpers'
+import { mockFunction, createElementSource } from '../../common/helpers'
 import { getPlan, Plan, PlanItem } from '../../../src/core/plan'
 import { planGenerators } from '../../common/plan_generator'
 
 describe('getPlan', () => {
   const allElements = mock.getAllElements()
-  const elementsSource = new InMemoryRemoteElementSource(allElements)
 
   const {
     planWithTypeChanges,
@@ -36,10 +34,8 @@ describe('getPlan', () => {
 
   it('should create empty plan', async () => {
     const plan = await getPlan({
-      before: allElements,
-      after: allElements,
-      beforeSource: elementsSource,
-      afterSource: elementsSource,
+      before: createElementSource(allElements),
+      after: createElementSource(allElements),
     })
     expect(plan.size).toBe(0)
   })
@@ -60,10 +56,8 @@ describe('getPlan', () => {
     const pre = allElements
     const preFiltered = pre.filter(element => element.elemID.name !== 'instance')
     const plan = await getPlan({
-      before: pre,
-      after: preFiltered,
-      beforeSource: elementsSource,
-      afterSource: elementsSource,
+      before: createElementSource(pre),
+      after: createElementSource(preFiltered),
     })
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
@@ -92,10 +86,8 @@ describe('getPlan', () => {
     const employee = post[4]
     employee.value.name = 'SecondEmployee'
     const plan = await getPlan({
-      before: allElements,
-      after: post,
-      beforeSource: elementsSource,
-      afterSource: elementsSource,
+      before: createElementSource(allElements),
+      after: createElementSource(post),
     })
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
@@ -115,9 +107,8 @@ describe('getPlan', () => {
 
   it('should split elements on addition if their fields create a dependency cycle', async () => {
     const [plan, splitElem] = await planWithSplitElem(true)
-
     const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(6)
+    expect(planItems).toHaveLength(5)
     const splitElemChanges = planItems
       .filter(item => item.groupKey === splitElem.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
@@ -129,7 +120,7 @@ describe('getPlan', () => {
     const [plan, splitElem] = await planWithSplitElem(false)
 
     const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(6)
+    expect(planItems).toHaveLength(5)
     const splitElemChanges = planItems
       .filter(item => item.groupKey === splitElem.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
@@ -155,10 +146,8 @@ describe('getPlan', () => {
       after[1].annotations.test = true
       after[2].annotations.test = true
       plan = await getPlan({
-        before,
-        after,
-        beforeSource: elementsSource,
-        afterSource: elementsSource,
+        before: createElementSource(before),
+        after: createElementSource(after),
         customGroupIdFunctions: {
           salto: async changes => new Map([...changes.entries()].map(([changeId]) => [changeId, 'all'])),
           dummy: dummyGroupKeyFunc,

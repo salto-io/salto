@@ -68,5 +68,5 @@ const main = async (): Promise<CliExitCode> => {
     await logger.end()
   }
 }
-
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 main().then(exitCode => process.exit(exitCode))

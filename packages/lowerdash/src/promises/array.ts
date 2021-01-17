@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { arrayOf } from '../collections/array'
 import { toIndexedIterable, IndexedIterator } from '../collections/iterable'
 
@@ -63,4 +64,18 @@ export const withLimitedConcurrency = async <T>(
   const results: T[] = []
   await Promise.all(arrayOf(maxConcurrency, () => seriesImpl(i, results)))
   return results
+}
+
+export const removeAsync = async <T>(
+  arr: T[],
+  removeFunc: (t: T) => Promise<boolean> | boolean
+): Promise<T[]> => {
+  const idxToRemove = new Set()
+  for (const val of arr) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await removeFunc(val)) {
+      idxToRemove.add(val)
+    }
+  }
+  return _.remove(arr, v => idxToRemove.has(v))
 }

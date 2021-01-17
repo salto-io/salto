@@ -21,7 +21,6 @@ type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 export type RemoteMap<T, K extends string = string> = {
   delete(key: K): Promise<boolean>
   get(key: K): Promise<T | undefined>
-  getSync(key: K): T | undefined
   has(key: K): Promise<boolean>
   set(key: K, value: T): Promise<void>
   setAll(values: ThenableIterable<[K, T]>): Promise<void>
@@ -44,10 +43,6 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     for await (const [k, v] of values) {
       this.data.set(k, v)
     }
-  }
-
-  getSync(key: K): T | undefined {
-    return this.data.get(key)
   }
 
   async delete(key: K): Promise<boolean> {

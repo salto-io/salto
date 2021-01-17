@@ -19,12 +19,15 @@ import {
   isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression,
 } from '@salto-io/adapter-api'
 import each from 'jest-each'
+// import each from 'jest-each'
+import { collections } from '@salto-io/lowerdash'
 import { registerTestFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
 import { SourceRange, parse, SourceMap, tokenizeContent } from '../../src/parser'
 
+const { awu } = collections.asynciterable
 const funcName = 'funcush'
 
 let functions: Functions
@@ -201,8 +204,11 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       }       `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
-      elements = parsed.elements.filter(element => !isContainerType(element))
-      genericTypes = parsed.elements.filter(element => isListType(element) || isMapType(element))
+      elements = await awu(parsed.elements).filter(element => !isContainerType(element))
+        .toArray()
+      genericTypes = await awu(parsed.elements)
+        .filter(element => isListType(element) || isMapType(element))
+        .toArray()
       sourceMap = parsed.sourceMap
     })
 

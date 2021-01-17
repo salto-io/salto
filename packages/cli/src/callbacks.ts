@@ -21,6 +21,7 @@ import {
   isPrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import { FetchChange, PlanItem } from '@salto-io/core'
+import { collections } from '@salto-io/lowerdash'
 import {
   formatFetchChangeForApproval, formatShouldContinueWithWarning, formatCancelCommand,
   formatCredentialsHeader, formatConfigFieldInput, formatShouldAbortWithValidationError,
@@ -31,6 +32,7 @@ import {
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
 
+const { awu } = collections.asynciterable
 export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   const question: inquirer.InputQuestion = {
     name: 'userInput',
@@ -103,7 +105,7 @@ export const shouldUpdateConfig = async (
 ): Promise<boolean> => {
   stdout.write(formatConfigChangeNeeded(
     introMessage,
-    formatDetailedChanges([change.detailedChanges()], true)
+    await formatDetailedChanges([change.detailedChanges()], true)
   ))
   return getUserBooleanInput(Prompts.SHOULD_UPDATE_CONFIG)
 }
@@ -122,7 +124,7 @@ export const getApprovedChanges = async (
     return autoApproved
   }
 
-  const questions = askForApproval.map((change, idx): inquirer.ExpandQuestion => ({
+  const questions = await awu(askForApproval).map(async (change, idx): Promise<inquirer.ExpandQuestion> => ({
     type: 'expand',
     choices: [
       { key: 'y', value: 'yes' },
@@ -131,9 +133,9 @@ export const getApprovedChanges = async (
     ],
     default: 0,
     name: idx.toString(),
-    message: formatFetchChangeForApproval(change, idx, askForApproval.length),
+    message: await formatFetchChangeForApproval(change, idx, askForApproval.length),
     when: answers => !shouldApproveAll(answers),
-  }))
+  })).toArray()
 
   const answers = await inquirer.prompt(questions)
   if (shouldApproveAll(answers)) {
@@ -167,15 +169,15 @@ export const getFieldInputType = (fieldType: TypeElement, fieldName: string): st
 
 export const getCredentialsFromUser = async (credentialsType: ObjectType):
   Promise<InstanceElement> => {
-  const questions = Object.keys(credentialsType.fields).map(fieldName =>
+  const questions = await awu(Object.keys(credentialsType.fields)).map(async fieldName =>
     ({
-      type: getFieldInputType(credentialsType.fields[fieldName].getType(), fieldName),
+      type: getFieldInputType(await credentialsType.fields[fieldName].getType(), fieldName),
       mask: '*',
       name: fieldName,
       message: formatConfigFieldInput(
         fieldName, credentialsType.fields[fieldName].annotations.message,
       ),
-    }))
+    })).toArray()
   const values = await inquirer.prompt(questions)
   return new InstanceElement(ElemID.CONFIG_NAME, credentialsType, values)
 }

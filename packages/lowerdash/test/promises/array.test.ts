@@ -96,4 +96,23 @@ describe('array', () => {
       })
     })
   })
+
+  describe('removeAsync', () => {
+    const { removeAsync } = promises.array
+    const predicate = async (v: number): Promise<boolean> => v % 2 === 0
+
+    describe('when given an empty input iterable', () => {
+      it('returns an empty result', async () => {
+        expect(await removeAsync<number>([], predicate)).toEqual([])
+      })
+    })
+
+    describe('when given a non-empty input iterable', () => {
+      it('returns a correct result', async () => {
+        const arr = [1, 2, 3, 4]
+        await removeAsync(arr, predicate)
+        expect(arr).toEqual([1, 3])
+      })
+    })
+  })
 })

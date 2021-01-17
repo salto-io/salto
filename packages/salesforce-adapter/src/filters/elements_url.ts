@@ -14,13 +14,16 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import wu from 'wu'
+import { collections } from '@salto-io/lowerdash'
 import { isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { lightiningElementsUrlRetreiver } from '../elements_url_retreiver/elements_url_retreiver'
 import { ElementIDResolver } from '../elements_url_retreiver/lightining_url_resolvers'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -28,10 +31,13 @@ const createElementIdResolver = (elementsMap: Record<string, Element>): ElementI
   id => elementsMap[id.getFullName()]
 
 
-const getRelevantElements = (elements: Element[]): wu.WuIterable<Element> =>
-  wu(elements)
-    .map(elem => (isCustomObject(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
-    .flatten(true)
+const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
+  awu(elements)
+    .flatMap(async elem => (
+      (await isCustomObject(elem) && isObjectType(elem))
+        ? [elem, ...Object.values(elem.fields)]
+        : [elem]
+    ))
 
 
 const filterCreator: FilterCreator = ({ client }) => ({
@@ -50,15 +56,17 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
 
-    const updateElementUrl = (element: Element): void => {
-      const elementURL = urlRetreiver.retreiveUrl(element)
+    const updateElementUrl = async (element: Element): Promise<void> => {
+      const elementURL = await urlRetreiver.retreiveUrl(element)
 
       if (elementURL !== undefined) {
         element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = elementURL.href
       }
     }
 
-    getRelevantElements(elements).forEach(element => updateElementUrl(element))
+    await awu(getRelevantElements(elements)).forEach(
+      async element => updateElementUrl(element)
+    )
   },
 })
 

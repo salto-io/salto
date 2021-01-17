@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
 import {
-  Adapter, Element, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
+  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
   AdapterSuccessInstallResult, AdapterAuthentication,
 } from '@salto-io/adapter-api'
@@ -23,8 +22,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { Workspace, ElementSelector, InMemoryRemoteElementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -50,6 +48,7 @@ import { createDiffChanges } from './core/diff'
 export { cleanWorkspace } from './core/clean'
 export { listUnresolvedReferences } from './core/list'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
@@ -75,35 +74,24 @@ export const updateCredentials = async (
 }
 
 const shouldElementBeIncluded = (services: ReadonlyArray<string>) =>
-  (element: Element): boolean => (
-    services.includes(element.elemID.adapter)
+  (id: ElemID): boolean => (
+    services.includes(id.adapter)
     // Variables belong to all of the services
-    || element.elemID.adapter === ElemID.VARIABLES_NAMESPACE
+    || id.adapter === ElemID.VARIABLES_NAMESPACE
   )
-
-const filterElementsByServices = (
-  elements: Element[] | readonly Element[],
-  services: ReadonlyArray<string>
-): Element[] => elements.filter(shouldElementBeIncluded(services))
-
-const partitionElementsByServices = (
-  elements: Element[] | readonly Element[],
-  services: ReadonlyArray<string>
-): [Element[], Element[]] => _.partition<Element>(elements, shouldElementBeIncluded(services))
 
 export const preview = async (
   workspace: Workspace,
   services = workspace.services(),
 ): Promise<Plan> => {
-  const stateElements = await workspace.state().getAll()
+  const stateElements = workspace.state()
   return getPlan({
-    before: filterElementsByServices(stateElements, services),
-    after: filterElementsByServices(await workspace.elements(), services),
+    before: stateElements,
+    after: await workspace.elements(),
     changeValidators: getAdapterChangeValidators(),
-    beforeSource: new InMemoryRemoteElementSource(stateElements),
-    afterSource: new InMemoryRemoteElementSource(await workspace.elements()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),
+    topLevelFilters: [shouldElementBeIncluded(services)],
   })
 }
 
@@ -119,14 +107,12 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   services = workspace.services(),
 ): Promise<DeployResult> => {
-  const workspaceElements = await workspace.elements()
-
-  const changedElements = new Map<string, Element>()
+  const changedElements = elementSource.createInMemoryElementSource()
   const adapters = await getAdapters(
     services,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
-    buildElementsSourceFromElements(workspaceElements)
+    await workspace.elements()
   )
 
   const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
@@ -150,27 +136,23 @@ export const deploy = async (
         await workspace.state().remove(updatedElement.elemID)
       } else {
         await workspace.state().set(updatedElement)
-        changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
+        await changedElements.set(updatedElement)
       }
     }))
   }
   const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
 
-  const relevantWorkspaceElements = workspaceElements
-    .filter(e => changedElements.has(e.elemID.getFullName()))
-
   // Add workspace elements as an additional context for resolve so that we can resolve
   // variable expressions. Adding only variables is not enough for the case of a variable
   // with the value of a reference.
-  const changes = wu(await getDetailedChanges(
-    relevantWorkspaceElements,
-    [...changedElements.values()],
-    //{ before: workspaceElements, after: workspaceElements }
-    new InMemoryRemoteElementSource(workspaceElements),
-    new InMemoryRemoteElementSource(workspaceElements),
+  const changes = await awu(await getDetailedChanges(
+    await workspace.elements(),
+    changedElements,
+    [id => changedElements.has(id)]
   )).map(change => ({ change, serviceChange: change }))
-    .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))
-    .flatten()
+    .flatMap(toChangesWithPath(
+      async name => collections.array.makeArray(await changedElements.get(name))
+    )).toArray()
   const errored = errors.length > 0
   return {
     success: !errored,
@@ -201,21 +183,20 @@ export const fetch: FetchFunc = async (
 ) => {
   log.debug('fetch starting..')
 
-  const state = await workspace.state()
-  const stateElements = await state.getAll()
-
   const fetchServices = services ?? workspace.services()
-  const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
-    stateElements, fetchServices
-  )
-  const filteredStateElementsSource = new InMemoryRemoteElementSource(filteredStateElements)
+  const fetchElementsFilter = shouldElementBeIncluded(fetchServices)
+  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
+    .filter(element => !fetchElementsFilter(element.elemID)).toArray()
+
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
-    buildElementsSourceFromElements(stateElements),
-    //createElemIdGetter(filteredStateElements)
-    createElemIdGetter(filteredStateElements, filteredStateElementsSource)
+    await workspace.elements(),
+    await createElemIdGetter(
+      stateElementsNotCoveredByFetch,
+      workspace.state()
+    )
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)
@@ -230,13 +211,14 @@ export const fetch: FetchFunc = async (
       changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
-      filterElementsByServices(await workspace.elements(), fetchServices),
-      filteredStateElements,
+      await workspace.elements(),
+      workspace.state(),
       currentConfigs,
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await state.override(elements.concat(stateElementsNotCoveredByFetch))
+    const state = workspace.state()
+    await state.override(awu(elements).concat(stateElementsNotCoveredByFetch), fetchServices)
     await state.updatePathIndex(unmergedElements,
       (await state.existingServices()).filter(key => !fetchServices.includes(key)))
     log.debug(`finish to override state with ${elements.length} elements`)
@@ -268,20 +250,12 @@ export const restore = async (
 ): Promise<LocalChange[]> => {
   log.debug('restore starting..')
   const fetchServices = servicesFilters ?? workspace.services()
-  const stateElements = filterElementsByServices(
-    await workspace.state().getAll(),
-    fetchServices
-  )
-  const workspaceElements = filterElementsByServices(
-    await workspace.elements(),
-    fetchServices
-  )
-  const pathIndex = await workspace.state().getPathIndex()
   const changes = await createRestoreChanges(
-    workspaceElements,
-    stateElements,
-    pathIndex,
+    await workspace.elements(),
+    workspace.state(),
+    await workspace.state().getPathIndex(),
     elementSelectors,
+    fetchServices
   )
   return changes.map(change => ({ change, serviceChange: change }))
 }
@@ -297,20 +271,19 @@ export const diff = async (
 ): Promise<LocalChange[]> => {
   const diffServices = servicesFilters ?? workspace.services()
   const fromElements = useState
-    ? await workspace.state(fromEnv).getAll()
+    ? workspace.state(fromEnv)
     : await workspace.elements(includeHidden, fromEnv)
   const toElements = useState
-    ? await workspace.state(toEnv).getAll()
+    ? workspace.state(toEnv)
     : await workspace.elements(includeHidden, toEnv)
-  const fromServiceElements = filterElementsByServices(fromElements, diffServices)
-  const toServiceElements = filterElementsByServices(toElements, diffServices)
+
   const diffChanges = await createDiffChanges(
-    toServiceElements,
-    fromServiceElements,
-    new InMemoryRemoteElementSource(toServiceElements),
-    new InMemoryRemoteElementSource(fromServiceElements),
+    toElements,
+    fromElements,
     elementSelectors,
+    [shouldElementBeIncluded(diffServices)]
   )
+
   return diffChanges.map(change => ({ change, serviceChange: change }))
 }
 
@@ -350,7 +323,7 @@ export const addAdapter = async (
   await workspace.addService(adapterName)
 
   if (_.isUndefined((await workspace.servicesConfig([adapterName]))[adapterName])) {
-    const defaultConfig = getDefaultAdapterConfig(adapterName)
+    const defaultConfig = await getDefaultAdapterConfig(adapterName)
     if (!_.isUndefined(defaultConfig)) {
       await workspace.updateServiceConfig(adapterName, defaultConfig)
     }

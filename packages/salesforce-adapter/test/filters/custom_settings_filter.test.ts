@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Element, ServiceIds, isInstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { createCustomSettingsObject } from '../utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -25,6 +26,8 @@ import {
   LIST_CUSTOM_SETTINGS_TYPE,
 } from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+
+const { awu } = collections.asynciterable
 
 const customSettingsWithNoNameFieldName = 'noNameField'
 const customSettingsWithNoNameField = new ObjectType({
@@ -110,14 +113,14 @@ describe('Custom settings filter', () => {
       expect(noNameObject).toEqual(customSettingsWithNoNameField)
     })
 
-    it('Should add two instances for the valid object and no isntances for noName one', () => {
-      const validObjectInstances = elements
-        .filter(elm => isInstanceElement(elm)
-          && elm.getType().elemID.isEqual(customSettingsObject.elemID))
+    it('Should add two instances for the valid object and no isntances for noName one', async () => {
+      const validObjectInstances = await awu(elements)
+        .filter(async elm => isInstanceElement(elm)
+          && (await elm.getType()).elemID.isEqual(customSettingsObject.elemID)).toArray()
       expect(validObjectInstances).toHaveLength(2)
-      const noNameObjectInstances = elements
-        .filter(elm => isInstanceElement(elm)
-          && elm.getType().elemID.isEqual(customSettingsWithNoNameField.elemID))
+      const noNameObjectInstances = await awu(elements)
+        .filter(async elm => isInstanceElement(elm)
+          && (await elm.getType()).elemID.isEqual(customSettingsWithNoNameField.elemID)).toArray()
       expect(noNameObjectInstances).toHaveLength(0)
     })
   })

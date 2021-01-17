@@ -19,7 +19,6 @@ const path = require('path')
 const child_process = require('child_process')
 const { promisify } = require('util')
 const { parse } = require('jsonc-parser')
-
 const exec = promisify(child_process.exec)
 
 const mapValues = (o, f) => Object.fromEntries(Object.entries(o).map(([k, v, i]) => [k, f(v, k, i)]))

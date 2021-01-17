@@ -14,13 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { isInstanceOfTypeChange } from '../utils'
 import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CODE_FIELD } from '../../constants'
 import { Types, apiName, isInstanceOfCustomObject, isCustomObject } from '../../transformers/transformer'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -31,16 +34,16 @@ const refListFieldNames = [
 
 const listOfText = new ListType(Types.primitiveDataTypes.Text)
 
-const fieldTypeFromTextListToLongText = (field: Field): Field => {
-  const fieldType = field.getType()
+const fieldTypeFromTextListToLongText = async (field: Field): Promise<Field> => {
+  const fieldType = await field.getType()
   if (isListType(fieldType) && fieldType.isEqual(listOfText)) {
     field.refType = createRefToElmWithValue(Types.primitiveDataTypes.LongTextArea)
   }
   return field
 }
 
-const fieldTypeFromLongTextToTextList = (field: Field): Field => {
-  const fieldType = field.getType()
+const fieldTypeFromLongTextToTextList = async (field: Field): Promise<Field> => {
+  const fieldType = await field.getType()
   if (isPrimitiveType(fieldType)
     && fieldType.isEqual(Types.primitiveDataTypes.LongTextArea)) {
     field.refType = createRefToElmWithValue(listOfText)
@@ -48,16 +51,16 @@ const fieldTypeFromLongTextToTextList = (field: Field): Field => {
   return field
 }
 
-const refListFieldsToLongText = (cpqCustomScriptObject: ObjectType): ObjectType => {
-  Object.values(cpqCustomScriptObject.fields)
-    .filter(field => refListFieldNames.includes(apiName(field, true)))
+const refListFieldsToLongText = async (cpqCustomScriptObject: ObjectType): Promise<ObjectType> => {
+  await awu(Object.values(cpqCustomScriptObject.fields))
+    .filter(async field => refListFieldNames.includes(await apiName(field, true)))
     .forEach(fieldTypeFromTextListToLongText)
   return cpqCustomScriptObject
 }
 
-const refListFieldsToTextLists = (cpqCustomScriptObject: ObjectType): ObjectType => {
-  Object.values(cpqCustomScriptObject.fields)
-    .filter(field => refListFieldNames.includes(apiName(field, true)))
+const refListFieldsToTextLists = async (cpqCustomScriptObject: ObjectType): Promise<ObjectType> => {
+  await awu(Object.values(cpqCustomScriptObject.fields))
+    .filter(async field => refListFieldNames.includes(await apiName(field, true)))
     .forEach(fieldTypeFromLongTextToTextList)
   return cpqCustomScriptObject
 }
@@ -99,60 +102,70 @@ const transformInstanceToSFValues = (
   return cpqCustomScriptInstance
 }
 
-const isInstanceOfCustomScript = (element: Element): element is InstanceElement =>
-  (isInstanceOfCustomObject(element) && apiName(element.getType()) === CPQ_CUSTOM_SCRIPT)
+const isInstanceOfCustomScript = async (element: Element): Promise<boolean> =>
+  (isInstanceElement(element)
+    && await isInstanceOfCustomObject(element)
+    && await apiName(await element.getType()) === CPQ_CUSTOM_SCRIPT)
 
-const isCustomScriptType = (objType: ObjectType): boolean =>
-  isCustomObject(objType) && apiName(objType) === CPQ_CUSTOM_SCRIPT
+const isCustomScriptType = async (objType: ObjectType): Promise<boolean> =>
+  isCustomObject(objType) && await apiName(objType) === CPQ_CUSTOM_SCRIPT
 
-const getCustomScriptObjectChange = (
+const getCustomScriptObjectChange = async (
   changes: ReadonlyArray<Change<ChangeDataType>>
-): Change<ObjectType> | undefined =>
-  changes
+): Promise<Change<ObjectType> | undefined> =>
+  awu(changes)
     .filter(isObjectTypeChange)
     .find(change => isCustomScriptType(getChangeElement(change) as ObjectType))
 
-const applyFuncOnCustomScriptInstanceChanges = (
+const applyFuncOnCustomScriptInstanceChanges = async (
   changes: ReadonlyArray<Change<ChangeDataType>>,
   fn: (inst: InstanceElement) => InstanceElement
-): void => {
-  changes
+): Promise<void> => {
+  await awu(changes)
     .filter(isInstanceOfTypeChange(CPQ_CUSTOM_SCRIPT))
     .forEach(
-      customScriptInstanceChange => applyFunctionToChangeData(customScriptInstanceChange, fn)
+      customScriptInstanceChange => applyFunctionToChangeData(
+        customScriptInstanceChange as Change<InstanceElement>,
+        fn
+      )
     )
 }
 
-const applyFuncOnCustomScriptObjectChange = (
+const applyFuncOnCustomScriptObjectChange = async (
   changes: ReadonlyArray<Change<ChangeDataType>>,
-  fn: (customScriptObject: ObjectType) => ObjectType
-): void => {
-  const customScriptObjectChange = getCustomScriptObjectChange(changes)
+  fn: (customScriptObject: ObjectType) => Promise<ObjectType>
+): Promise<void> => {
+  const customScriptObjectChange = await getCustomScriptObjectChange(changes)
   if (customScriptObjectChange !== undefined) {
-    applyFunctionToChangeData(customScriptObjectChange, fn)
+    await applyFunctionToChangeData(customScriptObjectChange, fn)
   }
 }
 
-const applyFuncOnCustomScriptFieldChange = (
+const applyFuncOnCustomScriptFieldChange = async (
   changes: ReadonlyArray<Change>,
-  fn: (customScriptField: Field) => Field
-): void => {
-  changes
+  fn: (customScriptField: Field) => Field | Promise<Field>
+): Promise<void> => {
+  await awu(changes)
     .filter<Change<Field>>(isFieldChange)
     .filter(change => isCustomScriptType(getChangeElement(change).parent))
-    .filter(change => refListFieldNames.includes(apiName(getChangeElement(change), true)))
-    .map(change => applyFunctionToChangeData(change, fn))
+    .filter(
+      async change => refListFieldNames.includes(await apiName(getChangeElement(change), true))
+    )
+    .forEach(change => applyFunctionToChangeData(change, fn))
 }
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const customObjects = elements.filter(isCustomObject)
-    const cpqCustomScriptObject = customObjects.find(obj => apiName(obj) === CPQ_CUSTOM_SCRIPT)
+    const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
+    const cpqCustomScriptObject = await awu(customObjects)
+      .find(async obj => await apiName(obj) === CPQ_CUSTOM_SCRIPT)
     if (cpqCustomScriptObject === undefined) {
       return
     }
-    refListFieldsToTextLists(cpqCustomScriptObject)
-    const cpqCustomScriptInstances = elements.filter(isInstanceOfCustomScript)
+    await refListFieldsToTextLists(cpqCustomScriptObject)
+    const cpqCustomScriptInstances = await awu(elements)
+      .filter(isInstanceOfCustomScript)
+      .toArray() as InstanceElement[]
     log.debug(`Transforming ${cpqCustomScriptInstances.length} instances of SBQQ__CustomScript`)
     cpqCustomScriptInstances.forEach((instance, index) => {
       refListValuesToArray(instance)
@@ -164,23 +177,26 @@ const filter: FilterCreator = () => ({
   },
   preDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
-    applyFuncOnCustomScriptInstanceChanges(addOrModifyChanges, transformInstanceToSFValues)
-    applyFuncOnCustomScriptObjectChange(
+    await applyFuncOnCustomScriptInstanceChanges(addOrModifyChanges, transformInstanceToSFValues)
+    await applyFuncOnCustomScriptObjectChange(
       // Fields are taken from object changes only when the object is added
       addOrModifyChanges.filter(isAdditionChange),
       refListFieldsToLongText
     )
-    applyFuncOnCustomScriptFieldChange(addOrModifyChanges, fieldTypeFromTextListToLongText)
+    await applyFuncOnCustomScriptFieldChange(
+      addOrModifyChanges,
+      fieldTypeFromTextListToLongText
+    )
   },
   onDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
-    applyFuncOnCustomScriptInstanceChanges(addOrModifyChanges, refListValuesToArray)
-    applyFuncOnCustomScriptObjectChange(
+    await applyFuncOnCustomScriptInstanceChanges(addOrModifyChanges, refListValuesToArray)
+    await applyFuncOnCustomScriptObjectChange(
       // Fields are taken from object changes only when the object is added
       addOrModifyChanges.filter(isAdditionChange),
       refListFieldsToTextLists,
     )
-    applyFuncOnCustomScriptFieldChange(addOrModifyChanges, fieldTypeFromLongTextToTextList)
+    await applyFuncOnCustomScriptFieldChange(addOrModifyChanges, fieldTypeFromLongTextToTextList)
     return []
   },
 })

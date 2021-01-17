@@ -49,8 +49,8 @@ export const getRecordOfInstance = async (
   uniqueField = 'Id',
 ): Promise<SalesforceRecord | undefined> => {
   const selectFieldsString = _.uniq([uniqueField].concat(additionalFields)).join(',')
-  const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.getType())} WHERE ${uniqueField} = '${instance.value[uniqueField]}'`
-  const queryResult = await client.queryAll(queryString)
+  const queryString = `SELECT ${selectFieldsString} FROM ${await apiName(await instance.getType())} WHERE ${uniqueField} = '${instance.value[uniqueField]}'`
+  const queryResult = client.queryAll(queryString)
   const records = (await toArrayAsync(queryResult)).flat()
   return records[0]
 }
@@ -82,8 +82,8 @@ export const objectExists = async (client: SalesforceClient, type: string, name:
 
 export const getMetadataFromElement = async (client: SalesforceClient,
   element: InstanceElement | ObjectType): Promise<MetadataInfo | undefined> => {
-  const mdType = metadataType(element)
-  const fullName = apiName(element)
+  const mdType = await metadataType(element)
+  const fullName = await apiName(element)
   return getMetadata(client, mdType, fullName)
 }
 
@@ -135,7 +135,12 @@ export function createInstance(
 
 export const getMetadataInstance = async (client: SalesforceClient, type: ObjectType,
   fullName: string): Promise<InstanceElement | undefined> => {
-  const md = await getMetadata(client, isObjectType(type) ? metadataType(type) : type, fullName)
+  const md = await getMetadata(
+    client,
+    isObjectType(type)
+      ? await metadataType(type)
+      : type, fullName
+  )
   return md === undefined ? undefined : createInstance({ value: md, type })
 }
 
@@ -154,7 +159,7 @@ const removeRecordIfAlreadyExists = async (
   instance: InstanceElement
 ): Promise<void> => {
   if (await getRecordOfInstance(client, instance) !== undefined) {
-    await client.bulkLoadOperation(apiName(instance.getType()), 'delete', [{ Id: instance.value.Id }])
+    await client.bulkLoadOperation(await apiName(await instance.getType()), 'delete', [{ Id: instance.value.Id }])
   }
 }
 
@@ -163,10 +168,10 @@ export const removeElementIfAlreadyExists = async (
   element: InstanceElement | ObjectType
 ): Promise<void> => {
   if (isInstanceOfCustomObject(element)) {
-    await removeRecordIfAlreadyExists(client, element)
+    await removeRecordIfAlreadyExists(client, element as InstanceElement)
   } else {
-    const mdType = metadataType(element)
-    const fullName = apiName(element)
+    const mdType = await metadataType(element)
+    const fullName = await apiName(element)
     await removeMetadataIfAlreadyExists(client, mdType, fullName)
   }
 }
@@ -194,7 +199,7 @@ export const createElementAndVerify = async <T extends InstanceElement | ObjectT
 ): Promise<T> => {
   const result = await createElement(adapter, element)
   if (isInstanceOfCustomObject(element)) {
-    expect(await getRecordOfInstance(client, element)).toBeDefined()
+    expect(await getRecordOfInstance(client, element as InstanceElement)).toBeDefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeDefined()
   }
@@ -227,7 +232,7 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
   element: InstanceElement | ObjectType): Promise<void> => {
   await removeElement(adapter, element)
   if (isInstanceOfCustomObject(element)) {
-    expect(await getRecordOfInstance(client, element)).toBeUndefined()
+    expect(await getRecordOfInstance(client, element as InstanceElement)).toBeUndefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeUndefined()
   }

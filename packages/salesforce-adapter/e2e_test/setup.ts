@@ -15,6 +15,7 @@
 */
 import { MetadataInfo } from 'jsforce'
 import { ObjectType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import * as constants from '../src/constants'
 import { CustomField, ProfileInfo } from '../src/client/types'
 import { createDeployPackage } from '../src/transformers/xml_transformer'
@@ -30,6 +31,7 @@ export const customObjectWithFieldsName = 'TestFields__c'
 export const customObjectAddFieldsName = 'TestAddFields__c'
 export const summaryFieldName = 'Case.summary__c'
 
+const { awu } = collections.asynciterable
 const randomString = String(Date.now()).substring(6)
 
 export const CUSTOM_FIELD_NAMES = {
@@ -853,8 +855,8 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
       [mockDefaultValues.StaticResource, mockTypes.StaticResource],
     ]
     const pkg = createDeployPackage()
-    instances.forEach(([values, type]) => {
-      pkg.add(createInstanceElement(values, type))
+    await awu(instances).forEach(async ([values, type]) => {
+      await pkg.add(createInstanceElement(values, type))
     })
     await client.deploy(await pkg.getZip())
   }

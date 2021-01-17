@@ -81,9 +81,9 @@ describe('XML Transformer', () => {
     describe('with simple types', () => {
       const profileValues = { fullName: 'TestProfile', num: 12, str: 'str <> bla', b: true }
       beforeEach(async () => {
-        pkg.add(createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout))
-        pkg.add(createInstanceElement({ fullName: 'TestLayout2' }, mockTypes.Layout))
-        pkg.add(createInstanceElement(profileValues, mockTypes.Profile))
+        await pkg.add(createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout))
+        await pkg.add(createInstanceElement({ fullName: 'TestLayout2' }, mockTypes.Layout))
+        await pkg.add(createInstanceElement(profileValues, mockTypes.Profile))
         pkg.delete(mockTypes.Profile, 'foo')
         zipFiles = await getZipFiles(pkg)
       })
@@ -129,8 +129,8 @@ describe('XML Transformer', () => {
     describe('with types that have a meta file', () => {
       const apexClassValues = { fullName: 'MyClass', someVal: 'asd', content: Buffer.from('some data') }
       beforeEach(async () => {
-        pkg.add(createInstanceElement(apexClassValues, mockTypes.ApexClass))
-        pkg.add(createInstanceElement({ fullName: 'TestFolder' }, mockTypes.EmailFolder))
+        await pkg.add(createInstanceElement(apexClassValues, mockTypes.ApexClass))
+        await pkg.add(createInstanceElement({ fullName: 'TestFolder' }, mockTypes.EmailFolder))
         zipFiles = await getZipFiles(pkg)
       })
       describe('for metadata with content', () => {
@@ -165,7 +165,7 @@ describe('XML Transformer', () => {
     describe('with complex types', () => {
       describe('AuraDefinitionBundle', () => {
         beforeEach(async () => {
-          pkg.add(createInstanceElement(
+          await pkg.add(createInstanceElement(
             mockDefaultValues.AuraDefinitionBundle,
             mockTypes.AuraDefinitionBundle
           ))
@@ -204,7 +204,7 @@ describe('XML Transformer', () => {
       })
       describe('LightningComponentBundle', () => {
         beforeEach(async () => {
-          pkg.add(createInstanceElement(
+          await pkg.add(createInstanceElement(
             mockDefaultValues.LightningComponentBundle,
             mockTypes.LightningComponentBundle,
           ))
@@ -241,7 +241,7 @@ describe('XML Transformer', () => {
     })
     describe('with Settings types', () => {
       beforeEach(async () => {
-        pkg.add(createInstanceElement({ fullName: 'TestSettings', testField: true }, mockTypes.TestSettings))
+        await pkg.add(createInstanceElement({ fullName: 'TestSettings', testField: true }, mockTypes.TestSettings))
         zipFiles = await getZipFiles(pkg)
       })
       it('manifest should include "Settings"', () => {

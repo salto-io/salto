@@ -49,12 +49,16 @@ export const onTextChangeEvent = (
 ): void => {
   if (path.extname(event.document.fileName) === FILE_EXTENSION) {
     const naclFile = { filename: event.document.fileName, buffer: event.document.getText() }
+    // We really do *not* want to await on this.
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     workspace.setNaclFiles(naclFile)
   }
 }
 
 export const onFileOpen = async (workspace: ws.EditorWorkspace, filename: string):
 Promise<void> => {
+  // We really do *not* want to await on this.
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   vscode.commands.executeCommand('editor.foldAllMarkerRegions')
   await workspace.validateFiles([filename])
 }
@@ -67,6 +71,8 @@ const showReloadWSPrompt = _.debounce(async (): Promise<void> => {
     action
   )
   if (action === choice) {
+    // We really do *not* want to await on this.
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     vscode.commands.executeCommand('workbench.action.reloadWindow')
   }
 }, FS_FILE_CHANGE_TIMEOUT)
@@ -76,6 +82,8 @@ export const onFileChange = async (
   filename: string
 ): Promise<void> => {
   if (!(await workspace.listNaclFiles()).includes(filename)) {
+    // We really do *not* want to await on this.
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     showReloadWSPrompt()
   }
 }

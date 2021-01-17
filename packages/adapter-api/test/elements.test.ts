@@ -67,10 +67,10 @@ describe('Test elements.ts', () => {
     expect(primNum.primitive).toBe(PrimitiveTypes.NUMBER)
   })
 
-  it('should create a basic object type with all params passed to the constructor', () => {
+  it('should create a basic object type with all params passed to the constructor', async () => {
     expect(ot.elemID).toEqual(otID)
-    expect(ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)
-    expect(ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
+    expect(await ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)
+    expect(await ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
   })
 
   //added in rebase
@@ -196,8 +196,11 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(lstField, _.cloneDeep(lstField))).toBeTruthy()
     })
 
-    it('should identify equal list types', () => {
-      expect(isEqualElements(lstField.getType(), _.cloneDeep(lstField.getType()))).toBeTruthy()
+    it('should identify equal list types', async () => {
+      expect(isEqualElements(
+        await lstField.getType(),
+        _.cloneDeep(await lstField.getType())
+      )).toBeTruthy()
     })
 
     it('should identify not equal for diff list types', () => {
@@ -216,8 +219,11 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(mapField, _.cloneDeep(mapField))).toBeTruthy()
     })
 
-    it('should identify equal map types', () => {
-      expect(isEqualElements(mapField.getType(), _.cloneDeep(mapField.getType()))).toBeTruthy()
+    it('should identify equal map types', async () => {
+      expect(isEqualElements(
+        await mapField.getType(),
+        _.cloneDeep(await mapField.getType())
+      )).toBeTruthy()
     })
 
     it('should identify not equal for diff map types', () => {

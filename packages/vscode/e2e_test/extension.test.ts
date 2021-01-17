@@ -18,6 +18,9 @@ import tmp from 'tmp-promise'
 import { SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
 import { copyFile, rm, mkdirp } from '@salto-io/file'
 import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/lang-server'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 // TODO: enable this back - tests fails
 // eslint-disable-next-line jest/no-disabled-tests
@@ -37,8 +40,8 @@ describe.skip('extension e2e', () => {
       fileFilter: '*.nacl',
       directoryFilter: e => e.basename[0] !== '.',
     })
-    naclFiles
-      .forEach(naclFile => { copyFile(naclFile.fullPath, `${wsPath}/${naclFile.basename}`) })
+    await awu(naclFiles)
+      .forEach(async naclFile => { await copyFile(naclFile.fullPath, `${wsPath}/${naclFile.basename}`) })
 
     workspace = new ws.EditorWorkspace(wsPath, await initLocalWorkspace(wsPath, 'default'))
   })

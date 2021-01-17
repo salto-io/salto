@@ -60,8 +60,8 @@ describe('adapters.ts', () => {
   })
 
   describe('getDefaultAdapterConfig', () => {
-    it('should call createDefaultInstanceFromType', () => {
-      getDefaultAdapterConfig('salesforce')
+    it('should call createDefaultInstanceFromType', async () => {
+      await getDefaultAdapterConfig('salesforce')
       expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
     })
   })
@@ -79,7 +79,7 @@ describe('adapters.ts', () => {
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
-          config: getDefaultAdapterConfig(serviceName),
+          config: await getDefaultAdapterConfig(serviceName),
           getElemIdFunc: undefined,
         })
       )

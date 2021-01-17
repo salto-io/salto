@@ -38,8 +38,8 @@ describe('file', () => {
 
   describe('stat', () => {
     describe('when the file does not exist', () => {
-      it('should reject with ErrnoException', () => {
-        expectRejectWithErrnoException(() => file.stat('nosuchfile'))
+      it('should reject with ErrnoException', async () => {
+        await expectRejectWithErrnoException(() => file.stat('nosuchfile'))
       })
     })
 
@@ -124,8 +124,8 @@ describe('file', () => {
 
   describe('readFile', () => {
     describe('when the file does not exist', () => {
-      it('should reject with ErrnoException', () => {
-        expectRejectWithErrnoException(() => file.readFile('nosuchfile'))
+      it('should reject with ErrnoException', async () => {
+        await expectRejectWithErrnoException(() => file.readFile('nosuchfile'))
       })
     })
 
@@ -139,8 +139,8 @@ describe('file', () => {
 
   describe('readTextFile', () => {
     describe('when the file does not exist', () => {
-      it('should reject with ErrnoException', () => {
-        expectRejectWithErrnoException(() => file.readTextFile('nosuchfile'))
+      it('should reject with ErrnoException', async () => {
+        await expectRejectWithErrnoException(() => file.readTextFile('nosuchfile'))
       })
     })
 
@@ -159,7 +159,7 @@ describe('file', () => {
 
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', async () => {
-        expectRejectWithErrnoException(() => file.readZipFile('nosuchfile'))
+        await expectRejectWithErrnoException(() => file.readZipFile('nosuchfile'))
       })
     })
 
@@ -191,8 +191,8 @@ describe('file', () => {
         await file.copyFile(source, dest)
       })
 
-      afterEach(() => {
-        destTmp.cleanup()
+      afterEach(async () => {
+        await destTmp.cleanup()
       })
 
       it('should throw error', async () => {

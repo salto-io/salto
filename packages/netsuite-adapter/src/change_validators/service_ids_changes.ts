@@ -17,22 +17,24 @@ import {
   BuiltinTypes, ChangeError,
   ChangeValidator, getChangeElement, InstanceElement, isInstanceChange, isModificationChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { isCustomType, isFileCabinetType } from '../types'
 
+const { awu } = collections.asynciterable
+
 const changeValidator: ChangeValidator = async changes => (
-  _.flatten(changes
+  awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
     .filter(change => {
       const instance = getChangeElement(change) as InstanceElement
       return isCustomType(instance.refType.elemID) || isFileCabinetType(instance.refType.elemID)
     })
-    .map(change => {
+    .flatMap(async change => {
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
-      const modifiedServiceIdsFields = Object.values(after.getType().fields)
-        .filter(field => field.getType() === BuiltinTypes.SERVICE_ID)
+      const modifiedServiceIdsFields = awu(Object.values((await after.getType()).fields))
+        .filter(async field => await field.getType() === BuiltinTypes.SERVICE_ID)
         .filter(field => before.value[field.name] !== after.value[field.name])
       return modifiedServiceIdsFields.map(modifiedServiceIdsField => ({
         elemID: after.elemID,
@@ -40,7 +42,8 @@ const changeValidator: ChangeValidator = async changes => (
         message: 'Fields of type serviceId are immutable',
         detailedMessage: `Field (${modifiedServiceIdsField.name}) is immutable`,
       } as ChangeError))
-    }))
+    })
+    .toArray()
 )
 
 export default changeValidator

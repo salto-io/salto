@@ -15,6 +15,7 @@
 */
 import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, Change, ChangeDataType, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/replace_instance_field_values'
@@ -25,6 +26,8 @@ import {
 } from '../../src/constants'
 import { metadataType } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+
+const { awu } = collections.asynciterable
 
 const FORECASTING_METADATA_TYPE = 'ForecastingSettings'
 const BEFORE_ID_1 = '00N4K000004woj7'
@@ -296,9 +299,9 @@ describe('replace instance field values filter', () => {
       await filter.onFetch(elements)
 
       namesAfterFilter = []
-      elements
+      await awu(elements)
         .filter(isInstanceElement)
-        .filter(e => metadataType(e) === FORECASTING_METADATA_TYPE)
+        .filter(async e => await metadataType(e) === FORECASTING_METADATA_TYPE)
         .map(e => e.value)
         .forEach(val => {
           const names = getAllNamesFromForecastingValue(val as ForecastingSettingsValue)

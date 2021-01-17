@@ -67,7 +67,6 @@ export const filtersRunner = (client: SalesforceClient,
     },
     preDeploy: async changes => {
       await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => filter.preDeploy(changes)))
-      Promise.resolve()
     },
     onDeploy: async changes =>
       ((await promises.array.series(filtersWith('onDeploy').map(filter => () => filter.onDeploy(changes)))).flat()),

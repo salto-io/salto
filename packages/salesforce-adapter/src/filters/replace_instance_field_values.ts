@@ -20,6 +20,7 @@ import {
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
@@ -27,6 +28,8 @@ import SalesforceClient from '../client/client'
 import { getIdsForType } from './add_missing_ids'
 import { getInternalId } from './utils'
 import { CUSTOM_FIELD } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -51,15 +54,15 @@ const getApiNameToIdLookup = async (client: SalesforceClient): Promise<Record<st
   _.mapValues(await getIdsForType(client, CUSTOM_FIELD), toShortId)
 )
 
-const shouldReplace = (field: Field): boolean => {
+const shouldReplace = async (field: Field): Promise<boolean> => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
-  return resolverFinder(field).length > 0
+  return (await resolverFinder(field)).length > 0
 }
 
-const replaceInstanceValues = (instance: InstanceElement,
-  nameLookup: Record<string, string>): void => {
-  const transformFunc: TransformFunc = ({ value, field }) => {
-    if (_.isUndefined(field) || !shouldReplace(field)) {
+const replaceInstanceValues = async (instance: InstanceElement,
+  nameLookup: Record<string, string>): Promise<void> => {
+  const transformFunc: TransformFunc = async ({ value, field }) => {
+    if (_.isUndefined(field) || !(await shouldReplace(field))) {
       return value
     }
 
@@ -71,39 +74,45 @@ const replaceInstanceValues = (instance: InstanceElement,
   }
 
   const values = instance.value
-  instance.value = transformValues(
+  instance.value = await transformValues(
     {
       values,
-      type: instance.getType(),
+      type: await instance.getType(),
       transformFunc,
       strict: false,
     }
   ) ?? values
 }
 
-const replaceInstancesValues = (elements: Element[], nameLookUp: Record<string, string>): void => {
-  elements
+const replaceInstancesValues = async (
+  elements: Element[],
+  nameLookUp: Record<string, string>
+): Promise<void> => {
+  await awu(elements)
     .filter(isInstanceElement)
-    .filter(e => Object.keys(metadataTypeToInstanceName).includes(metadataType(e)))
-    .forEach(e => {
-      replaceInstanceValues(e, nameLookUp)
-      log.debug(`replaced values of instance ${apiName(e)}`)
+    .filter(async e => Object.keys(metadataTypeToInstanceName).includes(await metadataType(e)))
+    .forEach(async e => {
+      await replaceInstanceValues(e, nameLookUp)
+      log.debug(`replaced values of instance ${await apiName(e)}`)
     })
 }
 
-const getIdToNameLookupFromAllElements = (elements: Element[]): Record<string, string> => {
+const getIdToNameLookupFromAllElements = async (
+  elements: Element[]
+): Promise<Record<string, string>> => {
   const lookup: Record<string, string> = {}
-  const fields = elements
+  const fields = await awu(elements)
     .filter(isObjectType)
-    .filter(e => Object.values(metadataTypeToInstanceName).includes(apiName(e)))
+    .filter(async e => Object.values(metadataTypeToInstanceName).includes(await apiName(e)))
     .flatMap(e => Object.values(e.fields))
+    .toArray()
 
-  Object.assign(lookup, ...fields.map(field => {
+  Object.assign(lookup, ...await awu(fields).map(async field => {
     const id = getInternalId(field)
     return id === undefined ? {} : {
-      [toShortId(id)]: apiName(field),
+      [toShortId(id)]: await apiName(field),
     }
-  }))
+  }).toArray())
   return lookup
 }
 
@@ -112,12 +121,12 @@ const getIdToNameLookupFromAllElements = (elements: Element[]): Record<string, s
  */
 const filter: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]) => {
-    const idToApiNameLookUp = getIdToNameLookupFromAllElements(elements)
-    replaceInstancesValues(elements, idToApiNameLookUp)
+    const idToApiNameLookUp = await getIdToNameLookupFromAllElements(elements)
+    await replaceInstancesValues(elements, idToApiNameLookUp)
   },
   preDeploy: async (changes: ReadonlyArray<Change>): Promise<void> => {
     const apiNameToIdLookup = await getApiNameToIdLookup(client)
-    replaceInstancesValues(
+    await replaceInstancesValues(
       changes.map(getChangeElement),
       apiNameToIdLookup
     )
@@ -127,7 +136,7 @@ const filter: FilterCreator = ({ client }) => ({
     const idToApiNameLookUp = Object.fromEntries( // invert the lookup
       Object.entries(apiNameToIdLookup).map(([key, value]) => ([value, key]))
     )
-    replaceInstancesValues(
+    await replaceInstancesValues(
       changes.map(getChangeElement),
       idToApiNameLookUp
     )

@@ -66,18 +66,18 @@ describe('missing fields filter', () => {
   describe('on fetch', () => {
     beforeEach(() => filter.onFetch(testElements))
 
-    it('should add primitive list fields', () => {
+    it('should add primitive list fields', async () => {
       const [testType] = testElements
       expect(testType.fields.lst).toBeDefined()
       expect(testType.fields.lst.annotations).toEqual({ dummy: true })
-      expect(testType.fields.lst.getType()).toEqual(new ListType(BuiltinTypes.STRING))
+      expect(await testType.fields.lst.getType()).toEqual(new ListType(BuiltinTypes.STRING))
     })
 
-    it('should add fields by type name', () => {
+    it('should add fields by type name', async () => {
       const [testType] = testElements
       expect(testType.fields.complex).toBeDefined()
       expect(testType.fields.complex.annotations).toEqual({})
-      expect(testType.fields.complex.getType()).toEqual(complexType)
+      expect(await testType.fields.complex.getType()).toEqual(complexType)
     })
 
     it('should keep existing fields unchanged', () => {

@@ -25,6 +25,9 @@ module.exports = deepMerge(
       tsconfigRootDir: __dirname,
       project: path.resolve(__dirname, './tsconfig.json'),
     },
+    rules: {
+      '@typescript-eslint/no-floating-promises': ['error']
+    }
   },
 )
 

@@ -24,13 +24,13 @@ import { createRemoteMap } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
 
-const createElements = (): Element[] => {
+const createElements = async (): Promise<Element[]> => {
   const params = Object.assign(defaultParams)
   params.numOfRecords = 1
   params.numOfObjs = 1
   params.numOfPrimitiveTypes = 1
   params.numOfTypes = 1
-  const generatedElements = generateElements(params)
+  const generatedElements = await generateElements(params)
   const elements = generatedElements.slice(0, generatedElements.length - 1)
   return elements
 }
@@ -59,8 +59,9 @@ async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element
 }
 
 describe('test operations on remote db', () => {
-  const elements = createElements()
+  let elements: Element[]
   beforeEach(async () => {
+    elements = await createElements()
     remoteMap = await createMap(Math.random().toString(36).substring(2, 15))
   })
   afterEach(async () => {
@@ -68,7 +69,7 @@ describe('test operations on remote db', () => {
   })
 
   it('finds an item after it is put', async () => {
-    remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+    await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(elements[0])
   })
 
@@ -120,7 +121,7 @@ describe('test operations on remote db', () => {
 describe('full integration', () => {
   it('creates keys and values, flushes', async () => {
     remoteMap = await createMap('integration')
-    const elements = createElements()
+    const elements = await createElements()
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     await remoteMap.putAll(await createAsyncIterable(elements.slice(1, elements.length)))
     await remoteMap.flush()

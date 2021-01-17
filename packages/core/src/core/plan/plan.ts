@@ -18,11 +18,12 @@ import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
-  isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource,
+  isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID,
 } from '@salto-io/adapter-api'
-import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, Group } from '@salto-io/dag'
+import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { expressions } from '@salto-io/workspace'
+import { expressions, elementSource } from '@salto-io/workspace'
+import { collections, values } from '@salto-io/lowerdash'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
@@ -32,53 +33,19 @@ import {
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
 
+const { awu } = collections.asynciterable
 const { resolve } = expressions
 
 const log = logger(module)
 
-/**
- * Add elements to a diff graph as changes
- */
-const addElements = (
-  elements: ReadonlyArray<Element>,
-  action: Change['action'] & ('add' | 'remove'),
-): PlanTransformer => graph => log.time(async () => {
-  const outputGraph = graph.clone()
-
-  // Helper functions
-  const toChange = (elem: ChangeDataType): DiffNode<ChangeDataType> => {
-    if (action === 'add') {
-      return { originalId: elem.elemID.getFullName(), action, data: { after: elem } }
-    }
-    return { originalId: elem.elemID.getFullName(), action, data: { before: elem } }
-  }
-
-  const addElemToOutputGraph = (elem: ChangeDataType): void => {
-    outputGraph.addNode(changeId(elem, action), [], toChange(elem))
-  }
-
-  const isTopLevelElement = (elem: Element): elem is ChangeDataType => (
-    isObjectType(elem) || isPrimitiveType(elem) || isInstanceElement(elem)
-  )
-
-  // Add top level elements to the graph
-  elements.filter(isTopLevelElement).forEach(addElemToOutputGraph)
-
-  // We add fields to the graph separately from their object types to allow for better granularity
-  // of cycle avoidance
-  _(elements)
-    .filter(isObjectType)
-    .map(obj => Object.values(obj.fields))
-    .flatten()
-    .forEach(addElemToOutputGraph)
-
-  return outputGraph
-}, 'add nodes to graph with action %s for %d elements', action, elements.length)
-
+export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
-const isEqualsNode = (node1: ChangeDataType, node2: ChangeDataType): boolean => {
+const isEqualsNode = (node1?: ChangeDataType, node2?: ChangeDataType): boolean => {
+  if (values.isDefined(node1) !== values.isDefined(node2)) {
+    return false
+  }
   if (isObjectType(node1) && isObjectType(node2)) {
     // We would like to check equality only on type level prop (annotations) and not fields
     return node1.isAnnotationsEqual(node2)
@@ -95,6 +62,90 @@ const isEqualsNode = (node1: ChangeDataType, node2: ChangeDataType): boolean => 
   // Assume we shouldn't reach this point
   return _.isEqual(node1, node2)
 }
+
+const addDifferentElements = (
+  before: elementSource.ElementsSource,
+  after: elementSource.ElementsSource,
+  topLevelFilters: IDFilter[]
+): PlanTransformer => graph => log.time(async () => {
+  const outputGraph = graph.clone()
+  const sieve = new Set<string>()
+
+  const resolveElement = async (
+    elem: Element | undefined,
+    context: ReadOnlyElementsSource
+  ): Promise<Element | undefined> => {
+    if (values.isDefined(elem)) {
+      return awu(await resolve(awu([elem]), context)).peek()
+    }
+    return undefined
+  }
+
+  const toChange = (
+    elem: ChangeDataType,
+    action: Change['action'] & ('add' | 'remove')
+  ): DiffNode<ChangeDataType> => {
+    if (action === 'add') {
+      return { originalId: elem.elemID.getFullName(), action, data: { after: elem } }
+    }
+    return { originalId: elem.elemID.getFullName(), action, data: { before: elem } }
+  }
+
+  const addElemToOutputGraph = (
+    elem: ChangeDataType,
+    action: Change['action'] & ('add' | 'remove')
+  ): void => {
+    outputGraph.addNode(changeId(elem, action), [], toChange(elem, action))
+  }
+
+  const addNodeIfDifferent = (beforeNode?: ChangeDataType, afterNode?: ChangeDataType): void => {
+    // We can cast to string, at least one of the nodes should be defined.
+    const fullname = beforeNode?.elemID.getFullName()
+      ?? afterNode?.elemID.getFullName() as string
+    if (!sieve.has(fullname)) {
+      sieve.add(fullname)
+      if (!isEqualsNode(beforeNode, afterNode)) {
+        if (values.isDefined(beforeNode)) {
+          addElemToOutputGraph(beforeNode, 'remove')
+        }
+        if (values.isDefined(afterNode)) {
+          addElemToOutputGraph(afterNode, 'add')
+        }
+      }
+    }
+  }
+
+  const addElementsNodes = async (id: ElemID): Promise<void> => {
+    const beforeElement = await resolveElement(
+      await before.get(id),
+      before
+    ) as ChangeDataType | undefined
+    const afterElement = await resolveElement(
+      await after.get(id),
+      after
+    ) as ChangeDataType | undefined
+    addNodeIfDifferent(beforeElement, afterElement)
+    const beforeFields = (isObjectType(beforeElement)) ? beforeElement.fields : {}
+    const afterFields = (isObjectType(afterElement)) ? afterElement.fields : {}
+    const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
+    allFieldNames.forEach(
+      fieldName => addNodeIfDifferent(
+        beforeFields[fieldName],
+        afterFields[fieldName]
+      )
+    )
+  }
+
+  await awu(await before.list())
+    .concat(await after.list())
+    .filter(async id => _.every(
+      await Promise.all(
+        topLevelFilters.map(filter => filter(id))
+      )
+    ))
+    .forEach(addElementsNodes)
+  return outputGraph
+}, 'add nodes to graph with action %s for %d elements')
 
 const addPlanFunctions = (
   groupGraph: GroupedNodeMap<Change>, changeErrors: ReadonlyArray<ChangeError>
@@ -187,14 +238,13 @@ export type AdditionalResolveContext = {
 }
 
 type GetPlanParameters = {
-  before: ReadonlyArray<Element>
-  after: ReadonlyArray<Element>
+  before: elementSource.ElementsSource
+  after: elementSource.ElementsSource
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
-  //additionalResolveContext?: AdditionalResolveContext
-  beforeSource: ReadOnlyElementsSource
-  afterSource: ReadOnlyElementsSource
+  additionalResolveContext?: ReadonlyArray<Element>
+  topLevelFilters?: IDFilter[]
 }
 export const getPlan = async ({
   before,
@@ -202,42 +252,23 @@ export const getPlan = async ({
   changeValidators = {},
   dependencyChangers = defaultDependencyChangers,
   customGroupIdFunctions = {},
-  beforeSource,
-  afterSource,
+  topLevelFilters = [],
 }: GetPlanParameters): Promise<Plan> => log.time(async () => {
-  // Resolve elements before adding them to the graph
-  const resolvedBefore = resolve(
-    before,
-    beforeSource,
-  )
-  const resolvedAfter = resolve(
-    after,
-    afterSource,
-  )
-
   const diffGraph = await buildDiffGraph(
-    addElements(resolvedBefore, 'remove'),
-    addElements(resolvedAfter, 'add'),
-    removeEqualNodes(isEqualsNode),
+    addDifferentElements(before, after, topLevelFilters),
     addModifyNodes(addNodeDependencies(dependencyChangers)),
   )
 
-  // filter invalid changes from the graph and the after elements
-  const beforeElementsMap = _.keyBy(resolvedBefore, e => e.elemID.getFullName())
-  const afterElementsMap = _.keyBy(resolvedAfter, e => e.elemID.getFullName())
   const filterResult = await filterInvalidChanges(
-    beforeElementsMap, afterElementsMap, diffGraph, changeValidators,
+    before, after, diffGraph, changeValidators,
   )
-
   const customGroupKeys = await getCustomGroupIds(
     filterResult.validDiffGraph, customGroupIdFunctions,
   )
-
   // build graph
   const groupedGraph = removeRedundantFieldChanges(
     buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, customGroupKeys)
   )
-
   // build plan
   return addPlanFunctions(groupedGraph, filterResult.changeErrors)
-}, 'get plan with %o -> %o elements', before.length, after.length)
+}, 'get plan with %o -> %o elements')

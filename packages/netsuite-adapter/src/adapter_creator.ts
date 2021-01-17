@@ -28,7 +28,10 @@ import NetsuiteAdapter from './adapter'
 import { configType, NetsuiteConfig } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, CLIENT_CONFIG,
+  FETCH_TARGET,
+  FETCH_ALL_TYPES_AT_ONCE,
 } from './constants'
+import { buildNetsuiteQuery } from './query'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -52,24 +55,37 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
     const invalidRegularExpressions = regularExpressions
       .filter(strRegex => !regex.isValidRegex(strRegex))
     if (!_.isEmpty(invalidRegularExpressions)) {
-      const errMessage = `Failed to load config due to an invalid ${FILE_PATHS_REGEX_SKIP_LIST} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
-      log.error(errMessage)
+      const errMessage = `received an invalid ${FILE_PATHS_REGEX_SKIP_LIST} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
       throw Error(errMessage)
     }
   }
 
+  const fetchTargetParameters = config?.value?.[FETCH_TARGET]
   const filePathsRegexSkipList = makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
-  validateRegularExpressions(filePathsRegexSkipList)
-  const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
-    [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
-    [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
-    [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
-    [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
+  const clientConfig = config?.value?.[CLIENT_CONFIG]
+  if (clientConfig?.[FETCH_ALL_TYPES_AT_ONCE] && fetchTargetParameters !== undefined) {
+    log.warn(`${FETCH_ALL_TYPES_AT_ONCE} is not supported with ${FETCH_TARGET}. Ignoring ${FETCH_ALL_TYPES_AT_ONCE}`)
+    clientConfig[FETCH_ALL_TYPES_AT_ONCE] = false
   }
-  Object.keys(config?.value ?? {})
-    .filter(k => !Object.keys(netsuiteConfig).includes(k))
-    .forEach(k => log.debug('Unknown config property was found: %s', k))
-  return netsuiteConfig
+  try {
+    validateRegularExpressions(filePathsRegexSkipList)
+    const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
+      [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
+      [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
+      [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
+      [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
+      [FETCH_TARGET]: fetchTargetParameters && buildNetsuiteQuery(fetchTargetParameters),
+    }
+
+    Object.keys(config?.value ?? {})
+      .filter(k => !Object.keys(netsuiteConfig).includes(k))
+      .forEach(k => log.debug('Unknown config property was found: %s', k))
+    return netsuiteConfig
+  } catch (e) {
+    e.message = `failed to load Netsuite config: ${e.message}`
+    log.error(e.message)
+    throw e
+  }
 }
 
 const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
@@ -80,6 +96,7 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
   const credentials = netsuiteCredentialsFromCredentials(context.credentials)
   return new NetsuiteAdapter({
     client: new NetsuiteClient({ credentials, config: adapterConfig[CLIENT_CONFIG] }),
+    elementsSource: context.elementsSource,
     config: adapterConfig,
     getElemIdFunc: context.getElemIdFunc,
   })

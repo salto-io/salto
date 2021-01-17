@@ -13,12 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
+import { Element, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+
+export type OnFetchParameters = {
+  elements: Element[]
+  elementsSource: ReadOnlyElementsSource
+  isPartial: boolean
+}
 
 // Filter interface, filters will be activated upon adapter fetch operations.
 // The filter will be responsible for specific business logic.
 export type OnFetchFilter = {
-  onFetch(elements: Element[]): Promise<void>
+  onFetch(parameters: OnFetchParameters): Promise<void>
 }
 
 export type FilterCreator = () => OnFetchFilter

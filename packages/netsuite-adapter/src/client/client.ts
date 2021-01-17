@@ -38,6 +38,8 @@ import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_SDF_CONCURRENCY, NetsuiteClientConfig,
 } from '../config'
+import { NetsuiteQuery, ObjectID } from '../query'
+import { customTypes } from '../types'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -112,11 +114,6 @@ export interface FileCustomizationInfo extends CustomizationInfo {
 
 export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
-}
-
-export interface ObjectID {
-  type: string
-  scriptId: string
 }
 
 export const convertToCustomizationInfo = (xmlContent: string):
@@ -380,9 +377,9 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getCustomObjects(typeNames: string[]): Promise<GetCustomObjectsResult> {
+  async getCustomObjects(query: NetsuiteQuery): Promise<GetCustomObjectsResult> {
     const { executor, projectName, authId } = await this.initProject()
-    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(executor, typeNames)
+    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(executor, query)
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
@@ -409,7 +406,7 @@ export default class NetsuiteClient {
 
   private async importObjects(
     executor: CommandActionExecutor,
-    typeNames: string[]
+    query: NetsuiteQuery
   ): Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: Set<string> }> {
     const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
@@ -430,15 +427,19 @@ export default class NetsuiteClient {
     }
     return {
       failedToFetchAllAtOnce: this.fetchAllTypesAtOnce,
-      failedTypes: await this.importObjectsInChunks(executor, typeNames),
+      failedTypes: await this.importObjectsInChunks(executor, query),
     }
   }
 
   private async importObjectsInChunks(
     executor: CommandActionExecutor,
-    typeNames: string[]
+    query: NetsuiteQuery
   ): Promise<Set<string>> {
-    const instancesIds = await this.listInstances(executor, typeNames)
+    const instancesIds = (await this.listInstances(
+      executor,
+      Object.keys(customTypes).filter(query.isTypeMatch)
+    )).filter(query.isObjectMatch)
+
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
     const idsChunks = wu.entries(instancesIdsByType).map(
       ([type, ids]: [string, ObjectID[]]) =>
@@ -513,12 +514,11 @@ export default class NetsuiteClient {
     return results.data
   }
 
-  private async listFilePaths(executor: CommandActionExecutor, filePathRegexSkipList: RegExp[]):
+  private async listFilePaths(executor: CommandActionExecutor):
     Promise<{ listedPaths: string[]; failedPaths: string[] }> {
     const failedPaths: string[] = []
     const actionResults = (await Promise.all(
       fileCabinetTopLevelFolders
-        .filter(folder => filePathRegexSkipList.every(regex => !regex.test(folder)))
         .map(folder =>
           this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor)
             .catch(() => {
@@ -572,7 +572,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async importFileCabinetContent(filePathRegexSkipList: RegExp[]):
+  async importFileCabinetContent(query: NetsuiteQuery):
     Promise<ImportFileCabinetResult> {
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
       fileCabinetDirPath: string): Promise<FileCustomizationInfo[]> => {
@@ -605,9 +605,9 @@ export default class NetsuiteClient {
       }))
 
     const project = await this.initProject()
-    const listFilesResults = await this.listFilePaths(project.executor, filePathRegexSkipList)
+    const listFilesResults = await this.listFilePaths(project.executor)
     const filePathsToImport = listFilesResults.listedPaths
-      .filter(path => filePathRegexSkipList.every(regex => !regex.test(path)))
+      .filter(path => query.isFileMatch(path))
     const importFilesResults = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
     const importedPaths = _.uniq(importFilesResults.importedPaths)

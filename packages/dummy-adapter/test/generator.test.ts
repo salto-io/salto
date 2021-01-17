@@ -52,7 +52,7 @@ describe('elements generator', () => {
       expect(types).toHaveLength(testParams.numOfTypes)
       expect(
         _.uniq(objects.map(obj => obj.elemID.getFullName()))
-      ).toHaveLength(testParams.numOfObjs + 3) // 3 default types
+      ).toHaveLength(testParams.numOfObjs + 4) // 4 default types
       expect(profiles).toHaveLength(testParams.numOfProfiles * 4)
       expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(
         testParams.numOfProfiles

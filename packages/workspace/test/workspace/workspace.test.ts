@@ -277,7 +277,25 @@ describe('workspace', () => {
       expect(firstSourceFragment.fragment).toContain('salesforce.text base_field')
     })
     it('should have merge error when hidden values are added to nacl', async () => {
-      const state = createState([])
+      const obj = new ObjectType({
+        elemID: new ElemID('salto', 't'),
+        fields: {
+          field: {
+            annotations: {
+              [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            },
+            refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          },
+        },
+      })
+      const inst = new InstanceElement(
+        'inst',
+        obj,
+        {
+          field: 1,
+        }
+      )
+      const state = createState([obj, inst])
       const workspace = await createWorkspace(
         mockDirStore([], false, {
           'x.nacl': `type salto.t {
@@ -291,13 +309,6 @@ describe('workspace', () => {
         }),
         state,
       )
-      await state.override(
-        await resolve(
-          await (await workspace.elements(false)).getAll(),
-          await workspace.elements(false)
-        )
-      )
-
       const wsErrors = await workspace.errors()
       expect(wsErrors.merge).toHaveLength(1)
     })

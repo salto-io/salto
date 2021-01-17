@@ -62,7 +62,7 @@ export const parseResultCache = (
 ): ParseResultCache => {
   const cahceSuffixRegex = new RegExp(`${CACHE_EXTENSION}$`)
   const resolveCacheFileName = (filename: string): string =>
-    _.replace(filename, /\.nacl$/, CACHE_EXTENSION)
+    _.replace(filename, /.nacl$/, CACHE_EXTENSION)
 
   const resolveFileName = (filename: string): string => (
     _.replace(filename, cahceSuffixRegex, '.nacl')
@@ -113,7 +113,9 @@ export const parseResultCache = (
       const cacheFilename = resolveCacheFileName(filename)
       await dirStore.delete(cacheFilename)
     },
-    list: async () => (await dirStore.list()).map(resolveFileName),
+    list: async () => (await dirStore.list())
+      .filter(filename => filename.endsWith(CACHE_EXTENSION))
+      .map(resolveFileName),
     clear: dirStore.clear,
     rename: dirStore.rename,
     flush: dirStore.flush,

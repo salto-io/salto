@@ -135,7 +135,8 @@ const resolveElement = async (
   element: Element,
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
-): Promise<void> => {
+  resolvedSet = new Set<string>()
+): Promise<Element> => {
   // Create a ReadonlyElementSource (ElementsGetter) with the proper context
   // to be used to resolve types. If it was already resolved use the reolsved and if not
   // fallback to the elementsSource
@@ -148,10 +149,18 @@ const resolveElement = async (
     elementsSource,
     resolvedElements
   )
+
+  if (resolvedSet.has(element.elemID.getFullName())) {
+    return element
+  }
+  resolvedSet.add(element.elemID.getFullName())
+
   const elementAnnoTypes = await element.getAnnotationTypes(contextedElementsGetter)
-  element.annotationRefTypes = _.mapValues(
+  element.annotationRefTypes = await mapValuesAsync(
     elementAnnoTypes,
-    type => createRefToElmWithValue(type)
+    async type => createRefToElmWithValue(
+      await resolveElement(type, elementsSource, resolvedElements, resolvedSet)
+    )
   )
 
   element.annotations = (await transformValues({
@@ -164,7 +173,14 @@ const resolveElement = async (
   }) ?? {})
 
   if (isInstanceElement(element)) {
-    element.refType = createRefToElmWithValue(await element.getType(contextedElementsGetter))
+    element.refType = createRefToElmWithValue(
+      await resolveElement(
+        await element.getType(contextedElementsGetter),
+        elementsSource,
+        resolvedElements,
+        resolvedSet
+      )
+    )
     element.value = (await transformValues({
       transformFunc: referenceCloner,
       values: element.value,
@@ -179,11 +195,16 @@ const resolveElement = async (
     element.fields = await mapValuesAsync(
       element.fields,
       async field => {
-        const fieldType = await field.getType(contextedElementsGetter) as TypeElement
+        const fieldType = await resolveElement(
+          await field.getType(contextedElementsGetter),
+          elementsSource,
+          resolvedElements,
+          resolvedSet
+        )
         return new Field(
           element,
           field.name,
-          fieldType,
+          fieldType as TypeElement,
           // _.cloneDeepWith(field.annotations, referenceCloner),
           (await transformValues({
             transformFunc: referenceCloner,
@@ -203,6 +224,7 @@ const resolveElement = async (
   }
 
   resolvedElements[element.elemID.getFullName()] = element
+  return element
 }
 
 export const resolve = async (

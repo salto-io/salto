@@ -184,7 +184,7 @@ export const loadWorkspace = async (
         newElements: await naclFilesSource.getAll(env),
         relevantElementIDs: awu(await naclFilesSource.list()).concat(await state(env).list()),
       })
-      if (env !== currentEnv()) {
+      if (env !== undefined && env !== currentEnv()) {
         return newState
       }
       workspaceState = Promise.resolve(newState)
@@ -194,7 +194,6 @@ export const loadWorkspace = async (
     const changedElementIDs = changes.map(getChangeElement).map(e => e.elemID)
 
     const newElements = awu(changes.filter(isAdditionOrModificationChange).map(getChangeElement))
-
     await buildNewMergedElementsAndErrors({
       currentElements: current.merged,
       currentErrors: current.errors,

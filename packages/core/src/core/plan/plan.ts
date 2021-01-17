@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
-  isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID,
+  isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -124,7 +124,9 @@ const addDifferentElements = (
       await after.get(id),
       after
     ) as ChangeDataType | undefined
-    addNodeIfDifferent(beforeElement, afterElement)
+    if (!isVariable(beforeElement) && !isVariable(afterElement)) {
+      addNodeIfDifferent(beforeElement, afterElement)
+    }
     const beforeFields = (isObjectType(beforeElement)) ? beforeElement.fields : {}
     const afterFields = (isObjectType(afterElement)) ? afterElement.fields : {}
     const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]

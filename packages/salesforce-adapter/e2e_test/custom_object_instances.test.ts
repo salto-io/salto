@@ -80,95 +80,104 @@ describe('custom object instances e2e', () => {
   describe('custom settings manipulations', () => {
     let createdInstance: InstanceElement
     let createdElement: ObjectType
-    it('should create new instances', async () => {
-      const settingsType = createCustomSettingsObject('customsetting__c', LIST_CUSTOM_SETTINGS_TYPE)
-      createdElement = await createElement(adapter, settingsType)
-      createdInstance = await createElement(adapter, await createInstance({
-        value: {
-          Name: 'TestName1',
-          fullName: 'customsetting TestName1',
-          TestField__c: 'somevalue',
-        },
-        type: createdElement,
-      }))
-      const result = await getRecordOfInstance(client, createdInstance, ['TestField__c'], 'Name')
-      expect(result).toBeDefined()
-      expect((result as SalesforceRecord).TestField).toEqual(createdInstance.value.TestField)
-      expect((result as SalesforceRecord).Name).toEqual(createdInstance.value.Name)
+
+    describe('should create new instances', () => {
+      it('should create new instances', async () => {
+        const settingsType = createCustomSettingsObject('customsetting__c', LIST_CUSTOM_SETTINGS_TYPE)
+        createdElement = await createElement(adapter, settingsType)
+        createdInstance = await createElement(adapter, createInstance({
+          value: {
+            Name: 'TestName1',
+            fullName: 'customsetting TestName1',
+            TestField__c: 'somevalue',
+          },
+          type: createdElement,
+        }))
+        const result = await getRecordOfInstance(client, createdInstance, ['TestField__c'], 'Name')
+        expect(result).toBeDefined()
+        expect((result as SalesforceRecord).TestField).toEqual(createdInstance.value.TestField)
+        expect((result as SalesforceRecord).Name).toEqual(createdInstance.value.Name)
+      })
     })
-    it('should delete custom object setting', async () => {
-      await removeElementAndVerify(adapter, client, createdInstance)
-      await removeElementAndVerify(adapter, client, createdElement)
+    describe('should delete custom object setting', () => {
+      it('should delete custom object setting', async () => {
+        await removeElementAndVerify(adapter, client, createdInstance)
+        await removeElementAndVerify(adapter, client, createdElement)
+      })
     })
   })
 
   describe('custom object instances manipulations', () => {
     let createdInstance: InstanceElement
 
-    it('should create the new instance', async () => {
-      const productTwoObjectType = await awu(elements)
-        .find(async e => isObjectType(e) && (await apiName(e, true) === productTwoMetadataName))
-      expect(productTwoObjectType).toBeDefined()
-      expect(isObjectType(productTwoObjectType)).toBeTruthy()
-      const value = {
-        Name: 'TestProductName',
-        ProductCode: 'GC198',
-        IsActive: true,
-        IsArchived: false,
-        SBQQ__Component__c: false,
-        SBQQ__CostEditable__c: false,
-        SBQQ__CustomConfigurationRequired__c: false,
-        SBQQ__DescriptionLocked__c: false,
-        SBQQ__EnableLargeConfiguration__c: false,
-        SBQQ__ExcludeFromMaintenance__c: false,
-        SBQQ__ExcludeFromOpportunity__c: false,
-        SBQQ__ExternallyConfigurable__c: false,
-        SBQQ__HasConfigurationAttributes__c: false,
-        SBQQ__HasConsumptionSchedule__c: false,
-        SBQQ__Hidden__c: false,
-        SBQQ__HidePriceInSearchResults__c: false,
-        SBQQ__IncludeInMaintenance__c: false,
-        SBQQ__NewQuoteGroup__c: false,
-        SBQQ__NonDiscountable__c: false,
-        SBQQ__NonPartnerDiscountable__c: false,
-        SBQQ__Optional__c: false,
-        SBQQ__PriceEditable__c: false,
-        SBQQ__PricingMethodEditable__c: false,
-        SBQQ__QuantityEditable__c: true,
-        SBQQ__ReconfigurationDisabled__c: false,
-        SBQQ__Taxable__c: false,
-        fullName: 'TestProductName',
-      }
-      const instance = await createInstance({
-        value,
-        type: productTwoObjectType as ObjectType,
+    describe('should create the new instance', () => {
+      it('should create the new instance', async () => {
+        const productTwoObjectType = await awu(elements)
+          .find(async e => isObjectType(e) && (await apiName(e, true) === productTwoMetadataName))
+        expect(productTwoObjectType).toBeDefined()
+        expect(isObjectType(productTwoObjectType)).toBeTruthy()
+        const value = {
+          Name: 'TestProductName',
+          ProductCode: 'GC198',
+          IsActive: true,
+          IsArchived: false,
+          SBQQ__Component__c: false,
+          SBQQ__CostEditable__c: false,
+          SBQQ__CustomConfigurationRequired__c: false,
+          SBQQ__DescriptionLocked__c: false,
+          SBQQ__EnableLargeConfiguration__c: false,
+          SBQQ__ExcludeFromMaintenance__c: false,
+          SBQQ__ExcludeFromOpportunity__c: false,
+          SBQQ__ExternallyConfigurable__c: false,
+          SBQQ__HasConfigurationAttributes__c: false,
+          SBQQ__HasConsumptionSchedule__c: false,
+          SBQQ__Hidden__c: false,
+          SBQQ__HidePriceInSearchResults__c: false,
+          SBQQ__IncludeInMaintenance__c: false,
+          SBQQ__NewQuoteGroup__c: false,
+          SBQQ__NonDiscountable__c: false,
+          SBQQ__NonPartnerDiscountable__c: false,
+          SBQQ__Optional__c: false,
+          SBQQ__PriceEditable__c: false,
+          SBQQ__PricingMethodEditable__c: false,
+          SBQQ__QuantityEditable__c: true,
+          SBQQ__ReconfigurationDisabled__c: false,
+          SBQQ__Taxable__c: false,
+          fullName: 'TestProductName',
+        }
+        const instance = await createInstance({
+          value,
+          type: productTwoObjectType as ObjectType,
+        })
+        createdInstance = await createElement(
+          adapter,
+          instance,
+        )
+        const result = await getRecordOfInstance(client, createdInstance)
+        expect(result).toBeDefined()
+        expect((result as SalesforceRecord).Id).toEqual(createdInstance.value.Id)
       })
-      createdInstance = await createElement(
-        adapter,
-        instance,
-      )
-      const result = await getRecordOfInstance(client, createdInstance)
-      expect(result).toBeDefined()
-      expect((result as SalesforceRecord).Id).toEqual(createdInstance.value.Id)
     })
 
-
-    it('should update values of a custom object instance', async () => {
-      const updatedInstance = createdInstance.clone()
-      updatedInstance.value.isActive = false
-      updatedInstance.value.ProductCode = 'newCode'
-      await adapter.deploy({
-        groupID: updatedInstance.elemID.getFullName(),
-        changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
+    describe('should update values of a custom object instance', () => {
+      it('should update values of a custom object instance', async () => {
+        const updatedInstance = createdInstance.clone()
+        updatedInstance.value.isActive = false
+        updatedInstance.value.ProductCode = 'newCode'
+        await adapter.deploy({
+          groupID: updatedInstance.elemID.getFullName(),
+          changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
+        })
+        const fields = ['IsActive', 'ProductCode', 'IsArchived']
+        const result = await getRecordOfInstance(client, createdInstance, fields)
+        expect(result).toBeDefined()
+        expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
       })
-      const fields = ['IsActive', 'ProductCode', 'IsArchived']
-      const result = await getRecordOfInstance(client, createdInstance, fields)
-      expect(result).toBeDefined()
-      expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
     })
-
-    it('should delete custom object instance', async () => {
-      await removeElementAndVerify(adapter, client, createdInstance)
+    describe('should delete custom object instance', () => {
+      it('should delete custom object instance', async () => {
+        await removeElementAndVerify(adapter, client, createdInstance)
+      })
     })
   })
 

@@ -20,7 +20,6 @@ import { ParseResult } from '../parser'
 import * as parseResultSerializer from '../serializer/parse_result'
 import { ContentType, DirectoryStore } from './dir_store'
 import { StaticFilesSource } from './static_files'
-import { FILE_EXTENSION } from './nacl_files'
 
 const log = logger(module)
 
@@ -58,16 +57,15 @@ const doesBufferMatchCachedMD5 = (buffer: ContentType | undefined,
   }
   return hash.toMD5(buffer) === metadata.md5
 }
-const extRegec = new RegExp(`${FILE_EXTENSION}$`)
 export const parseResultCache = (
   dirStore: DirectoryStore<string>, staticFilesSource: StaticFilesSource
 ): ParseResultCache => {
   const cahceSuffixRegex = new RegExp(`${CACHE_EXTENSION}$`)
   const resolveCacheFileName = (filename: string): string =>
-    _.replace(filename, extRegec, CACHE_EXTENSION)
+    _.replace(filename, /\.nacl$/, CACHE_EXTENSION)
 
   const resolveFileName = (filename: string): string => (
-    _.replace(filename, cahceSuffixRegex, FILE_EXTENSION)
+    _.replace(filename, cahceSuffixRegex, '.nacl')
   )
   const getCacheData = async (
     key: ParseResultKey,

@@ -18,16 +18,32 @@ import { collections } from '@salto-io/lowerdash'
 const { toAsyncIterable } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
+export type IterationOpts = {
+  first?: number
+  after?: string
+}
+
+export type RemoteMapOptions = {
+  batchInterval: number
+  LRUSize: number
+  dbLocation: string
+}
+
+export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
+
 export type RemoteMap<T, K extends string = string> = {
   delete(key: K): Promise<boolean>
   get(key: K): Promise<T | undefined>
   has(key: K): Promise<boolean>
   set(key: K, value: T): Promise<void>
-  setAll(values: ThenableIterable<[K, T]>): Promise<void>
-  entries(): AsyncIterable<[K, T]>
-  keys(): AsyncIterable<K>
-  values(): AsyncIterable<T>
+  setAll(values: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void>
+  entries(opts?: IterationOpts): AsyncIterable<RemoteMapEntry<T, K>>
+  keys(opts?: IterationOpts): AsyncIterable<K>
+  values(opts?: IterationOpts): AsyncIterable<T>
+  flush: () => Promise<void>
+  revert: () => Promise<void>
   clear(): Promise<void>
+  close(): Promise<void>
 }
 
 export type RemoteMapCreator<T> = (namespace: string) => RemoteMap<T>

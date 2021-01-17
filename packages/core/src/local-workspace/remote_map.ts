@@ -86,8 +86,7 @@ const dbConnections: Record<string, rocksdb> = {}
 
 export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMap.RemoteMapOptions,
   serialize: (value: T) => string,
-  deserialize: (s: string) => Promise<T>,
-  valueToKey: (value: T) => string): Promise<remoteMap.RemoteMap<T>> => {
+  deserialize: (s: string) => Promise<T>): Promise<remoteMap.RemoteMap<T>> => {
   if (!/^[a-z0-9-]+$/i.test(namespace)) {
     throw new Error(`Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`)
   }
@@ -138,13 +137,16 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
     return createIterator(namespace.concat(NAMESPACE_SEPARATOR), normalizedOpts)
   }
 
-  const putAllImpl = async (elements: AsyncIterable<T>, temp = true): Promise<void> => {
+  const setAllImpl = async (
+    elementsEntries: AsyncIterable<remoteMap.RemoteMapEntry<T, string>>,
+    temp = true,
+  ): Promise<void> => {
     let i = 0
     let batch = db.batch()
-    for await (const element of elements) {
+    for await (const entry of elementsEntries) {
       i += 1
-      cache.set(valueToKey(element), element)
-      batch.put(getAppropriateKey(valueToKey(element), temp), serialize(element))
+      cache.set(entry.key, entry.value)
+      batch.put(getAppropriateKey(entry.key, temp), serialize(entry.value))
       if (i % mapOptions.batchInterval === 0) {
         await promisify(batch.write.bind(batch))()
         batch = db.batch()
@@ -164,6 +166,15 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
       .map(async entry => deserialize(entry.value))
   }
 
+  const entriesImpl = (iterationOpts?: remoteMap.IterationOpts):
+  AsyncIterable<remoteMap.RemoteMapEntry<T, string>> => {
+    const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+    const tempIter = createTempIterator(opts)
+    const iter = createPersistentIterator(opts)
+    return awu(aggregatedIterable([tempIter, iter]))
+      .map(async entry => ({ key: entry.key, value: await deserialize(entry.value) }))
+  }
+
   const clearImpl = (prefix: string): Promise<void> => new Promise<void>(resolve => {
     db.clear({
       gte: prefix,
@@ -172,6 +183,10 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
       resolve()
     })
   })
+
+  const getValueByKey = async <T>(key: string): Promise<T | undefined> => {
+    const bla = await promisify(db.get)(key)
+  }
 
   const createDBIfNotCreated = async (loc: string): Promise<void> => {
     if (!(loc in dbConnections)) {
@@ -210,21 +225,14 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
         })
       }
     }),
-    values: (iterationOpts?: remoteMap.IterationOpts) =>
-      valuesImpl(false, iterationOpts),
-    entries: (iterationOpts?: remoteMap.IterationOpts) => {
-      const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
-      const tempIter = createTempIterator(opts)
-      const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterable([tempIter, iter]))
-        .map(async entry => ({ key: entry.key, value: await deserialize(entry.value) }))
-    },
+    values: (iterationOpts?: remoteMap.IterationOpts) => valuesImpl(false, iterationOpts),
+    entries: (iterationOpts?: remoteMap.IterationOpts) => entriesImpl(iterationOpts),
     set: async (key: string, element: T): Promise<void> => {
       cache.set(key, element)
       await promisify(db.put.bind(db))(keyToTempDBKey(key), serialize(element))
     },
-    putAll: putAllImpl,
-    list: (iterationOpts?: remoteMap.IterationOpts) => {
+    setAll: setAllImpl,
+    keys: (iterationOpts?: remoteMap.IterationOpts) => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       const tempKeyIter = createTempIterator(opts)
       const keyIter = createPersistentIterator(opts)
@@ -232,12 +240,17 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
         .map(async (entry: Entry<string>) => entry.key)
     },
     flush: async () => {
-      await putAllImpl(valuesImpl(true), false)
+      await setAllImpl(entriesImpl(), false)
       await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
     },
     revert: async () => {
       await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
     },
     close: () => promisify(db.close.bind(db))(),
+
+    // TODO: implement this
+    delete: async () => Promise.resolve(true),
+    clear: () => promisify(db.close.bind(db))(),
+    has: async () => Promise.resolve(true),
   }
 }

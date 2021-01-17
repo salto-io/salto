@@ -13,16 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type IterationOpts = {
-  first?: number
-  after?: string
-}
-
-export type RemoteMapOptions = {
-  batchInterval: number
-  LRUSize: number
-  dbLocation: string
-}
 
 export type RemoteMap<T> = {
   get: (key: string) => Promise<T | undefined>

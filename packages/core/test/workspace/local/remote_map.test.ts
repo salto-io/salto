@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import leveldown from 'leveldown'
+import rocksdb from 'rocksdb'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
-import rocksdb from 'rocksdb'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm } from '@salto-io/workspace'
 import { createRemoteMap } from '../../../src/local-workspace/remote_map'
@@ -52,9 +52,9 @@ const createMap = async (namespace:
     elem => elem.elemID.getFullName()
   )
 
-async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<Element> {
+async function *createAsyncIterable(iterable: Element[]): AsyncGenerator<[string, Element]> {
   for (const elem of iterable) {
-    yield elem
+    yield [elem.elemID.getFullName(), elem]
   }
 }
 
@@ -78,7 +78,7 @@ describe('test operations on remote db', () => {
   })
   describe('get', () => {
     it('should get an item after it is put', async () => {
-      remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+      await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(elements[0])
     })
 
@@ -91,8 +91,8 @@ describe('test operations on remote db', () => {
 
   describe('list', () => {
     it('should list all keys', async () => {
-      await remoteMap.putAll(createAsyncIterable(elements))
-      const iter = remoteMap.list()
+      await remoteMap.setAll(createAsyncIterable(elements))
+      const iter = remoteMap.keys()
       const res: string[] = []
       for await (const elemId of iter) {
         res.push(elemId)
@@ -101,16 +101,16 @@ describe('test operations on remote db', () => {
     })
 
     it('should list all keys - paginated', async () => {
-      await remoteMap.putAll(createAsyncIterable(elements))
+      await remoteMap.setAll(createAsyncIterable(elements))
       const firstPageRes: string[] = []
-      for await (const elemId of remoteMap.list({ first: 5 })) {
+      for await (const elemId of remoteMap.keys({ first: 5 })) {
         firstPageRes.push(elemId)
       }
       expect(firstPageRes).toHaveLength(5)
       expect(firstPageRes).toEqual(sortedElements.slice(0, 5))
       const nextPageRes: string[] = []
       const after = firstPageRes[firstPageRes.length - 1]
-      for await (const elemId of remoteMap.list({ first: 5, after })) {
+      for await (const elemId of remoteMap.keys({ first: 5, after })) {
         nextPageRes.push(elemId)
       }
       expect(nextPageRes).toHaveLength(2)
@@ -120,7 +120,7 @@ describe('test operations on remote db', () => {
 
   describe('values', () => {
     it('should get all values', async () => {
-      await remoteMap.putAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(await createAsyncIterable(elements))
       const iter = remoteMap.values()
       const res: Element[] = []
       for await (const element of iter) {
@@ -131,7 +131,7 @@ describe('test operations on remote db', () => {
     })
 
     it('should get all values - paginated', async () => {
-      await remoteMap.putAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(await createAsyncIterable(elements))
       const firstPageRes: Element[] = []
       for await (const element of remoteMap.values({ first: 5 })) {
         firstPageRes.push(element)
@@ -150,7 +150,7 @@ describe('test operations on remote db', () => {
 
   describe('entries', () => {
     it('should get all entries', async () => {
-      await remoteMap.putAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(await createAsyncIterable(elements))
       const iter = remoteMap.entries()
       const res: { key: string; value: Element }[] = []
       for await (const element of iter) {
@@ -163,7 +163,7 @@ describe('test operations on remote db', () => {
     })
 
     it('should get all entries - paginated', async () => {
-      await remoteMap.putAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(await createAsyncIterable(elements))
       const firstPageRes: { key: string; value: Element }[] = []
       for await (const element of remoteMap.entries({ first: 5 })) {
         firstPageRes.push(element)
@@ -185,7 +185,7 @@ describe('test operations on remote db', () => {
 
 
   it('when overriden, returns new value', async () => {
-    await remoteMap.putAll(createAsyncIterable(elements))
+    await remoteMap.setAll(createAsyncIterable(elements))
     await remoteMap.flush()
     const cloneElements = elements.map(elem => elem.clone())
     const changedElement = cloneElements[0] as ObjectType
@@ -213,7 +213,7 @@ describe('full integration', () => {
     remoteMap = await createMap('integration')
     const elements = await createElements()
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
-    await remoteMap.putAll(await createAsyncIterable(elements.slice(1, elements.length)))
+    await remoteMap.setAll(await createAsyncIterable(elements.slice(1, elements.length)))
     await remoteMap.flush()
     const iter = remoteMap.values()
     const res: Element[] = []

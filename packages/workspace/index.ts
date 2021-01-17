@@ -36,7 +36,6 @@ import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
 import { InMemoryRemoteElementSource } from './src/workspace/elements_source'
-import * as remoteMap from './src/workspace/remote_map/remote_map'
 
 export {
   errors,
@@ -74,5 +73,4 @@ export {
   selectElementIdsByTraversal,
   ElementIDToValue,
   InMemoryRemoteElementSource,
-  remoteMap,
 }

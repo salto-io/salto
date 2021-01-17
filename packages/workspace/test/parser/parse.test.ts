@@ -714,6 +714,26 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         : 'Invalid block item'
       expect(result.errors[0].summary).toEqual(expectedErrMsg)
     })
+
+    it('fails on missing list open', async () => {
+      const body = `
+      salto {
+          {
+            a = 1
+          },
+          {
+            a = 2
+          }
+        ]
+      }
+      `
+      const result = await parse(Buffer.from(body), 'none', functions)
+      expect(result.errors).not.toHaveLength(0)
+      const expectedErrMsg = useLegacyParser
+        ? 'Unexpected token: {'
+        : 'Invalid block item'
+      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+    })
   })
 
   it('fails on invalid top level syntax', async () => {

@@ -123,31 +123,61 @@ describe('fetch', () => {
       })
     })
     describe('partial fetch results', () => {
-      it('should ignore deletions when isPartial is true', async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          { elements: [newTypeBaseModified], isPartial: true },
-        )
-        const fetchChangesResult = await fetchChanges(
-          mockAdapters,
-          [newTypeBaseModified, typeWithField],
-          [],
-          [],
-        )
-        expect(Array.from(fetchChangesResult.changes).length).toBe(0)
+      describe('fetch is partial', () => {
+        it('should ignore deletions', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: true },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [newTypeBaseModified, typeWithField],
+            [],
+            [],
+          )
+          expect(Array.from(fetchChangesResult.changes).length).toBe(0)
+        })
+
+        it('should return the state elements with the service elements', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: true },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [],
+            [newTypeBase, typeWithField],
+            [],
+          )
+          expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
+        })
       })
-      it('should not ignore deletions when isPartial is false', async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          { elements: [newTypeBaseModified], isPartial: false },
-        )
-        const fetchChangesResult = await fetchChanges(
-          mockAdapters,
-          [newTypeBaseModified, typeWithField],
-          [],
-          [],
-        )
-        const resultChanges = Array.from(fetchChangesResult.changes)
-        expect(resultChanges.length).toBe(1)
-        expect(resultChanges[0].change.action).toBe('remove')
+      describe('fetch is not partial', () => {
+        it('should not ignore deletions', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: false },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [newTypeBaseModified, typeWithField],
+            [],
+            [],
+          )
+          const resultChanges = Array.from(fetchChangesResult.changes)
+          expect(resultChanges.length).toBe(1)
+          expect(resultChanges[0].change.action).toBe('remove')
+        })
+
+        it('should return the only the service elements', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: false },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [],
+            [newTypeBase, typeWithField],
+            [],
+          )
+          expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
+        })
       })
 
       it('should use the whole workspace to resolve elements when calculcating changes', async () => {

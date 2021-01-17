@@ -430,9 +430,17 @@ export const fetchChanges = async (
   })
   const adapterNameToConfigMessage = _
     .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
+
+  const elements = partiallyFetchedAdapters.size !== 0
+    ? _(stateElements)
+      .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
+      .unshift(...processErrorsResult.keptElements)
+      .uniqBy(e => e.elemID.getFullName())
+      .value()
+    : processErrorsResult.keptElements
   return {
     changes,
-    elements: processErrorsResult.keptElements,
+    elements,
     unmergedElements: serviceElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,

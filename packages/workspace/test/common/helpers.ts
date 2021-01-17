@@ -16,6 +16,11 @@
 import {
   isObjectType, TypeElement, InstanceElement,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
+
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 /**
  * Compare two types and expect them to be the same.
@@ -68,8 +73,12 @@ export const expectInstancesToMatch = (
   expect(expected.annotations).toEqual(actual.annotations)
 }
 
-export const expectToContainAllItems = <T>(arr: T[], items: T[]): void => {
-  items.forEach(item => expect(arr).toContain(item))
+export const expectToContainAllItems = async <T>(
+  itr: ThenableIterable<T>,
+  items: ThenableIterable<T>
+): Promise<void> => {
+  const arr = await awu(itr).toArray()
+  await awu(items).forEach(item => expect(arr).toContainEqual(item))
 }
 
 export const mockFunction = <T extends (...args: never[]) => unknown>():

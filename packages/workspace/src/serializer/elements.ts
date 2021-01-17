@@ -21,6 +21,7 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isInstanceElement, isPrimitiveType,
+  FieldDefinition, isObjectType, Values,
 } from '@salto-io/adapter-api'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
@@ -77,7 +78,7 @@ const ctorNameToSerializedName: Record<string, SerializedName> = _(NameToType).e
 
 type ReviverMap = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [K in SerializedName]: (v: any) => InstanceType<(typeof NameToType)[K]>
+  [K in SerializedName]: (v: any) => InstanceType<(typeof NameToType)[K]> | FieldDefinition
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -173,13 +174,16 @@ export const deserialize = async (
       undefined,
       v.annotations,
     ),
-    ObjectType: v => new ObjectType({
-      elemID: reviveElemID(v.elemID),
-      fields: v.fields,
-      annotationRefsOrTypes: v.annotationRefTypes,
-      annotations: v.annotations,
-      isSettings: v.isSettings,
-    }),
+    ObjectType: v => {
+      const r = new ObjectType({
+        elemID: reviveElemID(v.elemID),
+        fields: v.fields,
+        annotationRefsOrTypes: v.annotationRefTypes,
+        annotations: v.annotations,
+        isSettings: v.isSettings,
+      })
+      return r
+    },
     Variable: v => (
       new Variable(reviveElemID(v.elemID), v.value)
     ),
@@ -195,12 +199,10 @@ export const deserialize = async (
     MapType: v => new MapType(
       new ReferenceExpression(v.refInnerType.elemID),
     ),
-    Field: v => new Field(
-      new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
-      v.name,
-      v.refType,
-      v.annotations,
-    ),
+    Field: v => ({
+      refType: new ReferenceExpression(v.refType.elemID),
+      annotations: v.annotations,
+    }),
     TemplateExpression: v => (
       new TemplateExpression({ parts: v.parts })
     ),
@@ -241,15 +243,23 @@ export const deserialize = async (
       ))
     )
   }
+
+  const reviveStaticFiles = (values: Values): Values => _.cloneDeepWith(values, v => {
+    if (isStaticFile(v)) {
+      return staticFiles[v.filepath]
+    }
+    return undefined
+  })
   elements.forEach(element => {
-    _.keys(element).forEach(k => {
-      _.set(element, k, _.cloneDeepWith(_.get(element, k), v => {
-        if (isStaticFile(v)) {
-          return staticFiles[v.filepath]
-        }
-        return undefined
-      }))
-    })
+    element.annotations = reviveStaticFiles(element.annotations)
+    if (isObjectType(element)) {
+      Object.values(element.fields).forEach(field => {
+        field.annotations = reviveStaticFiles(field.annotations)
+      })
+    }
+    if (isInstanceElement(element)) {
+      element.value = reviveStaticFiles(element.value)
+    }
   })
 
   return Promise.resolve(elements)

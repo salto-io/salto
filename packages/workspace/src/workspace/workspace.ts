@@ -17,8 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change, getChangeElement, isAdditionOrModificationChange, Value, isType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, promises, values } from '@salto-io/lowerdash'
-import { resolvePath } from '@salto-io/adapter-utils'
+import { collections, promises } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -32,10 +31,14 @@ import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { updateMergedTypes, MergeError } from '../merger'
+import { InMemoryRemoteElementSource, ElementsSource } from './elements_source'
+import { buildNewMergedElementsAndErrors } from './nacl_files/elements_cache'
+import { RemoteMap, InMemoryRemoteMap, RemoteMapCreator } from './remote_map'
 
 const log = logger(module)
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
@@ -76,11 +79,11 @@ export type Workspace = {
   uid: string
   name: string
 
-  elements: (includeHidden?: boolean, env?: string) => Promise<ReadonlyArray<Element>>
+  elements: (includeHidden?: boolean, env?: string) => Promise<ElementsSource>
   state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
-  services: () => ReadonlyArray<string>
+  services: () => string[]
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
   serviceConfig: (name: string, defaultValue?: InstanceElement) =>
@@ -136,13 +139,18 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
+type WorkspaceState = {
+  merged: ElementsSource
+  errors: RemoteMap<MergeError[]>
+}
+
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
   elementsSources: EnvironmentsSources,
+  createRemoteMap: RemoteMapCreator<Value> = _name => new InMemoryRemoteMap()
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
-
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
 
   if (_.isEmpty(workspaceConfig.envs)) {
@@ -150,52 +158,72 @@ export const loadWorkspace = async (
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
   const currentEnv = (): string => workspaceConfig.currentEnv ?? workspaceConfig.envs[0].name
+  const getRemoteMapNameSpace = (
+    namespace: string, env?: string
+  ): string => `workspace:${env || currentEnv()}:${namespace}`
   const currentEnvConf = (): EnvConfig =>
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const currentEnvsConf = (): EnvConfig[] =>
     workspaceConfig.envs
-  const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
+  const services = (): string[] => makeArray(currentEnvConf().services)
   const state = (envName?: string): State => (
     elementsSources.sources[envName ?? currentEnv()].state as State
   )
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-    currentEnv(), elementsSources.commonSourceName)
-
+    currentEnv(), elementsSources.commonSourceName, createRemoteMap)
   let workspaceState: Promise<WorkspaceState> | undefined
-  const buildWorkspaceState = async ({ changes = [], env }: {
-    changes?: Change[]
+
+  const buildWorkspaceState = async ({ changes = [], env, hiddenElementsChangesIDs = [] }: {
+    changes?: Change<Element>[]
     env?: string
+    hiddenElementsChangesIDs?: ElemID[]
   }): Promise<WorkspaceState> => {
+    const newState = {
+      merged: new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged', env))),
+      errors: createRemoteMap(getRemoteMapNameSpace('errors', env)),
+    }
     if (_.isUndefined(workspaceState) || (env !== undefined && env !== currentEnv())) {
-      const visibleElements = await naclFilesSource.getAll(env)
-      const stateElements = await state(env).getAll()
-      const mergeResult = mergeWithHidden(visibleElements, stateElements)
-      return {
-        mergeErrors: mergeResult.errors,
-        elements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+      await buildNewMergedElementsAndErrors({
+        currentElements: newState.merged,
+        currentErrors: newState.errors,
+        mergeFunc: elements => mergeWithHidden(
+          elements,
+          state(env)
+        ),
+        newElements: await naclFilesSource.getAll(env),
+        relevantElementIDs: awu(await naclFilesSource.list()).concat(await state(env).list()),
+      })
+      if (env !== currentEnv()) {
+        return newState
       }
+      workspaceState = Promise.resolve(newState)
     }
-    const current = await workspaceState
-    const changedElementIDs = new Set(
-      changes.map(getChangeElement).map(e => e.elemID.getFullName())
-    )
-    const newElements = changes.filter(isAdditionOrModificationChange).map(getChangeElement)
-    const mergeRes = mergeWithHidden(
+
+    const current = (await workspaceState) as WorkspaceState
+    const changedElementIDs = changes.map(getChangeElement).map(e => e.elemID)
+
+    const newElements = awu(changes.filter(isAdditionOrModificationChange).map(getChangeElement))
+
+    await buildNewMergedElementsAndErrors({
+      currentElements: current.merged,
+      currentErrors: current.errors,
+      mergeFunc: elements => mergeWithHidden(
+        elements,
+        state(),
+        true,
+        hiddenElementsChangesIDs
+      ),
       newElements,
-      (await Promise.all(newElements.map(e => state().get(e.elemID)))).filter(values.isDefined)
-    )
-    const merged = calcNewMerged(
-      Object.values(current.elements), mergeRes.merged, changedElementIDs
-    )
-    return {
-      elements: _.keyBy(updateMergedTypes(
-        merged, _.keyBy(merged.filter(isType), e => e.elemID.getFullName())
-      ), e => e.elemID.getFullName()),
-      mergeErrors: calcNewMerged(current.mergeErrors, mergeRes.errors, changedElementIDs),
-    }
+      relevantElementIDs: awu(changedElementIDs).concat(hiddenElementsChangesIDs),
+    })
+
+    return current
   }
 
-  const getWorkspaceState = (): Promise<WorkspaceState> => {
+  const initChanges = await naclFilesSource.load()
+  await buildWorkspaceState({ changes: initChanges })
+
+  const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
       workspaceState = buildWorkspaceState({})
     }
@@ -209,23 +237,29 @@ export const loadWorkspace = async (
     return getWorkspaceState()
   }
 
+  // const findDebugChange = (changes: any[]): any => changes.find(c => (
+  //   c.id
+  //   || getChangeElement(c as Change).elemID
+  // ).getFullName().includes('salesforce.Queue.instance.queueHiddenInstance'))
+
   const updateNaclFiles = async (
     changes: DetailedChange[],
     mode?: RoutingMode
   ): Promise<void> => {
-    const { merged } = await elements()
-    const stateElements = (await state().getAll())
     const changesAfterHiddenRemoved = await handleHiddenChanges(
       changes,
       state(),
       naclFilesSource.getAll,
-      new InMemoryRemoteElementSource([
-        ...merged,
-        ...stateElements,
-      ]),
     )
+
+    const topLevelChangesIDSet = new Set(changesAfterHiddenRemoved.map(c => c.id.getFullName()))
+    const hiddenTopLevelChanges = changes
+      .filter(c => c.id.isTopLevel() && !topLevelChangesIDSet.has(c.id.getFullName()))
     const elementChanges = await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
-    workspaceState = buildWorkspaceState({ changes: elementChanges })
+    workspaceState = buildWorkspaceState({
+      changes: elementChanges,
+      hiddenElementsChangesIDs: hiddenTopLevelChanges.map(c => c.id),
+    })
   }
 
   const updateStateAndReturnChanges = async (elementChanges: Change[]):
@@ -271,7 +305,9 @@ export const loadWorkspace = async (
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
     const sourceRanges = await naclFilesSource.getSourceRanges(saltoElemErr.elemID)
+
     const sourceFragments = await Promise.all(sourceRanges.map(range => getSourceFragment(range)))
+
     return {
       ...saltoElemErr,
       message: saltoElemErr.message,
@@ -283,7 +319,6 @@ export const loadWorkspace = async (
       _.has(err, 'subject')
     const isElementError = (err: SaltoError): err is SaltoElementError =>
       _.get(err, 'elemID') instanceof ElemID
-
     if (isParseError(error)) {
       return transformParseError(error)
     }
@@ -295,7 +330,6 @@ export const loadWorkspace = async (
 
   const errors = async (validate = true): Promise<Errors> => {
     const resolvedElements = await elements()
-    const stateElements = await state().getAll()
     const errorsFromSource = await naclFilesSource.getErrors()
 
     const validationErrors = validate
@@ -311,8 +345,14 @@ export const loadWorkspace = async (
 
     return new Errors({
       ...errorsFromSource,
-      merge: [...errorsFromSource.merge, ...resolvedElements.mergeErrors],
-      validation: validationErrors,
+      merge: [
+        ...errorsFromSource.merge,
+        ...(await awu(resolvedElements.errors.values()).flat().toArray()),
+      ],
+      validation: await validateElements(
+        await awu(await resolvedElements.merged.getAll()).toArray(),
+        resolvedElements.merged
+      ),
     })
   }
 
@@ -322,11 +362,12 @@ export const loadWorkspace = async (
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
-    elements: async (includeHidden = true, env) => (
-      includeHidden
-        ? (Object.values((await elements(env)).elements))
-        : naclFilesSource.getAll(env)
-    ),
+    elements: async (includeHidden = true, env) => {
+      if (includeHidden) {
+        return (await elements(env)).merged
+      }
+      return (naclFilesSource).getElementsSource(env)
+    },
     state,
     envs,
     currentEnv,
@@ -342,9 +383,9 @@ export const loadWorkspace = async (
       return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
     hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (
-      (await naclFilesSource.list()).some(
+      await (awu(await naclFilesSource.list()).find(
         elemId => serviceNames.includes(elemId.adapter)
-      )
+      )) !== undefined
     ),
     hasElementsInEnv: async envName => {
       const envSource = elementsSources.sources[envName]
@@ -510,16 +551,9 @@ export const loadWorkspace = async (
       })()
       return { serviceName, status, date }
     },
-    getValue: async (id: ElemID): Promise<Value | undefined> => {
-      const topLevelID = id.createTopLevelParentID().parent
-      const element = (await elements()).elements[topLevelID.getFullName()]
-
-      if (element === undefined) {
-        log.debug('ElemID not found %s', id.getFullName())
-        return undefined
-      }
-      return resolvePath(element, id)
-    },
+    getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (
+      (await elements(env)).merged.get(id)
+    ),
   }
 }
 

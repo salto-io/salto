@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace } from '@salto-io/workspace'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { Workspace, elementSource, validator } from '@salto-io/workspace'
 import { ObjectType, InstanceElement, Element, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { listUnresolvedReferences } from '../../src/api'
 import { UnresolvedElemIDs } from '../../src/core/list'
@@ -26,8 +26,21 @@ const mockWorkspace = ({
   name: string
   envElements: Record<string, Element[]>
 }): Workspace => ({
-  elements: jest.fn().mockImplementation(async (_, env: string) => envElements[env]),
+  elements: jest.fn().mockImplementation(async (_, env: string) => (
+    elementSource.createInMemoryElementSource(envElements[env])
+  )),
   name,
+  errors: async () => ({
+    validation: await validator.validateElements(
+      envElements[name],
+      elementSource.createInMemoryElementSource(envElements[name])
+    ),
+    merge: [],
+    parse: [],
+    all: () => [],
+    hasErrors: () => true,
+    strings: () => [],
+  }),
   envs: () => Object.keys(envElements),
   currentEnv: () => name,
 } as unknown as Workspace)

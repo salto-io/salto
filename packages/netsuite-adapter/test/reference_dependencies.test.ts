@@ -67,7 +67,7 @@ describe('reference dependencies', () => {
 
   describe('getAllReferencedInstances', () => {
     it('should return all depending instances', async () => {
-      const result = getAllReferencedInstances([instanceWithManyRefs])
+      const result = await getAllReferencedInstances([instanceWithManyRefs])
       expect(result).toEqual([instanceWithManyRefs, dependsOn1Instance, fileInstance])
     })
   })

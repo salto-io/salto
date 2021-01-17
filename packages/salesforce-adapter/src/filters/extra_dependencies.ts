@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, ReferenceExpression, ElementMap, ElemID,
 } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { getAllReferencedIds, extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -25,6 +25,8 @@ import { metadataType, apiName, isCustomObject } from '../transformers/transform
 import SalesforceClient from '../client/client'
 import { getInternalId } from './utils'
 
+const { awu } = collections.asynciterable
+const { mapValuesAsync } = promises.object
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
@@ -97,13 +99,14 @@ const getDependencies = async (client: SalesforceClient): Promise<DependencyGrou
  *
  * @param elements  The fetched elements
  */
-const generateElemLookup = (elements: Element[]): ElementMapByMetadataType => (
-  _(elements)
-    .flatMap(e => (isObjectType(e) ? [e, ...Object.values(e.fields)] : [e]))
-    .filter(e => getInternalId(e) !== undefined && getInternalId(e) !== '')
-    .groupBy(metadataType)
-    .mapValues(items => _.keyBy(items, item => getInternalId(item)))
-    .value()
+const generateElemLookup = async (elements: Element[]): Promise<ElementMapByMetadataType> => (
+  mapValuesAsync(
+    await awu(elements)
+      .flatMap(e => (isObjectType(e) ? [e, ...Object.values(e.fields)] : [e]))
+      .filter(e => getInternalId(e) !== undefined && getInternalId(e) !== '')
+      .groupBy(metadataType),
+    async items => _.keyBy(items, item => getInternalId(item))
+  )
 )
 
 /**
@@ -111,9 +114,9 @@ const generateElemLookup = (elements: Element[]): ElementMapByMetadataType => (
  *
  * @param elements  The fetched elements
  */
-const generateCustomObjectLookup = (elements: Element[]): ElementMap => (
-  _.keyBy(
-    elements.filter(isCustomObject),
+const generateCustomObjectLookup = async (elements: Element[]): Promise<ElementMap> => (
+  collections.asynciterable.keyByAsync(
+    awu(elements).filter(isCustomObject),
     elem => apiName(elem),
   )
 )
@@ -125,12 +128,12 @@ const generateCustomObjectLookup = (elements: Element[]): ElementMap => (
  * @param elem        The element to modify
  * @param refElemIDs  The reference ids to add
  */
-const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => {
+const addGeneratedDependencies = async (elem: Element, refElemIDs: ElemID[]): Promise<void> => {
   if (refElemIDs.length === 0) {
     return
   }
 
-  const existingReferences = getAllReferencedIds(elem)
+  const existingReferences = await getAllReferencedIds(elem)
   const newDependencies = refElemIDs
     .filter(elemId => !existingReferences.has(elemId.getFullName()))
     .map(elemId => new ReferenceExpression(elemId))
@@ -163,7 +166,7 @@ const addExtraReferences = async (
     return elemLookup[type]?.[id]
   }
 
-  groupedDeps.forEach(edge => {
+  await awu(groupedDeps).forEach(async edge => {
     const elem = getElem(edge.from)
     if (elem === undefined) {
       log.debug(`Element ${edge.from.type}:${edge.from.id} (${edge.from.name}) not found, skipping ${
@@ -177,7 +180,10 @@ const addExtraReferences = async (
         elem.elemID.getFullName()}`)
     })
 
-    addGeneratedDependencies(elem, dependencies.map(item => item.elem?.elemID).filter(isDefined))
+    await addGeneratedDependencies(
+      elem,
+      dependencies.map(item => item.elem?.elemID).filter(isDefined)
+    )
   })
 }
 
@@ -187,8 +193,8 @@ const addExtraReferences = async (
 const creator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]) => {
     const groupedDeps = await getDependencies(client)
-    const elemLookup = generateElemLookup(elements)
-    const customObjectLookup = generateCustomObjectLookup(elements)
+    const elemLookup = await generateElemLookup(elements)
+    const customObjectLookup = await generateCustomObjectLookup(elements)
     await addExtraReferences(groupedDeps, elemLookup, customObjectLookup)
   },
 })

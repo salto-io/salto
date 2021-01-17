@@ -21,6 +21,7 @@ import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
@@ -30,6 +31,7 @@ import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode } from '../../src/types'
 import { validateWorkspace } from '../../src/workspace/workspace'
 
+const { awu } = collections.asynciterable
 declare global {
   // eslint-disable-next-line
   module jest {
@@ -94,7 +96,7 @@ export const editNaclFile = async (filename: string, replacements: ReplacementPa
 export const getNaclFileElements = async (filename: string):
   Promise<Element[]> => {
   const fileAsString = await readTextFile(filename)
-  return (await parse(Buffer.from(fileAsString), filename)).elements
+  return awu((await parse(Buffer.from(fileAsString), filename)).elements).toArray()
 }
 
 const runCommand = ({
@@ -273,17 +275,30 @@ const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeNam
   findElement(elements,
     new ElemID(adapter, typeName, 'instance', name)) as InstanceElement
 
-export const verifyInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
-  name: string, expectedValues: Values): void => {
-  const newInstance = findInstance(elements, adapter, typeName, name)
+export const verifyInstance = async (
+  elements: AsyncIterable<Element>,
+  adapter: string,
+  typeName: string,
+  name: string,
+  expectedValues: Values
+): Promise<void> => {
+  const newInstance = findInstance(await awu(elements).toArray(), adapter, typeName, name)
   Object.entries(expectedValues).forEach(([key, value]) =>
     expect(newInstance.value[key]).toEqual(value))
 }
 
-export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
-  expectedAnnotationTypes: TypeMap, expectedAnnotations: Values,
-  expectedFieldAnnotations: Record<string, Values>): ObjectType => {
-  const object = findElement(elements, new ElemID(adapter, typeName)) as ObjectType
+export const verifyObject = async (
+  elements: AsyncIterable<Element>,
+  adapter: string,
+  typeName: string,
+  expectedAnnotationTypes: TypeMap,
+  expectedAnnotations: Values,
+  expectedFieldAnnotations: Record<string, Values>
+): Promise<ObjectType> => {
+  const object = findElement(
+    await awu(elements).toArray(),
+    new ElemID(adapter, typeName)
+  ) as ObjectType
   Object.entries(expectedAnnotationTypes).forEach(([key, value]) =>
     expect(object.annotationRefTypes[key]).toEqual(value.elemID))
   Object.entries(expectedAnnotations).forEach(([key, value]) =>

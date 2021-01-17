@@ -15,12 +15,15 @@
 */
 import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change, getChangeElement, isInstanceChange } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/topics_for_objects'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+
+const { awu } = collections.asynciterable
 
 const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
@@ -82,8 +85,9 @@ describe('Topics for objects filter', () => {
       expect(topicForObject[ENABLE_TOPICS]).toBeTruthy()
 
       // Check topic instances' and type were deleted
-      expect(elements
-        .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)).toHaveLength(0)
+      expect(await awu(elements)
+        .filter(async elem => await metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
+        .toArray()).toHaveLength(0)
     })
   })
 
@@ -116,15 +120,17 @@ describe('Topics for objects filter', () => {
           TOPICS_FOR_OBJECTS_ANNOTATION
         )
       })
-      it('should add instance change to types that have changed topics enabled value', () => {
+      it('should add instance change to types that have changed topics enabled value', async () => {
         expect(changes).toHaveLength(6)
         const topicsInstanceChanges = changes.slice(4)
         expect(topicsInstanceChanges.map(change => change.action)).toEqual(['add', 'add'])
         const instances = topicsInstanceChanges.map(getChangeElement) as InstanceElement[]
-        expect(instances.map(inst => apiName(inst))).toEqual(['Test2__c', 'Test3__c'])
+        expect(
+          await Promise.all(instances.map(inst => apiName(inst)))
+        ).toEqual(['Test2__c', 'Test3__c'])
         expect(instances.map(inst => inst.value.enableTopics)).toEqual([true, false])
 
-        const topicsForObjectsType = instances[0].getType()
+        const topicsForObjectsType = await instances[0].getType()
         expect(topicsForObjectsType.annotations).toMatchObject({
           metadataType: TOPICS_FOR_OBJECTS_METADATA_TYPE,
           dirName: 'topicsForObjects',

@@ -16,17 +16,20 @@
 import _ from 'lodash'
 import { Element, ObjectType, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { isCustomObject, isCustom, relativeApiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
 import { API_NAME } from '../constants'
 import { getNamespace, getNamespaceFromString } from './utils'
 import { getObjectDirectoryPath } from './custom_objects'
 
+const { awu } = collections.asynciterable
+
 export const annotationsFileName = (objectName: string): string => `${pathNaclCase(objectName)}Annotations`
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
-const createCustomFieldsObjects = (customObject: ObjectType): ObjectType[] => {
+const createCustomFieldsObjects = async (customObject: ObjectType): Promise<ObjectType[]> => {
   const createCustomFieldObject = (fields: Record<string, Field>, namespace?: string): ObjectType =>
     (new ObjectType(
       {
@@ -44,7 +47,7 @@ const createCustomFieldsObjects = (customObject: ObjectType): ObjectType[] => {
   )
 
   // When there's an object namespace, all the custom fields are in the same object
-  const objNamespace = getNamespace(customObject)
+  const objNamespace = await getNamespace(customObject)
   if (!_.isUndefined(objNamespace) && !_.isEmpty(customFields)) {
     return [createCustomFieldObject(customFields, objNamespace)]
   }
@@ -72,7 +75,7 @@ const createCustomFieldsObjects = (customObject: ObjectType): ObjectType[] => {
   return customFieldsObjects
 }
 
-const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] => {
+const customObjectToSplittedElements = async (customObject: ObjectType): Promise<ObjectType[]> => {
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
     annotationRefsOrTypes: customObject.annotationRefTypes,
@@ -90,19 +93,23 @@ const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] 
       standardFieldsFileName(customObject.elemID.name),
     ],
   })
-  const customFieldsObjects = createCustomFieldsObjects(customObject)
+  const customFieldsObjects = await createCustomFieldsObjects(customObject)
   return [...customFieldsObjects, standardFieldsObject, annotationsObject]
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
-    const customObjects = elements.filter(isCustomObject)
-    const newSplittedCustomObjects = _.flatten(customObjects.map(customObjectToSplittedElements))
+    const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
+    const newSplittedCustomObjects = await awu(customObjects)
+      .flatMap(customObjectToSplittedElements)
+      .toArray()
+
     _.pullAllWith(
       elements,
       customObjects,
-      (elementA: Element, elementB: Element): boolean =>
-        (isCustomObject(elementA) && isCustomObject(elementB) && elementA.isEqual(elementB))
+      // Just incase this gets weird - This used to include a
+      // verification both objects are custom objects. Not sure why.
+      (elementA: Element, elementB: Element): boolean => elementA.isEqual(elementB)
     )
     elements.push(...newSplittedCustomObjects)
   },

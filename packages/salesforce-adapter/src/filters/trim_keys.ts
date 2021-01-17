@@ -20,9 +20,12 @@ import {
   MapKeyFunc, mapKeysRecursive,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import { metadataType } from '../transformers/transformer'
 import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -40,10 +43,11 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * LightningComponentBundle keys to fix potential parsing error
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
-      .filter(instance => metadataType(instance) === LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE)
-      .forEach(inst => {
+      .filter(
+        async instance => await metadataType(instance) === LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE
+      ).forEach(inst => {
         inst.value = mapKeysRecursive(inst.value, trimKeys, inst.elemID)
       })
   },

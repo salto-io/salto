@@ -18,15 +18,17 @@ import _ from 'lodash'
 import {
   Element, ObjectType, isContainerType, MapType, ListType, InstanceElement,
   Values, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, isMapType,
-  isListType,
+  isListType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+
 import { FilterCreator } from '../filter'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
-import { isInstanceOfType } from './utils'
+
+const { awu } = collections.asynciterable
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -180,17 +182,17 @@ const convertValuesToMapArrays = (
  * @param nonUniqueMapFields  The list of fields to convert to arrays
  * @param instanceMapFieldDef  The original field mapping definition
  */
-const updateFieldTypes = (
+const updateFieldTypes = async (
   instanceType: ObjectType,
   nonUniqueMapFields: string[],
   instanceMapFieldDef: Record<string, MapDef>,
-): void => {
-  Object.values(instanceType.fields).filter(
-    f => instanceMapFieldDef[f.name] !== undefined && !isMapType(f.getType())
-  ).forEach(f => {
+): Promise<void> => {
+  await awu(Object.values(instanceType.fields)).filter(
+    async f => instanceMapFieldDef[f.name] !== undefined && !isMapType(await f.getType())
+  ).forEach(async f => {
     const mapDef = instanceMapFieldDef[f.name]
-    const fieldType = f.getType()
-    let innerType = isContainerType(fieldType) ? fieldType.getInnerType() : fieldType
+    const fieldType = await f.getType()
+    let innerType = isContainerType(fieldType) ? await fieldType.getInnerType() : fieldType
     if (mapDef.mapToList || nonUniqueMapFields.includes(f.name)) {
       innerType = new ListType(innerType)
     }
@@ -202,16 +204,18 @@ const updateFieldTypes = (
   })
 }
 
-const convertInstanceFieldsToMaps = (
+const convertInstanceFieldsToMaps = async (
   instancesToConvert: InstanceElement[],
   instanceMapFieldDef: Record<string, MapDef>,
-): string[] => {
+): Promise<string[]> => {
   const nonUniqueMapFields = _.uniq(instancesToConvert.flatMap(
     instance => convertArraysToMaps(instance, instanceMapFieldDef)
   ))
   if (nonUniqueMapFields.length > 0) {
     log.info(`Converting the following fields to non-unique maps: ${nonUniqueMapFields},
-     instances types are: ${instancesToConvert.map(inst => metadataType(inst))}`)
+     instances types are: ${
+  await awu(instancesToConvert).map(inst => metadataType(inst)).toArray()
+}`)
     instancesToConvert.forEach(instance => {
       convertValuesToMapArrays(instance, nonUniqueMapFields, instanceMapFieldDef)
     })
@@ -225,10 +229,10 @@ const convertInstanceFieldsToMaps = (
  * @param instanceChanges          The instance changes to deploy
  * @param instanceMapFieldDef      The definitions of the fields to covert
  */
-const convertFieldsBackToLists = (
+const convertFieldsBackToLists = async (
   instanceChanges: ReadonlyArray<Change<InstanceElement>>,
   instanceMapFieldDef: Record<string, MapDef>,
-): void => {
+): Promise<void> => {
   const toVals = (values: Values): Values[] => Object.values(values).flat()
 
   const backToArrays = (instance: InstanceElement): InstanceElement => {
@@ -249,7 +253,7 @@ const convertFieldsBackToLists = (
     return instance
   }
 
-  instanceChanges.forEach(instanceChange =>
+  await awu(instanceChanges).forEach(instanceChange =>
     applyFunctionToChangeData(
       instanceChange,
       backToArrays,
@@ -282,21 +286,21 @@ const convertFieldsBackToMaps = (
  * @param instanceType          The type to update
  * @param instanceMapFieldDef  The field mapping definition
  */
-const convertFieldTypesBackToLists = (
+const convertFieldTypesBackToLists = async (
   instanceType: ObjectType,
   instanceMapFieldDef: Record<string, MapDef>,
-): void => {
-  Object.values(instanceType.fields).filter(
-    f => instanceMapFieldDef[f.name] !== undefined && isMapType(f.getType())
-  ).forEach(f => {
-    const fieldType = f.getType()
+): Promise<void> => {
+  await awu(Object.values(instanceType.fields)).filter(
+    async f => instanceMapFieldDef[f.name] !== undefined && isMapType(await f.getType())
+  ).forEach(async f => {
+    const fieldType = await f.getType()
     if (isMapType(fieldType)) {
-      f.refType = createRefToElmWithValue(fieldType.getInnerType())
+      f.refType = createRefToElmWithValue(await fieldType.getInnerType())
     }
     // for nested fields (not using while to avoid edge cases)
-    const newFieldType = f.getType()
+    const newFieldType = await f.getType()
     if (isMapType(newFieldType)) {
-      f.refType = createRefToElmWithValue(newFieldType.getInnerType())
+      f.refType = createRefToElmWithValue(await newFieldType.getInnerType())
     }
   })
 }
@@ -304,12 +308,21 @@ const convertFieldTypesBackToLists = (
 export const getInstanceChanges = (
   changes: ReadonlyArray<Change>,
   targetMetadataType: string,
-): ReadonlyArray<Change<InstanceElement>> => (
-  changes
+): Promise<ReadonlyArray<Change<InstanceElement>>> => (
+  awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter(change => metadataType(getChangeElement(change)) === targetMetadataType)
+    .filter(async change => await metadataType(getChangeElement(change)) === targetMetadataType)
+    .toArray()
 )
+
+export const findInstancesToConvert = (
+  elements: Element[],
+  targetMetadataType: string,
+): Promise<InstanceElement[]> => {
+  const instances = elements.filter(isInstanceElement)
+  return awu(instances).filter(async e => await metadataType(e) === targetMetadataType).toArray()
+}
 
 /**
  * Convert certain instances' fields into maps, so that they are easier to view,
@@ -317,27 +330,27 @@ export const getInstanceChanges = (
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    Object.keys(metadataTypeToFieldToMapDef).forEach(targetMetadataType => {
+    await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
         return
       }
 
-      const instancesToConvert = elements.filter(isInstanceOfType(targetMetadataType))
+      const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
       if (instancesToConvert.length === 0) {
         return
       }
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
-      const nonUniqueMapFields = convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
-      updateFieldTypes(instancesToConvert[0].getType(), nonUniqueMapFields, mapFieldDef)
+      const nonUniqueMapFields = await convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
+      await updateFieldTypes(await instancesToConvert[0].getType(), nonUniqueMapFields, mapFieldDef)
     })
   },
 
   preDeploy: async changes => {
-    Object.keys(metadataTypeToFieldToMapDef).forEach(targetMetadataType => {
+    await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
         return
       }
-      const instanceChanges = getInstanceChanges(changes, targetMetadataType)
+      const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
         return
       }
@@ -345,19 +358,19 @@ const filter: FilterCreator = ({ config }) => ({
       // since transformElement and salesforce do not require list fields to be defined as lists,
       // we only mark fields as lists of their map inner value is a list,
       // so that we can convert the object back correctly in onDeploy
-      convertFieldsBackToLists(instanceChanges, mapFieldDef)
+      await convertFieldsBackToLists(instanceChanges, mapFieldDef)
 
-      const instanceType = getChangeElement(instanceChanges[0]).getType()
-      convertFieldTypesBackToLists(instanceType, mapFieldDef)
+      const instanceType = await getChangeElement(instanceChanges[0]).getType()
+      await convertFieldTypesBackToLists(instanceType, mapFieldDef)
     })
   },
 
   onDeploy: async changes => {
-    Object.keys(metadataTypeToFieldToMapDef).forEach(targetMetadataType => {
+    await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
         return
       }
-      const instanceChanges = getInstanceChanges(changes, targetMetadataType)
+      const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
         return
       }
@@ -365,13 +378,13 @@ const filter: FilterCreator = ({ config }) => ({
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       convertFieldsBackToMaps(instanceChanges, mapFieldDef)
 
-      const instanceType = getChangeElement(instanceChanges[0]).getType()
+      const instanceType = await getChangeElement(instanceChanges[0]).getType()
       // after preDeploy, the fields with lists are exactly the ones that should be converted
       // back to lists
-      const nonUniqueMapFields = Object.keys(instanceType.fields).filter(
-        fieldName => isListType((instanceType.fields[fieldName].getType()))
-      )
-      updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
+      const nonUniqueMapFields = await awu(Object.keys(instanceType.fields)).filter(
+        async fieldName => isListType(await (instanceType.fields[fieldName].getType()))
+      ).toArray()
+      await updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
     })
 
     return []

@@ -13,17 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { inspect } from 'util'
 import {
   InstanceElement, ElemID, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import {
   MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
 
-const log = logger(module)
 
 export class DuplicateInstanceKeyError extends MergeError {
   readonly key: string
@@ -67,15 +64,6 @@ const mergeInstanceDefinitions = (
 
 export const mergeInstances = (
   instances: InstanceElement[]
-): MergeResult<InstanceElement[]> => {
-  const mergeResults = _(instances)
-    .groupBy(i => i.elemID.getFullName())
-    .map(elementGroup => mergeInstanceDefinitions(elementGroup[0], elementGroup))
-    .value()
-
-  const merged = mergeResults.map(r => r.merged)
-  const errors = _.flatten(mergeResults.map(r => r.errors))
-  log.debug(`merged ${instances.length} instances to ${merged.length} elements [errors=${
-    errors.length}]`)
-  return { merged, errors }
-}
+): MergeResult<InstanceElement> => (
+  mergeInstanceDefinitions(instances[0], instances)
+)

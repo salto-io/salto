@@ -21,6 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import { getAllReferencedIds, getParents } from '@salto-io/adapter-utils'
 
+const { awu } = collections.asynciterable
+
 const getParentIds = (elem: ChangeDataType): Set<string> => new Set(
   getParents(elem).filter(isReferenceExpression).map(ref => ref.elemID.getFullName())
 )
@@ -35,7 +37,9 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     ([_id, change]) => getChangeElemId(change),
   )
 
-  const addChangeDependency = ([id, change]: ChangeEntry): Iterable<DependencyChange> => {
+  const addChangeDependency = async (
+    [id, change]: ChangeEntry
+  ): Promise<Iterable<DependencyChange>> => {
     const elem = getChangeElement(change)
     const parents = getParentIds(elem)
     const elemId = elem.elemID.getFullName()
@@ -44,7 +48,7 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     const onlyAnnotations = isObjectType(elem)
     // Not using ElementsSource here is legit because it's ran
     // after resolve
-    return (wu(getAllReferencedIds(elem, onlyAnnotations))
+    return (wu(await getAllReferencedIds(elem, onlyAnnotations))
       .filter(targetId => targetId !== elemId) // Ignore self references
       .map(targetId => changesById.get(targetId) ?? [])
       .flatten(true) as wu.WuIterable<ChangeEntry>)
@@ -54,5 +58,5 @@ export const addReferencesDependency: DependencyChanger = async changes => {
         : addReferenceDependency(targetChange.action, id, targetId)))
   }
 
-  return wu(changes).map(addChangeDependency).flatten()
+  return awu(changes).flatMap(addChangeDependency).toArray()
 }

@@ -20,7 +20,10 @@ import { CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ElemID, InstanceElement } f
 import { createRefToElmWithValue, applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
 import { parser } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { TelemetryConfig } from './telemetry'
+
+const { awu } = collections.asynciterable
 
 const { dumpElements, parse } = parser
 
@@ -136,12 +139,15 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
-  const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
+  const configInstance = await awu((await parse(buf, filepath)).elements)
+    .peek() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
   configInstance.refType = createRefToElmWithValue(saltoAppConfigType)
-  applyInstancesDefaults([configInstance])
-  return configInstance.value as AppConfig
+  const [configWithDefaults] = await awu(
+    applyInstancesDefaults(awu([configInstance]))
+  ).toArray() as InstanceElement[]
+  return configWithDefaults.value as AppConfig
 }
 
 export const configFromDisk = async (): Promise<AppConfig> => {

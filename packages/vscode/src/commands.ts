@@ -70,9 +70,9 @@ export const createGoToServiceCommand = (
 ) => Promise<void> => async () => {
   const url = await getServiceUrl(workspace)
   if (url === undefined) {
-    vscode.window.showErrorMessage('Go to service is not supported for the chosen element')
+    await vscode.window.showErrorMessage('Go to service is not supported for the chosen element')
     return
   }
   // Using this library instead of vscode.env.openExternal because of issue: https://github.com/microsoft/vscode/issues/112577
-  open(url.href)
+  await open(url.href)
 }

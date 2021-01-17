@@ -34,9 +34,7 @@ import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import { FilterCreator } from './filter'
-import {
-  getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-} from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
@@ -47,6 +45,7 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { LazyElementsSourceIndex } from './elements_source_index/types'
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -175,13 +174,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       })
 
     const customizationInfos = [...customObjects, ...fileCabinetContent]
-    const instances = customizationInfos.map(customizationInfo => {
+    const instances = await awu(customizationInfos).map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]
         ?? fileCabinetTypes[customizationInfo.typeName]
       return type
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
         : undefined
     }).filter(isInstanceElement)
+      .toArray()
     const elements = [...getAllTypes(), ...instances, ...serverTimeElements]
 
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
@@ -232,9 +232,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
-  private getAllRequiredReferencedInstances(
+  private async getAllRequiredReferencedInstances(
     changedInstances: ReadonlyArray<InstanceElement>
-  ): ReadonlyArray<InstanceElement> {
+  ): Promise<ReadonlyArray<InstanceElement>> {
     if (this.deployReferencedElements) {
       return getAllReferencedInstances(changedInstances)
     }
@@ -243,9 +243,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
-    const customizationInfosToDeploy = this.getAllRequiredReferencedInstances(changedInstances)
-      .map(instance => resolveValues(instance, getLookUpName))
+    const customizationInfosToDeploy = await awu(
+      await this.getAllRequiredReferencedInstances(changedInstances)
+    ).map(async instance => resolveValues(instance, getLookUpName))
       .map(toCustomizationInfo)
+      .toArray()
     try {
       await this.client.deploy(customizationInfosToDeploy)
     } catch (e) {

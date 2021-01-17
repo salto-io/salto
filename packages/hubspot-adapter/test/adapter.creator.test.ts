@@ -30,8 +30,8 @@ describe('HubspotAdapter creator', () => {
       }
     )
 
-    beforeEach(() => {
-      adapter.validateCredentials(config)
+    beforeEach(async () => {
+      await adapter.validateCredentials(config)
     })
 
     it('should call validateCredentials with the correct credentials', () => {

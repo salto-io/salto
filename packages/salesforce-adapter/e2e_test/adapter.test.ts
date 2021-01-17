@@ -24,6 +24,7 @@ import { findElement, naclCase, createRefToElmWithValue } from '@salto-io/adapte
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+
 import { testHelpers } from '../index'
 import * as constants from '../src/constants'
 import {
@@ -64,6 +65,8 @@ import {
   customObjectWithFieldsName, gvsName, removeCustomObjectsWithVariousFields,
   summaryFieldName, verifyElementsExist,
 } from './setup'
+
+const { awu } = collections.asynciterable
 
 const { makeArray } = collections.array
 const { PROFILE_METADATA_TYPE } = constants
@@ -736,7 +739,7 @@ describe('Salesforce adapter E2E with real account', () => {
         loginHours: Values
       }
       const valuesFromService = await getMetadata(
-        client, PROFILE_METADATA_TYPE, apiName(newInstance),
+        client, PROFILE_METADATA_TYPE, await apiName(newInstance),
       ) as Profile
 
       const valuesFromInstance = newInstance.value as Profile
@@ -770,11 +773,12 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     // This test should be removed and replace with an appropriate one as soon as SALTO-551 is done
-    it('should not fetch tabVisibilities from profile', () => {
-      const [adminProfile] = result
+    it('should not fetch tabVisibilities from profile', async () => {
+      const [adminProfile] = await awu(result)
         .filter(isInstanceElement)
-        .filter(e => metadataType(e) === PROFILE_METADATA_TYPE)
-        .filter(e => apiName(e) === constants.ADMIN_PROFILE) as InstanceElement[]
+        .filter(async e => await metadataType(e) === PROFILE_METADATA_TYPE)
+        .filter(async e => await apiName(e) === constants.ADMIN_PROFILE)
+        .toArray() as InstanceElement[]
       expect(adminProfile.value.tabVisibilities).toBeUndefined()
     })
 
@@ -1465,14 +1469,14 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           // Resolve reference expression before deploy
-          const normalizeReference = (
+          const normalizeReference = async (
             ref: ReferenceExpression | string | undefined
-          ): string | undefined => {
+          ): Promise<string | undefined> => {
             if (isReferenceExpression(ref)) {
               const elem = findElement(result, ref.elemID)
               return elem
                 // adding fallback for partially-resolved elements
-                ? apiName(elem) || elem.elemID.typeName
+                ? await apiName(elem) || elem.elemID.typeName
                 : undefined
             }
             return ref
@@ -1506,17 +1510,16 @@ describe('Salesforce adapter E2E with real account', () => {
           let fields: Values
           const masterDetailApiName = `${testAddFieldPrefix}${CUSTOM_FIELD_NAMES.MASTER_DETAIL}`
           beforeAll(async () => {
-            fields = _(makeArray(objectInfo.fields)
-              .filter(f => f[INSTANCE_TYPE_FIELD]))
-              .map(f => [
+            const entries = await Promise.all(makeArray(objectInfo.fields)
+              .filter(f => f[INSTANCE_TYPE_FIELD])
+              .map(async f => [
                 f.fullName,
                 Object.assign(
-                  transformFieldAnnotations(f, objectInfo.fullName),
+                  await transformFieldAnnotations(f, objectInfo.fullName),
                   { [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD] }
                 ),
-              ])
-              .fromPairs()
-              .value()
+              ])) as [string, Values][]
+            fields = Object.fromEntries(entries)
           })
 
           const verifyFieldAddition = (field: Values,
@@ -2063,17 +2066,16 @@ describe('Salesforce adapter E2E with real account', () => {
         describe('fields', () => {
           let fields: Values
           beforeAll(async () => {
-            fields = _(makeArray(objectInfo.fields)
-              .filter(f => f[INSTANCE_TYPE_FIELD]))
-              .map(f => [
+            const entries = await Promise.all(makeArray(objectInfo.fields)
+              .filter(f => f[INSTANCE_TYPE_FIELD])
+              .map(async f => [
                 f.fullName,
                 Object.assign(
-                  transformFieldAnnotations(f, objectInfo.fullName),
+                  await transformFieldAnnotations(f, objectInfo.fullName),
                   { [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD] }
                 ),
-              ])
-              .fromPairs()
-              .value()
+              ])) as [string, Values][]
+            fields = Object.fromEntries(entries)
           })
 
           const verifyFieldUpdate = (
@@ -2367,7 +2369,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      addDefaults(element)
+      await addDefaults(element)
 
       await removeElementIfAlreadyExists(client, element)
       const addResult = await createElement(adapter, element)
@@ -2391,7 +2393,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      addDefaults(element)
+      await addDefaults(element)
 
       await removeElementIfAlreadyExists(client, element)
       const addResult = await createElement(adapter, element)
@@ -2401,7 +2403,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Checks if the new topic' object exists
       const results = (await client.readMetadata(constants.TOPICS_FOR_OBJECTS_METADATA_TYPE,
-        apiName(addResult))).result as TopicsForObjectsInfo[]
+        await apiName(addResult))).result as TopicsForObjectsInfo[]
       expect(results).toHaveLength(1)
       expect(results[0].enableTopics).toBe('true')
     })
@@ -2419,7 +2421,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      addDefaults(oldElement)
+      await addDefaults(oldElement)
 
       await removeElementIfAlreadyExists(client, oldElement)
       const addResult = await createElement(adapter, oldElement)
@@ -2465,12 +2467,12 @@ describe('Salesforce adapter E2E with real account', () => {
 
       beforeAll(async () => {
         // Make sure our test rule does not exist before we start
-        const assignmentRulesType = result
+        const assignmentRulesType = await awu(result)
           .filter(isObjectType)
-          .find(e => metadataType(e) === assignmentRulesTypeName) as ObjectType
+          .find(async e => await metadataType(e) === assignmentRulesTypeName) as ObjectType
 
-        const leadAssignmentRule = result
-          .filter(e => metadataType(e) === assignmentRulesTypeName)
+        const leadAssignmentRule = await awu(result)
+          .filter(async e => await metadataType(e) === assignmentRulesTypeName)
           .filter(isInstanceElement)
           .find(e => e.value[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead') as InstanceElement
 
@@ -2586,8 +2588,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const findInstance = async (instance: MetadataInstanceElement):
           Promise<MetadataInfo | undefined> => {
-          const type = metadataType(instance)
-          const retrieveResult = await retrieve(type, apiName(instance))
+          const type = await metadataType(instance)
+          const retrieveResult = await retrieve(type, await apiName(instance))
           // In the real code we pass in the fileProps from the request because there is an issue
           // where sometimes fileProps from the response have an empty fullName
           // this means that here we need to remove the package name from the file path to simulate
@@ -2597,19 +2599,19 @@ describe('Salesforce adapter E2E with real account', () => {
           const instances = await fromRetrieveResult(
             retrieveResult,
             fileProps,
-            new Set(instance.getType().annotations.hasMetaFile ? [type] : []),
+            new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
             new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
           )
-          return instances
-            .filter(({ file }) => file.fullName === apiName(instance))
+          return awu(instances)
+            .filter(async ({ file }) => file.fullName === await apiName(instance))
             .map(({ values }) => values)
-            .pop()
+            .peek()
         }
 
         const removeIfAlreadyExists = async (instance: MetadataInstanceElement): Promise<void> => {
           if (await findInstance(instance)) {
             const pkg = createDeployPackage()
-            pkg.delete(assertMetadataObjectType(instance.getType()), apiName(instance))
+            pkg.delete(assertMetadataObjectType(await instance.getType()), await apiName(instance))
             await client.deploy(await pkg.getZip())
           }
         }
@@ -3393,14 +3395,14 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
       })
 
-      afterAll(() => {
+      afterAll(async () => {
         // Deleting a flow through the deploy API requires specifying the version (so here the
         // delete would have to be on MyFlow-1 because we want to delete version 1).
         // unfortunately we don't have an easy way to get the flow version (it is technically
         // possible with SOQL on FlowVersionView but not clear if it is enough)
         // Removing the flow through CRUD does delete the latest version, so we can clean up
         // even if we don't support deleting flows through deploy
-        removeElementIfAlreadyExists(client, flow)
+        await removeElementIfAlreadyExists(client, flow)
       })
     })
 

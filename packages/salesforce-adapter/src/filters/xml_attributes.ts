@@ -19,10 +19,13 @@ import {
 import {
   MapKeyFunc, mapKeysRecursive,
 } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import { XML_ATTRIBUTE_PREFIX } from '../constants'
 import { metadataType } from '../transformers/transformer'
 import { metadataTypesWithAttributes } from '../transformers/xml_transformer'
+
+const { awu } = collections.asynciterable
 
 
 const removeAttributePrefixFunc: MapKeyFunc = ({ key }) => key.replace(XML_ATTRIBUTE_PREFIX, '')
@@ -32,9 +35,9 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * Upon fetch remove the XML_ATTRIBUTE_PREFIX from the instance.value keys so it'll match the type
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
-      .filter(inst => metadataTypesWithAttributes.includes(metadataType(inst)))
+      .filter(async inst => metadataTypesWithAttributes.includes(await metadataType(inst)))
       .forEach(inst => {
         inst.value = mapKeysRecursive(inst.value, removeAttributePrefixFunc, inst.elemID)
       })

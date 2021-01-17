@@ -15,10 +15,13 @@
 */
 import { EOL } from 'os'
 
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+
 import { ParseResult, ParseError, SourceMap } from '../parser'
 import * as elementSerializer from './elements'
+
+const { awu } = collections.asynciterable
 
 export type ParseResultMetadata = {
   md5: string
@@ -28,6 +31,7 @@ type SerializeableParseResult = ParseResult & {
   metadata?: ParseResultMetadata
 }
 
+
 const serializeErrors = (errors: ParseError[]): string =>
   safeJsonStringify(errors)
 
@@ -35,10 +39,10 @@ const serializeSourceMap = (sourceMap: SourceMap): string => (
   safeJsonStringify(Array.from(sourceMap.entries()))
 )
 
-export const serialize = (parseResult: SerializeableParseResult): string => [
+export const serialize = async (parseResult: SerializeableParseResult): Promise<string> => [
   // When serializing for the cache, keep reference expressions
   // since the idea is to reflect the nacl files, not the state file.
-  elementSerializer.serialize(parseResult.elements, 'keepRef'),
+  elementSerializer.serialize(await awu(parseResult.elements).toArray(), 'keepRef'),
   serializeErrors(parseResult.errors),
   parseResult.sourceMap ? serializeSourceMap(parseResult.sourceMap) : undefined,
   safeJsonStringify(parseResult.metadata),

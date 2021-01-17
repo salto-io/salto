@@ -13,12 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { PrimitiveType, ElemID } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { MergeResult, MergeError } from './common'
 
-const log = logger(module)
 
 export class MultiplePrimitiveTypesUnsupportedError extends MergeError {
   readonly duplicates: PrimitiveType[]
@@ -48,15 +45,4 @@ const mergePrimitiveDefinitions = (
 
 export const mergePrimitives = (
   primitives: PrimitiveType[]
-): MergeResult<Record<string, PrimitiveType>> => {
-  const mergeResults = _(primitives)
-    .groupBy(p => p.elemID.getFullName())
-    .mapValues(primitiveGroup => mergePrimitiveDefinitions(primitiveGroup[0], primitiveGroup))
-    .value()
-
-  const merged = _.mapValues(mergeResults, r => r.merged)
-  const errors = _.flatten(_.values(mergeResults).map(r => r.errors))
-  log.debug(`merged ${primitives.length} primitives to ${_.size(merged)} elements [errors=${
-    errors.length}]`)
-  return { merged, errors }
-}
+): MergeResult<PrimitiveType> => mergePrimitiveDefinitions(primitives[0], primitives)

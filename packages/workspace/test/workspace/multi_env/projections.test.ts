@@ -444,27 +444,33 @@ describe('projections', () => {
   })
   describe('project fields', () => {
     describe('project fields', () => {
+      let newField: Field
+      let newPartialField: Field
+      let modifiedField: Field
       const parentObj = new ObjectType({ elemID: new ElemID('salto', 'new_parent') })
-      const newField = new Field(
-        parentObj,
-        'new_field',
-        field.getType(),
-        _.clone(field.annotations),
-      )
 
-      const newPartialField = new Field(
-        field.parent,
-        'newName',
-        field.getType(),
-        _.omit(field.annotations, _.keys(partialField.annotations)),
-      )
+      beforeAll(async () => {
+        newField = new Field(
+          parentObj,
+          'new_field',
+          await field.getType(),
+          _.clone(field.annotations),
+        )
 
-      const modifiedField = new Field(
-        field.parent,
-        field.name,
-        field.getType(),
-        _.cloneDeepWith(field.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
-      )
+        newPartialField = new Field(
+          field.parent,
+          'newName',
+          await field.getType(),
+          _.omit(field.annotations, _.keys(partialField.annotations)),
+        )
+
+        modifiedField = new Field(
+          field.parent,
+          field.name,
+          await field.getType(),
+          _.cloneDeepWith(field.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
+        )
+      })
 
       it('should project an add change for a missing field', async () => {
         const change: DetailedChange = {

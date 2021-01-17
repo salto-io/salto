@@ -149,7 +149,7 @@ export const loadWorkspace = async (
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
   const currentEnv = (): string => workspaceConfig.currentEnv ?? workspaceConfig.envs[0].name
-  const getDBNameSpace = (
+  const getRemoteMapNameSpace = (
     namespace: string, env?: string
   ): string => `workspace:${env || currentEnv()}:${namespace}`
   const currentEnvConf = (): EnvConfig =>
@@ -170,8 +170,8 @@ export const loadWorkspace = async (
     hiddenElementsChangesIDs?: ElemID[]
   }): Promise<WorkspaceState> => {
     const newState = {
-      merged: new InMemoryRemoteElementSource(createRemoteMap(getDBNameSpace('merged', env))),
-      errors: createRemoteMap(getDBNameSpace('errors', env)),
+      merged: new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged', env))),
+      errors: createRemoteMap(getRemoteMapNameSpace('errors', env)),
     }
     if (_.isUndefined(workspaceState) || (env !== undefined && env !== currentEnv())) {
       await buildNewMergedElementsAndErrors({

@@ -82,7 +82,7 @@ const buildMultiEnvSource = (
     _.omit(sources, [primarySourceName, commonSourceName])
   )
 
-  const getDBNameSpace = (
+  const getRemoteMapNameSpace = (
     namespace: string, env?: string
   ): string => `multi_env:${env || primarySourceName}:${namespace}`
 
@@ -115,7 +115,7 @@ const buildMultiEnvSource = (
     const allActiveElements = awu(_.values(getActiveSources(env)))
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
-    const elements = new InMemoryRemoteElementSource(createRemoteMap(getDBNameSpace('merged')))
+    const elements = new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged')))
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
       new InMemoryRemoteElementSource(merged)

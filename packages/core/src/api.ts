@@ -183,16 +183,15 @@ export const fetch: FetchFunc = async (
   log.debug('fetch starting..')
   const fetchServices = services ?? workspace.services()
   const fetchElementsFilter = shouldElementBeIncluded(fetchServices)
-  const stateElementsNotCoveredByFetch = awu(await workspace.state().getAll())
-    .filter(element => !fetchElementsFilter(element.elemID))
+  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
+    .filter(element => !fetchElementsFilter(element.elemID)).toArray()
 
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
     await createElemIdGetter(
-      await awu(await workspace.state().getAll())
-        .filter(element => !fetchElementsFilter(element.elemID)).toArray(),
+      stateElementsNotCoveredByFetch,
       workspace.state()
     )
   )

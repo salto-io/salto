@@ -99,11 +99,10 @@ export const parseResultCache = (
         const validCacheBuffer = await getCacheData(key, allowInvalid)
         if (validCacheBuffer !== undefined) {
           // We await on deserialize instead of just returning it so we can catch the error.
-          const res = await parseResultSerializer.deserialize(
+          return await parseResultSerializer.deserialize(
             validCacheBuffer,
             val => staticFilesSource.getStaticFile(val.filepath, val.encoding)
           )
-          return res
         }
       } catch (err) {
         log.debug('Failed to handle cache file "%o": %o', resolveCacheFileName(key.filename), err)

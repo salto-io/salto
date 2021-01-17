@@ -60,7 +60,7 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.COMMENT]: /\/\//,
     [TOKEN_TYPES.WHITESPACE]: { match: /[ \t]+/ },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true },
-    [TOKEN_TYPES.INVALID]: { match: /[^ ]+/, error: true },
+    [TOKEN_TYPES.INVALID]: { match: /[^ \n]+/, error: true },
   },
   string: {
     [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },

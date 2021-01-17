@@ -53,12 +53,12 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       }
       // comment between top level blocks
       type salesforce.obj {
-        // comments inside a block
+        // comments inside a block with invalid ending characters ?
         salesforce.number num {}
       }
 
       type salesforce.test {
-        salesforce.string name { // comment after block def line end
+        salesforce.string name { // comment after block def line end with questionmark?
           // comment inside a field
           label = "Name"
           _required = true //comment after attribute

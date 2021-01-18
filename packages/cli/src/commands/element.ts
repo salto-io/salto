@@ -358,19 +358,21 @@ const safeGetElementId = (maybeElementIdPath: string): ElemID | undefined => {
     return undefined
   }
 }
-const getServiceUrlAnnotation = (element: Element):
-  string|undefined => _.get(element, ['annotations', CORE_ANNOTATIONS.SERVICE_URL])
 
 export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliTelemetry, output, workspacePath = '.' }): Promise<CliExitCode> => {
   log.debug('running element open command on \'%s\' %o', workspacePath, input)
+  const getServiceUrlAnnotation = (element: Element): string|undefined =>
+    _.get(element, ['annotations', CORE_ANNOTATIONS.SERVICE_URL])
   const { elementId, env } = input
   const { errored, workspace } = await loadWorkspace(workspacePath, output)
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+
   const reportUserError = (error: string): CliExitCode => {
     errorOutputLine(error, output)
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.UserInputError
   }
+
   const reportAppError = (error?: string): CliExitCode => {
     if (error) {
       errorOutputLine(error, output)
@@ -378,6 +380,7 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
+
   if (errored) {
     return reportAppError()
   }

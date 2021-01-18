@@ -378,13 +378,14 @@ type ElementUrl = {
 type FindServiceUrlResponse = NoElementsFound | ElementUrl
 
 const getServiceUrlAnnotation = (element: Element):
-  string|undefined => element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+  string|undefined => _.get(element, ['annotations', CORE_ANNOTATIONS.SERVICE_URL])
 
 const findServiceUrlAnnotation = async (elementId: ElemID, workspace: Workspace):
   Promise<FindServiceUrlResponse> => {
   const elementValue = await workspace.getValue(elementId)
-  if (elementValue && isField(elementValue)) {
-    return { type: 'ElementUrlFound', url: getServiceUrlAnnotation(elementValue) }
+  const maybeServiceUrl = getServiceUrlAnnotation(elementValue)
+  if (isField(elementValue) && maybeServiceUrl) {
+    return { type: 'ElementUrlFound', url: maybeServiceUrl }
   }
   const parentElement = await workspace.getValue(elementId.createTopLevelParentID().parent)
   if (!isElement(parentElement)) {

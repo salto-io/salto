@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import open from 'open'
-import { getLoginStatuses, listUnresolvedReferences, LoginStatus, Tags } from '@salto-io/core'
+import { listUnresolvedReferences, Tags } from '@salto-io/core'
 import { CORE_ANNOTATIONS, isElement, Element, ElemID, isField } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
@@ -351,14 +351,6 @@ type OpenActionArgs = {
 const isServiceDefined = (workspace: Workspace, serviceName: string): boolean =>
   workspace.services().includes(serviceName)
 
-const isServiceLoggedIn = async (workspace: Workspace, serviceName: string): Promise<boolean> => {
-  const serviceLoginStatus = (await getLoginStatuses(
-    workspace,
-    [serviceName]
-  ))[serviceName] as LoginStatus
-  return serviceLoginStatus.isLoggedIn
-}
-
 const isValidElementId = (maybeElementIdPath: string):
   boolean => {
   try {
@@ -442,9 +434,6 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   const serviceName = elemId.adapter
   if (!isServiceDefined(workspace, serviceName)) {
     return reportUserError(Prompts.SERVICE_IS_NOT_CONFIGURED_FOR_ENV(serviceName, envName))
-  }
-  if (!await isServiceLoggedIn(workspace, serviceName)) {
-    return reportUserError(Prompts.SERVICE_IS_NOT_LOGGED_IN(serviceName, envName))
   }
   const response = await findServiceUrlAnnotation(elemId, workspace)
   return processFindServiceUrlResponse(response)

@@ -136,13 +136,17 @@ const insertInstances = async (
     'insert',
     instancesToCreateRecords(instances)
   )
-  const successInstances = instances
+  const successInstanceAndIndexes = instances
+    .map((instance, index) => ({ instance, index }))
     .filter((_instance, index) => results[index]?.success)
-  successInstances.forEach((instance, index) => {
+  successInstanceAndIndexes.forEach(({ instance, index }) => {
     instance.value[CUSTOM_OBJECT_ID_FIELD] = results[index].id
   })
   const errorMessages = getErrorMessagesFromResults(results)
-  return { successInstances, errorMessages }
+  return {
+    successInstances: successInstanceAndIndexes.map(({ instance }) => instance),
+    errorMessages,
+  }
 }
 
 const updateInstances = async (

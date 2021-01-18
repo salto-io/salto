@@ -15,7 +15,7 @@
 */
 import { Workspace } from '@salto-io/workspace'
 import * as core from '@salto-io/core'
-import { ElemID, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, Field, ObjectType, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { LoginStatus } from '@salto-io/core'
 import open from 'open'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
@@ -1029,6 +1029,16 @@ describe('Element command group', () => {
         if (elemId.getFullName() === 'salesforce.elementWithoutElementType') {
           return Promise.resolve({})
         }
+        if (elemId.getFullName() === 'salesforce.Account.instance.field') {
+          return Promise.resolve(new Field(
+            new ObjectType({
+              elemID: new ElemID('salesforce.Account.instance'),
+            }), 'field', new PrimitiveType({ elemID: new ElemID('salesforce', 'Account', 'instance'), primitive: PrimitiveTypes.STRING }),
+            // eslint-disable-next-line quote-props
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { _service_url: serviceUrlAccount }
+          ))
+        }
         return Promise.resolve(undefined)
       },
     }
@@ -1043,9 +1053,21 @@ describe('Element command group', () => {
         }
       )
     })
-    it('should return a valid URL for an existing logged in service', async () => {
+    it('should return a valid URL for a given element ID', async () => {
       const openActionResult = await openAction({
         input: { elementId: 'salesforce.Account', env: 'env1' },
+        output,
+        cliTelemetry,
+        config,
+      })
+      expect(output.stderr.content).toEqual('')
+      expect(mockOpen).toHaveBeenCalledWith(serviceUrlAccount)
+      expect(openActionResult).toEqual(CliExitCode.Success)
+      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.success', tags: {}, timestamp: '', type: 'counter', value: 1 })
+    })
+    it('should return a valid URL for a given elementID of Field type', async () => {
+      const openActionResult = await openAction({
+        input: { elementId: 'salesforce.Account.instance.field', env: 'env1' },
         output,
         cliTelemetry,
         config,
@@ -1074,17 +1096,6 @@ describe('Element command group', () => {
     it('should return an error message when opening an non existing service', async () => {
       const openActionResult = await openAction({
         input: { elementId: 'nonExistingServiceName', env: 'env1' },
-        output,
-        cliTelemetry,
-        config,
-      })
-      expect(output.stderr.content).toContain('nonExistingServiceName is not configured in this environment')
-      expect(openActionResult).toEqual(CliExitCode.UserInputError)
-      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
-    })
-    it('should print the current env to the error message, if one was not provided in the arguments', async () => {
-      const openActionResult = await openAction({
-        input: { elementId: 'nonExistingServiceName' },
         output,
         cliTelemetry,
         config,

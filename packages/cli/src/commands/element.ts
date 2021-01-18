@@ -402,6 +402,7 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
     return CliExitCode.Success
   }
   const parentElement = await workspace.getValue(elemId.createTopLevelParentID().parent)
+
   if (!isElement(parentElement)) {
     return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
   }

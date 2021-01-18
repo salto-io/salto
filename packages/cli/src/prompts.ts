@@ -284,9 +284,6 @@ ${Prompts.SERVICE_ADD_HELP}`
     err: string
   ): string => `Error encountered while cleaning the workspace: ${err}.`
 
-  public static readonly SERVICE_IS_NOT_CONFIGURED_FOR_ENV =
-    (serviceName: string, env: string): string => `Service ${serviceName} is not configured for env ${env}. Use 'salto service add <service-name>'`
-
   public static readonly NO_MATCHES_FOUND_FOR_ELEMENT =
     (elementId: string): string => `Did not find any matches for element ${elementId}`
 

@@ -1078,7 +1078,7 @@ describe('Element command group', () => {
         cliTelemetry,
         config,
       })
-      expect(output.stderr.content).toContain('Service nonExistingServiceName is not configured for env env1. Use \'salto service add <service-name>\'')
+      expect(output.stderr.content).toContain('nonExistingServiceName is not configured in this environment')
       expect(openActionResult).toEqual(CliExitCode.UserInputError)
       expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
     })
@@ -1089,7 +1089,7 @@ describe('Element command group', () => {
         cliTelemetry,
         config,
       })
-      expect(output.stderr.content).toContain('Service nonExistingServiceName is not configured for env env. Use \'salto service add <service-name>\'')
+      expect(output.stderr.content).toContain('nonExistingServiceName is not configured in this environment')
       expect(openActionResult).toEqual(CliExitCode.UserInputError)
       expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
     })

@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatServiceNotConfigured } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
@@ -363,7 +363,7 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   log.debug('running element open command on \'%s\' %o', workspacePath, input)
   const getServiceUrlAnnotation = (element: Element): string|undefined =>
     _.get(element, ['annotations', CORE_ANNOTATIONS.SERVICE_URL])
-  const { elementId, env } = input
+  const { elementId } = input
   const { errored, workspace } = await loadWorkspace(workspacePath, output)
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
@@ -384,14 +384,13 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   if (errored) {
     return reportAppError()
   }
-  const envName = env || workspace.currentEnv()
   const elemId = safeGetElementId(elementId)
   if (elemId === undefined) {
     return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
   }
   const serviceName = elemId.adapter
   if (!isServiceDefined(workspace, serviceName)) {
-    return reportUserError(Prompts.SERVICE_IS_NOT_CONFIGURED_FOR_ENV(serviceName, envName))
+    return reportUserError(formatServiceNotConfigured(serviceName))
   }
   const elementValue = await workspace.getValue(elemId)
   const maybeServiceUrl = getServiceUrlAnnotation(elementValue)

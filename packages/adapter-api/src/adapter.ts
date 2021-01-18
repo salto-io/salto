@@ -26,6 +26,7 @@ import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 export interface FetchResult {
   elements: Element[]
   updatedConfig?: { config: InstanceElement; message: string }
+  isPartial?: boolean
 }
 
 export type DeployResult = {

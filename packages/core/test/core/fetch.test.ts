@@ -17,12 +17,12 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
-  ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
+  ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
-  FetchChangesResult, FetchProgressEvents,
+  FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { mockFunction } from '../common/helpers'
@@ -120,6 +120,162 @@ describe('fetch', () => {
           [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
+      })
+    })
+    describe('partial fetch results', () => {
+      describe('fetch is partial', () => {
+        it('should ignore deletions', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: true },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [newTypeBaseModified, typeWithField],
+            [],
+            [],
+          )
+          expect(Array.from(fetchChangesResult.changes).length).toBe(0)
+        })
+
+        it('should return the state elements with the service elements', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: true },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [],
+            [newTypeBase, typeWithField],
+            [],
+          )
+          expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
+        })
+      })
+      describe('fetch is not partial', () => {
+        it('should not ignore deletions', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: false },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [newTypeBaseModified, typeWithField],
+            [],
+            [],
+          )
+          const resultChanges = Array.from(fetchChangesResult.changes)
+          expect(resultChanges.length).toBe(1)
+          expect(resultChanges[0].change.action).toBe('remove')
+        })
+
+        it('should return the only the service elements', async () => {
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            { elements: [newTypeBaseModified], isPartial: false },
+          )
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            [],
+            [newTypeBase, typeWithField],
+            [],
+          )
+          expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
+        })
+      })
+
+      it('should use the existing elements to resolve the fetched elements when calculcating changes', async () => {
+        const beforeElement = new InstanceElement(
+          'name',
+          new ObjectType({
+            elemID: new ElemID('dummy', 'type'),
+            fields: {
+              field: { type: BuiltinTypes.NUMBER },
+            },
+          }),
+          { field: new ReferenceExpression(new ElemID('dummy', 'type', 'instance', 'referenced', 'field')) }
+        )
+
+        const workspaceReferencedElement = new InstanceElement(
+          'referenced',
+          new ObjectType({
+            elemID: new ElemID('dummy', 'type'),
+            fields: {
+              field: { type: BuiltinTypes.NUMBER },
+            },
+          }),
+          { field: 5 }
+        )
+        const stateReferencedElement = workspaceReferencedElement.clone()
+        stateReferencedElement.value.field = 6
+
+        const afterElement = beforeElement.clone()
+        afterElement.value.field = 4
+
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          { elements: [afterElement], isPartial: true },
+        )
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          [beforeElement, workspaceReferencedElement],
+          [beforeElement, stateReferencedElement],
+          [],
+        )
+
+        const resultChanges = Array.from(fetchChangesResult.changes)
+        expect(resultChanges.length).toBe(1)
+
+        const workspaceChange = resultChanges[0].change
+        const { serviceChange } = resultChanges[0]
+
+        expect(workspaceChange.action).toBe('modify')
+        expect(serviceChange.action).toBe('modify')
+
+        if (workspaceChange.action === 'modify' && serviceChange.action === 'modify') {
+          expect(workspaceChange.data.after).toBe(4)
+          expect(workspaceChange.data.before.resValue).toBe(5)
+
+          expect(serviceChange.data.after).toBe(4)
+          expect(serviceChange.data.before.resValue).toBe(6)
+        }
+      })
+
+      describe('multiple adapters', async () => {
+        const adapters = {
+          dummy1: {
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: true }),
+            deploy: mockFunction<AdapterOperations['deploy']>(),
+          },
+          dummy2: {
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: false }),
+            deploy: mockFunction<AdapterOperations['deploy']>(),
+          },
+        }
+
+        it('should ignore deletions only for adapter with partial results', async () => {
+          const fetchChangesResult = await fetchChanges(
+            adapters,
+            [
+              new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
+              new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
+            ],
+            [],
+            [],
+          )
+          const resultChanges = Array.from(fetchChangesResult.changes)
+          expect(resultChanges.length).toBe(1)
+          expect(resultChanges[0].change.action).toBe('remove')
+          expect(getChangeElement(resultChanges[0].change).elemID.adapter).toBe('dummy2')
+        })
+      })
+
+      describe('getAdaptersFirstFetchPartial', () => {
+        const elements = [
+          new ObjectType({ elemID: new ElemID('adapter1', 'type') }),
+        ]
+        const partiallyFetchedAdapters = new Set(['adapter1', 'adapter3'])
+
+        const resultAdapters = getAdaptersFirstFetchPartial(elements, partiallyFetchedAdapters)
+
+        it('results should only include adapter which is first fetch is partial', () => {
+          expect(resultAdapters).toEqual(new Set(['adapter3']))
+        })
       })
     })
     describe('config changes', () => {

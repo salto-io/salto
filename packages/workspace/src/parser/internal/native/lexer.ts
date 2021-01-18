@@ -159,8 +159,10 @@ class PeekableLexer {
       return token
     }
 
-    public recover(stopTokens: string[]): void {
-      const allStopTokens = [TOKEN_TYPES.NEWLINE, ...stopTokens]
+    public recover(stopTokens: string[], advancePastNewlines = true): void {
+      const allStopTokens = (advancePastNewlines
+        ? [TOKEN_TYPES.NEWLINE, ...stopTokens]
+        : stopTokens)
       // This is handling a special case in which the recover char
       // is not a new line. In such case, there is a chance that the
       // char is already loaded to the peekNoNewLine attr, which means
@@ -168,7 +170,7 @@ class PeekableLexer {
       while (!allStopTokens.includes(this.peek(false)?.type || '')) {
         this.next(false)
       }
-      if (this.peek(false)?.type === TOKEN_TYPES.NEWLINE) {
+      if (advancePastNewlines && this.peek(false)?.type === TOKEN_TYPES.NEWLINE) {
         this.next(false)
       }
     }

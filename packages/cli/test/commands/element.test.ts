@@ -766,7 +766,7 @@ describe('Element command group', () => {
   describe('list-unresolved command', () => {
     const listUnresolvedName = 'list-unresolved'
     const mockListUnresolved = core.listUnresolvedReferences as jest.MockedFunction<
-            typeof core.listUnresolvedReferences>
+      typeof core.listUnresolvedReferences>
 
     describe('success - all unresolved references are found in complete-from', () => {
       const workspacePath = 'valid-ws'
@@ -987,17 +987,15 @@ describe('Element command group', () => {
     })
   })
   describe('open command', () => {
-    const mockWorkspaceForOpenCommand: Workspace = ({
-      services: () => ['netsuite', 'salesforceNotLoggedIn', 'salesforce'],
-      hasErrors: () => Promise.resolve(false),
-      setCurrentEnv: () => Promise.resolve(),
+    const mockWorkspaceForOpenCommand = {
+      ...mocks.mockLoadWorkspace('workspacePath', ['env'], false, true, ['netsuite', 'salesforceNotLoggedIn', 'salesforce']),
       currentEnv: () => 'env',
       getValue: (elemId: ElemID) => {
         if (elemId.getFullName() === 'salesforce.Account.instance.variable.variable2') {
           return Promise.resolve(new ObjectType({
             elemID: new ElemID('salesforce', 'Account', 'instance', 'variable', 'variable2'),
             // eslint-disable-next-line quote-props
-            annotations: { },
+            annotations: {},
           }))
         }
         if (elemId.getFullName() === 'salesforce.Account.instance.variable') {
@@ -1033,7 +1031,7 @@ describe('Element command group', () => {
         }
         return Promise.resolve(undefined)
       },
-    }) as unknown as Workspace
+    }
     beforeEach(() => {
       output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       telemetry = mocks.getMockTelemetry()

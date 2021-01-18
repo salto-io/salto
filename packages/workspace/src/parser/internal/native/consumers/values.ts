@@ -235,7 +235,7 @@ const consumeArrayItems = (
         end: positionAtEnd(token),
         filename: context.filename,
       }))
-      context.lexer.recover([TOKEN_TYPES.COMMA, closingTokenType])
+      context.lexer.recover([TOKEN_TYPES.COMMA, closingTokenType], false)
       if (context.lexer.peek()?.type === TOKEN_TYPES.COMMA) {
         context.lexer.next()
       }

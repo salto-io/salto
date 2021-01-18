@@ -15,15 +15,9 @@
 */
 
 import { ElemID, ObjectType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { buildElementsSourceFromElements } from '../src/elements'
 
-const asyncIterableToArray = async <T>(iterator: AsyncIterable<T>): Promise<T[]> => {
-  const array: T[] = []
-  for await (const i of iterator) {
-    array.push(i)
-  }
-  return array
-}
 
 describe('buildElementsSourceFromElements', () => {
   const elements = [
@@ -35,7 +29,8 @@ describe('buildElementsSourceFromElements', () => {
 
   describe('getAll', () => {
     it('should return all the elements', async () => {
-      const recievedElements = await asyncIterableToArray(await elementsSource.getAll())
+      const recievedElements = await collections.asynciterable
+        .toArrayAsync(await elementsSource.getAll())
       expect(recievedElements).toEqual(elements)
     })
   })
@@ -52,7 +47,8 @@ describe('buildElementsSourceFromElements', () => {
 
   describe('list', () => {
     it('should return all the elements ids', async () => {
-      const recievedElementsIds = await asyncIterableToArray(await elementsSource.list())
+      const recievedElementsIds = await collections.asynciterable
+        .toArrayAsync(await elementsSource.list())
       expect(recievedElementsIds).toEqual(elements.map(e => e.elemID))
     })
   })

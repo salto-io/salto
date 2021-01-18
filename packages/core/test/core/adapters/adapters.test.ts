@@ -15,6 +15,8 @@
 */
 import { InstanceElement, ElemID, AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { adapter } from '@salto-io/salesforce-adapter'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
@@ -72,7 +74,7 @@ describe('adapters.ts', () => {
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
         {},
-        []
+        buildElementsSourceFromElements([])
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -89,7 +91,7 @@ describe('adapters.ts', () => {
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
         { [sfConfig.elemID.adapter]: sfConfig },
-        [],
+        buildElementsSourceFromElements([]),
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -102,19 +104,29 @@ describe('adapters.ts', () => {
     })
 
     it('should return an ReadOnlyElementsSource with only the adapter elements', async () => {
+      const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
         { [sfConfig.elemID.adapter]: sfConfig },
-        [
+        buildElementsSourceFromElements([
           new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
           new ObjectType({ elemID: new ElemID('dummy', 'type2') }),
-        ],
+        ]),
       )
       const elementsSource = result[serviceName]?.elementsSource
       expect(elementsSource).toBeDefined()
-      expect(await elementsSource.has(new ElemID(serviceName, 'type1'))).toBeTruthy()
+      expect(await elementsSource.has(objectType.elemID)).toBeTruthy()
       expect(await elementsSource.has(new ElemID('dummy', 'type2'))).toBeFalsy()
+
+      expect(await elementsSource.get(objectType.elemID)).toBeDefined()
+      expect(await elementsSource.get(new ElemID('dummy', 'type2'))).toBeUndefined()
+
+      expect(await collections.asynciterable.toArrayAsync(await elementsSource.getAll()))
+        .toEqual([objectType])
+
+      expect(await collections.asynciterable.toArrayAsync(await elementsSource.list()))
+        .toEqual([objectType.elemID])
     })
   })
 

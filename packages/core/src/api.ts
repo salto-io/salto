@@ -24,6 +24,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector } from '@salto-io/workspace'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -124,7 +125,7 @@ export const deploy = async (
     services,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
-    workspaceElements
+    buildElementsSourceFromElements(workspaceElements)
   )
 
   const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
@@ -207,7 +208,7 @@ export const fetch: FetchFunc = async (
     fetchServices,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
-    workspaceElements,
+    buildElementsSourceFromElements(workspaceElements),
     createElemIdGetter(filteredStateElements)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)

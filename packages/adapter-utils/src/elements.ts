@@ -14,10 +14,13 @@
 * limitations under the License.
 */
 import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
+import _ from 'lodash'
 
 export const buildElementsSourceFromElements = (elements: ReadonlyArray<Element>):
-  ReadOnlyElementsSource =>
-  ({
+  ReadOnlyElementsSource => {
+  const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
+
+  return {
     getAll: async () => {
       async function *getElements(): AsyncIterable<Element> {
         for (const element of elements) {
@@ -26,7 +29,7 @@ export const buildElementsSourceFromElements = (elements: ReadonlyArray<Element>
       }
       return getElements()
     },
-    get: async id => elements.find(e => e.elemID.isEqual(id)),
+    get: async id => elementsMap[id.getFullName()],
     list: async () => {
       async function *getIds(): AsyncIterable<ElemID> {
         for (const element of elements) {
@@ -35,5 +38,6 @@ export const buildElementsSourceFromElements = (elements: ReadonlyArray<Element>
       }
       return getIds()
     },
-    has: async id => elements.find(e => e.elemID.isEqual(id)) !== undefined,
-  })
+    has: async id => id.getFullName() in elementsMap,
+  }
+}

@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, Element,
+  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, safeJsonStringify, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import adapterCreators from './creators'
 
@@ -62,41 +62,65 @@ export const getDefaultAdapterConfig = (adapterName: string): InstanceElement | 
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
+const filterElementsSourceAdapter = (
+  elementsSource: ReadOnlyElementsSource,
+  adapter: string
+): ReadOnlyElementsSource => ({
+  getAll: async () => {
+    async function *getElements(): AsyncIterable<Element> {
+      for await (const element of await elementsSource.getAll()) {
+        if (element.elemID.adapter === adapter) {
+          yield element
+        }
+      }
+    }
+    return getElements()
+  },
+  get: async id => (id.adapter === adapter ? elementsSource.get(id) : undefined),
+  list: async () => {
+    async function *getIds(): AsyncIterable<ElemID> {
+      for await (const element of await elementsSource.getAll()) {
+        if (element.elemID.adapter === adapter) {
+          yield element.elemID
+        }
+      }
+    }
+    return getIds()
+  },
+  has: async id => (id.adapter === adapter ? elementsSource.has(id) : false),
+})
+
 export const getAdaptersCreatorConfigs = async (
   adapters: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
   config: Readonly<Record<string, InstanceElement>>,
-  workspaceElements: ReadonlyArray<Element>,
+  workspaceElementsSource: ReadOnlyElementsSource,
   elemIdGetter?: ElemIdGetter,
-): Promise<Record<string, AdapterOperationsContext>> => {
-  const adapterToElements = _.groupBy(workspaceElements, e => e.elemID.adapter)
-  return _
-    .fromPairs(await Promise.all(adapters.map(
-      async adapter => {
-        const adapterConfig = config[adapter]
-        return ([adapter, {
-          credentials: credentials[adapter],
-          config: adapterConfig ?? getDefaultAdapterConfig(adapter),
-          elementsSource: buildElementsSourceFromElements(
-            adapterToElements[adapter] !== undefined ? adapterToElements[adapter] : []
-          ),
-          getElemIdFunc: elemIdGetter,
-        }])
-      }
-    )))
-}
+): Promise<Record<string, AdapterOperationsContext>> => (
+  _.fromPairs(await Promise.all(adapters.map(
+    async adapter => {
+      const adapterConfig = config[adapter]
+      return ([adapter, {
+        credentials: credentials[adapter],
+        config: adapterConfig ?? getDefaultAdapterConfig(adapter),
+        elementsSource: filterElementsSourceAdapter(workspaceElementsSource, adapter),
+        getElemIdFunc: elemIdGetter,
+      }])
+    }
+  )))
+)
 
 export const getAdapters = async (
   adapters: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
   config: Readonly<Record<string, InstanceElement>>,
-  workspaceElements: ReadonlyArray<Element>,
+  workspaceElementsSource: ReadOnlyElementsSource,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperations>> =>
   initAdapters(await getAdaptersCreatorConfigs(
     adapters,
     credentials,
     config,
-    workspaceElements,
+    workspaceElementsSource,
     elemIdGetter
   ))

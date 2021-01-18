@@ -452,7 +452,7 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
 const elementOpenDef = createPublicCommandDef({
   properties: {
     name: 'open',
-    description: 'Opens a logged-in session of the element UI',
+    description: 'Opens the service page of an element',
     keyedOptions: [
       ENVIRONMENT_OPTION,
     ],
@@ -460,7 +460,7 @@ const elementOpenDef = createPublicCommandDef({
       {
         name: 'elementId',
         type: 'string',
-        description: 'an ElementId',
+        description: 'an Element ID',
         required: true,
       },
     ],

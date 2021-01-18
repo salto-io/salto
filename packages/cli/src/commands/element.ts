@@ -359,12 +359,14 @@ const safeGetElementId = (maybeElementIdPath: string): ElemID | undefined => {
   }
 }
 
-export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliTelemetry, output, workspacePath = '.' }): Promise<CliExitCode> => {
+export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliTelemetry, spinnerCreator, output, workspacePath = '.' }): Promise<CliExitCode> => {
   log.debug('running element open command on \'%s\' %o', workspacePath, input)
   const getServiceUrlAnnotation = (element: Element): string|undefined =>
     _.get(element, ['annotations', CORE_ANNOTATIONS.SERVICE_URL])
-  const { elementId } = input
-  const { errored, workspace } = await loadWorkspace(workspacePath, output)
+  const { elementId, env } = input
+  const { errored, workspace } = await loadWorkspace(workspacePath, output, {
+    spinnerCreator, sessionEnv: env,
+  })
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
   const reportUserError = (error: string): CliExitCode => {

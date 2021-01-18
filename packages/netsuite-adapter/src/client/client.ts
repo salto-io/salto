@@ -39,7 +39,6 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_SDF_CONCURRENCY, NetsuiteClientConfig,
 } from '../config'
 import { NetsuiteQuery, ObjectID } from '../query'
-import { customTypes } from '../types'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -377,9 +376,14 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getCustomObjects(query: NetsuiteQuery): Promise<GetCustomObjectsResult> {
+  async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
+    Promise<GetCustomObjectsResult> {
     const { executor, projectName, authId } = await this.initProject()
-    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(executor, query)
+    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(
+      executor,
+      typeNames,
+      query
+    )
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
@@ -406,6 +410,7 @@ export default class NetsuiteClient {
 
   private async importObjects(
     executor: CommandActionExecutor,
+    typeNames: string[],
     query: NetsuiteQuery
   ): Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: Set<string> }> {
     const importAllAtOnce = async (): Promise<boolean> => {
@@ -427,17 +432,18 @@ export default class NetsuiteClient {
     }
     return {
       failedToFetchAllAtOnce: this.fetchAllTypesAtOnce,
-      failedTypes: await this.importObjectsInChunks(executor, query),
+      failedTypes: await this.importObjectsInChunks(executor, typeNames, query),
     }
   }
 
   private async importObjectsInChunks(
     executor: CommandActionExecutor,
+    typeNames: string[],
     query: NetsuiteQuery
   ): Promise<Set<string>> {
     const instancesIds = (await this.listInstances(
       executor,
-      Object.keys(customTypes).filter(query.isTypeMatch)
+      typeNames.filter(query.isTypeMatch)
     )).filter(query.isObjectMatch)
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)

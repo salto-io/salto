@@ -45,7 +45,7 @@ describe('NetsuiteQuery', () => {
         })
 
         it('should not match file paths that do not match the received regexes', () => {
-          expect(query.isTypeMatch('wrongType')).toBeFalsy()
+          expect(query.isFileMatch('aaaaa')).toBeFalsy()
         })
       })
 

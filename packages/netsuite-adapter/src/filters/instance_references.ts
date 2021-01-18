@@ -132,6 +132,9 @@ const createElementsSourceServiceIdToElemID = async (
     return elementsSourceServiceIdToElemID
   }
 
+  // TODO: Replace this loop style with the same style that is
+  // used in generateServiceIdToElemID when ".map" and "".filter" for async iterables
+  // will be available in lowerdash.
   for await (const element of await elementsSource.getAll()) {
     if (isInstanceElement(element)) {
       elementsSourceServiceIdToElemID = _.assign(

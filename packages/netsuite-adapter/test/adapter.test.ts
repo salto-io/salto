@@ -128,7 +128,7 @@ describe('Adapter', () => {
       })
       const { elements, isPartial } = await netsuiteAdapter.fetch()
       expect(isPartial).toBeFalsy()
-      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][0]
+      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
       expect(_.pull(Object.keys(customTypes), ...typesToSkip).every(customObjectsQuery.isTypeMatch))
         .toBeTruthy()
@@ -180,7 +180,7 @@ describe('Adapter', () => {
       it('should match the types that match fetchTarget and not in typesToSkip', async () => {
         await adapter.fetch()
 
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][0]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
         expect(_.pull(Object.keys(customTypes), 'addressForm').some(customObjectsQuery.isTypeMatch)).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
@@ -232,7 +232,7 @@ describe('Adapter', () => {
 
     it('should call getCustomObjects with query that only matches types that are not in typesToSkip', async () => {
       await netsuiteAdapter.fetch()
-      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][0]
+      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
       expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
     })

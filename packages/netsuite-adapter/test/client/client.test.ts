@@ -165,6 +165,8 @@ describe('netsuite client', () => {
     { type: 'advancedpdftemplate', scriptId: 'IdB' },
   ]
 
+  const typeNames = instancesIds.map(instance => instance.type)
+
   const typeNamesQuery = buildNetsuiteQuery({
     types: Object.fromEntries(instancesIds.map(id => [id.type, ['.*']])),
   })
@@ -223,7 +225,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNamesQuery)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -236,7 +238,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNamesQuery)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -257,7 +259,7 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: true })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNamesQuery)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         7
       )
@@ -286,7 +288,7 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNamesQuery)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & importObjects & deleteAuthId
       const numberOfExecuteActions = 6
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -321,7 +323,7 @@ describe('netsuite client', () => {
       })
 
       const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
-      await client.getCustomObjects(typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & importObjects & deleteAuthId
       const numberOfExecuteActions = 7
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -377,7 +379,7 @@ describe('netsuite client', () => {
         // so the failure of the first chunk won't results skipping the second.
         sdfConcurrencyLimit: 1,
       })
-      await client.getCustomObjects(typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & importObjects & deleteAuthId
       const numberOfExecuteActions = 6
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -418,7 +420,7 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false, fetchTypeTimeoutInMinutes: 0.001 })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNamesQuery)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
       expect(getCustomObjectsResult.failedTypes).toEqual(['addressForm'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
     })
@@ -445,7 +447,7 @@ describe('netsuite client', () => {
           addressForm: ['.*'],
         },
       })
-      const getCustomObjectsResult = await client.getCustomObjects(query)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, query)
       expect(getCustomObjectsResult.failedTypes).toEqual([])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
     })
@@ -465,7 +467,7 @@ describe('netsuite client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNamesQuery)
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toHaveLength(0)
       expect(readDirMock).toHaveBeenCalledTimes(1)
@@ -514,7 +516,7 @@ describe('netsuite client', () => {
           addressForm: ['a'],
         },
       })
-      await mockClient().getCustomObjects(query)
+      await mockClient().getCustomObjects(typeNames, query)
       expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
         commandName: COMMANDS.LIST_OBJECTS,
         arguments: {

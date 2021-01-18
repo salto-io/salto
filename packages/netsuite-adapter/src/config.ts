@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction,
+  createRestriction, MapType,
 } from '@salto-io/adapter-api'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
@@ -75,6 +75,25 @@ const clientConfigType = new ObjectType({
   },
 })
 
+const queryConfigType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'queryConfig'),
+  fields: {
+    types: {
+      type: new MapType(new ListType(BuiltinTypes.STRING)),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: {},
+      },
+    },
+
+    filePaths: {
+      type: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
+      },
+    },
+  },
+})
+
 const configID = new ElemID(NETSUITE)
 export const configType = new ObjectType({
   elemID: configID,
@@ -103,6 +122,10 @@ export const configType = new ObjectType({
     },
     [CLIENT_CONFIG]: {
       type: clientConfigType,
+    },
+
+    [FETCH_TARGET]: {
+      type: queryConfigType,
     },
   },
 })

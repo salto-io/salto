@@ -115,7 +115,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? andQuery(this.fetchTarget, skipListQuery)
       : skipListQuery
 
-    const getCustomObjectsResult = this.client.getCustomObjects(fetchQuery)
+    const getCustomObjectsResult = this.client.getCustomObjects(
+      Object.keys(customTypes),
+      fetchQuery
+    )
     const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
     const {
       elements: customObjects,

@@ -715,7 +715,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       expect(result.errors[0].summary).toEqual(expectedErrMsg)
     })
 
-    it('fails on missing list open', async () => {
+    it('fails on missing list open in object', async () => {
       const body = `
       salto {
           {
@@ -732,6 +732,36 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       const expectedErrMsg = useLegacyParser
         ? 'Unexpected token: {'
         : 'Invalid block item'
+      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+    })
+
+    it('fails on missing list open in object item', async () => {
+      const body = `
+      salto {
+        a = {
+            "abc"
+          ]
+        }
+      }
+      `
+      const result = await parse(Buffer.from(body), 'none', functions)
+      expect(result.errors).not.toHaveLength(0)
+      const expectedErrMsg = useLegacyParser
+        ? 'Unexpected token: ]'
+        : 'Invalid attribute definition'
+      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+    })
+
+    it('fails on invalid object item with unexpected eof', async () => {
+      const body = `
+      salto {
+        a = {
+          {`
+      const result = await parse(Buffer.from(body), 'none', functions)
+      expect(result.errors).not.toHaveLength(0)
+      const expectedErrMsg = useLegacyParser
+        ? 'Unexpected end of file'
+        : 'Invalid attribute key'
       expect(result.errors[0].summary).toEqual(expectedErrMsg)
     })
   })

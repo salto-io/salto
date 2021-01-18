@@ -160,14 +160,11 @@ class PeekableLexer {
     }
 
     public recover(stopTokens: string[], advancePastNewlines = true): void {
-      const allStopTokens = (advancePastNewlines
-        ? [TOKEN_TYPES.NEWLINE, ...stopTokens]
-        : stopTokens)
       // This is handling a special case in which the recover char
       // is not a new line. In such case, there is a chance that the
       // char is already loaded to the peekNoNewLine attr, which means
       // that the lexer has already advanced
-      while (!allStopTokens.includes(this.peek(false)?.type || '')) {
+      while (!stopTokens.includes(this.peek(false)?.type || '')) {
         this.next(false)
       }
       if (advancePastNewlines && this.peek(false)?.type === TOKEN_TYPES.NEWLINE) {

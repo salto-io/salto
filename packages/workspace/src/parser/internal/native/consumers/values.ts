@@ -360,7 +360,7 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
     const tokens = consumeWords(context)
     if (tokens.value?.length !== 1) {
       context.errors.push(invalidAttrKey({ ...tokens.range, filename: context.filename }))
-      context.lexer.recover([TOKEN_TYPES.CCURLY])
+      context.lexer.recover([TOKEN_TYPES.NEWLINE, TOKEN_TYPES.CCURLY])
       return
     }
     const key = tokens.value[0]
@@ -372,7 +372,7 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
         end: tokens.range.end,
         filename: context.filename,
       }))
-      context.lexer.recover([TOKEN_TYPES.CCURLY])
+      context.lexer.recover([TOKEN_TYPES.NEWLINE, TOKEN_TYPES.CCURLY])
       return
     }
     // consume the token
@@ -400,7 +400,7 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
         end: positionAtStart(nonNewlineToken),
         filename: context.filename,
       }))
-      context.lexer.recover([TOKEN_TYPES.CCURLY])
+      context.lexer.recover([TOKEN_TYPES.NEWLINE, TOKEN_TYPES.CCURLY])
     }
   }
 

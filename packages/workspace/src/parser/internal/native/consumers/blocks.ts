@@ -45,6 +45,7 @@ export const recoverInvalidItemDefinition = (context: ParseContext): void => {
     TOKEN_TYPES.CCURLY,
     TOKEN_TYPES.EQUAL,
     TOKEN_TYPES.OCURLY,
+    TOKEN_TYPES.NEWLINE,
   ])
   // If we recover to the equal value, we need to consume it and the value it holds...
   if (context.lexer.peek()?.type === TOKEN_TYPES.EQUAL) {

@@ -358,35 +358,8 @@ const safeGetElementId = (maybeElementIdPath: string): ElemID | undefined => {
     return undefined
   }
 }
-type NoElementsFound = {
-  type: 'NoElementsFoundError'
-}
-type ElementUrl = {
-  type: 'ElementUrlFound'
-  url: string| undefined
-}
-type FindServiceUrlResponse = NoElementsFound | ElementUrl
-
 const getServiceUrlAnnotation = (element: Element):
   string|undefined => _.get(element, ['annotations', CORE_ANNOTATIONS.SERVICE_URL])
-
-const findServiceUrlAnnotation = async (elementId: ElemID, workspace: Workspace):
-  Promise<FindServiceUrlResponse> => {
-  const elementValue = await workspace.getValue(elementId)
-  const maybeServiceUrl = getServiceUrlAnnotation(elementValue)
-  if (isField(elementValue) && maybeServiceUrl) {
-    return { type: 'ElementUrlFound', url: maybeServiceUrl }
-  }
-  const parentElement = await workspace.getValue(elementId.createTopLevelParentID().parent)
-  if (!isElement(parentElement)) {
-    return { type: 'NoElementsFoundError' }
-  }
-  return { type: 'ElementUrlFound', url: getServiceUrlAnnotation(parentElement) }
-}
-
-function assertUnreachable(_x: never): never {
-  throw new Error("Didn't expect to get here")
-}
 
 export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliTelemetry, output, workspacePath = '.' }): Promise<CliExitCode> => {
   log.debug('running element open command on \'%s\' %o', workspacePath, input)
@@ -405,22 +378,6 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
-  const processFindServiceUrlResponse = async (response: FindServiceUrlResponse):
-    Promise<CliExitCode> => {
-    switch (response.type) {
-      case 'NoElementsFoundError':
-        return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
-      case 'ElementUrlFound':
-        if (!response.url) {
-          return reportAppError(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId))
-        }
-        await open(response.url)
-        cliTelemetry.success(workspaceTags)
-        return CliExitCode.Success
-      default:
-        return assertUnreachable(response)
-    }
-  }
   if (errored) {
     return reportAppError()
   }
@@ -433,8 +390,24 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   if (!isServiceDefined(workspace, serviceName)) {
     return reportUserError(Prompts.SERVICE_IS_NOT_CONFIGURED_FOR_ENV(serviceName, envName))
   }
-  const response = await findServiceUrlAnnotation(elemId, workspace)
-  return processFindServiceUrlResponse(response)
+  const elementValue = await workspace.getValue(elemId)
+  const maybeServiceUrl = getServiceUrlAnnotation(elementValue)
+  if (isField(elementValue) && maybeServiceUrl) {
+    await open(maybeServiceUrl)
+    cliTelemetry.success(workspaceTags)
+    return CliExitCode.Success
+  }
+  const parentElement = await workspace.getValue(elemId.createTopLevelParentID().parent)
+  if (!isElement(parentElement)) {
+    return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
+  }
+  const url = getServiceUrlAnnotation(parentElement)
+  if (!url) {
+    return reportAppError(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId))
+  }
+  await open(url)
+  cliTelemetry.success(workspaceTags)
+  return CliExitCode.Success
 }
 
 const elementOpenDef = createPublicCommandDef({

@@ -180,7 +180,7 @@ describe('fetch', () => {
         })
       })
 
-      it('should use the whole workspace to resolve elements when calculcating changes', async () => {
+      it('should use the existing elements to resolve the fetched elements when calculcating changes', async () => {
         const beforeElement = new InstanceElement(
           'name',
           new ObjectType({
@@ -192,7 +192,7 @@ describe('fetch', () => {
           { field: new ReferenceExpression(new ElemID('dummy', 'type', 'instance', 'referenced', 'field')) }
         )
 
-        const referencedElement = new InstanceElement(
+        const workspaceReferencedElement = new InstanceElement(
           'referenced',
           new ObjectType({
             elemID: new ElemID('dummy', 'type'),
@@ -202,21 +202,38 @@ describe('fetch', () => {
           }),
           { field: 5 }
         )
+        const stateReferencedElement = workspaceReferencedElement.clone()
+        stateReferencedElement.value.field = 6
 
         const afterElement = beforeElement.clone()
-        afterElement.value.field = 5
+        afterElement.value.field = 4
 
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           { elements: [afterElement], isPartial: true },
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          [beforeElement, referencedElement],
-          [],
+          [beforeElement, workspaceReferencedElement],
+          [beforeElement, stateReferencedElement],
           [],
         )
 
-        expect(Array.from(fetchChangesResult.changes).length).toBe(0)
+        const resultChanges = Array.from(fetchChangesResult.changes)
+        expect(resultChanges.length).toBe(1)
+
+        const workspaceChange = resultChanges[0].change
+        const { serviceChange } = resultChanges[0]
+
+        expect(workspaceChange.action).toBe('modify')
+        expect(serviceChange.action).toBe('modify')
+
+        if (workspaceChange.action === 'modify' && serviceChange.action === 'modify') {
+          expect(workspaceChange.data.after).toBe(4)
+          expect(workspaceChange.data.before.resValue).toBe(5)
+
+          expect(serviceChange.data.after).toBe(4)
+          expect(serviceChange.data.before.resValue).toBe(6)
+        }
       })
 
       describe('multiple adapters', async () => {

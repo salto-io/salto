@@ -351,13 +351,11 @@ type OpenActionArgs = {
 const isServiceDefined = (workspace: Workspace, serviceName: string): boolean =>
   workspace.services().includes(serviceName)
 
-const isValidElementId = (maybeElementIdPath: string):
-  boolean => {
+const safeGetElementId = (maybeElementIdPath: string): ElemID | undefined => {
   try {
-    ElemID.fromFullName(maybeElementIdPath)
-    return true
+    return ElemID.fromFullName(maybeElementIdPath)
   } catch (e) {
-    return false
+    return undefined
   }
 }
 type NoElementsFound = {
@@ -427,10 +425,10 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
     return reportAppError()
   }
   const envName = env || workspace.currentEnv()
-  if (!isValidElementId(elementId)) {
+  const elemId = safeGetElementId(elementId)
+  if (elemId === undefined) {
     return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
   }
-  const elemId = ElemID.fromFullName(elementId)
   const serviceName = elemId.adapter
   if (!isServiceDefined(workspace, serviceName)) {
     return reportUserError(Prompts.SERVICE_IS_NOT_CONFIGURED_FOR_ENV(serviceName, envName))

@@ -386,14 +386,17 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   if (errored) {
     return reportAppError()
   }
+
   const elemId = safeGetElementId(elementId)
   if (elemId === undefined) {
     return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
   }
+
   const serviceName = elemId.adapter
   if (!isServiceDefined(workspace, serviceName)) {
     return reportUserError(formatServiceNotConfigured(serviceName))
   }
+
   const element = await workspace.getValue(elemId)
   const serviceUrl = getServiceUrlAnnotation(element)
   if (isField(element) && serviceUrl !== undefined) {
@@ -401,15 +404,18 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   }
+
   const parentElement = await workspace.getValue(elemId.createTopLevelParentID().parent)
 
   if (!isElement(parentElement)) {
     return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
   }
+
   const parentServiceUrl = getServiceUrlAnnotation(parentElement)
   if (parentServiceUrl === undefined) {
     return reportAppError(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId))
   }
+
   await open(parentServiceUrl)
   cliTelemetry.success(workspaceTags)
   return CliExitCode.Success

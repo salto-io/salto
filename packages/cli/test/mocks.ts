@@ -31,6 +31,7 @@ import commandDefinitions from '../src/commands/index'
 import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
 import { Spinner, SpinnerCreator } from '../src/types'
 import { getCliTelemetry } from '../src/telemetry'
+import { version as currentVersion } from '../src/generated/version.json'
 
 export type MockFunction<T extends (...args: never[]) => unknown> =
   jest.Mock<ReturnType<T>, Parameters<T>>
@@ -286,6 +287,7 @@ export const mockWorkspace = ({
       elements: {},
       pathIndex: new pathIndex.PathIndex(),
       servicesUpdateDate: {},
+      saltoVersion: currentVersion,
     })
   )
   return {

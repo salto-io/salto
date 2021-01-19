@@ -396,7 +396,7 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   }
   const elementValue = await workspace.getValue(elemId)
   const maybeServiceUrl = getServiceUrlAnnotation(elementValue)
-  if (isField(elementValue) && maybeServiceUrl) {
+  if (isField(elementValue) && maybeServiceUrl !== undefined) {
     await open(maybeServiceUrl)
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
@@ -407,7 +407,7 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
     return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
   }
   const url = getServiceUrlAnnotation(parentElement)
-  if (!url) {
+  if (url === undefined) {
     return reportAppError(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId))
   }
   await open(url)

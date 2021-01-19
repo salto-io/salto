@@ -991,20 +991,6 @@ describe('Element command group', () => {
       ...mocks.mockLoadWorkspace('workspacePath', ['env'], false, true, ['netsuite', 'salesforceNotLoggedIn', 'salesforce']),
       currentEnv: () => 'env',
       getValue: (elemId: ElemID) => {
-        if (elemId.getFullName() === 'salesforce.Account.instance.variable.variable2') {
-          return Promise.resolve(new ObjectType({
-            elemID: new ElemID('salesforce', 'Account', 'instance', 'variable', 'variable2'),
-            // eslint-disable-next-line quote-props
-            annotations: {},
-          }))
-        }
-        if (elemId.getFullName() === 'salesforce.Account.instance.variable') {
-          return Promise.resolve(new ObjectType({
-            elemID: new ElemID('salesforce', 'Account', 'instance', 'variable'),
-            // eslint-disable-next-line quote-props
-            annotations: { '_service_url': serviceUrlAccount },
-          }))
-        }
         if (elemId.getFullName() === 'salesforce.Account') {
           return Promise.resolve(new ObjectType({
             elemID: new ElemID('salesforce', 'Account'),
@@ -1065,18 +1051,6 @@ describe('Element command group', () => {
       expect(openActionResult).toEqual(CliExitCode.Success)
       expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.success', tags: {}, timestamp: '', type: 'counter', value: 1 })
     })
-    it('should return a valid URL for a given elementID of Field type', async () => {
-      const openActionResult = await openAction({
-        input: { elementId: 'salesforce.Account.instance.field', env: 'env1' },
-        output,
-        cliTelemetry,
-        config,
-      })
-      expect(output.stderr.content).toEqual('')
-      expect(mockOpen).toHaveBeenCalledWith(serviceUrlAccount)
-      expect(openActionResult).toEqual(CliExitCode.Success)
-      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.success', tags: {}, timestamp: '', type: 'counter', value: 1 })
-    })
     it('should error out when loading workspace fails', async () => {
       mockLoadWorkspace.mockResolvedValue(
         {
@@ -1125,18 +1099,6 @@ describe('Element command group', () => {
       expect(output.stderr.content).toEqual('Did not find any matches for element salesforce.element.invalidType\n')
       expect(openActionResult).toEqual(CliExitCode.UserInputError)
       expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
-    })
-    it('should return the service URL from the top level parent if one does not exists on the elementId', async () => {
-      const openActionResult = await openAction({
-        input: { elementId: 'salesforce.Account.instance.variable.variable2', env: 'env' },
-        output,
-        cliTelemetry,
-        config,
-      })
-      expect(output.stderr.content).toEqual('')
-      expect(mockOpen).toHaveBeenCalledWith(serviceUrlAccount)
-      expect(openActionResult).toEqual(CliExitCode.Success)
-      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.success', tags: {}, timestamp: '', type: 'counter', value: 1 })
     })
     it('should return an error when trying to open an elementId that is not of type Element', async () => {
       const openActionResult = await openAction({

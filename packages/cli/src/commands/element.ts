@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import open from 'open'
 import { listUnresolvedReferences, Tags } from '@salto-io/core'
-import { CORE_ANNOTATIONS, isElement, Element, ElemID, isField } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, isElement, Element, ElemID } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
@@ -379,29 +379,20 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   }
 
   const element = await workspace.getValue(elemId)
-  const serviceUrl = getServiceUrlAnnotation(element)
-  if (isField(element) && serviceUrl !== undefined) {
-    await open(serviceUrl)
-    cliTelemetry.success(workspaceTags)
-    return CliExitCode.Success
-  }
-
-  const parentElement = await workspace.getValue(elemId.createTopLevelParentID().parent)
-
-  if (!isElement(parentElement)) {
+  if (!isElement(element)) {
     errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.UserInputError
   }
+  const serviceUrl = getServiceUrlAnnotation(element)
 
-  const parentServiceUrl = getServiceUrlAnnotation(parentElement)
-  if (parentServiceUrl === undefined) {
+  if (serviceUrl === undefined) {
     errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
 
-  await open(parentServiceUrl)
+  await open(serviceUrl)
   cliTelemetry.success(workspaceTags)
   return CliExitCode.Success
 }

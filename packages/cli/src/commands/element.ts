@@ -384,6 +384,7 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.UserInputError
   }
+
   const serviceUrl = getServiceUrlAnnotation(element)
 
   if (serviceUrl === undefined) {

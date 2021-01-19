@@ -369,32 +369,23 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   })
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
-  const reportUserError = (error: string): CliExitCode => {
-    errorOutputLine(error, output)
-    cliTelemetry.failure(workspaceTags)
-    return CliExitCode.UserInputError
-  }
-
-  const reportAppError = (error?: string): CliExitCode => {
-    if (error) {
-      errorOutputLine(error, output)
-    }
+  if (errored) {
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
 
-  if (errored) {
-    return reportAppError()
-  }
-
   const elemId = safeGetElementId(elementId)
   if (elemId === undefined) {
-    return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
+    errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.UserInputError
   }
 
   const serviceName = elemId.adapter
   if (!isServiceDefined(workspace, serviceName)) {
-    return reportUserError(formatServiceNotConfigured(serviceName))
+    errorOutputLine(formatServiceNotConfigured(serviceName), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.UserInputError
   }
 
   const element = await workspace.getValue(elemId)
@@ -408,12 +399,16 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   const parentElement = await workspace.getValue(elemId.createTopLevelParentID().parent)
 
   if (!isElement(parentElement)) {
-    return reportUserError(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId))
+    errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.UserInputError
   }
 
   const parentServiceUrl = getServiceUrlAnnotation(parentElement)
   if (parentServiceUrl === undefined) {
-    return reportAppError(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId))
+    errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.AppError
   }
 
   await open(parentServiceUrl)

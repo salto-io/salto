@@ -62,7 +62,7 @@ export const parseResultCache = (
 ): ParseResultCache => {
   const cahceSuffixRegex = new RegExp(`${CACHE_EXTENSION}$`)
   const resolveCacheFileName = (filename: string): string =>
-    _.replace(filename, /.nacl$/, CACHE_EXTENSION)
+    _.replace(filename, /\.nacl$/, CACHE_EXTENSION)
 
   const resolveFileName = (filename: string): string => (
     _.replace(filename, cahceSuffixRegex, '.nacl')

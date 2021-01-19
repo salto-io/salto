@@ -186,7 +186,7 @@ const resolveElement = async (
       values: element.value,
       elementsSource,
       strict: false,
-      type: await element.getType(),
+      type: await element.getType(contextedElementsGetter),
       allowEmpty: true,
     })) ?? {}
   }
@@ -211,7 +211,7 @@ const resolveElement = async (
             values: field.annotations,
             elementsSource,
             strict: false,
-            type: await field.getAnnotationTypes(),
+            type: await field.getAnnotationTypes(contextedElementsGetter),
             allowEmpty: true,
           })) ?? {}
         )

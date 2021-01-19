@@ -208,7 +208,8 @@ export const createElementAndVerify = async <T extends InstanceElement | ObjectT
 export const createAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
   type: string, md: MetadataInfo, typeElements: Iterable<Element>): Promise<InstanceElement> => {
   const instance = createInstance({ value: md, type, typeElements })
-  return createElementAndVerify(adapter, client, instance)
+  await createElementAndVerify(adapter, client, instance)
+  return instance
 }
 
 export const removeElement = async <T extends InstanceElement | ObjectType>(

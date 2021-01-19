@@ -107,14 +107,22 @@ export class ReferenceExpression {
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {
-    // if (this.resValue === undefined && elementsSource === undefined) {
-    //   throw new Error(`Can not resolve value of reference with ElemID
-    // ${this.elemID.getFullName()} without elementsSource cause value does not exist`)
-    // }
-    // TODO: What should we do if elementsSource exists but has no value for this elemID?
-    return (await elementsSource?.get(this.elemID))
-      ?? this.value
-      ?? new ObjectType({ elemID: this.elemID })
+    if (this.resValue === undefined && elementsSource === undefined) {
+      throw new Error(
+        `Can not resolve value of reference with ElemID ${this.elemID.getFullName()} `
+        + 'without elementsSource cause value does not exist'
+      )
+    }
+    const value = (await elementsSource?.get(this.elemID)) ?? this.value
+    // When there's no value in the ElementSource & in the Ref
+    // Fallback to a placeholder Type. This resembles the behaviour
+    // before the RefType change.
+    if (value === undefined) {
+      return new ObjectType({
+        elemID: this.elemID,
+      })
+    }
+    return value
   }
 }
 

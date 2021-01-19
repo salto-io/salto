@@ -723,13 +723,13 @@ describe('Element command group', () => {
           ...mocks.mockCliCommandArgs(commandName),
           input: {
             elementId: 'salesforce.Lead',
-            env: 'otherEnv',
+            env: mocks.withEnvironmentParam,
           },
           workspace,
         })
       })
       it('should set the requested environment', () => {
-        expect(workspace.setCurrentEnv).toHaveBeenCalledWith('otherEnv', false)
+        expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
       })
       it('should call open with the url', () => {
         expect(open).toHaveBeenCalledWith(serviceUrlAccount)
@@ -801,8 +801,7 @@ describe('Element command group', () => {
         })
       })
       it('should print the id is invalid', () => {
-        // TODO:ORI - fix this
-        expect(output.stderr.content).toEqual('asd')
+        expect(output.stderr.content).toEqual('Cannot create ID foo.bla.bar.buzz - Invalid ID type bar\n')
       })
       it('should return error exit code', () => {
         expect(result).toEqual(CliExitCode.UserInputError)
@@ -819,13 +818,13 @@ describe('Element command group', () => {
         result = await openAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
-            elementId: 'salesforce.Lead.fields.Account.label',
+            elementId: 'salesforce.Lead.field.Account.label',
           },
           workspace,
         })
       })
       it('should print element does not have a url', () => {
-        expect(output.stderr.content).toEqual('Go to service is not supported for element salesforce.Lead.fields.Account.label\n')
+        expect(output.stderr.content).toEqual('Go to service is not supported for element salesforce.Lead.field.Account.label\n')
       })
       it('should return error exit code', () => {
         expect(result).toEqual(CliExitCode.AppError)

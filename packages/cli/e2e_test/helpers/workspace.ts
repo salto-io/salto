@@ -15,7 +15,7 @@
 */
 import glob from 'glob'
 import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@salto-io/core'
-import { parser, Workspace } from '@salto-io/workspace'
+import { parser, Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
@@ -97,7 +97,7 @@ export const getNaclFileElements = async (filename: string):
   return (await parse(Buffer.from(fileAsString), filename)).elements
 }
 
-export const runCommand = ({
+const runCommand = ({
   workspacePath,
   args,
   cliOutput,
@@ -185,17 +185,12 @@ export const runFetch = async (
 }
 
 export const runDeploy = async ({
-  lastPlan,
   workspacePath,
   allowErrors = false,
 }: {
-  lastPlan?: Plan | undefined
   workspacePath: string
   allowErrors?: boolean
 }): Promise<void> => {
-  if (lastPlan) {
-    lastPlan.clear()
-  }
   const cliOutput = mockCliOutput()
   const result = await runCommand({
     args: ['deploy', '-f'],
@@ -210,6 +205,27 @@ export const runDeploy = async ({
     expect(errs).toHaveLength(0)
     expect(result).toBe(CliExitCode.Success)
   }
+}
+
+export const runClean = async ({
+  workspacePath,
+  cleanArgs,
+}: {
+  workspacePath: string
+  cleanArgs: Partial<WorkspaceComponents>
+}): Promise<CliExitCode> => {
+  const options = [
+    ...cleanArgs.nacl === false ? ['--no-nacl'] : [],
+    ...cleanArgs.state === false ? ['--no-state'] : [],
+    ...cleanArgs.cache === false ? ['--no-cache'] : [],
+    ...cleanArgs.staticResources === false ? ['--no-static-resources'] : [],
+    ...cleanArgs.credentials ? ['--credentials'] : [],
+    ...cleanArgs.serviceConfig ? ['--service-config'] : [],
+  ]
+  return runCommand({
+    workspacePath,
+    args: ['clean', '-f', ...options],
+  })
 }
 
 export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Workspace> => {

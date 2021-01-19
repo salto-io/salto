@@ -183,17 +183,18 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   )
   // Print state recencies
   outputLine(formatStateRecencies(stateRecencies), output)
-  // Validate state recencies
-  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
-  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
-  if (!force && await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, output)) {
-    return CliExitCode.AppError
-  }
 
   const validWorkspace = await isValidWorkspaceForCommand(
     { workspace, cliOutput: output, spinnerCreator, force }
   )
   if (!validWorkspace) {
+    return CliExitCode.AppError
+  }
+
+  // Validate state recencies
+  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
+  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
+  if (!force && await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, output)) {
     return CliExitCode.AppError
   }
 

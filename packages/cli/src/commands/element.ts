@@ -315,7 +315,7 @@ type OpenActionArgs = {
   elementId: string
 } & EnvArg
 
-const safeGetElementID = (maybeElementIdPath: string, output: CliOutput): ElemID | undefined => {
+const safeGetElementId = (maybeElementIdPath: string, output: CliOutput): ElemID | undefined => {
   try {
     return ElemID.fromFullName(maybeElementIdPath)
   } catch (e) {
@@ -332,7 +332,7 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({
   const { elementId } = input
   await validateAndSetEnv(workspace, input, output)
 
-  const elemId = safeGetElementID(elementId, output)
+  const elemId = safeGetElementId(elementId, output)
   if (elemId === undefined) {
     return CliExitCode.UserInputError
   }

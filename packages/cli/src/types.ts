@@ -74,7 +74,6 @@ export interface CliOutput {
 
 export interface CliInput {
   args: string[]
-  // stdin: ReadStream
   telemetry: Telemetry
   config: CommandConfig
 

@@ -30,7 +30,6 @@ import {
   BuiltinTypes, ObjectType,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import * as DeployCommandImpl from '../src/commands/deploy'
 import {
@@ -40,12 +39,12 @@ import {
   runCreateEnv,
   runDeleteEnv,
   runSetEnv,
-  runCommand,
   runPreviewGetPlan,
+  runClean,
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
-let lastPlan: Plan
+// let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>
 
 const apiNameAnno = (
@@ -113,13 +112,8 @@ describe('cli e2e', () => {
     client = new SalesforceClient({
       credentials: new UsernamePasswordCredentials(credsLease.value),
     })
-    jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan, _planErrors): string => {
-      lastPlan = p
-      return 'plan'
-    })
     jest.spyOn(DeployCommandImpl, 'shouldDeploy').mockImplementation(
       (p: Plan): Promise<boolean> => {
-        lastPlan = p
         const { length } = [...wu(p.itemsByEvalOrder())]
         return Promise.resolve(length < 100) // Safety to avoid breaking the SF instance
       }
@@ -198,6 +192,7 @@ describe('cli e2e', () => {
 
   describe('deploy with a new object, instance, and instance with variable expressions', () => {
     let workspace: Workspace
+    let deployPlan: Plan
     beforeAll(async () => {
       await copyFile(addModelNaclFile, fullPath(tmpNaclFileRelativePath))
       await editNaclFile(fullPath(tmpNaclFileRelativePath), [
@@ -206,11 +201,12 @@ describe('cli e2e', () => {
         [new RegExp(NEW_INSTANCE_BASE_ELEM_NAME, 'g'), newInstanceElemName],
         [new RegExp(NEW_INSTANCE2_BASE_ELEM_NAME, 'g'), newInstance2ElemName],
       ])
-      await runDeploy({ lastPlan, workspacePath: fetchOutputDir })
+      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      await runDeploy({ workspacePath: fetchOutputDir })
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should have "add" changes', async () => {
-      verifyChanges(lastPlan, [{ action: 'add', element: newObjectElemName },
+      verifyChanges(deployPlan, [{ action: 'add', element: newObjectElemName },
         { action: 'add', element: newInstanceElemName },
         { action: 'add', element: newInstance2ElemName }])
     })
@@ -243,16 +239,18 @@ describe('cli e2e', () => {
   })
 
   describe('deploy after modifying the object and the instance', () => {
+    let deployPlan: Plan
     beforeAll(async () => {
       await editNaclFile(fullPath(tmpNaclFileRelativePath), [
         ['Beta', 'Modified'],
         ['Beta__c', 'Modified__c'],
         ['To Be Modified', 'I Am Modified'],
       ])
-      await runDeploy({ lastPlan, workspacePath: fetchOutputDir })
+      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      await runDeploy({ workspacePath: fetchOutputDir })
     })
     it('should have "modify" changes', async () => {
-      verifyChanges(lastPlan, [
+      verifyChanges(deployPlan, [
         { action: 'remove', element: 'Beta' },
         { action: 'add', element: 'Modified' },
         { action: 'modify', element: newInstanceElemName },
@@ -322,17 +320,18 @@ describe('cli e2e', () => {
   })
 
   describe('deploy after deleting the object and the instance', () => {
+    let deployPlan: Plan
     beforeAll(async () => {
       await rm(fullPath(tmpNaclFileRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
       await rm(fullPath(newObjectStandardFieldRelativePath))
       await rm(fullPath(newObjectCustomFieldRelativePath))
       // We have to run preview before the deploy to get the plan
-      lastPlan = await runPreviewGetPlan(fetchOutputDir)
+      deployPlan = await runPreviewGetPlan(fetchOutputDir)
       await runDeploy({ workspacePath: fetchOutputDir })
     })
     it('should have "remove" changes', async () => {
-      verifyChanges(lastPlan, [
+      verifyChanges(deployPlan, [
         { action: 'remove', element: newObjectElemName },
         { action: 'remove', element: newInstanceElemName },
         { action: 'remove', element: newInstance2ElemName },
@@ -395,9 +394,13 @@ describe('cli e2e', () => {
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
       expect(`${fetchOutputDir}/salesforce`).not.toExist() // not checking common folder for now
       expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
-      await runCommand({
-        args: ['clean', '-f', '--no-state', '--no-cache', '--no-static-resources'],
+      await runClean({
         workspacePath: fetchOutputDir,
+        cleanArgs: {
+          state: false,
+          cache: false,
+          staticResources: false,
+        },
       })
       expect(`${fetchOutputDir}/envs/default/salesforce`).not.toExist()
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
@@ -407,9 +410,9 @@ describe('cli e2e', () => {
     it('should clear out only the requested parts - state + static resources', async () => {
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
       expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
-      await runCommand({
-        args: ['clean', '-f'],
+      await runClean({
         workspacePath: fetchOutputDir,
+        cleanArgs: {},
       })
       expect(`${fetchOutputDir}/envs`).not.toExist()
       expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).not.toExist()
@@ -417,9 +420,15 @@ describe('cli e2e', () => {
 
     it('should clear out only the requested parts - service config', async () => {
       const salesforceConfBefore = await readFile(salesforceConfPath)
-      await runCommand({
-        args: ['clean', '-f', '--no-nacl', '--no-state', '--no-cache', '--no-static-resources', '--service-config'],
+      await runClean({
         workspacePath: fetchOutputDir,
+        cleanArgs: {
+          nacl: false,
+          state: false,
+          cache: false,
+          staticResources: false,
+          serviceConfig: true,
+        },
       })
       expect(await readFile(salesforceConfPath)).not.toEqual(salesforceConfBefore)
     })

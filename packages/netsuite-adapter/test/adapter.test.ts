@@ -35,7 +35,6 @@ import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
-import { buildNetsuiteQuery } from '../src/query'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual('../src/config'),
@@ -156,13 +155,13 @@ describe('Adapter', () => {
       const conf = {
         [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
         [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
-        [FETCH_TARGET]: buildNetsuiteQuery({
+        [FETCH_TARGET]: {
           types: {
             [SAVED_SEARCH]: ['.*'],
             addressForm: ['.*'],
           },
           filePaths: ['Some/File/.*'],
-        }),
+        },
       }
       const adapter = new NetsuiteAdapter({
         client,

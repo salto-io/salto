@@ -35,7 +35,10 @@ export type NetsuiteQuery = {
   isFileMatch: (filePath: string) => boolean
 }
 
-const validateParameters = (parameters: NetsuiteQueryParameters): void => {
+export const validateParameters = ({ types = {}, filePaths = [] }:
+  Partial<NetsuiteQueryParameters>): void => {
+  const parameters = { types, filePaths }
+
   const existingTypes = new Set(Object.keys(customTypes))
   const receivedTypes = new Set(Object.keys(parameters.types))
 
@@ -57,7 +60,6 @@ export const buildNetsuiteQuery = (
   { types = {}, filePaths = [] }: Partial<NetsuiteQueryParameters>
 ): NetsuiteQuery => {
   const parameters = { types, filePaths }
-  validateParameters(parameters)
   return {
     isTypeMatch: typeName => parameters.types[typeName] !== undefined,
     isObjectMatch: objectID => {

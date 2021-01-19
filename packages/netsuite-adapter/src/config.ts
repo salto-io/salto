@@ -24,7 +24,7 @@ import {
   SDF_CONCURRENCY_LIMIT, SAVED_SEARCH, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET,
 } from './constants'
-import { NetsuiteQuery } from './query'
+import { NetsuiteQueryParameters } from './query'
 
 const { makeArray } = collections.array
 
@@ -142,7 +142,7 @@ export type NetsuiteConfig = {
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
   [CLIENT_CONFIG]?: NetsuiteClientConfig
-  [FETCH_TARGET]?: NetsuiteQuery
+  [FETCH_TARGET]?: NetsuiteQueryParameters
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite. '

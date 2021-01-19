@@ -38,7 +38,7 @@ import {
   DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
-import { andQuery, buildNetsuiteQuery, NetsuiteQuery, notQuery } from './query'
+import { andQuery, buildNetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
 
 const { makeArray } = collections.array
 
@@ -69,7 +69,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly deployReferencedElements: boolean
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
-  private readonly fetchTarget?: NetsuiteQuery
+  private readonly fetchTarget?: NetsuiteQueryParameters
 
   public constructor({
     client,
@@ -112,7 +112,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }))
 
     const fetchQuery = this.fetchTarget !== undefined
-      ? andQuery(this.fetchTarget, skipListQuery)
+      ? andQuery(buildNetsuiteQuery(this.fetchTarget), skipListQuery)
       : skipListQuery
 
     const getCustomObjectsResult = this.client.getCustomObjects(

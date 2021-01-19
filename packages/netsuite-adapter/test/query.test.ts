@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { describe } from 'jest-circus'
-import { andQuery, buildNetsuiteQuery, notQuery } from '../src/query'
+import { andQuery, buildNetsuiteQuery, notQuery, validateParameters } from '../src/query'
 
 describe('NetsuiteQuery', () => {
   describe('buildNetsuiteQuery', () => {
@@ -61,55 +61,55 @@ describe('NetsuiteQuery', () => {
         })
       })
     })
+  })
 
-    describe('validateParameters', () => {
-      it('Valid query should not throw exception', () => {
-        expect(() => buildNetsuiteQuery({
+  describe('validateParameters', () => {
+    it('Valid query should not throw exception', () => {
+      expect(() => validateParameters({
+        types: {
+          addressForm: ['aaa.*', 'bbb.*'],
+          advancedpdftemplate: ['ccc.*', 'ddd.*'],
+        },
+        filePaths: ['eee.*', 'fff.*'],
+      })).not.toThrow()
+    })
+
+    it('Invalid regexes should throw an error with the regexes', () => {
+      let error: Error | undefined
+      try {
+        validateParameters({
           types: {
-            addressForm: ['aaa.*', 'bbb.*'],
-            advancedpdftemplate: ['ccc.*', 'ddd.*'],
+            addressForm: ['aa(a.*', 'bbb.*'],
           },
-          filePaths: ['eee.*', 'fff.*'],
-        })).not.toThrow()
-      })
+          filePaths: ['eee.*', 'f(ff.*'],
+        })
+      } catch (e) {
+        error = e
+      }
 
-      it('Invalid regexes should throw an error with the regexes', () => {
-        let error: Error | undefined
-        try {
-          buildNetsuiteQuery({
-            types: {
-              addressForm: ['aa(a.*', 'bbb.*'],
-            },
-            filePaths: ['eee.*', 'f(ff.*'],
-          })
-        } catch (e) {
-          error = e
-        }
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('aa(a.*')
+      expect(error?.message).toContain('f(ff.*')
+      expect(error?.message).not.toContain('bbb.*')
+      expect(error?.message).not.toContain('eee.*')
+    })
 
-        expect(error).toBeDefined()
-        expect(error?.message).toContain('aa(a.*')
-        expect(error?.message).toContain('f(ff.*')
-        expect(error?.message).not.toContain('bbb.*')
-        expect(error?.message).not.toContain('eee.*')
-      })
+    it('Invalid types should throw an error with the types', () => {
+      let error: Error | undefined
+      try {
+        validateParameters({
+          types: {
+            addressForm: ['.*'],
+            invalidType: ['.*'],
+          },
+        })
+      } catch (e) {
+        error = e
+      }
 
-      it('Invalid types should throw an error with the types', () => {
-        let error: Error | undefined
-        try {
-          buildNetsuiteQuery({
-            types: {
-              addressForm: ['.*'],
-              invalidType: ['.*'],
-            },
-          })
-        } catch (e) {
-          error = e
-        }
-
-        expect(error).toBeDefined()
-        expect(error?.message).toContain('invalidType')
-        expect(error?.message).not.toContain('addressForm')
-      })
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('invalidType')
+      expect(error?.message).not.toContain('addressForm')
     })
   })
 

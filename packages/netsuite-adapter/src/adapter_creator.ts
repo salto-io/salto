@@ -31,7 +31,7 @@ import {
   FETCH_TARGET,
   FETCH_ALL_TYPES_AT_ONCE,
 } from './constants'
-import { buildNetsuiteQuery } from './query'
+import { validateParameters } from './query'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -69,12 +69,15 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   }
   try {
     validateRegularExpressions(filePathsRegexSkipList)
+    if (fetchTargetParameters !== undefined) {
+      validateParameters(fetchTargetParameters)
+    }
     const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
       [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
       [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
       [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
       [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
-      [FETCH_TARGET]: fetchTargetParameters && buildNetsuiteQuery(fetchTargetParameters),
+      [FETCH_TARGET]: fetchTargetParameters,
     }
 
     Object.keys(config?.value ?? {})

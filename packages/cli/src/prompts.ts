@@ -283,4 +283,10 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly CLEAN_FAILED = (
     err: string
   ): string => `Error encountered while cleaning the workspace: ${err}.`
+
+  public static readonly NO_MATCHES_FOUND_FOR_ELEMENT =
+    (elementId: string): string => `Did not find any matches for element ${elementId}`
+
+  public static readonly GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT =
+    (elementId: string): string => `Go to service is not supported for element ${elementId}`
 }

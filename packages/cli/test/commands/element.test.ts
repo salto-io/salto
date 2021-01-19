@@ -15,9 +15,11 @@
 */
 import { Workspace } from '@salto-io/workspace'
 import * as core from '@salto-io/core'
-import { ElemID } from '@salto-io/adapter-api'
+import { ElemID, Field, ObjectType, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { LoginStatus } from '@salto-io/core'
+import open from 'open'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
-import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction } from '../../src/commands/element'
+import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -43,14 +45,42 @@ const mockedList: typeof core.listUnresolvedReferences = (_workspace, completeFr
 )
 
 jest.mock('../../src/workspace/workspace')
+jest.mock('open')
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   listUnresolvedReferences: jest.fn().mockImplementation((_ws, env) => mockedList(_ws, env)),
+  getLoginStatuses: jest.fn().mockImplementation((
+    _workspace: Workspace,
+    serviceNames: string[],
+  ) => {
+    const loginStatuses: Record<string, LoginStatus> = {}
+    serviceNames.forEach(serviceName => {
+      if (serviceName === 'salesforce') {
+        loginStatuses[serviceName] = {
+          isLoggedIn: true,
+          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(serviceName)),
+        }
+      } else if (serviceName === 'oauthAdapter') {
+        loginStatuses[serviceName] = {
+          isLoggedIn: true,
+          configTypeOptions: mocks.mockOauthCredentialsType(serviceName, { url: '', accessTokenField: '' }),
+        }
+      } else {
+        loginStatuses[serviceName] = {
+          isLoggedIn: false,
+          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(serviceName)),
+        }
+      }
+    })
+    return loginStatuses
+  }),
 }))
 describe('Element command group', () => {
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
+  const serviceUrlAccount = 'http://acme.com'
+  const mockOpen = open as jest.Mock
   const config = { shouldCalcTotalSize: true }
   let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockLoadWorkspace = mockCliWorkspace.loadWorkspace as jest.Mock
@@ -736,7 +766,7 @@ describe('Element command group', () => {
   describe('list-unresolved command', () => {
     const listUnresolvedName = 'list-unresolved'
     const mockListUnresolved = core.listUnresolvedReferences as jest.MockedFunction<
-            typeof core.listUnresolvedReferences>
+      typeof core.listUnresolvedReferences>
 
     describe('success - all unresolved references are found in complete-from', () => {
       const workspacePath = 'valid-ws'
@@ -954,6 +984,132 @@ describe('Element command group', () => {
       it('should return failure', () => {
         expect(result).toBe(CliExitCode.AppError)
       })
+    })
+  })
+  describe('open command', () => {
+    const mockWorkspaceForOpenCommand = {
+      ...mocks.mockLoadWorkspace('workspacePath', ['env'], false, true, ['netsuite', 'salesforceNotLoggedIn', 'salesforce']),
+      currentEnv: () => 'env',
+      getValue: (elemId: ElemID) => {
+        if (elemId.getFullName() === 'salesforce.Account') {
+          return Promise.resolve(new ObjectType({
+            elemID: new ElemID('salesforce', 'Account'),
+            // eslint-disable-next-line quote-props
+            annotations: { '_service_url': serviceUrlAccount },
+          }))
+        }
+        if (elemId.getFullName() === 'salesforce.Date') {
+          return Promise.resolve(new ObjectType({
+            elemID: new ElemID('salesforce', 'Date'),
+            annotations: {},
+          }))
+        }
+        if (elemId.getFullName() === 'salesForce.AccountIntelligenceSettings') {
+          return Promise.resolve(new ObjectType({
+            elemID: new ElemID('salesforce', 'AccountIntelligenceSettings'),
+            annotations: {
+              hiddenStrAnno: 'some value',
+            },
+          }))
+        }
+        if (elemId.getFullName() === 'salesforce.elementWithoutElementType') {
+          return Promise.resolve({})
+        }
+        if (elemId.getFullName() === 'salesforce.Account.instance.field') {
+          return Promise.resolve(new Field(
+            new ObjectType({
+              elemID: new ElemID('salesforce.Account.instance'),
+            }), 'field', new PrimitiveType({ elemID: new ElemID('salesforce', 'Account', 'instance'), primitive: PrimitiveTypes.STRING }),
+            // eslint-disable-next-line quote-props
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { _service_url: serviceUrlAccount }
+          ))
+        }
+        return Promise.resolve(undefined)
+      },
+    }
+    beforeEach(() => {
+      output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      telemetry = mocks.getMockTelemetry()
+      cliTelemetry = getCliTelemetry(telemetry, 'open')
+      mockLoadWorkspace.mockResolvedValue(
+        {
+          workspace: mockWorkspaceForOpenCommand,
+          errored: false,
+        }
+      )
+    })
+    it('should return a valid URL for a given element ID', async () => {
+      const openActionResult = await openAction({
+        input: { elementId: 'salesforce.Account', env: 'env1' },
+        output,
+        cliTelemetry,
+        config,
+      })
+      expect(output.stderr.content).toEqual('')
+      expect(mockOpen).toHaveBeenCalledWith(serviceUrlAccount)
+      expect(openActionResult).toEqual(CliExitCode.Success)
+      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.success', tags: {}, timestamp: '', type: 'counter', value: 1 })
+    })
+    it('should error out when loading workspace fails', async () => {
+      mockLoadWorkspace.mockResolvedValue(
+        {
+          workspace: mockWorkspaceForOpenCommand,
+          errored: true,
+        }
+      )
+      const openActionResult = await openAction({
+        input: { elementId: 'salesforce.Account', env: 'env1' },
+        output,
+        cliTelemetry,
+        config,
+      })
+      expect(openActionResult).toEqual(CliExitCode.AppError)
+      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
+    })
+    it('should return an error when elementId does not contain ServiceURL annotation', async () => {
+      const openActionResult = await openAction({
+        input: { elementId: 'salesforce.Date', env: 'env1' },
+        output,
+        cliTelemetry,
+        config,
+      })
+      expect(output.stderr.content).toEqual('Go to service is not supported for element salesforce.Date\n')
+      expect(openActionResult).toEqual(CliExitCode.AppError)
+      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
+    })
+    it('should return an error when trying to open a non existing element', async () => {
+      const openActionResult = await openAction({
+        input: { elementId: 'salesforce.Nonexisting', env: 'env' },
+        output,
+        cliTelemetry,
+        config,
+      })
+      expect(output.stderr.content).toEqual('Did not find any matches for element salesforce.Nonexisting\n')
+      expect(openActionResult).toEqual(CliExitCode.UserInputError)
+      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
+    })
+    it('should return an error when trying to open an invalid elementId', async () => {
+      const openActionResult = await openAction({
+        input: { elementId: 'salesforce.element.invalidType', env: 'env' },
+        output,
+        cliTelemetry,
+        config,
+      })
+      expect(output.stderr.content).toEqual('Did not find any matches for element salesforce.element.invalidType\n')
+      expect(openActionResult).toEqual(CliExitCode.UserInputError)
+      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
+    })
+    it('should return an error when trying to open an elementId that is not of type Element', async () => {
+      const openActionResult = await openAction({
+        input: { elementId: 'salesforce.elementWithoutElementType', env: 'env' },
+        output,
+        cliTelemetry,
+        config,
+      })
+      expect(output.stderr.content).toEqual('Did not find any matches for element salesforce.elementWithoutElementType\n')
+      expect(openActionResult).toEqual(CliExitCode.UserInputError)
+      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
     })
   })
 })

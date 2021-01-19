@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import open from 'open'
 import { listUnresolvedReferences, Tags } from '@salto-io/core'
+import { CORE_ANNOTATIONS, isElement, Element, ElemID } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
@@ -340,6 +342,81 @@ const listUnresolvedDef = createPublicCommandDef({
   action: listUnresolvedAction,
 })
 
+// Open
+
+type OpenActionArgs = {
+  elementId: string
+} & EnvArg
+
+const safeGetElementId = (maybeElementIdPath: string): ElemID | undefined => {
+  try {
+    return ElemID.fromFullName(maybeElementIdPath)
+  } catch (e) {
+    return undefined
+  }
+}
+
+export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliTelemetry, spinnerCreator, output, workspacePath = '.' }): Promise<CliExitCode> => {
+  log.debug('running element open command on \'%s\' %o', workspacePath, input)
+  const getServiceUrlAnnotation = (element: Element): string|undefined =>
+    _.get(element, ['annotations', CORE_ANNOTATIONS.SERVICE_URL])
+  const { elementId, env } = input
+  const { errored, workspace } = await loadWorkspace(workspacePath, output, {
+    spinnerCreator, sessionEnv: env,
+  })
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+
+  if (errored) {
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.AppError
+  }
+
+  const elemId = safeGetElementId(elementId)
+  if (elemId === undefined) {
+    errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.UserInputError
+  }
+
+  const element = await workspace.getValue(elemId)
+  if (!isElement(element)) {
+    errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.UserInputError
+  }
+
+  const serviceUrl = getServiceUrlAnnotation(element)
+
+  if (serviceUrl === undefined) {
+    errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
+    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.AppError
+  }
+
+  await open(serviceUrl)
+  cliTelemetry.success(workspaceTags)
+  return CliExitCode.Success
+}
+
+const elementOpenDef = createPublicCommandDef({
+  properties: {
+    name: 'open',
+    description: 'Opens the service page of an element',
+    keyedOptions: [
+      ENVIRONMENT_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'elementId',
+        type: 'string',
+        description: 'an Element ID',
+        required: true,
+      },
+    ],
+  },
+  action: openAction,
+})
+
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
@@ -350,6 +427,7 @@ const elementGroupDef = createCommandGroupDef({
     moveToEnvsDef,
     cloneDef,
     listUnresolvedDef,
+    elementOpenDef,
   ],
 })
 

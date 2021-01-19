@@ -21,7 +21,7 @@ import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm } from '@salto-io/workspace'
-import { createRemoteMap } from '../../../src/local-workspace/remote_map'
+import { remoteMapCreator } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
@@ -42,16 +42,13 @@ const DB_LOCATION = '/tmp/test_db'
 let remoteMap: rm.RemoteMap<Element>
 
 const createMap = async (namespace:
-  string): Promise<rm.RemoteMap<Element>> => createRemoteMap<Element>(
+  string): Promise<rm.RemoteMap<Element>> => remoteMapCreator<Element>(DB_LOCATION)({
     namespace,
-    {
-      dbLocation: DB_LOCATION,
-      batchInterval: 1000,
-      LRUSize: 500,
-    },
-    elem => serialize([elem]),
-    async elemStr => (await deserialize(elemStr))[0],
-  )
+    batchInterval: 1000,
+    LRUSize: 500,
+    serialize: elem => serialize([elem]),
+    deserialize: async elemStr => (await deserialize(elemStr))[0],
+  })
 
 async function *createAsyncIterable(iterable: Element[]):
 AsyncGenerator<rm.RemoteMapEntry<Element, string>> {
@@ -74,12 +71,12 @@ describe('test operations on remote db', () => {
     await remoteMap.revert()
   })
 
-  it('finds an item after it is put', async () => {
+  it('finds an item after it is set', async () => {
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(elements[0])
   })
   describe('get', () => {
-    it('should get an item after it is put', async () => {
+    it('should get an item after it is set', async () => {
       await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(elements[0])
     })
@@ -92,7 +89,7 @@ describe('test operations on remote db', () => {
   })
 
   describe('delete', () => {
-    it('should delete item and do not find it no more', async () => {
+    it('should delete an item and not find it anymore', async () => {
       const elemID = elements[0].elemID.getFullName()
       await remoteMap.set(elemID, elements[0])
       expect(await remoteMap.get(elemID)).toBeDefined()

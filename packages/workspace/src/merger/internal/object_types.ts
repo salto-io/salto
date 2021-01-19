@@ -42,21 +42,44 @@ export class DuplicateAnnotationFieldDefinitionError extends FieldDefinitionMerg
     super({ elemID, cause: `has duplicate annotation key '${annotationKey}'` })
     this.annotationKey = annotationKey
   }
+
+  serialize = (): string => JSON.stringify({
+    type: DuplicateAnnotationFieldDefinitionError.name,
+    args: {
+      elemID: this.elemID.getFullName(),
+      annotationKey: this.annotationKey,
+    },
+  })
 }
 
 export class ConflictingFieldTypesError extends FieldDefinitionMergeError {
+  readonly definedTypes: string[]
   constructor(
     { elemID, definedTypes }:
-      { elemID: ElemID; definedTypes: Set<string> }
+      { elemID: ElemID; definedTypes: string[] }
   ) {
     super({ elemID, cause: `has conflicting type definitions '${[...definedTypes.values()].join(', ')}'` })
+    this.definedTypes = definedTypes
   }
+
+  serialize = (): string => JSON.stringify({
+    type: ConflictingFieldTypesError.name,
+    args: {
+      elemID: this.elemID.getFullName(),
+      definedTypes: this.definedTypes,
+    },
+  })
 }
 
 export class ConflictingSettingError extends MergeError {
-  constructor(elemID: ElemID) {
+  constructor({ elemID }: { elemID: ElemID }) {
     super({ elemID, error: 'conflicting is settings definitions' })
   }
+
+  serialize = (): string => JSON.stringify({
+    type: ConflictingSettingError.name,
+    args: { elemID: this.elemID.getFullName() },
+  })
 }
 
 export class DuplicateAnnotationTypeError extends MergeError {
@@ -66,6 +89,11 @@ export class DuplicateAnnotationTypeError extends MergeError {
     super({ elemID, error: `duplicate annotation type '${key}'` })
     this.key = key
   }
+
+  serialize = (): string => JSON.stringify({
+    type: DuplicateAnnotationTypeError.name,
+    args: { elemID: this.elemID.getFullName(), key: this.key },
+  })
 }
 
 const mergeFieldDefinitions = (
@@ -87,7 +115,7 @@ const mergeFieldDefinitions = (
   const definedTypes = new Set(definitions.map(field => field.refType.elemID.getFullName()))
   const typeErrors = definedTypes.size === 1
     ? []
-    : [new ConflictingFieldTypesError({ elemID, definedTypes })]
+    : [new ConflictingFieldTypesError({ elemID, definedTypes: [...definedTypes] })]
 
   return {
     merged: base.clone(mergedAnnotations.merged),
@@ -137,7 +165,7 @@ const mergeObjectDefinitions = (
   const refIsSettings = objects[0].isSettings
   const isSettingsErrors = _.every(objects, obj => obj.isSettings === refIsSettings)
     ? []
-    : [new ConflictingSettingError(objects[0].elemID)]
+    : [new ConflictingSettingError({ elemID: objects[0].elemID })]
 
   return {
     merged: new ObjectType({

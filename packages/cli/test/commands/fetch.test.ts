@@ -673,6 +673,7 @@ describe('fetch command', () => {
                   error: 'test',
                   message: 'test merge error',
                   severity: 'Warning',
+                  serialize: () => '',
                 },
               },
             ],

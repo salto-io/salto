@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PrimitiveType, ElemID } from '@salto-io/adapter-api'
+import { PrimitiveType, ElemID, Values } from '@salto-io/adapter-api'
 import { MergeResult, MergeError } from './common'
+import { serialize, deserialize } from '../../serializer/elements'
 
 
 export class MultiplePrimitiveTypesUnsupportedError extends MergeError {
@@ -31,6 +32,19 @@ export class MultiplePrimitiveTypesUnsupportedError extends MergeError {
       ].join('. '),
     })
     this.duplicates = duplicates
+  }
+
+  serialize = (): string => JSON.stringify({
+    type: MultiplePrimitiveTypesUnsupportedError.name,
+    args: { elemID: this.elemID.getFullName(), duplicates: serialize(this.duplicates) },
+  })
+
+  static deserialize = async (data: Values): Promise<MultiplePrimitiveTypesUnsupportedError> => {
+    const { elemID, duplicates } = data
+    return new MultiplePrimitiveTypesUnsupportedError({
+      elemID,
+      duplicates: (await deserialize(duplicates)) as PrimitiveType[],
+    })
   }
 }
 

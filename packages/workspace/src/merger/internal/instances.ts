@@ -24,6 +24,8 @@ import {
 
 export class DuplicateInstanceKeyError extends MergeError {
   readonly key: string
+  readonly existingValue: unknown
+  readonly newValue: unknown
 
   constructor({ elemID, key, existingValue, newValue }:
     { elemID: ElemID; key: string; existingValue: unknown; newValue: unknown}) {
@@ -32,7 +34,19 @@ export class DuplicateInstanceKeyError extends MergeError {
       error: `duplicate key ${key} (values - ${inspect(existingValue)} & ${inspect(newValue)})`,
     })
     this.key = key
+    this.existingValue = existingValue
+    this.newValue = newValue
   }
+
+  serialize = (): string => JSON.stringify({
+    type: DuplicateInstanceKeyError.name,
+    args: {
+      elemID: this.elemID.getFullName(),
+      key: this.key,
+      existingValue: this.existingValue,
+      newValue: this.newValue,
+    },
+  })
 }
 
 const mergeInstanceDefinitions = (

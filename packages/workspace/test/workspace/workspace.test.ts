@@ -41,6 +41,7 @@ import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { PathIndex } from '../../src/workspace/path_index'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
+import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -97,14 +98,18 @@ const createWorkspace = async (
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
 ): Promise<Workspace> =>
-  loadWorkspace(configSource || mockWorkspaceConfigSource(), credentials || mockCredentialsSource(),
+  loadWorkspace(
+    configSource || mockWorkspaceConfigSource(),
+    credentials || mockCredentialsSource(),
     {
       commonSourceName: '',
       sources: elementSources || {
         '': {
           naclFiles: await naclFilesSource(
-            dirStore || mockDirStore(), mockParseCache(),
+            dirStore || mockDirStore(),
+            mockParseCache(),
             staticFilesSource || mockStaticFilesSource(),
+            () => Promise.resolve(new InMemoryRemoteMap()),
           ),
         },
         default: {
@@ -112,7 +117,9 @@ const createWorkspace = async (
           state: state ?? createState([]),
         },
       },
-    })
+    },
+    () => Promise.resolve(new InMemoryRemoteMap()),
+  )
 
 const getElemMap = async (
   elements: ElementsSource
@@ -1218,8 +1225,14 @@ describe('workspace', () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
-      const workspace = await initWorkspace('ws-name', 'uid', 'default', workspaceConf,
-        mockCredentialsSource(), { commonSourceName: '',
+      const workspace = await initWorkspace(
+        'ws-name',
+        'uid',
+        'default',
+        workspaceConf,
+        mockCredentialsSource(),
+        {
+          commonSourceName: '',
           sources: {
             default: {
               naclFiles: createMockNaclFileSource([]),
@@ -1229,7 +1242,10 @@ describe('workspace', () => {
               naclFiles: createMockNaclFileSource([]),
               state: createState([]),
             },
-          } })
+          },
+        },
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
         { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }], currentEnv: 'default' }
       )

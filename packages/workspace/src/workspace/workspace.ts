@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change, getChangeElement, isAdditionOrModificationChange, Value } from '@salto-io/adapter-api'
+import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
+  getChangeElement, isAdditionOrModificationChange, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
@@ -32,7 +33,8 @@ import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError } from '../merger'
 import { InMemoryRemoteElementSource, ElementsSource } from './elements_source'
 import { buildNewMergedElementsAndErrors } from './nacl_files/elements_cache'
-import { RemoteMap, InMemoryRemoteMap, RemoteMapCreator } from './remote_map'
+import { RemoteMap, RemoteMapCreator } from './remote_map'
+import { serialize, deserialize } from '../serializer/elements'
 
 const log = logger(module)
 
@@ -139,7 +141,7 @@ export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
   elementsSources: EnvironmentsSources,
-  createRemoteMap: RemoteMapCreator<Value> = _name => new InMemoryRemoteMap()
+  createRemoteMap: RemoteMapCreator<Value>,
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -169,12 +171,24 @@ export const loadWorkspace = async (
     env?: string
     hiddenElementsChangesIDs?: ElemID[]
   }): Promise<WorkspaceState> => {
-    const envToUse = env ?? currentEnv()
-    const newState = {
-      merged: new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged', envToUse))),
-      errors: createRemoteMap(getRemoteMapNameSpace('errors', envToUse)),
-    }
-    if (_.isUndefined(workspaceState) || (envToUse !== currentEnv())) {
+    if (_.isUndefined(workspaceState) || (env !== undefined && env !== currentEnv())) {
+      const envToUse = env ?? currentEnv()
+      const newState = {
+        merged: new InMemoryRemoteElementSource(
+          await createRemoteMap({
+            namespace: getRemoteMapNameSpace('merged', envToUse),
+            serialize: (element: Element) => serialize([element]),
+            // TODO: we might need to pass static file reviver to the deserialization func
+            deserialize: async (data: string) => (await deserialize(data))[0],
+          })
+        ),
+        errors: await createRemoteMap({
+          namespace: getRemoteMapNameSpace('errors', envToUse),
+          serialize: (element: Element) => serialize([element]),
+          // TODO: we might need to pass static file reviver to the deserialization func
+          deserialize: async (data: string) => (await deserialize(data))[0],
+        }),
+      }
       await buildNewMergedElementsAndErrors({
         currentElements: newState.merged,
         currentErrors: newState.errors,
@@ -227,11 +241,6 @@ export const loadWorkspace = async (
     }
     return getWorkspaceState()
   }
-
-  // const findDebugChange = (changes: any[]): any => changes.find(c => (
-  //   c.id
-  //   || getChangeElement(c as Change).elemID
-  // ).getFullName().includes('salesforce.Queue.instance.queueHiddenInstance'))
 
   const updateNaclFiles = async (
     changes: DetailedChange[],
@@ -396,8 +405,8 @@ export const loadWorkspace = async (
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(elementsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
-      return loadWorkspace(config, credentials,
-        { commonSourceName: elementsSources.commonSourceName, sources })
+      const envSources = { commonSourceName: elementsSources.commonSourceName, sources }
+      return loadWorkspace(config, credentials, envSources, createRemoteMap)
     },
     clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
       if (args.cache || args.nacl || args.staticResources) {
@@ -455,8 +464,12 @@ export const loadWorkspace = async (
         await environmentSource.state?.clear()
       }
       delete elementsSources.sources[env]
-      naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-        currentEnv(), elementsSources.commonSourceName)
+      naclFilesSource = multiEnvSource(
+        _.mapValues(elementsSources.sources, e => e.naclFiles),
+        currentEnv(),
+        elementsSources.commonSourceName,
+        createRemoteMap,
+      )
     },
     renameEnvironment: async (envName: string, newEnvName: string, newEnvNaclPath? : string) => {
       const envConfig = envs().find(e => e === envName)
@@ -485,8 +498,12 @@ export const loadWorkspace = async (
       }
       elementsSources.sources[newEnvName] = environmentSource
       delete elementsSources.sources[envName]
-      naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-        currentEnv(), elementsSources.commonSourceName)
+      naclFilesSource = multiEnvSource(
+        _.mapValues(elementsSources.sources, e => e.naclFiles),
+        currentEnv(),
+        elementsSources.commonSourceName,
+        createRemoteMap,
+      )
     },
     setCurrentEnv: async (env: string, persist = true): Promise<void> => {
       if (!envs().includes(env)) {
@@ -497,7 +514,7 @@ export const loadWorkspace = async (
         await config.setWorkspaceConfig(workspaceConfig)
       }
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-        currentEnv(), elementsSources.commonSourceName)
+        currentEnv(), elementsSources.commonSourceName, createRemoteMap)
       workspaceState = undefined
     },
 
@@ -529,6 +546,7 @@ export const initWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
   envs: EnvironmentsSources,
+  createRemoteMap: RemoteMapCreator<Value>,
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
@@ -537,5 +555,5 @@ export const initWorkspace = async (
     envs: [{ name: defaultEnvName }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(config, credentials, envs)
+  return loadWorkspace(config, credentials, envs, createRemoteMap)
 }

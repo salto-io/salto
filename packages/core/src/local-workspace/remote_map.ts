@@ -24,7 +24,6 @@ const { awu } = asynciterable
 const NAMESPACE_SEPARATOR = '::'
 const TEMP_PREFIX = '~TEMP~'
 
-type Entry<T> = { key: string; value: T}
 type RocksDBValue = string | Buffer | undefined
 
 type CreateIteratorOpts = remoteMap.IterationOpts & {
@@ -33,8 +32,8 @@ type CreateIteratorOpts = remoteMap.IterationOpts & {
 }
 
 const readIteratorNext = (iterator: rocksdb
-  .Iterator): Promise<Entry<string> | undefined> =>
-  new Promise<Entry<string> | undefined>(resolve => {
+  .Iterator): Promise<remoteMap.RemoteMapEntry<string> | undefined> =>
+  new Promise<remoteMap.RemoteMapEntry<string> | undefined>(resolve => {
     const callback = (_err: Error | undefined, key: RocksDBValue, value: RocksDBValue): void => {
       const keyAsString = key?.toString()
       const cleanKey = keyAsString?.substr(keyAsString
@@ -49,8 +48,10 @@ const readIteratorNext = (iterator: rocksdb
   })
 
 export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
-AsyncIterable<Entry<string>> {
-  const latestEntries: (Entry<string> | undefined)[] = Array.from({ length: iterators.length })
+AsyncIterable<remoteMap.RemoteMapEntry<string>> {
+  const latestEntries: (remoteMap.RemoteMapEntry<string> | undefined)[] = Array.from(
+    { length: iterators.length }
+  )
   await Promise.all(iterators.map(async (iter, i) => {
     latestEntries[i] = await readIteratorNext(iter)
   }))
@@ -84,13 +85,14 @@ AsyncIterable<Entry<string>> {
 
 const dbConnections: Record<string, rocksdb> = {}
 
-export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMap.RemoteMapOptions,
-  serialize: (value: T) => string,
-  deserialize: (s: string) => Promise<T>): Promise<remoteMap.RemoteMap<T>> => {
+export const remoteMapCreator = <T>(location: string): remoteMap.RemoteMapCreator<T> => async (
+  { namespace, batchInterval = 1000, LRUSize = 500, serialize, deserialize }:
+  remoteMap.CreateRemoteMapParams<T>
+): Promise<remoteMap.RemoteMap<T>> => {
   if (!/^[a-z0-9-]+$/i.test(namespace)) {
     throw new Error(`Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`)
   }
-  const cache = new LRU<string, T>({ max: mapOptions.LRUSize })
+  const cache = new LRU<string, T>({ max: LRUSize })
   let db: rocksdb
 
   const keyToDBKey = (key: string): string =>
@@ -147,12 +149,12 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
       i += 1
       cache.set(entry.key, entry.value)
       batch.put(getAppropriateKey(entry.key, temp), serialize(entry.value))
-      if (i % mapOptions.batchInterval === 0) {
+      if (i % batchInterval === 0) {
         await promisify(batch.write.bind(batch))()
         batch = db.batch()
       }
     }
-    if (i % mapOptions.batchInterval !== 0) {
+    if (i % batchInterval !== 0) {
       await promisify(batch.write.bind(batch))()
     }
   }
@@ -195,7 +197,7 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
       db = dbConnections[loc]
     }
   }
-  await createDBIfNotCreated(mapOptions.dbLocation)
+  await createDBIfNotCreated(location)
 
   return {
     get: async (key: string): Promise<T | undefined> => new Promise(resolve => {
@@ -234,7 +236,7 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
       const tempKeyIter = createTempIterator(opts)
       const keyIter = createPersistentIterator(opts)
       return awu(aggregatedIterable([tempKeyIter, keyIter]))
-        .map(async (entry: Entry<string>) => entry.key)
+        .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key)
     },
     flush: async () => {
       await setAllImpl(entriesImpl(), false)
@@ -263,7 +265,7 @@ export const createRemoteMap = async <T>(namespace: string, mapOptions: remoteMa
         return true
       }
       const hasKeyImpl = (k: string): boolean => {
-        let val: rocksdb.Bytes | undefined
+        let val: RocksDBValue
         db.get(k, async (error, value) => {
           val = error ? undefined : value
         })

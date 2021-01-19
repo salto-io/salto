@@ -21,7 +21,7 @@ import { Element, ElemID, getChangeElement, Value,
   DetailedChange, Change, isRemovalChange } from '@salto-io/adapter-api'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
-import { RemoteMap, RemoteMapCreator, InMemoryRemoteMap } from '../../remote_map'
+import { RemoteMap, RemoteMapCreator } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal, ElementIDToValue } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
@@ -31,6 +31,7 @@ import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_
 import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
 import { InMemoryRemoteElementSource, ElementsSource } from '../../elements_source'
+import { serialize, deserialize } from '../../../serializer/elements'
 
 const { awu } = collections.asynciterable
 const { series } = promises.array
@@ -115,7 +116,12 @@ const buildMultiEnvSource = (
     const allActiveElements = awu(_.values(getActiveSources(env)))
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
-    const elements = new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged')))
+    const elements = new InMemoryRemoteElementSource(await createRemoteMap({
+      namespace: getRemoteMapNameSpace('merged'),
+      serialize: (element: Element) => serialize([element]),
+      // TODO: we might need to pass static file reviver to the deserialization func
+      deserialize: async (data: string) => (await deserialize(data))[0],
+    }))
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
       new InMemoryRemoteElementSource(merged)
@@ -464,7 +470,7 @@ export const multiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-  createRemoteMap: RemoteMapCreator<Value> = _name => new InMemoryRemoteMap(),
+  createRemoteMap: RemoteMapCreator<Value>,
 ): MultiEnvSource => buildMultiEnvSource(
   sources,
   primarySourceName,

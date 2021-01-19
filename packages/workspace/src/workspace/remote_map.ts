@@ -23,13 +23,24 @@ export type IterationOpts = {
   after?: string
 }
 
-export type RemoteMapOptions = {
-  batchInterval: number
-  LRUSize: number
-  dbLocation: string
+export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
+export type RemoteMapType = 'workspace' | 'state'
+
+export interface CreateRemoteMapParams<T> {
+  namespace: string
+  batchInterval?: number
+  LRUSize?: number
+  serialize: (value: T) => string
+  deserialize: (s: string) => Promise<T>
 }
 
-export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
+export interface CreateRemoteMapParamsWithLocation<T> extends CreateRemoteMapParams<T> {
+  location: string
+}
+
+export interface CreateRemoteMapParamsWithType<T> extends CreateRemoteMapParams<T> {
+  type: RemoteMapType
+}
 
 export type RemoteMap<T, K extends string = string> = {
   delete(key: K): Promise<void>
@@ -46,7 +57,7 @@ export type RemoteMap<T, K extends string = string> = {
   close(): Promise<void>
 }
 
-export type RemoteMapCreator<T> = (namespace: string) => RemoteMap<T>
+export type RemoteMapCreator<T> = (opts: CreateRemoteMapParams<T>) => Promise<RemoteMap<T>>
 
 // This is for now. Don't commit this K?
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {

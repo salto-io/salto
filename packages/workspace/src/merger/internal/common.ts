@@ -16,12 +16,7 @@
 import _ from 'lodash'
 import { inspect } from 'util'
 import { types } from '@salto-io/lowerdash'
-
-import {
-  ElemID,
-  SaltoElementError,
-  SaltoErrorSeverity,
-} from '@salto-io/adapter-api'
+import { ElemID, SaltoElementError, SaltoErrorSeverity } from '@salto-io/adapter-api'
 
 
 export abstract class MergeError extends types.Bean<Readonly<{
@@ -37,10 +32,14 @@ export abstract class MergeError extends types.Bean<Readonly<{
   toString(): string {
     return this.message
   }
+
+  abstract serialize(): string
 }
 
 export class DuplicateAnnotationError extends MergeError {
   readonly key: string
+  readonly existingValue: unknown
+  readonly newValue: unknown
 
   constructor({ elemID, key, existingValue, newValue }:
     { elemID: ElemID; key: string; existingValue: unknown; newValue: unknown}) {
@@ -49,7 +48,19 @@ export class DuplicateAnnotationError extends MergeError {
       error: `duplicate annotation key ${key} (values - ${inspect(existingValue)} & ${inspect(newValue)})`,
     })
     this.key = key
+    this.existingValue = existingValue
+    this.newValue = newValue
   }
+
+  serialize = (): string => JSON.stringify({
+    type: DuplicateAnnotationError.name,
+    args: {
+      elemID: this.elemID.getFullName(),
+      key: this.key,
+      existingValue: this.existingValue,
+      newValue: this.newValue,
+    },
+  })
 }
 
 export type MergeResult<T> = {

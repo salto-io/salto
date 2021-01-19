@@ -174,7 +174,7 @@ export const isValidWorkspaceForCommand = async ({
   workspace,
   cliOutput,
   spinnerCreator,
-  force = false,
+  force,
   ignoreUnresolvedRefs = false,
 }: {
   workspace: Workspace

@@ -49,16 +49,16 @@ describe('deploy command', () => {
   let output: mocks.MockCliOutput
   let cliCommandArgs: mocks.MockCommandArgs
   const services = ['salesforce']
+  const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
 
   beforeEach(() => {
     const cliArgs = mocks.mockCliArgs()
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     output = cliArgs.output
+    mockGetUserBooleanInput.mockReset()
   })
 
   describe('should deploy considering user input', () => {
-    const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
-
     it('should continue with deploy when user input is y', async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(true)
       await action({
@@ -145,6 +145,25 @@ describe('deploy command', () => {
       })
       expect(result).toBe(CliExitCode.AppError)
     })
+    it('should allow the user to cancel when there are warnings', async () => {
+      const workspace = mocks.mockWorkspace({})
+      workspace.errors.mockResolvedValue(
+        mocks.mockErrors([{ severity: 'Warning', message: 'some warning' }])
+      )
+      mockGetUserBooleanInput.mockResolvedValue(false)
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          services,
+        },
+        workspace,
+      })
+      expect(result).toBe(CliExitCode.AppError)
+      expect(callbacks.shouldContinueInCaseOfWarnings).toHaveBeenCalled()
+    })
   })
   describe('when deploy result makes the workspace invalid', () => {
     let workspace: mocks.MockWorkspace
@@ -156,8 +175,6 @@ describe('deploy command', () => {
           mocks.mockErrors([{ severity: 'Error', message: '' }])
         )
       })
-      const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
-      mockGetUserBooleanInput.mockClear()
       mockGetUserBooleanInput.mockReturnValue(true)
     })
     describe('when called without force', () => {

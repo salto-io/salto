@@ -17,7 +17,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { fetch, FetchChange, FetchProgressEvents, StepEmitter, FetchFunc } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { CliExitCode, CliTelemetry } from '../../src/types'
+import { CliExitCode, CliTelemetry, CliError } from '../../src/types'
 import * as fetchCmd from '../../src/commands/fetch'
 import { action, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
 import * as callbacks from '../../src/callbacks'
@@ -814,6 +814,20 @@ describe('fetch command', () => {
         workspace,
       })
       expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
+    })
+    it('should fail if provided env does not exist', async () => {
+      await expect(action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          interactive: false,
+          mode: 'default',
+          services,
+          stateOnly: false,
+          env: 'envThatDoesNotExist',
+        },
+        workspace: mocks.mockWorkspace({}),
+      })).rejects.toThrow(new CliError(CliExitCode.AppError))
     })
   })
 })

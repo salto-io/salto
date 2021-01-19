@@ -6,4 +6,4 @@ _Additional context for reviewer_
 
 ---
 _Release Notes_: 
-__Replace me with a short sentence that describes the effect of this change on Salto users__
+_Replace me with a short sentence that describes the effect of this change on Salto users_

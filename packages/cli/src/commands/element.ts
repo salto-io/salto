@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatServiceNotConfigured } from '../formatter'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
@@ -348,9 +348,6 @@ type OpenActionArgs = {
   elementId: string
 } & EnvArg
 
-const isServiceDefined = (workspace: Workspace, serviceName: string): boolean =>
-  workspace.services().includes(serviceName)
-
 const safeGetElementId = (maybeElementIdPath: string): ElemID | undefined => {
   try {
     return ElemID.fromFullName(maybeElementIdPath)
@@ -377,13 +374,6 @@ export const openAction: CommandDefAction<OpenActionArgs> = async ({ input, cliT
   const elemId = safeGetElementId(elementId)
   if (elemId === undefined) {
     errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
-    cliTelemetry.failure(workspaceTags)
-    return CliExitCode.UserInputError
-  }
-
-  const serviceName = elemId.adapter
-  if (!isServiceDefined(workspace, serviceName)) {
-    errorOutputLine(formatServiceNotConfigured(serviceName), output)
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.UserInputError
   }

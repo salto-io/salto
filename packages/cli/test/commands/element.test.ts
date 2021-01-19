@@ -1093,17 +1093,6 @@ describe('Element command group', () => {
       expect(openActionResult).toEqual(CliExitCode.AppError)
       expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
     })
-    it('should return an error message when opening an non existing service', async () => {
-      const openActionResult = await openAction({
-        input: { elementId: 'nonExistingServiceName', env: 'env1' },
-        output,
-        cliTelemetry,
-        config,
-      })
-      expect(output.stderr.content).toContain('nonExistingServiceName is not configured in this environment')
-      expect(openActionResult).toEqual(CliExitCode.UserInputError)
-      expect(telemetry.getEvents()).toContainEqual({ name: 'workspace.open.failure', tags: {}, timestamp: '', type: 'counter', value: 1 })
-    })
     it('should return an error when elementId does not contain ServiceURL annotation', async () => {
       const openActionResult = await openAction({
         input: { elementId: 'salesforce.Date', env: 'env1' },

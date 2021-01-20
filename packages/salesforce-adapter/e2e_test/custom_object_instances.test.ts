@@ -25,7 +25,7 @@ import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
 import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
 import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
-import customObjectsFilter, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD } from '../src/filters/custom_objects'
+import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
 import { CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LIST_CUSTOM_SETTINGS_TYPE, METADATA_TYPE, SALESFORCE } from '../src/constants'
@@ -58,7 +58,7 @@ describe('custom object instances e2e', () => {
     adapter = adapterParams.adapter
     client = adapterParams.client
 
-    const leadInstance = new InstanceElement(
+    const instance = new InstanceElement(
       CUSTOM_OBJECT,
       new ObjectType(
         {
@@ -67,26 +67,11 @@ describe('custom object instances e2e', () => {
         },
       ),
       {
-        [INSTANCE_FULL_NAME_FIELD]: 'Lead',
-        fields: [
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
-            [INSTANCE_TYPE_FIELD]: 'Checkbox',
-            [INSTANCE_REQUIRED_FIELD]: 'false',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'WhoKnows',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'Pepper',
-            [INSTANCE_TYPE_FIELD]: 'Location',
-            [INSTANCE_REQUIRED_FIELD]: 'false',
-          },
-        ],
+        [INSTANCE_FULL_NAME_FIELD]: 'Product2',
       },
     )
 
-    elements = [leadInstance]
+    elements = [instance]
     await runFiltersOnFetch(
       client,
       filtersContext,

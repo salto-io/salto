@@ -456,16 +456,13 @@ const fetchSObjects = async (
 ): Promise<Record<string, DescribeSObjectResult[]>> => {
   const sobjectsList = await client.listSObjects()
 
-  const sobjectNames = _(sobjectsList)
+  const sobjectNames = sobjectsList
     .map(sobj => sobj.name)
     .filter(name => name in customObjectInstances)
-    .value()
 
   const sobjectsDescriptions = await client.describeSObjects(sobjectNames)
 
-  return _(sobjectsDescriptions)
-    .groupBy(e => e.name)
-    .value()
+  return _.groupBy(sobjectsDescriptions, e => e.name)
 }
 
 const createFromSObjectsAndInstances = (

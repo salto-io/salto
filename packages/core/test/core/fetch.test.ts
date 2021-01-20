@@ -594,7 +594,7 @@ describe('fetch', () => {
         const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
-          awu([obj]), 
+          awu([obj]),
           elementsSource
         )
 
@@ -614,7 +614,7 @@ describe('fetch', () => {
         const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
-          awu([obj]), 
+          awu([obj]),
           elementsSource
         )
 
@@ -636,7 +636,7 @@ describe('fetch', () => {
         const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
-          awu([obj]), 
+          awu([obj]),
           elementsSource
         )
 

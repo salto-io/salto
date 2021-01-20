@@ -320,13 +320,20 @@ export const generateElements = async (
       return mapValuesAsync(ref.fields, async field => generateValue(await field.getType()))
     }
     if (isListType(ref)) {
-      return arrayOf(getListLength(), async () => generateValue(await ref.getInnerType()))
+      return Promise.all(
+        arrayOf(getListLength(),
+          async () => generateValue(await ref.getInnerType()))
+      )
     }
     if (isMapType(ref)) {
       return Object.fromEntries(
-        arrayOf(getListLength(), async () => generateValue(await ref.getInnerType())).map(
-          (val, index) => [`k${index}`, val]
-        )
+        (await Promise.all(
+          arrayOf(getListLength(),
+            async () => generateValue(await ref.getInnerType()))
+        ))
+          .map(
+            (val, index) => [`k${index}`, val]
+          )
       )
     }
     // Linter token
@@ -343,7 +350,7 @@ export const generateElements = async (
 
   const generateFields = async (): Promise<Record<string, FieldDefinition>> => Object.fromEntries(
     await Promise.all(arrayOf(
-      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd),
+      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd) + 1,
       async () => {
         const name = getName()
         const fieldType = getFieldType(true)

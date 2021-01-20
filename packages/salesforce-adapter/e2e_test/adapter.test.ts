@@ -193,20 +193,20 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       describe('should fetch sobject annotations from the custom object instance', () => {
-        it('should fetch relevant simple annotations for standard object', () => {
+        it('should fetch relevant simple annotations for standard object', async () => {
           const lead = findAnnotationsObject(result, 'Lead')
-          expect(lead.getAnnotationTypes()).toHaveProperty('enableFeeds')
+          expect(await lead.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(lead.annotations.enableFeeds).toBeDefined()
 
-          expect(lead.getAnnotationTypes()).not.toHaveProperty('deploymentStatus')
+          expect(await lead.getAnnotationTypes()).not.toHaveProperty('deploymentStatus')
           expect(lead.annotations.deploymentStatus).toBeUndefined()
         })
 
-        it('should fetch relevant simple annotations for custom object', () => {
+        it('should fetch relevant simple annotations for custom object', async () => {
           const customObj = findAnnotationsObject(result, 'TestFields__c')
-          expect(customObj.getAnnotationTypes()).toHaveProperty('enableFeeds')
+          expect(await customObj.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(customObj.annotations.enableFeeds).toBeDefined()
-          expect(customObj.getAnnotationTypes()).toHaveProperty('deploymentStatus')
+          expect(await customObj.getAnnotationTypes()).toHaveProperty('deploymentStatus')
           expect(customObj.annotations.deploymentStatus).toBeDefined()
         })
       })
@@ -271,11 +271,11 @@ describe('Salesforce adapter E2E with real account', () => {
       })
     })
 
-    it('should fetch metadata type', () => {
+    it('should fetch metadata type', async () => {
       const flow = findElements(result, 'Flow')[0] as ObjectType
-      expect(flow.fields.description.getType()).toEqual(BuiltinTypes.STRING)
-      expect(flow.fields.isTemplate.getType()).toEqual(BuiltinTypes.BOOLEAN)
-      expect(flow.fields.actionCalls.getType()).toEqual(findElements(result, 'FlowActionCall')[0])
+      expect(await flow.fields.description.getType()).toEqual(BuiltinTypes.STRING)
+      expect(await flow.fields.isTemplate.getType()).toEqual(BuiltinTypes.BOOLEAN)
+      expect(await flow.fields.actionCalls.getType()).toEqual(findElements(result, 'FlowActionCall')[0])
       expect(getRestriction(flow.fields.processType).enforce_value).toEqual(false)
     })
 
@@ -2297,7 +2297,7 @@ describe('Salesforce adapter E2E with real account', () => {
               .toEqual(`${accountApiName}.${CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY}`)
             delete fieldInfo[constants.INSTANCE_FULL_NAME_FIELD]
             expect(Object.assign(
-              transformFieldAnnotations(fieldInfo, accountApiName),
+              await transformFieldAnnotations(fieldInfo, accountApiName),
               { [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY }
             )).toEqual(_.omit(annotations, constants.API_NAME))
           })

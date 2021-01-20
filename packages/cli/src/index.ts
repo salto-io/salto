@@ -54,13 +54,14 @@ const main = async (): Promise<CliExitCode> => {
   log.debug('Installation ID: %s', config.installationID)
   log.info('running "%s"', cmdStr)
   try {
-    return cli({
+    const ret = await cli({
       input: { args, telemetry, config: config.command },
       output: { stdout, stderr },
       commandDefs,
       spinnerCreator: oraSpinnerCreator,
       workspacePath: '.',
     })
+    return ret
   } finally {
     await Promise.all([
       telemetry.stop(EVENTS_FLUSH_WAIT_TIME),

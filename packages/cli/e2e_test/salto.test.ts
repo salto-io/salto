@@ -280,7 +280,6 @@ describe('cli e2e', () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
     })
   })
-  // eslint-disable-next-line
   describe('fetch expecting no changes', () => {
     let workspace: Workspace
     beforeAll(async () => {

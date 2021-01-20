@@ -20,7 +20,7 @@ import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, B
 import { applyInstancesDefaults, resolvePath, flattenElementStr } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import {
@@ -292,12 +292,12 @@ const calcFetchChanges = async (
   stateElements: elementSource.ElementsSource,
   workspaceElements: elementSource.ElementsSource
 ): Promise<Iterable<FetchChange>> => {
-  const serviceChanges = await log.time(() =>
+  const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
       stateElements,
       mergedServiceElements,
     ),
-  'finished to calculate service-state changes')
+  'finished to calculate service-state changes')]
   const pendingChanges = await log.time(() => getChangeMap(
     stateElements,
     workspaceElements,
@@ -307,13 +307,12 @@ const calcFetchChanges = async (
     workspaceElements,
     mergedServiceElements,
   ), 'finished to calculate service-workspace changes')
-
   const serviceElementsSource = elementSource.createInMemoryElementSource(serviceElements)
 
   return awu(serviceChanges)
     .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatMap(toChangesWithPath(
-      async name => collections.array.makeArray(await serviceElementsSource.get(name))
+      async name => [await serviceElementsSource.get(name)].filter(values.isDefined)
     )).toArray()
 }
 
@@ -373,6 +372,7 @@ export const fetchChanges = async (
   })
   const adapterNameToConfigMessage = _
     .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
+
   return {
     changes,
     elements: processErrorsResult.keptElements,

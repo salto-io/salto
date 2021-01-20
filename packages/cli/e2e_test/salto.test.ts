@@ -16,7 +16,7 @@
 import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
-import { strings } from '@salto-io/lowerdash'
+import { strings, collections } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists, readFile } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
@@ -44,6 +44,9 @@ import {
   runClean,
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
+
+
+const { awu } = collections.asynciterable
 
 let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>
@@ -223,7 +226,7 @@ describe('cli e2e', () => {
     })
     it('should update the object in the Nacl file', async () => {
       const newObject = await verifyObject(
-        await (await workspace.elements()).getAll(),
+        await awu(await (await workspace.elements()).getAll()).toArray(),
         SALESFORCE,
         newObjectElemName,
         {
@@ -290,7 +293,7 @@ describe('cli e2e', () => {
     })
     it('should fetch the new object standard fields and annotations to the correct files', async () => {
       const newObject = await verifyObject(
-        await (await workspace.elements()).getAll(),
+        await awu(await (await workspace.elements()).getAll()).toArray(),
         SALESFORCE,
         newObjectElemName,
         {

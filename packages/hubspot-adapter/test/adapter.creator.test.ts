@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import HubspotClient from '../src/client/client'
 import { defaultCredentialsType, adapter } from '../src/adapter_creator'
 
@@ -51,7 +52,7 @@ describe('HubspotAdapter creator', () => {
     )
 
     beforeEach(() => {
-      adapter.operations({ credentials })
+      adapter.operations({ credentials, elementsSource: buildElementsSourceFromElements([]) })
     })
 
     it('creates the client correctly', () => {

@@ -469,3 +469,10 @@ export function isEqualElements(first?: any, second?: any): boolean {
   }
   return false
 }
+
+export type ReadOnlyElementsSource = {
+  list: () => Promise<AsyncIterable<ElemID>>
+  get: (id: ElemID) => Promise<Element | undefined>
+  getAll: () => Promise<AsyncIterable<Element>>
+  has: (id: ElemID) => Promise<boolean>
+}

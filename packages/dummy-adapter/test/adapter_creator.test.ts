@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { defaultParams, DUMMY_ADAPTER } from '../src/generator'
 import DummyAdapter from '../src/adapter'
@@ -38,9 +39,10 @@ describe('adapter creator', () => {
         adapter.authenticationMethods.basic.credentialsType),
       config: new InstanceElement(
         DUMMY_ADAPTER,
-                adapter.configType as ObjectType,
-                defaultParams
+        adapter.configType as ObjectType,
+        defaultParams
       ),
+      elementsSource: buildElementsSourceFromElements([]),
     })).toBeInstanceOf(DummyAdapter)
   })
 })

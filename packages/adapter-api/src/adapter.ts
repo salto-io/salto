@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, ObjectType, Element,
+  InstanceElement, ObjectType, Element, ReadOnlyElementsSource,
 } from './elements'
 import { AdapterAuthentication } from './authentication_types'
 import { ElemID } from './element_id'
@@ -61,6 +61,7 @@ export type AdapterOperationsContext = {
   credentials: InstanceElement
   config?: InstanceElement
   getElemIdFunc?: ElemIdGetter
+  elementsSource: ReadOnlyElementsSource
 }
 
 export type ChangeError = SaltoElementError & {

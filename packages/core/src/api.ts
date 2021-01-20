@@ -24,6 +24,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector } from '@salto-io/workspace'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -117,11 +118,14 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   services = workspace.services(),
 ): Promise<DeployResult> => {
+  const workspaceElements = await workspace.elements()
+
   const changedElements = new Map<string, Element>()
   const adapters = await getAdapters(
     services,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
+    buildElementsSourceFromElements(workspaceElements)
   )
 
   const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
@@ -151,7 +155,6 @@ export const deploy = async (
   }
   const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
 
-  const workspaceElements = await workspace.elements()
   const relevantWorkspaceElements = workspaceElements
     .filter(e => changedElements.has(e.elemID.getFullName()))
 
@@ -194,6 +197,9 @@ export const fetch: FetchFunc = async (
   services?,
 ) => {
   log.debug('fetch starting..')
+
+  const workspaceElements = await workspace.elements()
+
   const fetchServices = services ?? workspace.services()
   const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
     await workspace.state().getAll(), fetchServices
@@ -202,6 +208,7 @@ export const fetch: FetchFunc = async (
     fetchServices,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
+    buildElementsSourceFromElements(workspaceElements),
     createElemIdGetter(filteredStateElements)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
@@ -217,7 +224,7 @@ export const fetch: FetchFunc = async (
       changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
-      filterElementsByServices(await workspace.elements(), fetchServices),
+      filterElementsByServices(workspaceElements, fetchServices),
       filteredStateElements,
       currentConfigs,
       progressEmitter,

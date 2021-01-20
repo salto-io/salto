@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, Field } from '@salto-io/adapter-api'
+import { Element, ObjectType, Field, isObjectType } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isCustomObject, isCustom, relativeApiName } from '../transformers/transformer'
@@ -103,13 +103,14 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     const newSplittedCustomObjects = await awu(customObjects)
       .flatMap(customObjectToSplittedElements)
       .toArray()
-
     _.pullAllWith(
       elements,
       customObjects,
-      // Just incase this gets weird - This used to include a
-      // verification both objects are custom objects. Not sure why.
-      (elementA: Element, elementB: Element): boolean => elementA.isEqual(elementB)
+      // No need to check for custom objectness since all of the elements in
+      // the second params are custom objects.
+      (elementA: Element, elementB: Element): boolean => isObjectType(elementA)
+        && isObjectType(elementB)
+        && elementA.isEqual(elementB)
     )
     elements.push(...newSplittedCustomObjects)
   },

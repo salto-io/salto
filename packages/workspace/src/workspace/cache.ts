@@ -113,7 +113,9 @@ export const parseResultCache = (
       const cacheFilename = resolveCacheFileName(filename)
       await dirStore.delete(cacheFilename)
     },
-    list: async () => (await dirStore.list()).map(resolveFileName),
+    list: async () => (await dirStore.list())
+      .filter(filename => filename.endsWith(CACHE_EXTENSION))
+      .map(resolveFileName),
     clear: dirStore.clear,
     rename: dirStore.rename,
     flush: dirStore.flush,

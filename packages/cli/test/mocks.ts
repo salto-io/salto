@@ -26,6 +26,7 @@ import {
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
 import { Workspace, errors as wsErrors, state as wsState, pathIndex, parser } from '@salto-io/workspace'
+import { logger } from '@salto-io/logging'
 import realCli from '../src/cli'
 import commandDefinitions from '../src/commands/index'
 import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
@@ -171,6 +172,10 @@ export const cli = async ({
   const spinnerCreator = mockSpinnerCreator(spinners)
 
   const exitCode = await realCli({ input, output, commandDefs, spinnerCreator, workspacePath: '.' })
+  await Promise.all([
+    input.telemetry.stop(1000),
+    logger.end(),
+  ])
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }

@@ -370,7 +370,7 @@ Manage the environment services
 Manage the workspace environments
 
 **Commands:**
-* `create <envName>` :                            Create a new environemnt in the workspace
+* `create <envName>` :                            Create a new environment in the workspace
 * `list` :                                        List all workspace environments
 * `current` :                                     Print the name of the current workspace environment
 * `set <envName>` :                               Set a new current workspace environment

@@ -133,7 +133,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 
   public static readonly FETCH_SHOULD_ALIGN_FETCH_MODE = (
     fetchMode: string
-  ): string => 'It is recommended to fetch in \'align\' mode when fetching an environemnt for the first time and the fetched services already have elements in other environments.'
+  ): string => 'It is recommended to fetch in \'align\' mode when fetching an environment for the first time and the fetched services already have elements in other environments.'
    + ` Do you want to change the fetch mode from '${fetchMode}' to 'align'?`
 
   public static readonly FETCH_CHANGING_FETCH_MODE_TO_ALIGN = 'Changing fetch mode to \'align\''

@@ -19,7 +19,7 @@ import { hash as hashUtils, types } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Element, ReadOnlyElementsSource } from './elements'
+import { Element, ReadOnlyElementsSource, ObjectType } from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -108,10 +108,21 @@ export class ReferenceExpression {
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {
     if (this.resValue === undefined && elementsSource === undefined) {
-      throw new Error(`Can not resolve value of reference with ElemID ${this.elemID.getFullName()} without elementsSource cause value does not exist`)
+      throw new Error(
+        `Can not resolve value of reference with ElemID ${this.elemID.getFullName()} `
+        + 'without elementsSource cause value does not exist'
+      )
     }
-    // TODO: What should we do if elementsSource exists but has no value for this elemID?
-    return (await elementsSource?.get(this.elemID)) ?? this.value
+    const value = (await elementsSource?.get(this.elemID)) ?? this.value
+    // When there's no value in the ElementSource & in the Ref
+    // Fallback to a placeholder Type. This resembles the behaviour
+    // before the RefType change.
+    if (value === undefined) {
+      return new ObjectType({
+        elemID: this.elemID,
+      })
+    }
+    return value
   }
 }
 

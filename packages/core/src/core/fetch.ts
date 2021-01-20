@@ -471,7 +471,6 @@ export const createElemIdGetter = async (
     elements,
     state
   )
-
   return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
     serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
 }

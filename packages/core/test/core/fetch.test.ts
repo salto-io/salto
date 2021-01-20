@@ -594,7 +594,7 @@ describe('fetch', () => {
         const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
-          awu([obj]),
+          awu([obj]), 
           elementsSource
         )
 
@@ -614,7 +614,11 @@ describe('fetch', () => {
         const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
+<<<<<<< HEAD
           awu([obj]),
+=======
+          awu([obj]), 
+>>>>>>> ac97263a... fixed element to service id map created with wrong elements input
           elementsSource
         )
 
@@ -636,7 +640,11 @@ describe('fetch', () => {
         const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
+<<<<<<< HEAD
           awu([obj]),
+=======
+          awu([obj]), 
+>>>>>>> ac97263a... fixed element to service id map created with wrong elements input
           elementsSource
         )
 

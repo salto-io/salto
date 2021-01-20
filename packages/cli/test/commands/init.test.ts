@@ -17,8 +17,9 @@ import { Workspace } from '@salto-io/workspace'
 import { locateWorkspaceRoot } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/init'
-import { buildEventName, getCliTelemetry } from '../../src/telemetry'
-import { CliTelemetry } from '../../src/types'
+import { buildEventName } from '../../src/telemetry'
+import { getEnvName } from '../../src/callbacks'
+import { CommandArgs } from '../../src/command_builder'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -36,13 +37,18 @@ jest.mock('@salto-io/core', () => ({
   locateWorkspaceRoot: jest.fn(),
 }))
 
-const mockGetEnv = mocks.createMockEnvNameGetter()
-const mockLocateWorkspaceRoot = locateWorkspaceRoot as
-  jest.MockedFunction<typeof locateWorkspaceRoot>
-jest.mock('../../src/callbacks', () => ({
-  ...jest.requireActual('../../src/callbacks'),
-  getEnvName: () => mockGetEnv(),
-}))
+const mockLocateWorkspaceRoot = (
+  locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
+)
+
+jest.mock('../../src/callbacks', () => {
+  const actual = jest.requireActual('../../src/callbacks')
+  return {
+    ...actual,
+    getEnvName: jest.fn().mockImplementation(actual.getEnvName),
+  }
+})
+const mockGetEnvName = getEnvName as jest.MockedFunction<typeof getEnvName>
 
 const commandName = 'init'
 const eventsNames = {
@@ -52,26 +58,27 @@ const eventsNames = {
 }
 
 describe('init command', () => {
-  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  let cliCommandArgs: CommandArgs
   let telemetry: mocks.MockTelemetry
-  let cliTelemetry: CliTelemetry
-  const config = { shouldCalcTotalSize: false }
-
+  let output: mocks.MockCliOutput
   beforeEach(async () => {
+    mockGetEnvName.mockResolvedValue('default')
     mockLocateWorkspaceRoot.mockResolvedValue(undefined)
-    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    telemetry = mocks.getMockTelemetry()
-    cliTelemetry = getCliTelemetry(telemetry, 'init')
+    const cliArgs = mocks.mockCliArgs()
+    cliCommandArgs = {
+      ...mocks.mockCliCommandArgs(commandName, cliArgs),
+      workspacePath: '.',
+    }
+    telemetry = cliArgs.telemetry
+    output = cliArgs.output
   })
 
   it('should invoke api\'s init', async () => {
     await action({
+      ...cliCommandArgs,
       input: {
         workspaceName: 'test',
       },
-      config,
-      cliTelemetry,
-      output,
     })
     expect(output.stdout.content.search('test')).toBeGreaterThan(0)
     expect(telemetry.getEvents()).toHaveLength(2)
@@ -82,12 +89,10 @@ describe('init command', () => {
 
   it('should print errors', async () => {
     await action({
+      ...cliCommandArgs,
       input: {
         workspaceName: 'error',
       },
-      config,
-      cliTelemetry,
-      output,
     })
     expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
     expect(telemetry.getEvents()).toHaveLength(2)
@@ -100,12 +105,10 @@ describe('init command', () => {
     const path = '/some/path/to/workspace'
     mockLocateWorkspaceRoot.mockResolvedValue(path)
     await action({
+      ...cliCommandArgs,
       input: {
         workspaceName: 'test',
       },
-      config,
-      cliTelemetry,
-      output,
     })
     expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n\n`)
     expect(output.stdout.content).toEqual('')

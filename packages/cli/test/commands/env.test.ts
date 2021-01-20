@@ -13,46 +13,37 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as core from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { createAction, setAction, currentAction, listAction, deleteAction, renameAction } from '../../src/commands/env'
-import { CliExitCode, CliTelemetry } from '../../src/types'
+import { CliExitCode } from '../../src/types'
 
-jest.mock('@salto-io/core')
 describe('env command group', () => {
-  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  const config = { shouldCalcTotalSize: true }
-  let cliTelemetry: CliTelemetry
+  let cliArgs: mocks.MockCliArgs
+  let output: mocks.MockCliOutput
 
   beforeEach(async () => {
-    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(
-      baseDir => Promise.resolve(mocks.mockLoadWorkspace(baseDir))
-    )
+    cliArgs = mocks.mockCliArgs()
+    output = cliArgs.output
   })
 
   describe('create command', () => {
+    const commandName = 'create'
     it('should create a new environment', async () => {
       await createAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {
           envName: 'new-env',
         },
-        output,
-        config,
-        cliTelemetry,
+        workspace: mocks.mockWorkspace({}),
       })
       expect(output.stdout.content.search('new-env')).toBeGreaterThan(0)
     })
 
     describe('create multiple environments', () => {
-      let lastWorkspace: Workspace
+      let workspace: mocks.MockWorkspace
       beforeEach(() => {
-        jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(baseDir => {
-          lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1'])
-          return Promise.resolve(lastWorkspace)
-        })
+        workspace = mocks.mockWorkspace({ envs: ['me1'] })
         jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(
           () => Promise.resolve(false)
         )
@@ -64,17 +55,16 @@ describe('env command group', () => {
 
       it('should prompt on 2nd environment creation, and do nothing if false', async () => {
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me2',
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledWith('me1')
-        expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+        expect(workspace.demoteAll).not.toHaveBeenCalled()
       })
 
       it('should prompt on 2nd environment creation, and isolate if true', async () => {
@@ -83,158 +73,141 @@ describe('env command group', () => {
         )
 
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me2',
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledWith('me1')
-        expect(lastWorkspace.demoteAll).toHaveBeenCalled()
+        expect(workspace.demoteAll).toHaveBeenCalled()
       })
 
       it('should not prompt if force=true and acceptSuggestions=false, and do nothing', async () => {
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me2',
             force: true,
             yesAll: false,
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
-        expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+        expect(workspace.demoteAll).not.toHaveBeenCalled()
       })
 
       it('should isolate without prompting if acceptSuggestions=true', async () => {
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me2',
             yesAll: true,
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
-        expect(lastWorkspace.demoteAll).toHaveBeenCalled()
+        expect(workspace.demoteAll).toHaveBeenCalled()
       })
       it('should isolate without prompting if acceptSuggestions=true and force=true', async () => {
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me2',
             force: true,
             yesAll: true,
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
-        expect(lastWorkspace.demoteAll).toHaveBeenCalled()
+        expect(workspace.demoteAll).toHaveBeenCalled()
       })
 
       it('should not prompt on 2nd environment creation if workspace is empty', async () => {
-        jest.spyOn(core, 'loadLocalWorkspace').mockImplementationOnce(baseDir => {
-          lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1'], true)
-          return Promise.resolve(lastWorkspace)
-        })
+        workspace.isEmpty.mockResolvedValue(true)
 
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me2',
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
-        expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+        expect(workspace.demoteAll).not.toHaveBeenCalled()
       })
 
       it('should not prompt on 2nd environment creation if env1 folder exists', async () => {
-        jest.spyOn(core, 'loadLocalWorkspace').mockImplementation(baseDir => {
-          lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1'])
-          lastWorkspace.hasElementsInEnv = jest.fn().mockResolvedValue(true)
-          return Promise.resolve(lastWorkspace)
-        })
+        workspace.hasElementsInEnv.mockResolvedValue(true)
 
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me2',
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
-        expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+        expect(workspace.demoteAll).not.toHaveBeenCalled()
       })
 
       it('should not prompt on 3rd environment creation', async () => {
-        jest.spyOn(core, 'loadLocalWorkspace').mockImplementationOnce(baseDir => {
-          lastWorkspace = mocks.mockLoadWorkspace(baseDir, ['me1', 'me2'], true)
-          return Promise.resolve(lastWorkspace)
-        })
+        workspace = mocks.mockWorkspace({ envs: ['me1', 'me2'] })
 
         await createAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me3',
           },
-          output,
-          config,
-          cliTelemetry,
+          workspace,
         })
         expect(output.stdout.content.search('me3')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
-        expect(lastWorkspace.demoteAll).not.toHaveBeenCalled()
+        expect(workspace.demoteAll).not.toHaveBeenCalled()
       })
     })
   })
 
   describe('set command', () => {
+    const commandName = 'set'
     it('should set an environment', async () => {
       await setAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {
           envName: 'active',
         },
-        output,
-        cliTelemetry,
-        config,
+        workspace: mocks.mockWorkspace({}),
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
     })
   })
 
   describe('current command', () => {
+    const commandName = 'current'
     it('should display the current environment', async () => {
       await currentAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {},
-        output,
-        cliTelemetry,
-        config,
+        workspace: mocks.mockWorkspace({}),
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
     })
   })
 
   describe('list command', () => {
+    const commandName = 'list'
     it('should list all environments', async () => {
       await listAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {},
-        output,
-        cliTelemetry,
-        config,
+        workspace: mocks.mockWorkspace({}),
       })
       expect(output.stdout.content.search('active')).toBeGreaterThan(0)
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
@@ -242,29 +215,29 @@ describe('env command group', () => {
   })
 
   describe('delete command', () => {
+    const commandName = 'delete'
     it('should display the deleted environment', async () => {
       await deleteAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {
           envName: 'inactive',
         },
-        output,
-        cliTelemetry,
-        config,
+        workspace: mocks.mockWorkspace({}),
       })
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
     })
   })
 
   describe('rename command', () => {
+    const commandName = 'rename'
     it('should display renamed environment', async () => {
       const result = await renameAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {
           oldName: 'inactive',
           newName: 'new-inactive',
         },
-        output,
-        cliTelemetry,
-        config,
+        workspace: mocks.mockWorkspace({}),
       })
       expect(result).toBe(CliExitCode.Success)
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)

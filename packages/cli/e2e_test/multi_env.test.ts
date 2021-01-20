@@ -300,7 +300,7 @@ describe('multi env tests', () => {
       let elementsWithHidden: readonly Element[]
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
-        const workspace = await loadValidWorkspace(baseDir, true)
+        const workspace = await loadValidWorkspace(baseDir)
         visibleElements = (await workspace.elements(false))
         elementsWithHidden = (await workspace.elements(true))
       })
@@ -382,7 +382,7 @@ describe('multi env tests', () => {
         if (afterOtherEnvFetchPlan && afterOtherEnvFetchPlan.size > 10) {
           throw new Error('Too many unexpected changes. Aborting')
         }
-        await runDeploy({ fetchOutputDir: baseDir })
+        await runDeploy({ workspacePath: baseDir })
       })
 
       it('should have a non empty preview for the target enviornment', () => {
@@ -441,7 +441,7 @@ describe('multi env tests', () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
         afterDeleteOtherEnvFetchPlan = await runPreviewGetPlan(baseDir)
-        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true })
+        await runDeploy({ workspacePath: baseDir, allowErrors: true })
       })
 
       it('should have a non empty preview for the target enviornment', () => {
@@ -525,9 +525,9 @@ describe('multi env tests', () => {
         await runSetEnv(baseDir, ENV2_NAME)
         await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV1_NAME)
-        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true })
+        await runDeploy({ workspacePath: baseDir, allowErrors: true })
         await runSetEnv(baseDir, ENV2_NAME)
-        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true })
+        await runDeploy({ workspacePath: baseDir, allowErrors: true })
       })
 
       it('should create common elements in both envs', async () => {
@@ -606,9 +606,9 @@ describe('multi env tests', () => {
         await runSetEnv(baseDir, ENV2_NAME)
         await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV1_NAME)
-        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true })
+        await runDeploy({ workspacePath: baseDir, allowErrors: true })
         await runSetEnv(baseDir, ENV2_NAME)
-        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true })
+        await runDeploy({ workspacePath: baseDir, allowErrors: true })
       })
 
       it('should remove common elements from nacl change', async () => {

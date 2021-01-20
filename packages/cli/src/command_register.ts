@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import commander from 'commander'
-import { PositionalOption, CommandOrGroupDef, isCommand, CommandDef, CommandsGroupDef, KeyedOption } from './command_builder'
-import { CliArgs } from './types'
+import { CommandOrGroupDef, isCommand, CommandDef, CommandsGroupDef } from './command_builder'
+import { CliArgs, PositionalOption, KeyedOption } from './types'
 import { versionString } from './version'
 
 const LIST_SUFFIX = '...'

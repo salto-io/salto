@@ -20,7 +20,7 @@ import * as env from '../src/commands/env'
 import { CliExitCode, CliError } from '../src/types'
 
 describe('cli as a whole', () => {
-  let o: mocks.MockCliOutput
+  let o: mocks.MockCliReturn
 
   jest.setTimeout(200)
   jest.spyOn(logger, 'end').mockResolvedValue(undefined)

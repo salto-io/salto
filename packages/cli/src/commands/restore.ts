@@ -20,13 +20,13 @@ import { logger } from '@salto-io/logging'
 import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatChangesSummary, formatStepCompleted, formatStepFailed } from '../formatter'
+import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatChangesSummary, formatStepCompleted, formatStepFailed, formatStateRecencies } from '../formatter'
 import Prompts from '../prompts'
-import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../workspace/workspace'
+import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
-import { createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
-import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
+import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
 
@@ -98,47 +98,42 @@ const applyLocalChangesToWorkspace = async (
   return false
 }
 
-export const action: CommandDefAction<RestoreArgs> = async ({
+export const action: WorkspaceCommandAction<RestoreArgs> = async ({
   input,
   cliTelemetry,
   config,
   output,
   spinnerCreator,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running restore command on \'%s\' %o', workspacePath, input)
   const {
     elementSelectors = [], force, interactive, dryRun,
-    detailedPlan, listPlannedChanges, services, env, mode,
+    detailedPlan, listPlannedChanges, services, mode,
   } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
-  const { workspace, errored } = await loadWorkspace(
-    workspacePath,
-    output,
-    {
-      force,
-      printStateRecency: true,
-      spinnerCreator,
-      sessionEnv: env,
-    }
+  await validateAndSetEnv(workspace, input, output)
+  const activeServices = getAndValidateActiveServices(workspace, services)
+  const stateRecencies = await Promise.all(
+    activeServices.map(service => workspace.getStateRecency(service))
   )
-  if (errored) {
-    cliTelemetry.failure()
+  // Print state recencies
+  outputLine(formatStateRecencies(stateRecencies), output)
+
+  const validWorkspace = await isValidWorkspaceForCommand(
+    { workspace, cliOutput: output, spinnerCreator, force }
+  )
+  if (!validWorkspace) {
     return CliExitCode.AppError
   }
-  const actualServices = getAndValidateActiveServices(workspace, services)
-
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-  cliTelemetry.start(workspaceTags)
 
   outputLine(EOL, output)
   outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
 
-  const changes = await restore(workspace, actualServices, validSelectors)
+  const changes = await restore(workspace, activeServices, validSelectors)
   if (listPlannedChanges || dryRun) {
     printRestorePlan(changes, detailedPlan, output)
   }
@@ -147,10 +142,10 @@ export const action: CommandDefAction<RestoreArgs> = async ({
   outputLine(EOL, output)
 
   if (dryRun) {
-    cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   }
 
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   const updatingWsSucceeded = await applyLocalChangesToWorkspace(
     changes,
     workspace,
@@ -165,14 +160,12 @@ export const action: CommandDefAction<RestoreArgs> = async ({
 
   if (updatingWsSucceeded) {
     outputLine(formatRestoreFinish(), output)
-    cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   }
-  cliTelemetry.failure(workspaceTags)
   return CliExitCode.AppError
 }
 
-const restoreDef = createPublicCommandDef({
+const restoreDef = createWorkspaceCommand({
   properties: {
     name: 'restore',
     description: 'Update the workspace configuration elements from the state file',

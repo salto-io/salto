@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import glob from 'glob'
-import { Plan, telemetrySender, preview, loadLocalWorkspace } from '@salto-io/core'
+import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@salto-io/core'
 import { parser, Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
-import _ from 'lodash'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
@@ -25,15 +24,11 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
-import { action as fetchAction } from '../../src/commands/fetch'
+import commandDefs from '../../src/commands'
+import cli from '../../src/cli'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
-import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
-import { loadWorkspace } from '../../src/workspace/workspace'
-import { action as deployAction } from '../../src/commands/deploy'
-import { addAction, loginAction } from '../../src/commands/service'
-import { action as initAction } from '../../src/commands/init'
-import { createAction, setAction, deleteAction } from '../../src/commands/env'
-import { action as cleanAction } from '../../src/commands/clean'
+import { CliOutput, CliExitCode } from '../../src/types'
+import { validateWorkspace } from '../../src/workspace/workspace'
 
 declare global {
   // eslint-disable-next-line
@@ -70,20 +65,14 @@ const services = ['salesforce']
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
-const config = { shouldCalcTotalSize: true }
-
-const cliTelemetry: CliTelemetry = {
-  start: () => jest.fn(),
-  failure: () => jest.fn(),
-  success: () => jest.fn(),
-  mergeErrors: () => jest.fn(),
-  changes: () => jest.fn(),
-  changesToApply: () => jest.fn(),
-  errors: () => jest.fn(),
-  actionsSuccess: () => jest.fn(),
-  actionsFailure: () => jest.fn(),
-  workspaceSize: () => jest.fn(),
-  stacktrace: () => jest.fn(),
+const config: AppConfig = {
+  installationID: 'abcd',
+  telemetry: {
+    enabled: false,
+    token: '1234',
+    url: 'http://0.0.0.0',
+  },
+  command: { shouldCalcTotalSize: true },
 }
 
 const telemetry = telemetrySender(
@@ -92,33 +81,6 @@ const telemetry = telemetrySender(
 )
 
 export const cleanup = async (): Promise<void> => telemetry.stop(0)
-
-export const runAddSalesforceService = async (workspacePath: string): Promise<void> => {
-  await addAction({
-    input: {
-      login: true,
-      serviceName: 'salesforce',
-      authType: 'basic',
-    },
-    config,
-    output: mockCliOutput(),
-    cliTelemetry,
-    workspacePath,
-  })
-}
-
-export const runSalesforceLogin = async (workspacePath: string): Promise<void> => {
-  await loginAction({
-    input: {
-      serviceName: 'salesforce',
-      authType: 'basic',
-    },
-    cliTelemetry,
-    config,
-    output: mockCliOutput(),
-    workspacePath,
-  })
-}
 
 export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
   Promise<void> => {
@@ -135,26 +97,47 @@ export const getNaclFileElements = async (filename: string):
   return (await parse(Buffer.from(fileAsString), filename)).elements
 }
 
-export const runInit = async (
-  workspacePath: string,
-  baseDir?: string
-): Promise<void> => {
-  const origDir = process.cwd()
-  if (baseDir) {
-    process.chdir(baseDir)
-  }
-  await initAction({
+const runCommand = ({
+  workspacePath,
+  args,
+  cliOutput,
+}: {
+  workspacePath: string
+  args: string[]
+  cliOutput?: CliOutput
+}): Promise<CliExitCode> => (
+  cli({
     input: {
-      workspaceName: workspacePath,
+      args,
+      config: config.command,
+      telemetry,
     },
-    cliTelemetry,
-    config,
-    output: mockCliOutput(),
+    commandDefs,
     workspacePath,
+    output: cliOutput ?? mockCliOutput(),
+    spinnerCreator: mockSpinnerCreator([]),
   })
-  if (baseDir) {
-    process.chdir(origDir)
-  }
+)
+
+export const runInit = async (
+  workspaceName: string,
+  workspacePath: string,
+): Promise<void> => {
+  await runCommand({
+    workspacePath, args: ['init', workspaceName],
+  })
+}
+
+export const runAddSalesforceService = async (workspacePath: string): Promise<void> => {
+  await runCommand({
+    workspacePath, args: ['service', 'add', 'salesforce'],
+  })
+}
+
+export const runSalesforceLogin = async (workspacePath: string): Promise<void> => {
+  await runCommand({
+    workspacePath, args: ['service', 'login', 'salesforce'],
+  })
 }
 
 export const runCreateEnv = async (
@@ -162,39 +145,20 @@ export const runCreateEnv = async (
   envName: string,
   force?: boolean,
 ): Promise<void> => {
-  await createAction({
-    input: {
-      envName,
-      force,
-    },
-    config,
-    cliTelemetry,
-    output: mockCliOutput(),
-    workspacePath,
+  await runCommand({
+    workspacePath, args: ['env', 'create', envName, ...force ? ['-f'] : []],
   })
 }
 
 export const runSetEnv = async (workspacePath: string, envName: string): Promise<void> => {
-  await setAction({
-    input: {
-      envName,
-    },
-    config,
-    cliTelemetry,
-    output: mockCliOutput(),
-    workspacePath,
+  await runCommand({
+    workspacePath, args: ['env', 'set', envName],
   })
 }
 
 export const runDeleteEnv = async (workspacePath: string, envName: string): Promise<void> => {
-  await deleteAction({
-    input: {
-      envName,
-    },
-    config,
-    cliTelemetry,
-    output: mockCliOutput(),
-    workspacePath,
+  await runCommand({
+    workspacePath, args: ['env', 'delete', envName],
   })
 }
 
@@ -208,56 +172,32 @@ export const runFetch = async (
   isolated = false,
   inputEnvironment?: string,
 ): Promise<void> => {
-  const result = await fetchAction({
-    input: {
-      services,
-      env: inputEnvironment,
-      mode: isolated ? 'isolated' : 'override',
-      force: true,
-      interactive: false,
-      stateOnly: false,
-    },
-    config,
-    cliTelemetry,
-    output: mockCliOutput(),
+  const result = await runCommand({
     workspacePath: fetchOutputDir,
+    args: [
+      'fetch',
+      '-f',
+      ...inputEnvironment ? ['-e', inputEnvironment] : [],
+      '-m', isolated ? 'isolated' : 'override',
+    ],
   })
   expect(result).toEqual(CliExitCode.Success)
 }
 
 export const runDeploy = async ({
-  lastPlan,
-  fetchOutputDir,
+  workspacePath,
   allowErrors = false,
-  force = true,
-  dryRun = false,
-  detailedPlan = false,
 }: {
-  lastPlan?: Plan | undefined
-  fetchOutputDir: string
+  workspacePath: string
   allowErrors?: boolean
-  force?: boolean
-  dryRun?: boolean
-  detailedPlan?: boolean
 }): Promise<void> => {
-  if (lastPlan) {
-    lastPlan.clear()
-  }
-  const output = mockCliOutput()
-  const result = await deployAction({
-    input: {
-      force,
-      dryRun,
-      detailedPlan,
-      services,
-    },
-    config,
-    cliTelemetry,
-    output: mockCliOutput(),
-    spinnerCreator: mockSpinnerCreator([]),
-    workspacePath: fetchOutputDir,
+  const cliOutput = mockCliOutput()
+  const result = await runCommand({
+    args: ['deploy', '-f'],
+    workspacePath,
+    cliOutput,
   })
-  const errs = (output.stderr as MockWriteStream).content
+  const errs = (cliOutput.stderr as MockWriteStream).content
   // This assert is before result assert so will see the error
   // This is not a mistake, we will have errors on some deployments
   // with delete changes, and its expected.
@@ -267,46 +207,37 @@ export const runDeploy = async ({
   }
 }
 
-export const runPreview = async (fetchOutputDir: string): Promise<void> => (
-  runDeploy({ fetchOutputDir, allowErrors: false, dryRun: true })
-)
-
-export const runClean = async (
-  workspaceName: string,
-  cleanArgs: WorkspaceComponents,
-): Promise<void> => {
-  await cleanAction({
-    input: {
-      ...cleanArgs,
-      force: true,
-    },
-    config,
-    cliTelemetry,
-    output: mockCliOutput(),
-    workspacePath: workspaceName,
+export const runClean = async ({
+  workspacePath,
+  cleanArgs,
+}: {
+  workspacePath: string
+  cleanArgs: Partial<WorkspaceComponents>
+}): Promise<CliExitCode> => {
+  const options = [
+    ...cleanArgs.nacl === false ? ['--no-nacl'] : [],
+    ...cleanArgs.state === false ? ['--no-state'] : [],
+    ...cleanArgs.cache === false ? ['--no-cache'] : [],
+    ...cleanArgs.staticResources === false ? ['--no-static-resources'] : [],
+    ...cleanArgs.credentials ? ['--credentials'] : [],
+    ...cleanArgs.serviceConfig ? ['--service-config'] : [],
+  ]
+  return runCommand({
+    workspacePath,
+    args: ['clean', '-f', ...options],
   })
 }
 
-export const loadValidWorkspace = async (
-  fetchOutputDir: string,
-  force = true
-): Promise<Workspace> => {
-  const { workspace, errored } = await loadWorkspace(fetchOutputDir, mockCliOutput(), { force })
-  expect(errored).toBeFalsy()
+export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Workspace> => {
+  const workspace = await loadLocalWorkspace(fetchOutputDir)
+  const { errors } = await validateWorkspace(workspace)
+  expect(errors).toHaveLength(0)
   return workspace
 }
 
-export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
-  const workspace = await loadValidWorkspace(fetchOutputDir)
+export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan> => {
+  const workspace = await loadLocalWorkspace(fetchOutputDir)
   return preview(workspace, services)
-}
-
-export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
-  if (lastPlan) {
-    lastPlan.clear()
-  }
-  await runPreview(fetchOutputDir)
-  expect(_.isEmpty(lastPlan)).toBeTruthy()
 }
 
 const getChangedElementName = (change: Change): string => getChangeElement(change).elemID.name
@@ -330,6 +261,11 @@ export const verifyChanges = (plan: Plan,
     .sort(compareChanges)
 
   expect(expectedChanges.sort(compareChanges)).toEqual(changes)
+}
+
+export const runEmptyPreview = async (fetchOutputDir: string): Promise<void> => {
+  const plan = await runPreviewGetPlan(fetchOutputDir)
+  verifyChanges(plan, [])
 }
 
 const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,

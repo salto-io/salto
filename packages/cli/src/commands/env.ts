@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
-import { loadLocalWorkspace, diff } from '@salto-io/core'
+import { diff } from '@salto-io/core'
 import { Workspace, createElementSelectors } from '@salto-io/workspace'
-import { createCommandGroupDef, createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode } from '../types'
 import {
   formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv,
@@ -26,12 +25,9 @@ import {
   formatInvalidFilters, formatStepStart, formatStepCompleted, formatEnvDiff,
 } from '../formatter'
 import Prompts from '../prompts'
-import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
 import { outputLine, errorOutputLine } from '../outputer'
 import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
-
-const log = logger(module)
 
 const setEnvironment = async (
   envName: string,
@@ -88,22 +84,18 @@ type EnvDiffArgs = {
   state: boolean
 } & ServicesArg
 
-export const diffAction: CommandDefAction<EnvDiffArgs> = async ({
+export const diffAction: WorkspaceCommandAction<EnvDiffArgs> = async ({
   input,
   output,
-  cliTelemetry,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running env diff command on \'%s\' %o', workspacePath, input)
   const { detailedPlan, elementSelector = [], hidden, state, fromEnv, toEnv, services } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
-  const workspace = await loadLocalWorkspace(workspacePath)
   const actualServices = getAndValidateActiveServices(workspace, services)
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   if (!(workspace.envs().includes(fromEnv))) {
     errorOutputLine(`Unknown environment ${fromEnv}`, output)
     return CliExitCode.UserInputError
@@ -112,7 +104,6 @@ export const diffAction: CommandDefAction<EnvDiffArgs> = async ({
     errorOutputLine(`Unknown environment ${toEnv}`, output)
     return CliExitCode.UserInputError
   }
-  cliTelemetry.start(workspaceTags)
   outputLine(EOL, output)
   outputLine(formatStepStart(Prompts.DIFF_CALC_DIFF_START(toEnv, fromEnv)), output)
 
@@ -128,12 +119,11 @@ export const diffAction: CommandDefAction<EnvDiffArgs> = async ({
   outputLine(formatEnvDiff(changes, detailedPlan, toEnv, fromEnv), output)
   outputLine(formatStepCompleted(Prompts.DIFF_CALC_DIFF_FINISH(toEnv, fromEnv)), output)
   outputLine(EOL, output)
-  cliTelemetry.success(workspaceTags)
 
   return CliExitCode.Success
 }
 
-const envDiffDef = createPublicCommandDef({
+const envDiffDef = createWorkspaceCommand({
   properties: {
     name: 'diff',
     description: 'Compare two workspace environments',
@@ -190,20 +180,18 @@ type EnvRenameArgs = {
   newName: string
 }
 
-export const renameAction: CommandDefAction<EnvRenameArgs> = async ({
+export const renameAction: WorkspaceCommandAction<EnvRenameArgs> = async ({
   input,
   output,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running env rename command on \'%s\' %o', workspacePath, input)
   const { oldName, newName } = input
-  const workspace = await loadLocalWorkspace(workspacePath)
   await workspace.renameEnvironment(oldName, newName)
   outputLine(formatRenameEnv(oldName, newName), output)
   return CliExitCode.Success
 }
 
-const envRenameDef = createPublicCommandDef({
+const envRenameDef = createWorkspaceCommand({
   properties: {
     name: 'rename',
     description: 'Rename a workspace environment',
@@ -230,18 +218,16 @@ type EnvDeleteArgs = {
   envName: string
 }
 
-export const deleteAction: CommandDefAction<EnvDeleteArgs> = async (
-  { input, output, workspacePath = '.' },
+export const deleteAction: WorkspaceCommandAction<EnvDeleteArgs> = async (
+  { input, output, workspace },
 ): Promise<CliExitCode> => {
-  log.debug('running env delete command on \'%s\' %o', workspacePath, input)
   const { envName } = input
-  const workspace = await loadLocalWorkspace(workspacePath)
   await workspace.deleteEnvironment(envName)
   outputLine(formatDeleteEnv(envName), output)
   return CliExitCode.Success
 }
 
-const envDeleteDef = createPublicCommandDef({
+const envDeleteDef = createWorkspaceCommand({
   properties: {
     name: 'delete',
     description: 'Delete a workspace environment',
@@ -262,14 +248,13 @@ type EnvSetArgs = {
   envName: string
 }
 
-export const setAction: CommandDefAction<EnvSetArgs> = async (
-  { input: { envName }, output, workspacePath = '.' },
-): Promise<CliExitCode> => {
-  const workspace = await loadLocalWorkspace(workspacePath)
-  return setEnvironment(envName, output, workspace)
-}
+export const setAction: WorkspaceCommandAction<EnvSetArgs> = async (
+  { input: { envName }, output, workspace },
+): Promise<CliExitCode> => (
+  setEnvironment(envName, output, workspace)
+)
 
-const envSetDef = createPublicCommandDef({
+const envSetDef = createWorkspaceCommand({
   properties: {
     name: 'set',
     description: 'Set a new current workspace environment',
@@ -288,16 +273,14 @@ const envSetDef = createPublicCommandDef({
 // Current
 type EnvCurrentArgs = {}
 
-export const currentAction: CommandDefAction<EnvCurrentArgs> = async (
-  { output, workspacePath = '.' },
+export const currentAction: WorkspaceCommandAction<EnvCurrentArgs> = async (
+  { output, workspace },
 ): Promise<CliExitCode> => {
-  log.debug('running env current command on \'%s\'', workspacePath)
-  const workspace = await loadLocalWorkspace(workspacePath)
   outputLine(formatCurrentEnv(workspace.currentEnv()), output)
   return CliExitCode.Success
 }
 
-const envCurrentDef = createPublicCommandDef({
+const envCurrentDef = createWorkspaceCommand({
   properties: {
     name: 'current',
     description: 'Print the name of the current workspace environment',
@@ -308,17 +291,15 @@ const envCurrentDef = createPublicCommandDef({
 // List
 type EnvListArgs = {}
 
-export const listAction: CommandDefAction<EnvListArgs> = async (
-  { output, workspacePath = '.' },
+export const listAction: WorkspaceCommandAction<EnvListArgs> = async (
+  { output, workspace },
 ): Promise<CliExitCode> => {
-  log.debug('running env list command on \'%s\'', workspacePath)
-  const workspace = await loadLocalWorkspace(workspacePath)
   const list = formatEnvListItem(workspace.envs(), workspace.currentEnv())
   outputLine(list, output)
   return CliExitCode.Success
 }
 
-const envListDef = createPublicCommandDef({
+const envListDef = createWorkspaceCommand({
   properties: {
     name: 'list',
     description: 'List all workspace environments',
@@ -333,14 +314,13 @@ type EnvCreateArgs = {
   yesAll?: boolean
 }
 
-export const createAction: CommandDefAction<EnvCreateArgs> = async ({
+export const createAction: WorkspaceCommandAction<EnvCreateArgs> = async ({
   input,
   output,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running env create command on \'%s\' %o', workspacePath, input)
   const { force, yesAll, envName } = input
-  const workspace = await loadLocalWorkspace(workspacePath)
+  // Note - CLI always loads the workspace from '.'
   await maybeIsolateExistingEnv(output, workspace, force, yesAll)
 
   await workspace.addEnvironment(envName)
@@ -349,7 +329,7 @@ export const createAction: CommandDefAction<EnvCreateArgs> = async ({
   return CliExitCode.Success
 }
 
-const envCreateDef = createPublicCommandDef({
+const envCreateDef = createWorkspaceCommand({
   properties: {
     name: 'create',
     description: 'Create a new environment in the workspace',

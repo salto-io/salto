@@ -13,11 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
 import semver from 'semver'
-import { FetchChange, Tags, loadLocalWorkspace, StepEmitter } from '@salto-io/core'
+import { FetchChange, Tags, StepEmitter } from '@salto-io/core'
 import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace, nacl, StateRecency, validator as wsValidator } from '@salto-io/workspace'
@@ -145,7 +144,7 @@ const logWorkspaceUpdates = async (
   }
 }
 
-const shouldRecommendFetch = async (
+export const shouldRecommendFetch = async (
   stateSaltoVersion: string | undefined,
   invalidRecencies: StateRecency[],
   cliOutput: CliOutput
@@ -171,71 +170,35 @@ const shouldRecommendFetch = async (
   return false
 }
 
-export const loadWorkspace = async (
-  workingDir: string,
-  cliOutput: CliOutput,
-  {
-    force = false,
-    printStateRecency = false,
-    recommendStateStatus: recommendStateRecency = false,
-    spinnerCreator = undefined,
-    sessionEnv = undefined,
-    services = undefined,
-    ignoreUnresolvedRefs = false,
-    configOverrides,
-  }: Partial<LoadWorkspaceOptions> = {}
-): Promise<LoadWorkspaceResult> => {
-  const spinner = spinnerCreator
-    ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
-    : { succeed: () => undefined, fail: () => undefined }
-
-  const workspace = await loadLocalWorkspace(workingDir, configOverrides)
-  if (!_.isUndefined(sessionEnv)) {
-    if (!(workspace.envs().includes(sessionEnv))) {
-      spinner.fail(`Environment ${sessionEnv} isn't configured. Use salto env create.`)
-      return { workspace, errored: true, stateRecencies: [] }
-    }
-    await workspace.setCurrentEnv(sessionEnv, false)
-  }
-
+export const isValidWorkspaceForCommand = async ({
+  workspace,
+  cliOutput,
+  spinnerCreator,
+  force,
+  ignoreUnresolvedRefs = false,
+}: {
+  workspace: Workspace
+  cliOutput: CliOutput
+  spinnerCreator: SpinnerCreator
+  force?: boolean
+  ignoreUnresolvedRefs?: boolean
+}): Promise<boolean> => {
+  const spinner = spinnerCreator(Prompts.LOADING_WORKSPACE, {})
   const { status, errors } = await validateWorkspace(workspace, ignoreUnresolvedRefs)
-  // Stop the spinner
+  await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), cliOutput)
+
   if (status === 'Error') {
     spinner.fail(formatWorkspaceLoadFailed(errors.length))
-  } else {
-    spinner.succeed(formatFinishedLoading(workspace.currentEnv()))
-  }
-  // Print state's recency
-  const stateRecencies = await Promise.all((services || workspace.services())
-    .map(service => workspace.getStateRecency(service)))
-
-  if (printStateRecency) {
-    const prompt = stateRecencies.map(recency => (recency.status === 'Nonexistent'
-      ? Prompts.NONEXISTENT_STATE(recency.serviceName)
-      : Prompts.STATE_RECENCY(recency.serviceName, recency.date as Date))).join(EOL)
-    cliOutput.stdout.write(prompt + EOL)
-  }
-
-  // Offer to cancel because of stale status (stale or version)
-  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
-  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
-  if (recommendStateRecency && !force
-    && status !== 'Error'
-    && await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, cliOutput)
-  ) {
-    return { workspace, errored: true, stateRecencies }
-  }
-
-  // Handle warnings/errors
-  await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), cliOutput)
-  if (status === 'Warning' && !force) {
-    const shouldContinue = await shouldContinueInCaseOfWarnings(errors.length, cliOutput)
-    return { workspace, errored: !shouldContinue, stateRecencies }
-  }
-  if (status === 'Error') {
     cliOutput.stdout.write(formatWorkspaceAbort(errors.length))
+    return false
   }
-  return { workspace, errored: status === 'Error', stateRecencies }
+
+  spinner.succeed(formatFinishedLoading(workspace.currentEnv()))
+  if (status === 'Warning' && !force) {
+    return shouldContinueInCaseOfWarnings(errors.length, cliOutput)
+  }
+
+  return true
 }
 
 export const updateStateOnly = async (ws: Workspace,

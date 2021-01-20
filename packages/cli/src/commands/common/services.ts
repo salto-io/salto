@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
-import { KeyedOption } from '../../command_builder'
+import { KeyedOption } from '../../types'
 
 export type ServicesArg = {
     services?: string[]

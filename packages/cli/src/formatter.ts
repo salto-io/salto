@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { EOL } from 'os'
 import chalk from 'chalk'
 import wu, { WuIterable } from 'wu'
 import {
@@ -23,7 +24,7 @@ import {
   isStaticFile,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange } from '@salto-io/core'
-import { errors, SourceFragment, parser, WorkspaceComponents } from '@salto-io/workspace'
+import { errors, SourceFragment, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import Prompts from './prompts'
 
@@ -673,3 +674,11 @@ export const formatEnvDiff = (
     emptyLine(),
   ].join('\n')
 }
+
+export const formatStateRecencies = (stateRecencies: StateRecency[]): string => (
+  stateRecencies.map(
+    recency => (recency.status === 'Nonexistent'
+      ? Prompts.NONEXISTENT_STATE(recency.serviceName)
+      : Prompts.STATE_RECENCY(recency.serviceName, recency.date as Date))
+  ).join(EOL)
+)

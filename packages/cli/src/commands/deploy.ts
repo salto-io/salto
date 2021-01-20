@@ -16,19 +16,18 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import { promises } from '@salto-io/lowerdash'
-import { PlanItem, Plan, preview, DeployResult, Tags, ItemStatus, deploy } from '@salto-io/core'
+import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
-import { createPublicCommandDef, CommandDefAction } from '../command_builder'
+import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
-import { EnvArg, ENVIRONMENT_OPTION } from './common/env'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
-import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue } from '../formatter'
+import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
-import { loadWorkspace, getWorkspaceTelemetryTags, updateWorkspace } from '../workspace/workspace'
-import { ConfigOverrideArg, getConfigOverrideChanges, CONFIG_OVERRIDE_OPTION } from './common/config_override'
+import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
+import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
 
@@ -75,12 +74,11 @@ type DeployArgs = {
   force: boolean
   dryRun: boolean
   detailedPlan: boolean
-} & ServicesArg & EnvArg & ConfigOverrideArg
+} & ServicesArg & EnvArg
 
 const deployPlan = async (
   actionPlan: Plan,
   workspace: Workspace,
-  workspaceTags: Tags,
   cliTelemetry: CliTelemetry,
   output: CliOutput,
   force: boolean,
@@ -159,9 +157,10 @@ const deployPlan = async (
     result.errors.length,
   ), output)
   output.stdout.write(EOL)
-  log.debug(`${result.errors.length} errors occured:\n${result.errors.map(err => err.message).join('\n')}`)
+  log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.message).join('\n')}`)
 
   if (executingDeploy) {
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
     cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
   }
@@ -169,32 +168,35 @@ const deployPlan = async (
   return result
 }
 
-export const action: CommandDefAction<DeployArgs> = async ({
+export const action: WorkspaceCommandAction<DeployArgs> = async ({
   input,
   cliTelemetry,
   output,
   spinnerCreator,
-  workspacePath = '.',
+  workspace,
 }): Promise<CliExitCode> => {
-  log.debug('running deploy command on \'%s\' %o', workspacePath, input)
-  const { force, dryRun, detailedPlan, env, services } = input
-  const { workspace, errored } = await loadWorkspace(workspacePath,
-    output,
-    {
-      force,
-      printStateRecency: true,
-      recommendStateStatus: true,
-      spinnerCreator,
-      sessionEnv: env,
-      configOverrides: getConfigOverrideChanges(input),
-    })
-  if (errored) {
-    cliTelemetry.failure()
+  const { force, dryRun, detailedPlan, services } = input
+  await validateAndSetEnv(workspace, input, output)
+  const actualServices = getAndValidateActiveServices(workspace, services)
+  const stateRecencies = await Promise.all(
+    actualServices.map(service => workspace.getStateRecency(service))
+  )
+  // Print state recencies
+  outputLine(formatStateRecencies(stateRecencies), output)
+
+  const validWorkspace = await isValidWorkspaceForCommand(
+    { workspace, cliOutput: output, spinnerCreator, force }
+  )
+  if (!validWorkspace) {
     return CliExitCode.AppError
   }
-  const actualServices = getAndValidateActiveServices(workspace, services)
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-  cliTelemetry.start(workspaceTags)
+
+  // Validate state recencies
+  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
+  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
+  if (!force && await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, output)) {
+    return CliExitCode.AppError
+  }
 
   const actionPlan = await preview(workspace, actualServices)
   await printPlan(actionPlan, output, workspace, detailedPlan)
@@ -202,7 +204,6 @@ export const action: CommandDefAction<DeployArgs> = async ({
   const result = dryRun ? { success: true, errors: [] } : await deployPlan(
     actionPlan,
     workspace,
-    workspaceTags,
     cliTelemetry,
     output,
     force,
@@ -221,16 +222,10 @@ export const action: CommandDefAction<DeployArgs> = async ({
     }
   }
 
-  if (cliExitCode === CliExitCode.Success) {
-    cliTelemetry.success(workspaceTags)
-  } else {
-    cliTelemetry.failure(workspaceTags)
-  }
-
   return cliExitCode
 }
 
-const deployDef = createPublicCommandDef({
+const deployDef = createWorkspaceCommand({
   properties: {
     name: 'deploy',
     description: 'Update the upstream services from the workspace configuration elements',
@@ -255,7 +250,6 @@ const deployDef = createPublicCommandDef({
       },
       SERVICES_OPTION,
       ENVIRONMENT_OPTION,
-      CONFIG_OVERRIDE_OPTION,
     ],
   },
   action,

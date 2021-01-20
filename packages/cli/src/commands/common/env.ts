@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { KeyedOption } from '../../command_builder'
+import { Workspace } from '@salto-io/workspace'
+import { errorOutputLine } from '../../outputer'
+import { CliError, CliExitCode, CliOutput, KeyedOption } from '../../types'
 
 export type EnvArg = {
     env?: string
@@ -25,4 +27,18 @@ export const ENVIRONMENT_OPTION: KeyedOption<EnvArg> = {
   required: false,
   description: 'The name of the environment to use (default=current env)',
   type: 'string',
+}
+
+export const validateAndSetEnv = async (
+  workspace: Workspace,
+  envArg: EnvArg,
+  cliOutput: CliOutput,
+): Promise<void> => {
+  if (envArg.env !== undefined) {
+    if (!workspace.envs().includes(envArg.env)) {
+      errorOutputLine(`Unknown environment ${envArg.env}`, cliOutput)
+      throw new CliError(CliExitCode.UserInputError)
+    }
+    await workspace.setCurrentEnv(envArg.env, false)
+  }
 }

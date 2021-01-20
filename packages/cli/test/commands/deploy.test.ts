@@ -13,14 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import semver from 'semver'
+import moment from 'moment'
 import { Plan, PlanItem } from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
-import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
+import { Workspace, state, pathIndex } from '@salto-io/workspace'
+import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
-import * as workspace from '../../src/workspace/workspace'
-import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import { version as currentVersion } from '../../src/generated/version.json'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -44,177 +45,155 @@ jest.mock('@salto-io/core', () => ({
     _services: string[],
   ) => mockPreview()),
 }))
-jest.mock('../../src/workspace/workspace')
 
 const commandName = 'deploy'
-const eventsNames = {
-  failure: buildEventName(commandName, 'failure'),
-}
 
 describe('deploy command', () => {
-  let telemetry: mocks.MockTelemetry
-  let cliTelemetry: CliTelemetry
-  const config = { shouldCalcTotalSize: true }
-  const spinners: Spinner[] = []
-  let spinnerCreator: SpinnerCreator
-  let output: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  let workspace: mocks.MockWorkspace
+  let output: mocks.MockCliOutput
+  let cliCommandArgs: mocks.MockCommandArgs
   const services = ['salesforce']
-  const env = 'inactive'
-
-  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
-  mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+  const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
+  const mockShouldCancel = callbacks.shouldCancelCommand as jest.Mock
 
   beforeEach(() => {
-    output = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    spinnerCreator = mocks.mockSpinnerCreator(spinners)
+    const cliArgs = mocks.mockCliArgs()
+    cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
+    output = cliArgs.output
+    workspace = mocks.mockWorkspace({})
+    workspace.getStateRecency.mockImplementation(async serviceName => ({
+      serviceName, status: 'Valid', date: new Date(),
+    }))
+    mockGetUserBooleanInput.mockReset()
+    mockShouldCancel.mockReset()
   })
 
   describe('should deploy considering user input', () => {
-    let content: string
-    const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
-    beforeEach(() => {
-      telemetry = mocks.getMockTelemetry()
-      cliTelemetry = getCliTelemetry(telemetry, commandName)
-    })
-
     it('should continue with deploy when user input is y', async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(true)
       await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           dryRun: false,
           detailedPlan: false,
           services,
         },
-        output,
-        cliTelemetry,
-        spinnerCreator,
-        config,
+        workspace,
       })
-      content = output.stdout.content
-      expect(content).toContain('Starting the deployment plan')
-      expect(content).toContain('Deployment succeeded')
+      expect(output.stdout.content).toContain('Starting the deployment plan')
+      expect(output.stdout.content).toContain('Deployment succeeded')
     })
 
     it('should not deploy when user input is n', async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(false)
       await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           dryRun: false,
           detailedPlan: false,
           services,
         },
-        output,
-        cliTelemetry,
-        spinnerCreator,
-        config,
+        workspace,
       })
-      content = output.stdout.content
-      expect(content).toContain('Cancelling deploy')
-      expect(content).not.toContain('Deployment succeeded')
+      expect(output.stdout.content).toContain('Cancelling deploy')
+      expect(output.stdout.content).not.toContain('Deployment succeeded')
     })
   })
 
   describe('should not deploy on dry-run', () => {
-    let content: string
     it('should not deploy when dry-run flag is set', async () => {
-      telemetry = mocks.getMockTelemetry()
       const result = await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           dryRun: true,
           detailedPlan: false,
           services,
         },
-        output,
-        cliTelemetry,
-        spinnerCreator,
-        config,
+        workspace,
       })
       expect(result).toBe(CliExitCode.Success)
-      content = output.stdout.content
       // exit without attempting to deploy
-      expect(content).not.toContain('Cancelling deploy')
-      expect(content).not.toContain('Deployment succeeded')
+      expect(output.stdout.content).not.toContain('Cancelling deploy')
+      expect(output.stdout.content).not.toContain('Deployment succeeded')
     })
   })
 
   describe('detailed plan', () => {
-    let content: string
-
     it('should include value changes when detailed-plan is set', async () => {
-      telemetry = mocks.getMockTelemetry()
       await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           dryRun: false,
           detailedPlan: true,
           services,
         },
-        output,
-        cliTelemetry,
-        spinnerCreator,
-        config,
+        workspace,
       })
-      content = output.stdout.content
-      expect(content).toMatch(/M.*name: "FirstEmployee" => "PostChange"/)
+      expect(output.stdout.content).toMatch(/M.*name: "FirstEmployee" => "PostChange"/)
     })
   })
 
   describe('invalid deploy', () => {
     it('should fail gracefully', async () => {
-      telemetry = mocks.getMockTelemetry()
-      cliTelemetry = getCliTelemetry(telemetry, commandName)
-      // Running with base dir 'errorDir' will cause the mock to throw an error
+      workspace.errors.mockResolvedValue(
+        mocks.mockErrors([{ severity: 'Error', message: 'some error' }])
+      )
       const result = await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           dryRun: false,
           detailedPlan: false,
           services,
         },
-        output,
-        cliTelemetry,
-        spinnerCreator,
-        config,
-        workspacePath: 'errorDir',
+        workspace,
       })
       expect(result).toBe(CliExitCode.AppError)
-      expect(telemetry.getEvents()).toHaveLength(1)
-      expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+    })
+    it('should allow the user to cancel when there are warnings', async () => {
+      workspace.errors.mockResolvedValue(
+        mocks.mockErrors([{ severity: 'Warning', message: 'some warning' }])
+      )
+      mockGetUserBooleanInput.mockResolvedValue(false)
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          services,
+        },
+        workspace,
+      })
+      expect(result).toBe(CliExitCode.AppError)
+      expect(callbacks.shouldContinueInCaseOfWarnings).toHaveBeenCalled()
     })
   })
   describe('when deploy result makes the workspace invalid', () => {
     beforeEach(() => {
-      telemetry = mocks.getMockTelemetry()
-      cliTelemetry = getCliTelemetry(telemetry, commandName)
-      const mockWs = mocks.mockLoadWorkspaceEnvironment('', output, {})
-      mockLoadWorkspace.mockResolvedValueOnce(mockWs)
-      const mockUpdateNacls = mockWs.workspace.updateNaclFiles as jest.Mock
-      const mockWorkspaceErrors = mockWs.workspace.errors as jest.Mock
-      mockUpdateNacls.mockImplementationOnce(async () => {
-        mockWorkspaceErrors.mockResolvedValueOnce(mocks.mockErrors([
-          { severity: 'Error', message: '' },
-        ]))
+      workspace.updateNaclFiles.mockImplementationOnce(async () => {
+        // Make the workspace errored after the call to updateNaclFiles
+        workspace.errors.mockResolvedValueOnce(
+          mocks.mockErrors([{ severity: 'Error', message: '' }])
+        )
       })
-      const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
-      mockGetUserBooleanInput.mockClear()
       mockGetUserBooleanInput.mockReturnValue(true)
     })
     describe('when called without force', () => {
       it('should fail after asking whether to write', async () => {
         const result = await action({
+          ...cliCommandArgs,
           input: {
             force: false,
             dryRun: false,
             detailedPlan: false,
             services,
           },
-          output,
-          cliTelemetry,
-          spinnerCreator,
-          config,
+          workspace,
         })
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).toHaveBeenCalled()
@@ -223,16 +202,14 @@ describe('deploy command', () => {
     describe('when called with force', () => {
       it('should fail without user interaction', async () => {
         const result = await action({
+          ...cliCommandArgs,
           input: {
             force: true,
             dryRun: false,
             detailedPlan: false,
             services,
           },
-          output,
-          cliTelemetry,
-          spinnerCreator,
-          config,
+          workspace,
         })
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
@@ -241,23 +218,148 @@ describe('deploy command', () => {
   })
   describe('Using environment variable', () => {
     it('should use provided env', async () => {
-      telemetry = mocks.getMockTelemetry()
-      mockLoadWorkspace.mockClear()
       await action({
+        ...cliCommandArgs,
         input: {
           force: false,
           dryRun: false,
           detailedPlan: false,
           services,
-          env,
+          env: mocks.withEnvironmentParam,
         },
-        output,
-        cliTelemetry,
-        spinnerCreator,
-        config,
+        workspace,
       })
-      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(env)
-      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
+    })
+  })
+  describe('recommend fetch flow', () => {
+    const mockState = ({
+      saltoVersion, servicesUpdateDate,
+    }: Partial<state.StateData>): state.State => (
+      state.buildInMemState(async () => ({
+        elements: {},
+        pathIndex: new pathIndex.PathIndex(),
+        servicesUpdateDate: servicesUpdateDate ?? {},
+        saltoVersion,
+      }))
+    )
+    const inputOptions = {
+      force: false,
+      dryRun: false,
+      detailedPlan: false,
+    }
+    describe('when state salto version does not exist', () => {
+      beforeEach(async () => {
+        mockShouldCancel.mockResolvedValue(true)
+        workspace.state.mockReturnValue(mockState({}))
+        await action({
+          ...cliCommandArgs,
+          input: inputOptions,
+          workspace,
+        })
+      })
+      it('should recommend cancel', () => {
+        expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
+      })
+    })
+    describe('when state version is newer than the current version', () => {
+      beforeEach(async () => {
+        mockShouldCancel.mockResolvedValue(true)
+        workspace.state.mockReturnValue(mockState({
+          saltoVersion: semver.inc(currentVersion, 'patch') as string,
+        }))
+        await action({
+          ...cliCommandArgs,
+          input: inputOptions,
+          workspace,
+        })
+      })
+      it('should recommend cancel', () => {
+        expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
+      })
+    })
+    describe('when state version is the current version', () => {
+      beforeEach(async () => {
+        // answer false so we do not continue with deploy
+        mockGetUserBooleanInput.mockResolvedValue(false)
+
+        workspace.state.mockReturnValue(mockState({
+          saltoVersion: currentVersion,
+        }))
+      })
+      describe('when all services are valid', () => {
+        beforeEach(async () => {
+          await action({
+            ...cliCommandArgs,
+            input: inputOptions,
+            workspace,
+          })
+        })
+        it('should not recommend cancel', () => {
+          expect(callbacks.shouldCancelCommand).not.toHaveBeenCalled()
+        })
+      })
+      describe('when some services were never fetched', () => {
+        beforeEach(async () => {
+          workspace.getStateRecency.mockImplementationOnce(async serviceName => ({
+            serviceName, status: 'Nonexistent', date: undefined,
+          }))
+          await action({
+            ...cliCommandArgs,
+            input: inputOptions,
+            workspace,
+          })
+        })
+        it('should recommend cancel', () => {
+          expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
+        })
+      })
+      describe('when some services are old', () => {
+        beforeEach(async () => {
+          workspace.getStateRecency.mockImplementationOnce(async serviceName => ({
+            serviceName, status: 'Old', date: moment(new Date()).subtract(1, 'month').toDate(),
+          }))
+          await action({
+            ...cliCommandArgs,
+            input: inputOptions,
+            workspace,
+          })
+        })
+        it('should recommend cancel', () => {
+          expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
+        })
+      })
+    })
+    describe('when state version is older than the current version by more than one patch', () => {
+      const decreaseVersion = (version: semver.SemVer): semver.SemVer => {
+        const prev = new semver.SemVer(version)
+        if (prev.patch > 1) {
+          prev.patch -= 2
+        } else if (prev.minor > 0) {
+          prev.minor -= 1
+        } else if (prev.major > 0) {
+          prev.major -= 1
+        } else {
+          throw new Error(`Cannot decrease version ${version.format()}`)
+        }
+        return prev
+      }
+      beforeEach(async () => {
+        mockShouldCancel.mockResolvedValue(true)
+        const prevVersion = decreaseVersion(semver.parse(currentVersion) as semver.SemVer)
+
+        workspace.state.mockReturnValue(mockState({
+          saltoVersion: prevVersion.format(),
+        }))
+        await action({
+          ...cliCommandArgs,
+          input: inputOptions,
+          workspace,
+        })
+      })
+      it('should recommend cancel', () => {
+        expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

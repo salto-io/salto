@@ -20,7 +20,7 @@ import { getConfigOverrideChanges } from '../../src/commands/common/config_overr
 
 describe('Commands commons tests', () => {
   describe('getAndValidateActiveServices with workspace with services', () => {
-    const mockWorkspace = mocks.mockLoadWorkspace('ws', undefined, undefined, undefined, ['service1', 'service2', 'service3'])
+    const mockWorkspace = mocks.mockWorkspace({ services: ['service1', 'service2', 'service3'] })
 
     it('Should return the workspaces\' services if no input services provided', () => {
       const result = getAndValidateActiveServices(mockWorkspace, undefined)
@@ -37,7 +37,7 @@ describe('Commands commons tests', () => {
     })
   })
   describe('getAndValidateActiveServices with workspace with no services', () => {
-    const mockWorkspace = mocks.mockLoadWorkspace('ws', undefined, undefined, undefined, [])
+    const mockWorkspace = mocks.mockWorkspace({ services: [] })
     it('Should throw an error if no input services provided', () => {
       expect(() => getAndValidateActiveServices(mockWorkspace, undefined)).toThrow()
     })

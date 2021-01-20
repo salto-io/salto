@@ -25,15 +25,29 @@ import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
-import { Workspace, errors as wsErrors } from '@salto-io/workspace'
-import * as workspace from '../src/workspace/workspace'
+import { Workspace, errors as wsErrors, state as wsState, pathIndex, parser } from '@salto-io/workspace'
 import realCli from '../src/cli'
 import commandDefinitions from '../src/commands/index'
-import { CommandOrGroupDef } from '../src/command_builder'
-import { Spinner, SpinnerCreator, CliOutput } from '../src/types'
+import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
+import { Spinner, SpinnerCreator } from '../src/types'
+import { getCliTelemetry } from '../src/telemetry'
+import { version as currentVersion } from '../src/generated/version.json'
 
-export const mockFunction = <T extends (...args: never[]) => unknown>():
-  jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
+export type MockFunction<T extends (...args: never[]) => unknown> =
+  jest.Mock<ReturnType<T>, Parameters<T>>
+
+export type SpiedFunction<T extends (...args: never[]) => unknown> =
+  jest.SpyInstance<ReturnType<T>, Parameters<T>>
+
+export type MockInterface<T extends {}> = {
+  [k in keyof T]: T[k] extends (...args: never[]) => unknown
+    ? MockFunction<T[k]>
+    : MockInterface<T[k]>
+}
+
+export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
+  jest.fn()
+)
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 
@@ -50,8 +64,9 @@ export class MockWriteStream {
   write(s: string): void { this.content += s }
 }
 
-export type MockWritableStream = NodeJS.WritableStream & {
-  contents(): string
+export type MockCliOutput = {
+  stdout: MockWriteStream
+  stderr: MockWriteStream
 }
 
 export const mockSpinnerCreator = (spinners: Spinner[]): SpinnerCreator => jest.fn(() => {
@@ -63,7 +78,7 @@ export const mockSpinnerCreator = (spinners: Spinner[]): SpinnerCreator => jest.
   return result
 })
 
-export interface MockCliOutput {
+export interface MockCliReturn {
   err: string
   out: string
   exitCode: number
@@ -106,6 +121,30 @@ const getMockCommandConfig = (): CommandConfig => ({
   shouldCalcTotalSize: true,
 })
 
+export type MockCliArgs = {
+  telemetry: MockTelemetry
+  config: CommandConfig
+  output: MockCliOutput
+  spinnerCreator: SpinnerCreator
+}
+export const mockCliArgs = (): MockCliArgs => ({
+  telemetry: getMockTelemetry(),
+  config: getMockCommandConfig(),
+  output: { stdout: new MockWriteStream(), stderr: new MockWriteStream() },
+  spinnerCreator: mockSpinnerCreator([]),
+})
+
+export type MockCommandArgs = Omit<CommandArgs, 'workspacePath'>
+export const mockCliCommandArgs = (commandName: string, cliArgs?: MockCliArgs): MockCommandArgs => {
+  const { telemetry, config, output, spinnerCreator } = cliArgs ?? mockCliArgs()
+  return {
+    cliTelemetry: getCliTelemetry(telemetry, commandName),
+    config,
+    output,
+    spinnerCreator,
+  }
+}
+
 export const cli = async ({
   commandDefs = commandDefinitions,
   args = [],
@@ -116,7 +155,7 @@ export const cli = async ({
   args?: string[]
   out?: MockWriteStreamOpts
   err?: MockWriteStreamOpts
-} = {}): Promise<MockCliOutput> => {
+} = {}): Promise<MockCliReturn> => {
   const input = {
     args,
     stdin: {},
@@ -131,17 +170,7 @@ export const cli = async ({
   const spinners: Spinner[] = []
   const spinnerCreator = mockSpinnerCreator(spinners)
 
-  const config = { installationID: 'installationID',
-    telemetry: {
-      url: 'url',
-      token: 'token',
-      enabled: false,
-    },
-    command: {
-      shouldCalcTotalSize: false,
-    } }
-
-  const exitCode = await realCli({ input, output, commandDefs, spinnerCreator, config })
+  const exitCode = await realCli({ input, output, commandDefs, spinnerCreator, workspacePath: '.' })
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }
@@ -234,82 +263,87 @@ export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => ({
   strings: () => errors.map(err => err.message),
 })
 
-export const mockLoadWorkspace = (
-  name: string,
-  envs = ['active', 'inactive'],
-  isEmpty = false,
-  hasElementsInServices = true,
-  services = ['salesforce', 'hubspot']
-): Workspace =>
-  ({
-    uid: '123',
-    name,
-    currentEnv: () => 'active',
-    envs: () => envs,
-    services: () => services,
-    elements: jest.fn().mockResolvedValue([] as ReadonlyArray<Element>),
-    hasErrors: () => jest.fn().mockResolvedValue(false),
-    errors: () => jest.fn().mockResolvedValue(mockErrors([])),
-    isEmpty: jest.fn().mockResolvedValue(isEmpty),
-    hasElementsInServices: jest.fn().mockResolvedValue(hasElementsInServices),
-    getElementIdsBySelectors: jest.fn(),
-    getTotalSize: jest.fn().mockResolvedValue(0),
-    addEnvironment: jest.fn(),
-    deleteEnvironment: jest.fn(),
-    renameEnvironment: jest.fn(),
-    setCurrentEnv: jest.fn().mockReturnValue('active'),
-    transformToWorkspaceError: () => ({
-      sourceFragments: [],
-      message: 'Error',
-      severity: 'Error',
-    }),
-    state: jest.fn().mockImplementation(() => ({
-      existingServices: jest.fn().mockResolvedValue(services),
-    })),
-    fetchedServices: jest.fn().mockResolvedValue([]),
-    promote: jest.fn().mockResolvedValue(undefined),
-    demote: jest.fn().mockResolvedValue(undefined),
-    demoteAll: jest.fn().mockResolvedValue(undefined),
-    copyTo: jest.fn().mockResolvedValue(undefined),
-    flush: jest.fn().mockResolvedValue(undefined),
-    updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
-    clear: jest.fn().mockResolvedValue(undefined),
-    updateServiceConfig: jest.fn().mockResolvedValue(undefined),
-    hasElementsInEnv: jest.fn().mockResolvedValue(false),
-  } as unknown as Workspace)
+// Mock interface does not handle template functions well
+export type MockWorkspace = MockInterface<Omit<Workspace, 'transformToWorkspaceError'>>
+  & Pick<Workspace, 'transformToWorkspaceError'>
 
 export const withoutEnvironmentParam = 'active'
 export const withEnvironmentParam = 'inactive'
 
-export const mockLoadWorkspaceEnvironment = (
-  baseDir: string,
-  _cliOutput: CliOutput,
-  { sessionEnv = withoutEnvironmentParam }: Partial<workspace.LoadWorkspaceOptions>
-): workspace.LoadWorkspaceResult => {
-  if (baseDir === 'errorDir') {
-    return {
-      workspace: ({}) as unknown as Workspace,
-      errored: true,
-      stateRecencies: [],
-    }
-  }
-  if (sessionEnv === withEnvironmentParam) {
-    return {
-      workspace: {
-        ...mockLoadWorkspace(baseDir),
-        currentEnv: () => withEnvironmentParam,
-      },
-      errored: false,
-      stateRecencies: [],
-    }
-  }
+type MockWorkspaceArgs = {
+  uid?: string
+  name?: string
+  envs?: string[]
+  services?: string[]
+}
+export const mockWorkspace = ({
+  uid = '123',
+  name = '',
+  envs = ['active', 'inactive'],
+  services = ['salesforce', 'hubspot'],
+}: MockWorkspaceArgs): MockWorkspace => {
+  const state = wsState.buildInMemState(
+    async () => ({
+      elements: {},
+      pathIndex: new pathIndex.PathIndex(),
+      servicesUpdateDate: {},
+      saltoVersion: currentVersion,
+    })
+  )
   return {
-    workspace: {
-      ...mockLoadWorkspace(baseDir),
-      currentEnv: () => withoutEnvironmentParam,
-    },
-    errored: false,
-    stateRecencies: [],
+    uid,
+    name,
+    elements: mockFunction<Workspace['elements']>().mockResolvedValue(elements()),
+    state: mockFunction<Workspace['state']>().mockReturnValue(state),
+    envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),
+    currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue(envs[0]),
+    services: mockFunction<Workspace['services']>().mockReturnValue(services),
+    servicesCredentials: mockFunction<Workspace['servicesCredentials']>().mockResolvedValue({}),
+    servicesConfig: mockFunction<Workspace['servicesConfig']>().mockResolvedValue({}),
+    isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
+    hasElementsInServices: mockFunction<Workspace['hasElementsInServices']>().mockResolvedValue(true),
+    hasElementsInEnv: mockFunction<Workspace['hasElementsInEnv']>().mockResolvedValue(false),
+    getSourceFragment: mockFunction<Workspace['getSourceFragment']>().mockImplementation(
+      async sourceRange => ({ sourceRange, fragment: '' })
+    ),
+    hasErrors: mockFunction<Workspace['hasErrors']>().mockResolvedValue(false),
+    errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
+    transformToWorkspaceError: mockFunction<Workspace['transformToWorkspaceError']>().mockImplementation(
+      async error => ({ ...error, sourceFragments: [] })
+    ) as Workspace['transformToWorkspaceError'],
+    transformError: mockFunction<Workspace['transformError']>().mockImplementation(
+      async error => ({ ...error, sourceFragments: [] })
+    ),
+    updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
+    listNaclFiles: mockFunction<Workspace['listNaclFiles']>().mockResolvedValue([]),
+    getTotalSize: mockFunction<Workspace['getTotalSize']>().mockResolvedValue(0),
+    getNaclFile: mockFunction<Workspace['getNaclFile']>(),
+    setNaclFiles: mockFunction<Workspace['setNaclFiles']>(),
+    removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>(),
+    getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(new parser.SourceMap()),
+    getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockResolvedValue([]),
+    getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
+    getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([]),
+    getElementIdsBySelectors: mockFunction<Workspace['getElementIdsBySelectors']>().mockResolvedValue([]),
+    getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>(),
+    flush: mockFunction<Workspace['flush']>(),
+    clone: mockFunction<Workspace['clone']>(),
+    clear: mockFunction<Workspace['clear']>(),
+    addService: mockFunction<Workspace['addService']>(),
+    addEnvironment: mockFunction<Workspace['addEnvironment']>(),
+    deleteEnvironment: mockFunction<Workspace['deleteEnvironment']>(),
+    renameEnvironment: mockFunction<Workspace['renameEnvironment']>(),
+    setCurrentEnv: mockFunction<Workspace['setCurrentEnv']>(),
+    updateServiceCredentials: mockFunction<Workspace['updateServiceCredentials']>(),
+    updateServiceConfig: mockFunction<Workspace['updateServiceConfig']>(),
+    getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(
+      async serviceName => ({ serviceName, status: 'Nonexistent', date: undefined })
+    ),
+    promote: mockFunction<Workspace['promote']>(),
+    demote: mockFunction<Workspace['demote']>(),
+    demoteAll: mockFunction<Workspace['demoteAll']>(),
+    copyTo: mockFunction<Workspace['copyTo']>(),
+    getValue: mockFunction<Workspace['getValue']>(),
   }
 }
 
@@ -569,10 +603,3 @@ export const deploy = async (
     errors: [],
   }
 }
-
-export const createMockEnvNameGetter = (
-  newEnvName = 'default'
-): (
-) => Promise<string> => (
-  () => Promise.resolve(newEnvName)
-)

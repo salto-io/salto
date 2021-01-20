@@ -131,6 +131,7 @@ const layoutAssignmentsType = new ObjectType({
     layout: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     recordType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
+  path: [DUMMY_ADAPTER, 'Default', 'LayoutAssignments'],
 })
 
 const oldProfileType = new ObjectType({
@@ -341,7 +342,7 @@ export const generateElements = async (
         const fieldType = getFieldType(true)
         return [name, {
           refType: createRefToElmWithValue(fieldType),
-          annotations: generateAnnotations(
+          annotations: await generateAnnotations(
             // don't generate random annotations for builtin types, even if they
             // support additional annotation types
             fieldType === BuiltinTypes.HIDDEN_STRING ? {} : await fieldType.getAnnotationTypes()
@@ -371,7 +372,7 @@ export const generateElements = async (
           PrimitiveTypes.NUMBER,
         ]),
         annotationRefsOrTypes,
-        annotations: generateAnnotations(annotationRefsOrTypes, true),
+        annotations: await generateAnnotations(annotationRefsOrTypes, true),
         path: [DUMMY_ADAPTER, 'Types', name],
       })
       await updateElementRank(element)
@@ -396,7 +397,7 @@ export const generateElements = async (
         elemID: new ElemID(DUMMY_ADAPTER, name),
         fields: await generateFields(),
         annotationRefsOrTypes,
-        annotations: generateAnnotations(annotationRefsOrTypes, true),
+        annotations: await generateAnnotations(annotationRefsOrTypes, true),
         path: [DUMMY_ADAPTER, 'Types', name],
       })
       await updateElementRank(objType)
@@ -414,7 +415,7 @@ export const generateElements = async (
         elemID: new ElemID(DUMMY_ADAPTER, name),
         fields: await generateFields(),
         annotationRefsOrTypes,
-        annotations: generateAnnotations(annotationRefsOrTypes),
+        annotations: await generateAnnotations(annotationRefsOrTypes),
       })
       const fieldsObjType = new ObjectType({
         elemID: fullObjType.elemID,
@@ -545,123 +546,36 @@ export const generateElements = async (
       }
     ).flat()
   }
-
-  const generateEnvElements = (): Element[] => {
-    const envID = process.env.SALTO_ENV
-    if (envID === undefined) return []
-    const PrimWithHiddenAnnos = new PrimitiveType({
-      elemID: new ElemID('dummy', 'PrimWithAnnos'),
-      primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
-        SharedHidden: BuiltinTypes.HIDDEN_STRING,
-        DiffHidden: BuiltinTypes.HIDDEN_STRING,
-      },
-      path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
-    })
-
-    const sharedObj = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, 'EnvObj'),
-      fields: {
-        SharedField: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        },
-        SharedButDiffField: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        },
-        [`${envID}Field`]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        },
-        [`${envID}FieldWithHidden`]: {
-          refType: createRefToElmWithValue(PrimWithHiddenAnnos),
-          annotations: {
-            SharedHidden: 'HIDDEN!',
-            DiffHidden: `${envID}-HIDDENNNN!!!!`,
-          },
-        },
-      },
-      annotationRefsOrTypes: {
-        ShardAnno: BuiltinTypes.STRING,
-        SharedButDiffAnno: BuiltinTypes.STRING,
-        [`${envID}Anno`]: BuiltinTypes.STRING,
-        SharedHidden: BuiltinTypes.HIDDEN_STRING,
-        DiffHidden: BuiltinTypes.HIDDEN_STRING,
-      },
-      annotations: {
-        SharedAnno: 'AnnoValue',
-        SharedButDiffAnno: `${envID}AnnoValue`,
-        [`${envID}Anno`]: 'AnnoValue',
-        SharedHidden: 'HIDDEN!',
-        DiffHidden: `${envID}-HIDDENNNN!!!!`,
-      },
-      path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
-    })
-    const sharedInst = new InstanceElement(
-      'EnvInst',
-      sharedObj,
-      {
-        SharedField: 'FieldValue',
-        SharedButDiffField: `${envID}FieldValue`,
-        [`${envID}Field`]: 'FieldValue',
-      },
-      [DUMMY_ADAPTER, 'EnvStuff', 'EnvInst'],
-      {
-        [CORE_ANNOTATIONS.SERVICE_URL]: `http://www.somthing.com/${envID}`,
-      }
-    )
-    const envSpecificObj = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, `${envID}EnvObj`),
-      fields: {
-        Field: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        },
-      },
-      path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
-    })
-    const envSpecificInst = new InstanceElement(
-      `${envID}EnvInst`,
-      envSpecificObj,
-      { Field: 'FieldValue' },
-      [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`]
-    )
-    const res = [envSpecificInst, sharedObj, sharedInst, PrimWithHiddenAnnos]
-    if (!process.env.SALTO_OMIT) {
-      res.push(envSpecificObj)
-    }
-    return res
-  }
-
   const generateExtraElements = async (naclDir: string): Promise<Element[]> => {
     const allNaclMocks = await readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
     })
-    return (await Promise.all(allNaclMocks.map(async file => {
+    return awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {})
-      parsedNaclFile.elements.forEach(elem => {
+      awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
       return parsedNaclFile.elements
-    }))).flat()
+    })).flat().toArray()
   }
 
-
-  const defaultTypes = [defaultObj, permissionsType, profileType]
-  progressReporter.reportProgress({ message: 'Generating primitive types' })
+  const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
+  progressReporter?.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = await generatePrimitiveTypes()
-  progressReporter.reportProgress({ message: 'Generating types' })
+  progressReporter?.reportProgress({ message: 'Generating types' })
   const types = await generateTypes()
-  progressReporter.reportProgress({ message: 'Generating objects' })
+  progressReporter?.reportProgress({ message: 'Generating objects' })
   const objects = await generateObjects()
-  progressReporter.reportProgress({ message: 'Generating records' })
+  progressReporter?.reportProgress({ message: 'Generating records' })
   const records = await generateRecords()
-  progressReporter.reportProgress({ message: 'Generating profile likes' })
+  progressReporter?.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
-  progressReporter.reportProgress({ message: 'Generation done' })
-  const envObjects = generateEnvElements()
   const extraElements = params.extraNaclPath
     ? await generateExtraElements(params.extraNaclPath)
     : []
   const defaultExtraElements = await generateExtraElements(path.join(__dirname, 'data', 'fixtures'))
+  progressReporter?.reportProgress({ message: 'Generation done' })
   return [
     ...defaultTypes,
     ...primtiveTypes,
@@ -670,7 +584,6 @@ export const generateElements = async (
     ...objects,
     ...profiles,
     new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'noPath'), fields: {} }),
-    ...envObjects,
     ...extraElements,
     ...defaultExtraElements,
   ]

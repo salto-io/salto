@@ -520,7 +520,10 @@ describe('Custom Objects filter', () => {
 
         const instance = new InstanceElement(
           'Custom__c',
-          new ObjectType({ elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT) }),
+          new ObjectType({
+            elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+            annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+          }),
           { [INSTANCE_FULL_NAME_FIELD]: 'Custom__c' },
         )
         const elements: Element[] = [instance]
@@ -678,7 +681,10 @@ describe('Custom Objects filter', () => {
 
         const instance = new InstanceElement(
           objectName,
-          new ObjectType({ elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT) }),
+          new ObjectType({
+            elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+            annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+          }),
           { [INSTANCE_FULL_NAME_FIELD]: objectName },
         )
         const elements = [instance]

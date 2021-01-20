@@ -450,33 +450,20 @@ const createFromInstance = (instance: InstanceElement,
   return [object, ...nestedMetadataInstances]
 }
 
-const fetchSObjects = async (client: SalesforceClient, elements: Element[]):
-  Promise<Record<string, DescribeSObjectResult[]>> => {
-  const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
-    const sobjectsList = await client.listSObjects()
-    const elementsNames = new Set(elements.map(
-      e => (isInstanceElement(e) ? e.value.fullName : undefined)
-    ).filter(e => e !== undefined))
+const fetchSObjects = async (
+  client: SalesforceClient,
+  customObjectInstances: Record<string, Element>
+): Promise<Record<string, DescribeSObjectResult[]>> => {
+  const sobjectsList = await client.listSObjects()
 
-    const sobjectNames = sobjectsList.map(sobj => sobj.name).filter(name => elementsNames.has(name))
-    return client.describeSObjects(sobjectNames)
-  }
+  const sobjectNames = _(sobjectsList)
+    .map(sobj => sobj.name)
+    .filter(name => name in customObjectInstances)
+    .value()
 
-  const getCustomObjectNames = async (): Promise<Set<string>> => {
-    const { result: customObjects } = await client.listMetadataObjects(
-      { type: CUSTOM_OBJECT },
-      // All errors are considered to be unhandled errors. If an error occur, throws an exception
-      () => true
-    )
-    return new Set(customObjects.map(o => o.fullName))
-  }
-
-  const [customObjectNames, sobjectsDescriptions] = await Promise.all([
-    getCustomObjectNames(), getSobjectDescriptions(),
-  ])
+  const sobjectsDescriptions = await client.describeSObjects(sobjectNames)
 
   return _(sobjectsDescriptions)
-    .filter(({ name }) => customObjectNames.has(name))
     .groupBy(e => e.name)
     .value()
 }
@@ -778,15 +765,15 @@ const filterCreator: FilterCreator = ({ client, config }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
     onFetch: async (elements: Element[]): Promise<void> => {
-      const sObjects = await fetchSObjects(client, elements).catch(e => {
-        log.error('failed to fetch sobjects reason: %o', e)
-        return []
-      })
-
       const customObjectInstances = _.keyBy(
         elements.filter(isInstanceOfType(CUSTOM_OBJECT)),
         instance => apiName(instance),
       )
+
+      const sObjects = await fetchSObjects(client, customObjectInstances).catch(e => {
+        log.error('failed to fetch sobjects reason: %o', e)
+        return []
+      })
 
       const typesToMergeFromInstance = (): TypesFromInstance => {
         const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, InstanceElement, ObjectType,
+  Element, isObjectType, InstanceElement, ObjectType, ElemID,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { SalesforceRecord } from '../src/client/types'
@@ -25,10 +25,10 @@ import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
 import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
 import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
-import customObjectsFilter from '../src/filters/custom_objects'
+import customObjectsFilter, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD } from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
-import { LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
+import { CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LIST_CUSTOM_SETTINGS_TYPE, METADATA_TYPE, SALESFORCE } from '../src/constants'
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('custom object instances e2e', () => {
@@ -58,7 +58,35 @@ describe('custom object instances e2e', () => {
     adapter = adapterParams.adapter
     client = adapterParams.client
 
-    elements = []
+    const leadInstance = new InstanceElement(
+      CUSTOM_OBJECT,
+      new ObjectType(
+        {
+          elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+          annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+        },
+      ),
+      {
+        [INSTANCE_FULL_NAME_FIELD]: 'Lead',
+        fields: [
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
+            [INSTANCE_TYPE_FIELD]: 'Checkbox',
+            [INSTANCE_REQUIRED_FIELD]: 'false',
+          },
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'WhoKnows',
+          },
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'Pepper',
+            [INSTANCE_TYPE_FIELD]: 'Location',
+            [INSTANCE_REQUIRED_FIELD]: 'false',
+          },
+        ],
+      },
+    )
+
+    elements = [leadInstance]
     await runFiltersOnFetch(
       client,
       filtersContext,

@@ -450,11 +450,15 @@ const createFromInstance = (instance: InstanceElement,
   return [object, ...nestedMetadataInstances]
 }
 
-const fetchSObjects = async (client: SalesforceClient):
+const fetchSObjects = async (client: SalesforceClient, elements: Element[]):
   Promise<Record<string, DescribeSObjectResult[]>> => {
   const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
     const sobjectsList = await client.listSObjects()
-    const sobjectNames = sobjectsList.map(sobj => sobj.name)
+    const elementsNames = new Set(elements.map(
+      e => (isInstanceElement(e) ? e.value.fullName : undefined)
+    ).filter(e => e !== undefined))
+
+    const sobjectNames = sobjectsList.map(sobj => sobj.name).filter(name => elementsNames.has(name))
     return client.describeSObjects(sobjectNames)
   }
 
@@ -774,7 +778,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
     onFetch: async (elements: Element[]): Promise<void> => {
-      const sObjects = await fetchSObjects(client).catch(e => {
+      const sObjects = await fetchSObjects(client, elements).catch(e => {
         log.error('failed to fetch sobjects reason: %o', e)
         return []
       })

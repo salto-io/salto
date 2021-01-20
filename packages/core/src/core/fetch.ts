@@ -182,7 +182,6 @@ const processMergeErrors = async (
       { error: me, elements: [] }]))
     .fromPairs()
     .value() as Record<string, MergeErrorWithElements>
-
   const errorsWithDroppedElements: MergeErrorWithElements[] = []
   const errorsWithStateElements: MergeErrorWithElements[] = []
   const keptElements = await awu(elements).filter(async e => {
@@ -388,9 +387,9 @@ export const fetchChanges = async (
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
-      _.isEmpty(stateElements) ? workspaceElements : stateElements,
+      await awu(await stateElements.getAll()).isEmpty() ? workspaceElements : stateElements,
       workspaceElements,
-      partiallyFetchedAdapters,
+      partiallyFetchedAdapters
     )
 
   log.debug('finished to calculate fetch changes')

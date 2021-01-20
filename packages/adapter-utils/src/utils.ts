@@ -171,7 +171,7 @@ export const transformValues = async (
         return transformListInnerValue(newVal)
       }
       const transformed = await awu(newVal)
-        .map(transformListInnerValue)
+        .map((v, i) => transformListInnerValue(v, i))
         .filter((val: Value) => !_.isUndefined(val))
         .toArray()
       return transformed.length === 0 && (newVal.length > 0 || !allowEmpty)

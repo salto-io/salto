@@ -33,7 +33,7 @@ import { buildNewMergedElementsAndErrors } from './elements_cache'
 import { Functions } from '../../parser/functions'
 import { RemoteMap, InMemoryRemoteMap, RemoteMapCreator } from '../remote_map'
 
-const { awu } = collections.asynciterable
+const { awu, concatAsync } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
@@ -235,7 +235,7 @@ const buildNaclFilesState = async (
   const referencedIndexDeletions: Record<string, Set<string>> = {}
   // We need to iterate over this twice - so no point in making this iterable :/
   const relevantElementIDs: ElemID[] = []
-  let newElementsToMerge: AsyncIterable<Element> = awu([])
+  const newElementsToMerge: AsyncIterable<Element>[] = []
 
   const updateIndex = async <T>(
     index: RemoteMap<T[]>,
@@ -267,7 +267,6 @@ const buildNaclFilesState = async (
         ?? new Set<string>()
       elementsIndexAdditions[elementFullName].add(naclFile.filename)
     })
-
     relevantElementIDs.push(
       ...await awu(await naclFile.elements.list()).toArray(),
       ...await awu(
@@ -275,7 +274,7 @@ const buildNaclFilesState = async (
       ).toArray(),
     )
 
-    newElementsToMerge = awu(newElementsToMerge).concat(await naclFile.elements.getAll())
+    newElementsToMerge.push(await naclFile.elements.getAll())
     currentState.parsedNaclFiles[naclFile.filename] = naclFile
   }
 
@@ -335,7 +334,7 @@ const buildNaclFilesState = async (
   // log.info('workspace has %d elements and %d parsed NaCl files',
   //   _.size(elementsIndex), _.size(allParsed))
   const changes = await buildNewMergedElementsAndErrors({
-    newElements: awu(newElementsToMerge).concat(unmodifiedFragments),
+    newElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,

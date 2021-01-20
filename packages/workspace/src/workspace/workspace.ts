@@ -169,22 +169,23 @@ export const loadWorkspace = async (
     env?: string
     hiddenElementsChangesIDs?: ElemID[]
   }): Promise<WorkspaceState> => {
+    const envToUse = env ?? currentEnv()
     const newState = {
-      merged: new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged', env))),
-      errors: createRemoteMap(getRemoteMapNameSpace('errors', env)),
+      merged: new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged', envToUse))),
+      errors: createRemoteMap(getRemoteMapNameSpace('errors', envToUse)),
     }
-    if (_.isUndefined(workspaceState) || (env !== undefined && env !== currentEnv())) {
+    if (_.isUndefined(workspaceState) || (envToUse !== currentEnv())) {
       await buildNewMergedElementsAndErrors({
         currentElements: newState.merged,
         currentErrors: newState.errors,
         mergeFunc: elements => mergeWithHidden(
           elements,
-          state(env)
+          state(envToUse)
         ),
-        newElements: await naclFilesSource.getAll(env),
-        relevantElementIDs: awu(await naclFilesSource.list()).concat(await state(env).list()),
+        newElements: await naclFilesSource.getAll(envToUse),
+        relevantElementIDs: awu(await naclFilesSource.list()).concat(await state(envToUse).list()),
       })
-      if (env !== currentEnv()) {
+      if (envToUse !== currentEnv()) {
         return newState
       }
       workspaceState = Promise.resolve(newState)
@@ -194,7 +195,6 @@ export const loadWorkspace = async (
     const changedElementIDs = changes.map(getChangeElement).map(e => e.elemID)
 
     const newElements = awu(changes.filter(isAdditionOrModificationChange).map(getChangeElement))
-
     await buildNewMergedElementsAndErrors({
       currentElements: current.merged,
       currentErrors: current.errors,

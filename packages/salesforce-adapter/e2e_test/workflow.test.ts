@@ -186,29 +186,35 @@ describe('workflow filter', () => {
       const workflows = findElements(fetchResult, WORKFLOW_METADATA_TYPE, baseCustomObject)
       workflow = workflows[0] as InstanceElement
     })
-    it('should fetch workflow', async () => {
-      expect(workflow.value[INSTANCE_FULL_NAME_FIELD]).toBe(baseCustomObject)
+    describe('fetch workflow', () => {
+      it('should fetch workflow', async () => {
+        expect(workflow.value[INSTANCE_FULL_NAME_FIELD]).toBe(baseCustomObject)
+      })
     })
-
-    it('should fetch workflow alerts', async () => {
-      verifySubInstance(WORKFLOW_ALERTS_FIELD, `${baseCustomObject}_TestWorkflowAlert@v`,
-        'E2E Fetch WorkflowAlert')
+    describe('fetch workflow alerts', () => {
+      it('should fetch workflow alerts', async () => {
+        verifySubInstance(WORKFLOW_ALERTS_FIELD, `${baseCustomObject}_TestWorkflowAlert@v`,
+          'E2E Fetch WorkflowAlert')
+      })
     })
-
-    it('should fetch workflow field updates', async () => {
-      verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD,
-        `${baseCustomObject}_TestWorkflowFieldUpdate@v`,
-        'E2E Fetch WorkflowFieldUpdate')
+    describe('fetch workflow field updates', () => {
+      it('should fetch workflow field updates', async () => {
+        verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD,
+          `${baseCustomObject}_TestWorkflowFieldUpdate@v`,
+          'E2E Fetch WorkflowFieldUpdate')
+      })
     })
-
-    it('should fetch workflow task', async () => {
-      verifySubInstance(WORKFLOW_TASKS_FIELD, `${baseCustomObject}_TestWorkflowTask@v`,
-        'E2E Fetch WorkflowTask')
+    describe('fetch workflow task', () => {
+      it('should fetch workflow task', async () => {
+        verifySubInstance(WORKFLOW_TASKS_FIELD, `${baseCustomObject}_TestWorkflowTask@v`,
+          'E2E Fetch WorkflowTask')
+      })
     })
-
-    it('should fetch workflow rule', async () => {
-      verifySubInstance(WORKFLOW_RULES_FIELD, `${baseCustomObject}_TestWorkflowRule@v`,
-        'E2E Fetch WorkflowRule')
+    describe('fetch workflow rule', () => {
+      it('should fetch workflow rule', async () => {
+        verifySubInstance(WORKFLOW_RULES_FIELD, `${baseCustomObject}_TestWorkflowRule@v`,
+          'E2E Fetch WorkflowRule')
+      })
     })
   })
 
@@ -220,64 +226,67 @@ describe('workflow filter', () => {
       beforeAll(async () => {
         await removeMetadataIfAlreadyExists(client, alertType, newInstanceName)
       })
+      describe('create workflow alert', () => {
+        it('should create workflow alert', async () => {
+          const value = {
+            [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
+            description: 'My Workflow Alert',
+            protected: false,
+            recipients: [
+              {
+                recipient: 'CEO',
+                type: 'role',
+              },
+            ],
+            senderType: 'CurrentUser',
+            template: 'unfiled$public/SalesNewCustomerEmail',
+          }
 
-      it('should create workflow alert', async () => {
-        const value = {
-          [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
-          description: 'My Workflow Alert',
-          protected: false,
-          recipients: [
+          newAlert = await createAndVerify(adapter, client, alertType, value, fetchResult)
+        })
+      })
+      describe('update workflow alert', () => {
+        it('should update workflow alert', async () => {
+          const oldAlert = newAlert.clone()
+          newAlert.value.description = 'My Updated Workflow Alert'
+          newAlert.value.recipients = [
             {
               recipient: 'CEO',
               type: 'role',
             },
-          ],
-          senderType: 'CurrentUser',
-          template: 'unfiled$public/SalesNewCustomerEmail',
-        }
+            {
+              recipient: 'CFO',
+              type: 'role',
+            },
+          ]
+          newAlert.value.template = 'unfiled$public/SupportCaseResponse'
 
-        newAlert = await createAndVerify(adapter, client, alertType, value, fetchResult)
-      })
+          await adapter.deploy({
+            groupID: newAlert.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: oldAlert, after: newAlert } }],
+          })
 
-      it('should update workflow alert', async () => {
-        const oldAlert = newAlert.clone()
-        newAlert.value.description = 'My Updated Workflow Alert'
-        newAlert.value.recipients = [
-          {
-            recipient: 'CEO',
-            type: 'role',
-          },
-          {
-            recipient: 'CFO',
-            type: 'role',
-          },
-        ]
-        newAlert.value.template = 'unfiled$public/SupportCaseResponse'
-
-        await adapter.deploy({
-          groupID: newAlert.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: oldAlert, after: newAlert } }],
+          const postUpdate = await getMetadata(client, alertType, newInstanceName)
+          expect(postUpdate).toBeDefined()
+          expect(_.get(postUpdate, 'description')).toEqual('My Updated Workflow Alert')
+          expect(_.get(postUpdate, 'recipients')).toEqual([
+            {
+              recipient: 'CEO',
+              type: 'role',
+            },
+            {
+              recipient: 'CFO',
+              type: 'role',
+            },
+          ])
+          expect(_.get(postUpdate, 'template'))
+            .toEqual('unfiled$public/SupportCaseResponse')
         })
-
-        const postUpdate = await getMetadata(client, alertType, newInstanceName)
-        expect(postUpdate).toBeDefined()
-        expect(_.get(postUpdate, 'description')).toEqual('My Updated Workflow Alert')
-        expect(_.get(postUpdate, 'recipients')).toEqual([
-          {
-            recipient: 'CEO',
-            type: 'role',
-          },
-          {
-            recipient: 'CFO',
-            type: 'role',
-          },
-        ])
-        expect(_.get(postUpdate, 'template'))
-          .toEqual('unfiled$public/SupportCaseResponse')
       })
-
-      it('should delete workflow alert', async () => {
-        await removeElementAndVerify(adapter, client, newAlert)
+      describe('delete workflow alert', () => {
+        it('should delete workflow alert', async () => {
+          await removeElementAndVerify(adapter, client, newAlert)
+        })
       })
     })
 
@@ -288,46 +297,51 @@ describe('workflow filter', () => {
       beforeAll(async () => {
         await removeMetadataIfAlreadyExists(client, fieldUpdateType, newInstanceName)
       })
-
-      it('should create workflow field update', async () => {
-        const value = {
-          [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
-          name: 'TestWorkflowFieldUpdate',
-          description: 'My Workflow Field Update',
-          field: 'Company',
-          formula: 'LastName',
-          notifyAssignee: false,
-          reevaluateOnChange: true,
-          protected: false,
-          operation: 'Formula',
-        }
-        newInstance = await createAndVerify(adapter, client, fieldUpdateType, value, fetchResult)
-      })
-
-      it('should update workflow field update', async () => {
-        const old = newInstance.clone()
-        newInstance.value.description = 'My Updated Workflow Field Update'
-        newInstance.value.field = 'Rating'
-        newInstance.value.operation = 'PreviousValue'
-        newInstance.value.reevaluateOnChange = false
-
-        await adapter.deploy({
-          groupID: newInstance.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+      describe('should create workflow field update', () => {
+        it('should create workflow field update', async () => {
+          const value = {
+            [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
+            name: 'TestWorkflowFieldUpdate',
+            description: 'My Workflow Field Update',
+            field: 'Company',
+            formula: 'LastName',
+            notifyAssignee: false,
+            reevaluateOnChange: true,
+            protected: false,
+            operation: 'Formula',
+          }
+          newInstance = await createAndVerify(
+            adapter, client, fieldUpdateType, value, fetchResult
+          )
         })
-
-        const workflowFieldUpdateInfo = await getMetadata(client, fieldUpdateType,
-          newInstanceName)
-        expect(workflowFieldUpdateInfo).toBeDefined()
-        expect(_.get(workflowFieldUpdateInfo, 'description'))
-          .toEqual('My Updated Workflow Field Update')
-        expect(_.get(workflowFieldUpdateInfo, 'field')).toEqual('Rating')
-        expect(_.get(workflowFieldUpdateInfo, 'operation')).toEqual('PreviousValue')
-        expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toEqual('false')
       })
+      describe('should update workflow field update', () => {
+        it('should update workflow field update', async () => {
+          const old = newInstance.clone()
+          newInstance.value.description = 'My Updated Workflow Field Update'
+          newInstance.value.field = 'Rating'
+          newInstance.value.operation = 'PreviousValue'
+          newInstance.value.reevaluateOnChange = false
 
-      it('should delete workflow field update', async () => {
-        await removeElementAndVerify(adapter, client, newInstance)
+          await adapter.deploy({
+            groupID: newInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+          })
+
+          const workflowFieldUpdateInfo = await getMetadata(client, fieldUpdateType,
+            newInstanceName)
+          expect(workflowFieldUpdateInfo).toBeDefined()
+          expect(_.get(workflowFieldUpdateInfo, 'description'))
+            .toEqual('My Updated Workflow Field Update')
+          expect(_.get(workflowFieldUpdateInfo, 'field')).toEqual('Rating')
+          expect(_.get(workflowFieldUpdateInfo, 'operation')).toEqual('PreviousValue')
+          expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toEqual('false')
+        })
+      })
+      describe('should delete workflow field update', () => {
+        it('should delete workflow field update', async () => {
+          await removeElementAndVerify(adapter, client, newInstance)
+        })
       })
     })
 
@@ -338,41 +352,44 @@ describe('workflow filter', () => {
       beforeAll(async () => {
         await removeMetadataIfAlreadyExists(client, taskType, newInstanceName)
       })
+      describe('create workflow task', () => {
+        it('should create workflow task', async () => {
+          const value = {
+            [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
+            assignedTo: 'CEO',
+            assignedToType: 'role',
+            description: 'My Workflow Task',
+            dueDateOffset: 1,
+            notifyAssignee: false,
+            priority: 'Normal',
+            protected: false,
+            status: 'Not Started',
+            subject: 'TestWorkflowOutboundMessage',
+          }
 
-      it('should create workflow task', async () => {
-        const value = {
-          [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
-          assignedTo: 'CEO',
-          assignedToType: 'role',
-          description: 'My Workflow Task',
-          dueDateOffset: 1,
-          notifyAssignee: false,
-          priority: 'Normal',
-          protected: false,
-          status: 'Not Started',
-          subject: 'TestWorkflowOutboundMessage',
-        }
-
-        newInstance = await createAndVerify(adapter, client, taskType, value, fetchResult)
-      })
-
-
-      it('should update workflow task', async () => {
-        const old = newInstance.clone()
-        newInstance.value.description = 'My Updated Workflow Task'
-
-        await adapter.deploy({
-          groupID: newInstance.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+          newInstance = await createAndVerify(adapter, client, taskType, value, fetchResult)
         })
-
-        const workflowTaskInfo = await getMetadata(client, taskType, newInstanceName)
-        expect(workflowTaskInfo).toBeDefined()
-        expect(_.get(workflowTaskInfo, 'description')).toEqual('My Updated Workflow Task')
       })
 
-      it('should delete workflow task', async () => {
-        await removeElementAndVerify(adapter, client, newInstance)
+      describe('update workflow task', () => {
+        it('should update workflow task', async () => {
+          const old = newInstance.clone()
+          newInstance.value.description = 'My Updated Workflow Task'
+
+          await adapter.deploy({
+            groupID: newInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+          })
+
+          const workflowTaskInfo = await getMetadata(client, taskType, newInstanceName)
+          expect(workflowTaskInfo).toBeDefined()
+          expect(_.get(workflowTaskInfo, 'description')).toEqual('My Updated Workflow Task')
+        })
+      })
+      describe('delete workflow task', () => {
+        it('should delete workflow task', async () => {
+          await removeElementAndVerify(adapter, client, newInstance)
+        })
       })
     })
 
@@ -383,90 +400,93 @@ describe('workflow filter', () => {
       beforeAll(async () => {
         await removeMetadataIfAlreadyExists(client, rulesType, newInstanceName)
       })
-
-      it('should create workflow rule', async () => {
-        const value = {
-          [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
-          actions: [
-            {
-              name: 'TestWorkflowAlert',
-              type: 'Alert',
-            },
-            {
-              name: 'TestWorkflowFieldUpdate',
-              type: 'FieldUpdate',
-            },
-            {
-              name: 'TestWorkflowTask',
-              type: 'Task',
-            },
-          ],
-          active: false,
-          criteriaItems: [
-            {
-              field: `${baseCustomObject}.Company`,
-              operation: 'notEqual',
-              value: 'BLA',
-            },
-          ],
-          description: 'My Workflow Rule',
-          triggerType: 'onCreateOnly',
-          workflowTimeTriggers: [
-            {
-              actions: [
-                {
-                  name: 'TestWorkflowAlert',
-                  type: 'Alert',
-                },
-              ],
-              timeLength: '1',
-              workflowTimeTriggerUnit: 'Hours',
-            },
-          ],
-        }
-
-        newInstance = await createAndVerify(adapter, client, rulesType, value, fetchResult)
-      })
-
-      it('should update workflow rule', async () => {
-        const old = newInstance.clone()
-        newInstance.value.description = 'My Updated Workflow Rule'
-        newInstance.value.criteriaItems = []
-        newInstance.value.formula = 'true'
-        newInstance.value.triggerType = 'onCreateOrTriggeringUpdate'
-        newInstance.value.workflowTimeTriggers = [
-          {
+      describe('create workflow rule', () => {
+        it('should create workflow rule', async () => {
+          const value = {
+            [INSTANCE_FULL_NAME_FIELD]: newInstanceName,
             actions: [
+              {
+                name: 'TestWorkflowAlert',
+                type: 'Alert',
+              },
               {
                 name: 'TestWorkflowFieldUpdate',
                 type: 'FieldUpdate',
               },
+              {
+                name: 'TestWorkflowTask',
+                type: 'Task',
+              },
             ],
-            timeLength: '2',
-            workflowTimeTriggerUnit: 'Days',
-          },
-        ]
+            active: false,
+            criteriaItems: [
+              {
+                field: `${baseCustomObject}.Company`,
+                operation: 'notEqual',
+                value: 'BLA',
+              },
+            ],
+            description: 'My Workflow Rule',
+            triggerType: 'onCreateOnly',
+            workflowTimeTriggers: [
+              {
+                actions: [
+                  {
+                    name: 'TestWorkflowAlert',
+                    type: 'Alert',
+                  },
+                ],
+                timeLength: '1',
+                workflowTimeTriggerUnit: 'Hours',
+              },
+            ],
+          }
 
-        await adapter.deploy({
-          groupID: newInstance.elemID.getFullName(),
-          changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+          newInstance = await createAndVerify(adapter, client, rulesType, value, fetchResult)
         })
-
-        const workflowRuleInfo = await getMetadata(client, rulesType, newInstanceName)
-        expect(workflowRuleInfo).toBeDefined()
-        expect(_.get(workflowRuleInfo, 'description')).toEqual('My Updated Workflow Rule')
-        expect(_.get(workflowRuleInfo, 'criteriaItems')).toBeUndefined()
-        expect(_.get(workflowRuleInfo, 'formula')).toEqual('true')
-        expect(_.get(workflowRuleInfo, 'triggerType')).toEqual('onCreateOrTriggeringUpdate')
-        const workflowTimeTrigger = _.get(workflowRuleInfo, 'workflowTimeTriggers')
-        expect(workflowTimeTrigger.actions).toEqual({ name: 'TestWorkflowFieldUpdate',
-          type: 'FieldUpdate' })
-        expect(workflowTimeTrigger.timeLength).toEqual('2')
-        expect(workflowTimeTrigger.workflowTimeTriggerUnit).toEqual('Days')
       })
+      describe('update workflow rule', () => {
+        it('should update workflow rule', async () => {
+          const old = newInstance.clone()
+          newInstance.value.description = 'My Updated Workflow Rule'
+          newInstance.value.criteriaItems = []
+          newInstance.value.formula = 'true'
+          newInstance.value.triggerType = 'onCreateOrTriggeringUpdate'
+          newInstance.value.workflowTimeTriggers = [
+            {
+              actions: [
+                {
+                  name: 'TestWorkflowFieldUpdate',
+                  type: 'FieldUpdate',
+                },
+              ],
+              timeLength: '2',
+              workflowTimeTriggerUnit: 'Days',
+            },
+          ]
 
-      it('should delete workflow rule', async () => {
-        await removeElementAndVerify(adapter, client, newInstance)
+          await adapter.deploy({
+            groupID: newInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+          })
+
+          const workflowRuleInfo = await getMetadata(client, rulesType, newInstanceName)
+          expect(workflowRuleInfo).toBeDefined()
+          expect(_.get(workflowRuleInfo, 'description')).toEqual('My Updated Workflow Rule')
+          expect(_.get(workflowRuleInfo, 'criteriaItems')).toBeUndefined()
+          expect(_.get(workflowRuleInfo, 'formula')).toEqual('true')
+          expect(_.get(workflowRuleInfo, 'triggerType')).toEqual('onCreateOrTriggeringUpdate')
+          const workflowTimeTrigger = _.get(workflowRuleInfo, 'workflowTimeTriggers')
+          expect(workflowTimeTrigger.actions).toEqual({ name: 'TestWorkflowFieldUpdate',
+            type: 'FieldUpdate' })
+          expect(workflowTimeTrigger.timeLength).toEqual('2')
+          expect(workflowTimeTrigger.workflowTimeTriggerUnit).toEqual('Days')
+        })
+      })
+      describe('delete workflow rule', () => {
+        it('should delete workflow rule', async () => {
+          await removeElementAndVerify(adapter, client, newInstance)
+        })
       })
     })
   })

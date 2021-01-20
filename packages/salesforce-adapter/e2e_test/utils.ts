@@ -49,7 +49,7 @@ export const getRecordOfInstance = async (
 ): Promise<SalesforceRecord | undefined> => {
   const selectFieldsString = _.uniq([uniqueField].concat(additionalFields)).join(',')
   const queryString = `SELECT ${selectFieldsString} FROM ${await apiName(await instance.getType())} WHERE ${uniqueField} = '${instance.value[uniqueField]}'`
-  const queryResult = client.queryAll(queryString)
+  const queryResult = await client.queryAll(queryString)
   const records = (await toArrayAsync(queryResult)).flat()
   return records[0]
 }
@@ -166,7 +166,7 @@ export const removeElementIfAlreadyExists = async (
   client: SalesforceClient,
   element: InstanceElement | ObjectType
 ): Promise<void> => {
-  if (isInstanceOfCustomObject(element)) {
+  if (await isInstanceOfCustomObject(element)) {
     await removeRecordIfAlreadyExists(client, element as InstanceElement)
   } else {
     const mdType = await metadataType(element)
@@ -197,7 +197,7 @@ export const createElementAndVerify = async <T extends InstanceElement | ObjectT
   adapter: SalesforceAdapter, client: SalesforceClient, element: T,
 ): Promise<T> => {
   const result = await createElement(adapter, element)
-  if (isInstanceOfCustomObject(element)) {
+  if (await isInstanceOfCustomObject(element)) {
     expect(await getRecordOfInstance(client, element as InstanceElement)).toBeDefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeDefined()
@@ -207,7 +207,7 @@ export const createElementAndVerify = async <T extends InstanceElement | ObjectT
 
 export const createAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
   type: string, md: MetadataInfo, typeElements: Iterable<Element>): Promise<InstanceElement> => {
-  const instance = await createInstance({ value: md, type, typeElements })
+  const instance = createInstance({ value: md, type, typeElements })
   await createElementAndVerify(adapter, client, instance)
   return instance
 }
@@ -230,7 +230,7 @@ export const removeElement = async <T extends InstanceElement | ObjectType>(
 export const removeElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
   element: InstanceElement | ObjectType): Promise<void> => {
   await removeElement(adapter, element)
-  if (isInstanceOfCustomObject(element)) {
+  if (await isInstanceOfCustomObject(element)) {
     expect(await getRecordOfInstance(client, element as InstanceElement)).toBeUndefined()
   } else {
     expect(await getMetadataFromElement(client, element)).toBeUndefined()

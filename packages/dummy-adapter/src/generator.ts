@@ -126,6 +126,7 @@ const layoutAssignmentsType = new ObjectType({
     layout: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     recordType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
+  path: [DUMMY_ADAPTER, 'Default', 'LayoutAssignments'],
 })
 
 const oldProfileType = new ObjectType({
@@ -199,7 +200,8 @@ export const generateElements = async (
 
   const getFieldType = (allowContainers = false): TypeElement => {
     const fieldTypeOptions = [
-      Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN),
+      Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN
+        && type !== BuiltinTypes.HIDDEN_STRING),
       weightedRandomSelect(primitiveByRank.slice(0, -1)) || [],
       weightedRandomSelect(objByRank.slice(0, -1)) || [],
     ]
@@ -335,7 +337,7 @@ export const generateElements = async (
         const fieldType = getFieldType(true)
         return [name, {
           refType: createRefToElmWithValue(fieldType),
-          annotations: generateAnnotations(
+          annotations: await generateAnnotations(
             // don't generate random annotations for builtin types, even if they
             // support additional annotation types
             fieldType === BuiltinTypes.HIDDEN_STRING ? {} : await fieldType.getAnnotationTypes()
@@ -365,7 +367,7 @@ export const generateElements = async (
           PrimitiveTypes.NUMBER,
         ]),
         annotationRefsOrTypes,
-        annotations: generateAnnotations(annotationRefsOrTypes, true),
+        annotations: await generateAnnotations(annotationRefsOrTypes, true),
         path: [DUMMY_ADAPTER, 'Types', name],
       })
       await updateElementRank(element)
@@ -390,7 +392,7 @@ export const generateElements = async (
         elemID: new ElemID(DUMMY_ADAPTER, name),
         fields: await generateFields(),
         annotationRefsOrTypes,
-        annotations: generateAnnotations(annotationRefsOrTypes, true),
+        annotations: await generateAnnotations(annotationRefsOrTypes, true),
         path: [DUMMY_ADAPTER, 'Types', name],
       })
       await updateElementRank(objType)
@@ -408,7 +410,7 @@ export const generateElements = async (
         elemID: new ElemID(DUMMY_ADAPTER, name),
         fields: await generateFields(),
         annotationRefsOrTypes,
-        annotations: generateAnnotations(annotationRefsOrTypes),
+        annotations: await generateAnnotations(annotationRefsOrTypes),
       })
       const fieldsObjType = new ObjectType({
         elemID: fullObjType.elemID,
@@ -542,7 +544,7 @@ export const generateElements = async (
   const reportProgress = (details: string, completedPercents: number): void => {
     if (progressReporter) progressReporter.reportProgress({ details, completedPercents })
   }
-  const defaultTypes = [defaultObj, permissionsType, profileType]
+  const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   reportProgress('Generating primitive types', 10)
   const primtiveTypes = await generatePrimitiveTypes()
   reportProgress('Generating types', 30)

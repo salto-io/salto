@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { readFile, readDir, writeFile, mkdirp, rm } from '@salto-io/file'
 import osPath from 'path'
+import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, {
   ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomTypeInfo,
@@ -109,7 +110,7 @@ jest.mock('@salto-io/file', () => ({
     if (filePath.endsWith('manifest.xml')) {
       return MOCK_MANIFEST_INVALID_DEPENDENCIES
     }
-    return `<TypeA filename="${filePath.split('/').pop()}">`
+    return `<addressForm filename="${filePath.split('/').pop()}">`
   }),
   writeFile: jest.fn(),
   mkdirp: jest.fn(),
@@ -160,11 +161,15 @@ describe('netsuite client', () => {
   })
 
   const instancesIds = [
-    { type: 'TypeA', scriptId: 'IdA' },
-    { type: 'TypeB', scriptId: 'IdB' },
+    { type: 'addressForm', scriptId: 'IdA' },
+    { type: 'advancedpdftemplate', scriptId: 'IdB' },
   ]
 
-  const typeNames = Array.from(new Set(instancesIds.map(id => id.type)))
+  const typeNames = instancesIds.map(instance => instance.type)
+
+  const typeNamesQuery = buildNetsuiteQuery({
+    types: Object.fromEntries(instancesIds.map(id => [id.type, ['.*']])),
+  })
 
   const importObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
@@ -220,7 +225,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -233,7 +238,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -248,13 +253,13 @@ describe('netsuite client', () => {
           })
         }
         if (context.commandName === COMMANDS.IMPORT_OBJECTS
-          && ['TypeA', 'ALL'].includes(context.arguments.type)) {
+          && ['addressForm', 'ALL'].includes(context.arguments.type)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: true })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
       expect(mockExecuteAction).toHaveBeenCalledTimes(
         7
       )
@@ -265,7 +270,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
-      expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
+      expect(getCustomObjectsResult.failedTypes).toEqual(['addressForm'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
     })
 
@@ -277,13 +282,13 @@ describe('netsuite client', () => {
             data: instancesIds,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'TypeA') {
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'addressForm') {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & importObjects & deleteAuthId
       const numberOfExecuteActions = 6
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -296,16 +301,16 @@ describe('netsuite client', () => {
       }
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
-      expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
+      expect(getCustomObjectsResult.failedTypes).toEqual(['addressForm'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
     })
 
     it('should split to chunks without mixing different types in the same chunk', async () => {
       const ids = [
-        { type: 'typeA', scriptId: 'a' },
-        { type: 'typeA', scriptId: 'b' },
-        { type: 'typeA', scriptId: 'c' },
-        { type: 'typeB', scriptId: 'd' },
+        { type: 'addressForm', scriptId: 'a' },
+        { type: 'addressForm', scriptId: 'b' },
+        { type: 'addressForm', scriptId: 'c' },
+        { type: 'advancedpdftemplate', scriptId: 'd' },
       ]
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
@@ -318,7 +323,7 @@ describe('netsuite client', () => {
       })
 
       const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
-      await client.getCustomObjects(['typeA', 'typeB'])
+      await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & importObjects & deleteAuthId
       const numberOfExecuteActions = 7
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -327,19 +332,19 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'typeA',
+        type: 'addressForm',
         scriptid: 'a b',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
-        type: 'typeA',
+        type: 'addressForm',
         scriptid: 'c',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
-        type: 'typeB',
+        type: 'advancedpdftemplate',
         scriptid: 'd',
       }))
 
@@ -349,10 +354,10 @@ describe('netsuite client', () => {
 
     it('should skip chunks if the type has failed', async () => {
       const ids = [
-        { type: 'typeA', scriptId: 'a' },
-        { type: 'typeA', scriptId: 'b' },
-        { type: 'typeA', scriptId: 'c' },
-        { type: 'typeB', scriptId: 'd' },
+        { type: 'addressForm', scriptId: 'a' },
+        { type: 'addressForm', scriptId: 'b' },
+        { type: 'addressForm', scriptId: 'c' },
+        { type: 'advancedpdftemplate', scriptId: 'd' },
       ]
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
@@ -374,7 +379,7 @@ describe('netsuite client', () => {
         // so the failure of the first chunk won't results skipping the second.
         sdfConcurrencyLimit: 1,
       })
-      await client.getCustomObjects(['typeA', 'typeB'])
+      await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & importObjects & deleteAuthId
       const numberOfExecuteActions = 6
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -384,13 +389,13 @@ describe('netsuite client', () => {
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'typeA',
+        type: 'addressForm',
         scriptid: 'a b',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
-        type: 'typeB',
+        type: 'advancedpdftemplate',
         scriptid: 'd',
       }))
 
@@ -408,15 +413,15 @@ describe('netsuite client', () => {
             data: instancesIds,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'TypeA') {
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'addressForm') {
           await new Promise(resolve => setTimeout(resolve, 100))
           return Promise.resolve({ isSuccess: () => true })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false, fetchTypeTimeoutInMinutes: 0.001 })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames)
-      expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
+      expect(getCustomObjectsResult.failedTypes).toEqual(['addressForm'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
     })
 
@@ -431,10 +436,18 @@ describe('netsuite client', () => {
           await new Promise(resolve => setTimeout(resolve, 1))
           return Promise.resolve({ isSuccess: () => true })
         }
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({ isSuccess: () => true, data: [{ scriptId: 'id', type: 'type' }] })
+        }
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: true, fetchTypeTimeoutInMinutes: 0.0001 })
-      const getCustomObjectsResult = await client.getCustomObjects(['someType'])
+      const query = buildNetsuiteQuery({
+        types: {
+          addressForm: ['.*'],
+        },
+      })
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, query)
       expect(getCustomObjectsResult.failedTypes).toEqual([])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
     })
@@ -444,7 +457,7 @@ describe('netsuite client', () => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
           return Promise.resolve({
             isSuccess: () => true,
-            data: [{ type: 'TypeA', scriptId: 'a' }],
+            data: [{ type: 'addressForm', scriptId: 'a' }],
           })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -454,7 +467,7 @@ describe('netsuite client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames)
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toHaveLength(0)
       expect(readDirMock).toHaveBeenCalledTimes(1)
@@ -462,7 +475,7 @@ describe('netsuite client', () => {
       expect(rmMock).toHaveBeenCalledTimes(1)
       expect(customizationInfos).toHaveLength(2)
       expect(customizationInfos).toEqual([{
-        typeName: 'TypeA',
+        typeName: 'addressForm',
         scriptId: 'a',
         values: {
           '@_filename': 'a.xml',
@@ -471,7 +484,7 @@ describe('netsuite client', () => {
         fileExtension: 'html',
       },
       {
-        typeName: 'TypeA',
+        typeName: 'addressForm',
         scriptId: 'b',
         values: {
           '@_filename': 'b.xml',
@@ -483,9 +496,57 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
     })
+
+    it('should list and import only objects that match the query', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: [
+              { type: 'addressForm', scriptId: 'a' },
+              { type: 'addressForm', scriptId: 'b' },
+            ],
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const query = buildNetsuiteQuery({
+        types: {
+          addressForm: ['a'],
+        },
+      })
+      await mockClient().getCustomObjects(typeNames, query)
+      expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
+        commandName: COMMANDS.LIST_OBJECTS,
+        arguments: {
+          type: 'addressForm',
+        },
+      }))
+
+      expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
+        commandName: COMMANDS.IMPORT_OBJECTS,
+        arguments: expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'a',
+        }),
+      }))
+
+      expect(mockExecuteAction).not.toHaveBeenCalledWith(expect.objectContaining({
+        commandName: COMMANDS.IMPORT_OBJECTS,
+        arguments: expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'b',
+        }),
+      }))
+    })
   })
 
   describe('importFileCabinetContent', () => {
+    const allFilesQuery = buildNetsuiteQuery({
+      filePaths: ['.*'],
+    })
+
     let client: NetsuiteClient
     beforeEach(() => {
       client = mockClient()
@@ -498,7 +559,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent([])).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
       expect(rmMock).toHaveBeenCalledTimes(0)
     })
 
@@ -509,24 +570,9 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent([])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toEqual(fileCabinetTopLevelFolders)
-    })
-
-    it('should not call listFiles for folders in skip list', async () => {
-      mockExecuteAction.mockResolvedValue(Promise.resolve({ isSuccess: () => true }))
-      const { elements, failedPaths } = await client
-        .importFileCabinetContent([new RegExp(fileCabinetTopLevelFolders[0])])
-
-      expect(mockExecuteAction).toHaveBeenCalledTimes(5)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, deleteAuthIdCommandMatcher)
-      expect(elements).toHaveLength(0)
-      expect(failedPaths).toHaveLength(0)
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -536,7 +582,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent([])).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
     })
 
     it('should succeed when having no files', async () => {
@@ -557,7 +603,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent([])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -618,7 +664,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent([])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(mockExecuteAction).toHaveBeenCalledTimes(9)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -674,7 +720,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent([])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(elements).toHaveLength(2)
       expect(elements).toEqual([{
@@ -701,7 +747,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
     })
 
-    it('should filter out paths that match filePathRegexSkipList', async () => {
+    it('should filter out paths that do not match the query', async () => {
       mockExecuteAction.mockImplementation(context => {
         const filesPathResult = [
           MOCK_FILE_PATH,
@@ -715,9 +761,10 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(
-        [new RegExp(MOCK_FILE_PATH)]
-      )
+      const query = notQuery(buildNetsuiteQuery({
+        filePaths: [MOCK_FILE_PATH],
+      }))
+      const { elements, failedPaths } = await client.importFileCabinetContent(query)
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)
@@ -766,7 +813,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent([])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(readFileMock).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(1)
       expect(elements).toEqual([{

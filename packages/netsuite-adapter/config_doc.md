@@ -20,12 +20,12 @@ netsuite {
 
 ## Configuration options
 
-| Name                                    | Default when undefined  | Description
-| ----------------------------------------| ------------------------| -----------
-| typesToSkip                             | [] (fetch all types)    | Specified types that their instances will not be fetched from the service
-| filePathRegexSkipList                   | [] (fetch all files)    | Matching file-cabinet file paths will not be fetched from the service
-| deployReferencedElements                | false                   | Deployment of a certain configuration element will include all elements referred by it
-| [client](#client-configuration-options) | {} (no overrides)       | Configuration relating to the client used to interact with netsuite
+| Name                                                | Default when undefined  | Description
+| ----------------------------------------------------| ------------------------| -----------
+| typesToSkip                                         | [] (fetch all types)    | Specified types that their instances will not be fetched from the service
+| filePathRegexSkipList                               | [] (fetch all files)    | Matching file-cabinet file paths will not be fetched from the service
+| deployReferencedElements                            | false                   | Deployment of a certain configuration element will include all elements referred by it
+| [client](#client-configuration-options)             | {} (no overrides)       | Configuration relating to the client used to interact with netsuite
 
 ### Client configuration options
 

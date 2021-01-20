@@ -15,7 +15,7 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  Element, Field, isInstanceElement, isListType, ObjectType, Values, Value,
+  Field, isInstanceElement, isListType, ObjectType, Values, Value,
 } from '@salto-io/adapter-api'
 import { applyRecursive } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -63,7 +63,7 @@ const filterCreator: FilterCreator = () => ({
    *
    * @param elements the already fetched elements
    */
-  onFetch: async (elements: Element[]) => {
+  onFetch: async ({ elements }) => {
     elements
       .filter(isInstanceElement)
       .forEach(inst => castAndOrderListsRecursively(inst.type, inst.value))

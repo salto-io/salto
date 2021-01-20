@@ -17,13 +17,14 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction,
+  createRestriction, MapType,
 } from '@salto-io/adapter-api'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, SAVED_SEARCH, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
-  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
+  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET,
 } from './constants'
+import { NetsuiteQueryParameters } from './query'
 
 const { makeArray } = collections.array
 
@@ -74,6 +75,25 @@ const clientConfigType = new ObjectType({
   },
 })
 
+const queryConfigType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'queryConfig'),
+  fields: {
+    types: {
+      type: new MapType(new ListType(BuiltinTypes.STRING)),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: {},
+      },
+    },
+
+    filePaths: {
+      type: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
+      },
+    },
+  },
+})
+
 const configID = new ElemID(NETSUITE)
 export const configType = new ObjectType({
   elemID: configID,
@@ -103,6 +123,10 @@ export const configType = new ObjectType({
     [CLIENT_CONFIG]: {
       type: clientConfigType,
     },
+
+    [FETCH_TARGET]: {
+      type: queryConfigType,
+    },
   },
 })
 
@@ -118,6 +142,7 @@ export type NetsuiteConfig = {
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
   [CLIENT_CONFIG]?: NetsuiteClientConfig
+  [FETCH_TARGET]?: NetsuiteQueryParameters
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite. '

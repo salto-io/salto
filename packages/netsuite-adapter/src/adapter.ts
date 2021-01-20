@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  FetchResult, isInstanceElement, ObjectType, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, Element, getChangeElement, InstanceElement,
+  FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
+  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -28,7 +28,7 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import {
-  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, INTEGRATION,
+  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, INTEGRATION, FETCH_TARGET,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
@@ -38,11 +38,13 @@ import {
   DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
+import { andQuery, buildNetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
 
 const { makeArray } = collections.array
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
+  elementsSource: ReadOnlyElementsSource
   // Filters to support special cases upon fetch
   filtersCreators?: FilterCreator[]
   // Types that we skip their deployment and fetch
@@ -60,15 +62,18 @@ export interface NetsuiteAdapterParams {
 
 export default class NetsuiteAdapter implements AdapterOperations {
   private readonly client: NetsuiteClient
+  private readonly elementsSource: ReadOnlyElementsSource
   private filtersCreators: FilterCreator[]
   private readonly typesToSkip: string[]
-  private readonly filePathRegexSkipList: RegExp[]
+  private readonly filePathRegexSkipList: string[]
   private readonly deployReferencedElements: boolean
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
+  private readonly fetchTarget?: NetsuiteQueryParameters
 
   public constructor({
     client,
+    elementsSource,
     filtersCreators = [
       convertLists,
       replaceInstanceReferencesFilter,
@@ -85,14 +90,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     config,
   }: NetsuiteAdapterParams) {
     this.client = client
+    this.elementsSource = elementsSource
     this.filtersCreators = filtersCreators
     this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
     this.filePathRegexSkipList = filePathRegexSkipList
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
-      .map(e => new RegExp(e))
     this.deployReferencedElements = config[DEPLOY_REFERENCED_ELEMENTS] ?? deployReferencedElements
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
+    this.fetchTarget = config[FETCH_TARGET]
   }
 
   /**
@@ -100,9 +106,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<FetchResult> {
-    const customTypesToFetch = _.pull(Object.keys(customTypes), ...this.typesToSkip)
-    const getCustomObjectsResult = this.client.getCustomObjects(customTypesToFetch)
-    const importFileCabinetResult = this.client.importFileCabinetContent(this.filePathRegexSkipList)
+    const skipListQuery = notQuery(buildNetsuiteQuery({
+      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
+      filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
+    }))
+
+    const fetchQuery = this.fetchTarget !== undefined
+      ? andQuery(buildNetsuiteQuery(this.fetchTarget), skipListQuery)
+      : skipListQuery
+
+    const getCustomObjectsResult = this.client.getCustomObjects(
+      Object.keys(customTypes),
+      fetchQuery
+    )
+    const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
     const {
       elements: customObjects,
       failedTypes,
@@ -117,21 +134,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const instances = customizationInfos.map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]
         ?? fileCabinetTypes[customizationInfo.typeName]
-      return type && !this.shouldSkipType(type)
-        ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
+      return type ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
     }).filter(isInstanceElement)
     const elements = [...getAllTypes(), ...instances]
-    await this.runFiltersOnFetch(elements)
+
+    const isPartial = this.fetchTarget !== undefined
+
+    await this.runFiltersOnFetch(elements, this.elementsSource, isPartial)
     const config = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedTypes, failedFilePaths,
       this.userConfig)
-    if (_.isUndefined(config)) {
-      return { elements }
-    }
-    return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG } }
-  }
 
-  private shouldSkipType(type: ObjectType): boolean {
-    return this.typesToSkip.includes(type.elemID.name)
+    if (_.isUndefined(config)) {
+      return { elements, isPartial }
+    }
+    return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG }, isPartial }
   }
 
   private getAllRequiredReferencedInstances(
@@ -156,10 +172,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { errors: [], appliedChanges: changeGroup.changes }
   }
 
-  private async runFiltersOnFetch(elements: Element[]): Promise<void> {
+  private async runFiltersOnFetch(
+    elements: Element[],
+    elementsSource: ReadOnlyElementsSource,
+    isPartial: boolean
+  ): Promise<void> {
     // Fetch filters order is important so they should run one after the other
     return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
-      (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
+      (prevRes, filter) => prevRes.then(() =>
+        filter.onFetch({ elements, elementsSource, isPartial })),
       Promise.resolve(),
     )
   }

@@ -444,7 +444,7 @@ const getInstanceServiceId = async (
 }
 
 export const generateServiceIdToStateElemId = async (
-  stateElements: Element[],
+  stateElements: AsyncIterable<Element>,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Record<string, ElemID>> =>
   Object.fromEntries(await awu(stateElements)
@@ -464,10 +464,13 @@ export const generateServiceIdToStateElemId = async (
     .toArray())
 
 export const createElemIdGetter = async (
-  stateElements: Element[],
-  elementsSource: ReadOnlyElementsSource,
+  elements: AsyncIterable<Element>,
+  state: elementSource.ElementsSource
 ): Promise<ElemIdGetter> => {
-  const serviceIdToStateElemId = await generateServiceIdToStateElemId(stateElements, elementsSource)
+  const serviceIdToStateElemId = await generateServiceIdToStateElemId(
+    elements,
+    state
+  )
   return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
     serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
 }

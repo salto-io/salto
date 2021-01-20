@@ -179,7 +179,7 @@ export const generateElements = async (
       s = u * u + v * v
     } while (s >= 1 || s === 0)
     s = Math.sqrt(-2.0 * (Math.log(s) / s))
-    return Math.floor(mean + (stdDev * u * s))
+    return Math.max(Math.floor(mean + (stdDev * u * s)), 0)
   }
 
   const weightedRandomSelect = <T>(items: T[], weights?: number[]): T => {
@@ -261,7 +261,7 @@ export const generateElements = async (
     }
   }
 
-  const getListLength = (): number => normalRandom(params.listLengthMean, params.listLengthStd)
+  const getListLength = (): number => normalRandom(params.listLengthMean, params.listLengthStd) + 1
 
   const getSingleLine = (): string => (
     stringLinesOpts[Math.floor(Math.random() * stringLinesOpts.length)]
@@ -308,13 +308,20 @@ export const generateElements = async (
       return mapValuesAsync(ref.fields, async field => generateValue(await field.getType()))
     }
     if (isListType(ref)) {
-      return arrayOf(getListLength(), async () => generateValue(await ref.getInnerType()))
+      return Promise.all(
+        arrayOf(getListLength(),
+          async () => generateValue(await ref.getInnerType()))
+      )
     }
     if (isMapType(ref)) {
       return Object.fromEntries(
-        arrayOf(getListLength(), async () => generateValue(await ref.getInnerType())).map(
-          (val, index) => [`k${index}`, val]
-        )
+        (await Promise.all(
+          arrayOf(getListLength(),
+            async () => generateValue(await ref.getInnerType()))
+        ))
+          .map(
+            (val, index) => [`k${index}`, val]
+          )
       )
     }
     // Linter token
@@ -331,7 +338,7 @@ export const generateElements = async (
 
   const generateFields = async (): Promise<Record<string, FieldDefinition>> => Object.fromEntries(
     await Promise.all(arrayOf(
-      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd),
+      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd) + 1,
       async () => {
         const name = getName()
         const fieldType = getFieldType(true)

@@ -72,8 +72,8 @@ const createObjectTypeFromNestedAdditions = (
       case 'annotation': {
         const annoName = nestedValue.id.createTopLevelParentID().path[0]
         return { ...prev,
-          annotationTypes: {
-            ...prev.annotationTypes,
+          annotationRefsOrTypes: {
+            ...prev.annotationRefsOrTypes,
             [annoName]: nestedValue.value,
           } }
       }
@@ -82,7 +82,7 @@ const createObjectTypeFromNestedAdditions = (
   }, {
     elemID: commonObjectType.elemID,
     fields: {} as Record<string, FieldDefinition>,
-    annotationTypes: {},
+    annotationRefsOrTypes: {},
     annotations: {},
     path,
     isSettings: commonObjectType.isSettings,
@@ -118,8 +118,8 @@ const createPrimitiveTypeFromNestedAdditions = (
         [nestedValue.id.name]: nestedValue.value,
       } }
     case 'annotation': return { ...prev,
-      annotationTypes: {
-        ...prev.annotationTypes,
+      annotationRefTypes: {
+        ...prev.annotationRefTypes,
         [nestedValue.id.name]: nestedValue.value,
       } }
     default: return prev
@@ -127,7 +127,7 @@ const createPrimitiveTypeFromNestedAdditions = (
 }, {
   elemID: commonPrimitiveType.elemID,
   primitive: commonPrimitiveType.primitive,
-  annotationTypes: {},
+  annotationRefTypes: {},
   annotations: {},
   path,
 }))

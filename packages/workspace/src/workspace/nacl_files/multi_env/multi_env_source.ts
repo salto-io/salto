@@ -307,6 +307,8 @@ const buildMultiEnvSource = (
     const changes = await mapValuesAsync(getActiveSources(), src => src.load())
     const buildRes = await buildMultiEnvState({ changes })
     state = Promise.resolve(buildRes.state)
+    // We still need to load the secondrary nacl file sources
+    await awu(Object.values(secondarySources())).forEach(src => src.load())
     return buildRes.changes
   }
 

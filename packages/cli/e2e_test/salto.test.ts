@@ -106,9 +106,7 @@ describe('cli e2e', () => {
     newInstance2FullName = `${NEW_INSTANCE2_BASE_ELEM_NAME}${randomString}`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `${newObjectElemName}${SALESFORCE_CUSTOM_SUFFIX}`
-    newObjectStandardFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
     newObjectAnnotationsRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}Annotations.nacl`
-    newObjectCustomFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}CustomFields.nacl`
     tmpNaclFileRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
 
     process.env[SALTO_HOME_VAR] = homePath
@@ -314,7 +312,7 @@ describe('cli e2e', () => {
       )
       const annotationObjSourceMap = await workspace.getSourceMap(newObjectAnnotationsRelativePath)
       const standardFieldsObjSourceMap = await workspace
-        .getSourceMap(newObjectStandardFieldRelativePath)
+        .getSourceMap(tmpNaclFileRelativePath)
       expect(standardFieldsObjSourceMap.has(newObject.elemID.getFullName())).toBeTruthy()
       expect(standardFieldsObjSourceMap.has(newObject.elemID.createNestedID('annotation')
         .getFullName())).toBeFalsy()

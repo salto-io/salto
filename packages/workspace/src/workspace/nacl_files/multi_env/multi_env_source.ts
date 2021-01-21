@@ -83,9 +83,9 @@ const buildMultiEnvSource = (
     _.omit(sources, [primarySourceName, commonSourceName])
   )
 
-  const getRemoteMapNameSpace = (
+  const getRemoteMapNamespace = (
     namespace: string, env?: string
-  ): string => `multi_env:${env || primarySourceName}:${namespace}`
+  ): string => `multi_env-${env || primarySourceName}-${namespace}`
 
   const getActiveSources = (env?: string): Record<string, NaclFilesSource> => ({
     [primarySourceName]: env === undefined ? sources[primarySourceName] : sources[env],
@@ -117,7 +117,7 @@ const buildMultiEnvSource = (
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
     const elements = new InMemoryRemoteElementSource(await createRemoteMap({
-      namespace: getRemoteMapNameSpace('merged'),
+      namespace: getRemoteMapNamespace('merged'),
       serialize: (element: Element) => serialize([element]),
       // TODO: we might need to pass static file reviver to the deserialization func
       deserialize: async (data: string) => (await deserialize(data))[0],

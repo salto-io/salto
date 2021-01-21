@@ -41,8 +41,8 @@ const DB_LOCATION = '/tmp/test_db'
 
 let remoteMap: rm.RemoteMap<Element>
 
-const createMap = async (namespace:
-  string): Promise<rm.RemoteMap<Element>> => remoteMapCreator<Element>(DB_LOCATION)({
+const createMap = async (namespace: string): Promise<rm.RemoteMap<Element>> =>
+  remoteMapCreator<Element>(DB_LOCATION)({
     namespace,
     batchInterval: 1000,
     LRUSize: 500,
@@ -142,7 +142,7 @@ describe('test operations on remote db', () => {
       for await (const elemId of remoteMap.keys({ first: 5, after })) {
         nextPageRes.push(elemId)
       }
-      expect(nextPageRes).toHaveLength(2)
+      expect(nextPageRes).toHaveLength(3)
       expect(nextPageRes).toEqual(sortedElements.slice(5))
     })
   })
@@ -172,7 +172,7 @@ describe('test operations on remote db', () => {
       for await (const element of remoteMap.values({ first: 5, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(2)
+      expect(nextPageRes).toHaveLength(3)
       expect(nextPageRes.map(e => e.elemID.getFullName())).toEqual(sortedElements.slice(5))
     })
   })
@@ -206,7 +206,7 @@ describe('test operations on remote db', () => {
       for await (const element of remoteMap.entries({ first: 5, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(2)
+      expect(nextPageRes).toHaveLength(3)
       expect(nextPageRes.map(e => e.value.elemID.getFullName())).toEqual(sortedElements.slice(5))
       expect(nextPageRes.map(e => e.key)).toEqual(sortedElements.slice(5))
     })

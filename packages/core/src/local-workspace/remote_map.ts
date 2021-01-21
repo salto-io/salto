@@ -89,8 +89,10 @@ export const remoteMapCreator = <T>(location: string): remoteMap.RemoteMapCreato
   { namespace, batchInterval = 1000, LRUSize = 500, serialize, deserialize }:
   remoteMap.CreateRemoteMapParams<T>
 ): Promise<remoteMap.RemoteMap<T>> => {
-  if (!/^[a-z0-9-]+$/i.test(namespace)) {
-    throw new Error(`Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`)
+  if (!/^[a-z0-9-_/]+$/i.test(namespace)) {
+    throw new Error(
+      `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`
+    )
   }
   const cache = new LRU<string, T>({ max: LRUSize })
   let db: rocksdb

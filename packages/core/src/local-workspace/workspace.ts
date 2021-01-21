@@ -110,7 +110,9 @@ const loadNaclFileSource = (
   const { naclFilesStore, cache, staticFileSource } = getNaclFilesSourceParams(
     sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
   )
-  return naclFilesSource(naclFilesStore, cache, staticFileSource, remoteMapCreator(cacheBaseDir))
+  return naclFilesSource(
+    sourceName, naclFilesStore, cache, staticFileSource, remoteMapCreator(cacheBaseDir)
+  )
 }
 
 

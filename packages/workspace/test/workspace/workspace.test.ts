@@ -106,6 +106,7 @@ const createWorkspace = async (
       sources: elementSources || {
         '': {
           naclFiles: await naclFilesSource(
+            '',
             dirStore || mockDirStore(),
             mockParseCache(),
             staticFilesSource || mockStaticFilesSource(),

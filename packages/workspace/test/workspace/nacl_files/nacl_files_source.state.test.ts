@@ -116,6 +116,7 @@ describe('Nacl Files Source', () => {
           await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})
         )))
       naclFileSourceTest = await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -321,6 +322,7 @@ describe('Nacl Files Source', () => {
                 await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})
               )))
             naclFileSourceWithFragments = await naclFilesSource(
+              '',
               mockDirStore,
               mockCache,
               mockedStaticFilesSource,

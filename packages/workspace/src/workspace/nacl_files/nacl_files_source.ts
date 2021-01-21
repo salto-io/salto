@@ -109,6 +109,10 @@ const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer
   buffer: naclFile.buffer,
 })
 
+const getRemoteMapNamespace = (
+  namespace: string, name: string
+): string => `naclFileSource-${name}-${namespace}`
+
 // This assumes List</Map< will only be in container types' ElemID and that they have closing >
 const getTypeOrContainerTypeID = (elemID: ElemID): ElemID => {
   const fullName = elemID.getFullName()
@@ -219,26 +223,27 @@ export const getParsedNaclFiles = async (
 type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change<Element>[] }
 
 const buildNaclFilesState = async ({
-  newNaclFiles, createRemoteMap, existingState, staticFileSource,
+  newNaclFiles, createRemoteMap, existingState, staticFileSource, sourceName,
 }: {
   newNaclFiles: ParsedNaclFile[]
   createRemoteMap: RemoteMapCreator<Value>
   existingState?: NaclFilesState
   staticFileSource: StaticFilesSource
+  sourceName: string
 }): Promise<buildNaclFilesStateResult> => {
   const currentState = existingState ?? {
     elementsIndex: await createRemoteMap({
-      namespace: 'elements_index',
+      namespace: getRemoteMapNamespace('elements_index', sourceName),
       serialize: (val: string[]) => JSON.stringify(val),
       deserialize: data => JSON.parse(data),
     }) as RemoteMap<string[]>,
     mergeErrors: await createRemoteMap({
-      namespace: 'errors',
+      namespace: getRemoteMapNamespace('errors', sourceName),
       serialize: (val: MergeError[]) => serializeMergeErrors(val),
       deserialize: async data => deserializeMergeErrors(data),
     }) as RemoteMap<MergeError[]>,
     mergedElements: new InMemoryRemoteElementSource(await createRemoteMap({
-      namespace: 'merged',
+      namespace: getRemoteMapNamespace('merged', sourceName),
       serialize: (element: Element) => serialize([element]),
       deserialize: async data => (await deserialize(
         data,
@@ -247,7 +252,7 @@ const buildNaclFilesState = async ({
     })),
     parsedNaclFiles: {} as ParsedNaclFileMap,
     referencedIndex: await createRemoteMap({
-      namespace: 'referenced_index',
+      namespace: getRemoteMapNamespace('referenced_index', sourceName),
       serialize: (val: string[]) => JSON.stringify(val),
       deserialize: data => JSON.parse(data),
     }) as RemoteMap<string[]>,
@@ -391,6 +396,7 @@ const logNaclFileUpdateErrorContext = (
 }
 
 const buildNaclFilesSource = (
+  sourceName: string,
   naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
@@ -457,6 +463,7 @@ const buildNaclFilesSource = (
       newNaclFiles: parsedNaclFilesFromCache,
       createRemoteMap,
       staticFileSource,
+      sourceName,
     })
     ).state
     const parsedModifiedFiles = await parseNaclFiles(modifiedNaclFiles, cache, functions)
@@ -465,6 +472,7 @@ const buildNaclFilesSource = (
       createRemoteMap,
       existingState: cacheOnlyState,
       staticFileSource,
+      sourceName,
     })
   }
 
@@ -479,6 +487,7 @@ const buildNaclFilesSource = (
       createRemoteMap,
       existingState: current,
       staticFileSource,
+      sourceName,
     })
   }
 
@@ -708,6 +717,7 @@ const buildNaclFilesSource = (
     },
 
     clone: () => buildNaclFilesSource(
+      sourceName,
       naclFilesStore.clone(),
       cache.clone(),
       staticFileSource.clone(),
@@ -735,6 +745,7 @@ const buildNaclFilesSource = (
 }
 
 export const naclFilesSource = async (
+  sourceName: string,
   naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
@@ -743,10 +754,11 @@ export const naclFilesSource = async (
 ): Promise<NaclFilesSource> => {
   const state = (parsedFiles !== undefined)
     ? (await buildNaclFilesState({
-      newNaclFiles: parsedFiles, createRemoteMap, staticFileSource,
+      newNaclFiles: parsedFiles, createRemoteMap, staticFileSource, sourceName,
     })).state
     : undefined
   return buildNaclFilesSource(
+    sourceName,
     naclFilesStore,
     cache,
     staticFileSource,

@@ -151,9 +151,9 @@ export const loadWorkspace = async (
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
   const currentEnv = (): string => workspaceConfig.currentEnv ?? workspaceConfig.envs[0].name
-  const getRemoteMapNameSpace = (
+  const getRemoteMapNamespace = (
     namespace: string, env?: string
-  ): string => `workspace:${env || currentEnv()}:${namespace}`
+  ): string => `workspace-${env || currentEnv()}-${namespace}`
   const currentEnvConf = (): EnvConfig =>
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const currentEnvsConf = (): EnvConfig[] =>
@@ -176,17 +176,17 @@ export const loadWorkspace = async (
       const newState = {
         merged: new InMemoryRemoteElementSource(
           await createRemoteMap({
-            namespace: getRemoteMapNameSpace('merged', envToUse),
+            namespace: getRemoteMapNamespace('merged', envToUse),
             serialize: (element: Element) => serialize([element]),
             // TODO: we might need to pass static file reviver to the deserialization func
             deserialize: async (data: string) => (await deserialize(data))[0],
           })
         ),
         errors: await createRemoteMap({
-          namespace: getRemoteMapNameSpace('errors', envToUse),
-          serialize: (element: Element) => serialize([element]),
+          namespace: getRemoteMapNamespace('errors', envToUse),
+          serialize: (saltoErrors: SaltoError[]) => JSON.stringify(saltoErrors),
           // TODO: we might need to pass static file reviver to the deserialization func
-          deserialize: async (data: string) => (await deserialize(data))[0],
+          deserialize: async (data: string) => JSON.parse(data),
         }),
       }
       await buildNewMergedElementsAndErrors({

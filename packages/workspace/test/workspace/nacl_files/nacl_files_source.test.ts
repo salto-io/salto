@@ -103,6 +103,7 @@ describe('Nacl Files Source', () => {
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
       await ((await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -118,6 +119,7 @@ describe('Nacl Files Source', () => {
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
       await (await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -135,6 +137,7 @@ describe('Nacl Files Source', () => {
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
       await expect((await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -152,6 +155,7 @@ describe('Nacl Files Source', () => {
     it('should use store\'s isEmpty', async () => {
       mockDirStore.isEmpty = jest.fn().mockResolvedValue(Promise.resolve())
       await (await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -168,6 +172,7 @@ describe('Nacl Files Source', () => {
       mockCache.rename = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.rename = jest.fn().mockResolvedValue(Promise.resolve())
       await (await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -188,6 +193,7 @@ describe('Nacl Files Source', () => {
       mockedStaticFilesSource.getTotalSize = jest.fn().mockResolvedValue(Promise.resolve(200))
       const totalSize = await (
         await naclFilesSource(
+          '',
           mockDirStore,
           mockCache,
           mockedStaticFilesSource,
@@ -214,6 +220,7 @@ describe('Nacl Files Source', () => {
     } as DetailedChange
     it('should not parse file when updating single add changes in a new file', async () => {
       const naclSrc = await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -232,6 +239,7 @@ describe('Nacl Files Source', () => {
     let src: NaclFilesSource
     beforeEach(async () => {
       src = await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -268,6 +276,7 @@ describe('Nacl Files Source', () => {
         },
       ]
       const naclSource = naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
@@ -288,6 +297,7 @@ describe('Nacl Files Source', () => {
 
     beforeEach(async () => {
       naclSource = await naclFilesSource(
+        '',
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,

@@ -270,7 +270,7 @@ export const runDeploy = async ({
 }
 
 export const runPreview = async (fetchOutputDir: string): Promise<void> => (
-  await runDeploy({ fetchOutputDir, allowErrors: false, dryRun: true })
+  runDeploy({ fetchOutputDir, allowErrors: false, dryRun: true })
 )
 
 export const runClean = async (

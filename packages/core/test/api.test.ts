@@ -37,6 +37,7 @@ import * as workspace from '@salto-io/workspace'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
+import * as adapters from '../src/core/adapters/adapters'
 import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
@@ -140,11 +141,14 @@ describe('api.ts', () => {
     describe('Full fetch', () => {
       let ws: workspace.Workspace
       let stateOverride: jest.SpyInstance
+      let mockGetAdaptersCreatorConfigs: jest.SpyInstance
 
       beforeAll(async () => {
-        const stateElements = [new InstanceElement('old_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
-        ws = mockWorkspace({ stateElements })
+        const workspaceElements = [new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+        const stateElements = [new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+        ws = mockWorkspace({ elements: workspaceElements, stateElements })
         stateOverride = jest.spyOn(ws.state(), 'override')
+        mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, SERVICES)
       })
@@ -158,6 +162,12 @@ describe('api.ts', () => {
 
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()
+      })
+
+      it('should pass the state elements to getAdaptersCreatorConfigs', async () => {
+        const elementsSource = mockGetAdaptersCreatorConfigs.mock.calls[0][3]
+        expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'state_instance'))).toBeTruthy()
+        expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'workspace_instance'))).toBeFalsy()
       })
     })
 

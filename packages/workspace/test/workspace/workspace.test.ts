@@ -29,7 +29,7 @@ import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { mockStaticFilesSource } from '../utils'
+import { mockStaticFilesSource, mockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
@@ -110,7 +110,7 @@ const createWorkspace = async (
             dirStore || mockDirStore(),
             mockParseCache(),
             staticFilesSource || mockStaticFilesSource(),
-            () => Promise.resolve(new InMemoryRemoteMap()),
+            mockCreateRemoteMap,
           ),
         },
         default: {
@@ -119,7 +119,7 @@ const createWorkspace = async (
         },
       },
     },
-    () => Promise.resolve(new InMemoryRemoteMap()),
+    mockCreateRemoteMap,
   )
 
 const getElemMap = async (
@@ -1130,8 +1130,8 @@ describe('workspace', () => {
 
     it('should add the type that change from hidden to not hidden, excluding hidden annotations', () => {
       expect(typeBecameNotHidden).toBeDefined()
-      expect(typeBecameNotHidden).toEqual(_.omit(
-        accountInsightsSettingsType, 'annotations.internalId',
+      expect(typeBecameNotHidden.annotations).toEqual(_.omit(
+        accountInsightsSettingsType.annotations, 'internalId',
       ))
     })
 

@@ -18,8 +18,9 @@ import { values, collections } from '@salto-io/lowerdash'
 import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
 import { StaticFilesSource } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
+import { RemoteMap, RemoteMapEntry, CreateRemoteMapParams } from '../src/workspace/remote_map'
 
-const { awu } = collections.asynciterable
+const { awu, toAsyncIterable } = collections.asynciterable
 const { isDefined } = values
 
 export class TestFuncImpl extends FunctionExpression {}
@@ -70,6 +71,44 @@ export const mockStaticFilesSource = (): StaticFilesSource => ({
   clear: jest.fn(),
   delete: jest.fn(),
 })
+
+export const mockCreateRemoteMap = async <T>(opts: CreateRemoteMapParams<T>):
+Promise<RemoteMap<T>> => {
+  let data: Record<string, string> = {}
+  return {
+    setAll: async (
+      entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, string>>
+    ): Promise<void> => {
+      for await (const entry of entries) {
+        data[entry.key] = opts.serialize(entry.value)
+      }
+    },
+    delete: async (key: string) => {
+      delete data[key]
+    },
+    get: async (key: string): Promise<T | undefined> => {
+      const value = data[key]
+      return value ? opts.deserialize(value) : undefined
+    },
+    has: async (key: string): Promise<boolean> => key in data,
+    set: async (key: string, value: T): Promise<void> => {
+      data[key] = opts.serialize(value)
+    },
+    clear: async (): Promise<void> => {
+      data = {}
+    },
+    entries: (): AsyncIterable<RemoteMapEntry<T, string>> =>
+      awu(Object.entries(data))
+        .map(async e =>
+          ({ key: e[0], value: await opts.deserialize(e[1] as unknown as string) })),
+    keys: (): AsyncIterable<string> => toAsyncIterable(Object.keys(data)),
+    values: (): AsyncIterable<T> =>
+      awu(Object.values(data)).map(async v => opts.deserialize(v)),
+    flush: (): Promise<void> => Promise.resolve(undefined),
+    revert: (): Promise<void> => Promise.resolve(undefined),
+    close: (): Promise<void> => Promise.resolve(undefined),
+  }
+}
 
 export const defaultContent = 'ZOMG'
 const defaultPath = 'path'

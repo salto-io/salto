@@ -34,14 +34,6 @@ export interface CreateRemoteMapParams<T> {
   deserialize: (s: string) => Promise<T>
 }
 
-export interface CreateRemoteMapParamsWithLocation<T> extends CreateRemoteMapParams<T> {
-  location: string
-}
-
-export interface CreateRemoteMapParamsWithType<T> extends CreateRemoteMapParams<T> {
-  type: RemoteMapType
-}
-
 export type RemoteMap<T, K extends string = string> = {
   delete(key: K): Promise<void>
   get(key: K): Promise<T | undefined>

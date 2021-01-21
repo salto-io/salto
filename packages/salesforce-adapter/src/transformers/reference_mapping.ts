@@ -146,7 +146,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
   {
     src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
-    serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: 'Letterhead' },
   },
   {

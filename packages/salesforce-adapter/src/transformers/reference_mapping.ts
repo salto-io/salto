@@ -30,7 +30,6 @@ import {
   CPQ_QUOTE_LINE_FIELDS, DEFAULT_OBJECT_TO_API_MAPPING, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING,
   TEST_OBJECT_TO_API_MAPPING, CPQ_TESTED_OBJECT, CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE,
   CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD,
-  LETTERHEAD_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -148,7 +147,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: LETTERHEAD_TYPE },
+    target: { parentContext: 'instanceParent', type: 'Letterhead' },
   },
   {
     src: { field: 'fields', parentTypes: ['WorkflowOutboundMessage'] },

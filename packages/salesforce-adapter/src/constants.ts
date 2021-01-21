@@ -306,7 +306,6 @@ export const WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE = 'WorkflowOutboundMessage'
 export const WORKFLOW_RULE_METADATA_TYPE = 'WorkflowRule'
 export const WORKFLOW_TASK_METADATA_TYPE = 'WorkflowTask'
 export const WEBLINK_METADATA_TYPE = 'WebLink'
-export const LETTERHEAD_TYPE = 'Letterhead'
 export const BUSINESS_HOURS_METADATA_TYPE = 'BusinessHoursSettings'
 export const SETTINGS_METADATA_TYPE = 'Settings'
 

@@ -133,7 +133,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 
   public static readonly FETCH_SHOULD_ALIGN_FETCH_MODE = (
     fetchMode: string
-  ): string => 'It is recommended to fetch in \'align\' mode when fetching an environemnt for the first time and the fetched services already have elements in other environments.'
+  ): string => 'It is recommended to fetch in \'align\' mode when fetching an environment for the first time and the fetched services already have elements in other environments.'
    + ` Do you want to change the fetch mode from '${fetchMode}' to 'align'?`
 
   public static readonly FETCH_CHANGING_FETCH_MODE_TO_ALIGN = 'Changing fetch mode to \'align\''
@@ -167,7 +167,7 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly ISOLATE_FIRST_ENV_RECOMMENDATION = (
     existingEnv: string
   ): string => 'This operation will turn this workspace to a multi environment one by adding a second environment.'
-    + ` It is recommended to move all enviroment '${existingEnv}' configuration to the environment-specific folder.`
+    + ` It is recommended to move all environment '${existingEnv}' configuration to the environment-specific folder.`
 
   public static readonly DONE_ISOLATING_FIRST_ENV = (
     existingEnv: string

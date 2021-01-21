@@ -145,6 +145,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
+    target: { type: 'Letterhead' },
+  },
+  {
     src: { field: 'fields', parentTypes: ['WorkflowOutboundMessage'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },

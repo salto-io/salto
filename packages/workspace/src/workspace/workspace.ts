@@ -31,7 +31,7 @@ import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError } from '../merger'
-import { InMemoryRemoteElementSource, ElementsSource } from './elements_source'
+import { RemoteElementSource, ElementsSource } from './elements_source'
 import { buildNewMergedElementsAndErrors } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserialize } from '../serializer/elements'
@@ -174,7 +174,7 @@ export const loadWorkspace = async (
     if (_.isUndefined(workspaceState) || (env !== undefined && env !== currentEnv())) {
       const envToUse = env ?? currentEnv()
       const newState = {
-        merged: new InMemoryRemoteElementSource(
+        merged: new RemoteElementSource(
           await createRemoteMap({
             namespace: getRemoteMapNamespace('merged', envToUse),
             serialize: (element: Element) => serialize([element]),

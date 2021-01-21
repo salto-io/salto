@@ -30,7 +30,7 @@ import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } f
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
 import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
-import { InMemoryRemoteElementSource, ElementsSource } from '../../elements_source'
+import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserialize } from '../../../serializer/elements'
 
 const { awu } = collections.asynciterable
@@ -116,7 +116,7 @@ const buildMultiEnvSource = (
     const allActiveElements = awu(_.values(getActiveSources(env)))
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
-    const elements = new InMemoryRemoteElementSource(await createRemoteMap({
+    const elements = new RemoteElementSource(await createRemoteMap({
       namespace: getRemoteMapNamespace('merged'),
       serialize: (element: Element) => serialize([element]),
       // TODO: we might need to pass static file reviver to the deserialization func
@@ -124,7 +124,7 @@ const buildMultiEnvSource = (
     }))
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
-      new InMemoryRemoteElementSource(merged)
+      new RemoteElementSource(merged)
     ))
     return {
       elements,

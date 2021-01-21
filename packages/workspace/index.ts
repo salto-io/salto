@@ -35,7 +35,7 @@ import { createElementSelector, ElementSelector, validateSelectorsMatches,
 import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
-import { InMemoryRemoteElementSource } from './src/workspace/elements_source'
+import { RemoteElementSource } from './src/workspace/elements_source'
 
 export {
   errors,
@@ -72,5 +72,5 @@ export {
   createElementSelectors,
   selectElementIdsByTraversal,
   ElementIDToValue,
-  InMemoryRemoteElementSource,
+  RemoteElementSource,
 }

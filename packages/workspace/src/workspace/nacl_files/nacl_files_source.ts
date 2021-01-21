@@ -25,7 +25,7 @@ import { MergeError, mergeElements } from '../../merger'
 import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
   getNestedStaticFiles } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
-import { ElementsSource, InMemoryRemoteElementSource, createInMemoryElementSource } from '../elements_source'
+import { ElementsSource, RemoteElementSource, createInMemoryElementSource } from '../elements_source'
 import { ParseResultCache, ParseResultKey } from '../cache'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
@@ -85,7 +85,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
 export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
 export type ParsedNaclFile = {
   filename: string
-  elements: InMemoryRemoteElementSource
+  elements: RemoteElementSource
   data: RemoteMap<Value, ParsedNaclFileDataKeys>
   buffer?: string
 }
@@ -242,7 +242,7 @@ const buildNaclFilesState = async ({
       serialize: (val: MergeError[]) => serializeMergeErrors(val),
       deserialize: async data => deserializeMergeErrors(data),
     }) as RemoteMap<MergeError[]>,
-    mergedElements: new InMemoryRemoteElementSource(await createRemoteMap({
+    mergedElements: new RemoteElementSource(await createRemoteMap({
       namespace: getRemoteMapNamespace('merged', sourceName),
       serialize: (element: Element) => serialize([element]),
       deserialize: async data => (await deserialize(

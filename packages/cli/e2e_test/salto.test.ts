@@ -15,7 +15,7 @@
 */
 import path from 'path'
 import wu from 'wu'
-//import tmp from 'tmp-promise'
+import tmp from 'tmp-promise'
 import { strings, collections } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists, readFile } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
@@ -94,12 +94,12 @@ describe('cli e2e', () => {
     path.join(fetchOutputDir, partialPath)
 
   beforeAll(async () => {
-    homePath = '/Users/roironn/tmp/e2e' //tmp.dirSync().name
+    homePath = tmp.dirSync().name
+    randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     fetchOutputDir = `${homePath}/NACL/test_fetch`
     localStorageDir = `${homePath}/.salto/test_fetch`
     localWorkspaceDir = `${homePath}/e2e-375e3f65-be66-4fdc-a561-4c4f9735db94`
     statePath = `${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`
-    randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstance2ElemName = NEW_INSTANCE2_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
@@ -284,8 +284,8 @@ describe('cli e2e', () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
     })
   })
-
-  describe.skip('fetch expecting no changes', () => {
+  // eslint-disable-next-line
+  describe('fetch expecting no changes', () => {
     let workspace: Workspace
     beforeAll(async () => {
       await runFetch(fetchOutputDir)
@@ -339,8 +339,7 @@ describe('cli e2e', () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
     })
   })
-
-  describe.skip('deploy after deleting the object and the instance', () => {
+  describe('deploy after deleting the object and the instance', () => {
     beforeAll(async () => {
       await rm(fullPath(tmpNaclFileRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
@@ -368,8 +367,7 @@ describe('cli e2e', () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
     })
   })
-
-  describe.skip('multi-env after initial fetch', () => {
+  describe('multi-env after initial fetch', () => {
     // Note: this test relies on the existence of the salesforce folder from an earlier fetch,
     // and should be run after all non-multienv tests have completed
     beforeAll(() => {
@@ -401,8 +399,7 @@ describe('cli e2e', () => {
       expect(callbacksImpl.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalled()
     })
   })
-
-  describe.skip('clean after initial fetch', () => {
+  describe('clean after initial fetch', () => {
     // Note: this should be the last test to run, as it will clear out parts of the workspace
     let salesforceConfPath: string
     beforeAll(async () => {

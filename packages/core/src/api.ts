@@ -122,6 +122,7 @@ export const deploy = async (
     const topLevelElem = await workspace.state().get(changeElem.parent.elemID) as ObjectType
     return new ObjectType({
       ...topLevelElem,
+      annotationRefsOrTypes: topLevelElem.annotationRefTypes,
       fields: change.action === 'remove'
         ? _.omit(topLevelElem.fields, changeElem.name)
         : _.merge({}, topLevelElem.fields, { [changeElem.name]: changeElem }),

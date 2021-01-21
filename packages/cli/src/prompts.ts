@@ -167,7 +167,7 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly ISOLATE_FIRST_ENV_RECOMMENDATION = (
     existingEnv: string
   ): string => 'This operation will turn this workspace to a multi environment one by adding a second environment.'
-    + ` It is recommended to move all enviroment '${existingEnv}' configuration to the environment-specific folder.`
+    + ` It is recommended to move all environment '${existingEnv}' configuration to the environment-specific folder.`
 
   public static readonly DONE_ISOLATING_FIRST_ENV = (
     existingEnv: string

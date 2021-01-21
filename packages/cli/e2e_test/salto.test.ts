@@ -83,9 +83,7 @@ describe('cli e2e', () => {
   let newInstance2FullName: string
   let newObjectElemName: string
   let newObjectApiName: string
-  let newObjectStandardFieldRelativePath: string
   let newObjectAnnotationsRelativePath: string
-  let newObjectCustomFieldRelativePath: string
 
   const ROLE = 'Role'
   let client: SalesforceClient
@@ -341,8 +339,6 @@ describe('cli e2e', () => {
     beforeAll(async () => {
       await rm(fullPath(tmpNaclFileRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
-      await rm(fullPath(newObjectStandardFieldRelativePath))
-      await rm(fullPath(newObjectCustomFieldRelativePath))
       // We have to run preview first, otherwise the last plan won't be updated
       lastPlan.clear()
       await runPreview(fetchOutputDir)

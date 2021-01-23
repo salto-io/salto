@@ -25,7 +25,7 @@ import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
-import { remoteMapCreator } from './remote_map'
+import { createRemoteMapCreator } from './remote_map'
 
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
@@ -111,7 +111,7 @@ const loadNaclFileSource = (
     sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
   )
   return naclFilesSource(
-    sourceName, naclFilesStore, cache, staticFileSource, remoteMapCreator(cacheBaseDir)
+    sourceName, naclFilesStore, cache, staticFileSource, createRemoteMapCreator(cacheBaseDir)
   )
 }
 
@@ -184,7 +184,7 @@ export const loadLocalWorkspace = async (
   const elemSources = await loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
   const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
   const ws = await loadWorkspace(
-    workspaceConfig, credentials, elemSources, remoteMapCreator(cacheDirName)
+    workspaceConfig, credentials, elemSources, createRemoteMapCreator(cacheDirName)
   )
 
   return {
@@ -232,6 +232,6 @@ Promise<Workspace> => {
 
   return initWorkspace(
     workspaceName, uid, envName, workspaceConfig,
-    credentials, elemSources, remoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
+    credentials, elemSources, createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
   )
 }

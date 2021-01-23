@@ -70,11 +70,19 @@ type MultiEnvSource = Omit<NaclFilesSource, 'getAll' | 'getElementsSource'> & {
   getElementsSource: (env?: string) => Promise<ElementsSource>
 }
 
+export const deserializeElement = async (data: string): Promise<Element> => {
+  const elements = (await deserialize(data))
+  if (elements.length !== 1) {
+    throw new Error('Deserialization failed. should receive single element')
+  }
+  return elements[0]
+}
+
 const buildMultiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-  createRemoteMap: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator<Value>,
   initState?: Promise<MultiEnvState>
 ): MultiEnvSource => {
   const primarySource = (): NaclFilesSource => sources[primarySourceName]
@@ -116,11 +124,11 @@ const buildMultiEnvSource = (
     const allActiveElements = awu(_.values(getActiveSources(env)))
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
-    const elements = new RemoteElementSource(await createRemoteMap({
+    const elements = new RemoteElementSource(await remoteMapCreator({
       namespace: getRemoteMapNamespace('merged'),
       serialize: (element: Element) => serialize([element]),
       // TODO: we might need to pass static file reviver to the deserialization func
-      deserialize: async (data: string) => (await deserialize(data))[0],
+      deserialize: deserializeElement,
     }))
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
@@ -459,7 +467,7 @@ const buildMultiEnvSource = (
       _.mapValues(sources, source => source.clone()),
       primarySourceName,
       commonSourceName,
-      createRemoteMap,
+      remoteMapCreator,
       state
     ),
     load,
@@ -470,10 +478,10 @@ export const multiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-  createRemoteMap: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator<Value>,
 ): MultiEnvSource => buildMultiEnvSource(
   sources,
   primarySourceName,
   commonSourceName,
-  createRemoteMap
+  remoteMapCreator
 )

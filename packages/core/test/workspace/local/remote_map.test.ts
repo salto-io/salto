@@ -21,7 +21,7 @@ import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm } from '@salto-io/workspace'
-import { remoteMapCreator } from '../../../src/local-workspace/remote_map'
+import { createRemoteMapCreator } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
@@ -42,7 +42,7 @@ const DB_LOCATION = '/tmp/test_db'
 let remoteMap: rm.RemoteMap<Element>
 
 const createMap = async (namespace: string): Promise<rm.RemoteMap<Element>> =>
-  remoteMapCreator<Element>(DB_LOCATION)({
+  createRemoteMapCreator<Element>(DB_LOCATION)({
     namespace,
     batchInterval: 1000,
     LRUSize: 500,

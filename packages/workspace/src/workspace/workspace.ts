@@ -24,7 +24,7 @@ import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
-import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
+import { multiEnvSource, deserializeElement } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
@@ -34,7 +34,7 @@ import { MergeError } from '../merger'
 import { RemoteElementSource, ElementsSource } from './elements_source'
 import { buildNewMergedElementsAndErrors } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
-import { serialize, deserialize } from '../serializer/elements'
+import { serialize } from '../serializer/elements'
 
 const log = logger(module)
 
@@ -141,7 +141,7 @@ export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
   elementsSources: EnvironmentsSources,
-  createRemoteMap: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator<Value>,
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -163,7 +163,7 @@ export const loadWorkspace = async (
     elementsSources.sources[envName ?? currentEnv()].state as State
   )
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-    currentEnv(), elementsSources.commonSourceName, createRemoteMap)
+    currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
   let workspaceState: Promise<WorkspaceState> | undefined
 
   const buildWorkspaceState = async ({ changes = [], env, hiddenElementsChangesIDs = [] }: {
@@ -175,14 +175,14 @@ export const loadWorkspace = async (
       const envToUse = env ?? currentEnv()
       const newState = {
         merged: new RemoteElementSource(
-          await createRemoteMap({
+          await remoteMapCreator({
             namespace: getRemoteMapNamespace('merged', envToUse),
             serialize: (element: Element) => serialize([element]),
             // TODO: we might need to pass static file reviver to the deserialization func
-            deserialize: async (data: string) => (await deserialize(data))[0],
+            deserialize: deserializeElement,
           })
         ),
-        errors: await createRemoteMap({
+        errors: await remoteMapCreator({
           namespace: getRemoteMapNamespace('errors', envToUse),
           serialize: (saltoErrors: SaltoError[]) => JSON.stringify(saltoErrors),
           // TODO: we might need to pass static file reviver to the deserialization func
@@ -406,7 +406,7 @@ export const loadWorkspace = async (
       const sources = _.mapValues(elementsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
       const envSources = { commonSourceName: elementsSources.commonSourceName, sources }
-      return loadWorkspace(config, credentials, envSources, createRemoteMap)
+      return loadWorkspace(config, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
       if (args.cache || args.nacl || args.staticResources) {
@@ -468,7 +468,7 @@ export const loadWorkspace = async (
         _.mapValues(elementsSources.sources, e => e.naclFiles),
         currentEnv(),
         elementsSources.commonSourceName,
-        createRemoteMap,
+        remoteMapCreator,
       )
     },
     renameEnvironment: async (envName: string, newEnvName: string, newEnvNaclPath? : string) => {
@@ -502,7 +502,7 @@ export const loadWorkspace = async (
         _.mapValues(elementsSources.sources, e => e.naclFiles),
         currentEnv(),
         elementsSources.commonSourceName,
-        createRemoteMap,
+        remoteMapCreator,
       )
     },
     setCurrentEnv: async (env: string, persist = true): Promise<void> => {
@@ -514,7 +514,7 @@ export const loadWorkspace = async (
         await config.setWorkspaceConfig(workspaceConfig)
       }
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-        currentEnv(), elementsSources.commonSourceName, createRemoteMap)
+        currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
       workspaceState = undefined
     },
 
@@ -546,7 +546,7 @@ export const initWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
   envs: EnvironmentsSources,
-  createRemoteMap: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator<Value>,
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
@@ -555,5 +555,5 @@ export const initWorkspace = async (
     envs: [{ name: defaultEnvName }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(config, credentials, envs, createRemoteMap)
+  return loadWorkspace(config, credentials, envs, remoteMapCreator)
 }

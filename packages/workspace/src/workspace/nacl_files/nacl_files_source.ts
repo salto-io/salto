@@ -535,7 +535,6 @@ const buildNaclFilesSource = (
       acc.merge(sourceMap)
       return acc
     }, new SourceMap())
-
     const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)

@@ -198,17 +198,18 @@ export const fetch: FetchFunc = async (
 ) => {
   log.debug('fetch starting..')
 
-  const workspaceElements = await workspace.elements()
+  const state = await workspace.state()
+  const stateElements = await state.getAll()
 
   const fetchServices = services ?? workspace.services()
   const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
-    await workspace.state().getAll(), fetchServices
+    stateElements, fetchServices
   )
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
-    buildElementsSourceFromElements(workspaceElements),
+    buildElementsSourceFromElements(stateElements),
     createElemIdGetter(filteredStateElements)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
@@ -224,13 +225,12 @@ export const fetch: FetchFunc = async (
       changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
-      filterElementsByServices(workspaceElements, fetchServices),
+      filterElementsByServices(await workspace.elements(), fetchServices),
       filteredStateElements,
       currentConfigs,
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    const state = await workspace.state()
     await state.override(elements.concat(stateElementsNotCoveredByFetch))
     await state.updatePathIndex(unmergedElements,
       (await state.existingServices()).filter(key => !fetchServices.includes(key)))

@@ -199,16 +199,17 @@ export const fetch: FetchFunc = async (
   log.debug('fetch starting..')
 
   const state = await workspace.state()
+  const stateElements = await state.getAll()
 
   const fetchServices = services ?? workspace.services()
   const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
-    await state.getAll(), fetchServices
+    stateElements, fetchServices
   )
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
     await workspace.servicesConfig(services),
-    buildElementsSourceFromElements(await state.getAll()),
+    buildElementsSourceFromElements(stateElements),
     createElemIdGetter(filteredStateElements)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)

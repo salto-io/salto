@@ -21,11 +21,11 @@ import { mergeElements, MergeError, updateMergedTypes } from '../../merger'
 
 const log = logger(module)
 
-const calcChanges = (
+export const calcChanges = (
   fullNames: string[],
   currentElements: Record<string, Element>,
   newElements: Record<string, Element>,
-): Change<Element>[] => fullNames.map(fullName => {
+): Change[] => fullNames.map(fullName => {
   const before = currentElements[fullName]
   const after = newElements[fullName]
   if (before === undefined && after === undefined) {
@@ -33,7 +33,7 @@ const calcChanges = (
   }
   const change = toChange({ before, after })
   return isEqualElements(before, after) ? undefined : change
-}).filter(values.isDefined)
+}).filter(values.isDefined) as Change[]
 
 export const calcNewMerged = <T extends MergeError | Element>(
   currentMerged: T[], newMerged: T[], relevantElementIDs: Set<string>
@@ -52,7 +52,7 @@ export const buildNewMergedElementsAndErrors = ({
 }): {
   mergedElements: Record<string, Element>
   mergeErrors: MergeError[]
-  changes: Change<Element>[]
+  changes: Change[]
 } => {
   log.info('going to merge %d new elements to the existing %d elements',
     newElements.length, Object.keys(currentElements))

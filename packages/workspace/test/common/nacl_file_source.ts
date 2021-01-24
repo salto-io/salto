@@ -26,7 +26,7 @@ export const createMockNaclFileSource = (
   naclFiles: Record<string, Element[]> = {},
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
   sourceRanges?: SourceRange[],
-  changes: Change<Element>[] = [],
+  changes: Change[] = [],
 ): NaclFilesSource => ({
   list: async () => elements.map(e => e.elemID),
   isEmpty: async () => elements.length === 0,

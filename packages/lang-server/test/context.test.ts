@@ -22,10 +22,12 @@ import { mockWorkspace } from './workspace'
 // TODO: should enable this
 describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
-  const naclFilename = 'context.nacl'
+  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
+  const naclFilename = path.join(baseDir, 'context.nacl')
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, naclFilename)))
+    workspace = new EditorWorkspace(
+      baseDir, await mockWorkspace([naclFilename])
+    )
   })
 
   describe('type', () => {

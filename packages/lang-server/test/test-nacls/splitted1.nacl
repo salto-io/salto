@@ -1,0 +1,11 @@
+
+type vs.splitted {
+    string first_name {
+        _required = true  
+    }
+    string last_name {}
+}
+
+vs.splitted splittedInst {
+    last_name = "last"
+}

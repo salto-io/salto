@@ -1,0 +1,10 @@
+vs.type inst {
+    field = 4
+}
+
+vs.type referenced {
+}
+
+vs.type referencedField {
+    field = "label value"
+}

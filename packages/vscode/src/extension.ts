@@ -81,7 +81,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       vscode.workspace.onDidChangeTextDocument(
         createReportErrorsEventListener(workspace, diagCollection)
       ),
-      vscode.workspace.onDidOpenTextDocument(onFileOpen),
+      vscode.workspace.onDidOpenTextDocument(td => onFileOpen(workspace, td.fileName)),
       vscode.commands.registerCommand('salto.copyReference', createCopyReferenceCommand(workspace)),
       vscode.commands.registerCommand('salto.goToService', createGoToServiceCommand(workspace))
     )

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, InstanceElement, ObjectType, ElemID,
+  Element, isObjectType, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { SalesforceRecord } from '../src/client/types'
@@ -23,12 +23,12 @@ import SalesforceAdapter, { testHelpers } from '../index'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
-import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
+import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes, getMetadataInstance } from './utils'
 import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
-import { CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LIST_CUSTOM_SETTINGS_TYPE, METADATA_TYPE, SALESFORCE } from '../src/constants'
+import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('custom object instances e2e', () => {
@@ -58,20 +58,13 @@ describe('custom object instances e2e', () => {
     adapter = adapterParams.adapter
     client = adapterParams.client
 
-    const instance = new InstanceElement(
-      CUSTOM_OBJECT,
-      new ObjectType(
-        {
-          elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
-          annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
-        },
-      ),
-      {
-        [INSTANCE_FULL_NAME_FIELD]: 'Product2',
-      },
-    )
-
+    const types = await fetchTypes(client, [CUSTOM_OBJECT])
+    const instance = await getMetadataInstance(client, types[0], productTwoMetadataName)
+    if (instance === undefined) {
+      throw new Error(`Failed getting ${productTwoMetadataName} instance`)
+    }
     elements = [instance]
+
     await runFiltersOnFetch(
       client,
       filtersContext,

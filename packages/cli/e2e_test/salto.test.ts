@@ -16,7 +16,7 @@
 import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
-import { strings } from '@salto-io/lowerdash'
+import { strings, collections } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists, readFile } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
@@ -79,9 +79,7 @@ describe('cli e2e', () => {
   let newInstance2FullName: string
   let newObjectElemName: string
   let newObjectApiName: string
-  let newObjectStandardFieldRelativePath: string
   let newObjectAnnotationsRelativePath: string
-  let newObjectCustomFieldRelativePath: string
 
   const ROLE = 'Role'
   let client: SalesforceClient
@@ -91,20 +89,18 @@ describe('cli e2e', () => {
 
   beforeAll(async () => {
     homePath = tmp.dirSync().name
+    randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     fetchOutputDir = `${homePath}/NACL/test_fetch`
     localStorageDir = `${homePath}/.salto/test_fetch`
     localWorkspaceDir = `${homePath}/e2e-375e3f65-be66-4fdc-a561-4c4f9735db94`
     statePath = `${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`
-    randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstance2ElemName = NEW_INSTANCE2_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
     newInstance2FullName = `${NEW_INSTANCE2_BASE_ELEM_NAME}${randomString}`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `${newObjectElemName}${SALESFORCE_CUSTOM_SUFFIX}`
-    newObjectStandardFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
     newObjectAnnotationsRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}Annotations.nacl`
-    newObjectCustomFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}CustomFields.nacl`
     tmpNaclFileRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
 
     process.env[SALTO_HOME_VAR] = homePath
@@ -219,7 +215,7 @@ describe('cli e2e', () => {
     })
     it('should update the object in the Nacl file', async () => {
       const newObject = await verifyObject(
-        await (await workspace.elements()).getAll(),
+        await awu(await (await workspace.elements()).getAll()).toArray(),
         SALESFORCE,
         newObjectElemName,
         {
@@ -279,7 +275,7 @@ describe('cli e2e', () => {
       await runEmptyPreview(fetchOutputDir)
     })
   })
-
+  // eslint-disable-next-line
   describe('fetch expecting no changes', () => {
     let workspace: Workspace
     beforeAll(async () => {
@@ -288,7 +284,7 @@ describe('cli e2e', () => {
     })
     it('should fetch the new object standard fields and annotations to the correct files', async () => {
       const newObject = await verifyObject(
-        await (await workspace.elements()).getAll(),
+        await awu(await (await workspace.elements()).getAll()).toArray(),
         SALESFORCE,
         newObjectElemName,
         {
@@ -309,7 +305,7 @@ describe('cli e2e', () => {
       )
       const annotationObjSourceMap = await workspace.getSourceMap(newObjectAnnotationsRelativePath)
       const standardFieldsObjSourceMap = await workspace
-        .getSourceMap(newObjectStandardFieldRelativePath)
+        .getSourceMap(tmpNaclFileRelativePath)
       expect(standardFieldsObjSourceMap.has(newObject.elemID.getFullName())).toBeTruthy()
       expect(standardFieldsObjSourceMap.has(newObject.elemID.createNestedID('annotation')
         .getFullName())).toBeFalsy()
@@ -406,7 +402,6 @@ describe('cli e2e', () => {
       await runEmptyPreview(fetchOutputDir)
     })
   })
-
   describe('multi-env after initial fetch', () => {
     // Note: this test relies on the existence of the salesforce folder from an earlier fetch,
     // and should be run after all non-multienv tests have completed
@@ -439,7 +434,6 @@ describe('cli e2e', () => {
       expect(callbacksImpl.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalled()
     })
   })
-
   describe('clean after initial fetch', () => {
     // Note: this should be the last test to run, as it will clear out parts of the workspace
     let salesforceConfPath: string

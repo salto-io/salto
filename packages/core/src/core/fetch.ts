@@ -26,8 +26,8 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, promises, types } from '@salto-io/lowerdash'
-import { merger, InMemoryRemoteElementSource, elementSource } from '@salto-io/workspace'
+import { merger, elementSource } from '@salto-io/workspace'
+import { collections, values, promises, types } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import {
@@ -421,12 +421,12 @@ const calcFetchChanges = async (
   const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
   const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
 
-  const serviceChanges = await log.time(() =>
+  const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
       filteredStateElements,
       mergedServiceElements,
     ),
-  'finished to calculate service-state changes')
+  'finished to calculate service-state changes')]
   const pendingChanges = await log.time(() => getChangeMap(
     filteredStateElements,
     filteredWorkspaceElements,
@@ -436,13 +436,12 @@ const calcFetchChanges = async (
     filteredWorkspaceElements,
     mergedServiceElements,
   ), 'finished to calculate service-workspace changes')
-
   const serviceElementsSource = elementSource.createInMemoryElementSource(serviceElements)
 
   return awu(serviceChanges)
     .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatMap(toChangesWithPath(
-      async name => collections.array.makeArray(await serviceElementsSource.get(name))
+      async name => [await serviceElementsSource.get(name)].filter(values.isDefined)
     )).toArray()
 }
 
@@ -590,7 +589,7 @@ const getInstanceServiceId = async (
 }
 
 export const generateServiceIdToStateElemId = async (
-  stateElements: Element[],
+  stateElements: AsyncIterable<Element>,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Record<string, ElemID>> =>
   Object.fromEntries(await awu(stateElements)
@@ -610,10 +609,14 @@ export const generateServiceIdToStateElemId = async (
     .toArray())
 
 export const createElemIdGetter = async (
-  stateElements: Element[],
-  elementsSource: ReadOnlyElementsSource,
+  elements: AsyncIterable<Element>,
+  state: elementSource.ElementsSource
 ): Promise<ElemIdGetter> => {
-  const serviceIdToStateElemId = await generateServiceIdToStateElemId(stateElements, elementsSource)
+  const serviceIdToStateElemId = await generateServiceIdToStateElemId(
+    elements,
+    state
+  )
+
   return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
     serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
 }

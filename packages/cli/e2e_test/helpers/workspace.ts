@@ -290,7 +290,7 @@ export const verifyInstance = async (
 }
 
 export const verifyObject = async (
-  elements: AsyncIterable<Element>,
+  elements: Element[],
   adapter: string,
   typeName: string,
   expectedAnnotationTypes: TypeMap,
@@ -302,7 +302,7 @@ export const verifyObject = async (
     new ElemID(adapter, typeName)
   ) as ObjectType
   Object.entries(expectedAnnotationTypes).forEach(([key, value]) =>
-    expect(object.annotationRefTypes[key]).toEqual(value.elemID))
+    expect(object.annotationRefTypes[key].elemID).toEqual(value.elemID))
   Object.entries(expectedAnnotations).forEach(([key, value]) =>
     expect(object.annotations[key]).toEqual(value))
   Object.entries(expectedFieldAnnotations).forEach(([fieldName, fieldAnnotation]) => {

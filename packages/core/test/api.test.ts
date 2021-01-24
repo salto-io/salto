@@ -268,6 +268,7 @@ describe('api.ts', () => {
         const [removedField, origField] = Object.values(origElement.fields)
         changedElement = new ObjectType({
           ...origElement,
+          annotationRefsOrTypes: origElement.annotationRefTypes,
           fields: _.omit(origElement.fields, removedField.name),
         })
         const changedField = changedElement.fields[origField.name]

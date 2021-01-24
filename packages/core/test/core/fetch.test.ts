@@ -759,7 +759,10 @@ describe('fetch', () => {
       it('should generate for ObjectType and its fields', async () => {
         const regularField = addField(obj, regularFieldDef)
 
-        const serviceIdToStateElemId = await generateServiceIdToStateElemId([obj], elementsSource)
+        const serviceIdToStateElemId = await generateServiceIdToStateElemId(
+          awu([obj]),
+          elementsSource
+        )
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
@@ -776,7 +779,10 @@ describe('fetch', () => {
         delete regularFieldDef.annotations[SERVICE_ID_ANNOTATION]
         const regularField = addField(obj, regularFieldDef)
 
-        const serviceIdToStateElemId = await generateServiceIdToStateElemId([obj], elementsSource)
+        const serviceIdToStateElemId = await generateServiceIdToStateElemId(
+          awu([obj]),
+          elementsSource
+        )
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
@@ -795,7 +801,10 @@ describe('fetch', () => {
         delete regularFieldType.annotationRefTypes[SERVICE_ID_ANNOTATION]
         const regularField = addField(obj, regularFieldDef)
 
-        const serviceIdToStateElemId = await generateServiceIdToStateElemId([obj], elementsSource)
+        const serviceIdToStateElemId = await generateServiceIdToStateElemId(
+          awu([obj]),
+          elementsSource
+        )
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
@@ -812,7 +821,7 @@ describe('fetch', () => {
         delete instance.value[SERVICE_ID_FIELD_NAME]
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
-          [instance],
+          awu([instance]),
           elementsSource
         )
 
@@ -826,7 +835,7 @@ describe('fetch', () => {
         addField(obj, serviceIdField)
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
-          [instance],
+          awu([instance]),
           elementsSource
         )
 
@@ -842,7 +851,7 @@ describe('fetch', () => {
         delete instance.value[SERVICE_ID_FIELD_NAME]
 
         const serviceIdToStateElemId = await generateServiceIdToStateElemId(
-          [instance],
+          awu([instance]),
           elementsSource
         )
 

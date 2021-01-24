@@ -18,7 +18,7 @@ module.exports = {
         'no-restricted-syntax': [
             {
                 selector: "CallExpression[callee.object.name='JSON'][callee.property.name='stringify'][arguments.length=1]",
-                message: 'JSON.stringify usage without a replacer is disallowed. Use JSONSaltoValue instead.',
+                message: 'JSON.stringify usage without a replacer is disallowed. Use safeJsonStringify instead.',
             }
         ]
     }

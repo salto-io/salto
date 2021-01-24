@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DeployResult, Change, getChangeElement, isRemovalChange, isModificationChange, isInstanceChange, isContainerType, isAdditionChange } from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
@@ -272,7 +273,7 @@ export const deployMetadata = async (
 
   const deployRes = await client.deploy(pkgData)
 
-  log.debug('deploy result: %s', JSON.stringify(deployRes, undefined, 2))
+  log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
     deployRes, pkg.getDeletionsPackageName()

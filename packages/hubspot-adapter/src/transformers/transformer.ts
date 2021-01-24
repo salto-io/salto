@@ -16,7 +16,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isContainerType, isMapType } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
@@ -842,7 +842,7 @@ export const transformPrimitive: TransformFunc = ({ value, field, path }) => {
     }
     return new StaticFile({
       filepath: `${path?.getFullNameParts().filter((namePart: string): boolean => namePart !== 'instance').join('/')}.json`,
-      content: Buffer.from(JSON.stringify(value, null, 2)),
+      content: Buffer.from(safeJsonStringify(value, undefined, 2)),
       encoding: 'utf-8',
     })
   }

@@ -20,6 +20,7 @@ import {
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
 import { isInstanceOfCustomObject, instancesToCreateRecords, apiName,
   instancesToDeleteRecords, instancesToUpdateRecords, Types } from './transformers/transformer'
@@ -199,7 +200,7 @@ const deployAddInstances = async (
     const idFieldsValues = Object.fromEntries(
       idFieldsNames.map(fieldName => [fieldName, vals[fieldName]])
     )
-    return toMD5(JSON.stringify(idFieldsValues))
+    return toMD5(safeJsonStringify(idFieldsValues))
   }
   const computeRecordSaltoIdHash = (record: SalesforceRecord): string => {
     const recordValues = transformRecordToValues(type, record)

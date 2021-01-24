@@ -41,7 +41,7 @@ export const serialize = (parseResult: SerializeableParseResult): string => [
   elementSerializer.serialize(parseResult.elements, 'keepRef'),
   serializeErrors(parseResult.errors),
   parseResult.sourceMap ? serializeSourceMap(parseResult.sourceMap) : undefined,
-  JSON.stringify(parseResult.metadata),
+  safeJsonStringify(parseResult.metadata),
 ].join(EOL)
 
 const deserializeParseErrors = (data: string): ParseError[] =>

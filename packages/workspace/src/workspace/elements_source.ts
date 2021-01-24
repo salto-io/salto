@@ -35,7 +35,7 @@ export interface ElementsSource {
   delete(id: ElemID): Promise<void>
 }
 
-export class InMemoryRemoteElementSource implements ElementsSource {
+export class RemoteElementSource implements ElementsSource {
   private elements: RemoteMap<Element>
 
   constructor(elementsMap: RemoteMap<Element>) {
@@ -107,7 +107,7 @@ export class InMemoryRemoteElementSource implements ElementsSource {
     await this.elements.setAll(
       awu(elements)
         .filter(element => !isContainerType(element))
-        .map(e => [e.elemID.getFullName(), e])
+        .map(e => ({ key: e.elemID.getFullName(), value: e }))
     )
   }
 
@@ -138,7 +138,7 @@ export class InMemoryRemoteElementSource implements ElementsSource {
 
 export const createInMemoryElementSource = (
   elements: readonly Element[] = []
-): InMemoryRemoteElementSource => {
+): RemoteElementSource => {
   const inMemMap = new InMemoryRemoteMap(elements.map(e => [e.elemID.getFullName(), e]))
-  return new InMemoryRemoteElementSource(inMemMap)
+  return new RemoteElementSource(inMemMap)
 }

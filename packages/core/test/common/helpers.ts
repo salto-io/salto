@@ -25,6 +25,6 @@ export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFun
 
 export const createElementSource = (
   elements: readonly Element[]
-): elementSource.InMemoryRemoteElementSource => (
+): elementSource.RemoteElementSource => (
   elementSource.createInMemoryElementSource(elements as Element[])
 )

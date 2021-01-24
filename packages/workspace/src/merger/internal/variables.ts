@@ -20,11 +20,6 @@ export class DuplicateVariableNameError extends MergeError {
   constructor({ elemID }: { elemID: ElemID }) {
     super({ elemID, error: `duplicate variable ${elemID.getFullName()}` })
   }
-
-  serialize = (): string => JSON.stringify({
-    type: DuplicateVariableNameError.name,
-    args: { elemID: this.elemID.getFullName() },
-  })
 }
 
 const mergeVariableDefinitions = (

@@ -35,7 +35,6 @@ import { buildNewMergedElementsAndErrors } from './elements_cache'
 import { serialize, deserialize } from '../../serializer/elements'
 import { Functions } from '../../parser/functions'
 import { RemoteMap, InMemoryRemoteMap, RemoteMapCreator } from '../remote_map'
-import { serialize as serializeMergeErrors, deserialize as deserializeMergeErrors } from '../../merger/internal/errors'
 
 const { awu, concatAsync } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
@@ -239,8 +238,8 @@ const buildNaclFilesState = async ({
     }) as RemoteMap<string[]>,
     mergeErrors: await remoteMapCreator({
       namespace: getRemoteMapNamespace('errors', sourceName),
-      serialize: (val: MergeError[]) => serializeMergeErrors(val),
-      deserialize: async data => deserializeMergeErrors(data),
+      serialize: (val: MergeError[]) => serialize(val),
+      deserialize: async data => deserialize(data),
     }) as RemoteMap<MergeError[]>,
     mergedElements: new RemoteElementSource(await remoteMapCreator({
       namespace: getRemoteMapNamespace('merged', sourceName),

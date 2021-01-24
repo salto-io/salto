@@ -16,6 +16,7 @@
 import { EOL } from 'os'
 
 import { values, collections } from '@salto-io/lowerdash'
+import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 
 import { ParseResult, ParseError, SourceMap } from '../parser'
@@ -64,7 +65,7 @@ export const deserialize = async (
   const elements = await elementSerializer.deserialize(elementsData, staticFileReviver)
   return {
     errors: deserializeParseErrors(errorsData),
-    elements,
+    elements: elements as Element[],
     sourceMap: sourceMapData ? deserializeSourceMap(sourceMapData) : undefined,
   }
 }

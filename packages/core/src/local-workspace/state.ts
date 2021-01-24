@@ -75,9 +75,9 @@ const readFromPaths = async (paths: string[]): Promise<string[][]> => {
   return [elementsData, updateDateData, pathIndexData, versions]
 }
 
-const deserializeAndFlatten = async (elementsJSON: string): Promise<Element[]> => (
+const deserializeAndFlatten = async (elementsJSON: string): Promise<Element[]> => ((
   await deserialize(elementsJSON)
-).map(flattenElementStr)
+) as Element[]).map(flattenElementStr)
 
 const flattenStateData = async (elementsData: string[], pathIndexData: string[],
   updateDateData: string[], versions: string[]): Promise<state.StateData> => {

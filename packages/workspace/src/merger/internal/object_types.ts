@@ -42,14 +42,6 @@ export class DuplicateAnnotationFieldDefinitionError extends FieldDefinitionMerg
     super({ elemID, cause: `has duplicate annotation key '${annotationKey}'` })
     this.annotationKey = annotationKey
   }
-
-  serialize = (): string => JSON.stringify({
-    type: DuplicateAnnotationFieldDefinitionError.name,
-    args: {
-      elemID: this.elemID.getFullName(),
-      annotationKey: this.annotationKey,
-    },
-  })
 }
 
 export class ConflictingFieldTypesError extends FieldDefinitionMergeError {
@@ -61,25 +53,12 @@ export class ConflictingFieldTypesError extends FieldDefinitionMergeError {
     super({ elemID, cause: `has conflicting type definitions '${[...definedTypes.values()].join(', ')}'` })
     this.definedTypes = definedTypes
   }
-
-  serialize = (): string => JSON.stringify({
-    type: ConflictingFieldTypesError.name,
-    args: {
-      elemID: this.elemID.getFullName(),
-      definedTypes: this.definedTypes,
-    },
-  })
 }
 
 export class ConflictingSettingError extends MergeError {
   constructor({ elemID }: { elemID: ElemID }) {
     super({ elemID, error: 'conflicting is settings definitions' })
   }
-
-  serialize = (): string => JSON.stringify({
-    type: ConflictingSettingError.name,
-    args: { elemID: this.elemID.getFullName() },
-  })
 }
 
 export class DuplicateAnnotationTypeError extends MergeError {
@@ -89,11 +68,6 @@ export class DuplicateAnnotationTypeError extends MergeError {
     super({ elemID, error: `duplicate annotation type '${key}'` })
     this.key = key
   }
-
-  serialize = (): string => JSON.stringify({
-    type: DuplicateAnnotationTypeError.name,
-    args: { elemID: this.elemID.getFullName(), key: this.key },
-  })
 }
 
 const mergeFieldDefinitions = (

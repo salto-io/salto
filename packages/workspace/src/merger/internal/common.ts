@@ -32,8 +32,6 @@ export abstract class MergeError extends types.Bean<Readonly<{
   toString(): string {
     return this.message
   }
-
-  abstract serialize(): string
 }
 
 export class DuplicateAnnotationError extends MergeError {
@@ -51,16 +49,6 @@ export class DuplicateAnnotationError extends MergeError {
     this.existingValue = existingValue
     this.newValue = newValue
   }
-
-  serialize = (): string => JSON.stringify({
-    type: DuplicateAnnotationError.name,
-    args: {
-      elemID: this.elemID.getFullName(),
-      key: this.key,
-      existingValue: this.existingValue,
-      newValue: this.newValue,
-    },
-  })
 }
 
 export type MergeResult<T> = {

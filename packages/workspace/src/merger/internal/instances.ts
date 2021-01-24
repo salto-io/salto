@@ -37,16 +37,6 @@ export class DuplicateInstanceKeyError extends MergeError {
     this.existingValue = existingValue
     this.newValue = newValue
   }
-
-  serialize = (): string => JSON.stringify({
-    type: DuplicateInstanceKeyError.name,
-    args: {
-      elemID: this.elemID.getFullName(),
-      key: this.key,
-      existingValue: this.existingValue,
-      newValue: this.newValue,
-    },
-  })
 }
 
 const mergeInstanceDefinitions = (

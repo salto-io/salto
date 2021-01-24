@@ -71,7 +71,7 @@ type MultiEnvSource = Omit<NaclFilesSource, 'getAll' | 'getElementsSource'> & {
 }
 
 export const deserializeElement = async (data: string): Promise<Element> => {
-  const elements = (await deserialize(data))
+  const elements = (await deserialize(data)) as Element[]
   if (elements.length !== 1) {
     throw new Error('Deserialization failed. should receive single element')
   }

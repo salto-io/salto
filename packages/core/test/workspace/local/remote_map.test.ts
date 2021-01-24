@@ -47,7 +47,7 @@ const createMap = async (namespace: string): Promise<rm.RemoteMap<Element>> =>
     batchInterval: 1000,
     LRUSize: 500,
     serialize: elem => serialize([elem]),
-    deserialize: async elemStr => (await deserialize(elemStr))[0],
+    deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
   })
 
 async function *createAsyncIterable(iterable: Element[]):

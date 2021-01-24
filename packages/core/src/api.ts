@@ -129,6 +129,7 @@ export const deploy = async (
     const topLevelElem = await workspace.state().get(changeElem.parent.elemID) as ObjectType
     return new ObjectType({
       ...topLevelElem,
+      annotationRefsOrTypes: topLevelElem.annotationRefTypes,
       fields: change.action === 'remove'
         ? _.omit(topLevelElem.fields, changeElem.name)
         : _.merge({}, topLevelElem.fields, { [changeElem.name]: changeElem }),
@@ -199,7 +200,10 @@ export const fetch: FetchFunc = async (
     await workspace.servicesCredentials(services),
     workspace.serviceConfig.bind(workspace),
     await workspace.elements(),
-    createElemIdGetter(await workspace.state().getAll(), workspace.state())
+    await createElemIdGetter(
+      await (await workspace.elements()).getAll(),
+      workspace.state()
+    )
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

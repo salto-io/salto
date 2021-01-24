@@ -89,7 +89,8 @@ export const getChangeLocations = (
     }]
   }
 
-  return findLocations().map(location => ({ ...change, location }))
+  const r = findLocations().map(location => ({ ...change, location }))
+  return r
 }
 
 const fixEdgeIndentation = (
@@ -266,17 +267,19 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
             ...prev.annotations,
             [addition.id.name]: addition.data.after,
           } }
-        case 'annotation': return { ...prev,
-          annotationTypes: {
-            ...prev.annotationTypes,
-            [addition.id.name]: addition.data.after,
-          } }
+        case 'annotation': {
+          return { ...prev,
+            annotationRefsOrTypes: {
+              ...prev.annotationRefsOrTypes,
+              [addition.id.name]: addition.data.after,
+            } }
+        }
         default: return prev
       }
     }, {
       elemID: additions[0].id.createTopLevelParentID().parent,
       fields: {},
-      annotationTypes: {},
+      annotationRefsOrTypes: {},
       annotations: {},
     }))
   const wrapperObject = createObjectTypeFromNestedAdditions(nestedAdditions)
@@ -313,13 +316,11 @@ export const getChangesToUpdate = (
     changes,
     isNestedAddition
   ) as [DetailedAddition[], DetailedChange[]]
-
   const wrappedNestedAdditions: DetailedAddition[] = _(nestedAdditionsWithPath)
     .groupBy(addition => [addition.path, addition.id.createTopLevelParentID().parent])
     .values()
     .map(wrapAdditions)
     .value()
-
   return groupAnnotationTypeChanges(_.concat(otherChanges, wrappedNestedAdditions), sourceMap)
 }
 

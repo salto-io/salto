@@ -18,7 +18,8 @@ import path from 'path'
 import wu from 'wu'
 import { Workspace, nacl, errors, parser, validator } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, Change, getChangeElement,
-  isRemovalChange, isReferenceExpression, isContainerType, Value, isModificationChange, isTypeOrInstanceChange } from '@salto-io/adapter-api'
+  isRemovalChange, isReferenceExpression, isContainerType,
+  Value, isModificationChange } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { transformElement, detailedCompare, TransformFunc } from '@salto-io/adapter-utils'
 
@@ -160,7 +161,7 @@ export class EditorWorkspace {
     return validateElements(elementsToValidate, workspaceElements)
   }
 
-  private async getValidationErrors(files: string[], changes: Change<Element>[]):
+  private async getValidationErrors(files: string[], changes: Change[]):
   Promise<errors.ValidationError[]> {
     // We update the validation errors iterativly by validating the following elements:
     //   - all the elements in the changed files
@@ -183,7 +184,6 @@ export class EditorWorkspace {
       .map(c => getChangeElement(c).elemID)
     const removalChangesOfNonTopLevels = changes
       .filter(isModificationChange)
-      .filter(isTypeOrInstanceChange)
       .flatMap(c => detailedCompare(c.data.before, c.data.after, true))
       .filter(isRemovalChange)
       .map(c => c.id)

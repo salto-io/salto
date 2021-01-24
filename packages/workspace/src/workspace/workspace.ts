@@ -102,8 +102,8 @@ export type Workspace = {
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change<Element>[]>
-  removeNaclFiles: (...names: string[]) => Promise<Change<Element>[]>
+  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change[]>
+  removeNaclFiles: (...names: string[]) => Promise<Change[]>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
@@ -163,7 +163,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
 
   let workspaceState: Promise<WorkspaceState> | undefined
   const buildWorkspaceState = async ({ changes = [], env }: {
-    changes?: Change<Element>[]
+    changes?: Change[]
     env?: string
   }): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState) || (env !== undefined && env !== currentEnv())) {
@@ -220,8 +220,8 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     workspaceState = buildWorkspaceState({ changes: elementChanges })
   }
 
-  const updateStateAndReturnChanges = async (elementChanges: Change<Element>[]):
-  Promise<Change<Element>[]> => {
+  const updateStateAndReturnChanges = async (elementChanges: Change[]):
+  Promise<Change[]> => {
     const changedElementIDs = elementChanges.map(e => getChangeElement(e).elemID.getFullName())
     const allElements = (await getWorkspaceState()).elements
     workspaceState = buildWorkspaceState({ changes: elementChanges })
@@ -230,12 +230,12 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     return calcChanges(changedElementIDs, allElements, newElements)
   }
 
-  const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<Change<Element>[]> => {
+  const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<Change[]> => {
     const elementChanges = await naclFilesSource.setNaclFiles(...naclFiles)
     return updateStateAndReturnChanges(elementChanges)
   }
 
-  const removeNaclFiles = async (...names: string[]): Promise<Change<Element>[]> => {
+  const removeNaclFiles = async (...names: string[]): Promise<Change[]> => {
     const elementChanges = await naclFilesSource.removeNaclFiles(...names)
     return updateStateAndReturnChanges(elementChanges)
   }

@@ -84,7 +84,7 @@ const buildMultiEnvSource = (
     [commonSourceName]: sources[commonSourceName],
   })
 
-  const getAfterFromChange = (change: Change<Element>):
+  const getAfterFromChange = (change: Change):
   [string, Element | undefined] => {
     const changeElem = getChangeElement(change)
     return [
@@ -119,8 +119,8 @@ const buildMultiEnvSource = (
   let state = initState
   const buildMultiEnvState = async ({ env, changes = {} }: {
     env?: string
-    changes?: Record<string, Change<Element>[]>
-  }): Promise<{ state: MultiEnvState; changes: Change<Element>[] }> => {
+    changes?: Record<string, Change[]>
+  }): Promise<{ state: MultiEnvState; changes: Change[] }> => {
     const primaryEnv = env ?? primarySourceName
     if (state === undefined || primaryEnv !== primarySourceName) {
       return { state: await buildState(env), changes: [] }
@@ -199,7 +199,7 @@ const buildMultiEnvSource = (
   }
 
   const applyRoutedChanges = async (routedChanges: RoutedChanges):
-  Promise<Record<string, Change<Element>[]>> => {
+  Promise<Record<string, Change[]>> => {
     const secondaryChanges = routedChanges.secondarySources || {}
     return resolveValues({
       [primarySourceName]: primarySource().updateNaclFiles(routedChanges.primarySource || []),
@@ -212,7 +212,7 @@ const buildMultiEnvSource = (
   const updateNaclFiles = async (
     changes: DetailedChange[],
     mode: RoutingMode = 'default'
-  ): Promise<Change<Element>[]> => {
+  ): Promise<Change[]> => {
     const routedChanges = await routeChanges(
       changes,
       primarySource(),
@@ -318,7 +318,7 @@ const buildMultiEnvSource = (
     ),
     getTotalSize: async (): Promise<number> =>
       _.sum(await Promise.all(Object.values(sources).map(s => s.getTotalSize()))),
-    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<Change<Element>[]> => {
+    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<Change[]> => {
       const envNameToNaclFiles = _.groupBy(
         naclFiles, naclFile => getSourceNameForNaclFile(naclFile.filename)
       )
@@ -334,7 +334,7 @@ const buildMultiEnvSource = (
       state = Promise.resolve(buildRes.state)
       return buildRes.changes
     },
-    removeNaclFiles: async (...names: string[]): Promise<Change<Element>[]> => {
+    removeNaclFiles: async (...names: string[]): Promise<Change[]> => {
       const envNameToFilesToRemove = _.groupBy(names, getSourceNameForNaclFile)
       const envNameToChanges = await mapValuesAsync(envNameToFilesToRemove, (files, envName) =>
         getSourceFromEnvName(envName)

@@ -16,7 +16,7 @@
 import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeElements, isTypeOrInstanceChange } from '../src/change'
+import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeElements } from '../src/change'
 
 describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
@@ -136,17 +136,6 @@ describe('change.ts', () => {
         [objChange, instChange, typeChange].forEach(
           change => expect(isFieldChange(change)).toBeFalsy()
         )
-      })
-    })
-    describe('isTypeOrInstanceChange', () => {
-      it('should return true for changes of type or instance elements', () => {
-        [objChange, instChange, typeChange].forEach(
-          change => expect(isTypeOrInstanceChange(change)).toBeTruthy()
-        )
-      })
-
-      it('should return false for changes of field elements', () => {
-        expect(isTypeOrInstanceChange(fieldChange)).toBeFalsy()
       })
     })
   })

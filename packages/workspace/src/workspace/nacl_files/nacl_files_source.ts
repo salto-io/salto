@@ -58,15 +58,15 @@ export type NaclFile = {
 }
 
 export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Change<Element>[]>
+  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Change[]>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change<Element>[]>
-  removeNaclFiles: (...names: string[]) => Promise<Change<Element>[]>
+  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change[]>
+  removeNaclFiles: (...names: string[]) => Promise<Change[]>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
@@ -200,7 +200,7 @@ export const getParsedNaclFiles = async (
   return parseNaclFiles(naclFiles, cache, functions)
 }
 
-type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change<Element>[] }
+type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change[] }
 const buildNaclFilesState = (
   newNaclFiles: ParsedNaclFile[], currentState?: NaclFilesState
 ): buildNaclFilesStateResult => {
@@ -398,7 +398,7 @@ const buildNaclFilesSource = (
     await Promise.all(emptyNaclFiles.map(naclFile => naclFilesStore.delete(naclFile.filename)))
   }
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<Change<Element>[]> => {
+  const updateNaclFiles = async (changes: DetailedChange[]): Promise<Change[]> => {
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
       return naclFile ? naclFile.buffer : ''

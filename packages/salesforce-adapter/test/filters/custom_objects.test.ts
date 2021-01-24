@@ -133,7 +133,35 @@ describe('Custom Objects filter', () => {
         },
       }) as typeof filter
       customObjectType = generateCustomObjectType()
-      result = [customObjectType]
+
+      const leadInstance = new InstanceElement(
+        CUSTOM_OBJECT,
+        new ObjectType(
+          {
+            elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT),
+            annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+          },
+        ),
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'Lead',
+          fields: [
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
+              [INSTANCE_TYPE_FIELD]: 'Checkbox',
+              [INSTANCE_REQUIRED_FIELD]: 'false',
+            },
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'WhoKnows',
+            },
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'Pepper',
+              [INSTANCE_TYPE_FIELD]: 'Location',
+              [INSTANCE_REQUIRED_FIELD]: 'false',
+            },
+          ],
+        },
+      )
+      result = [customObjectType, leadInstance]
     })
 
     afterEach(() => {
@@ -247,6 +275,14 @@ describe('Custom Objects filter', () => {
         expect(leadObj.fields.Formula__c.type.elemID.name).toBe('FormulaText')
         expect(leadObj.fields.Formula__c.annotations[FORMULA]).toBe('my formula')
       })
+
+      it('should not fetch sobject if they are not in the received elements', async () => {
+        mockSingleSObject('Lead', [])
+        const elements = [customObjectType]
+        await filter.onFetch(elements)
+        expect(findElements(elements, 'Lead')).toHaveLength(0)
+      })
+
       it('should fetch sobject with Name compound field', async () => {
         mockSingleSObject('Lead', [
           {
@@ -440,34 +476,7 @@ describe('Custom Objects filter', () => {
             nillable: true,
           },
         ])
-        const leadInstance = new InstanceElement(
-          CUSTOM_OBJECT,
-          new ObjectType(
-            {
-              elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT),
-              annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
-            },
-          ),
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'Lead',
-            fields: [
-              {
-                [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
-                [INSTANCE_TYPE_FIELD]: 'Checkbox',
-                [INSTANCE_REQUIRED_FIELD]: 'false',
-              },
-              {
-                [INSTANCE_FULL_NAME_FIELD]: 'WhoKnows',
-              },
-              {
-                [INSTANCE_FULL_NAME_FIELD]: 'Pepper',
-                [INSTANCE_TYPE_FIELD]: 'Location',
-                [INSTANCE_REQUIRED_FIELD]: 'false',
-              },
-            ],
-          },
-        )
-        result.push(leadInstance)
+
         await filter.onFetch(result)
 
         const lead = findElements(result, 'Lead').pop() as ObjectType
@@ -509,10 +518,20 @@ describe('Custom Objects filter', () => {
           },
         ])
 
-        const newFilter = filterCreator({ client, config: {} }) as typeof filter
-        await newFilter.onFetch(result)
+        const instance = new InstanceElement(
+          'Custom__c',
+          new ObjectType({
+            elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+            annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+          }),
+          { [INSTANCE_FULL_NAME_FIELD]: 'Custom__c' },
+        )
+        const elements: Element[] = [instance]
 
-        const custom = result.filter(o => o.elemID.name === 'Custom').pop() as ObjectType
+        const newFilter = filterCreator({ client, config: {} }) as typeof filter
+        await newFilter.onFetch(elements)
+
+        const custom = elements.filter(o => o.elemID.name === 'Custom').pop() as ObjectType
         expect(custom.fields.StringField.annotations[API_NAME]).toEqual('Custom__c.StringField__c')
       })
 
@@ -647,7 +666,8 @@ describe('Custom Objects filter', () => {
       it('should fetch packaged custom SObjects', async () => {
         const namespaceName = 'namespaceName'
         const fieldWithNamespaceName = `${namespaceName}${NAMESPACE_SEPARATOR}WithNamespace__c`
-        mockSingleSObject(`${namespaceName}${NAMESPACE_SEPARATOR}Test__c`, [
+        const objectName = `${namespaceName}${NAMESPACE_SEPARATOR}Test__c`
+        mockSingleSObject(objectName, [
           {
             name: 'dummy', label: 'dummy', type: 'string',
           },
@@ -659,9 +679,19 @@ describe('Custom Objects filter', () => {
           },
         ], false, true, true)
 
-        await filter.onFetch(result)
+        const instance = new InstanceElement(
+          objectName,
+          new ObjectType({
+            elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+            annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+          }),
+          { [INSTANCE_FULL_NAME_FIELD]: objectName },
+        )
+        const elements = [instance]
 
-        const testElements = findElements(result, 'namespaceName__Test__c') as ObjectType[]
+        await filter.onFetch(elements)
+
+        const testElements = findElements(elements, 'namespaceName__Test__c') as ObjectType[]
         expect(testElements).toHaveLength(1)
         const object = testElements.find(obj =>
           _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,

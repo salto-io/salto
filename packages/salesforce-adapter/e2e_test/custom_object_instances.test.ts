@@ -23,12 +23,12 @@ import SalesforceAdapter, { testHelpers } from '../index'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
-import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
+import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes, getMetadataInstance } from './utils'
 import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
-import { LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
+import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('custom object instances e2e', () => {
@@ -58,7 +58,13 @@ describe('custom object instances e2e', () => {
     adapter = adapterParams.adapter
     client = adapterParams.client
 
-    elements = []
+    const types = await fetchTypes(client, [CUSTOM_OBJECT])
+    const instance = await getMetadataInstance(client, types[0], productTwoMetadataName)
+    if (instance === undefined) {
+      throw new Error(`Failed getting ${productTwoMetadataName} instance`)
+    }
+    elements = [instance]
+
     await runFiltersOnFetch(
       client,
       filtersContext,

@@ -20,7 +20,7 @@ import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, B
 import { applyInstancesDefaults, resolvePath, flattenElementStr } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource } from '@salto-io/workspace'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import {
@@ -112,7 +112,6 @@ export const toChangesWithPath = (
         await serviceElementByFullName(changeID.createTopLevelParentID().parent)
       )
       log.debug(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
-
       return path
         ? [_.merge({}, change, { change: { path } })]
         : [change]
@@ -307,12 +306,15 @@ const calcFetchChanges = async (
     workspaceElements,
     mergedServiceElements,
   ), 'finished to calculate service-workspace changes')
-  const serviceElementsSource = elementSource.createInMemoryElementSource(serviceElements)
+  const serviceElementsMap = _.groupBy(
+    serviceElements,
+    e => e.elemID.getFullName()
+  )
 
   return awu(serviceChanges)
     .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatMap(toChangesWithPath(
-      async name => [await serviceElementsSource.get(name)].filter(values.isDefined)
+      async name => serviceElementsMap[name.getFullName()] ?? []
     )).toArray()
 }
 

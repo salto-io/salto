@@ -28,6 +28,13 @@ import { RemoteMap, InMemoryRemoteMap } from '../workspace/remote_map'
 const { awu } = collections.asynciterable
 
 export { MergeError, DuplicateAnnotationError } from './internal/common'
+export {
+  DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
+  ConflictingSettingError, DuplicateAnnotationTypeError,
+} from './internal/object_types'
+export { DuplicateInstanceKeyError } from './internal/instances'
+export { MultiplePrimitiveTypesUnsupportedError } from './internal/primitives'
+export { DuplicateVariableNameError } from './internal/variables'
 export type MergeResult = {
   merged: RemoteMap<Element>
   errors: RemoteMap<MergeError[]>

@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
-import { ElementsSource, InMemoryRemoteElementSource } from '../elements_source'
+import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { PathIndex } from '../path_index'
 
 export type StateData = {
-  elements: InMemoryRemoteElementSource
+  elements: RemoteElementSource
   // The date of the last fetch
   servicesUpdateDate: Record<string, Date>
   pathIndex: PathIndex

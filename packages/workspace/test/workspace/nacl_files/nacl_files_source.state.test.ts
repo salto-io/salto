@@ -26,6 +26,7 @@ import { ParseResultCache } from '../../../src/workspace/cache'
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
+import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -115,7 +116,12 @@ describe('Nacl Files Source', () => {
           await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})
         )))
       naclFileSourceTest = await naclFilesSource(
-        mockDirStore, mockCache, mockedStaticFilesSource, undefined, parsedNaclFiles
+        '',
+        mockDirStore,
+        mockCache,
+        mockedStaticFilesSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        parsedNaclFiles
       )
       await naclFileSourceTest.getAll()
     })
@@ -316,7 +322,12 @@ describe('Nacl Files Source', () => {
                 await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})
               )))
             naclFileSourceWithFragments = await naclFilesSource(
-              mockDirStore, mockCache, mockedStaticFilesSource, undefined, parsedNaclFiles
+              '',
+              mockDirStore,
+              mockCache,
+              mockedStaticFilesSource,
+              () => Promise.resolve(new InMemoryRemoteMap()),
+              parsedNaclFiles,
             )
           })
           it('should change splitted element correctly', async () => {

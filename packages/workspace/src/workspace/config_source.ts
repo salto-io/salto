@@ -114,7 +114,6 @@ export const configSource = (
         await setUnsafe(name, config)
         return
       }
-
       const currConf = currConfWithoutOverrides.clone()
       applyConfigOverrides(currConf)
 
@@ -122,9 +121,14 @@ export const configSource = (
 
       validateConfigChanges(configChanges)
 
-      applyDetailedChanges(currConfWithoutOverrides, configChanges)
+      // currConfWithoutOverrides might have a different id than config.
+      // In order to apply the changes on currConfWithoutOverrides we need it
+      // to have the same id prefix as the changes.
+      const configToUpdate = config.clone()
+      configToUpdate.value = currConfWithoutOverrides.value
+      applyDetailedChanges(configToUpdate, configChanges)
 
-      await setUnsafe(name, currConfWithoutOverrides)
+      await setUnsafe(name, configToUpdate)
     },
 
     delete: async (name: string): Promise<void> => {

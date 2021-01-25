@@ -20,13 +20,16 @@ import { listUnresolvedReferences } from '@salto-io/core'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
-import { CliOutput, CliExitCode } from '../types'
+import { collections } from '@salto-io/lowerdash'
+import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
 import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { getUserBooleanInput } from '../callbacks'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 

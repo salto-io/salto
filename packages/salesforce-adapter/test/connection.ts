@@ -96,16 +96,19 @@ export const mockFileProperties = (
 export type MockRetrieveResultInput = Partial<Omit<RetrieveResult, 'zipFile'>> &{
   zipFiles?: ZipFile[]
 }
-export const mockRetrieveResult = (
+export const mockRetrieveResult = async (
   props: MockRetrieveResultInput
+): Promise<RetrieveResult> => ({
+  fileProperties: [],
+  id: _.uniqueId(),
+  messages: [],
+  zipFile: await createEncodedZipContent(props.zipFiles ?? []),
+  ...props,
+})
+export const mockRetrieveLocator = (
+  props: MockRetrieveResultInput | Promise<RetrieveResult>
 ): RetrieveResultLocator<RetrieveResult> => ({
-  complete: async () => ({
-    fileProperties: [],
-    id: _.uniqueId(),
-    messages: [],
-    zipFile: await createEncodedZipContent(props.zipFiles ?? []),
-    ...props,
-  }),
+  complete: () => (props instanceof Promise ? props : mockRetrieveResult(props)),
 } as RetrieveResultLocator<RetrieveResult>)
 
 export const mockDeployMessage = (params: Partial<DeployMessage>): DeployMessage => ({
@@ -300,7 +303,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     upsert: mockFunction<Metadata['upsert']>().mockResolvedValue([]),
     delete: mockFunction<Metadata['delete']>().mockResolvedValue([]),
     update: mockFunction<Metadata['update']>().mockResolvedValue([]),
-    retrieve: mockFunction<Metadata['retrieve']>().mockReturnValue(mockRetrieveResult({})),
+    retrieve: mockFunction<Metadata['retrieve']>().mockReturnValue(mockRetrieveLocator({})),
     deploy: mockFunction<Metadata['deploy']>().mockReturnValue(mockDeployResult({})),
   },
   soap: {

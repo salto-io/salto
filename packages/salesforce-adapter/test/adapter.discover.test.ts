@@ -33,7 +33,7 @@ import {
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
   MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput,
-  mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveResult,
+  mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveLocator,
 } from './connection'
 
 describe('SalesforceAdapter fetch', () => {
@@ -98,7 +98,7 @@ describe('SalesforceAdapter fetch', () => {
         const zipFiles = instances.map(inst => inst.zipFiles).filter(values.isDefined)
         if (!_.isEmpty(zipFiles)) {
           _.chunk(zipFiles, testMaxItemsInRetrieveRequest).forEach(
-            chunkFiles => connection.metadata.retrieve.mockReturnValueOnce(mockRetrieveResult({
+            chunkFiles => connection.metadata.retrieve.mockReturnValueOnce(mockRetrieveLocator({
               zipFiles: _.flatten(chunkFiles),
             })),
           )
@@ -871,7 +871,7 @@ public class MyClass${index} {
         )
         connectionMock.metadata.read.mockRejectedValue(new SFError('sf:UNKNOWN_EXCEPTION'))
 
-        connectionMock.metadata.retrieve.mockReturnValue(mockRetrieveResult({
+        connectionMock.metadata.retrieve.mockReturnValue(mockRetrieveLocator({
           messages: [{
             fileName: 'unpackaged/package.xml',
             problem: 'Metadata API received improper input.'

@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import nock from 'nock'
+import { RetrieveResult } from 'jsforce-types'
+import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import SalesforceClient, { ApiLimitsTooLowError,
@@ -24,6 +25,7 @@ import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { mockRetrieveResult, mockRetrieveLocator } from './connection'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -519,26 +521,35 @@ describe('salesforce client', () => {
     })
 
     describe('rate limit configuration', () => {
-      type Resolvable<T> = { promise: T; resolve: () => void }
-      let reads: Resolvable<ReturnType<typeof testConnection.metadata.read>>[]
+      type PromiseVal<T> = T extends PromiseLike<infer U> ? U : T
+      type Resolvable<T> = {
+        promise: Promise<T>
+        resolve: () => void
+      }
+      let reads: Resolvable<PromiseVal<ReturnType<typeof testConnection.metadata.read>>>[]
       let mockRead: jest.MockedFunction<typeof testConnection.metadata.read>
       let readReqs: ReturnType<typeof testClient.readMetadata>[]
-      let retrieves: Resolvable<ReturnType<typeof testConnection.metadata.retrieve>>[]
+      let retrieves: Resolvable<RetrieveResult>[]
       let mockRetrieve: jest.MockedFunction<typeof testConnection.metadata.retrieve>
       let retrieveReqs: ReturnType<typeof testClient.retrieve>[]
-      let lists: Resolvable<ReturnType<typeof testConnection.metadata.list>>[]
+      let lists: Resolvable<PromiseVal<ReturnType<typeof testConnection.metadata.list>>>[]
       let mockList: jest.MockedFunction<typeof testConnection.metadata.list>
       let listReqs: ReturnType<typeof testClient.listMetadataObjects>[]
 
-      const makeResolvablePromise = <T>(): Resolvable<T> => {
-        const res = {
-          promise: undefined,
-          resolve: undefined,
-        } as unknown as Resolvable<T>
-        res.promise = new Promise(resolve => {
-          res.resolve = resolve
-        }) as unknown as T
-        return res
+      let emptyRetrieveResult: RetrieveResult
+
+      beforeAll(async () => {
+        emptyRetrieveResult = await mockRetrieveResult({ fileProperties: [] })
+      })
+
+      const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        let resolve: () => void = () => {}
+        // Unsafe assumption - promise constructor calls the paramter function synchronously
+        const promise = new Promise<T>(resolveFunc => {
+          resolve = () => resolveFunc(resolveValue)
+        })
+        return { promise, resolve }
       }
 
       describe('with total and individual limits', () => {
@@ -567,17 +578,20 @@ describe('salesforce client', () => {
           mockList = testConnection.metadata.list as jest.MockedFunction<
             typeof testConnection.metadata.list>
 
-          reads = _.times(2, () => makeResolvablePromise())
+          reads = _.times(2, () => makeResolvablePromise([]))
           _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
           readReqs = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
-          retrieves = _.times(4, () => makeResolvablePromise())
-          _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
+          retrieves = _.times(4, () => makeResolvablePromise(emptyRetrieveResult))
+          _.times(
+            retrieves.length,
+            i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)),
+          )
           retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
             apiVersion: API_VERSION,
             singlePackage: false,
             unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
           }))
-          lists = _.times(2, () => makeResolvablePromise())
+          lists = _.times(2, () => makeResolvablePromise([]))
           _.times(lists.length, i => mockList.mockResolvedValueOnce(lists[i].promise))
           listReqs = _.times(lists.length, i => testClient.listMetadataObjects({ type: `t${i}` }))
 
@@ -619,7 +633,9 @@ describe('salesforce client', () => {
             }),
             connection: testConnection,
             config: {
-              maxConcurrentApiRequests: { },
+              maxConcurrentApiRequests: {
+                retrieve: 100,
+              },
             },
           })
           mockRead = testConnection.metadata.read as jest.MockedFunction<
@@ -627,27 +643,32 @@ describe('salesforce client', () => {
           mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
             typeof testConnection.metadata.retrieve>
 
-          reads = _.times(2, () => makeResolvablePromise())
+          reads = _.times(2, () => makeResolvablePromise([]))
           _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
           readReqs = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
-          retrieves = _.times(4, () => makeResolvablePromise())
-          _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
+          retrieves = _.times(4, () => makeResolvablePromise(emptyRetrieveResult))
+          _.times(
+            retrieves.length,
+            i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)),
+          )
           retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
             apiVersion: API_VERSION,
             singlePackage: false,
             unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
           }))
-
-          retrieves[0].resolve()
-          retrieves[1].resolve()
-          await Promise.all(retrieveReqs.slice(0, 2))
         })
 
-        it('should call 2nd read before 1st completed', () => {
+        it('should call 2nd read before 1st completed', async () => {
+          reads[1].resolve()
+          await readReqs[1]
           expect(mockRead).toHaveBeenCalledTimes(2)
         })
-        it('should call more retrieves', () => {
-          expect(mockRetrieve.mock.calls.length).toBeGreaterThanOrEqual(3)
+        it('should call all retrieves', async () => {
+          // Wait for the last retrieve - this will only work if the throttling allowed
+          // the last request to run before the requests before it finished
+          retrieves[3].resolve()
+          await retrieveReqs[3]
+          expect(mockRetrieve).toHaveBeenCalledTimes(4)
         })
       })
 
@@ -665,8 +686,11 @@ describe('salesforce client', () => {
           mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
             typeof testConnection.metadata.retrieve>
 
-          retrieves = _.times(6, () => makeResolvablePromise())
-          _.times(retrieves.length, i => mockRetrieve.mockResolvedValueOnce(retrieves[i].promise))
+          retrieves = _.times(6, () => makeResolvablePromise(emptyRetrieveResult))
+          _.times(
+            retrieves.length,
+            i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)),
+          )
           retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
             apiVersion: API_VERSION,
             singlePackage: false,

@@ -164,8 +164,14 @@ const buildMultiEnvSource = (
     }
     const current = state !== undefined ? await state : await buildState(env)
     const envs = [commonSourceName, primaryEnv]
-    const relevantElementIDs = Object.values(_.pick(changes, envs))
-      .flat().map(getChangeElement).map(e => e.elemID)
+    const relevantElementIDs = _.uniqBy(
+      Object.values(_.pick(changes, envs))
+        .flat()
+        .map(getChangeElement)
+        .map(e => e.elemID),
+      id => id.getFullName()
+    )
+
     const changedElementsByEnv = _.mapValues(
       _.pick(changes, envs),
       envChanges => Object.fromEntries(envChanges.map(getAfterFromChange))

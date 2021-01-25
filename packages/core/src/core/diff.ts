@@ -40,7 +40,9 @@ const filterRelevantParts = (elementIds: ElemID[],
   return undefined
 }
 
-const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
+// This returns an array rather than iterablebecause it's going to be used
+// in an inMemElementSource any way
+const filterElementsByRelevance = (elements: AsyncIterable<Element>, relevantIds: ElemID[],
   selectorsToVerify: Set<string>): Promise<Element[]> => {
   const topLevelIds = new Set<string>(relevantIds
     .map(id => id.createTopLevelParentID().parent.getFullName()))
@@ -60,17 +62,17 @@ export const createDiffChanges = async (
   topLevelFilters: IDFilter[] = []
 ): Promise<DetailedChange[]> => {
   if (elementSelectors.length > 0) {
-    const toElements = await awu(await toElementsSrc.getAll()).toArray()
-    const fromElements = await awu(await fromElementsSrc.getAll()).toArray()
-    const toElementIdsFiltered = await selectElementIdsByTraversal(elementSelectors,
-      toElements.map(element => ({ elemID: element.elemID, element })), true)
-    const fromElementIdsFiltered = await selectElementIdsByTraversal(elementSelectors,
-      fromElements.map(element => ({ elemID: element.elemID, element })), true)
+    const toElements = awu(await toElementsSrc.list())
+    const fromElements = awu(await fromElementsSrc.list())
+    const toElementIdsFiltered = await awu(await selectElementIdsByTraversal(elementSelectors,
+      toElements, toElementsSrc, true)).toArray()
+    const fromElementIdsFiltered = await awu(await selectElementIdsByTraversal(elementSelectors,
+      fromElements, fromElementsSrc, true)).toArray()
     const selectorsToVerify = new Set<string>(elementSelectors
       .map(sel => sel.origin).filter(sel => !sel.includes('*')))
-    const toElementsFiltered = await filterElementsByRelevance([...toElements],
+    const toElementsFiltered = await filterElementsByRelevance(await toElementsSrc.getAll(),
       toElementIdsFiltered, selectorsToVerify)
-    const fromElementsFiltered = await filterElementsByRelevance(fromElements,
+    const fromElementsFiltered = await filterElementsByRelevance(await fromElementsSrc.getAll(),
       fromElementIdsFiltered, selectorsToVerify)
     if (selectorsToVerify.size > 0) {
       throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)

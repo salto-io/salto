@@ -107,7 +107,7 @@ export type Workspace = {
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean) => Promise<ElemID[]>
+    commonOnly?: boolean) => Promise<AsyncIterable<ElemID>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>

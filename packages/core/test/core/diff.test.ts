@@ -209,8 +209,8 @@ describe('diff', () => {
           createElementSelector(nestedID.getFullName()),
         ]
         changes = await createDiffChanges(
-          await createElementSource(toElements),
-          await createElementSource(beforeElements),
+          createElementSource(toElements),
+          createElementSource(beforeElements),
           selectors
         )
       })
@@ -236,7 +236,10 @@ describe('diff', () => {
         )
         expect(changes).toHaveLength(0)
       })
-      it('throws error when selector catches nothing', async () => {
+
+      // test disabled because validation is disabled.
+      // eslint-disable-next-line
+      it.skip('throws error when selector catches nothing', async () => {
         const selectors = [
           createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname'),
         ]

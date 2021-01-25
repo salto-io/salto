@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, Field, TypeElement } from '@salto-io/adapter-api'
+import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, Field, TypeElement, isContainerType } from '@salto-io/adapter-api'
 import { resolvePath, TransformFunc, createRefToElmWithValue, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
@@ -221,6 +221,17 @@ const resolveElement = async (
 
   if (isVariable(element)) {
     element.value = await resolveMaybeExpression(element.value, elementsSource, resolvedElements)
+  }
+
+  if (isContainerType(element)) {
+    element.refInnerType = createRefToElmWithValue(
+      await resolveElement(
+        await element.getInnerType(contextedElementsGetter),
+        elementsSource,
+        resolvedElements,
+        resolvedSet
+      )
+    )
   }
 
   resolvedElements[element.elemID.getFullName()] = element

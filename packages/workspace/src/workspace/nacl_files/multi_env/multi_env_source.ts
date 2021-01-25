@@ -22,7 +22,7 @@ import { Element, ElemID, getChangeElement, Value,
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { RemoteMap, RemoteMapCreator } from '../../remote_map'
-import { ElementSelector, selectElementIdsByTraversal, ElementIDToValue } from '../../element_selector'
+import { ElementSelector, selectElementIdsByTraversal } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 import { mergeElements, MergeError } from '../../../merger'
@@ -76,7 +76,7 @@ type MultiEnvSource = Omit<NaclFilesSource, 'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<void>
   getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean) => Promise<ElemID[]>
+    commonOnly?: boolean) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<void>
   demoteAll: () => Promise<void>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
@@ -260,15 +260,15 @@ const buildMultiEnvSource = (
     return buildRes.changes
   }
 
-  const getElementsFromSource = async (
-    source: NaclFilesSource
-  ): Promise<AsyncIterable<ElementIDToValue>> =>
-    awu((await source.getAll())).map(elem => ({ elemID: elem.elemID, element: elem }))
+  const getElementsFromSource = async (source: NaclFilesSource):
+    Promise<AsyncIterable<ElemID>> => awu((await source.list()))
 
   const getElementIdsBySelectors = async (selectors: ElementSelector[],
-    commonOnly = false): Promise<ElemID[]> =>
-    selectElementIdsByTraversal(selectors, await awu(await getElementsFromSource(commonOnly
-      ? commonSource() : primarySource())).toArray())
+    commonOnly = false): Promise<AsyncIterable<ElemID>> => {
+    const relevantSource = commonOnly ? commonSource() : primarySource()
+    const elementsFromSource = await getElementsFromSource(relevantSource)
+    return selectElementIdsByTraversal(selectors, elementsFromSource, relevantSource)
+  }
 
   const promote = async (ids: ElemID[]): Promise<void> => {
     const routedChanges = await routePromote(

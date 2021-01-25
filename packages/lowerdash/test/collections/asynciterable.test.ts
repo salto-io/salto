@@ -405,6 +405,10 @@ describe('asynciterable', () => {
           A: [{ key: 'A' }],
         })
       })
+      it('should delete copies from list when uniquifying', async () => {
+        expect(await (await awu([1, 2, 3, 5, 4, 6, 6, 4, 3, 7, 2, 1])
+          .uniquify(num => num).toArray())).toEqual([1, 2, 3, 5, 4, 6, 7])
+      })
     })
     describe('function chaining', () => {
       describe('when orig is async', () => {

@@ -777,7 +777,8 @@ describe('multi env source', () => {
       jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.copyTo(await source.getElementIdsBySelectors(selectors), ['inactive'])
+      await source.copyTo(await awu(await source
+        .getElementIdsBySelectors(selectors)).toArray(), ['inactive'])
       expect(routers.routeCopyTo).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, { inactive: inactiveSource }
       )
@@ -787,7 +788,7 @@ describe('multi env source', () => {
       jest.spyOn(routers, 'routeCopyTo').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.copyTo(await source.getElementIdsBySelectors(selectors))
+      await source.copyTo(await awu(await source.getElementIdsBySelectors(selectors)).toArray())
       expect(routers.routeCopyTo).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, { inactive: inactiveSource }
       )
@@ -799,7 +800,7 @@ describe('multi env source', () => {
       jest.spyOn(routers, 'routePromote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.promote(await source.getElementIdsBySelectors(selectors))
+      await source.promote(await awu(await source.getElementIdsBySelectors(selectors)).toArray())
       expect(routers.routePromote).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )
@@ -811,7 +812,8 @@ describe('multi env source', () => {
       jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.demote(await source.getElementIdsBySelectors(selectors, true))
+      await source.demote(await awu(await source.getElementIdsBySelectors(selectors, true))
+        .toArray())
       expect(routers.routeDemote).toHaveBeenCalledWith(
         [commonObject.elemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )

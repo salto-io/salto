@@ -89,8 +89,7 @@ export const getChangeLocations = (
     }]
   }
 
-  const r = findLocations().map(location => ({ ...change, location }))
-  return r
+  return findLocations().map(location => ({ ...change, location }))
 }
 
 const fixEdgeIndentation = (

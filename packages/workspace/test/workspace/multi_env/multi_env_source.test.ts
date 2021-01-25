@@ -26,6 +26,7 @@ import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
+import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 const mockAwu = awu
@@ -181,7 +182,12 @@ const sources = {
   [activePrefix]: envSource,
   [inactivePrefix]: inactiveSource,
 }
-const source = multiEnvSource(sources, activePrefix, commonPrefix)
+const source = multiEnvSource(
+  sources,
+  activePrefix,
+  commonPrefix,
+  () => Promise.resolve(new InMemoryRemoteMap()),
+)
 
 describe('multi env source', () => {
   describe('getNaclFile', () => {
@@ -243,6 +249,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -271,6 +278,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -318,6 +326,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -370,7 +379,12 @@ describe('multi env source', () => {
   describe('isEmpty', () => {
     it('should return true when there are no sources', async () => {
       const srcs = {}
-      const src = multiEnvSource(srcs, activePrefix, commonPrefix)
+      const src = multiEnvSource(
+        srcs,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )
       expect(await src.isEmpty()).toBeTruthy()
     })
     it('should return true when some sources have files', async () => {
@@ -379,7 +393,12 @@ describe('multi env source', () => {
         [activePrefix]: emptySource,
         [inactivePrefix]: inactiveSource,
       }
-      const src = multiEnvSource(srcs, activePrefix, commonPrefix)
+      const src = multiEnvSource(
+        srcs,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )
       expect(await src.isEmpty()).toBeFalsy()
     })
     it('should look at elements from all active sources and not inactive sources', async () => {
@@ -387,7 +406,12 @@ describe('multi env source', () => {
         [commonPrefix]: emptySource,
         [inactivePrefix]: inactiveSource,
       }
-      const src = multiEnvSource(srcs, activePrefix, commonPrefix)
+      const src = multiEnvSource(
+        srcs,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )
       expect(await src.isEmpty()).toBeTruthy()
     })
   })
@@ -484,6 +508,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -510,6 +535,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -540,6 +566,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -582,6 +609,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -614,6 +642,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -653,6 +682,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
@@ -679,6 +709,7 @@ describe('multi env source', () => {
         },
         primarySourceName,
         commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
       )
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()

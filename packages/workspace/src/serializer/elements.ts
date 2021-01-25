@@ -23,6 +23,12 @@ import {
   isInstanceElement, isPrimitiveType,
   FieldDefinition, isObjectType, Values,
 } from '@salto-io/adapter-api'
+import { DuplicateAnnotationError, MergeError } from '../merger/internal/common'
+import { DuplicateInstanceKeyError } from '../merger/internal/instances'
+import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
+  ConflictingSettingError, DuplicateAnnotationTypeError } from '../merger/internal/object_types'
+import { DuplicateVariableNameError } from '../merger/internal/variables'
+import { MultiplePrimitiveTypesUnsupportedError } from '../merger/internal/primitives'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
 
@@ -57,6 +63,14 @@ const NameToType = {
   ReferenceExpression: ReferenceExpression,
   VariableExpression: VariableExpression,
   StaticFile: StaticFile,
+  DuplicateAnnotationError: DuplicateAnnotationError,
+  DuplicateInstanceKeyError: DuplicateInstanceKeyError,
+  DuplicateAnnotationFieldDefinitionError: DuplicateAnnotationFieldDefinitionError,
+  ConflictingFieldTypesError: ConflictingFieldTypesError,
+  ConflictingSettingError: ConflictingSettingError,
+  DuplicateAnnotationTypeError: DuplicateAnnotationTypeError,
+  DuplicateVariableNameError: DuplicateVariableNameError,
+  MultiplePrimitiveTypesUnsupportedError: MultiplePrimitiveTypesUnsupportedError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -92,7 +106,7 @@ function isSerializedClass(value: any): value is SerializedClass {
     && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serialize = (elements: Element[],
+export const serialize = (elements: (Element | MergeError)[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'): string => {
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
@@ -155,15 +169,15 @@ export const serialize = (elements: Element[],
 export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const reviveElemID = (v: {[key: string]: any}): ElemID => (
-  new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
-)
-
 export const deserialize = async (
   data: string,
   staticFileReviver?: StaticFileReviver,
-): Promise<Element[]> => {
+): Promise<(Element | MergeError)[]> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reviveElemID = (v: {[key: string]: any}): ElemID => (
+    new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
+  )
+
   let staticFiles: Record<string, StaticFile> = {}
 
   const revivers: ReviverMap = {
@@ -219,6 +233,52 @@ export const deserialize = async (
       staticFiles[staticFile.filepath] = staticFile
       return staticFile
     },
+    DuplicateAnnotationError: v => (
+      new DuplicateAnnotationError({
+        elemID: reviveElemID(v.elemID),
+        key: v.key,
+        existingValue: v.existingValue,
+        newValue: v.newValue,
+      })
+    ),
+    DuplicateInstanceKeyError: v => (
+      new DuplicateInstanceKeyError({
+        elemID: reviveElemID(v.elemID),
+        key: v.key,
+        existingValue: v.existingValue,
+        newValue: v.newValue,
+      })
+    ),
+    DuplicateAnnotationFieldDefinitionError: v => (
+      new DuplicateAnnotationFieldDefinitionError({
+        elemID: reviveElemID(v.elemID),
+        annotationKey: v.annotationKey,
+      })
+    ),
+    ConflictingFieldTypesError: v => (
+      new ConflictingFieldTypesError({
+        elemID: reviveElemID(v.elemID),
+        definedTypes: v.definedTypes,
+      })
+    ),
+    ConflictingSettingError: v => (
+      new ConflictingSettingError({ elemID: reviveElemID(v.elemID) })
+    ),
+    DuplicateAnnotationTypeError: v => (
+      new DuplicateAnnotationTypeError({
+        elemID: reviveElemID(v.elemID),
+        key: v.key,
+      })
+    ),
+    DuplicateVariableNameError: v => (
+      new DuplicateVariableNameError({ elemID: reviveElemID(v.elemID) })
+    ),
+    MultiplePrimitiveTypesUnsupportedError: v => (
+      new MultiplePrimitiveTypesUnsupportedError({
+        elemID: reviveElemID(v.elemID),
+        duplicates: v.duplicates,
+      })
+    ),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -262,5 +322,5 @@ export const deserialize = async (
     }
   })
 
-  return Promise.resolve(elements)
+  return elements
 }

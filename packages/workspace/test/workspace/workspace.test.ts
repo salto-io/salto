@@ -29,7 +29,7 @@ import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { mockStaticFilesSource } from '../utils'
+import { mockStaticFilesSource, mockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX } from '../../src/workspace/workspace'
@@ -42,6 +42,7 @@ import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { PathIndex } from '../../src/workspace/path_index'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
+import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -98,14 +99,19 @@ const createWorkspace = async (
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
 ): Promise<Workspace> =>
-  loadWorkspace(configSource || mockWorkspaceConfigSource(), credentials || mockCredentialsSource(),
+  loadWorkspace(
+    configSource || mockWorkspaceConfigSource(),
+    credentials || mockCredentialsSource(),
     {
       commonSourceName: '',
       sources: elementSources || {
         '': {
           naclFiles: await naclFilesSource(
-            dirStore || mockDirStore(), mockParseCache(),
+            '',
+            dirStore || mockDirStore(),
+            mockParseCache(),
             staticFilesSource || mockStaticFilesSource(),
+            mockCreateRemoteMap,
           ),
         },
         default: {
@@ -113,7 +119,9 @@ const createWorkspace = async (
           state: state ?? createState([]),
         },
       },
-    })
+    },
+    mockCreateRemoteMap,
+  )
 
 const getElemMap = async (
   elements: ElementsSource
@@ -1184,8 +1192,8 @@ describe('workspace', () => {
 
     it('should add the type that change from hidden to not hidden, excluding hidden annotations', () => {
       expect(typeBecameNotHidden).toBeDefined()
-      expect(typeBecameNotHidden).toEqual(_.omit(
-        accountInsightsSettingsType, 'annotations.internalId',
+      expect(typeBecameNotHidden.annotations).toEqual(_.omit(
+        accountInsightsSettingsType.annotations, 'internalId',
       ))
     })
 
@@ -1291,8 +1299,14 @@ describe('workspace', () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
-      const workspace = await initWorkspace('ws-name', 'uid', 'default', workspaceConf,
-        mockCredentialsSource(), { commonSourceName: '',
+      const workspace = await initWorkspace(
+        'ws-name',
+        'uid',
+        'default',
+        workspaceConf,
+        mockCredentialsSource(),
+        {
+          commonSourceName: '',
           sources: {
             default: {
               naclFiles: createMockNaclFileSource([]),
@@ -1302,7 +1316,10 @@ describe('workspace', () => {
               naclFiles: createMockNaclFileSource([]),
               state: createState([]),
             },
-          } })
+          },
+        },
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
         { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }], currentEnv: 'default' }
       )

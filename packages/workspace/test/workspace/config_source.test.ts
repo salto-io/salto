@@ -72,6 +72,13 @@ describe('configSource', () => {
         })
       })
     })
+    it('should ignore overrides when requested', async () => {
+      const conf = await source.get('valid', true)
+      expect(conf?.value).toEqual({
+        val: 1,
+        other: 3,
+      })
+    })
     it('should return undefined when there is no file', async () => {
       expect(await source.get('noSuchFile')).toBeUndefined()
     })

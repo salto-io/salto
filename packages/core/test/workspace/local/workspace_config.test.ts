@@ -137,6 +137,16 @@ describe('workspace local config', () => {
     expect((repoDirStore.set as jest.Mock).mock.calls).toHaveLength(1)
     expect((prefDirStore.set as jest.Mock).mock.calls).toHaveLength(0)
   })
+  it('should set first adapter configuration in repo', async () => {
+    await configSource.setAdapter('newAdapter', new InstanceElement(
+      'newAdapter',
+      new ObjectType({
+        elemID: new ElemID('newAdapter'),
+      })
+    ))
+    expect((repoDirStore.set as jest.Mock).mock.calls).toHaveLength(1)
+    expect((prefDirStore.set as jest.Mock).mock.calls).toHaveLength(0)
+  })
   describe('edge cases', () => {
     const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
     beforeEach(async () => {
@@ -172,6 +182,93 @@ describe('workspace local config', () => {
       mockCreateDirStore.mockImplementation(() => secondWorkspaceError)
       const conf = await workspaceConfigSource('bla')
       await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoWorkspaceConfig())
+    })
+  })
+  describe('overriden fields', () => {
+    beforeEach(async () => {
+      configSource = await workspaceConfigSource(
+        'bla',
+        undefined,
+        [{
+          id: new ElemID('salesforce', ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME, 'client', 'maxConcurrentApiRequests', 'retrieve'),
+          action: 'modify',
+          data: { before: 3, after: 6 },
+        }]
+      )
+    })
+    it('update to an overridden field should throw an exception', async () => {
+      const updatedConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID('salesforce', ElemID.CONFIG_NAME) }),
+        {
+          metadataTypesSkippedList: [
+            'Report',
+            'ReportType',
+            'ReportFolder',
+            'Dashboard',
+            'DashboardFolder',
+          ],
+          instancesRegexSkippedList: [
+            '^ConnectedApp.CPQIntegrationUserApp$',
+            '^EmailTemplate.MarketoEmailTemplates',
+          ],
+          maxItemsInRetrieveRequest: 2500,
+          client: {},
+        }
+      )
+      await expect(configSource.setAdapter('salesforce', updatedConfig)).rejects.toThrow()
+    })
+
+    it('should not change the value of an override field', async () => {
+      const updatedConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID('salesforce', ElemID.CONFIG_NAME) }),
+        {
+          metadataTypesSkippedList: [
+            'Report',
+            'ReportType',
+            'ReportFolder',
+            'Dashboard',
+            'DashboardFolder',
+            'newType',
+          ],
+          instancesRegexSkippedList: [
+            '^ConnectedApp.CPQIntegrationUserApp$',
+            '^EmailTemplate.MarketoEmailTemplates',
+          ],
+          maxItemsInRetrieveRequest: 2500,
+          client: {
+            maxConcurrentApiRequests: {
+              retrieve: 6,
+            },
+          },
+        }
+      )
+      await configSource.setAdapter('salesforce', updatedConfig)
+      expect(repoDirStore.set).toHaveBeenCalledWith({
+        filename: expect.any(String),
+        buffer: `salesforce {
+  metadataTypesSkippedList = [
+    "Report",
+    "ReportType",
+    "ReportFolder",
+    "Dashboard",
+    "DashboardFolder",
+    "newType",
+  ]
+  instancesRegexSkippedList = [
+    "^ConnectedApp.CPQIntegrationUserApp$",
+    "^EmailTemplate.MarketoEmailTemplates",
+  ]
+  maxItemsInRetrieveRequest = 2500
+  client = {
+    maxConcurrentApiRequests = {
+      retrieve = 3
+    }
+  }
+}
+`,
+      })
     })
   })
 })

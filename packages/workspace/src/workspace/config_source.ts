@@ -25,7 +25,7 @@ import { DirectoryStore } from './dir_store'
 const log = logger(module)
 
 export interface ConfigSource {
-  get(name: string): Promise<InstanceElement | undefined>
+  get(name: string, ignoreOverrides?: boolean): Promise<InstanceElement | undefined>
   set(name: string, config: Readonly<InstanceElement>): Promise<void>
   delete(name: string): Promise<void>
   rename(name: string, newName: string): Promise<void>
@@ -47,7 +47,7 @@ export const configSource = (
   const configOverridesById = _.groupBy(configOverrides, change => change.id.adapter)
 
   return {
-    get: async (name: string): Promise<InstanceElement | undefined> => {
+    get: async (name: string, ignoreOverrides = false): Promise<InstanceElement | undefined> => {
       const naclFile = await dirStore.get(filename(name))
       if (_.isUndefined(naclFile)) {
         log.warn('Could not find file %s for configuration %s', filename(name), name)
@@ -71,11 +71,13 @@ export const configSource = (
         )
         return undefined
       }
-      // Apply configuration overrides
-      const overridesForInstance = configOverridesById[configInstance.elemID.adapter] ?? []
-      overridesForInstance.forEach(change => {
-        setPath(configInstance, change.id, getChangeElement(change))
-      })
+      if (!ignoreOverrides) {
+        // Apply configuration overrides
+        const overridesForInstance = configOverridesById[configInstance.elemID.adapter] ?? []
+        overridesForInstance.forEach(change => {
+          setPath(configInstance, change.id, getChangeElement(change))
+        })
+      }
       return configInstance
     },
 

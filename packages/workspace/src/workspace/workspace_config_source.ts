@@ -18,7 +18,7 @@ import { WorkspaceConfig } from './config/workspace_config_types'
 
 // Seperating adapter config to allow for lazy adapter loading.
 export type AdapterConfigSource = {
-  getAdapter(adapter: string): Promise<InstanceElement | undefined>
+  getAdapter(adapter: string, ignoreOverrides?: boolean): Promise<InstanceElement | undefined>
   setAdapter(adapter: string, config: Readonly<InstanceElement>): Promise<void>
 }
 

@@ -25,6 +25,7 @@ import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
+import { createRemoteMapCreator } from './remote_map'
 
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
@@ -109,7 +110,9 @@ const loadNaclFileSource = (
   const { naclFilesStore, cache, staticFileSource } = getNaclFilesSourceParams(
     sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
   )
-  return naclFilesSource(naclFilesStore, cache, staticFileSource)
+  return naclFilesSource(
+    sourceName, naclFilesStore, cache, staticFileSource, createRemoteMapCreator(cacheBaseDir)
+  )
 }
 
 
@@ -179,7 +182,10 @@ export const loadLocalWorkspace = async (
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
   const elemSources = await loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
-  const ws = await loadWorkspace(workspaceConfig, credentials, elemSources)
+  const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
+  const ws = await loadWorkspace(
+    workspaceConfig, credentials, elemSources, createRemoteMapCreator(cacheDirName)
+  )
 
   return {
     ...ws,
@@ -226,6 +232,6 @@ Promise<Workspace> => {
 
   return initWorkspace(
     workspaceName, uid, envName, workspaceConfig,
-    credentials, elemSources,
+    credentials, elemSources, createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
   )
 }

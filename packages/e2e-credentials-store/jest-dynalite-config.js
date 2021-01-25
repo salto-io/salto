@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,24 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const path = require('path')
-const deepMerge = require('../../build_utils/deep_merge')
-
-module.exports = deepMerge(
-  require('../../eslintrc.js'),
-  {
-    overrides: [
-      {
-        files: ['*.ts'],
-        parserOptions: {
-          tsconfigRootDir: __dirname,
-          project: path.resolve(__dirname, './tsconfig.json'),
-        },
-      }
-    ],
-    parserOptions: {
-      project: [],
-    }
-  },
-)
-
+module.exports = {
+  tables: [],
+}

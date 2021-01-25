@@ -32,7 +32,7 @@ const { makeArray } = collections.array
 export const DEFAULT_SDF_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 20
-export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 30
+export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 50
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 
 const clientConfigType = new ObjectType({
@@ -154,20 +154,18 @@ const wrapAsRegex = (str: string): string => `^${_.escapeRegExp(str)}$`
 
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
-  failedTypes: string[],
   failedFilePaths: string[]
 ): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof NetsuiteClientConfig, Value>> => ({
   ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
-  ...(!_.isEmpty(failedTypes) ? { [TYPES_TO_SKIP]: failedTypes } : {}),
   ...(!_.isEmpty(failedFilePaths)
     ? { [FILE_PATHS_REGEX_SKIP_LIST]: failedFilePaths.map(wrapAsRegex) }
     : {}),
 })
 
 
-export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, failedTypes: string[],
+export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean,
   failedFilePaths: string[], currentConfig: NetsuiteConfig): InstanceElement | undefined => {
-  const suggestions = toConfigSuggestions(failedToFetchAllAtOnce, failedTypes, failedFilePaths)
+  const suggestions = toConfigSuggestions(failedToFetchAllAtOnce, failedFilePaths)
   if (_.isEmpty(suggestions)) {
     return undefined
   }
@@ -184,8 +182,6 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
     configType,
     _.pickBy({
       ...currentConfig,
-      [TYPES_TO_SKIP]: makeArray(currentConfig[TYPES_TO_SKIP])
-        .concat(makeArray(suggestions[TYPES_TO_SKIP])),
       [FILE_PATHS_REGEX_SKIP_LIST]: makeArray(currentConfig[FILE_PATHS_REGEX_SKIP_LIST])
         .concat(makeArray(suggestions[FILE_PATHS_REGEX_SKIP_LIST])),
       [CLIENT_CONFIG]: clientConfigSuggestion,

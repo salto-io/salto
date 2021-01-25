@@ -32,12 +32,11 @@ describe('config', () => {
       [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
     },
   }
-  const newFailedType = 'test2'
   const newFailedFilePath = '/path/to/file.js'
   const expectedNewFailedFileRegex = '^/path/to/file\\.js$'
 
   it('should return undefined when having no currentConfig suggestions', () => {
-    expect(getConfigFromConfigChanges(false, [], [], currentConfig)).toBeUndefined()
+    expect(getConfigFromConfigChanges(false, [], currentConfig)).toBeUndefined()
   })
 
   it('should have match between generated regex and the failed file', () => {
@@ -52,13 +51,12 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
-    const configFromConfigChanges = getConfigFromConfigChanges(true, [newFailedType],
+    const configFromConfigChanges = getConfigFromConfigChanges(true,
       [newFailedFilePath], {}) as InstanceElement
     expect(configFromConfigChanges.isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
-        [TYPES_TO_SKIP]: [newFailedType],
         [FILE_PATHS_REGEX_SKIP_LIST]: [expectedNewFailedFileRegex],
         [CLIENT_CONFIG]: {
           [FETCH_ALL_TYPES_AT_ONCE]: false,
@@ -68,12 +66,12 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
-    expect(getConfigFromConfigChanges(true, [newFailedType], [newFailedFilePath], currentConfig))
+    expect(getConfigFromConfigChanges(true, [newFailedFilePath], currentConfig))
       .toEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
         {
-          [TYPES_TO_SKIP]: ['test1', newFailedType],
+          [TYPES_TO_SKIP]: ['test1'],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*', expectedNewFailedFileRegex],
           [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: {

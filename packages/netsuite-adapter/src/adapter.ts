@@ -122,7 +122,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
     const {
       elements: customObjects,
-      failedTypes,
       failedToFetchAllAtOnce,
     } = await getCustomObjectsResult
     const {
@@ -141,7 +140,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const isPartial = this.fetchTarget !== undefined
 
     await this.runFiltersOnFetch(elements, this.elementsSource, isPartial)
-    const config = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedTypes, failedFilePaths,
+    const config = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedFilePaths,
       this.userConfig)
 
     if (_.isUndefined(config)) {

@@ -195,7 +195,6 @@ type Project = {
 
 export type GetCustomObjectsResult = {
   elements: CustomTypeInfo[]
-  failedTypes: string[]
   failedToFetchAllAtOnce: boolean
 }
 
@@ -379,11 +378,7 @@ export default class NetsuiteClient {
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
     const { executor, projectName, authId } = await this.initProject()
-    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(
-      executor,
-      typeNames,
-      query
-    )
+    const { failedToFetchAllAtOnce } = await this.importObjects(executor, typeNames, query)
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
@@ -401,18 +396,14 @@ export default class NetsuiteClient {
       })
     )
     await this.projectCleanup(projectName, authId)
-    return {
-      elements: elements.filter(e => !failedTypes.has(e.typeName)),
-      failedTypes: Array.from(failedTypes),
-      failedToFetchAllAtOnce,
-    }
+    return { elements, failedToFetchAllAtOnce }
   }
 
   private async importObjects(
     executor: CommandActionExecutor,
     typeNames: string[],
     query: NetsuiteQuery
-  ): Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: Set<string> }> {
+  ): Promise<{ failedToFetchAllAtOnce: boolean }> {
     const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
       try {
@@ -428,19 +419,45 @@ export default class NetsuiteClient {
     }
 
     if (this.fetchAllTypesAtOnce && await importAllAtOnce()) {
-      return { failedToFetchAllAtOnce: false, failedTypes: new Set<string>() }
+      return { failedToFetchAllAtOnce: false }
     }
-    return {
-      failedToFetchAllAtOnce: this.fetchAllTypesAtOnce,
-      failedTypes: await this.importObjectsInChunks(executor, typeNames, query),
-    }
+    await this.importObjectsInChunks(executor, typeNames, query)
+    return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce }
   }
 
   private async importObjectsInChunks(
     executor: CommandActionExecutor,
     typeNames: string[],
     query: NetsuiteQuery
-  ): Promise<Set<string>> {
+  ): Promise<void> {
+    const importObjectsChunk = async (
+      { type, ids, index, total }: ObjectsChunk, retry = true
+    ): Promise<void> => {
+      try {
+        log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
+        await this.runImportObjectsCommand(executor, type, ids.join(' '),
+          this.fetchTypeTimeoutInMinutes)
+        log.debug('Fetched chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
+      } catch (e) {
+        log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
+        log.warn(e)
+        if (!retry) {
+          throw e
+        }
+        if (ids.length === 1) {
+          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s', index, total, type)
+          await importObjectsChunk({ type, ids, index, total }, false)
+          return
+        }
+        log.debug('Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks', index, total, ids.length, type)
+        const middle = (ids.length + 1) / 2
+        await Promise.all([
+          importObjectsChunk({ type, ids: ids.slice(0, middle), index, total }),
+          importObjectsChunk({ type, ids: ids.slice(middle, ids.length), index, total }),
+        ])
+      }
+    }
+
     const instancesIds = (await this.listInstances(
       executor,
       typeNames.filter(query.isTypeMatch)
@@ -462,28 +479,11 @@ export default class NetsuiteClient {
           .toArray()
     ).flatten(true).toArray()
 
-
-    const failedTypes = new Set<string>()
     log.debug('Fetching custom objects one by one')
     await withLimitedConcurrency( // limit the number of open promises
-      idsChunks.map(({ type, ids, index, total }: ObjectsChunk) => async () => {
-        if (failedTypes.has(type)) {
-          return
-        }
-        try {
-          log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
-          await this.runImportObjectsCommand(executor, type, ids.join(' '),
-            this.fetchTypeTimeoutInMinutes)
-          log.debug('Fetched chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
-        } catch (e) {
-          log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
-          log.warn(e)
-          failedTypes.add(type)
-        }
-      }),
+      idsChunks.map(idsChunk => async () => importObjectsChunk(idsChunk)),
       this.sdfConcurrencyLimit
     )
-    return failedTypes
   }
 
   private async runImportObjectsCommand(

@@ -18,6 +18,7 @@ export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes, getDefaultAdapterConfig } from './src/core/adapters/adapters'
+export { createDiffChanges } from './src/core/diff'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
   CACHE_DIR_NAME, COMMON_ENV_PREFIX, locateWorkspaceRoot,

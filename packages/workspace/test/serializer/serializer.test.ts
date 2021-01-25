@@ -23,7 +23,7 @@ import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
-import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
+import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { LazyStaticFile } from '../../src/workspace/static_files/source'
 import { SyncDirectoryStore } from '../../src/workspace/dir_store'
@@ -397,7 +397,7 @@ describe('State/cache serialization', () => {
         duplicateVariableNameError,
       ]
       serialized = serialize(mergeErrors)
-      deserialized = (await deserialize(serialized)) as MergeError[]
+      deserialized = await deserializeMergeErrors(serialized)
     })
     it('serialized value should be non empty string', () => {
       expect(typeof serialized).toEqual('string')

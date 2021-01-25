@@ -102,8 +102,10 @@ function isSerializedClass(value: any): value is SerializedClass {
     && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serialize = (elements: (Element | MergeError)[],
-  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'): string => {
+export const serialize = <T = Element>(
+  elements: T[],
+  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'
+): string => {
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
     const o = e as T & SerializedClass
@@ -160,16 +162,13 @@ export const serialize = (elements: (Element | MergeError)[],
 export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
-export const deserialize = async (
-  data: string,
-  staticFileReviver?: StaticFileReviver,
-): Promise<(Element | MergeError)[]> => {
+const generalDeserialize = async <T>(data: string):
+Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
+  const staticFiles: Record<string, StaticFile> = {}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reviveElemID = (v: {[key: string]: any}): ElemID => (
     new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
   )
-
-  let staticFiles: Record<string, StaticFile> = {}
 
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
@@ -271,7 +270,6 @@ export const deserialize = async (
       })
     ),
   }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReviver = (_k: string, v: any): any => {
     if (isSerializedClass(v)) {
@@ -284,8 +282,20 @@ export const deserialize = async (
     }
     return v
   }
+  const elements = JSON.parse(data, elementReviver) as T[]
+  return { elements, staticFiles }
+}
 
-  const elements = JSON.parse(data, elementReviver) as Element[]
+export const deserializeMergeErrors = async (data: string): Promise<MergeError[]> =>
+  (await generalDeserialize<MergeError>(data)).elements
+
+export const deserialize = async (
+  data: string,
+  staticFileReviver?: StaticFileReviver,
+): Promise<Element[]> => {
+  const res = await generalDeserialize<Element>(data)
+  let { staticFiles } = res
+  const { elements } = res
 
   if (staticFileReviver) {
     staticFiles = _.fromPairs(

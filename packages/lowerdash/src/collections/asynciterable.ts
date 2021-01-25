@@ -239,6 +239,16 @@ export const everyAsync = async<T>(
   func: (t: T) => Thenable<unknown>
 ): Promise<boolean> => !(await someAsync(itr, async t => !(await func(t))))
 
+const uniquify = <T, K>(vals: ThenableIterable<T>, toSetType: (val: T) => K): AsyncIterable<T> => {
+  const uniques = new Set<K>()
+  return filterAsync(vals, val => {
+    if (uniques.has(toSetType(val))) {
+      return false
+    }
+    uniques.add(toSetType(val))
+    return true
+  })
+}
 
 export type AwuIterable<T> = AsyncIterable<T> & {
   filter<S extends T>(filterFunc: (t: T, index: number) => t is S): AwuIterable<S>
@@ -259,6 +269,7 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   every(func: (t: T) => Thenable<unknown>): Promise<boolean>
   keyBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T>>
   groupBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T[]>>
+  uniquify(toSetType: (t: T) => unknown): AwuIterable<T>
 }
 
 export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
@@ -286,5 +297,6 @@ export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
     every: func => everyAsync(itr, func),
     keyBy: keyFunc => keyByAsync(itr, keyFunc),
     groupBy: keyFunc => groupByAsync(itr, keyFunc),
+    uniquify: (toSetType: (t: T) => unknown) => awu(uniquify(itr, toSetType)),
   }
 }

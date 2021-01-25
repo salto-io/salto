@@ -1,1 +1,7 @@
-../../.eslintignore
+/dist
+*.d.ts
+*.config.js
+coverage
+src/tools/
+/src/generated
+/package_native.js

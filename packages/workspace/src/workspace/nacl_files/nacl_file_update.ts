@@ -19,6 +19,7 @@ import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdd
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { SourceRange, SourceMap } from '../../parser'
 
 import {
@@ -27,7 +28,7 @@ import {
 import { Functions } from '../../parser/functions'
 
 const { awu } = collections.asynciterable
-
+const log = logger(module)
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
 
@@ -90,7 +91,11 @@ export const getChangeLocations = (
     }]
   }
 
-  return findLocations().map(location => ({ ...change, location }))
+  const r = findLocations().map(location => ({ ...change, location }))
+  if (!_.some(r)) {
+    log.debug('Found no locations for %o', change)
+  }
+  return r
 }
 
 const fixEdgeIndentation = (

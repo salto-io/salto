@@ -568,10 +568,10 @@ const getInstanceServiceId = async (
 }
 
 export const generateServiceIdToStateElemId = async (
-  stateElements: AsyncIterable<Element>,
+  elements: AsyncIterable<Element>,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Record<string, ElemID>> =>
-  Object.fromEntries(await awu(stateElements)
+  Object.fromEntries(await awu(elements)
     .filter(elem => isInstanceElement(elem) || isObjectType(elem))
     .flatMap(async elem => {
       if (isObjectType(elem)) {
@@ -589,11 +589,11 @@ export const generateServiceIdToStateElemId = async (
 
 export const createElemIdGetter = async (
   elements: AsyncIterable<Element>,
-  state: elementSource.ElementsSource
+  src: ReadOnlyElementsSource
 ): Promise<ElemIdGetter> => {
   const serviceIdToStateElemId = await generateServiceIdToStateElemId(
     elements,
-    state
+    src
   )
 
   return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>

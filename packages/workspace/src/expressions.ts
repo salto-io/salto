@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, Field, TypeElement } from '@salto-io/adapter-api'
+import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, Field, TypeElement, isContainerType } from '@salto-io/adapter-api'
 import { resolvePath, TransformFunc, createRefToElmWithValue, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
@@ -172,6 +172,17 @@ const resolveElement = async (
     allowEmpty: true,
   }) ?? {})
 
+  if (isContainerType(element)) {
+    element.refInnerType = createRefToElmWithValue(
+      await resolveElement(
+        await element.getInnerType(contextedElementsGetter),
+        elementsSource,
+        resolvedElements,
+        resolvedSet,
+      )
+    )
+  }
+
   if (isInstanceElement(element)) {
     element.refType = createRefToElmWithValue(
       await resolveElement(
@@ -205,7 +216,6 @@ const resolveElement = async (
           element,
           field.name,
           fieldType as TypeElement,
-          // _.cloneDeepWith(field.annotations, referenceCloner),
           (await transformValues({
             transformFunc: referenceCloner,
             values: field.annotations,

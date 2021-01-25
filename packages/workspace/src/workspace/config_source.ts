@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { applyDetailedChanges, detailedCompare, setPath } from '@salto-io/adapter-utils'
-import { InstanceElement, DetailedChange, isInstanceElement, getChangeElement } from '@salto-io/adapter-api'
+import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
+import { InstanceElement, DetailedChange, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { parse, dumpElements } from '../parser'
 
@@ -76,9 +76,7 @@ export const configSource = (
 
   const applyConfigOverrides = (conf: InstanceElement): void => {
     const overridesForInstance = configOverridesById[conf.elemID.adapter] ?? []
-    overridesForInstance.forEach(change => {
-      setPath(conf, change.id, getChangeElement(change))
-    })
+    applyDetailedChanges(conf, overridesForInstance)
   }
 
   const setUnsafe = async (name: string, config: InstanceElement): Promise<void> => {
@@ -96,7 +94,7 @@ export const configSource = (
     )
 
     if (updatedOverriddenIds.length !== 0) {
-      throw new Error(`cannot update fields that were overriden by the user: ${updatedOverriddenIds.map(change => change.id)}`)
+      throw new Error(`cannot update fields that were overriden by the user: ${updatedOverriddenIds.map(change => change.id.getFullName())}`)
     }
   }
 
@@ -120,7 +118,7 @@ export const configSource = (
       const currConf = currConfWithoutOverrides.clone()
       applyConfigOverrides(currConf)
 
-      const configChanges = await detailedCompare(currConf, config.clone())
+      const configChanges = await detailedCompare(currConf, config)
 
       validateConfigChanges(configChanges)
 

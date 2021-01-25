@@ -21,7 +21,7 @@ import { Element, ElemID, getChangeElement, Value,
   DetailedChange, Change, isRemovalChange } from '@salto-io/adapter-api'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
-import { RemoteMap, RemoteMapCreator, InMemoryRemoteMap } from '../../remote_map'
+import { RemoteMap, RemoteMapCreator } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal, ElementIDToValue } from '../../element_selector'
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
@@ -30,7 +30,8 @@ import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } f
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
 import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
-import { InMemoryRemoteElementSource, ElementsSource } from '../../elements_source'
+import { RemoteElementSource, ElementsSource } from '../../elements_source'
+import { serialize, deserialize } from '../../../serializer/elements'
 
 const { awu } = collections.asynciterable
 const { series } = promises.array
@@ -82,11 +83,19 @@ type MultiEnvSource = Omit<NaclFilesSource, 'getAll' | 'getElementsSource'> & {
   getElementsSource: (env?: string) => Promise<ElementsSource>
 }
 
+export const deserializeElement = async (data: string): Promise<Element> => {
+  const elements = (await deserialize(data)) as Element[]
+  if (elements.length !== 1) {
+    throw new Error('Deserialization failed. should receive single element')
+  }
+  return elements[0]
+}
+
 const buildMultiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-  createRemoteMap: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator<Value>,
   initState?: Promise<MultiEnvState>
 ): MultiEnvSource => {
   const primarySource = (): NaclFilesSource => sources[primarySourceName]
@@ -95,9 +104,9 @@ const buildMultiEnvSource = (
     _.omit(sources, [primarySourceName, commonSourceName])
   )
 
-  const getRemoteMapNameSpace = (
+  const getRemoteMapNamespace = (
     namespace: string, env?: string
-  ): string => `multi_env:${env || primarySourceName}:${namespace}`
+  ): string => `multi_env-${env || primarySourceName}-${namespace}`
 
   const getActiveSources = (env?: string): Record<string, NaclFilesSource> => ({
     [primarySourceName]: env === undefined ? sources[primarySourceName] : sources[env],
@@ -128,10 +137,15 @@ const buildMultiEnvSource = (
     const allActiveElements = awu(_.values(getActiveSources(env)))
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
-    const elements = new InMemoryRemoteElementSource(createRemoteMap(getRemoteMapNameSpace('merged')))
+    const elements = new RemoteElementSource(await remoteMapCreator({
+      namespace: getRemoteMapNamespace('merged'),
+      serialize: (element: Element) => serialize([element]),
+      // TODO: we might need to pass static file reviver to the deserialization func
+      deserialize: deserializeElement,
+    }))
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
-      new InMemoryRemoteElementSource(merged)
+      new RemoteElementSource(merged)
     ))
     return {
       elements,
@@ -457,7 +471,7 @@ const buildMultiEnvSource = (
       _.mapValues(sources, source => source.clone()),
       primarySourceName,
       commonSourceName,
-      createRemoteMap,
+      remoteMapCreator,
       state
     ),
     load,
@@ -468,10 +482,10 @@ export const multiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-  createRemoteMap: RemoteMapCreator<Value> = _name => new InMemoryRemoteMap(),
+  remoteMapCreator: RemoteMapCreator<Value>,
 ): MultiEnvSource => buildMultiEnvSource(
   sources,
   primarySourceName,
   commonSourceName,
-  createRemoteMap
+  remoteMapCreator
 )

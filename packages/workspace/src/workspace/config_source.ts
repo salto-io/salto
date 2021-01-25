@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { setPath } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, detailedCompare, setPath } from '@salto-io/adapter-utils'
 import { InstanceElement, DetailedChange, isInstanceElement, getChangeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { parse, dumpElements } from '../parser'
@@ -25,7 +25,7 @@ import { DirectoryStore } from './dir_store'
 const log = logger(module)
 
 export interface ConfigSource {
-  get(name: string, ignoreOverrides?: boolean): Promise<InstanceElement | undefined>
+  get(name: string): Promise<InstanceElement | undefined>
   set(name: string, config: Readonly<InstanceElement>): Promise<void>
   delete(name: string): Promise<void>
   rename(name: string, newName: string): Promise<void>
@@ -39,51 +39,94 @@ class ConfigParseError extends Error {
 
 export const configSource = (
   dirStore: DirectoryStore<string>,
-  configOverrides?: DetailedChange[],
+  configOverrides: DetailedChange[] = [],
 ): ConfigSource => {
   const filename = (name: string): string =>
     (name.endsWith(FILE_EXTENSION) ? name : name.concat(FILE_EXTENSION))
 
   const configOverridesById = _.groupBy(configOverrides, change => change.id.adapter)
 
-  return {
-    get: async (name: string, ignoreOverrides = false): Promise<InstanceElement | undefined> => {
-      const naclFile = await dirStore.get(filename(name))
-      if (_.isUndefined(naclFile)) {
-        log.warn('Could not find file %s for configuration %s', filename(name), name)
-        return undefined
-      }
-      const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
-      if (!_.isEmpty(parseResult.errors)) {
-        log.error('failed to parse %s due to %o', name, parseResult.errors)
-        throw new ConfigParseError(name)
-      }
-      if (parseResult.elements.length > 1) {
-        log.warn('%s has more than a single element in the config file; returning the first element',
-          name)
-      }
-      const configInstance = parseResult.elements.find(isInstanceElement)
-      if (configInstance === undefined) {
-        log.warn(
-          'failed to find config instance for %s, found the following elements: %s',
-          name,
-          parseResult.elements.map(elem => elem.elemID.getFullName()).join(','),
-        )
-        return undefined
-      }
-      if (!ignoreOverrides) {
-        // Apply configuration overrides
-        const overridesForInstance = configOverridesById[configInstance.elemID.adapter] ?? []
-        overridesForInstance.forEach(change => {
-          setPath(configInstance, change.id, getChangeElement(change))
-        })
-      }
-      return configInstance
-    },
+  const getConfigWithoutOverrides = async (name: string):
+    Promise<InstanceElement | undefined> => {
+    const naclFile = await dirStore.get(filename(name))
+    if (_.isUndefined(naclFile)) {
+      log.warn('Could not find file %s for configuration %s', filename(name), name)
+      return undefined
+    }
+    const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
+    if (!_.isEmpty(parseResult.errors)) {
+      log.error('failed to parse %s due to %o', name, parseResult.errors)
+      throw new ConfigParseError(name)
+    }
+    if (parseResult.elements.length > 1) {
+      log.warn('%s has more than a single element in the config file; returning the first element',
+        name)
+    }
+    const configInstance = parseResult.elements.find(isInstanceElement)
+    if (configInstance === undefined) {
+      log.warn(
+        'failed to find config instance for %s, found the following elements: %s',
+        name,
+        parseResult.elements.map(elem => elem.elemID.getFullName()).join(','),
+      )
+      return undefined
+    }
+    return configInstance
+  }
 
+  const applyConfigOverrides = (conf: InstanceElement): void => {
+    const overridesForInstance = configOverridesById[conf.elemID.adapter] ?? []
+    overridesForInstance.forEach(change => {
+      setPath(conf, change.id, getChangeElement(change))
+    })
+  }
+
+  const setUnsafe = async (name: string, config: InstanceElement): Promise<void> => {
+    await dirStore.set({ filename: filename(name), buffer: await dumpElements([config]) })
+    await dirStore.flush()
+  }
+
+  const validateConfigChanges = (configChanges: DetailedChange[]): void => {
+    const updatedOverriddenIds = configOverrides.filter(
+      overiddeChange => configChanges.some(
+        updateChange => updateChange.id.isParentOf(overiddeChange.id)
+          || overiddeChange.id.isParentOf(updateChange.id)
+          || overiddeChange.id.isEqual(updateChange.id)
+      )
+    )
+
+    if (updatedOverriddenIds.length !== 0) {
+      throw new Error(`cannot update fields that were overriden by the user: ${updatedOverriddenIds.map(change => change.id)}`)
+    }
+  }
+
+  return {
+    get: async (name: string): Promise<InstanceElement | undefined> => {
+      const conf = await getConfigWithoutOverrides(name)
+      if (conf === undefined) {
+        return undefined
+      }
+      applyConfigOverrides(conf)
+      return conf
+    },
     set: async (name: string, config: InstanceElement): Promise<void> => {
-      await dirStore.set({ filename: filename(name), buffer: await dumpElements([config]) })
-      await dirStore.flush()
+      const currConfWithoutOverrides = await getConfigWithoutOverrides(name)
+      // Could happen at the initialization of a service.
+      if (currConfWithoutOverrides === undefined) {
+        await setUnsafe(name, config)
+        return
+      }
+
+      const currConf = currConfWithoutOverrides.clone()
+      applyConfigOverrides(currConf)
+
+      const configChanges = await detailedCompare(currConf, config.clone())
+
+      validateConfigChanges(configChanges)
+
+      applyDetailedChanges(currConfWithoutOverrides, configChanges)
+
+      await setUnsafe(name, currConfWithoutOverrides)
     },
 
     delete: async (name: string): Promise<void> => {

@@ -15,22 +15,41 @@
 */
 import { collections } from '@salto-io/lowerdash'
 
-const { toAsyncIterable } = collections.asynciterable
+const { toAsyncIterable, awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
+export type IterationOpts = {
+  first?: number
+  after?: string
+}
+
+export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
+export type RemoteMapType = 'workspace' | 'state'
+
+export interface CreateRemoteMapParams<T> {
+  namespace: string
+  batchInterval?: number
+  LRUSize?: number
+  serialize: (value: T) => string
+  deserialize: (s: string) => Promise<T>
+}
+
 export type RemoteMap<T, K extends string = string> = {
-  delete(key: K): Promise<boolean>
+  delete(key: K): Promise<void>
   get(key: K): Promise<T | undefined>
   has(key: K): Promise<boolean>
   set(key: K, value: T): Promise<void>
-  setAll(values: ThenableIterable<[K, T]>): Promise<void>
-  entries(): AsyncIterable<[K, T]>
-  keys(): AsyncIterable<K>
-  values(): AsyncIterable<T>
+  setAll(values: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void>
+  entries(opts?: IterationOpts): AsyncIterable<RemoteMapEntry<T, K>>
+  keys(opts?: IterationOpts): AsyncIterable<K>
+  values(opts?: IterationOpts): AsyncIterable<T>
+  flush: () => Promise<void>
+  revert: () => Promise<void>
   clear(): Promise<void>
+  close(): Promise<void>
 }
 
-export type RemoteMapCreator<T> = (namespace: string) => RemoteMap<T>
+export type RemoteMapCreator<T> = (opts: CreateRemoteMapParams<T>) => Promise<RemoteMap<T>>
 
 // This is for now. Don't commit this K?
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {
@@ -39,14 +58,14 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     this.data = new Map(data)
   }
 
-  async setAll(values: ThenableIterable<[K, T]>): Promise<void> {
-    for await (const [k, v] of values) {
-      this.data.set(k, v)
+  async setAll(entries: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void> {
+    for await (const entry of entries) {
+      this.data.set(entry.key, entry.value)
     }
   }
 
-  async delete(key: K): Promise<boolean> {
-    return this.data.delete(key)
+  async delete(key: K): Promise<void> {
+    this.data.delete(key)
   }
 
   async get(key: K): Promise<T | undefined> {
@@ -65,8 +84,8 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     this.data = new Map()
   }
 
-  entries(): AsyncIterable<[K, T]> {
-    return toAsyncIterable(this.data.entries())
+  entries(): AsyncIterable<RemoteMapEntry<T, K>> {
+    return awu(this.data.entries()).map(e => ({ key: e[0], value: e[1] }))
   }
 
   keys(): AsyncIterable<K> {
@@ -75,6 +94,21 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
 
   values(): AsyncIterable<T> {
     return toAsyncIterable(this.data.values())
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async flush(): Promise<void> {
+    return Promise.resolve(undefined)
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async revert(): Promise<void> {
+    return Promise.resolve(undefined)
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async close(): Promise<void> {
+    return Promise.resolve(undefined)
   }
 
   [Symbol.toStringTag]: '[InMemoryRemoteMap]'

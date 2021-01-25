@@ -195,7 +195,7 @@ export const fetch: FetchFunc = async (
     await workspace.servicesConfig(services),
     await workspace.elements(),
     await createElemIdGetter(
-      await (await workspace.elements()).getAll(),
+      await workspace.state().getAll(),
       workspace.state()
     )
   )

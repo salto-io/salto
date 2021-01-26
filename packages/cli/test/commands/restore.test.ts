@@ -32,7 +32,7 @@ const eventsNames = {
 }
 
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   restore: jest.fn().mockImplementation(() => Promise.resolve([])),
 }))
 

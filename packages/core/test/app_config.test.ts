@@ -20,7 +20,7 @@ import * as conf from '../src/app_config'
 
 
 jest.mock('@salto-io/file', () => ({
-  ...jest.requireActual('@salto-io/file'),
+  ...jest.requireActual<{}>('@salto-io/file'),
   mkdirp: jest.fn(),
   replaceContents: jest.fn(),
   exists: jest.fn(),

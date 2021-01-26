@@ -28,7 +28,7 @@ import {
 import { Types } from '../../src/transformers/transformer'
 
 jest.mock('../../src/constants', () => ({
-  ...jest.requireActual('../../src/constants'),
+  ...jest.requireActual<{}>('../../src/constants'),
   MAX_IDS_PER_INSTANCES_QUERY: 2,
 }))
 

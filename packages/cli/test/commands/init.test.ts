@@ -22,7 +22,7 @@ import { getEnvName } from '../../src/callbacks'
 import { CommandArgs } from '../../src/command_builder'
 
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   initLocalWorkspace: jest.fn().mockImplementation(
     (_baseDir: string, workspaceName: string): Workspace => {
       if (workspaceName === 'error') throw new Error('failed')

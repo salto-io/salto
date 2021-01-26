@@ -22,7 +22,7 @@ import * as mocks from '../mocks'
 const commandName = 'diff'
 
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   diff: jest.fn().mockImplementation(() => Promise.resolve([])),
 }))
 describe('diff command', () => {

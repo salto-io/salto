@@ -28,7 +28,7 @@ import * as mockDirStore from '../../../src/local-workspace/dir_store'
 const { ENVS_PREFIX } = ws.nacl
 
 jest.mock('@salto-io/file', () => ({
-  ...jest.requireActual('@salto-io/file'),
+  ...jest.requireActual<{}>('@salto-io/file'),
   exists: jest.fn(),
   rm: jest.fn(),
   isEmptyDir: {
@@ -36,7 +36,7 @@ jest.mock('@salto-io/file', () => ({
   },
 }))
 jest.mock('@salto-io/workspace', () => ({
-  ...jest.requireActual('@salto-io/workspace'),
+  ...jest.requireActual<{}>('@salto-io/workspace'),
   initWorkspace: jest.fn(),
   loadWorkspace: jest.fn(),
 }))

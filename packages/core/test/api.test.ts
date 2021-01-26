@@ -52,7 +52,7 @@ const mockServiceWithInstall = 'adapterWithInstallMethod'
 const SERVICES = [mockService, emptyMockService]
 
 jest.mock('../src/core/fetch', () => ({
-  ...jest.requireActual('../src/core/fetch'),
+  ...jest.requireActual<{}>('../src/core/fetch'),
   fetchChanges: jest.fn(),
 }))
 jest.mock('../src/core/restore', () => ({

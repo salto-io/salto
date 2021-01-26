@@ -29,7 +29,7 @@ import { mockFunction } from '../common/helpers'
 
 jest.mock('pietile-eventemitter')
 jest.mock('@salto-io/adapter-utils', () => ({
-  ...jest.requireActual('@salto-io/adapter-utils'),
+  ...jest.requireActual<{}>('@salto-io/adapter-utils'),
   applyInstancesDefaults: jest.fn(),
 }))
 

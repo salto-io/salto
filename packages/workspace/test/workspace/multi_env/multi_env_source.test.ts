@@ -27,7 +27,7 @@ import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
 
 jest.mock('@salto-io/adapter-utils', () => ({
-  ...jest.requireActual('@salto-io/adapter-utils'),
+  ...jest.requireActual<{}>('@salto-io/adapter-utils'),
   applyInstancesDefaults: jest.fn(),
 }))
 

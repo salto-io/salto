@@ -19,7 +19,7 @@ import * as adapters from '../../src/core/adapters'
 import { mockWorkspace } from '../common/workspace'
 
 jest.mock('../../src/core/adapters', () => ({
-  ...jest.requireActual('../../src/core/adapters'),
+  ...jest.requireActual<{}>('../../src/core/adapters'),
   getDefaultAdapterConfig: jest.fn(service => ({ service, aaa: 'aaa' })),
 }))
 

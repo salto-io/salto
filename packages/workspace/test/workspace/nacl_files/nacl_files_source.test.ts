@@ -24,7 +24,7 @@ import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
 
 jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
-  ...jest.requireActual('../../../src/workspace/nacl_files/nacl_file_update'),
+  ...jest.requireActual<{}>('../../../src/workspace/nacl_files/nacl_file_update'),
   getChangeLocations: (change: DetailedChange) => ({
     ...change,
     location: {
@@ -36,7 +36,7 @@ jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
 }))
 
 jest.mock('../../../src/parser', () => ({
-  ...jest.requireActual('../../../src/parser'),
+  ...jest.requireActual<{}>('../../../src/parser'),
   parse: jest.fn().mockResolvedValue({ elements: [], errors: [] }),
 }))
 

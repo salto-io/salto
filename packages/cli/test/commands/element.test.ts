@@ -38,7 +38,7 @@ const mockedList: typeof core.listUnresolvedReferences = (_workspace, completeFr
 )
 jest.mock('open')
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   listUnresolvedReferences: jest.fn().mockImplementation((_ws, env) => mockedList(_ws, env)),
 }))
 describe('Element command group', () => {

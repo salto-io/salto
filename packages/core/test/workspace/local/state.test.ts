@@ -38,7 +38,7 @@ jest.mock('glob', () => (query: string, f: (_err: Error | null, files: string[])
   }
 })
 jest.mock('@salto-io/file', () => ({
-  ...jest.requireActual('@salto-io/file'),
+  ...jest.requireActual<{}>('@salto-io/file'),
   replaceContents: jest.fn().mockImplementation(() => Promise.resolve()),
   readTextFile: jest.fn().mockImplementation((filename: string) => {
     if (filename === 'error') {

@@ -22,7 +22,7 @@ import { action } from '../../src/commands/clean'
 const commandName = 'clean'
 
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   getDefaultAdapterConfig: jest.fn().mockImplementation(service => ({ a: 'a', serviceName: service })),
   cleanWorkspace: jest.fn(),
 }))

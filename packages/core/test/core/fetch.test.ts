@@ -236,7 +236,7 @@ describe('fetch', () => {
         }
       })
 
-      describe('multiple adapters', async () => {
+      describe('multiple adapters', () => {
         const adapters = {
           dummy1: {
             fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: true }),

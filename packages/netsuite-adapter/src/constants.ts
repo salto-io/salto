@@ -44,6 +44,7 @@ export const FOLDER = 'folder'
 // Fields
 export const SCRIPT_ID = 'scriptid'
 export const PATH = 'path'
+export const RECORD_TYPE = 'recordType'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'

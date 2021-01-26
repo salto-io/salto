@@ -32,6 +32,7 @@ import {
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
+import consistentValues from './filters/consistent_values'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
@@ -76,6 +77,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     elementsSource,
     filtersCreators = [
       convertLists,
+      consistentValues,
       replaceInstanceReferencesFilter,
     ],
     typesToSkip = [

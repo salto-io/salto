@@ -22,7 +22,7 @@ import { SALESFORCE } from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
-export const DATA_MANAGEMENT = 'data'
+export const DATA_MANAGEMENT = 'dataManagement'
 export const CLIENT_CONFIG = 'client'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -35,6 +35,7 @@ export const METADATA_EXCLUDE_LIST = 'exclude'
 export const METADATA_TYPE = 'metadataType'
 export const METADATA_NAME = 'name'
 export const METADATA_NAMESPACE = 'namespace'
+export const DATA_CONFIGURATION = 'data'
 
 
 export type FilterContext = {
@@ -323,59 +324,8 @@ const metadataQueryType = new ObjectType({
 const metadataConfigType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'metadataConfig'),
   fields: {
-    [METADATA_INCLUDE_LIST]: {
-      type: new ListType(metadataQueryType),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          {
-            metadataType: '.*',
-            namespace: '',
-            name: '.*',
-          },
-        ],
-      },
-    },
-    [METADATA_EXCLUDE_LIST]: {
-      type: new ListType(metadataQueryType),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          {
-            metadataType: 'Report',
-          },
-          {
-            metadataType: 'ReportType',
-          },
-          {
-            metadataType: 'ReportFolder',
-          },
-          {
-            metadataType: 'Dashboard',
-          },
-          {
-            metadataType: 'DashboardFolder',
-          },
-          {
-            metadataType: 'Profile',
-          },
-          {
-            metadataType: 'PermissionSet',
-          },
-          {
-            metadataType: 'SiteDotCom',
-          },
-          {
-            metadataType: 'EmailTemplate',
-            name: 'Marketo.*',
-            namespace: '',
-          },
-          {
-            metadataType: 'StandardValueSet',
-            name: '^(AddressCountryCode)|(AddressStateCode)$',
-            namespace: '',
-          },
-        ],
-      },
-    },
+    [METADATA_INCLUDE_LIST]: { type: new ListType(metadataQueryType) },
+    [METADATA_EXCLUDE_LIST]: { type: new ListType(metadataQueryType) },
   },
 })
 
@@ -383,14 +333,65 @@ const fetchConfigType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'metadataQuery'),
   fields: {
     [METADATA_CONFIG]: { type: metadataConfigType },
-    [DATA_MANAGEMENT]: { type: dataManagementType },
+    [DATA_CONFIGURATION]: { type: dataManagementType },
   },
 })
 
 export const configType = new ObjectType({
   elemID: configID,
   fields: {
-    [FETCH_CONFIG]: { type: fetchConfigType },
+    [FETCH_CONFIG]: {
+      type: fetchConfigType,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: {
+          [METADATA_CONFIG]: {
+            [METADATA_INCLUDE_LIST]: [
+              {
+                metadataType: '.*',
+                namespace: '',
+                name: '.*',
+              },
+            ],
+            [METADATA_EXCLUDE_LIST]: [
+              {
+                metadataType: 'Report',
+              },
+              {
+                metadataType: 'ReportType',
+              },
+              {
+                metadataType: 'ReportFolder',
+              },
+              {
+                metadataType: 'Dashboard',
+              },
+              {
+                metadataType: 'DashboardFolder',
+              },
+              {
+                metadataType: 'Profile',
+              },
+              {
+                metadataType: 'PermissionSet',
+              },
+              {
+                metadataType: 'SiteDotCom',
+              },
+              {
+                metadataType: 'EmailTemplate',
+                name: 'Marketo.*',
+                namespace: '',
+              },
+              {
+                metadataType: 'StandardValueSet',
+                name: '^(AddressCountryCode)|(AddressStateCode)$',
+                namespace: '',
+              },
+            ],
+          },
+        },
+      },
+    },
     [MAX_ITEMS_IN_RETRIEVE_REQUEST]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
@@ -403,6 +404,13 @@ export const configType = new ObjectType({
     },
     [CLIENT_CONFIG]: {
       type: clientConfigType,
+    },
+    [DATA_MANAGEMENT]: { type: dataManagementType },
+    [INSTANCES_REGEX_SKIPPED_LIST]: {
+      type: new ListType(BuiltinTypes.STRING),
+    },
+    [METADATA_TYPES_SKIPPED_LIST]: {
+      type: new ListType(BuiltinTypes.STRING),
     },
   },
 })

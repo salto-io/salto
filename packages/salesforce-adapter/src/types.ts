@@ -18,15 +18,24 @@ import {
   FieldDefinition,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
+import { SALESFORCE } from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
-export const DATA_MANAGEMENT = 'dataManagement'
+export const DATA_MANAGEMENT = 'data'
 export const CLIENT_CONFIG = 'client'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const SYSTEM_FIELDS = 'systemFields'
 export const USE_OLD_PROFILES = 'useOldProfiles'
+export const FETCH_CONFIG = 'fetch'
+export const METADATA_CONFIG = 'metadata'
+export const METADATA_INCLUDE_LIST = 'include'
+export const METADATA_EXCLUDE_LIST = 'exclude'
+export const METADATA_TYPE = 'metadataType'
+export const METADATA_NAME = 'name'
+export const METADATA_NAMESPACE = 'namespace'
+
 
 export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
@@ -302,46 +311,86 @@ const clientConfigType = new ObjectType({
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
 })
 
-// Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
-const INSTANCE_SUFFIXES = [
-  'c', 'r', 'ka', 'kav', 'Feed', 'ViewStat', 'VoteStat', 'DataCategorySelection', 'x', 'xo', 'mdt', 'Share', 'Tag',
-  'History', 'pc', 'pr', 'hd', 'hqr', 'hst', 'b', 'latitude__s', 'longitude__s', 'e', 'p', 'ChangeEvent', 'chn',
-]
+const metadataQueryType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'metadataQuery'),
+  fields: {
+    [METADATA_TYPE]: { type: BuiltinTypes.STRING },
+    [METADATA_NAMESPACE]: { type: BuiltinTypes.STRING },
+    [METADATA_NAME]: { type: BuiltinTypes.STRING },
+  },
+})
 
-export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})([^a-zA-Z\\d_]+|$)).+$`
+const metadataConfigType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'metadataConfig'),
+  fields: {
+    [METADATA_INCLUDE_LIST]: {
+      type: new ListType(metadataQueryType),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          {
+            metadataType: '.*',
+            namespace: '',
+            name: '.*',
+          },
+        ],
+      },
+    },
+    [METADATA_EXCLUDE_LIST]: {
+      type: new ListType(metadataQueryType),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          {
+            metadataType: 'Report',
+          },
+          {
+            metadataType: 'ReportType',
+          },
+          {
+            metadataType: 'ReportFolder',
+          },
+          {
+            metadataType: 'Dashboard',
+          },
+          {
+            metadataType: 'DashboardFolder',
+          },
+          {
+            metadataType: 'Profile',
+          },
+          {
+            metadataType: 'PermissionSet',
+          },
+          {
+            metadataType: 'SiteDotCom',
+          },
+          {
+            metadataType: 'EmailTemplate',
+            name: 'Marketo.*',
+            namespace: '',
+          },
+          {
+            metadataType: 'StandardValueSet',
+            name: '^(AddressCountryCode)|(AddressStateCode)$',
+            namespace: '',
+          },
+        ],
+      },
+    },
+  },
+})
+
+const fetchConfigType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'metadataQuery'),
+  fields: {
+    [METADATA_CONFIG]: { type: metadataConfigType },
+    [DATA_MANAGEMENT]: { type: dataManagementType },
+  },
+})
 
 export const configType = new ObjectType({
   elemID: configID,
   fields: {
-    [METADATA_TYPES_SKIPPED_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          'Report',
-          'ReportType',
-          'ReportFolder',
-          'Dashboard',
-          'DashboardFolder',
-          'Profile',
-          'PermissionSet',
-          'SiteDotCom', // Fetched as a binary blob and seems to change on each fetch
-          constants.CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
-        ],
-      },
-    },
-    [INSTANCES_REGEX_SKIPPED_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          '^EmailTemplate.Marketo',
-
-          // We currently can't deploy them or edit them after they are created:
-          '^StandardValueSet.AddressCountryCode',
-          '^StandardValueSet.AddressStateCode',
-          PACKAGES_INSTANCES_REGEX,
-        ],
-      },
-    },
+    [FETCH_CONFIG]: { type: fetchConfigType },
     [MAX_ITEMS_IN_RETRIEVE_REQUEST]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
@@ -351,9 +400,6 @@ export const configType = new ObjectType({
     },
     [USE_OLD_PROFILES]: {
       type: BuiltinTypes.BOOLEAN,
-    },
-    [DATA_MANAGEMENT]: {
-      type: dataManagementType,
     },
     [CLIENT_CONFIG]: {
       type: clientConfigType,

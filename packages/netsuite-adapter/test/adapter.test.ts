@@ -240,22 +240,8 @@ describe('Adapter', () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
       const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], [], config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], config)
       expect(fetchResult.updatedConfig).toBeUndefined()
-    })
-
-    it('should call getConfigFromConfigChanges with failed types', async () => {
-      client.getCustomObjects = jest.fn().mockResolvedValue({
-        elements: [],
-        failedTypes: ['TypeA', 'TypeB'],
-        failedToFetchAllAtOnce: false,
-      })
-      const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
-      const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
-      getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
-      const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['TypeA', 'TypeB'], [], config)
-      expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
 
     it('should call getConfigFromConfigChanges with failed file paths', async () => {
@@ -268,21 +254,20 @@ describe('Adapter', () => {
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
       const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], ['/path/to/file'], config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['/path/to/file'], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
 
     it('should call getConfigFromConfigChanges with false for fetchAllAtOnce', async () => {
       client.getCustomObjects = jest.fn().mockResolvedValue({
         elements: [],
-        failedTypes: [],
         failedToFetchAllAtOnce: true,
       })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
       const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], [], config)
+      expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
   })

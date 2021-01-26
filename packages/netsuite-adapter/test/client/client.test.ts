@@ -244,7 +244,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
     })
 
-    it('should return all types as failedTypes and failedToFetchAllAtOnce when IMPORT_OBJECTS has failed with fetchAllAtOnce', async () => {
+    it('should return true failedToFetchAllAtOnce when IMPORT_OBJECTS has failed with fetchAllAtOnce', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
           return Promise.resolve({
@@ -252,17 +252,14 @@ describe('netsuite client', () => {
             data: instancesIds,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS
-          && ['addressForm', 'ALL'].includes(context.arguments.type)) {
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'ALL') {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: true })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
-      expect(mockExecuteAction).toHaveBeenCalledTimes(
-        7
-      )
+      expect(mockExecuteAction).toHaveBeenCalledTimes(7)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
@@ -270,11 +267,10 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
-      expect(getCustomObjectsResult.failedTypes).toEqual(['addressForm'])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
     })
 
-    it('should return all types as failedTypes and failedToFetchAllAtOnce when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
+    it('should fail when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
           return Promise.resolve({
@@ -288,21 +284,97 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
-      // createProject & setupAccount & listObjects & importObjects & deleteAuthId
+      await expect(client.getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+    })
+
+    it('should split to smaller chunks and retry when IMPORT_OBJECTS has failed for a certain chunk', async () => {
+      const ids = [
+        { type: 'addressForm', scriptId: 'a' },
+        { type: 'addressForm', scriptId: 'b' },
+      ]
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: ids,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS
+          && context.arguments.scriptid.length > 1) {
+          return Promise.resolve({ isSuccess: () => false })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      const client = mockClient({ fetchAllTypesAtOnce: false })
+      await client.getCustomObjects(typeNames, typeNamesQuery)
+      // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
+      const numberOfExecuteActions = 7
+      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+        scriptid: 'a b',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+        scriptid: 'a',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+        scriptid: 'b',
+      }))
+
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
+    })
+
+    it('should retry chunks with size 1 when IMPORT_OBJECTS has failed', async () => {
+      const ids = [
+        { type: 'addressForm', scriptId: 'a' },
+      ]
+      let isFirstImportTry = true
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: ids,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS && isFirstImportTry) {
+          isFirstImportTry = false
+          return Promise.resolve({ isSuccess: () => false })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      const client = mockClient({ fetchAllTypesAtOnce: false })
+      await client.getCustomObjects(typeNames, typeNamesQuery)
+      // createProject & setupAccount & listObjects & 2*importObjects & deleteAuthId
       const numberOfExecuteActions = 6
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-      // eslint-disable-next-line no-plusplus
-      for (let i = 4; i < numberOfExecuteActions; i++) {
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(i, importObjectsCommandMatcher)
-      }
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+        scriptid: 'a',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+        scriptid: 'a',
+      }))
+
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
-      expect(getCustomObjectsResult.failedTypes).toEqual(['addressForm'])
-      expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
     })
 
     it('should split to chunks without mixing different types in the same chunk', async () => {
@@ -324,7 +396,7 @@ describe('netsuite client', () => {
 
       const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
       await client.getCustomObjects(typeNames, typeNamesQuery)
-      // createProject & setupAccount & listObjects & importObjects & deleteAuthId
+      // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 7
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -352,58 +424,6 @@ describe('netsuite client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
-    it('should skip chunks if the type has failed', async () => {
-      const ids = [
-        { type: 'addressForm', scriptId: 'a' },
-        { type: 'addressForm', scriptId: 'b' },
-        { type: 'addressForm', scriptId: 'c' },
-        { type: 'advancedpdftemplate', scriptId: 'd' },
-      ]
-      mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.LIST_OBJECTS) {
-          return Promise.resolve({
-            isSuccess: () => true,
-            data: ids,
-          })
-        }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.scriptid === 'a b') {
-          return Promise.resolve({ isSuccess: () => false })
-        }
-        return Promise.resolve({ isSuccess: () => true })
-      })
-
-      const client = mockClient({
-        fetchAllTypesAtOnce: false,
-        maxItemsInImportObjectsRequest: 2,
-        // If the ConcurrencyLimit won't be 1, the client will execute all the chunks in parallel
-        // so the failure of the first chunk won't results skipping the second.
-        sdfConcurrencyLimit: 1,
-      })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
-      // createProject & setupAccount & importObjects & deleteAuthId
-      const numberOfExecuteActions = 6
-      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'a b',
-      }))
-
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
-        type: 'advancedpdftemplate',
-        scriptid: 'd',
-      }))
-
-      expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
-    })
-
-
     it('should fail to import type when it exceeds the configured timeout', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       mockExecuteAction.mockImplementation(async context => {
@@ -420,9 +440,7 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false, fetchTypeTimeoutInMinutes: 0.001 })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
-      expect(getCustomObjectsResult.failedTypes).toEqual(['addressForm'])
-      expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
+      await expect(client.getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
     })
 
     it('should fail to import all types at once due to timeout and succeed type by type', async () => {
@@ -448,7 +466,6 @@ describe('netsuite client', () => {
         },
       })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, query)
-      expect(getCustomObjectsResult.failedTypes).toEqual([])
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
     })
 
@@ -466,10 +483,8 @@ describe('netsuite client', () => {
       const {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
-        failedTypes,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toHaveLength(0)
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(rmMock).toHaveBeenCalledTimes(1)

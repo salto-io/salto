@@ -472,19 +472,8 @@ Moving the specified elements to envs.
   describe('move-to-common command', () => {
     const moveToCommonName = 'move-to-common'
     describe('when workspace throws an error on move-to-common', () => {
-<<<<<<< HEAD
       let result: CliExitCode
       let output: mocks.MockCliOutput
-=======
-      const workspacePath = 'unexpected-error'
-      const workspace = {
-        ...mocks.mockLoadWorkspace(workspacePath),
-        flush: async () => {
-          throw new Error('Oy Vey Zmir')
-        },
-        getElementIdsBySelectors: async () => [],
-      }
->>>>>>> f3391ee2... Implement async element selection in diff command (#1774)
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output

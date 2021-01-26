@@ -474,14 +474,6 @@ Moving the specified elements to envs.
     describe('when workspace throws an error on move-to-common', () => {
       let result: CliExitCode
       let output: mocks.MockCliOutput
-      const workspacePath = 'unexpected-error'
-      const workspace = {
-        ...mocks.mockLoadWorkspace(workspacePath),
-        flush: async () => {
-          throw new Error('Oy Vey Zmir')
-        },
-        getElementIdsBySelectors: async () => [],
-      }
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output

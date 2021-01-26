@@ -670,6 +670,12 @@ describe('salesforce client', () => {
           await retrieveReqs[3]
           expect(mockRetrieve).toHaveBeenCalledTimes(4)
         })
+
+        afterAll(async () => {
+          [...reads, ...retrieves].forEach(delayedPromise => delayedPromise.resolve())
+          await Promise.all(readReqs)
+          await Promise.all(retrieveReqs)
+        })
       })
 
       describe('with no config', () => {
@@ -703,6 +709,11 @@ describe('salesforce client', () => {
 
         it('should call at most 4 retrieves', () => {
           expect(mockRetrieve.mock.calls.length).toBeLessThanOrEqual(4)
+        })
+
+        afterAll(async () => {
+          retrieves.forEach(delayedPromise => delayedPromise.resolve())
+          await Promise.all(retrieveReqs)
         })
       })
     })

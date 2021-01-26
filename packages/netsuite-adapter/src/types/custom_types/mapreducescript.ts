@@ -860,7 +860,7 @@ mapreducescriptInnerTypes.push(mapreducescript_scriptdeployments_scriptdeploymen
 
 const mapreducescript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'mapreducescript_scriptdeployments')
 
-const mapreducescript_scriptdeployments = new ObjectType({
+export const mapreducescript_scriptdeployments = new ObjectType({
   elemID: mapreducescript_scriptdeploymentsElemID,
   annotations: {
   },

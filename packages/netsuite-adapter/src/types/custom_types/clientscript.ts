@@ -519,7 +519,7 @@ clientscriptInnerTypes.push(clientscript_scriptdeployments_scriptdeployment)
 
 const clientscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'clientscript_scriptdeployments')
 
-const clientscript_scriptdeployments = new ObjectType({
+export const clientscript_scriptdeployments = new ObjectType({
   elemID: clientscript_scriptdeploymentsElemID,
   annotations: {
   },

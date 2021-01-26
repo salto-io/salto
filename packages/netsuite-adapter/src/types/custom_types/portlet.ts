@@ -504,7 +504,7 @@ portletInnerTypes.push(portlet_scriptdeployments_scriptdeployment)
 
 const portlet_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'portlet_scriptdeployments')
 
-const portlet_scriptdeployments = new ObjectType({
+export const portlet_scriptdeployments = new ObjectType({
   elemID: portlet_scriptdeploymentsElemID,
   annotations: {
   },

@@ -499,7 +499,7 @@ workflowactionscriptInnerTypes.push(workflowactionscript_scriptdeployments_scrip
 
 const workflowactionscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'workflowactionscript_scriptdeployments')
 
-const workflowactionscript_scriptdeployments = new ObjectType({
+export const workflowactionscript_scriptdeployments = new ObjectType({
   elemID: workflowactionscript_scriptdeploymentsElemID,
   annotations: {
   },

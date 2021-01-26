@@ -507,6 +507,18 @@ inner_types_to_export = {
     'savedcsvimport_filemappings',
     'customsegment_segmentapplication_transactionline_applications',
     'customsegment_segmentapplication_transactionbody_applications',
+    'bundleinstallationscript_scriptdeployments',
+    'clientscript_scriptdeployments',
+    'customrecordactionscript_scriptdeployments',
+    'mapreducescript_scriptdeployments',
+    'massupdatescript_scriptdeployments',
+    'portlet_scriptdeployments',
+    'restlet_scriptdeployments',
+    'scheduledscript_scriptdeployments',
+    'sdfinstallationscript_scriptdeployments',
+    'suitelet_scriptdeployments',
+    'usereventscript_scriptdeployments',
+    'workflowactionscript_scriptdeployments',
 }
 
 should_not_be_required = {

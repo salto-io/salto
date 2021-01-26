@@ -26,6 +26,19 @@ import {
   customsegment_segmentapplication_transactionbody_applications,
   customsegment_segmentapplication_transactionline_applications,
 } from '../types/custom_types/customsegment'
+import { SCRIPT_ID } from '../constants'
+import { bundleinstallationscript_scriptdeployments } from '../types/custom_types/bundleinstallationscript'
+import { clientscript_scriptdeployments } from '../types/custom_types/clientscript'
+import { customrecordactionscript_scriptdeployments } from '../types/custom_types/customrecordactionscript'
+import { mapreducescript_scriptdeployments } from '../types/custom_types/mapreducescript'
+import { portlet_scriptdeployments } from '../types/custom_types/portlet'
+import { massupdatescript_scriptdeployments } from '../types/custom_types/massupdatescript'
+import { restlet_scriptdeployments } from '../types/custom_types/restlet'
+import { scheduledscript_scriptdeployments } from '../types/custom_types/scheduledscript'
+import { sdfinstallationscript_scriptdeployments } from '../types/custom_types/sdfinstallationscript'
+import { suitelet_scriptdeployments } from '../types/custom_types/suitelet'
+import { usereventscript_scriptdeployments } from '../types/custom_types/usereventscript'
+import { workflowactionscript_scriptdeployments } from '../types/custom_types/workflowactionscript'
 
 type FieldFullNameToOrderBy = Map<string, string | undefined>
 
@@ -34,6 +47,20 @@ const unorderedListFields: FieldFullNameToOrderBy = new Map([
   [savedcsvimport_filemappings.fields.filemapping.elemID.getFullName(), 'file'],
   [customsegment_segmentapplication_transactionbody_applications.fields.application.elemID.getFullName(), 'id'],
   [customsegment_segmentapplication_transactionline_applications.fields.application.elemID.getFullName(), 'id'],
+  [bundleinstallationscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(),
+    SCRIPT_ID],
+  [clientscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [customrecordactionscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(),
+    SCRIPT_ID],
+  [mapreducescript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [massupdatescript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [portlet_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [restlet_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [scheduledscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [sdfinstallationscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [suitelet_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [usereventscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  [workflowactionscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
 ])
 
 const castAndOrderListsRecursively = (

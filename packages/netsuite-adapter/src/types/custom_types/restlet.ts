@@ -494,7 +494,7 @@ restletInnerTypes.push(restlet_scriptdeployments_scriptdeployment)
 
 const restlet_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'restlet_scriptdeployments')
 
-const restlet_scriptdeployments = new ObjectType({
+export const restlet_scriptdeployments = new ObjectType({
   elemID: restlet_scriptdeploymentsElemID,
   annotations: {
   },

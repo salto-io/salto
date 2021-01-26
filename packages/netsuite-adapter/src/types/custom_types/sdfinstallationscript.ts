@@ -412,7 +412,7 @@ sdfinstallationscriptInnerTypes.push(sdfinstallationscript_scriptdeployments_scr
 
 const sdfinstallationscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'sdfinstallationscript_scriptdeployments')
 
-const sdfinstallationscript_scriptdeployments = new ObjectType({
+export const sdfinstallationscript_scriptdeployments = new ObjectType({
   elemID: sdfinstallationscript_scriptdeploymentsElemID,
   annotations: {
   },

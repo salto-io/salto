@@ -499,7 +499,7 @@ customrecordactionscriptInnerTypes.push(customrecordactionscript_scriptdeploymen
 
 const customrecordactionscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'customrecordactionscript_scriptdeployments')
 
-const customrecordactionscript_scriptdeployments = new ObjectType({
+export const customrecordactionscript_scriptdeployments = new ObjectType({
   elemID: customrecordactionscript_scriptdeploymentsElemID,
   annotations: {
   },

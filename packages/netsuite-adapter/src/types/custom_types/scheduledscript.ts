@@ -872,7 +872,7 @@ scheduledscriptInnerTypes.push(scheduledscript_scriptdeployments_scriptdeploymen
 
 const scheduledscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments')
 
-const scheduledscript_scriptdeployments = new ObjectType({
+export const scheduledscript_scriptdeployments = new ObjectType({
   elemID: scheduledscript_scriptdeploymentsElemID,
   annotations: {
   },

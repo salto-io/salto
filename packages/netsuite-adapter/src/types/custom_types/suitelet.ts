@@ -561,7 +561,7 @@ suiteletInnerTypes.push(suitelet_scriptdeployments_scriptdeployment)
 
 const suitelet_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'suitelet_scriptdeployments')
 
-const suitelet_scriptdeployments = new ObjectType({
+export const suitelet_scriptdeployments = new ObjectType({
   elemID: suitelet_scriptdeploymentsElemID,
   annotations: {
   },

@@ -519,7 +519,7 @@ usereventscriptInnerTypes.push(usereventscript_scriptdeployments_scriptdeploymen
 
 const usereventscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'usereventscript_scriptdeployments')
 
-const usereventscript_scriptdeployments = new ObjectType({
+export const usereventscript_scriptdeployments = new ObjectType({
   elemID: usereventscript_scriptdeploymentsElemID,
   annotations: {
   },

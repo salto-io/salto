@@ -462,7 +462,7 @@ massupdatescriptInnerTypes.push(massupdatescript_scriptdeployments_scriptdeploym
 
 const massupdatescript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'massupdatescript_scriptdeployments')
 
-const massupdatescript_scriptdeployments = new ObjectType({
+export const massupdatescript_scriptdeployments = new ObjectType({
   elemID: massupdatescript_scriptdeploymentsElemID,
   annotations: {
   },

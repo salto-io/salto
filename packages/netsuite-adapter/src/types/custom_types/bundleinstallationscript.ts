@@ -454,7 +454,7 @@ bundleinstallationscriptInnerTypes.push(bundleinstallationscript_scriptdeploymen
 
 const bundleinstallationscript_scriptdeploymentsElemID = new ElemID(constants.NETSUITE, 'bundleinstallationscript_scriptdeployments')
 
-const bundleinstallationscript_scriptdeployments = new ObjectType({
+export const bundleinstallationscript_scriptdeployments = new ObjectType({
   elemID: bundleinstallationscript_scriptdeploymentsElemID,
   annotations: {
   },

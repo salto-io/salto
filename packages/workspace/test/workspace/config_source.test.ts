@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, ElemID, Value, InstanceElement } from '@salto-io/adapter-api'
+import { DetailedChange, ElemID, Value, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { DirectoryStore } from '../../src/workspace/dir_store'
 import { configSource, ConfigSource } from '../../src/workspace/config_source'
 import { mockDirStore } from '../common/nacl_file_store'
 
@@ -24,12 +25,13 @@ describe('configSource', () => {
     action: 'add',
     data: { after: value },
   })
+  let dirStore: DirectoryStore<string>
   beforeEach(() => {
     const overrides: DetailedChange[] = [
       createConfigOverride('valid', ['val'], 2),
       createConfigOverride('valid', ['new'], { a: true }),
     ]
-    const dirStore = mockDirStore(
+    dirStore = mockDirStore(
       undefined,
       undefined,
       {
@@ -88,6 +90,63 @@ describe('configSource', () => {
     })
     it('should fail if the config file has parse errors', async () => {
       await expect(source.get('error')).rejects.toThrow()
+    })
+  })
+  describe('set', () => {
+    it('update to an overridden field should throw an exception', async () => {
+      const updatedConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID('valid', ElemID.CONFIG_NAME) }),
+        {
+          val: 3,
+          other: 3,
+          new: {
+            a: true,
+          },
+        }
+      )
+      await expect(source.set('valid', updatedConfig)).rejects.toThrow()
+    })
+
+    it('should not change the value of an override field', async () => {
+      const updatedConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID('valid', ElemID.CONFIG_NAME) }),
+        {
+          val: 2,
+          other: 4,
+          new: {
+            a: true,
+          },
+        }
+      )
+      await source.set('valid', updatedConfig)
+      expect(dirStore.set).toHaveBeenCalledWith({
+        filename: expect.any(String),
+        buffer: `valid {
+  val = 1
+  other = 4
+}
+`,
+      })
+    })
+
+    it('should set first configuration in repo without changes', async () => {
+      await source.set('newAdapter', new InstanceElement(
+        'newAdapter',
+        new ObjectType({
+          elemID: new ElemID('newAdapter'),
+        }),
+        { a: 2 },
+      ))
+
+      expect(dirStore.set).toHaveBeenCalledWith({
+        filename: expect.any(String),
+        buffer: `newAdapter {
+  a = 2
+}
+`,
+      })
     })
   })
 })

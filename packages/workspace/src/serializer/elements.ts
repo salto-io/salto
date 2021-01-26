@@ -282,7 +282,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     }
     return v
   }
-  const elements = JSON.parse(data, elementReviver) as T[]
+  const elements = JSON.parse(data, elementReviver)
   return { elements, staticFiles }
 }
 

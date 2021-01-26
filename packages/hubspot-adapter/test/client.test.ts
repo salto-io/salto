@@ -133,14 +133,16 @@ describe('Test HubSpot client', () => {
 
           mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
           mockGetAllWorkflows = jest.fn().mockImplementation(getAllWorkflowsResultMock)
+          const mockGetWorkflow = jest.fn()
+          workflowsMockArray.forEach(wf => mockGetWorkflow.mockResolvedValueOnce(wf))
           mockGetAllMarketingEmail = jest.fn().mockImplementation(getAllMarketingEmailResultMock)
           mockGetAllContactProperty = jest.fn().mockImplementation(getAllContactPropertyMock)
 
           connection.forms.getAll = mockGetAllForms
-          connection.workflows.getAll = jest.fn().mockImplementation(mockGetAllWorkflows)
-          connection.marketingEmail.getAll = jest.fn().mockImplementation(mockGetAllMarketingEmail)
-          connection.contacts.properties.getAll = jest.fn()
-            .mockImplementation(mockGetAllContactProperty)
+          connection.workflows.getAll = mockGetAllWorkflows
+          connection.workflows.get = mockGetWorkflow
+          connection.marketingEmail.getAll = mockGetAllMarketingEmail
+          connection.contacts.properties.getAll = mockGetAllContactProperty
         })
 
         it('should success', async () => {

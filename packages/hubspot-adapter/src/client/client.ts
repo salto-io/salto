@@ -157,7 +157,7 @@ export default class HubspotClient {
       const workflowsResp = basicWorkflows.map(async (basicWorkflow: Workflows):
         Promise<Workflows> => {
         const workflowResp = workflowsAPI.get(basicWorkflow.id)
-        validateResponse(workflowResp)
+        await validateResponse(workflowResp)
         return workflowResp
       })
       return await Promise.all(workflowsResp) as Workflows[]

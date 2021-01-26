@@ -479,9 +479,9 @@ export default class NetsuiteClient {
           .toArray()
     ).flatten(true).toArray()
 
-    log.debug('Fetching custom objects one by one')
+    log.debug('Fetching custom objects by types in chunks')
     await withLimitedConcurrency( // limit the number of open promises
-      idsChunks.map(idsChunk => async () => importObjectsChunk(idsChunk)),
+      idsChunks.map(idsChunk => () => importObjectsChunk(idsChunk)),
       this.sdfConcurrencyLimit
     )
   }

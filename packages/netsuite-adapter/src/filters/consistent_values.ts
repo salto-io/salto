@@ -52,7 +52,9 @@ const setConsistentValues = (instance: InstanceElement): void => {
 
 const filterCreator: FilterCreator = () => ({
   /**
-   * Upon fetch, mark values of list type as list and order lists that are fetched unordered
+   * Upon fetch, set fields that are randomly returned with different values but have the same
+   * meaning to have a consistent equivalent  value so there won't be irrelevant changes upon fetch
+   * even if nothing hasn't really changed in the service.
    *
    * @param elements the already fetched elements
    */

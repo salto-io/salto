@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, DATA_MANAGEMENT } from '../src/types'
+import { ConfigChangeSuggestion } from '../src/types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from '../src/config_change'
 
 describe('Config Changes', () => {
@@ -22,11 +22,13 @@ describe('Config Changes', () => {
   const refToObjectName = 'refTo'
   const currentConfig = {
     metadataTypesSkippedList: ['Type1'],
-    dataManagement: {
-      includeObjects: [includedObjectName],
-      allowReferenceTo: [refToObjectName],
-      saltoIDSettings: {
-        defaultIdFields: ['Name'],
+    fetch: {
+      data: {
+        includeObjects: [includedObjectName],
+        allowReferenceTo: [refToObjectName],
+        saltoIDSettings: {
+          defaultIdFields: ['Name'],
+        },
       },
     },
   }
@@ -40,12 +42,12 @@ describe('Config Changes', () => {
 
   describe('getConfigChangeMessage', () => {
     const configChangeWithoutReason = {
-      type: DATA_MANAGEMENT,
+      type: 'dataManagement',
       value: 'something',
     } as ConfigChangeSuggestion
 
     const configChangeWithReason = {
-      type: DATA_MANAGEMENT,
+      type: 'dataManagement',
       value: 'somethingElse',
       reason: 'because',
     } as ConfigChangeSuggestion
@@ -71,7 +73,7 @@ describe('Config Changes', () => {
       let newConfig: InstanceElement | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
-          type: DATA_MANAGEMENT,
+          type: 'dataManagement',
           value: includedObjectName,
         } as ConfigChangeSuggestion
         newConfig = getConfigFromConfigChanges([suggestToRemoveObject], cloneOfCurrentConfig)
@@ -81,11 +83,11 @@ describe('Config Changes', () => {
         expect(newConfig).toBeDefined()
         expect(newConfig?.value.metadataTypesSkippedList)
           .toEqual(currentConfig.metadataTypesSkippedList)
-        expect(newConfig?.value.dataManagement).toMatchObject(currentConfig.dataManagement)
+        expect(newConfig?.value.fetch.data).toMatchObject(currentConfig.fetch.data)
       })
 
       it('should add the object name to excludeObjects', () => {
-        expect(newConfig?.value.dataManagement.excludeObjects).toContain(includedObjectName)
+        expect(newConfig?.value.fetch.data.excludeObjects).toContain(includedObjectName)
       })
 
       it('should not change the currentConfig', () => {
@@ -97,7 +99,7 @@ describe('Config Changes', () => {
       let newConfig: InstanceElement | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
-          type: DATA_MANAGEMENT,
+          type: 'dataManagement',
           value: refToObjectName,
         } as ConfigChangeSuggestion
         newConfig = getConfigFromConfigChanges([suggestToRemoveObject], currentConfig)
@@ -107,15 +109,15 @@ describe('Config Changes', () => {
         expect(newConfig).toBeDefined()
         expect(newConfig?.value.metadataTypesSkippedList)
           .toEqual(currentConfig.metadataTypesSkippedList)
-        expect(newConfig?.value.dataManagement.saltoIDSettings)
-          .toMatchObject(currentConfig.dataManagement.saltoIDSettings)
-        expect(newConfig?.value.dataManagement.includeObjects)
-          .toEqual(currentConfig.dataManagement.includeObjects)
+        expect(newConfig?.value.fetch.data.saltoIDSettings)
+          .toMatchObject(currentConfig.fetch.data.saltoIDSettings)
+        expect(newConfig?.value.fetch.data.includeObjects)
+          .toEqual(currentConfig.fetch.data.includeObjects)
       })
 
       it('should add the object name to excludeObjects and remove it from allowReferenceTo', () => {
-        expect(newConfig?.value.dataManagement.excludeObjects).toContain(refToObjectName)
-        expect(newConfig?.value.dataManagement.allowReferenceTo).not.toContain(refToObjectName)
+        expect(newConfig?.value.fetch.data.excludeObjects).toContain(refToObjectName)
+        expect(newConfig?.value.fetch.data.allowReferenceTo).not.toContain(refToObjectName)
       })
 
       it('should not change the currentConfig', () => {

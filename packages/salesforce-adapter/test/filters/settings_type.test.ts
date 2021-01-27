@@ -27,7 +27,11 @@ describe('Test Settings Type', () => {
   const { client } = mockClient()
 
   const filter = filterCreator(
-    { client, config: { metadataTypesSkippedList: ['CaseSettings'] } }
+    {
+      client,
+      // config: { metadataTypesSkippedList: ['CaseSettings'] },
+      config: {},
+    }
   ) as FilterWith<'onFetch'>
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'settingsTest')

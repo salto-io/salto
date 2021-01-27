@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
@@ -79,7 +80,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
 
     const settingsTypeInfos = settingsList.filter(info => (
-      !(config.metadataTypesSkippedList ?? []).includes(getSettingsTypeName(info.fullName))
+      !(config.fetch?.metadata?.exclude?.map(x => x?.metadataType).filter(values.isDefined) ?? [])
+        .includes(getSettingsTypeName(info.fullName))
     ))
 
     // Create settings types
@@ -100,7 +102,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           client,
           metadataType: type,
           fileProps: [info],
-          instancesRegexSkippedList: config.instancesRegexSkippedList,
+          instancesRegexSkippedList: config.fetch?.metadata?.exclude
+            ?.map(x => x?.metadataType).filter(values.isDefined).map(x => new RegExp(x)),
         }))
     )
     const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)

@@ -175,21 +175,23 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            dataManagement: {
-              includeObjects: [
-              ],
-              excludeObjects: [
-                '^TestNamespace__Exclude.*',
-                excludeOverrideObjectName,
-              ],
-              allowReferenceTo: [
-                '^RefFromNamespace__RefTo.*',
-                refToObjectName,
-                refFromAndToObjectName,
-                emptyRefToObjectName,
-              ],
-              saltoIDSettings: {
-                defaultIdFields: [],
+            fetch: {
+              data: {
+                includeObjects: [
+                ],
+                excludeObjects: [
+                  '^TestNamespace__Exclude.*',
+                  excludeOverrideObjectName,
+                ],
+                allowReferenceTo: [
+                  '^RefFromNamespace__RefTo.*',
+                  refToObjectName,
+                  refFromAndToObjectName,
+                  emptyRefToObjectName,
+                ],
+                saltoIDSettings: {
+                  defaultIdFields: [],
+                },
               },
             },
           },
@@ -227,26 +229,28 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            dataManagement: {
-              includeObjects: [
-                createNamespaceRegexFromString(testNamespace),
-                createNamespaceRegexFromString(refFromNamespace),
-                includeObjectName,
-                excludeOverrideObjectName,
-                refFromAndToObjectName,
-              ],
-              excludeObjects: [
-                '^TestNamespace__Exclude.*',
-                excludeOverrideObjectName,
-              ],
-              allowReferenceTo: [
-                '^RefFromNamespace__RefTo.*',
-                refToObjectName,
-                refFromAndToObjectName,
-                emptyRefToObjectName,
-              ],
-              saltoIDSettings: {
-                defaultIdFields: ['Id'],
+            fetch: {
+              data: {
+                includeObjects: [
+                  createNamespaceRegexFromString(testNamespace),
+                  createNamespaceRegexFromString(refFromNamespace),
+                  includeObjectName,
+                  excludeOverrideObjectName,
+                  refFromAndToObjectName,
+                ],
+                excludeObjects: [
+                  '^TestNamespace__Exclude.*',
+                  excludeOverrideObjectName,
+                ],
+                allowReferenceTo: [
+                  '^RefFromNamespace__RefTo.*',
+                  refToObjectName,
+                  refFromAndToObjectName,
+                  emptyRefToObjectName,
+                ],
+                saltoIDSettings: {
+                  defaultIdFields: ['Id'],
+                },
               },
             },
           },
@@ -769,27 +773,29 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            dataManagement: {
-              includeObjects: [
-                createNamespaceRegexFromString(nameBasedNamespace),
-                pricebookEntryName,
-                SBQQCustomActionName,
-                productName,
-                badIdFieldsName,
-                notQueryableIdFieldsName,
-              ],
-              allowReferenceTo: [
-                refToObjectName,
-              ],
-              saltoIDSettings: {
-                defaultIdFields: ['##allMasterDetailFields##', 'Name'],
-                overrides: [
-                  { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
-                  { objectsRegex: SBQQCustomActionName, idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
-                  { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
-                  { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
-                  { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
+            fetch: {
+              data: {
+                includeObjects: [
+                  createNamespaceRegexFromString(nameBasedNamespace),
+                  pricebookEntryName,
+                  SBQQCustomActionName,
+                  productName,
+                  badIdFieldsName,
+                  notQueryableIdFieldsName,
                 ],
+                allowReferenceTo: [
+                  refToObjectName,
+                ],
+                saltoIDSettings: {
+                  defaultIdFields: ['##allMasterDetailFields##', 'Name'],
+                  overrides: [
+                    { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
+                    { objectsRegex: SBQQCustomActionName, idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
+                    { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
+                    { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
+                    { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
+                  ],
+                },
               },
             },
           },

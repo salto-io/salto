@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, DATA_MANAGEMENT, configType, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, configType, SalesforceConfig } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -45,7 +45,7 @@ export const createInvlidIdFieldConfigChange = (
   invalidFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: DATA_MANAGEMENT,
+    type: 'dataManagement',
     value: `^${typeName}$`,
     reason: `${invalidFields} defined as idFields but are not queryable or do not exist on type ${typeName}`,
   })
@@ -55,7 +55,7 @@ export const createUnresolvedRefIdFieldConfigChange = (
   unresolvedRefIdFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: DATA_MANAGEMENT,
+    type: 'dataManagement',
     value: `^${typeName}$`,
     reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
@@ -91,12 +91,14 @@ export const getConfigFromConfigChanges = (
   currentConfig: Readonly<SalesforceConfig>,
 ): InstanceElement | undefined => {
   const configChangesByType = _.groupBy(configChanges, 'type')
-  const currentMetadataTypesSkippedList = makeArray(currentConfig.metadataTypesSkippedList)
-  const currentInstancesRegexSkippedList = makeArray(currentConfig.instancesRegexSkippedList)
-  const currentDataManagement = currentConfig.dataManagement
+  const currentMetadataTypesSkippedList = makeArray(currentConfig.fetch?.metadata
+    ?.exclude?.map(x => x?.metadataType).filter(values.isDefined))
+  const currentInstancesRegexSkippedList = makeArray(currentConfig.fetch?.metadata
+    ?.exclude?.map(x => x?.name).filter(values.isDefined))
+  const currentDataManagement = currentConfig.fetch?.data
   const metadataTypesSkippedList = makeArray(configChangesByType.metadataTypesSkippedList)
     .map(e => e.value)
-    .filter(e => !currentMetadataTypesSkippedList.includes(e))
+    .filter(e => currentMetadataTypesSkippedList.includes(e))
   const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
     .map(e => e.value)
     .filter(e => !currentInstancesRegexSkippedList.includes(e))

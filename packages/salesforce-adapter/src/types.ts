@@ -22,7 +22,6 @@ import { SALESFORCE } from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
-export const DATA_MANAGEMENT = 'dataManagement'
 export const CLIENT_CONFIG = 'client'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -38,11 +37,23 @@ export const METADATA_NAMESPACE = 'namespace'
 export const DATA_CONFIGURATION = 'data'
 
 
+export type MetaDataQueryParams = {
+  metadataType?: string
+  namespace?: string
+  name?: string
+}
+
+export type FetchParameters = {
+  metadata?: {
+    include?: MetaDataQueryParams[]
+    exclude?: MetaDataQueryParams[]
+  }
+  data?: DataManagementConfig
+}
+
 export type FilterContext = {
-  [METADATA_TYPES_SKIPPED_LIST]?: string[]
-  [INSTANCES_REGEX_SKIPPED_LIST]?: RegExp[]
+  [FETCH_CONFIG]?: FetchParameters
   [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
-  [DATA_MANAGEMENT]?: DataManagementConfig
   [SYSTEM_FIELDS]?: string[]
   [USE_OLD_PROFILES]?: boolean
 }
@@ -106,16 +117,14 @@ export type SalesforceClientConfig = Partial<{
 }>
 
 export type SalesforceConfig = {
-  [METADATA_TYPES_SKIPPED_LIST]?: string[]
-  [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
+  [FETCH_CONFIG]?: FetchParameters
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [USE_OLD_PROFILES]?: boolean
-  [DATA_MANAGEMENT]?: DataManagementConfig
   [CLIENT_CONFIG]?: SalesforceClientConfig
 }
 
 export type ConfigChangeSuggestion = {
-  type: keyof SalesforceConfig & ('metadataTypesSkippedList' | 'instancesRegexSkippedList' | 'dataManagement')
+  type: 'metadataTypesSkippedList' | 'instancesRegexSkippedList' | 'dataManagement'
   value: string
   reason?: string
 }
@@ -234,7 +243,7 @@ const saltoIDSettingsType = new ObjectType({
 })
 
 const dataManagementType = new ObjectType({
-  elemID: new ElemID(constants.SALESFORCE, DATA_MANAGEMENT),
+  elemID: new ElemID(constants.SALESFORCE, DATA_CONFIGURATION),
   fields: {
     includeObjects: { type: new ListType(BuiltinTypes.STRING) },
     excludeObjects: { type: new ListType(BuiltinTypes.STRING) },
@@ -353,30 +362,14 @@ export const configType = new ObjectType({
               },
             ],
             [METADATA_EXCLUDE_LIST]: [
-              {
-                metadataType: 'Report',
-              },
-              {
-                metadataType: 'ReportType',
-              },
-              {
-                metadataType: 'ReportFolder',
-              },
-              {
-                metadataType: 'Dashboard',
-              },
-              {
-                metadataType: 'DashboardFolder',
-              },
-              {
-                metadataType: 'Profile',
-              },
-              {
-                metadataType: 'PermissionSet',
-              },
-              {
-                metadataType: 'SiteDotCom',
-              },
+              { metadataType: 'Report' },
+              { metadataType: 'ReportType' },
+              { metadataType: 'ReportFolder' },
+              { metadataType: 'Dashboard' },
+              { metadataType: 'DashboardFolder' },
+              { metadataType: 'Profile' },
+              { metadataType: 'PermissionSet' },
+              { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',
                 name: 'Marketo.*',
@@ -404,13 +397,6 @@ export const configType = new ObjectType({
     },
     [CLIENT_CONFIG]: {
       type: clientConfigType,
-    },
-    [DATA_MANAGEMENT]: { type: dataManagementType },
-    [INSTANCES_REGEX_SKIPPED_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
-    },
-    [METADATA_TYPES_SKIPPED_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
     },
   },
 })

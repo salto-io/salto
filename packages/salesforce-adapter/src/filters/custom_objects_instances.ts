@@ -401,13 +401,14 @@ export const getCustomObjectsFetchSettings = (
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
-    if (config.dataManagement === undefined) {
+    const dataManagement = config.fetch?.data
+    if (dataManagement === undefined) {
       return []
     }
     const customObjects = elements.filter(isCustomObject)
     const customObjectFetchSetting = getCustomObjectsFetchSettings(
       customObjects,
-      config.dataManagement
+      dataManagement
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,

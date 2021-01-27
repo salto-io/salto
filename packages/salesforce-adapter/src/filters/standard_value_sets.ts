@@ -18,7 +18,7 @@ import { FileProperties } from 'jsforce-types'
 import {
   Element, ObjectType, InstanceElement, Field, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
@@ -104,8 +104,8 @@ const STANDARD_VALUE_SETS: StandardValuesSets = new Set<string>([
   'WorkOrderStatus',
 ])
 
-const encodeValues = (values: string[]): string =>
-  values.sort().join(';')
+const encodeValues = (vals: string[]): string =>
+  vals.sort().join(';')
 
 const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLookup => _.fromPairs(
   svsInstances
@@ -200,7 +200,8 @@ export const makeFilter = (
         client,
         fileProps: [...standardValueSetNames].map(emptyFileProperties),
         metadataType: svsMetadataType,
-        instancesRegexSkippedList: config.instancesRegexSkippedList,
+        instancesRegexSkippedList: config.fetch?.metadata
+          ?.exclude?.map(x => x?.name).filter(values.isDefined).map(x => new RegExp(x)),
       })
       elements.push(...svsInstances.elements)
       updateSVSReferences(elements, svsInstances.elements)

@@ -29,7 +29,11 @@ describe('Test CustomFeedFilter', () => {
   const { client } = mockClient()
 
   const filter = filterCreator(
-    { client, config: { instancesRegexSkippedList: [/^CustomFeedFilter.Case.skipped$/] } }
+    {
+      client,
+      // config: { instancesRegexSkippedList: [/^CustomFeedFilter.Case.skipped$/] },
+      config: {},
+    }
   ) as FilterWith<'onFetch'>
   const mockObject = new ObjectType({
     elemID: CUSTOM_FEED_FILTER_METADATA_TYPE_ID,

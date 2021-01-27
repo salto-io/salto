@@ -21,7 +21,7 @@ import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-ut
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { decorators, collections, values } from '@salto-io/lowerdash'
+import { decorators, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
@@ -72,7 +72,6 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 
-const { makeArray } = collections.array
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -131,17 +130,8 @@ export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
 
-  // Regular expressions for instances that we want to exclude from readMetadata
-  // The regular expression would be matched against instances of the format METADATA_TYPE.INSTANCE
-  // For example: CustomObject.Lead
-  instancesRegexSkippedList?: string[]
-
   // Max items to fetch in one retrieve request
   maxItemsInRetrieveRequest?: number
-
-  // Metadata types that we do not want to fetch even though they are returned as top level
-  // types from the API
-  metadataTypesSkippedList?: string[]
 
   // Metadata types that are being fetched in the filters
   metadataTypesOfInstancesFetchedInFilters?: string[]
@@ -239,8 +229,6 @@ export const allSystemFields = [
 ]
 
 export default class SalesforceAdapter implements AdapterOperations {
-  private metadataTypesSkippedList: string[]
-  private instancesRegexSkippedList: RegExp[]
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
   private metadataAdditionalTypes: string[]
@@ -251,16 +239,16 @@ export default class SalesforceAdapter implements AdapterOperations {
   private userConfig: SalesforceConfig
 
   public constructor({
-    metadataTypesSkippedList = [
-      'CustomField', // We have special treatment for this type
-      constants.SETTINGS_METADATA_TYPE,
-      'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
-      'CustomIndex', // readMetadata and retrieve fail on this type when fetching by name
-      // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
-      'AssignmentRule', 'EscalationRule',
-    ],
+    // metadataTypesSkippedList = [
+    //   'CustomField', // We have special treatment for this type
+    //   constants.SETTINGS_METADATA_TYPE,
+    //   'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
+    //   'CustomIndex', // readMetadata and retrieve fail on this type when fetching by name
+    //   // readMetadata fails on those and pass on the parents
+    //   // (AssignmentRules and EscalationRules)
+    //   'AssignmentRule', 'EscalationRule',
+    // ],
     metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
-    instancesRegexSkippedList = [],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = metadataToRetrieveAndDeploy,
     metadataAdditionalTypes = [
@@ -342,11 +330,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     useOldProfiles = constants.DEFAULT_USE_OLD_PROFILES,
     config,
   }: SalesforceAdapterParams) {
-    this.metadataTypesSkippedList = metadataTypesSkippedList
-      .concat(makeArray(config.metadataTypesSkippedList))
-    this.instancesRegexSkippedList = instancesRegexSkippedList
-      .concat(makeArray(config.instancesRegexSkippedList))
-      .map(e => new RegExp(e))
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
     this.userConfig = config
@@ -357,10 +340,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.filtersRunner = filtersRunner(
       this.client,
       {
-        instancesRegexSkippedList: this.instancesRegexSkippedList,
-        metadataTypesSkippedList: this.metadataTypesSkippedList,
+        fetch: config.fetch,
         unsupportedSystemFields,
-        dataManagement: config.dataManagement,
         systemFields,
         useOldProfiles: config.useOldProfiles ?? useOldProfiles,
       },
@@ -427,7 +408,7 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const result = isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
-        resolvedChanges, this.client, this.userConfig.dataManagement,
+        resolvedChanges, this.client, this.userConfig.fetch?.data,
       )
       : await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)
@@ -460,7 +441,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         metaFile: false,
         suffix: '',
       })),
-    ].filter(info => !this.metadataTypesSkippedList.includes(info.xmlName))
+    ].filter(info => !this.userConfig.fetch?.metadata
+      ?.exclude?.map(x => x?.metadataType).filter(values.isDefined).includes(info.xmlName))
   }
 
   @logDuration('fetching metadata types')
@@ -516,7 +498,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       retrieveMetadataInstances({
         client: this.client,
         types: metadataTypesToRetrieve,
-        instancesRegexSkippedList: this.instancesRegexSkippedList,
+        instancesRegexSkippedList: this.userConfig.fetch?.metadata
+          ?.exclude?.map(x => x?.metadataType).filter(values.isDefined)
+          ?.map(x => new RegExp(x)) ?? [],
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
       }),
       readInstances(metadataTypesToRead),
@@ -541,7 +525,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       client: this.client,
       fileProps,
       metadataType: type,
-      instancesRegexSkippedList: this.instancesRegexSkippedList,
+      instancesRegexSkippedList: this.userConfig.fetch?.metadata
+        ?.exclude?.map(x => x?.metadataType).filter(values.isDefined)
+        ?.map(x => new RegExp(x)) ?? [],
     })
     return {
       elements: instances.elements,

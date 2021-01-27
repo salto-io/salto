@@ -87,7 +87,9 @@ describe('Custom settings filter', () => {
         {
           client,
           config: {
-            dataManagement: undefined,
+            fetch: {
+              data: undefined,
+            },
           },
         }
       ) as FilterType
@@ -129,7 +131,9 @@ describe('Custom settings filter', () => {
         {
           client,
           config: {
-            dataManagement: undefined,
+            fetch: {
+              data: undefined,
+            },
           },
         }
       ) as FilterType

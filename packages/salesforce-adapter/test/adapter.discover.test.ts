@@ -59,8 +59,8 @@ describe('SalesforceAdapter fetch', () => {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
         config: {
-          metadataTypesSkippedList: testMetadataTypesSkippedList,
-          instancesRegexSkippedList: testInstancesRegexSkippedList,
+          // metadataTypesSkippedList: testMetadataTypesSkippedList,
+          // instancesRegexSkippedList: testInstancesRegexSkippedList,
           maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
         },
       },

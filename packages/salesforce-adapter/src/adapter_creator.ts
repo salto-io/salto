@@ -26,8 +26,8 @@ import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
-  DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
-  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName } from './types'
+  DataManagementConfig, UsernamePasswordCredentials,
+  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES, DATA_CONFIGURATION } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -71,13 +71,13 @@ SalesforceConfig => {
       if (dataManagementConfig.saltoIDSettings.defaultIdFields === undefined) {
         throw Error('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
       }
-      validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
-      validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
-      validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
+      validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
+      validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
+      validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
       if (dataManagementConfig.saltoIDSettings.overrides !== undefined) {
         const overridesObjectRegexs = dataManagementConfig.saltoIDSettings.overrides
           .map(override => override.objectsRegex)
-        validateRegularExpressions(`${DATA_MANAGEMENT}.saltoIDSettings.overrides`, overridesObjectRegexs)
+        validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.saltoIDSettings.overrides`, overridesObjectRegexs)
       }
     }
   }
@@ -102,12 +102,10 @@ SalesforceConfig => {
   validateDataManagement(config?.value?.dataManagement)
   validateClientConfig(config?.value?.client)
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
-    metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
-    instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
-    maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
-    dataManagement: config?.value?.dataManagement,
-    useOldProfiles: config?.value?.useOldProfiles,
-    client: config?.value?.client,
+    [FETCH_CONFIG]: config?.value?.[FETCH_CONFIG],
+    [MAX_ITEMS_IN_RETRIEVE_REQUEST]: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
+    useOldProfiles: config?.value?.[USE_OLD_PROFILES],
+    client: config?.value?.[CLIENT_CONFIG],
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

@@ -43,10 +43,12 @@ describe('custom object instances e2e', () => {
   let credLease: CredsLease<UsernamePasswordCredentials>
 
   const filtersContext = {
-    dataManagement: {
-      includeObjects: [productTwoMetadataName],
-      saltoIDSettings: {
-        defaultIdFields: ['Id'],
+    fetch: {
+      data: {
+        includeObjects: [productTwoMetadataName],
+        saltoIDSettings: {
+          defaultIdFields: ['Id'],
+        },
       },
     },
   }

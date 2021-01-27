@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { values } from '@salto-io/lowerdash'
 import { FileProperties } from 'jsforce-types'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
@@ -45,7 +46,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       client,
       fileProps: fileProps.map(fixCustomFeedFullName),
       metadataType: customFeedFilterType,
-      instancesRegexSkippedList: config.instancesRegexSkippedList,
+      instancesRegexSkippedList: config.fetch?.metadata?.exclude?.map(x => x?.metadataType)
+        .filter(values.isDefined).map(x => new RegExp(x)),
     })
     instances.elements.forEach(e => elements.push(e))
     return [...instances.configChanges, ...configChanges]

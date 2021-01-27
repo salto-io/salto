@@ -22,6 +22,7 @@ describe('packages instances regex', () => {
     expect(packagesInstanceRegex.test('ApexClass.AVSFQB__cDBSyncUtilTest')).toBeTruthy()
     expect(packagesInstanceRegex.test('ApexClass.AVSFQB__DBSyncUtilTest__c')).toBeTruthy()
     expect(packagesInstanceRegex.test('ApexClass.AVSFQB__c__c')).toBeTruthy()
+    expect(packagesInstanceRegex.test('Layout.MyPacakge__Feed_Sales_Layout')).toBeTruthy()
   })
 
   it('should not match non-packages instances', () => {

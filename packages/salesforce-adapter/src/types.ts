@@ -308,7 +308,7 @@ const INSTANCE_SUFFIXES = [
   'History', 'pc', 'pr', 'hd', 'hqr', 'hst', 'b', 'latitude__s', 'longitude__s', 'e', 'p', 'ChangeEvent', 'chn',
 ]
 
-export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})((?![a-zA-Z\\d]+|__)|$)).+$`
+export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})([^a-zA-Z\\d_]+|$)).+$`
 
 export const configType = new ObjectType({
   elemID: configID,

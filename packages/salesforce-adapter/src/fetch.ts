@@ -19,12 +19,13 @@ import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD } from './constants'
+import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile'
+import { getNamespaceFromString } from './filters/utils'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -114,7 +115,11 @@ export const fetchMetadataInstances = async ({
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
     fileProps.map(getFullName).filter(
-      name => metadataQuery.isInstanceMatch({ namespace: 'aaaaaaa', metadataType: metadataTypeName, name })
+      name => metadataQuery.isInstanceMatch({
+        namespace: getNamespaceFromString(name) ?? DEFAULT_NAMESPACE,
+        metadataType: metadataTypeName,
+        name,
+      })
     ),
   )
 
@@ -172,7 +177,11 @@ export const retrieveMetadataInstances = async ({
   const configChanges: ConfigChangeSuggestion[] = []
 
   const notInSkipList = (file: FileProperties): boolean => (
-    metadataQuery.isInstanceMatch({ namespace: 'aaaaaa', metadataType: file.type, name: file.fullName })
+    metadataQuery.isInstanceMatch({
+      namespace: getNamespaceFromString(file.fullName) ?? DEFAULT_NAMESPACE,
+      metadataType: file.type,
+      name: file.fullName,
+    })
   )
 
   const getFolders = async (type: MetadataObjectType): Promise<(FileProperties | undefined)[]> => {

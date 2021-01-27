@@ -13,6 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { ParsedNaclFile, ParsedNaclFileDataKeys } from './parsed_nacl_file'
-export { NaclFile, FILE_EXTENSION, NaclFilesSource, naclFilesSource, getParsedNaclFiles, RoutingMode, getFunctions } from './nacl_files_source'
-export { ENVS_PREFIX } from './multi_env/multi_env_source'
+import { Value } from '@salto-io/adapter-api'
+import { RemoteMap } from '../remote_map'
+import { SourceMap } from '../../parser'
+
+import { RemoteElementSource } from '../elements_source'
+
+
+export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
+
+export type ParsedNaclFile = {
+  filename: string
+  elements: RemoteElementSource
+  data: RemoteMap<Value, ParsedNaclFileDataKeys>
+  buffer?: string
+  sourceMap?: SourceMap // TODO: Change to RemoteMap
+}

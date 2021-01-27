@@ -63,7 +63,7 @@ import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
-import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges, getConfigChangeMessage } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { addDefaults } from './filters/utils'
@@ -71,6 +71,7 @@ import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, l
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
+import { buildMetadataQuery, MetadataQuery } from './fetch_profile'
 
 const log = logger(module)
 
@@ -237,6 +238,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private filtersRunner: Required<Filter>
   private client: SalesforceClient
   private userConfig: SalesforceConfig
+  private metadataQuery: MetadataQuery
 
   public constructor({
     // metadataTypesSkippedList = [
@@ -337,6 +339,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
+
+    this.metadataQuery = buildMetadataQuery(config[FETCH_CONFIG]?.metadata ?? {})
     this.filtersRunner = filtersRunner(
       this.client,
       {
@@ -344,6 +348,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         unsupportedSystemFields,
         systemFields,
         useOldProfiles: config.useOldProfiles ?? useOldProfiles,
+        metadataQuery: this.metadataQuery,
       },
       filterCreators
     )
@@ -441,8 +446,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         metaFile: false,
         suffix: '',
       })),
-    ].filter(info => !this.userConfig.fetch?.metadata
-      ?.exclude?.map(x => x?.metadataType).filter(values.isDefined).includes(info.xmlName))
+    ].filter(info => this.metadataQuery.isTypeMatch(info.xmlName))
   }
 
   @logDuration('fetching metadata types')
@@ -498,9 +502,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       retrieveMetadataInstances({
         client: this.client,
         types: metadataTypesToRetrieve,
-        instancesRegexSkippedList: this.userConfig.fetch?.metadata
-          ?.exclude?.map(x => x?.metadataType).filter(values.isDefined)
-          ?.map(x => new RegExp(x)) ?? [],
+        metadataQuery: this.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
       }),
       readInstances(metadataTypesToRead),
@@ -525,9 +527,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       client: this.client,
       fileProps,
       metadataType: type,
-      instancesRegexSkippedList: this.userConfig.fetch?.metadata
-        ?.exclude?.map(x => x?.metadataType).filter(values.isDefined)
-        ?.map(x => new RegExp(x)) ?? [],
+      metadataQuery: this.metadataQuery,
     })
     return {
       elements: instances.elements,

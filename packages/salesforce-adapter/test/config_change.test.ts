@@ -42,12 +42,12 @@ describe('Config Changes', () => {
 
   describe('getConfigChangeMessage', () => {
     const configChangeWithoutReason = {
-      type: 'dataManagement',
+      type: 'dataObjectsExclude',
       value: 'something',
     } as ConfigChangeSuggestion
 
     const configChangeWithReason = {
-      type: 'dataManagement',
+      type: 'dataObjectsExclude',
       value: 'somethingElse',
       reason: 'because',
     } as ConfigChangeSuggestion
@@ -73,7 +73,7 @@ describe('Config Changes', () => {
       let newConfig: InstanceElement | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
-          type: 'dataManagement',
+          type: 'dataObjectsExclude',
           value: includedObjectName,
         } as ConfigChangeSuggestion
         newConfig = getConfigFromConfigChanges([suggestToRemoveObject], cloneOfCurrentConfig)
@@ -99,7 +99,7 @@ describe('Config Changes', () => {
       let newConfig: InstanceElement | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
-          type: 'dataManagement',
+          type: 'dataObjectsExclude',
           value: refToObjectName,
         } as ConfigChangeSuggestion
         newConfig = getConfigFromConfigChanges([suggestToRemoveObject], currentConfig)

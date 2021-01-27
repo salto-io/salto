@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion } from '../../src/types'
+import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -869,6 +869,7 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithOrphanValue = changeSuggestions
+          .filter(isDataManagementConfigSuggestions)
           .filter(suggestion => suggestion.value.includes(orphanObjectName))
         expect(changeSuggestionWithOrphanValue).toHaveLength(1)
         expect(changeSuggestionWithOrphanValue[0].type).toEqual('dataManagement')
@@ -887,6 +888,7 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
+          .filter(isDataManagementConfigSuggestions)
           .filter(suggestion => suggestion.value.includes(badIdFieldsName))
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
         expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
@@ -905,6 +907,7 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
+          .filter(isDataManagementConfigSuggestions)
           .filter(suggestion => suggestion.value.includes(notQueryableIdFieldsName))
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
         expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')

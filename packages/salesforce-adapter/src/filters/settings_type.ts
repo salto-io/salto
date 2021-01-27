@@ -16,13 +16,13 @@
 import _ from 'lodash'
 import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { ConfigChangeSuggestion } from '../types'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
+import { MetadataQuery } from '../fetch_profile'
 
 const log = logger(module)
 
@@ -79,10 +79,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       elements.filter(isObjectType).map(e => [apiName(e), e])
     )
 
-    const settingsTypeInfos = settingsList.filter(info => (
-      !(config.fetch?.metadata?.exclude?.map(x => x?.metadataType).filter(values.isDefined) ?? [])
-        .includes(getSettingsTypeName(info.fullName))
-    ))
+    const settingsTypeInfos = settingsList.filter(
+      info => (config.metadataQuery as MetadataQuery)
+        .isTypeMatch(getSettingsTypeName(info.fullName))
+    )
 
     // Create settings types
     const settingsTypes = (await Promise.all(
@@ -102,8 +102,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           client,
           metadataType: type,
           fileProps: [info],
-          instancesRegexSkippedList: config.fetch?.metadata?.exclude
-            ?.map(x => x?.metadataType).filter(values.isDefined).map(x => new RegExp(x)),
+          metadataQuery: config.metadataQuery as MetadataQuery,
         }))
     )
     const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)

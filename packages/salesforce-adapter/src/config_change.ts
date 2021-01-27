@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, configType, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -45,7 +45,7 @@ export const createInvlidIdFieldConfigChange = (
   invalidFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: 'dataManagement',
+    type: 'dataObjectsExclude',
     value: `^${typeName}$`,
     reason: `${invalidFields} defined as idFields but are not queryable or do not exist on type ${typeName}`,
   })
@@ -55,7 +55,7 @@ export const createUnresolvedRefIdFieldConfigChange = (
   unresolvedRefIdFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: 'dataManagement',
+    type: 'dataObjectsExclude',
     value: `^${typeName}$`,
     reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
@@ -64,13 +64,13 @@ export const createSkippedListConfigChange = (type: string, instance?: string):
   ConfigChangeSuggestion => {
   if (_.isUndefined(instance)) {
     return {
-      type: METADATA_TYPES_SKIPPED_LIST,
-      value: type,
+      type: 'metadataExclude',
+      value: { metadataType: `^${type}$` },
     }
   }
   return {
-    type: INSTANCES_REGEX_SKIPPED_LIST,
-    value: `^${type}.${instance}$`,
+    type: 'metadataExclude',
+    value: { metadataType: `^${type}$`, name: `^${instance}$` },
   }
 }
 
@@ -90,21 +90,19 @@ export const getConfigFromConfigChanges = (
   configChanges: ConfigChangeSuggestion[],
   currentConfig: Readonly<SalesforceConfig>,
 ): InstanceElement | undefined => {
-  const configChangesByType = _.groupBy(configChanges, 'type')
-  const currentMetadataTypesSkippedList = makeArray(currentConfig.fetch?.metadata
-    ?.exclude?.map(x => x?.metadataType).filter(values.isDefined))
-  const currentInstancesRegexSkippedList = makeArray(currentConfig.fetch?.metadata
-    ?.exclude?.map(x => x?.name).filter(values.isDefined))
+  const currentMetadataExclude = makeArray(currentConfig.fetch?.metadata?.exclude)
   const currentDataManagement = currentConfig.fetch?.data
-  const metadataTypesSkippedList = makeArray(configChangesByType.metadataTypesSkippedList)
+
+  const newMetadataExclude = makeArray(configChanges)
+    .filter(isMetadataConfigSuggestions)
     .map(e => e.value)
-    .filter(e => currentMetadataTypesSkippedList.includes(e))
-  const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
-    .map(e => e.value)
-    .filter(e => !currentInstancesRegexSkippedList.includes(e))
-  const dataObjectsToExclude = makeArray(configChangesByType.dataManagement)
+    .filter(e => currentMetadataExclude.includes(e))
+
+  const dataObjectsToExclude = makeArray(configChanges)
+    .filter(isDataManagementConfigSuggestions)
     .map(config => config.value)
-  if ([metadataTypesSkippedList, instancesRegexSkippedList, dataObjectsToExclude]
+
+  if ([newMetadataExclude, dataObjectsToExclude]
     .every(_.isEmpty)) {
     return undefined
   }
@@ -125,16 +123,21 @@ export const getConfigFromConfigChanges = (
     ElemID.CONFIG_NAME,
     configType,
     _.pickBy({
-      metadataTypesSkippedList: metadataTypesSkippedList
-        .concat(currentMetadataTypesSkippedList),
-      instancesRegexSkippedList: instancesRegexSkippedList
-        .concat(currentInstancesRegexSkippedList),
+      fetch: {
+        metadata: {
+          ...currentConfig.fetch?.metadata,
+          exclude: [
+            ...currentMetadataExclude,
+            ...newMetadataExclude,
+          ],
+        },
+        data: currentDataManagement === undefined ? undefined : {
+          ...currentDataManagement,
+          ...dataManagementOverrides,
+        },
+      },
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
       useOldProfiles: currentConfig.useOldProfiles,
-      dataManagement: currentDataManagement === undefined ? undefined : {
-        ...currentDataManagement,
-        ...dataManagementOverrides,
-      },
       client: currentConfig.client,
     }, isDefined)
   )

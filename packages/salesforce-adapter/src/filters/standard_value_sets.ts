@@ -18,7 +18,7 @@ import { FileProperties } from 'jsforce-types'
 import {
   Element, ObjectType, InstanceElement, Field, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
@@ -27,6 +27,7 @@ import {
 import { extractFullNamesFromValueList } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
+import { MetadataQuery } from '../fetch_profile'
 
 const { makeArray } = collections.array
 
@@ -200,8 +201,7 @@ export const makeFilter = (
         client,
         fileProps: [...standardValueSetNames].map(emptyFileProperties),
         metadataType: svsMetadataType,
-        instancesRegexSkippedList: config.fetch?.metadata
-          ?.exclude?.map(x => x?.name).filter(values.isDefined).map(x => new RegExp(x)),
+        metadataQuery: config.metadataQuery as MetadataQuery,
       })
       elements.push(...svsInstances.elements)
       updateSVSReferences(elements, svsInstances.elements)

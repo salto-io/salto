@@ -24,6 +24,7 @@ import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
+import { MetadataQuery } from './fetch_profile'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -98,12 +99,12 @@ const getFullName = (obj: FileProperties): string => {
 }
 
 export const fetchMetadataInstances = async ({
-  client, metadataType, fileProps, instancesRegexSkippedList,
+  client, metadataType, fileProps, metadataQuery,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
-  instancesRegexSkippedList: ReadonlyArray<RegExp> | undefined
+  metadataQuery: MetadataQuery
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -112,9 +113,9 @@ export const fetchMetadataInstances = async ({
 
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
-    fileProps.map(getFullName)
-      .filter(name => !((instancesRegexSkippedList ?? [])
-        .some(re => re.test(`${metadataTypeName}.${name}`)))),
+    fileProps.map(getFullName).filter(
+      name => metadataQuery.isInstanceMatch({ namespace: 'aaaaaaa', metadataType: metadataTypeName, name })
+    ),
   )
 
   const fullNameToNamespaceAndId = Object.fromEntries(
@@ -159,19 +160,19 @@ type RetrieveMetadataInstancesArgs = {
   client: SalesforceClient
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
-  instancesRegexSkippedList: ReadonlyArray<RegExp>
+  metadataQuery: MetadataQuery
 }
 
 export const retrieveMetadataInstances = async ({
   client,
   types,
   maxItemsInRetrieveRequest,
-  instancesRegexSkippedList,
+  metadataQuery,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
   const notInSkipList = (file: FileProperties): boolean => (
-    !instancesRegexSkippedList.some(re => re.test(`${file.type}.${file.fullName}`))
+    metadataQuery.isInstanceMatch({ namespace: 'aaaaaa', metadataType: file.type, name: file.fullName })
   )
 
   const getFolders = async (type: MetadataObjectType): Promise<(FileProperties | undefined)[]> => {

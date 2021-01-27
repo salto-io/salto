@@ -25,7 +25,7 @@ import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
-  isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
+  isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   DataManagementConfig, UsernamePasswordCredentials,
   Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES, DATA_CONFIGURATION } from './types'
 
@@ -97,8 +97,6 @@ SalesforceConfig => {
     }
   }
 
-  const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
-  validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
   validateDataManagement(config?.value?.dataManagement)
   validateClientConfig(config?.value?.client)
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {

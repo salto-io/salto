@@ -21,12 +21,12 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
 import { SalesforceRecord } from '../src/client/types'
-import { filtersRunner } from '../src/filter'
+import { FilterContext, filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS, allSystemFields } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
-import { ConfigChangeSuggestion, FilterContext } from '../src/types'
+import { ConfigChangeSuggestion } from '../src/types'
 import { fetchMetadataType } from '../src/fetch'
 
 const { makeArray } = collections.array

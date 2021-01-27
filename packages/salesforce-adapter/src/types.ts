@@ -20,10 +20,8 @@ import {
 import * as constants from './constants'
 import { SALESFORCE } from './constants'
 
-export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
 export const CLIENT_CONFIG = 'client'
-export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const SYSTEM_FIELDS = 'systemFields'
 export const USE_OLD_PROFILES = 'useOldProfiles'
@@ -37,25 +35,22 @@ export const METADATA_NAMESPACE = 'namespace'
 export const DATA_CONFIGURATION = 'data'
 
 
-export type MetaDataQueryParams = {
-  metadataType?: string
-  namespace?: string
-  name?: string
+export type MetadataInstance = {
+  metadataType: string
+  namespace: string
+  name: string
+}
+
+export type MetadataQueryParams = Partial<MetadataInstance>
+
+export type MetadataParams = {
+  include?: MetadataQueryParams[]
+  exclude?: MetadataQueryParams[]
 }
 
 export type FetchParameters = {
-  metadata?: {
-    include?: MetaDataQueryParams[]
-    exclude?: MetaDataQueryParams[]
-  }
+  metadata?: MetadataParams
   data?: DataManagementConfig
-}
-
-export type FilterContext = {
-  [FETCH_CONFIG]?: FetchParameters
-  [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
-  [SYSTEM_FIELDS]?: string[]
-  [USE_OLD_PROFILES]?: boolean
 }
 
 type ObjectIdSettings = {
@@ -123,11 +118,27 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
 }
 
-export type ConfigChangeSuggestion = {
-  type: 'metadataTypesSkippedList' | 'instancesRegexSkippedList' | 'dataManagement'
+export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
+
+type DataManagementConfigSuggestions = {
+  type: 'dataObjectsExclude'
   value: string
   reason?: string
 }
+
+export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
+  suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
+
+export type MetadataConfigSuggestion = {
+  type: 'metadataExclude'
+  value: MetadataQueryParams
+  reason?: string
+}
+
+export const isMetadataConfigSuggestions = (suggestion: ConfigChangeSuggestion):
+  suggestion is MetadataConfigSuggestion => suggestion.type === 'metadataExclude'
+
+
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]
   elements: T

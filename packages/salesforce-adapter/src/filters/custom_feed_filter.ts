@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { values } from '@salto-io/lowerdash'
 import { FileProperties } from 'jsforce-types'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
@@ -21,6 +20,7 @@ import { FilterCreator } from '../filter'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { SALESFORCE } from '../constants'
+import { MetadataQuery } from '../fetch_profile'
 
 export const CUSTOM_FEED_FILTER_METADATA_TYPE = 'CustomFeedFilter'
 export const CUSTOM_FEED_FILTER_METADATA_TYPE_ID = new ElemID(
@@ -46,8 +46,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       client,
       fileProps: fileProps.map(fixCustomFeedFullName),
       metadataType: customFeedFilterType,
-      instancesRegexSkippedList: config.fetch?.metadata?.exclude?.map(x => x?.metadataType)
-        .filter(values.isDefined).map(x => new RegExp(x)),
+      metadataQuery: config.metadataQuery as MetadataQuery,
     })
     instances.elements.forEach(e => elements.push(e))
     return [...instances.configChanges, ...configChanges]

@@ -53,7 +53,6 @@ export type RemoteMapCreator = <T, K extends string = string>(
   opts: CreateRemoteMapParams<T>
 ) => Promise<RemoteMap<T, K>>
 
-// This is for now. Don't commit this K?
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {
   private data: Map<K, T>
   constructor(data: RemoteMapEntry<T, K>[] = []) {

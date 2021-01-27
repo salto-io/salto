@@ -17,15 +17,16 @@ import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Va
 import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource, ParsedNaclFile } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { ParseResultCache } from '../../../src/workspace/cache'
+import { ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
 import { createInMemoryElementSource } from '../../../src/workspace/elements_source'
 import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
-import { ParsedNaclFileDataKeys } from '../../../src/workspace/nacl_files/nacl_files_source'
+import { ParsedNaclFileDataKeys, ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
+import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 const { awu } = collections.asynciterable
 
@@ -62,7 +63,7 @@ const validateParsedNaclFile = async (
 
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
-  let mockCache: ParseResultCache
+  let mockCache: ParsedNaclFileCache
   let mockedStaticFilesSource: StaticFilesSource
   const mockParse = parser.parse as jest.Mock
 
@@ -330,7 +331,17 @@ describe('Nacl Files Source', () => {
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
       const elements = [elem];
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData);
-      (mockCache.get as jest.Mock).mockResolvedValue({ elements, errors: [] })
+      // (mockCache.get as jest.Mock).mockResolvedValue({
+      //   elements: createInMemoryElementSource(elements),
+      //   errors: [],
+      // })
+      (mockCache.get as jest.Mock).mockImplementation(async () => toParsedNaclFile(
+        mockFileData,
+        {
+          elements,
+          errors: [],
+        }
+      ))
       await validateParsedNaclFile(
         await naclSource.getParsedNaclFile(mockFileData.filename),
         mockFileData.filename,

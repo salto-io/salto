@@ -1,0 +1,255 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+// import _ from 'lodash'
+// import { logger } from '@salto-io/logging'
+import { Value, Element } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { hash, collections, types } from '@salto-io/lowerdash'
+import { SourceMap, SourceRange } from '../../parser'
+import { ContentType } from '../dir_store'
+import { serialize, deserialize } from '../../serializer/elements'
+import { StaticFilesSource } from '../static_files'
+import { RemoteMapCreator, RemoteMap } from '../remote_map'
+import { RemoteElementSource } from '../elements_source'
+import { ParsedNaclFile, ParsedNaclFileDataKeys } from './parsed_nacl_file'
+
+const { awu } = collections.asynciterable
+
+// const log = logger(module)
+
+type FileCacheMetdata = {
+  timestamp: number
+  hash: string
+}
+
+export type ParseResultKey = {
+  filename: string
+  lastModified: number
+  buffer?: ContentType
+}
+
+type FileSources = {
+  elementsSource: RemoteElementSource
+  data: RemoteMap<Value, ParsedNaclFileDataKeys>
+  sourceMap: RemoteMap<SourceRange[]>
+}
+
+export type ParsedNaclFileCache = {
+  flush: () => Promise<void>
+  clone: () => ParsedNaclFileCache
+  clear: () => Promise<void>
+  rename: (name: string) => Promise<void>
+  list: () => Promise<string[]>
+  delete: (filename: string) => Promise<void>
+  get(key: ParseResultKey, allowInvalid?: boolean): Promise<ParsedNaclFile | undefined>
+  put(key: ParseResultKey, value: ParsedNaclFile): Promise<void>
+}
+
+const isMD5Equal = (
+  cacheMD5: string,
+  buffer?: ContentType
+): boolean => (buffer === undefined ? false : (hash.toMD5(buffer) === cacheMD5))
+
+const shouldReturnCacheData = (
+  key: ParseResultKey,
+  fileCacheMetadata: FileCacheMetdata,
+  allowInvalid = false
+): boolean => (
+  allowInvalid
+  || isMD5Equal(fileCacheMetadata.hash, key.buffer)
+  || fileCacheMetadata.timestamp >= key.lastModified
+)
+
+const parseResultFromFileSources = async (
+  filename: string,
+  fileSources: FileSources
+): Promise<ParsedNaclFile> => {
+  const sourceMapEntries: [string, SourceRange[]][] = (
+    await awu(fileSources.sourceMap.entries())
+      .toArray()).map(e => [e.key, e.value])
+  return ({
+    filename,
+    elements: fileSources.elementsSource,
+    data: fileSources.data,
+    sourceMap: new SourceMap(
+      sourceMapEntries
+    ),
+  })
+}
+
+const getRemoteMapCacheNamespace = (
+  cacheName: string,
+  type: string,
+  fileName?: string,
+): string =>
+  (fileName === undefined ? `parsedResultCache-${cacheName}-${type}` : `parsedResultCache-${cacheName}-${type}-${fileName}`)
+
+const getMetadata = async (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+): Promise<RemoteMap<FileCacheMetdata>> => (
+  remoteMapCreator({
+    namespace: getRemoteMapCacheNamespace(cacheName, 'metadata'),
+    serialize: (val: FileCacheMetdata) => safeJsonStringify(val),
+    deserialize: data => JSON.parse(data),
+  })
+)
+
+const getCacheFilesList = async (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+): Promise<string[]> => {
+  const metadata = await getMetadata(cacheName, remoteMapCreator)
+  return awu(metadata.keys()).toArray()
+}
+
+const getFileSources = async (
+  cacheName: string,
+  fileName: string,
+  remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StaticFilesSource,
+): Promise<FileSources> => ({
+  // This should be per element?
+  elementsSource: new RemoteElementSource(await remoteMapCreator({
+    namespace: getRemoteMapCacheNamespace(cacheName, 'elements', fileName),
+    serialize: (element: Element) => serialize([element]),
+    deserialize: async data => (await deserialize(
+      data,
+      async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding),
+    ))[0],
+  })),
+  sourceMap: (await remoteMapCreator({
+    namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap'),
+    serialize: (sourceRanges: SourceRange[]) => safeJsonStringify(sourceRanges),
+    deserialize: data => JSON.parse(data),
+  })),
+  data: (await remoteMapCreator({
+    namespace: getRemoteMapCacheNamespace(cacheName, 'data'),
+    serialize: (val: Value) => safeJsonStringify(val),
+    deserialize: data => JSON.parse(data),
+  })) as RemoteMap<Value, ParsedNaclFileDataKeys>,
+})
+
+const getAllFilesSources = async (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StaticFilesSource,
+): Promise<collections.asynciterable.AwuIterable<types.ValueOf<FileSources>>> => {
+  const fileNames = await getCacheFilesList(cacheName, remoteMapCreator)
+  return awu(fileNames).flatMap(async filename =>
+    Object.values(await getFileSources(
+      cacheName,
+      filename,
+      remoteMapCreator,
+      staticFilesSource
+    )))
+}
+
+export const createParseResultCache = (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StaticFilesSource,
+): ParsedNaclFileCache => {
+  // To allow renames
+  let actualCacheName = cacheName
+  return {
+    put: async (key: Required<ParseResultKey>, value: ParsedNaclFile): Promise<void> => {
+      const fileSources = await getFileSources(
+        actualCacheName,
+        key.filename,
+        remoteMapCreator,
+        staticFilesSource
+      )
+      await fileSources.data.clear()
+      await fileSources.data.setAll(value.data.entries())
+      if (value.sourceMap !== undefined) {
+        await fileSources.sourceMap.clear()
+        await awu(value.sourceMap.entries()).forEach(async ([sourceKey, sourceRanges]) => {
+          await fileSources.sourceMap.set(sourceKey, sourceRanges)
+        })
+      }
+      // Should consider not accepting this as an elements source
+      await fileSources.elementsSource.clear()
+      await fileSources.elementsSource.setAll(await value.elements.getAll())
+      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
+      await metadata.set(key.filename, {
+        hash: hash.toMD5(key.buffer),
+        timestamp: Date.now(),
+      })
+    },
+    get: async (key: ParseResultKey, allowInvalid = false): Promise<ParsedNaclFile | undefined> => {
+      const fileSources = await getFileSources(
+        actualCacheName,
+        key.filename,
+        remoteMapCreator,
+        staticFilesSource
+      )
+      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
+      const fileMetadata = await metadata.get(key.filename)
+      if (fileMetadata === undefined) {
+        return undefined
+      }
+      if (!shouldReturnCacheData(key, fileMetadata, allowInvalid)) {
+        return undefined
+      }
+      return parseResultFromFileSources(key.filename, fileSources)
+    },
+    delete: async (filename: string): Promise<void> => {
+      const fileSources = await getFileSources(
+        actualCacheName,
+        filename,
+        remoteMapCreator,
+        staticFilesSource
+      )
+      Object.values(fileSources).forEach(async source =>
+        source.clear())
+      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
+      await metadata.delete(filename)
+    },
+    list: async () => getCacheFilesList(actualCacheName, remoteMapCreator),
+    clear: async () => {
+      const filesSources = await getAllFilesSources(
+        actualCacheName,
+        remoteMapCreator,
+        staticFilesSource
+      )
+      await filesSources.forEach(async source =>
+        source.clear())
+      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
+      await metadata.clear()
+    },
+    rename: async (newName: string) => {
+      actualCacheName = newName
+      // TODO:
+      // 1. Remove the data from current name namespaces
+      // 2. Copy the data from the current
+    },
+    flush: async () => {
+      const filesSources = await getAllFilesSources(
+        actualCacheName,
+        remoteMapCreator,
+        staticFilesSource
+      )
+      await filesSources.forEach(async source =>
+        source.flush())
+      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
+      await metadata.flush()
+    },
+    // This is not right cause it will use the same remoteMaps
+    clone: (): ParsedNaclFileCache =>
+      createParseResultCache(cacheName, remoteMapCreator, staticFilesSource.clone()),
+  }
+}

@@ -21,7 +21,7 @@ import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { ParseResultCache } from '../../../src/workspace/cache'
+import { ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
@@ -32,7 +32,7 @@ const { awu } = collections.asynciterable
 
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
-  let mockCache: ParseResultCache
+  let mockCache: ParsedNaclFileCache
   let mockedStaticFilesSource: StaticFilesSource
   const mockDirStoreGet = jest.fn()
 

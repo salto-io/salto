@@ -304,10 +304,8 @@ describe('multi env tests', () => {
         await runSetEnv(baseDir, ENV2_NAME)
         const workspace = await loadValidWorkspace(baseDir, true)
         visibleElements = await awu(await (await workspace.elements(false)).getAll())
-          .filter(isInstanceElement)
           .toArray() as InstanceElement[]
         elementsWithHidden = await awu(await (await workspace.elements(true)).getAll())
-          .filter(isInstanceElement)
           .toArray() as InstanceElement[]
       })
 

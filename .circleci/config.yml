@@ -73,7 +73,9 @@ jobs:
 
       - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
 
-      - run: yarn
+        # Yarn has some random race-condition failures, trying multiple times seems to help
+        # when the source of the problem is yarn itself and not the packages
+      - run: yarn || yarn || yarn
 
       - run:
           # As a workaround to the --frozen-lockfile flag not working with workspaces

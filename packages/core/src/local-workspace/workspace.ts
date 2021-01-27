@@ -30,7 +30,7 @@ import { createRemoteMapCreator } from './remote_map'
 
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
-const { parseResultCache } = parseCache
+const { createParseResultCache } = parseCache
 const { buildStaticFilesSource } = staticFiles
 
 export const STATES_DIR_NAME = 'states'
@@ -63,7 +63,7 @@ export const getNaclFilesSourceParams = (
   excludeDirs: string[] = []
 ): {
   naclFilesStore: dirStore.DirectoryStore<string>
-  cache: parseCache.ParseResultCache
+  cache: parseCache.ParsedNaclFileCache
   staticFileSource: staticFiles.StaticFilesSource
 } => {
   const dirPathToIgnore = (dirPath: string): boolean =>
@@ -85,18 +85,17 @@ export const getNaclFilesSourceParams = (
   })
 
   const cacheName = name === COMMON_ENV_PREFIX ? 'common' : name
-  const cacheStore = localDirectoryStore({
-    baseDir: cacheDir,
-    name: cacheName,
-    encoding: 'utf8',
-  })
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
     buildLocalStaticFilesCache(cacheDir, cacheName),
   )
   return {
     naclFilesStore,
-    cache: parseResultCache(cacheStore, staticFileSource),
+    cache: createParseResultCache(
+      cacheName,
+      createRemoteMapCreator(cacheDir),
+      staticFileSource,
+    ),
     staticFileSource,
   }
 }

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2020 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,6 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { ParsedNaclFile, ParsedNaclFileDataKeys } from './parsed_nacl_file'
-export { NaclFile, FILE_EXTENSION, NaclFilesSource, naclFilesSource, getParsedNaclFiles, RoutingMode, getFunctions } from './nacl_files_source'
-export { ENVS_PREFIX } from './multi_env/multi_env_source'
+import { Element } from '@salto-io/adapter-api'
+import { SourceMap, ParseError } from '../../parser'
+
+
+export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
+
+export type ParsedNaclFileData = {
+  errors: ParseError[]
+  timestamp: number
+  referenced: string[]
+}
+
+export type ParsedNaclFile = {
+  filename: string
+  elements: Element[]
+  data: ParsedNaclFileData
+  buffer?: string
+  sourceMap?: SourceMap // TODO: Change to RemoteMap
+}

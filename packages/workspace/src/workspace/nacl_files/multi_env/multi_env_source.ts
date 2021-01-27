@@ -27,7 +27,8 @@ import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
-import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
+import { ParsedNaclFile } from '../parsed_nacl_file'
 import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
@@ -138,6 +139,7 @@ const buildMultiEnvSource = (
       // TODO: we might need to pass static file reviver to the deserialization func
       deserialize: deserializeSingleElement,
     }))
+    await elements.clear()
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
       new RemoteElementSource(merged)

@@ -16,9 +16,16 @@
 import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
+<<<<<<< HEAD
 import { Workspace, parser, errors as wsErrors, parseCache, state, nacl, staticFiles, dirStore,
   loadWorkspace, EnvironmentsSources, remoteMap, elementSource } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
+=======
+import { Workspace, parser, errors as wsErrors,
+  merger, configSource as cs, nacl, staticFiles, dirStore, elementSource } from '@salto-io/workspace'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
+
+>>>>>>> 435904a9... New impl no rename and clone
 import { collections } from '@salto-io/lowerdash'
 
 const { toAsyncIterable } = collections.asynciterable
@@ -214,6 +221,7 @@ Promise<Workspace> => {
       name: 'test',
       currentEnv: 'default',
     })),
+<<<<<<< HEAD
     setWorkspaceConfig: jest.fn(),
     getAdapter: jest.fn(),
     setAdapter: jest.fn(),
@@ -225,6 +233,28 @@ Promise<Workspace> => {
     rename: jest.fn(),
   }
   return loadWorkspace(mockConfSource, mockCredentialsSource, elementsSources, mockCreateRemoteMap)
+=======
+    setNaclFiles: mockFunction<Workspace['setNaclFiles']>().mockResolvedValue(),
+    removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>().mockResolvedValue(),
+    listNaclFiles: mockFunction<Workspace['listNaclFiles']>().mockResolvedValue([filename]),
+    getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>().mockImplementation(async () => {
+      const elements = elementSource.createInMemoryElementSource()
+      await elements.setAll(merged.merged.values())
+      return {
+        elements,
+        filename: '',
+        data: {
+          timestamp: 0,
+          errors: [],
+          referenced: [],
+        },
+      }
+    }),
+    getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([filename]),
+    getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([filename]),
+    clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(naclFile, buffer))),
+  } as unknown as Workspace
+>>>>>>> 435904a9... New impl no rename and clone
 }
 
 export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []):

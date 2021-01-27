@@ -25,8 +25,8 @@ module.exports = {
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
   collectCoverageFrom: [
-    '**/*.js',
-    '**/*.jsx',
+    '**/dist/**/*.js',
+    '**/dist/**/*.jsx',
     '!**/node_modules/**',
     '!*.config.js',
     '!coverage/**',

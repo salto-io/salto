@@ -539,5 +539,6 @@ export const generateElements = (
     ...records,
     ...objects,
     ...profiles,
+    new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'doNotPersist'), fields: {} }),
   ]
 }

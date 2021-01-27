@@ -442,6 +442,11 @@ const buildNaclFilesSource = (
           // Changes might have a different cased filename, we just take the first variation
           const [filename] = fileChanges.map(change => change.location.filename).sort()
           try {
+            if (_.isEmpty(filename)) {
+              log.info('found changes with no filename - not writing to nacl. ids: %s',
+                fileChanges.map(change => change.id.getFullName()))
+              return undefined
+            }
             const naclFileData = await getNaclFileData(filename)
             const buffer = await updateNaclFileData(naclFileData, fileChanges, functions)
             const shouldNotParse = _.isEmpty(naclFileData)

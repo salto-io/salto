@@ -27,12 +27,12 @@ export const buildMetadataQuery = ({ include = [], exclude = [] }: MetadataParam
     instance: MetadataInstance,
     {
       metadataType = '.*',
-      // _namespace = '.*',
+      namespace = '.*',
       name = '.*',
     }: MetadataQueryParams
   ): boolean =>
     new RegExp(metadataType).test(instance.metadataType)
-    // && new RegExp(namespace).test(instance.namespace)
+    && new RegExp(namespace).test(instance.namespace)
     && new RegExp(name).test(instance.name)
 
   return {

@@ -84,14 +84,23 @@ describe('getNestedStaticFiles', () => {
 describe('getChangeLocations', () => {
   let result: DetailedChangeWithSource[]
   describe('with addition of top level element', () => {
-    beforeEach(() => {
+    it('should add the element at the end of the file', () => {
       const change: DetailedChange = { ...toChange({ after: mockType }), id: mockType.elemID }
       result = getChangeLocations(change, new Map())
-    })
-    it('should add the element at the end of the file', () => {
       expect(result).toHaveLength(1)
       expect(result[0].location.start).toEqual({ col: 1, line: Infinity, byte: Infinity })
       expect(result[0].location.end).toEqual({ col: 1, line: Infinity, byte: Infinity })
+      expect(result[0].location.filename).toEqual('this/is/happening.nacl')
+    })
+    it('should use the default filename when no path is provided', () => {
+      const noPath = mockType.clone()
+      noPath.path = undefined
+      const change: DetailedChange = { ...toChange({ after: noPath }), id: noPath.elemID }
+      result = getChangeLocations(change, new Map())
+      expect(result).toHaveLength(1)
+      expect(result[0].location.start).toEqual({ col: 1, line: Infinity, byte: Infinity })
+      expect(result[0].location.end).toEqual({ col: 1, line: Infinity, byte: Infinity })
+      expect(result[0].location.filename).toEqual('unsorted.nacl')
     })
   })
 })

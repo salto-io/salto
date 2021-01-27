@@ -31,10 +31,9 @@ const FILE_EXTENSION = '.nacl'
 
 export type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
-const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string =>
-  (pathParts
-    ? `${path.join(...pathParts)}${FILE_EXTENSION}`
-    : '')
+const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string => (
+  `${path.join(...(pathParts ?? ['unsorted']))}${FILE_EXTENSION}`
+)
 
 export const getChangeLocations = (
   change: DetailedChange,

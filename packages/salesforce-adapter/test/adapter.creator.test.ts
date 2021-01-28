@@ -51,8 +51,15 @@ describe('SalesforceAdapter creator', () => {
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
-      metadataTypesSkippedList: ['test1'],
-      instancesRegexSkippedList: ['test3', 'test2'],
+      fetch: {
+        metadata: {
+          exclude: [
+            { metadataType: 'test1' },
+            { name: 'test2' },
+            { name: 'test3' },
+          ],
+        },
+      },
       notExist: ['not exist'],
       client: {
         maxConcurrentApiRequests: {
@@ -153,8 +160,15 @@ describe('SalesforceAdapter creator', () => {
       })
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
-          metadataTypesSkippedList: ['test1'],
-          instancesRegexSkippedList: ['test3', 'test2'],
+          fetch: {
+            metadata: {
+              exclude: [
+                { metadataType: 'test1' },
+                { name: 'test2' },
+                { name: 'test3' },
+              ],
+            },
+          },
           client: {
             maxConcurrentApiRequests: {
               list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -173,7 +187,7 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { instancesRegexSkippedList: ['\\'] },
+        { fetch: { metadata: { include: [{ name: '\\' }] } } },
       )
       expect(() => adapter.operations({
         credentials,
@@ -197,7 +211,7 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('Failed to load config due to an invalid dataManagement.includeObjects value. The following regular expressions are invalid: \\')
+      })).toThrow('Failed to load config due to an invalid fetch.data.includeObjects value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.excludeObjects', () => {
@@ -216,7 +230,7 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('Failed to load config due to an invalid dataManagement.excludeObjects value. The following regular expressions are invalid: \\')
+      })).toThrow('Failed to load config due to an invalid fetch.data.excludeObjects value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.allowReferenceTo', () => {
@@ -235,7 +249,7 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('Failed to load config due to an invalid dataManagement.allowReferenceTo value. The following regular expressions are invalid: \\')
+      })).toThrow('Failed to load config due to an invalid fetch.data.allowReferenceTo value. The following regular expressions are invalid: \\')
     })
 
     it('should throw an error when creating adapter with invalid regex in dataManagement.saltoIDSettings.overrides objectsRegex', () => {
@@ -256,7 +270,7 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('Failed to load config due to an invalid dataManagement.saltoIDSettings.overrides value. The following regular expressions are invalid: \\')
+      })).toThrow('Failed to load config due to an invalid fetch.data.saltoIDSettings.overrides value. The following regular expressions are invalid: \\')
     })
 
 

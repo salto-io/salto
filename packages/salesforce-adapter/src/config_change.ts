@@ -46,7 +46,7 @@ export const createInvlidIdFieldConfigChange = (
 ): ConfigChangeSuggestion =>
   ({
     type: 'dataObjectsExclude',
-    value: `^${typeName}$`,
+    value: typeName,
     reason: `${invalidFields} defined as idFields but are not queryable or do not exist on type ${typeName}`,
   })
 
@@ -56,7 +56,7 @@ export const createUnresolvedRefIdFieldConfigChange = (
 ): ConfigChangeSuggestion =>
   ({
     type: 'dataObjectsExclude',
-    value: `^${typeName}$`,
+    value: typeName,
     reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
 
@@ -65,12 +65,12 @@ export const createSkippedListConfigChange = (type: string, instance?: string):
   if (_.isUndefined(instance)) {
     return {
       type: 'metadataExclude',
-      value: { metadataType: `^${type}$` },
+      value: { metadataType: type },
     }
   }
   return {
     type: 'metadataExclude',
-    value: { metadataType: `^${type}$`, name: `^${instance}$` },
+    value: { metadataType: type, name: instance },
   }
 }
 
@@ -96,7 +96,7 @@ export const getConfigFromConfigChanges = (
   const newMetadataExclude = makeArray(configChanges)
     .filter(isMetadataConfigSuggestions)
     .map(e => e.value)
-    .filter(e => currentMetadataExclude.includes(e))
+    .filter(e => !currentMetadataExclude.includes(e))
 
   const dataObjectsToExclude = makeArray(configChanges)
     .filter(isDataManagementConfigSuggestions)
@@ -123,7 +123,7 @@ export const getConfigFromConfigChanges = (
     ElemID.CONFIG_NAME,
     configType,
     _.pickBy({
-      fetch: {
+      fetch: _.pickBy({
         metadata: {
           ...currentConfig.fetch?.metadata,
           exclude: [
@@ -135,7 +135,7 @@ export const getConfigFromConfigChanges = (
           ...currentDataManagement,
           ...dataManagementOverrides,
         },
-      },
+      }, isDefined),
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
       useOldProfiles: currentConfig.useOldProfiles,
       client: currentConfig.client,

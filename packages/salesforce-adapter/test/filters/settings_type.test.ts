@@ -30,8 +30,15 @@ describe('Test Settings Type', () => {
   const filter = filterCreator(
     {
       client,
-      // config: { metadataTypesSkippedList: ['CaseSettings'] },
-      config: { fetchProfile: buildFetchProfile({}) },
+      config: {
+        fetchProfile: buildFetchProfile({
+          metadata: {
+            exclude: [
+              { metadataType: 'CaseSettings' },
+            ],
+          },
+        }),
+      },
     }
   ) as FilterWith<'onFetch'>
 

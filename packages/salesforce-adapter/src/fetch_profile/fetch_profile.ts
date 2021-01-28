@@ -24,7 +24,7 @@ export type FetchProfile = {
 }
 
 export const buildFetchProfile = ({
-  metadata = { include: [{}] },
+  metadata = {},
   data,
 }: FetchParameters): FetchProfile => (
   {

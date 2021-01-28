@@ -20,7 +20,7 @@ export type MetadataQuery = {
   isInstanceMatch: (instance: MetadataInstance) => boolean
 }
 
-export const buildMetadataQuery = ({ include = [], exclude = [] }: MetadataParams):
+export const buildMetadataQuery = ({ include = [{}], exclude = [] }: MetadataParams):
   MetadataQuery => {
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
@@ -30,15 +30,15 @@ export const buildMetadataQuery = ({ include = [], exclude = [] }: MetadataParam
       name = '.*',
     }: MetadataQueryParams
   ): boolean =>
-    new RegExp(metadataType).test(instance.metadataType)
-    && new RegExp(namespace).test(instance.namespace)
-    && new RegExp(name).test(instance.name)
+    new RegExp(`^${metadataType}$`).test(instance.metadataType)
+    && new RegExp(`^${namespace}$`).test(instance.namespace)
+    && new RegExp(`^${name}$`).test(instance.name)
 
   return {
     isTypeMatch: type => (
-      include.some(({ metadataType = '.*' }) => new RegExp(metadataType).test(type))
+      include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
       && !exclude.some(({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
-        namespace === '.*' && name === '.*' && new RegExp(metadataType).test(type))
+        namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type))
     ),
 
     isInstanceMatch: instance => (

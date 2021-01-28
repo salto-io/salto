@@ -21,8 +21,12 @@ describe('Config Changes', () => {
   const includedObjectName = 'Object'
   const refToObjectName = 'refTo'
   const currentConfig = {
-    metadataTypesSkippedList: ['Type1'],
     fetch: {
+      metadata: {
+        exclude: [
+          { metadataType: 'Type1' },
+        ],
+      },
       data: {
         includeObjects: [includedObjectName],
         allowReferenceTo: [refToObjectName],
@@ -81,8 +85,8 @@ describe('Config Changes', () => {
 
       it('should create an instance with values same as original config besides excludeObjects', () => {
         expect(newConfig).toBeDefined()
-        expect(newConfig?.value.metadataTypesSkippedList)
-          .toEqual(currentConfig.metadataTypesSkippedList)
+        expect(newConfig?.value.fetch.metadata)
+          .toEqual(currentConfig.fetch.metadata)
         expect(newConfig?.value.fetch.data).toMatchObject(currentConfig.fetch.data)
       })
 
@@ -107,8 +111,8 @@ describe('Config Changes', () => {
 
       it('should create an instance with values same as original config besides excludeObjects and allowReferenceTo', () => {
         expect(newConfig).toBeDefined()
-        expect(newConfig?.value.metadataTypesSkippedList)
-          .toEqual(currentConfig.metadataTypesSkippedList)
+        expect(newConfig?.value.fetch.metadata)
+          .toEqual(currentConfig.fetch.metadata)
         expect(newConfig?.value.fetch.data.saltoIDSettings)
           .toMatchObject(currentConfig.fetch.data.saltoIDSettings)
         expect(newConfig?.value.fetch.data.includeObjects)

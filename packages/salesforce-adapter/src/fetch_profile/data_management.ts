@@ -16,17 +16,17 @@
 import { DataManagementConfig } from '../types'
 
 export type DataManagement = {
-  isObectMatch: (name: string) => boolean
+  isObjectMatch: (name: string) => boolean
   isReferenceAllowed: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
 }
 
 export const buildDataManagement = (params: DataManagementConfig): DataManagement => (
   {
-    isObectMatch: name => params.includeObjects.some(re => new RegExp(re).test(name))
+    isObjectMatch: name => params.includeObjects.some(re => new RegExp(`^${re}$`).test(name))
       && !params.excludeObjects?.some(re => new RegExp(re).test(name)),
 
-    isReferenceAllowed: name => params.allowReferenceTo?.some(re => new RegExp(re).test(name))
+    isReferenceAllowed: name => params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name))
       ?? false,
 
     getObjectIdsFields: name => {

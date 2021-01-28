@@ -32,14 +32,20 @@ import {
   MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput,
   mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveLocator,
 } from './connection'
+import { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
-  // const testMetadataTypesSkippedList = ['Test1', 'Ignored1']
-  // const testInstancesRegexSkippedList = [
-  //   'Test2.instance1', 'SkippedList$', '^ReportFolder.skip$', 'AssignmentRules.MyRules',
-  // ]
+
+  const metadataExclude = [
+    { metadataType: 'Test1' },
+    { metadataType: 'Ignored1' },
+    { metadataType: '.*Test2', name: 'instance1.*' },
+    { name: '.*SkippedList' },
+    { metadataType: 'ReportFolder', name: 'skip' },
+    { metadataType: '.*AssignmentRules', name: 'MyRules.*' },
+  ]
 
   const testMaxItemsInRetrieveRequest = 100
 
@@ -58,6 +64,11 @@ describe('SalesforceAdapter fetch', () => {
         config: {
           // metadataTypesSkippedList: testMetadataTypesSkippedList,
           // instancesRegexSkippedList: testInstancesRegexSkippedList,
+          fetch: {
+            metadata: {
+              exclude: metadataExclude,
+            },
+          },
           maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
         },
       },
@@ -814,114 +825,120 @@ public class MyClass${index} {
       })
     })
 
-    // describe('should return errors when fetch on certain instances failed', () => {
-    //   class SFError extends Error {
-    //     constructor(name: string, message?: string) {
-    //       super(message)
-    //       this.name = name
-    //     }
-    //   }
-    //   let result: FetchResult
-    //   let config: InstanceElement
+    describe('should return errors when fetch on certain instances failed', () => {
+      class SFError extends Error {
+        constructor(name: string, message?: string) {
+          super(message)
+          this.name = name
+        }
+      }
+      let result: FetchResult
+      let config: InstanceElement
 
-    //   const mockFailures = (connectionMock: MockInterface<Connection>): void => {
-    //     connectionMock.describeGlobal.mockImplementation(async () => ({ sobjects: [] }))
-    //     connectionMock.metadata.describe.mockResolvedValue(mockDescribeResult(
-    //       { xmlName: 'MetadataTest1' },
-    //       { xmlName: 'MetadataTest2' },
-    //       { xmlName: 'InstalledPackage' },
-    //       { xmlName: 'Report', inFolder: true },
-    //     ))
-    //     connectionMock.metadata.describeValueType.mockImplementation(
-    //       async (typeName: string) => {
-    //         if (typeName.endsWith('Report')) {
-    //           return mockDescribeValueResult({
-    //             parentField: {
-    //               name: '',
-    //               soapType: 'string',
-    //               foreignKeyDomain: 'ReportFolder',
-    //             },
-    //             valueTypeFields: [],
-    //           })
-    //         }
-    //         return mockDescribeValueResult({ valueTypeFields: [] })
-    //       }
-    //     )
-    //     connectionMock.metadata.list.mockImplementation(
-    //       async inQuery => {
-    //         const query = collections.array.makeArray(inQuery)[0]
-    //         const { type } = query
-    //         if (type === 'MetadataTest2') {
-    //           throw new SFError('sf:UNKNOWN_EXCEPTION')
-    //         }
-    //         if (_.isEqual(query, { type: 'Report', folder: 'testFolder' })) {
-    //           throw new SFError('sf:UNKNOWN_EXCEPTION')
-    //         }
-    //         const fullNames: Record<string, string> = {
-    //           MetadataTest1: 'instance1',
-    //           InstalledPackage: 'instance2',
-    //           ReportFolder: 'testFolder',
-    //         }
-    //         const fullName = fullNames[type]
-    //         return fullName === undefined ? [] : [mockFileProperties({ fullName, type })]
-    //       }
-    //     )
-    //     connectionMock.metadata.read.mockRejectedValue(new SFError('sf:UNKNOWN_EXCEPTION'))
+      const mockFailures = (connectionMock: MockInterface<Connection>): void => {
+        connectionMock.describeGlobal.mockImplementation(async () => ({ sobjects: [] }))
+        connectionMock.metadata.describe.mockResolvedValue(mockDescribeResult(
+          { xmlName: 'MetadataTest1' },
+          { xmlName: 'MetadataTest2' },
+          { xmlName: 'InstalledPackage' },
+          { xmlName: 'Report', inFolder: true },
+        ))
+        connectionMock.metadata.describeValueType.mockImplementation(
+          async (typeName: string) => {
+            if (typeName.endsWith('Report')) {
+              return mockDescribeValueResult({
+                parentField: {
+                  name: '',
+                  soapType: 'string',
+                  foreignKeyDomain: 'ReportFolder',
+                },
+                valueTypeFields: [],
+              })
+            }
+            return mockDescribeValueResult({ valueTypeFields: [] })
+          }
+        )
+        connectionMock.metadata.list.mockImplementation(
+          async inQuery => {
+            const query = collections.array.makeArray(inQuery)[0]
+            const { type } = query
+            if (type === 'MetadataTest2') {
+              throw new SFError('sf:UNKNOWN_EXCEPTION')
+            }
+            if (_.isEqual(query, { type: 'Report', folder: 'testFolder' })) {
+              throw new SFError('sf:UNKNOWN_EXCEPTION')
+            }
+            const fullNames: Record<string, string> = {
+              MetadataTest1: 'instance1',
+              InstalledPackage: 'instance2',
+              ReportFolder: 'testFolder',
+            }
+            const fullName = fullNames[type]
+            return fullName === undefined ? [] : [mockFileProperties({ fullName, type })]
+          }
+        )
+        connectionMock.metadata.read.mockRejectedValue(new SFError('sf:UNKNOWN_EXCEPTION'))
 
-    //     connectionMock.metadata.retrieve.mockReturnValue(mockRetrieveLocator({
-    //       messages: [{
-    //         fileName: 'unpackaged/package.xml',
-    //         problem: 'Metadata API received improper input.'
-    //           + 'Please ensure file name and capitalization is correct.'
-    //           + 'Load of metadata from db failed for metadata of '
-    //           + 'type:InstalledPackage and file name:Test2.',
-    //       }],
-    //     }))
-    //   }
+        connectionMock.metadata.retrieve.mockReturnValue(mockRetrieveLocator({
+          messages: [{
+            fileName: 'unpackaged/package.xml',
+            problem: 'Metadata API received improper input.'
+              + 'Please ensure file name and capitalization is correct.'
+              + 'Load of metadata from db failed for metadata of '
+              + 'type:InstalledPackage and file name:Test2.',
+          }],
+        }))
+      }
 
-    // it('should return correct config when orig config has values', async () => {
-    //   mockFailures(connection)
-    //   result = await adapter.fetch(mockFetchOpts)
-    //   config = result?.updatedConfig?.config as InstanceElement
-    //   expect(config).toBeDefined()
-    //   expect(config.value).toEqual(
-    //     {
-    //       [INSTANCES_REGEX_SKIPPED_LIST]: [
-    //         '^Report.testFolder$',
-    //         '^InstalledPackage.Test2$',
-    //         '^MetadataTest1.instance1$',
-    //       ]
-    //         .concat(testInstancesRegexSkippedList),
-    //       [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
-    //         .concat(testMetadataTypesSkippedList),
-    //       [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
-    //     }
-    //   )
-    // })
+      it('should return correct config when orig config has values', async () => {
+        mockFailures(connection)
+        result = await adapter.fetch(mockFetchOpts)
+        config = result?.updatedConfig?.config as InstanceElement
+        expect(config).toBeDefined()
+        expect(config.value).toEqual(
+          {
+            fetch: {
+              metadata: {
+                exclude: [
+                  ...metadataExclude,
+                  { metadataType: 'Report', name: 'testFolder' },
+                  { metadataType: 'InstalledPackage', name: 'Test2' },
+                  { metadataType: 'MetadataTest1', name: 'instance1' },
+                  { metadataType: 'MetadataTest2' },
+                ],
+              },
+            },
+            [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
+          }
+        )
+      }, 10000000)
+      it('should return correct config when original config is empty', async () => {
+        const { connection: connectionMock, adapter: adapterMock } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            metadataAdditionalTypes: [],
+            config: {},
+          },
+        })
+        mockFailures(connectionMock)
 
-    // it('should return correct config when original config is empty', async () => {
-    //   const { connection: connectionMock, adapter: adapterMock } = mockAdapter({
-    //     adapterParams: {
-    //       getElemIdFunc: mockGetElemIdFunc,
-    //       metadataAdditionalTypes: [],
-    //       config: {},
-    //     },
-    //   })
-    //   mockFailures(connectionMock)
-
-    //   result = await adapterMock.fetch(mockFetchOpts)
-    //   config = result?.updatedConfig?.config as InstanceElement
-    //   expect(config.value).toEqual(
-    //     {
-    //       [INSTANCES_REGEX_SKIPPED_LIST]: [
-    //         '^Report.testFolder$',
-    //         '^InstalledPackage.Test2$',
-    //         '^MetadataTest1.instance1$',
-    //       ],
-    //       [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2'],
-    //     }
-    //   )
-    // })
-    // })
+        result = await adapterMock.fetch(mockFetchOpts)
+        config = result?.updatedConfig?.config as InstanceElement
+        expect(config.value).toEqual(
+          {
+            fetch: {
+              metadata: {
+                exclude: [
+                  { metadataType: 'Report', name: 'testFolder' },
+                  { metadataType: 'InstalledPackage', name: 'Test2' },
+                  { metadataType: 'MetadataTest1', name: 'instance1' },
+                  { metadataType: 'MetadataTest2' },
+                ],
+              },
+            },
+          }
+        )
+      }, 10000000)
+    })
   })
 })

@@ -32,8 +32,15 @@ describe('Test CustomFeedFilter', () => {
   const filter = filterCreator(
     {
       client,
-      // config: { instancesRegexSkippedList: [/^CustomFeedFilter.Case.skipped$/] },
-      config: { fetchProfile: buildFetchProfile({}) },
+      config: {
+        fetchProfile: buildFetchProfile({
+          metadata: {
+            exclude: [
+              { metadataType: 'CustomFeedFilter', name: 'Case.skipped' },
+            ],
+          },
+        }),
+      },
     }
   ) as FilterWith<'onFetch'>
   const mockObject = new ObjectType({

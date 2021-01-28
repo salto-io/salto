@@ -24,7 +24,7 @@ import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
-import { MetadataQuery } from './fetch_profile'
+import { MetadataQuery } from './fetch_profile/metadata_query'
 import { getNamespaceFromString } from './filters/utils'
 
 const { isDefined } = lowerDashValues

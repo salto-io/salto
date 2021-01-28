@@ -18,7 +18,7 @@ import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import { ConfigChangeSuggestion, FetchParameters } from './types'
-import { MetadataQuery } from './fetch_profile'
+import { FetchProfile } from './fetch_profile/fetch_profile'
 
 // Filters run in a specific order and get a mutable list as input which they may modify
 // to affect the overall result as well as the input for subsequent filters.
@@ -47,7 +47,7 @@ export type FilterContext = {
   unsupportedSystemFields?: string[]
   systemFields?: string[]
   useOldProfiles?: boolean
-  metadataQuery?: MetadataQuery
+  fetchProfile?: FetchProfile
 }
 
 export const filtersRunner = (client: SalesforceClient,

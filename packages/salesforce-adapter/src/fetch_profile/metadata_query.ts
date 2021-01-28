@@ -13,13 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { MetadataInstance, MetadataParams, MetadataQueryParams } from './types'
+import { MetadataInstance, MetadataParams, MetadataQueryParams } from '../types'
 
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
 }
-
 
 export const buildMetadataQuery = ({ include = [], exclude = [] }: MetadataParams):
   MetadataQuery => {

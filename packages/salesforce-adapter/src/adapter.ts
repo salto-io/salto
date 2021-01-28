@@ -71,7 +71,7 @@ import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, l
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
-import { buildMetadataQuery, MetadataQuery } from './fetch_profile'
+import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 
 const log = logger(module)
 
@@ -238,7 +238,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private filtersRunner: Required<Filter>
   private client: SalesforceClient
   private userConfig: SalesforceConfig
-  private metadataQuery: MetadataQuery
+  private fetchProfile: FetchProfile
 
   public constructor({
     // metadataTypesSkippedList = [
@@ -340,7 +340,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
 
-    this.metadataQuery = buildMetadataQuery(config[FETCH_CONFIG]?.metadata ?? {})
+    this.fetchProfile = buildFetchProfile(config[FETCH_CONFIG] ?? {})
     this.filtersRunner = filtersRunner(
       this.client,
       {
@@ -348,7 +348,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         unsupportedSystemFields,
         systemFields,
         useOldProfiles: config.useOldProfiles ?? useOldProfiles,
-        metadataQuery: this.metadataQuery,
+        fetchProfile: this.fetchProfile,
       },
       filterCreators
     )
@@ -446,7 +446,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         metaFile: false,
         suffix: '',
       })),
-    ].filter(info => this.metadataQuery.isTypeMatch(info.xmlName))
+    ].filter(info => this.fetchProfile.metadataQuery.isTypeMatch(info.xmlName))
   }
 
   @logDuration('fetching metadata types')
@@ -502,7 +502,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       retrieveMetadataInstances({
         client: this.client,
         types: metadataTypesToRetrieve,
-        metadataQuery: this.metadataQuery,
+        metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
       }),
       readInstances(metadataTypesToRead),
@@ -527,7 +527,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       client: this.client,
       fileProps,
       metadataType: type,
-      metadataQuery: this.metadataQuery,
+      metadataQuery: this.fetchProfile.metadataQuery,
     })
     return {
       elements: instances.elements,

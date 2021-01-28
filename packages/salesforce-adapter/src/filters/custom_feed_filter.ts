@@ -20,7 +20,7 @@ import { FilterCreator } from '../filter'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { SALESFORCE } from '../constants'
-import { MetadataQuery } from '../fetch_profile'
+import { MetadataQuery } from '../fetch_profile/metadata_query'
 
 export const CUSTOM_FEED_FILTER_METADATA_TYPE = 'CustomFeedFilter'
 export const CUSTOM_FEED_FILTER_METADATA_TYPE_ID = new ElemID(
@@ -46,7 +46,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       client,
       fileProps: fileProps.map(fixCustomFeedFullName),
       metadataType: customFeedFilterType,
-      metadataQuery: config.metadataQuery as MetadataQuery,
+      metadataQuery: config.fetchProfile?.metadataQuery as MetadataQuery,
     })
     instances.elements.forEach(e => elements.push(e))
     return [...instances.configChanges, ...configChanges]

@@ -133,6 +133,42 @@ describe('tree map', () => {
     expect(wu(sourceMap.values()).toArray()).toEqual(baseEntries.map(([_k, v]) => v))
   })
 
+  it('should return the tree root', () => {
+    const sourceMap = new TreeMap(_.cloneDeep(baseEntries), separator)
+    expect(sourceMap.root).toMatchObject({
+      value: [],
+      children: {
+        salto: {
+          value: ['salto'],
+          children: {},
+        },
+        salesforce: {
+          value: [],
+          children: {
+            test: {
+              value: ['test'],
+              children: {
+                a: {
+                  value: ['test_a'],
+                  children: {
+                    b: {
+                      value: ['test_a_b'],
+                      children: {},
+                    },
+                  },
+                },
+                b: {
+                  value: ['test_b'],
+                  children: {},
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+  })
+
   it('should support forEach', () => {
     const sourceMap = new TreeMap(_.cloneDeep(baseEntries), separator)
     wu(sourceMap.values()).toArray()

@@ -95,6 +95,8 @@ export class TreeMap<T> implements Map<string, T[]> {
 
   get size(): number { return wu.reduce(count => count + 1, 0, this) }
 
+  get root(): TreeMapEntry<T> { return this.data }
+
   push(id: string, ...values: T[]): void {
     const key = id.split(this.separator)
     const valuesList = TreeMap.getFromPath(this.data, key)

@@ -11,6 +11,7 @@ salesforce {
     "Profile",
     "ForecastingSettings",
     "PermissionSet",
+    "CustomObjectTranslation",
   ]
   instancesRegexSkippedList = [
     "^EmailTemplate.MarketoEmailTemplates",

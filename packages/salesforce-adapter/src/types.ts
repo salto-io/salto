@@ -325,6 +325,7 @@ export const configType = new ObjectType({
           'Profile',
           'PermissionSet',
           'SiteDotCom', // Fetched as a binary blob and seems to change on each fetch
+          constants.CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
         ],
       },
     },

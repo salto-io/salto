@@ -42,7 +42,7 @@ const DB_LOCATION = '/tmp/test_db'
 let remoteMap: rm.RemoteMap<Element>
 
 const createMap = async (namespace: string): Promise<rm.RemoteMap<Element>> =>
-  createRemoteMapCreator<Element>(DB_LOCATION)({
+  createRemoteMapCreator(DB_LOCATION)({
     namespace,
     batchInterval: 1000,
     LRUSize: 500,

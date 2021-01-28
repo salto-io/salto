@@ -15,14 +15,14 @@
 */
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { merger, pathIndex } from '@salto-io/workspace'
+import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { createRestoreChanges } from '../../src/core/restore'
 import { createElementSource } from '../common/helpers'
 
 const { awu } = collections.asynciterable
 const { mergeElements } = merger
-const { createPathIndex } = pathIndex
+const { getElementsPathHints } = pathIndex
 
 describe('restore', () => {
   const nestedType = new ObjectType({
@@ -127,7 +127,7 @@ describe('restore', () => {
   let multiPathObjMerged: Element
   let singlePathInstMerged: Element
   let multiPathInstMerged: Element
-  let index: pathIndex.PathIndex
+  let index: remoteMap.RemoteMap<pathIndex.Path[]>
   beforeAll(async () => {
     const { merged } = await mergeElements(awu([singlePathObject, ...elementfragments]))
     allElement = await awu(merged.values()).toArray()
@@ -139,7 +139,9 @@ describe('restore', () => {
     multiPathObjMerged = allElement[2].clone()
     singlePathInstMerged = allElement[1].clone()
     multiPathInstMerged = allElement[3].clone()
-    index = await createPathIndex(elementfragments)
+    index = new remoteMap.InMemoryRemoteMap(
+      (await getElementsPathHints(elementfragments)).map(e => [e.key, e.value])
+    )
   })
 
   describe('with no changes', () => {

@@ -16,27 +16,27 @@
 import _ from 'lodash'
 import { ElemID, DetailedChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { pathIndex, ElementSelector, elementSource } from '@salto-io/workspace'
+import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 
-type PathIndex = pathIndex.PathIndex
+type Path = pathIndex.Path
 
 const splitChangeByPath = async (
   change: DetailedChange,
-  index: PathIndex
+  index: remoteMap.RemoteMap<Path[]>
 ): Promise<DetailedChange[]> => {
-  const changeHints = _.uniqWith(index.get(change.id.getFullName()), _.isEqual)
+  const changeHints = _.uniqWith(await index.get(change.id.getFullName()), _.isEqual)
   if (_.isEmpty(changeHints)) {
     return [change]
   }
   return Promise.all(changeHints.map(async hint => {
-    const filterByPathHint = (id: ElemID): boolean => {
-      const idHints = index.get(id.getFullName()) as string[][]
+    const filterByPathHint = async (id: ElemID): Promise<boolean> => {
+      const idHints = await index.get(id.getFullName()) as string[][]
       return _.some(idHints, idHint => _.isEqual(idHint, hint))
     }
     const filteredChange = await applyFunctionToChangeData(
       change,
-      changeData => filterByID(change.id, changeData, filterByPathHint),
+      async changeData => filterByID(change.id, changeData, filterByPathHint),
     )
     return {
       ...filteredChange,
@@ -48,7 +48,7 @@ const splitChangeByPath = async (
 export const createRestoreChanges = async (
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
-  index: PathIndex,
+  index: remoteMap.RemoteMap<pathIndex.Path[]>,
   elementSelectors: ElementSelector[] = [],
   services?: readonly string[]
 ): Promise<DetailedChange[]> => {

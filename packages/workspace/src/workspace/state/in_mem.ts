@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
-import wu from 'wu'
-import { PathIndex, createPathIndex, updatePathIndex } from '../path_index'
+import { collections } from '@salto-io/lowerdash'
+import { updatePathIndex, Path, overridePathIndex } from '../path_index'
 import { State, StateData } from './state'
-import { createInMemoryElementSource } from '../elements_source'
+import { RemoteMap } from '../remote_map'
+
+const { awu } = collections.asynciterable
 
 export const buildInMemState = (loadData: () => Promise<StateData>): State => {
   let innerStateData: Promise<StateData>
@@ -37,43 +39,43 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     remove: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
     override: async (elements: AsyncIterable<Element>, services?: string[]): Promise<void> => {
       const data = await stateData()
-      const newServices = services ?? Object.keys(data.servicesUpdateDate)
+      const newServices = services ?? await awu(data.servicesUpdateDate.keys()).toArray()
       await data.elements.overide(elements)
-      data.servicesUpdateDate = {
-        ...data.servicesUpdateDate,
-        ...wu(newServices.values()).toArray().reduce((acc, service) => {
-          acc[service] = new Date(Date.now())
-          return acc
-        }, {} as Record<string, Date>),
-      }
+      await data.servicesUpdateDate.setAll(
+        awu(newServices.map(s => ({ key: s, value: new Date(Date.now()) })))
+      )
     },
     getServicesUpdateDates: async (): Promise<Record<string, Date>> => {
-      const stateDataVal = (await stateData())
-      return stateDataVal.servicesUpdateDate
+      const stateDataVal = await awu((await stateData()).servicesUpdateDate.entries()).toArray()
+      return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
     },
     existingServices: async (): Promise<string[]> =>
-      Object.keys((await stateData()).servicesUpdateDate),
+      awu((await stateData()).servicesUpdateDate.keys()).toArray(),
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
-      (await stateData()).pathIndex = await createPathIndex(unmergedElements)
-    },
-    updatePathIndex: async (unmergedElements: Element[], servicesNotToChange: string[]):
-      Promise<void> => {
       const currentStateData = await stateData()
-      currentStateData.pathIndex = await updatePathIndex(
+      await overridePathIndex(currentStateData.pathIndex, unmergedElements)
+    },
+    updatePathIndex: async (
+      unmergedElements: Element[],
+      servicesNotToChange: string[]
+    ): Promise<void> => {
+      const currentStateData = await stateData()
+      await updatePathIndex(
         currentStateData.pathIndex, unmergedElements, servicesNotToChange
       )
     },
-    getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
+    getPathIndex: async (): Promise<RemoteMap<Path[]>> =>
+      (await stateData()).pathIndex,
     clear: async () => {
-      innerStateData = Promise.resolve({
-        elements: createInMemoryElementSource(),
-        pathIndex: new PathIndex(),
-        servicesUpdateDate: {},
-      })
+      const currentStateData = await stateData()
+      await currentStateData.elements.clear()
+      await currentStateData.pathIndex.clear()
+      await currentStateData.servicesUpdateDate.clear()
+      await currentStateData.saltoVersion.clear()
     },
     flush: () => Promise.resolve(),
     rename: () => Promise.resolve(),
     getHash: () => Promise.reject(new Error('memory state not hashable')),
-    getStateSaltoVersion: async () => (await stateData()).saltoVersion,
+    getStateSaltoVersion: async () => (await stateData()).saltoVersion?.get('version'),
   }
 }

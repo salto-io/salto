@@ -49,7 +49,9 @@ export type RemoteMap<T, K extends string = string> = {
   close(): Promise<void>
 }
 
-export type RemoteMapCreator<T> = (opts: CreateRemoteMapParams<T>) => Promise<RemoteMap<T>>
+export type RemoteMapCreator = <T, K extends string = string>(
+  opts: CreateRemoteMapParams<T>
+) => Promise<RemoteMap<T, K>>
 
 // This is for now. Don't commit this K?
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {

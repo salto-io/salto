@@ -32,7 +32,7 @@ import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
 import { buildNewMergedElementsAndErrors } from './elements_cache'
-import { serialize, deserialize, deserializeMergeErrors } from '../../serializer/elements'
+import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../../serializer/elements'
 import { Functions } from '../../parser/functions'
 import { RemoteMap, InMemoryRemoteMap, RemoteMapCreator } from '../remote_map'
 
@@ -225,36 +225,36 @@ const buildNaclFilesState = async ({
   newNaclFiles, remoteMapCreator, existingState, staticFilesSource, sourceName,
 }: {
   newNaclFiles: ParsedNaclFile[]
-  remoteMapCreator: RemoteMapCreator<Value>
+  remoteMapCreator: RemoteMapCreator
   existingState?: NaclFilesState
   staticFilesSource: StaticFilesSource
   sourceName: string
 }): Promise<buildNaclFilesStateResult> => {
   const currentState = existingState ?? {
-    elementsIndex: await remoteMapCreator({
+    elementsIndex: await remoteMapCreator<string[]>({
       namespace: getRemoteMapNamespace('elements_index', sourceName),
-      serialize: (val: string[]) => JSON.stringify(val),
+      serialize: val => JSON.stringify(val),
       deserialize: data => JSON.parse(data),
-    }) as RemoteMap<string[]>,
-    mergeErrors: await remoteMapCreator({
+    }),
+    mergeErrors: await remoteMapCreator<MergeError[]>({
       namespace: getRemoteMapNamespace('errors', sourceName),
-      serialize: (val: MergeError[]) => serialize(val),
+      serialize: errors => serialize(errors),
       deserialize: async data => deserializeMergeErrors(data),
-    }) as RemoteMap<MergeError[]>,
-    mergedElements: new RemoteElementSource(await remoteMapCreator({
+    }),
+    mergedElements: new RemoteElementSource(await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged', sourceName),
-      serialize: (element: Element) => serialize([element]),
-      deserialize: async data => (await deserialize(
+      serialize: element => serialize([element]),
+      deserialize: async data => deserializeSingleElement(
         data,
-        async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding),
-      ))[0],
+        async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)
+      ),
     })),
     parsedNaclFiles: {} as ParsedNaclFileMap,
-    referencedIndex: await remoteMapCreator({
+    referencedIndex: await remoteMapCreator<string[]>({
       namespace: getRemoteMapNamespace('referenced_index', sourceName),
-      serialize: (val: string[]) => JSON.stringify(val),
+      serialize: val => JSON.stringify(val),
       deserialize: data => JSON.parse(data),
-    }) as RemoteMap<string[]>,
+    }),
   }
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
@@ -399,7 +399,7 @@ const buildNaclFilesSource = (
   naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
   staticFilesSource: StaticFilesSource,
-  remoteMapCreator: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator,
   initState?: Promise<NaclFilesState>
 ): NaclFilesSource => {
   const functions: Functions = getFunctions(staticFilesSource)
@@ -748,7 +748,7 @@ export const naclFilesSource = async (
   naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
   staticFilesSource: StaticFilesSource,
-  remoteMapCreator: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator,
   parsedFiles?: ParsedNaclFile[],
 ): Promise<NaclFilesSource> => {
   const state = (parsedFiles !== undefined)

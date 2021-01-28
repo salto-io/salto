@@ -1564,7 +1564,7 @@ describe('Test utils.ts', () => {
       const onlyFields = await filterByID(
         objElemID,
         obj,
-        id => id.idType === 'type' || id.idType === 'field'
+        async id => id.idType === 'type' || id.idType === 'field'
       )
       expect(onlyFields).toBeDefined()
       expectEqualFields(onlyFields?.fields, obj.fields)
@@ -1573,7 +1573,7 @@ describe('Test utils.ts', () => {
       const onlyAnno = await filterByID(
         objElemID,
         obj,
-        id => id.idType === 'type' || id.idType === 'attr'
+        async id => id.idType === 'type' || id.idType === 'attr'
       )
       expect(onlyAnno).toBeDefined()
       expect(onlyAnno?.fields).toEqual({})
@@ -1583,7 +1583,7 @@ describe('Test utils.ts', () => {
       const onlyAnnoType = await filterByID(
         objElemID,
         obj,
-        id => id.idType === 'type' || id.idType === 'annotation'
+        async id => id.idType === 'type' || id.idType === 'annotation'
       )
       expect(onlyAnnoType).toBeDefined()
       expect(onlyAnnoType?.fields).toEqual({})
@@ -1593,7 +1593,7 @@ describe('Test utils.ts', () => {
       const withoutAnnoObjStr = await filterByID(
         objElemID,
         obj,
-        id => !id.getFullNameParts().includes('str')
+        async id => !id.getFullNameParts().includes('str')
       )
       expect(withoutAnnoObjStr).toBeDefined()
       expectEqualFields(withoutAnnoObjStr?.fields, obj.fields)
@@ -1605,7 +1605,7 @@ describe('Test utils.ts', () => {
       const withoutFieldAnnotations = await filterByID(
         objElemID,
         obj,
-        id => id.getFullName() !== 'salto.obj.field.obj.label'
+        async id => id.getFullName() !== 'salto.obj.field.obj.label'
       )
 
       expect(withoutFieldAnnotations).toBeDefined()
@@ -1616,7 +1616,7 @@ describe('Test utils.ts', () => {
       const onlyI = await filterByID(
         objElemID,
         obj,
-        id => (
+        async id => (
           Number.isNaN(Number(_.last(id.getFullNameParts())))
           || Number(_.last(id.getFullNameParts())) === 0
         )
@@ -1632,7 +1632,7 @@ describe('Test utils.ts', () => {
       const filteredPrim = await filterByID(
         prim.elemID,
         prim,
-        id => !id.getFullNameParts().includes('str')
+        async id => !id.getFullNameParts().includes('str')
       )
       expect(filteredPrim?.annotations.obj).toEqual({ num: 17 })
       expect(filteredPrim?.annotationRefTypes).toEqual({ obj: createRefToElmWithValue(annoType) })
@@ -1642,7 +1642,7 @@ describe('Test utils.ts', () => {
       const filteredInstance = await filterByID(
         inst.elemID,
         inst,
-        id => !id.getFullNameParts().includes('list')
+        async id => !id.getFullNameParts().includes('list')
       )
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
       expect(filteredInstance?.annotations).toEqual(inst.annotations)
@@ -1652,7 +1652,7 @@ describe('Test utils.ts', () => {
       const filteredInstance = await filterByID(
         inst.elemID,
         inst,
-        id => id.idType !== 'instance'
+        async id => id.idType !== 'instance'
       )
       expect(filteredInstance).toBeUndefined()
     })
@@ -1661,21 +1661,21 @@ describe('Test utils.ts', () => {
       const withoutList = await filterByID(
         inst.elemID,
         inst,
-        id => Number.isNaN(Number(_.last(id.getFullNameParts())))
+        async id => Number.isNaN(Number(_.last(id.getFullNameParts())))
       )
       expect(withoutList?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
 
       const withoutObj = await filterByID(
         inst.elemID,
         inst,
-        id => !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
+        async id => !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
       )
       expect(withoutObj?.value).toEqual({ list: inst.value.list, map: inst.value.map })
 
       const withoutMap = await filterByID(
         inst.elemID,
         inst,
-        id => !id.getFullNameParts().includes('Do'),
+        async id => !id.getFullNameParts().includes('Do'),
       )
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })

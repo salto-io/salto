@@ -63,13 +63,13 @@ const mockEmptyConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockEmpt
 export const mockWorkspace = ({
   elements = [],
   name = undefined,
-  index = undefined,
+  index = [],
   stateElements = undefined,
   services = SERVICES,
 }: {
   elements?: Element[]
   name?: string
-  index?: workspace.pathIndex.PathIndex
+  index?: workspace.remoteMap.RemoteMapEntry<workspace.pathIndex.Path[]>[]
   stateElements?: Element[]
   services?: string[]
 }): workspace.Workspace => {

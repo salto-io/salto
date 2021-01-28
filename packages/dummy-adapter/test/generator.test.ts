@@ -120,4 +120,19 @@ describe('elements generator', () => {
       })
     })
   })
+  describe('env data', () => {
+    it('should create env variables if the env variable is set', async () => {
+      const envName = 'env'
+      process.env.SALTO_ENV = envName
+      const elements = await generateElements(testParams)
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj'))
+        .toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj.instance.envEnvInst'))
+        .toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj'))
+        .toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj.instance.EnvInst'))
+        .toBeDefined()
+    })
+  })
 })

@@ -35,7 +35,7 @@ import { updateMergedTypes, MergeError } from '../merger'
 import { InMemoryRemoteElementSource, RemoteElementSource, ElementsSource } from './elements_source'
 import { buildNewMergedElementsAndErrors } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
-import { serialize } from '../serializer/elements'
+import { serialize, deserializeMergeErrors } from '../serializer/elements'
 
 const log = logger(module)
 
@@ -193,9 +193,8 @@ export const loadWorkspace = async (
         ),
         errors: await remoteMapCreator({
           namespace: getRemoteMapNamespace('errors', envToUse),
-          serialize: (saltoErrors: SaltoError[]) => JSON.stringify(saltoErrors),
-          // TODO: we might need to pass static file reviver to the deserialization func
-          deserialize: async (data: string) => JSON.parse(data),
+          serialize: (mergeErrors: MergeError[]) => serialize(mergeErrors),
+          deserialize: async (data: string) => deserializeMergeErrors(data),
         }),
       }
       await buildNewMergedElementsAndErrors({

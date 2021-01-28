@@ -23,7 +23,10 @@ export type FetchProfile = {
   readonly dataManagement?: DataManagement
 }
 
-export const buildFetchProfile = ({ metadata = {}, data }: FetchParameters): FetchProfile => (
+export const buildFetchProfile = ({
+  metadata = { include: [{}] },
+  data,
+}: FetchParameters): FetchProfile => (
   {
     metadataQuery: buildMetadataQuery(metadata),
     dataManagement: data && buildDataManagement(data),

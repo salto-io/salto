@@ -22,6 +22,7 @@ import mockClient from '../client'
 import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const customObjectType = new ObjectType({
   elemID: CUSTOM_OBJECT_TYPE_ID,
@@ -108,7 +109,7 @@ const generateObjectAndInstance = ({
 describe('FieldReferences filter', () => {
   const { client } = mockClient()
 
-  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   const generateElements = (
   ): Element[] => ([
@@ -359,7 +360,7 @@ describe('FieldReferences filter', () => {
 describe('FieldReferences filter - neighbor context strategy', () => {
   const { client } = mockClient()
 
-  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   const parentName = 'User'
   type WorkflowActionReference = {

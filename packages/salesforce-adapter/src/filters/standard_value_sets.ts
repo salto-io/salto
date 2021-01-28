@@ -27,7 +27,6 @@ import {
 import { extractFullNamesFromValueList } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
-import { MetadataQuery } from '../fetch_profile/metadata_query'
 
 const { makeArray } = collections.array
 
@@ -201,7 +200,7 @@ export const makeFilter = (
         client,
         fileProps: [...standardValueSetNames].map(emptyFileProperties),
         metadataType: svsMetadataType,
-        metadataQuery: config.fetchProfile?.metadataQuery as MetadataQuery,
+        metadataQuery: config.fetchProfile.metadataQuery,
       })
       elements.push(...svsInstances.elements)
       updateSVSReferences(elements, svsInstances.elements)

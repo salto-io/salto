@@ -28,6 +28,7 @@ import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import { ConfigChangeSuggestion } from '../src/types'
 import { fetchMetadataType } from '../src/fetch'
+import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -234,6 +235,7 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
 
 const defaultFilterContext: FilterContext = {
   systemFields: allSystemFields,
+  fetchProfile: buildFetchProfile({}),
 }
 
 export const runFiltersOnFetch = async (

@@ -43,6 +43,7 @@ import { FilterWith } from '../../src/filter'
 import { isCustom, Types, createInstanceElement, MetadataTypeAnnotations, metadataType } from '../../src/transformers/transformer'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
 import { WORKFLOW_DIR_NAME } from '../../src/filters/workflow'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('Custom Objects filter', () => {
   let connection: Connection
@@ -130,6 +131,7 @@ describe('Custom Objects filter', () => {
         config: {
           unsupportedSystemFields: ['UnsupportedField'],
           systemFields: ['SystemField', 'NameSystemField'],
+          fetchProfile: buildFetchProfile({}),
         },
       }) as typeof filter
       customObjectType = generateCustomObjectType()
@@ -528,7 +530,10 @@ describe('Custom Objects filter', () => {
         )
         const elements: Element[] = [instance]
 
-        const newFilter = filterCreator({ client, config: {} }) as typeof filter
+        const newFilter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as typeof filter
         await newFilter.onFetch(elements)
 
         const custom = elements.filter(o => o.elemID.name === 'Custom').pop() as ObjectType
@@ -1592,7 +1597,10 @@ describe('Custom Objects filter', () => {
       let changes: Change[]
       let testFieldSet: InstanceElement
       beforeAll(async () => {
-        filter = filterCreator({ client, config: {} }) as typeof filter
+        filter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as typeof filter
 
         testFieldSet = createInstanceElement(
           { fullName: 'Test__c.MyFieldSet', description: 'my field set' },
@@ -1643,7 +1651,10 @@ describe('Custom Objects filter', () => {
           undefined,
           parentAnnotation,
         )
-        filter = filterCreator({ client, config: {} }) as typeof filter
+        filter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as typeof filter
         changes = [
           toChange({ before: testObject }),
           toChange({ before: sideEffectInst }),
@@ -1676,7 +1687,10 @@ describe('Custom Objects filter', () => {
       let changes: Change[]
       let afterObj: ObjectType
       beforeAll(() => {
-        filter = filterCreator({ client, config: {} }) as typeof filter
+        filter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as typeof filter
         afterObj = testObject.clone()
         afterObj.annotations[LABEL] = 'New Label'
         changes = [

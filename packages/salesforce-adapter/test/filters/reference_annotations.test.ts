@@ -18,6 +18,7 @@ import { SALESFORCE, METADATA_TYPE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/reference_annotations'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('reference_annotations filter', () => {
   // Definitions
@@ -26,7 +27,7 @@ describe('reference_annotations filter', () => {
   const objTypeID = new ElemID(SALESFORCE, 'obj')
 
   const { client } = mockClient()
-  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   let nestedType: ObjectType
   let objType: ObjectType

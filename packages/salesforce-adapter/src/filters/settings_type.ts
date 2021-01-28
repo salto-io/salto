@@ -22,7 +22,6 @@ import SalesforceClient from '../client/client'
 import { ConfigChangeSuggestion } from '../types'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
-import { MetadataQuery } from '../fetch_profile/metadata_query'
 
 const log = logger(module)
 
@@ -80,7 +79,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
 
     const settingsTypeInfos = settingsList.filter(
-      info => (config.fetchProfile?.metadataQuery as MetadataQuery)
+      info => (config.fetchProfile.metadataQuery)
         .isTypeMatch(getSettingsTypeName(info.fullName))
     )
 
@@ -102,7 +101,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           client,
           metadataType: type,
           fileProps: [info],
-          metadataQuery: config.fetchProfile?.metadataQuery as MetadataQuery,
+          metadataQuery: config.fetchProfile.metadataQuery,
         }))
     )
     const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)

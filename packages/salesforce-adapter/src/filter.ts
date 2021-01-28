@@ -47,7 +47,7 @@ export type FilterContext = {
   unsupportedSystemFields?: string[]
   systemFields?: string[]
   useOldProfiles?: boolean
-  fetchProfile?: FetchProfile
+  fetchProfile: FetchProfile
 }
 
 export const filtersRunner = (client: SalesforceClient,

@@ -20,13 +20,14 @@ import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, METADATA_TYPE, FOREIGN_KEY_DOMAIN
 import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
 import filterCreator from '../../src/filters/foreign_key_references'
 import mockClient from '../client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 // Based on the instance_reference test scenarios
 describe('foregin_key_references filter', () => {
   const { client } = mockClient()
 
-  const refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: {} }) as FilterWith<'onFetch'>
-  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+  const refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   const parentObjFullName = 'parentFullName'
   const parentObjFieldName = 'parentObj'

@@ -21,6 +21,7 @@ import { SALESFORCE, CPQ_CUSTOM_SCRIPT, API_NAME, CPQ_CONSUMPTION_RATE_FIELDS, C
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/cpq/custom_script'
 import mockAdapter from '../../adapter'
+import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 
 describe('cpq custom script filter', () => {
   let client: SalesforceClient
@@ -96,7 +97,10 @@ describe('cpq custom script filter', () => {
       adapterParams: {
       },
     }))
-    filter = filterCreator({ client, config: {} }) as FilterType
+    filter = filterCreator({
+      client,
+      config: { fetchProfile: buildFetchProfile({}) },
+    }) as FilterType
   })
 
   describe('onFetch', () => {

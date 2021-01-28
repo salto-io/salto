@@ -23,6 +23,7 @@ import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import SalesforceClient from '../../src/client/client'
 import { apiName } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 
 describe('Test CustomFeedFilter', () => {
@@ -32,7 +33,7 @@ describe('Test CustomFeedFilter', () => {
     {
       client,
       // config: { instancesRegexSkippedList: [/^CustomFeedFilter.Case.skipped$/] },
-      config: {},
+      config: { fetchProfile: buildFetchProfile({}) },
     }
   ) as FilterWith<'onFetch'>
   const mockObject = new ObjectType({

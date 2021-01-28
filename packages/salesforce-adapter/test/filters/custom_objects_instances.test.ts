@@ -26,6 +26,7 @@ import {
   OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 jest.mock('../../src/constants', () => ({
   ...jest.requireActual('../../src/constants'),
@@ -175,7 +176,7 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            fetch: {
+            fetchProfile: buildFetchProfile({
               data: {
                 includeObjects: [
                 ],
@@ -193,7 +194,7 @@ describe('Custom Object Instances filter', () => {
                   defaultIdFields: [],
                 },
               },
-            },
+            }),
           },
         }
       ) as FilterType
@@ -229,7 +230,7 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            fetch: {
+            fetchProfile: buildFetchProfile({
               data: {
                 includeObjects: [
                   createNamespaceRegexFromString(testNamespace),
@@ -252,7 +253,7 @@ describe('Custom Object Instances filter', () => {
                   defaultIdFields: ['Id'],
                 },
               },
-            },
+            }),
           },
         }
       ) as FilterType
@@ -773,7 +774,7 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            fetch: {
+            fetchProfile: buildFetchProfile({
               data: {
                 includeObjects: [
                   createNamespaceRegexFromString(nameBasedNamespace),
@@ -797,7 +798,7 @@ describe('Custom Object Instances filter', () => {
                   ],
                 },
               },
-            },
+            }),
           },
         }
       ) as FilterType

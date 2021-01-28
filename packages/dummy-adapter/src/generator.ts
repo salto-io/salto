@@ -548,6 +548,65 @@ export const generateElements = async (
       }
     ).flat()
   }
+
+  const generateEnvElements = (): Element[] => {
+    const envID = process.env.SALTO_ENV
+    if (envID === undefined) return []
+    const sharedObj = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'EnvObj'),
+      fields: {
+        SharedField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        SharedButDiffField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        [`${envID}Field`]: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+      annotationRefsOrTypes: {
+        ShardAnno: BuiltinTypes.STRING,
+        SharedButDiffAnno: BuiltinTypes.STRING,
+        [`${envID}Anno`]: BuiltinTypes.STRING,
+      },
+      annotations: {
+        SharedAnno: 'AnnoValue',
+        SharedButDiffAnno: `${envID}AnnoValue`,
+        [`${envID}Anno`]: 'AnnoValue',
+      },
+      path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
+    })
+    const sharedInst = new InstanceElement(
+      'EnvInst',
+      sharedObj,
+      {
+        SharedField: 'FieldValue',
+        SharedButDiffField: `${envID}FieldValue`,
+        [`${envID}Field`]: 'FieldValue',
+      },
+      [DUMMY_ADAPTER, 'EnvStuff', 'EnvInst']
+    )
+    const envSpecificObj = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, `${envID}EnvObj`),
+      fields: {
+        Field: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+      path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
+    })
+    const envSpecificInst = new InstanceElement(
+      `${envID}EnvInst`,
+      envSpecificObj,
+      { Field: 'FieldValue' },
+      [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`]
+    )
+    return [envSpecificObj, envSpecificInst, sharedObj, sharedInst]
+  }
+  const reportProgress = (details: string, completedPercents: number): void => {
+    if (progressReporter) progressReporter.reportProgress({ details, completedPercents })
+  }
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter?.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = await generatePrimitiveTypes()
@@ -560,6 +619,7 @@ export const generateElements = async (
   progressReporter?.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
   progressReporter?.reportProgress({ message: 'Generation done' })
+  const envObjects = generateEnvElements()
   return [
     ...defaultTypes,
     ...primtiveTypes,
@@ -568,5 +628,6 @@ export const generateElements = async (
     ...objects,
     ...profiles,
     new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'noPath'), fields: {} }),
+    ...envObjects,
   ]
 }

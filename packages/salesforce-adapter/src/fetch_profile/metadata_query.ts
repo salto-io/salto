@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { MetadataInstance, MetadataParams, MetadataQueryParams } from '../types'
+import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
+import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_CONFIG } from '../types'
 
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
@@ -46,4 +47,27 @@ export const buildMetadataQuery = ({ include = [{}], exclude = [] }: MetadataPar
       && !exclude.some(params => isInstanceMatchQueryParams(instance, params))
     ),
   }
+}
+
+const validateMetadataQueryParams = (field: string, params: MetadataQueryParams[]): void => {
+  params.forEach(
+    queryParams => Object.entries(queryParams)
+      .forEach(([queryField, regex]) => {
+        if (regex !== undefined) {
+          try {
+            validateRegularExpressions([regex])
+          } catch (e) {
+            if (e instanceof ConfigValidationError) {
+              e.fieldPath.unshift(METADATA_CONFIG, field, queryField)
+            }
+            throw e
+          }
+        }
+      })
+  )
+}
+
+export const validateMetadataParams = (params: Partial<MetadataParams>): void => {
+  validateMetadataQueryParams('include', params.include ?? [])
+  validateMetadataQueryParams('exclude', params.exclude ?? [])
 }

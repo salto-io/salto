@@ -13,23 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import SalesforceClient, { validateCredentials } from './client/client'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
-  DataManagementConfig, UsernamePasswordCredentials,
-  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES, DATA_CONFIGURATION } from './types'
+  UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
+  SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES } from './types'
+import { validateFetchParameters } from './fetch_profile/fetch_profile'
+import { ConfigValidationError } from './config_validation'
 
-const { makeArray } = collections.array
 const log = logger(module)
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
@@ -50,65 +49,42 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 SalesforceConfig => {
-  const validateRegularExpressions = (listName: string, regularExpressions: string[]): void => {
-    const invalidRegularExpressions = regularExpressions
-      .filter(strRegex => !regex.isValidRegex(strRegex))
-    if (!_.isEmpty(invalidRegularExpressions)) {
-      const errMessage = `Failed to load config due to an invalid ${listName} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
-      log.error(errMessage)
-      throw Error(errMessage)
-    }
-  }
-
-  const validateDataManagement = (dataManagementConfig: DataManagementConfig | undefined): void => {
-    if (dataManagementConfig !== undefined) {
-      if (dataManagementConfig.includeObjects === undefined) {
-        throw Error('includeObjects is required when dataManagement is configured')
-      }
-      if (dataManagementConfig.saltoIDSettings === undefined) {
-        throw Error('saltoIDSettings is required when dataManagement is configured')
-      }
-      if (dataManagementConfig.saltoIDSettings.defaultIdFields === undefined) {
-        throw Error('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
-      }
-      validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
-      validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
-      validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
-      if (dataManagementConfig.saltoIDSettings.overrides !== undefined) {
-        const overridesObjectRegexs = dataManagementConfig.saltoIDSettings.overrides
-          .map(override => override.objectsRegex)
-        validateRegularExpressions(`${FETCH_CONFIG}.${DATA_CONFIGURATION}.saltoIDSettings.overrides`, overridesObjectRegexs)
-      }
-    }
-  }
-
   const validateClientConfig = (clientConfig: SalesforceClientConfig | undefined): void => {
     if (clientConfig?.maxConcurrentApiRequests !== undefined) {
       const invalidValues = (Object.entries(clientConfig.maxConcurrentApiRequests)
         .filter(([_name, value]) => value === 0))
       if (invalidValues.length > 0) {
-        throw Error(`${CLIENT_CONFIG}.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
+        throw new ConfigValidationError([CLIENT_CONFIG, 'maxConcurrentApiRequests'], `maxConcurrentApiRequests values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
       }
     }
 
     if (clientConfig?.retry?.retryStrategy !== undefined
         && RetryStrategyName[clientConfig.retry.retryStrategy] === undefined) {
-      throw Error(`${CLIENT_CONFIG}.clientConfig.retry.retryStrategy value '${clientConfig.retry.retryStrategy}' is not supported`)
+      throw new ConfigValidationError([CLIENT_CONFIG, 'clientConfig', 'retry', 'retryStrategy'], `retryStrategy value '${clientConfig.retry.retryStrategy}' is not supported`)
     }
   }
 
-  validateDataManagement(config?.value?.dataManagement)
-  validateClientConfig(config?.value?.client)
-  const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
-    [FETCH_CONFIG]: config?.value?.[FETCH_CONFIG],
-    [MAX_ITEMS_IN_RETRIEVE_REQUEST]: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
-    useOldProfiles: config?.value?.[USE_OLD_PROFILES],
-    client: config?.value?.[CLIENT_CONFIG],
+  try {
+    validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {})
+    validateClientConfig(config?.value?.client)
+    const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
+      [FETCH_CONFIG]: config?.value?.[FETCH_CONFIG],
+      [MAX_ITEMS_IN_RETRIEVE_REQUEST]: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
+      useOldProfiles: config?.value?.[USE_OLD_PROFILES],
+      client: config?.value?.[CLIENT_CONFIG],
+    }
+    Object.keys(config?.value ?? {})
+      .filter(k => !Object.keys(adapterConfig).includes(k))
+      .forEach(k => log.debug('Unknown config property was found: %s', k))
+    return adapterConfig
+  } catch (e) {
+    if (e instanceof ConfigValidationError) {
+      e.message = `Failed to load config due to an invalid ${e.fieldPath.join('.')} value. ${e.message}`
+    } else {
+      e.message = `Failed to load config. ${e.message}`
+    }
+    throw e
   }
-  Object.keys(config?.value ?? {})
-    .filter(k => !Object.keys(adapterConfig).includes(k))
-    .forEach(k => log.debug('Unknown config property was found: %s', k))
-  return adapterConfig
 }
 
 const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {

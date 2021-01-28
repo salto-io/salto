@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 
-import { FetchParameters } from '../types'
-import { buildDataManagement, DataManagement } from './data_management'
-import { buildMetadataQuery, MetadataQuery } from './metadata_query'
+import { ConfigValidationError } from '../config_validation'
+import { FetchParameters, FETCH_CONFIG } from '../types'
+import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
+import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
 
 export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
@@ -32,3 +33,17 @@ export const buildFetchProfile = ({
     dataManagement: data && buildDataManagement(data),
   }
 )
+
+export const validateFetchParameters = (params: Partial<FetchParameters>): void => {
+  try {
+    validateMetadataParams(params.metadata ?? {})
+    if (params.data !== undefined) {
+      validateDataManagementConfig(params.data)
+    }
+  } catch (e) {
+    if (e instanceof ConfigValidationError) {
+      e.fieldPath.unshift(FETCH_CONFIG)
+    }
+    throw e
+  }
+}

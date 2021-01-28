@@ -200,12 +200,16 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: {
-          includeObjects: ['\\'],
-          saltoIDSettings: {
-            defaultIdFields: ['field'],
+        {
+          fetch: {
+            data: {
+              includeObjects: ['\\'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+              },
+            },
           },
-        } },
+        },
       )
       expect(() => adapter.operations({
         credentials,
@@ -218,13 +222,17 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: {
-          includeObjects: ['obj'],
-          excludeObjects: ['\\'],
-          saltoIDSettings: {
-            defaultIdFields: ['field'],
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              excludeObjects: ['\\'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+              },
+            },
           },
-        } },
+        },
       )
       expect(() => adapter.operations({
         credentials,
@@ -237,13 +245,17 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: {
-          includeObjects: ['obj'],
-          allowReferenceTo: ['\\'],
-          saltoIDSettings: {
-            defaultIdFields: ['field'],
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              allowReferenceTo: ['\\'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+              },
+            },
           },
-        } },
+        },
       )
       expect(() => adapter.operations({
         credentials,
@@ -256,15 +268,19 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: {
-          includeObjects: ['obj'],
-          saltoIDSettings: {
-            defaultIdFields: ['field'],
-            overrides: [
-              { objectsRegex: '\\', idFields: ['Id'] },
-            ],
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+                overrides: [
+                  { objectsRegex: '\\', idFields: ['Id'] },
+                ],
+              },
+            },
           },
-        } },
+        },
       )
       expect(() => adapter.operations({
         credentials,
@@ -278,55 +294,67 @@ describe('SalesforceAdapter creator', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: {
-          saltoIDSettings: {
-            defaultIdFields: ['field'],
-            overrides: [
-              { objectsRegex: '\\', idFields: ['Id'] },
-            ],
+        {
+          fetch: {
+            data: {
+              saltoIDSettings: {
+                defaultIdFields: ['field'],
+                overrides: [
+                  { objectsRegex: '\\', idFields: ['Id'] },
+                ],
+              },
+            },
           },
-        } },
+        },
       )
       expect(() => adapter.operations({
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('includeObjects is required when dataManagement is configured')
+      })).toThrow('Failed to load config due to an invalid fetch.data.includeObjects value. includeObjects is required when dataManagement is configured')
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: {
-          includeObjects: ['obj'],
-        } },
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+            },
+          },
+        },
       )
       expect(() => adapter.operations({
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('saltoIDSettings is required when dataManagement is configured')
+      })).toThrow('Failed to load config due to an invalid fetch.data.saltoIDSettings value. saltoIDSettings is required when dataManagement is configured')
     })
 
     it('should throw error when dataManagement is created without saltoIDSettings.defaultIdFields', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
-        { dataManagement: {
-          includeObjects: ['obj'],
-          saltoIDSettings: {
-            overrides: [
-              { objectsRegex: '\\', idFields: ['Id'] },
-            ],
+        {
+          fetch: {
+            data: {
+              includeObjects: ['obj'],
+              saltoIDSettings: {
+                overrides: [
+                  { objectsRegex: '\\', idFields: ['Id'] },
+                ],
+              },
+            },
           },
-        } },
+        },
       )
       expect(() => adapter.operations({
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
+      })).toThrow('Failed to load config due to an invalid fetch.data.saltoIDSettings.defaultIdFields value. saltoIDSettings.defaultIdFields is required when dataManagement is configured')
     })
 
     it('should throw an error when creating adapter with invalid rate limits in client.maxConcurrentApiRequests', () => {
@@ -348,7 +376,7 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('client.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: read')
+      })).toThrow('Failed to load config due to an invalid client.maxConcurrentApiRequests value. maxConcurrentApiRequests values cannot be set to 0. Invalid keys: read')
     })
     it('should not throw an error when all rate limits client.maxConcurrentApiRequests are valid', () => {
       const validConfig = new InstanceElement(
@@ -422,7 +450,7 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('client.clientConfig.retry.retryStrategy value \'somethingElse\' is not supported')
+      })).toThrow('Failed to load config due to an invalid client.clientConfig.retry.retryStrategy value. retryStrategy value \'somethingElse\' is not supported')
     })
 
     it('should not throw an error when no config is passed', () => {

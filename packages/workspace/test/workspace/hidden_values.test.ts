@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
-import { State } from '../../src/workspace/state'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { MergeResult } from '../../src/merger'
 import { handleHiddenChanges, mergeWithHidden } from '../../src/workspace/hidden_values'
+import { mockState } from '../common/state'
+import { mockFunction } from '../common/helpers'
 
 describe('mergeWithHidden', () => {
   const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType => (
@@ -142,33 +143,66 @@ describe('mergeWithHidden', () => {
 
 describe('handleHiddenChanges', () => {
   describe('hidden_string in instance annotations', () => {
-    const instance = new InstanceElement(
-      'instance',
-      new ObjectType({
-        elemID: new ElemID('test', 'type'),
-      }),
-      {},
-      undefined,
-      { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' }
-    )
-
-    const change: DetailedChange = {
-      id: instance.elemID,
-      action: 'add',
-      data: { after: instance },
-    }
-
-    it('hidden_string value should be omitted', async () => {
-      const result = await handleHiddenChanges(
-        [change],
-        jest.fn() as unknown as State,
-        jest.fn().mockResolvedValue([])
+    let instance: InstanceElement
+    beforeEach(() => {
+      instance = new InstanceElement(
+        'instance',
+        new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            val: { type: BuiltinTypes.STRING },
+          },
+        }),
+        { val: 'asd' },
+        undefined,
+        { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' }
       )
+    })
 
-      expect(result.length).toBe(1)
-      expect(getChangeElement(result[0])).toBeDefined()
-      expect(getChangeElement(result[0])?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL])
-        .toBeUndefined()
+    describe('when adding the whole instance', () => {
+      let result: DetailedChange[]
+      let filteredInstance: InstanceElement
+      beforeEach(async () => {
+        const change: DetailedChange = {
+          id: instance.elemID,
+          action: 'add',
+          data: { after: instance },
+        }
+
+        result = await handleHiddenChanges(
+          [change],
+          mockState(),
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+        )
+        expect(result).toHaveLength(1)
+        filteredInstance = getChangeElement(result[0])
+      })
+      it('should omit the hidden annotation', () => {
+        expect(filteredInstance.annotations).not.toHaveProperty(INSTANCE_ANNOTATIONS.SERVICE_URL)
+      })
+      it('should keep non hidden values', () => {
+        expect(filteredInstance.value).toHaveProperty('val', 'asd')
+      })
+    })
+
+    describe('when adding only the hidden annotation', () => {
+      let result: DetailedChange[]
+      beforeEach(async () => {
+        const change: DetailedChange = {
+          id: instance.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL),
+          action: 'add',
+          data: { after: instance.annotations[INSTANCE_ANNOTATIONS.SERVICE_URL] },
+        }
+
+        result = await handleHiddenChanges(
+          [change],
+          mockState([instance.type, instance]),
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+        )
+      })
+      it('should omit the whole change', () => {
+        expect(result).toHaveLength(0)
+      })
     })
   })
 
@@ -192,12 +226,8 @@ describe('handleHiddenChanges', () => {
     it('hidden annotation should be omitted', async () => {
       const result = await handleHiddenChanges(
         [change],
-        {
-          get: (id: ElemID) => Promise.resolve(id.isEqual(object.elemID)
-            ? object
-            : undefined),
-        } as unknown as State,
-        jest.fn().mockResolvedValue([])
+        mockState([object]),
+        mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
       )
 
       expect(result.length).toBe(0)

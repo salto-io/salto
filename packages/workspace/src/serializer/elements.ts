@@ -288,8 +288,8 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
 
 export const deserializeMergeErrors = async (data: string): Promise<MergeError[]> => {
   const { elements: errors } = (await generalDeserialize<MergeError>(data))
-  if (errors.length !== errors.filter(isMergeError).length) {
-    throw new Error('Deserialization failed. should receive merge errors')
+  if (errors.some(error => !isMergeError(error))) {
+    throw new Error('Deserialization failed. At least one element did not deserialize to a MergeError')
   }
   return errors
 }
@@ -327,8 +327,8 @@ export const deserialize = async (
       element.value = reviveStaticFiles(element.value)
     }
   })
-  if (elements.length !== elements.filter(isElement).length) {
-    throw new Error('Deserialization failed. should receive elements')
+  if (elements.some(elem => !isElement(elem))) {
+    throw new Error('Deserialization failed. At least one element did not deserialize to an Element')
   }
   return elements
 }

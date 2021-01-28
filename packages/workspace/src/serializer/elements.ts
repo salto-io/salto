@@ -23,7 +23,7 @@ import {
   isInstanceElement, isPrimitiveType,
   FieldDefinition, isObjectType, Values,
 } from '@salto-io/adapter-api'
-import { DuplicateAnnotationError, MergeError } from '../merger/internal/common'
+import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
 import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
   ConflictingSettingError, DuplicateAnnotationTypeError } from '../merger/internal/object_types'
@@ -106,8 +106,10 @@ function isSerializedClass(value: any): value is SerializedClass {
     && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serialize = (elements: (Element | MergeError)[],
-  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'): string => {
+export const serialize = <T = Element>(
+  elements: T[],
+  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'
+): string => {
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
     const o = _.clone(e as T & SerializedClass)
@@ -169,16 +171,13 @@ export const serialize = (elements: (Element | MergeError)[],
 export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
-export const deserialize = async (
-  data: string,
-  staticFileReviver?: StaticFileReviver,
-): Promise<(Element | MergeError)[]> => {
+const generalDeserialize = async <T>(data: string):
+Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
+  const staticFiles: Record<string, StaticFile> = {}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reviveElemID = (v: {[key: string]: any}): ElemID => (
     new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
   )
-
-  let staticFiles: Record<string, StaticFile> = {}
 
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
@@ -280,7 +279,6 @@ export const deserialize = async (
       })
     ),
   }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReviver = (_k: string, v: any): any => {
     if (isSerializedClass(v)) {
@@ -293,8 +291,25 @@ export const deserialize = async (
     }
     return v
   }
+  const elements = JSON.parse(data, elementReviver)
+  return { elements, staticFiles }
+}
 
-  const elements = JSON.parse(data, elementReviver) as Element[]
+export const deserializeMergeErrors = async (data: string): Promise<MergeError[]> => {
+  const { elements: errors } = (await generalDeserialize<MergeError>(data))
+  if (errors.some(error => !isMergeError(error))) {
+    throw new Error('Deserialization failed. At least one element did not deserialize to a MergeError')
+  }
+  return errors
+}
+
+export const deserialize = async (
+  data: string,
+  staticFileReviver?: StaticFileReviver,
+): Promise<Element[]> => {
+  const res = await generalDeserialize<Element>(data)
+  let { staticFiles } = res
+  const { elements } = res
 
   if (staticFileReviver) {
     staticFiles = _.fromPairs(
@@ -321,6 +336,8 @@ export const deserialize = async (
       element.value = reviveStaticFiles(element.value)
     }
   })
-
+  if (elements.some(elem => !isElement(elem))) {
+    throw new Error('Deserialization failed. At least one element did not deserialize to an Element')
+  }
   return elements
 }

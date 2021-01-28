@@ -366,6 +366,9 @@ describe('State/cache serialization', () => {
         expect(deserialized.value.file).not.toBeInstanceOf(LazyStaticFile)
       })
     })
+    it('should throw error if trying to deserialize a non element object', async () => {
+      await expect(deserialize(JSON.stringify([{ test }]))).rejects.toThrow()
+    })
   })
   describe('merge errors', () => {
     const elemID = new ElemID('dummy', 'test')
@@ -426,6 +429,9 @@ describe('State/cache serialization', () => {
     })
     it('should serialize DuplicateVariableNameError correctly', () => {
       expect(deserialized[7]).toEqual(duplicateVariableNameError)
+    })
+    it('should throw error if trying to deserialize a non merge error object', async () => {
+      await expect(deserializeMergeErrors(JSON.stringify([{ test }]))).rejects.toThrow()
     })
   })
 })

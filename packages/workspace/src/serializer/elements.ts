@@ -22,7 +22,7 @@ import {
   isInstanceElement, isReferenceExpression, Variable, StaticFile, isStaticFile,
   FieldDefinition, isObjectType, Values, isPrimitiveType,
 } from '@salto-io/adapter-api'
-import { DuplicateAnnotationError, MergeError } from '../merger/internal/common'
+import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
 import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
   ConflictingSettingError, DuplicateAnnotationTypeError } from '../merger/internal/object_types'
@@ -286,8 +286,13 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
   return { elements, staticFiles }
 }
 
-export const deserializeMergeErrors = async (data: string): Promise<MergeError[]> =>
-  (await generalDeserialize<MergeError>(data)).elements
+export const deserializeMergeErrors = async (data: string): Promise<MergeError[]> => {
+  const { elements: errors } = (await generalDeserialize<MergeError>(data))
+  if (errors.length !== errors.filter(isMergeError).length) {
+    throw new Error('Deserialization failed. should receive merge errors')
+  }
+  return errors
+}
 
 export const deserialize = async (
   data: string,
@@ -322,6 +327,8 @@ export const deserialize = async (
       element.value = reviveStaticFiles(element.value)
     }
   })
-
+  if (elements.length !== elements.filter(isElement).length) {
+    throw new Error('Deserialization failed. should receive elements')
+  }
   return elements
 }

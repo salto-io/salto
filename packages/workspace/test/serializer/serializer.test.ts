@@ -23,7 +23,7 @@ import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
-import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
+import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { LazyStaticFile } from '../../src/workspace/static_files/source'
 import { SyncDirectoryStore } from '../../src/workspace/dir_store'
@@ -366,6 +366,9 @@ describe('State/cache serialization', () => {
         expect(deserialized.value.file).not.toBeInstanceOf(LazyStaticFile)
       })
     })
+    it('should throw error if trying to deserialize a non element object', async () => {
+      await expect(deserialize(JSON.stringify([{ test }]))).rejects.toThrow()
+    })
   })
   describe('merge errors', () => {
     const elemID = new ElemID('dummy', 'test')
@@ -397,7 +400,7 @@ describe('State/cache serialization', () => {
         duplicateVariableNameError,
       ]
       serialized = serialize(mergeErrors)
-      deserialized = (await deserialize(serialized)) as MergeError[]
+      deserialized = await deserializeMergeErrors(serialized)
     })
     it('serialized value should be non empty string', () => {
       expect(typeof serialized).toEqual('string')
@@ -426,6 +429,9 @@ describe('State/cache serialization', () => {
     })
     it('should serialize DuplicateVariableNameError correctly', () => {
       expect(deserialized[7]).toEqual(duplicateVariableNameError)
+    })
+    it('should throw error if trying to deserialize a non merge error object', async () => {
+      await expect(deserializeMergeErrors(JSON.stringify([{ test }]))).rejects.toThrow()
     })
   })
 })

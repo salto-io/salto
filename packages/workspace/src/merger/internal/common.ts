@@ -76,3 +76,7 @@ export const mergeNoDuplicates = <T>(
   )
   return { merged: merged as T, errors }
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isMergeError = (error: any): error is MergeError =>
+  error instanceof MergeError

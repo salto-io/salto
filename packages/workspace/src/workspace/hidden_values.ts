@@ -392,16 +392,16 @@ const filterOutHiddenChanges = async (
         changeType: TypeElement | undefined
         changePath: ReadonlyArray<string>
       } => {
+        if (change.id.isAttrID()) {
+          return {
+            changeType: elementAnnotationTypes(baseElem)[path[0]],
+            changePath: path.slice(1),
+          }
+        }
         if (isInstanceElement(baseElem)) {
           return {
             changeType: baseElem.type,
             changePath: path,
-          }
-        }
-        if (change.id.idType === 'attr') {
-          return {
-            changeType: elementAnnotationTypes(baseElem)[path[0]],
-            changePath: path.slice(1),
           }
         }
 

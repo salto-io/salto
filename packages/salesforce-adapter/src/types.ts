@@ -302,6 +302,14 @@ const clientConfigType = new ObjectType({
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
 })
 
+// Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
+const INSTANCE_SUFFIXES = [
+  'c', 'r', 'ka', 'kav', 'Feed', 'ViewStat', 'VoteStat', 'DataCategorySelection', 'x', 'xo', 'mdt', 'Share', 'Tag',
+  'History', 'pc', 'pr', 'hd', 'hqr', 'hst', 'b', 'latitude__s', 'longitude__s', 'e', 'p', 'ChangeEvent', 'chn',
+]
+
+export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})([^a-zA-Z\\d_]+|$)).+$`
+
 export const configType = new ObjectType({
   elemID: configID,
   fields: {
@@ -329,6 +337,7 @@ export const configType = new ObjectType({
           // We currently can't deploy them or edit them after they are created:
           '^StandardValueSet.AddressCountryCode',
           '^StandardValueSet.AddressStateCode',
+          PACKAGES_INSTANCES_REGEX,
         ],
       },
     },

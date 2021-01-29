@@ -70,15 +70,16 @@ const validateMetadataQueryParams = (field: string, params: MetadataQueryParams[
   params.forEach(
     queryParams => Object.entries(queryParams)
       .forEach(([queryField, regex]) => {
-        if (regex !== undefined) {
-          try {
-            validateRegularExpressions([regex])
-          } catch (e) {
-            if (e instanceof ConfigValidationError) {
-              e.fieldPath.unshift(METADATA_CONFIG, field, queryField)
-            }
-            throw e
+        if (regex === undefined) {
+          return
+        }
+        try {
+          validateRegularExpressions([regex])
+        } catch (e) {
+          if (e instanceof ConfigValidationError) {
+            e.fieldPath.unshift(METADATA_CONFIG, field, queryField)
           }
+          throw e
         }
       })
   )

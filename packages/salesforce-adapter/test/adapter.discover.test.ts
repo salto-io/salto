@@ -909,7 +909,7 @@ public class MyClass${index} {
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
           }
         )
-      }, 10000000)
+      })
       it('should return correct config when original config is empty', async () => {
         const { connection: connectionMock, adapter: adapterMock } = mockAdapter({
           adapterParams: {
@@ -936,7 +936,7 @@ public class MyClass${index} {
             },
           }
         )
-      }, 10000000)
+      })
     })
   })
 })

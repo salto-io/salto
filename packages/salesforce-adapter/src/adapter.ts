@@ -241,15 +241,6 @@ export default class SalesforceAdapter implements AdapterOperations {
   private fetchProfile: FetchProfile
 
   public constructor({
-    // metadataTypesSkippedList = [
-    //   'CustomField', // We have special treatment for this type
-    //   constants.SETTINGS_METADATA_TYPE,
-    //   'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
-    //   'CustomIndex', // readMetadata and retrieve fail on this type when fetching by name
-    //   // readMetadata fails on those and pass on the parents
-    //   // (AssignmentRules and EscalationRules)
-    //   'AssignmentRule', 'EscalationRule',
-    // ],
     metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = metadataToRetrieveAndDeploy,

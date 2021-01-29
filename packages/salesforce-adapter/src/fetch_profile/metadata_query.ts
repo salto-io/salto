@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { SETTINGS_METADATA_TYPE } from '../constants'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_CONFIG } from '../types'
 
@@ -21,8 +22,24 @@ export type MetadataQuery = {
   isInstanceMatch: (instance: MetadataInstance) => boolean
 }
 
+const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
+  // We have special treatment for this type
+  { metadataType: 'CustomField' },
+  { metadataType: SETTINGS_METADATA_TYPE },
+  // Only has the active flow version but we cant get flow versions anyway
+  { metadataType: 'FlowDefinition' },
+  // readMetadata and retrieve fail on this type when fetching by name
+  { metadataType: 'CustomIndex' },
+  // readMetadata fails on those and pass on the parents
+  // (AssignmentRules and EscalationRules)
+  { metadataType: 'AssignmentRule' },
+  { metadataType: 'EscalationRule' },
+]
+
 export const buildMetadataQuery = ({ include = [{}], exclude = [] }: MetadataParams):
   MetadataQuery => {
+  const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
+
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     {
@@ -38,13 +55,13 @@ export const buildMetadataQuery = ({ include = [{}], exclude = [] }: MetadataPar
   return {
     isTypeMatch: type => (
       include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
-      && !exclude.some(({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
+      && !fullExcludeList.some(({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
         namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type))
     ),
 
     isInstanceMatch: instance => (
       include.some(params => isInstanceMatchQueryParams(instance, params))
-      && !exclude.some(params => isInstanceMatchQueryParams(instance, params))
+      && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
     ),
   }
 }

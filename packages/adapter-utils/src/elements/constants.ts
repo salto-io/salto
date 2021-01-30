@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,17 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const deepMerge = require('../../build_utils/deep_merge')
-const path = require('path')
 
-module.exports = deepMerge(
-  require('../../eslintrc.js'),
-  require('../../eslint/adapter-api.rules.js'),
-  {
-    parserOptions: {
-      tsconfigRootDir: __dirname,
-      project: path.resolve(__dirname, './tsconfig.json'),
-    },
-  },
-)
+// NACL files path
+export const RECORDS_PATH = 'Records'
+export const TYPES_PATH = 'Types'
+export const SUBTYPES_PATH = 'Subtypes'
+export const OBJECTS_PATH = 'Objects'
 
+export const NAMESPACE_SEPARATOR = '__'

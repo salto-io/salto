@@ -307,6 +307,7 @@ const buildMultiEnvSource = (
       commonSource().flush(),
       ..._.values(secondarySources()).map(src => src.flush()),
     ])
+    await (await getState()).elements.flush()
   }
 
   const isEmpty = async (env?: string): Promise<boolean> => (

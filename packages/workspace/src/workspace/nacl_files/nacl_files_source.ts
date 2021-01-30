@@ -651,6 +651,11 @@ const buildNaclFilesSource = (
       await naclFilesStore.flush()
       await cache.flush()
       await staticFilesSource.flush()
+      const currentState = await getState()
+      await currentState.elementsIndex.flush()
+      await currentState.mergeErrors.flush()
+      await currentState.mergedElements.flush()
+      await currentState.referencedIndex.flush()
     },
 
     getErrors: async (): Promise<Errors> => {

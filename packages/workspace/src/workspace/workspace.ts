@@ -400,6 +400,9 @@ export const loadWorkspace = async (
     flush: async (): Promise<void> => {
       await state().flush()
       await naclFilesSource.flush()
+      const currentState = await getWorkspaceState()
+      await currentState.merged.flush()
+      await currentState.errors.flush()
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(elementsSources.sources, source =>

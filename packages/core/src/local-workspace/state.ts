@@ -251,6 +251,7 @@ export const localState = (
       if (pathToClean !== '') {
         await rm(pathToClean)
       }
+      await inMemState.flush()
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string> => {

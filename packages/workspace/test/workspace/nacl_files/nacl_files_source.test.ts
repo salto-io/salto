@@ -271,7 +271,9 @@ describe('Nacl Files Source', () => {
           elements,
           buffer: '',
           data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-            ['errors', []], ['timestamp', 0], ['referenced', []],
+            { key: 'errors', value: [] },
+            { key: 'timestamp', value: 0 },
+            { key: 'referenced', value: [] },
           ]),
         },
       ]

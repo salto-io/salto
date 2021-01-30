@@ -177,10 +177,10 @@ export const toParsedNaclFile = async (
     filename: naclFile.filename,
     elements,
     data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-      ['timestamp', naclFile.timestamp || Date.now()],
-      ['errors', parseResult.errors],
-      ['referenced', await awu(parseResult.elements).flatMap(getElementReferenced).toArray()],
-    ] as unknown as [ParsedNaclFileDataKeys, Value]),
+      { key: 'timestamp', value: naclFile.timestamp || Date.now() },
+      { key: 'errors', value: parseResult.errors },
+      { key: 'referenced', value: await awu(parseResult.elements).flatMap(getElementReferenced).toArray() },
+    ]),
   }
 }
 
@@ -416,9 +416,9 @@ const buildNaclFilesSource = (
       filename,
       elements,
       data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-        ['referenced', await awu(await elements.getAll()).flatMap(getElementReferenced).toArray()],
-        ['errors', []],
-        ['timestamp', Date.now()],
+        { key: 'referenced', value: await awu(await elements.getAll()).flatMap(getElementReferenced).toArray() },
+        { key: 'errors', value: [] },
+        { key: 'timestamp', value: Date.now() },
       ]),
     }
     const key = cacheResultKey({ filename: parsed.filename,

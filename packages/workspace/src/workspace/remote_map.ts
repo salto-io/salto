@@ -56,8 +56,8 @@ export type RemoteMapCreator = <T, K extends string = string>(
 // This is for now. Don't commit this K?
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {
   private data: Map<K, T>
-  constructor(data: [K, T][] = []) {
-    this.data = new Map(data)
+  constructor(data: RemoteMapEntry<T, K>[] = []) {
+    this.data = new Map(data.map(e => [e.key, e.value]))
   }
 
   async setAll(entries: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void> {

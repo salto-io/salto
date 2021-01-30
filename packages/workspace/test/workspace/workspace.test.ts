@@ -86,7 +86,7 @@ const createState = (elements: Element[]): State => buildInMemState(async () => 
   elements: createInMemoryElementSource(elements),
   pathIndex: new InMemoryRemoteMap(),
   servicesUpdateDate: new InMemoryRemoteMap(),
-  saltoVersion: new InMemoryRemoteMap([['version', '0.0.1']]),
+  saltoVersion: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }))
 
 const createWorkspace = async (

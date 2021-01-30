@@ -31,15 +31,13 @@ describe('state', () => {
   const servicesUpdateDate = { [adapter]: updateDate }
   const loadStateData = async (): Promise<StateData> => ({
     elements: createInMemoryElementSource([elem]),
-    servicesUpdateDate: new InMemoryRemoteMap([[adapter, updateDate]]),
+    servicesUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
     pathIndex,
-    saltoVersion: new InMemoryRemoteMap([['version', '0.0.1']]),
+    saltoVersion: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
   })
 
   beforeAll(async () => {
-    pathIndex = new InMemoryRemoteMap(
-      (await getElementsPathHints([elem])).map(e => [e.key, e.value] as [string, Path[]])
-    )
+    pathIndex = new InMemoryRemoteMap(await getElementsPathHints([elem]))
   })
   describe('build in-mem state', () => {
     let state: ReturnType<typeof buildInMemState>

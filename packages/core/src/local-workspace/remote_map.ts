@@ -164,7 +164,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
 
   const valuesImpl = (tempOnly = false, iterationOpts?: remoteMap.IterationOpts):
   AsyncIterable<T> => {
-    const opts = { ...(iterationOpts ?? {}), keys: false, values: true }
+    const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
     const tempIter = createTempIterator(opts)
     const iter = createPersistentIterator(opts)
     return awu(aggregatedIterable(tempOnly ? [tempIter] : [tempIter, iter]))
@@ -195,6 +195,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       db = rocksdb(loc)
       dbConnections[loc] = db
       await promisify(db.open.bind(db))()
+      await clearImpl(TEMP_PREFIX)
     } else {
       db = dbConnections[loc]
     }

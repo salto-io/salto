@@ -24,12 +24,10 @@ export const mockState = (
 ): state.State => (
   state.buildInMemState(async () => ({
     elements: elementSource.createInMemoryElementSource(elements),
-    pathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(
-      index.map(e => [e.key, e.value] as [string, pathIndex.Path[]])
-    ),
+    pathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
     servicesUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(
-      services.map(serviceName => [serviceName, new Date()])
+      services.map(serviceName => ({ key: serviceName, value: new Date() }))
     ),
-    saltoVersion: new remoteMap.InMemoryRemoteMap<string, 'version'>([['version', '0.0.1']]),
+    saltoVersion: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
   }))
 )

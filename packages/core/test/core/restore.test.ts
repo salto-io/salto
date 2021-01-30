@@ -139,9 +139,7 @@ describe('restore', () => {
     multiPathObjMerged = allElement[2].clone()
     singlePathInstMerged = allElement[1].clone()
     multiPathInstMerged = allElement[3].clone()
-    index = new remoteMap.InMemoryRemoteMap(
-      (await getElementsPathHints(elementfragments)).map(e => [e.key, e.value])
-    )
+    index = new remoteMap.InMemoryRemoteMap(await getElementsPathHints(elementfragments))
   })
 
   describe('with no changes', () => {

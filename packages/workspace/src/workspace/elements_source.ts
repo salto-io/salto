@@ -137,6 +137,8 @@ export class RemoteElementSource implements ElementsSource {
 export const createInMemoryElementSource = (
   elements: readonly Element[] = []
 ): RemoteElementSource => {
-  const inMemMap = new InMemoryRemoteMap(elements.map(e => [e.elemID.getFullName(), e]))
+  const inMemMap = new InMemoryRemoteMap(
+    elements.map(e => ({ key: e.elemID.getFullName(), value: e }))
+  )
   return new RemoteElementSource(inMemMap)
 }

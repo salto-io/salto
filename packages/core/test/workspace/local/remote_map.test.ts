@@ -223,14 +223,10 @@ describe('test operations on remote db', () => {
     changedElement.fields = { [Object.keys(changedElement.fields)[0].concat('A CHANGE')]:
       changedValue }
     await remoteMap.set(cloneElements[0].elemID.getFullName(), cloneElements[0])
-    const iter = remoteMap.values()
-    const res: Element[] = []
+    const res = await awu(remoteMap.values()).toArray()
     const elemToFieldNameMapping = (elem: Element): string | undefined =>
       (isObjectType(elem) ? Object.values((elem as ObjectType).fields)
         .map(field => field.name).sort().toString() : undefined)
-    for await (const element of iter) {
-      res.push(element)
-    }
     expect(res.map(elemToFieldNameMapping)).toEqual(cloneElements.sort((a, b) =>
       (a.elemID.getFullName() < b.elemID.getFullName() ? -1 : 1))
       .map(elemToFieldNameMapping))

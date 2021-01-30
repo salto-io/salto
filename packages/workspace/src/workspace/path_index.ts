@@ -56,11 +56,14 @@ const getElementPathHints = async (element: Element): Promise<Iterable<RemoteMap
   return wu(_.entries(pathHints)).map(e => ({ key: e[0], value: e[1] }))
 }
 
-export const getElementsPathHints = (unmergedElements: Element[]):
-Promise<RemoteMapEntry<Path[]>[]> =>
-  awu(unmergedElements)
+export const getElementsPathHints = async (unmergedElements: Element[]):
+Promise<RemoteMapEntry<Path[]>[]> => {
+  const elementIDsToEntries = await awu(unmergedElements)
     .flatMap(getElementPathHints)
-    .toArray()
+    .groupBy(e => e.key)
+  return Object.entries(elementIDsToEntries)
+    .map(entry => ({ key: entry[0], value: entry[1].flatMap(val => val.value) }))
+}
 
 export const overridePathIndex = async (
   current: RemoteMap<Path[]>,

@@ -1,28 +1,29 @@
 salesforce {
   fetch = {
     exclude = [
-      { 
+      {
         metadataType = "Report"
       },
-      { 
+      {
         metadataType = "ReportType"
       },
-      { 
+      {
         metadataType = "ReportFolder"
       },
-      { 
+      {
         metadataType = "Dashboard"
       },
-      { 
+      {
         metadataType = "DashboardFolder"
       },
-      { 
+      {
         metadataType = "Profile"
       },
-      { 
-        metadataType = "EmailTemplate",
+      {
+        metadataType = "EmailTemplate"
         name = "MarketoEmailTemplates.*"
       },
+    ]
   }
   maxItemsInRetrieveRequest = 2500
   client = {

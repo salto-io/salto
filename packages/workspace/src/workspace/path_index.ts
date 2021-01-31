@@ -18,53 +18,13 @@ import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { ElemID, Element, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
 import { TransformFunc, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
 
-type Path = readonly string[]
-export class PathIndex extends collections.treeMap.PartialTreeMap<Path> {
-  constructor(entries: Iterable<[string, Path[]]> = []) {
-    super(entries, ElemID.NAMESPACE_SEPARATOR)
-    this.compact()
-  }
+export type Path = readonly string[]
 
-  private compact(): void {
-    const compactEntry = (
-      entry: collections.treeMap.TreeMapEntry<Path>
-    ): collections.treeMap.TreeMapEntry<Path> => {
-      const shouldDrop = (child: collections.treeMap.TreeMapEntry<Path>): boolean => (
-        _.isEmpty(child.children) && _.isEqual(entry.value, child.value)
-      )
-      const newChildren = _(entry.children)
-        .mapValues(compactEntry)
-        .omitBy(shouldDrop)
-        .value() as Record<string, collections.treeMap.TreeMapEntry<Path>>
-      return { value: entry.value, children: newChildren }
-    }
-    this.data = compactEntry(this.data)
-  }
-
-  // Not - since compact is run the complexity of this set is O(N) where N is
-  // the number of keys in the map. When  inserting multiple values - use set All.
-  set(id: string, source: Path[]): this {
-    super.set(id, source)
-    this.compact()
-    return this
-  }
-
-  setAll(entries: Iterable<[string, Path[]]>): void {
-    wu(entries).forEach(entry => this.push(entry[0], ...entry[1]))
-    this.compact()
-  }
-
-  get(id: string): Path[] | undefined {
-    const path = id.split(this.separator)
-    const entry = collections.treeMap.TreeMap.getFromPath(this.data, path, false, true)
-    return entry?.value
-  }
-}
-
-const getElementPathHints = async (element: Element): Promise<Iterable<[string, Path[]]>> => {
+const getElementPathHints = async (element: Element): Promise<Iterable<RemoteMapEntry<Path[]>>> => {
   if (element.path === undefined) {
     return []
   }
@@ -93,38 +53,54 @@ const getElementPathHints = async (element: Element): Promise<Iterable<[string, 
     // TODO: Does this work with the above?
     runOnFields: true,
   })
-  return wu(_.entries(pathHints))
+  return wu(_.entries(pathHints)).map(e => ({ key: e[0], value: e[1] }))
 }
 
-export const getElementsPathHints = (unmergedElements: Element[]): Promise<[string, Path[]][]> =>
-  awu(unmergedElements).flatMap(getElementPathHints).toArray()
-
-
-export const createPathIndex = async (unmergedElements: Element[]): Promise<PathIndex> => {
-  const pathHints = await getElementsPathHints(unmergedElements)
-  const pathIndex = new PathIndex(pathHints)
-  return pathIndex
+export const getElementsPathHints = async (unmergedElements: Element[]):
+Promise<RemoteMapEntry<Path[]>[]> => {
+  const elementIDsToEntries = await awu(unmergedElements)
+    .flatMap(getElementPathHints)
+    .groupBy(e => e.key)
+  return Object.entries(elementIDsToEntries)
+    .map(entry => ({ key: entry[0], value: entry[1].flatMap(val => val.value) }))
 }
 
-export const updatePathIndex = async (current: PathIndex, unmergedElements: Element[],
-  servicesToMaintain: string[]): Promise<PathIndex> => {
+export const overridePathIndex = async (
+  current: RemoteMap<Path[]>,
+  unmergedElements: Element[],
+): Promise<void> => {
+  const entries = await getElementsPathHints(unmergedElements)
+  await current.clear()
+  await current.setAll(entries)
+}
+
+export const updatePathIndex = async (
+  current: RemoteMap<Path[]>,
+  unmergedElements: Element[],
+  servicesToMaintain: string[]
+): Promise<void> => {
   if (servicesToMaintain.length === 0) {
-    return createPathIndex(unmergedElements)
+    await overridePathIndex(current, unmergedElements)
+    return
   }
-  const oldPathHintsToMaintain = wu(current.entries()).filter(([value]) =>
-    servicesToMaintain.includes(ElemID.fromFullName(value).adapter))
-  const pathIndex = new PathIndex(oldPathHintsToMaintain)
-  pathIndex.setAll(await getElementsPathHints(unmergedElements))
-  return pathIndex
+  const entries = await getElementsPathHints(unmergedElements)
+  const oldPathHintsToMaintain = await awu(current.entries())
+    .filter(e => servicesToMaintain.includes(ElemID.fromFullName(e.key).adapter))
+    .concat(entries)
+    .toArray()
+  await current.clear()
+  await current.setAll(awu(oldPathHintsToMaintain))
 }
 
-export const deserializedPathIndex = (data: string): PathIndex => new PathIndex(JSON.parse(data))
-export const deserializedPathsIndex = (dataEntries: string[]): PathIndex => new PathIndex(
-  dataEntries.flatMap(data => JSON.parse(data))
+export const deserializedPathsIndex = (dataEntries: string[]): RemoteMapEntry<Path[], string>[] =>
+  dataEntries.flatMap(data => JSON.parse(data)).map(e => ({ key: e[0], value: e[1] }))
+
+export const serializedPathIndex = (entries: RemoteMapEntry<Path[], string>[]): string => (
+  safeJsonStringify(Array.from(entries.map(e => [e.key, e.value] as [string, Path[]])))
 )
-export const serializedPathIndex = (index: PathIndex): string => (
-  safeJsonStringify(Array.from(index.entries()))
-)
-export const serializePathIndexByService = (index: PathIndex): Record<string, string> =>
-  _.mapValues(_.groupBy(Array.from(index.entries()), entry =>
-    ElemID.fromFullName(entry[0]).adapter), e => safeJsonStringify(e))
+export const serializePathIndexByService = (entries: RemoteMapEntry<Path[], string>[]):
+Record<string, string> =>
+  _.mapValues(
+    _.groupBy(Array.from(entries), entry => ElemID.fromFullName(entry.key).adapter),
+    e => serializedPathIndex(e),
+  )

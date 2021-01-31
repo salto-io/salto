@@ -17,7 +17,7 @@ import { EOL } from 'os'
 import { replaceContents, exists, readZipFile, rm, rename, generateZipString } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { state as wsState, serialization, pathIndex } from '@salto-io/workspace'
+import { state as wsState, serialization, pathIndex, remoteMap } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import { localState, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
@@ -103,10 +103,13 @@ describe('local state', () => {
   const findReadZipFileCall = (filename: string): unknown[] =>
     readZipFileMock.mock.calls.find(c => c[0] === filename)
 
+  const remoteMapCreator = async <T, K extends string = string>():
+    Promise<remoteMap.RemoteMap<T, K>> => new remoteMap.InMemoryRemoteMap<T, K>()
+
   describe('multiple state files', () => {
     let state: wsState.State
     beforeEach(() => {
-      state = localState('multiple_files')
+      state = localState('multiple_files', '', remoteMapCreator)
     })
 
     it('reads all from both files but not from files with an additional suffix', async () => {
@@ -162,12 +165,12 @@ describe('local state', () => {
   describe('empty state', () => {
     let state: wsState.State
     beforeEach(() => {
-      state = localState('empty')
+      state = localState('empty', '', remoteMapCreator)
     })
 
     it('should return a hash of an empty state', async () => {
       const stateHash = await state.getHash()
-      expect(stateHash).toEqual(toMD5('{}'))
+      expect(stateHash).toEqual(toMD5(safeJsonStringify([])))
     })
 
     it('should return an empty array if there is no saved state', async () => {
@@ -227,33 +230,35 @@ describe('local state', () => {
   })
 
   it('should read valid state file', async () => {
-    const state = localState('full')
+    const state = localState('full', '', remoteMapCreator)
     const elements = await awu(await state.getAll()).toArray()
     expect(elements).toHaveLength(2)
     expect(await state.getStateSaltoVersion()).toBe('0.0.1')
   })
 
   it('should override path index when asked to', async () => {
-    const state = localState('full')
+    const state = localState('full', '', remoteMapCreator)
     await state.overridePathIndex([mockElement])
-    expect(await state.getPathIndex()).toEqual(await pathIndex.createPathIndex([mockElement]))
+    const entries = await awu((await state.getPathIndex()).entries()).toArray()
+    expect(entries).toEqual(await pathIndex.getElementsPathHints([mockElement]))
   })
 
   it('should update path index when asked to', async () => {
-    const state = localState('full')
+    const state = localState('full', '', remoteMapCreator)
     // This doesn't fully test the update functionality. That should be tested in path index test.
     // This just tests that we reach the function.
     await state.updatePathIndex([mockElement], [])
-    expect(await state.getPathIndex()).toEqual(await pathIndex.createPathIndex([mockElement]))
+    const entries = await awu((await state.getPathIndex()).entries()).toArray()
+    expect(entries).toEqual(await pathIndex.getElementsPathHints([mockElement]))
   })
 
   it('should throw an error if the state nacl file is not valid', async () => {
-    const state = localState('error')
+    const state = localState('error', '', remoteMapCreator)
     await expect(state.getAll()).rejects.toThrow()
   })
 
   it('should write file on flush and update version', async () => {
-    const state = localState('on-flush')
+    const state = localState('on-flush', '', remoteMapCreator)
     await state.set(mockElement)
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush.salto.jsonl.zip')
@@ -267,34 +272,15 @@ describe('local state', () => {
   })
 
   it('should return undefined version if the version was not provided in the state file', async () => {
-    const state = localState('mutiple_adapters')
+    const state = localState('mutiple_adapters', '', remoteMapCreator)
     expect(await state.getStateSaltoVersion()).not.toBeDefined()
-  })
-
-  describe('deprecated state file', () => {
-    let state: wsState.State
-
-    beforeEach(async () => {
-      state = localState('deprecated_file')
-      await state.getAll() // force read file
-    })
-
-    it('should read deprecated file and delete it on write', async () => {
-      const mockRm = rm as jest.Mock
-      mockRm.mockClear()
-      await state.flush()
-      const onFlush = findReplaceContentCall('deprecated_file.salesforce.jsonl.zip')
-      expect(onFlush).toBeDefined()
-      expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith('deprecated_file.jsonl')
-    })
   })
 
   describe('deprecated zip state file', () => {
     let state: wsState.State
 
     beforeEach(async () => {
-      state = localState('deprecated_file_zip')
+      state = localState('deprecated_file_zip', '', remoteMapCreator)
       await state.getAll() // force read file
     })
 
@@ -310,7 +296,7 @@ describe('local state', () => {
   })
 
   it('shouldn\'t write file if state was not loaded on flush', async () => {
-    const state = localState('not-flush')
+    const state = localState('not-flush', '', remoteMapCreator)
     await state.flush()
     expect(findReplaceContentCall('not-flush')).toBeUndefined()
   })
@@ -327,20 +313,20 @@ describe('local state', () => {
 
     it('should return an empty object when the state does not exist', async () => {
       mockExists.mockResolvedValueOnce(false)
-      const state = localState('filename')
+      const state = localState('filename', '', remoteMapCreator)
       const date = await state.getServicesUpdateDates()
       expect(date).toEqual({})
     })
     it('should return empty object when the updated date is not set', async () => {
       mockExists.mockResolvedValueOnce(true)
-      const state = localState('filename')
+      const state = localState('filename', '', remoteMapCreator)
       const date = await state.getServicesUpdateDates()
       expect(date).toEqual({})
     })
     it('should return the modification date of the state', async () => {
       mockExists.mockResolvedValueOnce(true)
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
-      const state = localState('filename')
+      const state = localState('filename', '', remoteMapCreator)
       const date = await state.getServicesUpdateDates()
       expect(date.salto).toEqual(saltoModificationDate)
       expect(date.hubspot).toEqual(hubspotModificationDate)
@@ -350,7 +336,7 @@ describe('local state', () => {
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
       const now = new Date(2013, 6, 4).getTime()
       jest.spyOn(Date, 'now').mockImplementationOnce(() => now)
-      const state = localState('filename')
+      const state = localState('filename', '', remoteMapCreator)
 
       const beforeOverrideDate = await state.getServicesUpdateDates()
       expect(beforeOverrideDate.salto).toEqual(saltoModificationDate)
@@ -363,7 +349,7 @@ describe('local state', () => {
     it('should not update modification date on set/remove', async () => {
       mockExists.mockResolvedValueOnce(true)
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
-      const state = localState('filename')
+      const state = localState('filename', '', remoteMapCreator)
 
       await state.set(mockElement)
       const overrideDate = await state.getServicesUpdateDates()
@@ -375,7 +361,7 @@ describe('local state', () => {
     })
     it('should ignore built in types in set ops', async () => {
       mockExists.mockResolvedValueOnce(true)
-      const state = localState('empty')
+      const state = localState('empty', '', remoteMapCreator)
       await state.set(BuiltinTypes.STRING)
       const overrideDate = await state.getServicesUpdateDates()
       expect(overrideDate).toEqual({})
@@ -384,12 +370,12 @@ describe('local state', () => {
 
   describe('exsitingAdapters', () => {
     it('should return empty list on empty state', async () => {
-      const state = localState('empty')
+      const state = localState('empty', '', remoteMapCreator)
       const adapters = await state.existingServices()
       expect(adapters).toHaveLength(0)
     })
     it('should return all adapters in a full state', async () => {
-      const state = localState('mutiple_adapters')
+      const state = localState('mutiple_adapters', '', remoteMapCreator)
       const adapters = await state.existingServices()
       expect(adapters).toEqual(['salto', 'hubspot'])
     })
@@ -397,14 +383,21 @@ describe('local state', () => {
 
   describe('getHash', () => {
     it('should call toMd5', async () => {
-      const state = localState('empty-state')
+      const state = localState('empty-state', '', remoteMapCreator)
       await state.set(mockElement)
+      await state.flush()
       const stateHash = await state.getHash()
-      expect(stateHash).toEqual(toMD5(safeJsonStringify({ salto: [serialize([mockElement]),
-        safeJsonStringify({}),
-        safeJsonStringify([]),
-        version,
-      ].join(EOL) })))
+      expect(stateHash)
+        .toEqual(toMD5(safeJsonStringify(
+          [
+            toMD5(await generateZipString([
+              serialize([mockElement]),
+              safeJsonStringify({}),
+              safeJsonStringify([]),
+              version,
+            ].join(EOL))),
+          ]
+        )))
     })
   })
 })

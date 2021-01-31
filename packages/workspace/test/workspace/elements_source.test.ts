@@ -31,16 +31,6 @@ describe('RemoteElementSource', () => {
       expect(await elemSource.has(new ElemID('dummy', 'not-exist'))).toEqual(false)
     })
   })
-  describe('flush', () => {
-    it('should throw', () => {
-      expect(elemSource.flush).toThrow()
-    })
-  })
-  describe('clear', () => {
-    it('should throw', () => {
-      expect(elemSource.clear).toThrow()
-    })
-  })
   describe('rename', () => {
     it('should throw', () => {
       expect(() => elemSource.rename('test')).toThrow()

@@ -26,9 +26,10 @@ describe('remote map', () => {
     const testKey2 = 'key2'
     const testVal2 = 'data2'
     beforeEach(async () => {
-      inMemRemoteMap = new InMemoryRemoteMap<string, string>(
-        [[testKey1, testVal1], [testKey2, testVal2]]
-      )
+      inMemRemoteMap = new InMemoryRemoteMap<string, string>([
+        { key: testKey1, value: testVal1 },
+        { key: testKey2, value: testVal2 },
+      ])
     })
     describe('get', () => {
       it('should return correct value', async () => {

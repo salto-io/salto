@@ -429,11 +429,10 @@ describe('api.ts', () => {
 
   describe('restore', () => {
     it('should return all changes as fetch changes', async () => {
-      const index = await workspace.pathIndex.createPathIndex([])
       const ws = mockWorkspace({
         elements: [],
         name: 'restore',
-        index,
+        index: [],
         stateElements: [],
       })
       const changes = await api.restore(ws)

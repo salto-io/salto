@@ -101,7 +101,11 @@ describe('local workspace', () => {
   describe('load elements  sources', () => {
     it('should build the appropriate nacl source', async () => {
       mockExists.mockResolvedValue(true)
-      const elemSources = await loadLocalElementsSources('.', path.join(getSaltoHome(), 'local'), ['env1', 'env2'])
+      const creator: ws.remoteMap.RemoteMapCreator = async <T, K extends string = string>() =>
+        new ws.remoteMap.InMemoryRemoteMap<T, K>()
+      const elemSources = await loadLocalElementsSources(
+        '.', path.join(getSaltoHome(), 'local'), ['env1', 'env2'], creator
+      )
       expect(Object.keys(elemSources.sources)).toHaveLength(3)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])

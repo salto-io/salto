@@ -120,14 +120,12 @@ export class RemoteElementSource implements ElementsSource {
     await this.setAll(elements)
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  flush(): Promise<void> {
-    throw new Error('Method not implemented.')
+  async flush(): Promise<void> {
+    await this.elements.flush()
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  clear(): Promise<void> {
-    throw new Error('Method not implemented.')
+  async clear(): Promise<void> {
+    await this.elements.clear()
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -139,6 +137,8 @@ export class RemoteElementSource implements ElementsSource {
 export const createInMemoryElementSource = (
   elements: readonly Element[] = []
 ): RemoteElementSource => {
-  const inMemMap = new InMemoryRemoteMap(elements.map(e => [e.elemID.getFullName(), e]))
+  const inMemMap = new InMemoryRemoteMap(
+    elements.map(e => ({ key: e.elemID.getFullName(), value: e }))
+  )
   return new RemoteElementSource(inMemMap)
 }

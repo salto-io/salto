@@ -39,7 +39,6 @@ import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
-import { PathIndex } from '../../src/workspace/path_index'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
@@ -86,9 +85,9 @@ const mockCredentialsSource = (): ConfigSource => ({
 
 const createState = (elements: Element[]): State => buildInMemState(async () => ({
   elements: createInMemoryElementSource(elements),
-  pathIndex: new PathIndex(),
-  servicesUpdateDate: {},
-  saltoVersion: '0.0.1',
+  pathIndex: new InMemoryRemoteMap(),
+  servicesUpdateDate: new InMemoryRemoteMap(),
+  saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }))
 
 const createWorkspace = async (

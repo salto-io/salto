@@ -671,35 +671,36 @@ export const valuesDeepSome = (value: Value, predicate: (val: Value) => boolean)
   return false
 }
 
-export const filterByID = <T extends Element | Values>(
+export const filterByID = async <T extends Element | Values>(
   id: ElemID, value: T,
-  filterFunc: (id: ElemID) => boolean
-): T | undefined => {
-  const filterInstanceAnnotations = (annotations: Value): Value => (
+  filterFunc: (id: ElemID) => Promise<boolean>
+): Promise<T | undefined> => {
+  const filterInstanceAnnotations = async (annotations: Value): Promise<Value> => (
     filterByID(id, annotations, filterFunc)
   )
 
-  const filterAnnotations = (annotations: Value): Value => (
+  const filterAnnotations = async (annotations: Value): Promise<Value> => (
     filterByID(id.createNestedID('attr'), annotations, filterFunc)
   )
 
-  const filterAnnotationType = (annoRefTypes: ReferenceMap): ReferenceMap => _.pickBy(
-    _.mapValues(annoRefTypes, (anno, annoName) => (
-      filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
-    )),
-    isDefined,
-  )
+  const filterAnnotationType = async (annoRefTypes: ReferenceMap): Promise<ReferenceMap> =>
+    _.pickBy(
+      await mapValuesAsync(annoRefTypes, async (anno, annoName) => (
+        await filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
+      )),
+      isDefined,
+    )
 
-  if (!filterFunc(id)) {
+  if (!(await filterFunc(id))) {
     return undefined
   }
   if (isObjectType(value)) {
-    const filteredFields = Object.values(value.fields)
-      .map(field => filterByID(field.elemID, field, filterFunc))
+    const filteredFields = await Promise.all(Object.values(value.fields)
+      .map(field => filterByID(field.elemID, field, filterFunc)))
     return new ObjectType({
       elemID: value.elemID,
-      annotations: filterAnnotations(value.annotations),
-      annotationRefsOrTypes: filterAnnotationType(value.annotationRefTypes),
+      annotations: await filterAnnotations(value.annotations),
+      annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
       fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
       path: value.path,
       isSettings: value.isSettings,
@@ -708,8 +709,8 @@ export const filterByID = <T extends Element | Values>(
   if (isPrimitiveType(value)) {
     return new PrimitiveType({
       elemID: value.elemID,
-      annotations: filterAnnotations(value.annotations),
-      annotationRefsOrTypes: filterAnnotationType(value.annotationRefTypes),
+      annotations: await filterAnnotations(value.annotations),
+      annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
       primitive: value.primitive,
       path: value.path,
     }) as Value as T
@@ -719,32 +720,32 @@ export const filterByID = <T extends Element | Values>(
       value.parent,
       value.name,
       value.refType,
-      filterByID(value.elemID, value.annotations, filterFunc)
+      await filterByID(value.elemID, value.annotations, filterFunc)
     ) as Value as T
   }
   if (isInstanceElement(value)) {
     return new InstanceElement(
       value.elemID.name,
       value.refType,
-      filterByID(value.elemID, value.value, filterFunc),
+      await filterByID(value.elemID, value.value, filterFunc),
       value.path,
-      filterInstanceAnnotations(value.annotations)
+      await filterInstanceAnnotations(value.annotations)
     ) as Value as T
   }
 
   if (_.isPlainObject(value)) {
     const filteredObj = _.pickBy(
-      _.mapValues(
+      await mapValuesAsync(
         value,
-        (val: Value, key: string) => filterByID(id.createNestedID(key), val, filterFunc)
+        async (val: Value, key: string) => filterByID(id.createNestedID(key), val, filterFunc)
       ),
       isDefined,
     )
     return _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
   }
   if (_.isArray(value)) {
-    const filteredArray = value
-      .map((item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc))
+    const filteredArray = (await Promise.all(value
+      .map(async (item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc))))
       .filter(isDefined)
     return _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
   }

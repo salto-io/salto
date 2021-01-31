@@ -18,12 +18,14 @@ import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { Path } from '../path_index'
 import { RemoteMap } from '../remote_map'
 
+export type StateMetadataKey = 'version' | 'hash'
+
 export type StateData = {
   elements: RemoteElementSource
   // The date of the last fetch
   servicesUpdateDate: RemoteMap<Date>
   pathIndex: RemoteMap<Path[]>
-  saltoVersion: RemoteMap<string, 'version'>
+  saltoMetadata: RemoteMap<string, StateMetadataKey>
 }
 
 export interface State extends ElementsSource {
@@ -36,5 +38,6 @@ export interface State extends ElementsSource {
   updatePathIndex(unmergedElements: Element[], servicesToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<RemoteMap<Path[]>>
   getHash(): Promise<string>
+  setHash(hash: string): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
 }

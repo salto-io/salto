@@ -170,7 +170,7 @@ describe('local state', () => {
 
     it('should return a hash of an empty state', async () => {
       const stateHash = await state.getHash()
-      expect(stateHash).toEqual(toMD5('{}'))
+      expect(stateHash).toEqual(toMD5(safeJsonStringify([])))
     })
 
     it('should return an empty array if there is no saved state', async () => {
@@ -274,25 +274,6 @@ describe('local state', () => {
   it('should return undefined version if the version was not provided in the state file', async () => {
     const state = localState('mutiple_adapters', '', remoteMapCreator)
     expect(await state.getStateSaltoVersion()).not.toBeDefined()
-  })
-
-  describe('deprecated state file', () => {
-    let state: wsState.State
-
-    beforeEach(async () => {
-      state = localState('deprecated_file', '', remoteMapCreator)
-      await state.getAll() // force read file
-    })
-
-    it('should read deprecated file and delete it on write', async () => {
-      const mockRm = rm as jest.Mock
-      mockRm.mockClear()
-      await state.flush()
-      const onFlush = findReplaceContentCall('deprecated_file.salesforce.jsonl.zip')
-      expect(onFlush).toBeDefined()
-      expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith('deprecated_file.jsonl')
-    })
   })
 
   describe('deprecated zip state file', () => {
@@ -404,12 +385,19 @@ describe('local state', () => {
     it('should call toMd5', async () => {
       const state = localState('empty-state', '', remoteMapCreator)
       await state.set(mockElement)
+      await state.flush()
       const stateHash = await state.getHash()
-      expect(stateHash).toEqual(toMD5(safeJsonStringify({ salto: toMD5([serialize([mockElement]),
-        safeJsonStringify({}),
-        safeJsonStringify([]),
-        version,
-      ].join(EOL)) })))
+      expect(stateHash)
+        .toEqual(toMD5(safeJsonStringify(
+          [
+            toMD5(await generateZipString([
+              serialize([mockElement]),
+              safeJsonStringify({}),
+              safeJsonStringify([]),
+              version,
+            ].join(EOL))),
+          ]
+        )))
     })
   })
 })

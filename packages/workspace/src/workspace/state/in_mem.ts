@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections, hash } from '@salto-io/lowerdash'
 import { updatePathIndex, Path, overridePathIndex } from '../path_index'
 import { State, StateData } from './state'
 import { RemoteMap } from '../remote_map'
 
 const { awu } = collections.asynciterable
+const { toMD5 } = hash
 
 export const buildInMemState = (loadData: () => Promise<StateData>): State => {
   let innerStateData: Promise<StateData>
@@ -71,17 +73,19 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
       await currentStateData.servicesUpdateDate.clear()
-      await currentStateData.saltoVersion.clear()
+      await currentStateData.saltoMetadata.clear()
     },
     flush: async () => {
       const currentStateData = await stateData()
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
       await currentStateData.servicesUpdateDate.flush()
-      await currentStateData.saltoVersion.flush()
+      await currentStateData.saltoMetadata.flush()
     },
     rename: () => Promise.resolve(),
-    getHash: () => Promise.reject(new Error('memory state not hashable')),
-    getStateSaltoVersion: async () => (await stateData()).saltoVersion?.get('version'),
+    getHash: async () => (await (await stateData()).saltoMetadata.get('hash'))
+      || toMD5(safeJsonStringify([])),
+    setHash: async (newHash: string) => (await stateData()).saltoMetadata.set('hash', newHash),
+    getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
   }
 }

@@ -33,7 +33,7 @@ describe('state', () => {
     elements: createInMemoryElementSource([elem]),
     servicesUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
     pathIndex,
-    saltoVersion: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
+    saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
   })
 
   beforeAll(async () => {
@@ -116,10 +116,6 @@ describe('state', () => {
 
     it('rename should do nothing', async () => {
       await expect(state.rename('bla')).resolves.not.toThrow()
-    })
-
-    it('getHash should not work on in memory state', async () => {
-      await expect(state.getHash()).rejects.toThrow()
     })
 
     it('should return the salto version that was provided in load data', async () => {

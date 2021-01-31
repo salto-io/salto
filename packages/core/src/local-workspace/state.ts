@@ -91,7 +91,7 @@ export const localState = (
   const createStateNamespace = (namespace: string): string =>
     `state-${envName}-${namespace}`
 
-  const createStateData = async (): Promise<state.StateData> => {
+  const loadFromRemoteMaps = async (): Promise<state.StateData> => {
     const elements = new RemoteElementSource(await remoteMapCreator<Element>({
       namespace: createStateNamespace('elements'),
       serialize: elem => serialize([elem]),
@@ -105,26 +105,25 @@ export const localState = (
     })
     const servicesUpdateDate = await remoteMapCreator<Date>({
       namespace: createStateNamespace('service_update_date'),
-      serialize: date => date.toJSON(),
+      serialize: date => date.toISOString(),
       deserialize: async data => new Date(data),
     })
-    const saltoVersion = await remoteMapCreator<string, 'version'>({
+    const saltoMetadata = await remoteMapCreator<string, 'version'>({
       namespace: createStateNamespace('salto_metadata'),
       serialize: data => data,
       deserialize: async data => data,
     })
-    return { elements, servicesUpdateDate, pathIndex: index, saltoVersion }
+    return { elements, servicesUpdateDate, pathIndex: index, saltoMetadata }
   }
 
-  const flushStateData = async ({
-    stateData, elementsData, pathIndexData, updateDateData, versions,
+  const syncQuickAccessStateData = async ({
+    stateData, filePaths, newHash,
   }: {
     stateData: state.StateData
-    elementsData: string[]
-    pathIndexData: string[]
-    updateDateData: string[]
-    versions: string[]
+    filePaths: string[]
+    newHash: string
   }): Promise<void> => {
+    const [elementsData, updateDateData, pathIndexData, versions] = await readFromPaths(filePaths)
     const deserializedElements = _.flatten(await Promise.all(
       elementsData.map((d: string) => deserializeAndFlatten(d))
     ))
@@ -147,47 +146,47 @@ export const localState = (
     ))
     const currentVersion = semver.minSatisfying(versions, '*') || undefined
     if (currentVersion) {
-      await stateData.saltoVersion.set('version', currentVersion)
+      await stateData.saltoMetadata.set('version', currentVersion)
     }
+    await stateData.saltoMetadata.set('hash', newHash)
   }
 
-  const loadFromFile = async (): Promise<state.StateData> => {
-    let elementsData: string[] = []
-    let updateDateData: string[] = []
-    let pathIndexData: string[] = []
-    let versions: string[] = []
+  const getRelevantStateFiles = async (): Promise<string[]> => {
     const currentFilePaths = await glob(filePathGlob(currentFilePrefix))
     if (currentFilePaths.length > 0) {
-      [elementsData, updateDateData, pathIndexData,
-        versions] = await readFromPaths(currentFilePaths)
-    } else if (await exists(`${filePrefix}${ZIPPED_STATE_EXTENSION}`)) {
-      pathToClean = `${filePrefix}${ZIPPED_STATE_EXTENSION}`;
-      [elementsData, updateDateData, pathIndexData,
-        versions] = await readFromPaths([`${filePrefix}${ZIPPED_STATE_EXTENSION}`])
-    } else if (await exists(filePrefix + STATE_EXTENSION)) {
-      pathToClean = filePrefix + STATE_EXTENSION;
-      [elementsData[0], updateDateData[0], pathIndexData[0]] = [...(
-        await readTextFile(pathToClean)).split(EOL), '[]', '[]', '[]']
-      versions = [version]
+      return currentFilePaths
     }
-    const stateWasUpdated = async (): Promise<boolean> => {
-      const hashRemoteMap = await remoteMapCreator<string>({
-        namespace: createStateNamespace('hash'),
-        serialize: data => data,
-        deserialize: async data => data,
-      })
-      const currentHash = await hashRemoteMap.get('value')
-      return toMD5([elementsData, pathIndexData, updateDateData, versions].join(EOL))
-        !== currentHash
+    const oldStateFilePath = `${filePrefix}${ZIPPED_STATE_EXTENSION}`
+    if (await exists(oldStateFilePath)) {
+      pathToClean = oldStateFilePath
+      return [oldStateFilePath]
     }
-    const stateData = await createStateData()
-    if (stateWasUpdated()) {
-      await flushStateData({ stateData, elementsData, pathIndexData, updateDateData, versions })
-    }
-    return stateData
+    return []
   }
 
-  const inMemState = state.buildInMemState(loadFromFile)
+  const getHashFromContent = (contents: string[]): string =>
+    toMD5(safeJsonStringify(contents.map(toMD5).sort()))
+
+  const getHash = async (filePaths: string[]): Promise<string> =>
+    getHashFromContent((await Promise.all(filePaths.map(readTextFile))))
+
+  const loadStateData = async (): Promise<state.StateData> => {
+    const quickAccessStateData = await loadFromRemoteMaps()
+    const filePaths = await getRelevantStateFiles()
+    const stateFilesHash = await getHash(filePaths)
+    const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))
+      ?? toMD5(safeJsonStringify([]))
+    if (quickAccessHash !== stateFilesHash) {
+      await syncQuickAccessStateData({
+        stateData: quickAccessStateData,
+        filePaths,
+        newHash: stateFilesHash,
+      })
+    }
+    return quickAccessStateData
+  }
+
+  const inMemState = state.buildInMemState(loadStateData)
 
   const createStateTextPerService = async (): Promise<Record<string, string>> => {
     const elements = await awu(await inMemState.getAll()).toArray()
@@ -244,20 +243,20 @@ export const localState = (
       }
       await mkdirp(path.dirname(currentFilePrefix))
       const stateTextPerService = await createStateTextPerService()
-      await Promise.all(Object.keys(stateTextPerService).map(async service => (
-        replaceContents(`${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
-          await generateZipString(stateTextPerService[service]))
-      )))
+      const filePathToContent = await Promise.all(Object.keys(stateTextPerService)
+        .map(async service => [
+          `${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
+          await generateZipString(stateTextPerService[service]),
+        ] as [string, string]))
+      await Promise.all(filePathToContent.map(f => replaceContents(...f)))
       if (pathToClean !== '') {
         await rm(pathToClean)
       }
+      await inMemState.setHash(getHashFromContent(filePathToContent.map(e => e[1])))
       await inMemState.flush()
       log.debug('finish flushing state')
     },
-    getHash: async (): Promise<string> => {
-      const stateText = await createStateTextPerService()
-      return toMD5(safeJsonStringify(_.mapValues(stateText, toMD5)))
-    },
+    getHash: async (): Promise<string> => inMemState.getHash(),
     clear: async (): Promise<void> => {
       const stateFiles = await findStateFiles(currentFilePrefix)
       await inMemState.clear()

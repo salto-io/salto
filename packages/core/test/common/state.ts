@@ -28,6 +28,6 @@ export const mockState = (
     servicesUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(
       services.map(serviceName => ({ key: serviceName, value: new Date() }))
     ),
-    saltoVersion: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
+    saltoMetadata: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
   }))
 )

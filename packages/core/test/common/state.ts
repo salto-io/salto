@@ -14,20 +14,20 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
-import { pathIndex, state, elementSource } from '@salto-io/workspace'
+import { pathIndex, state, elementSource, remoteMap } from '@salto-io/workspace'
 
 
 export const mockState = (
   services: string[] = [],
   elements: Element[] = [],
-  index?: pathIndex.PathIndex
+  index: remoteMap.RemoteMapEntry<pathIndex.Path[]>[] = []
 ): state.State => (
   state.buildInMemState(async () => ({
     elements: elementSource.createInMemoryElementSource(elements),
-    pathIndex: index ?? new pathIndex.PathIndex(),
-    servicesUpdateDate: Object.fromEntries(
-      services.map(serviceName => [serviceName, new Date()])
+    pathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
+    servicesUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(
+      services.map(serviceName => ({ key: serviceName, value: new Date() }))
     ),
-    saltoVersion: '0.0.1',
+    saltoMetadata: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
   }))
 )

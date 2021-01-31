@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SETTINGS_METADATA_TYPE } from '../constants'
+import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE } from '../constants'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_CONFIG } from '../types'
 
@@ -47,10 +47,12 @@ export const buildMetadataQuery = ({ include = [{}], exclude = [] }: MetadataPar
       namespace = '.*',
       name = '.*',
     }: MetadataQueryParams
-  ): boolean =>
-    new RegExp(`^${metadataType}$`).test(instance.metadataType)
-    && new RegExp(`^${namespace}$`).test(instance.namespace)
+  ): boolean => {
+    const realNamespace = namespace === '' ? DEFAULT_NAMESPACE : namespace
+    return new RegExp(`^${metadataType}$`).test(instance.metadataType)
+    && new RegExp(`^${realNamespace}$`).test(instance.namespace)
     && new RegExp(`^${name}$`).test(instance.name)
+  }
 
   return {
     isTypeMatch: type => (

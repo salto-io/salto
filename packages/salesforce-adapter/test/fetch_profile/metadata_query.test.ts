@@ -205,6 +205,16 @@ describe('buildMetadataQuery', () => {
       expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '' })).toBeFalsy()
       expect(query.isInstanceMatch({ namespace: 'bbb', metadataType: '', name: '' })).toBeFalsy()
     })
+
+    it('empty namespace should be tread as "standard"', () => {
+      const query = buildMetadataQuery({
+        include: [
+          { namespace: '' },
+        ],
+      })
+      expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '' })).toBeFalsy()
+    })
   })
 
   it('isTypeMatch should return correct results', () => {

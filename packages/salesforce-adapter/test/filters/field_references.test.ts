@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, CORE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
@@ -22,7 +23,7 @@ import mockClient from '../client'
 import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 const customObjectType = new ObjectType({
   elemID: CUSTOM_OBJECT_TYPE_ID,
@@ -69,7 +70,7 @@ const generateObjectAndInstance = ({
   }
   if (objType === CUSTOM_OBJECT || fieldValue === undefined) {
     const customObj = new ObjectType({
-      elemID: new ElemID(SALESFORCE, type, 'type', type),
+      elemID: new ElemID(SALESFORCE, type),
       annotations: {
         [METADATA_TYPE]: objType,
         [API_NAME]: type,
@@ -109,7 +110,7 @@ const generateObjectAndInstance = ({
 describe('FieldReferences filter', () => {
   const { client } = mockClient()
 
-  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   const generateElements = (
   ): Element[] => ([
@@ -333,7 +334,7 @@ describe('FieldReferences filter', () => {
     beforeAll(async () => {
       elements = generateElements()
       const modifiedDefs = fieldNameToTypeMappingDefs.map(def => _.omit(def, 'serializationStrategy'))
-      addReferences(elements, modifiedDefs)
+      await addReferences(elements, buildElementsSourceFromElements(elements), modifiedDefs)
     })
     afterAll(() => {
       jest.clearAllMocks()
@@ -360,7 +361,7 @@ describe('FieldReferences filter', () => {
 describe('FieldReferences filter - neighbor context strategy', () => {
   const { client } = mockClient()
 
-  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   const parentName = 'User'
   type WorkflowActionReference = {

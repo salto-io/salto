@@ -14,49 +14,47 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
-import { SALESFORCE, METADATA_TYPE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../../src/constants'
+import { SALESFORCE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/reference_annotations'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext, createMetadataTypeElement } from '../utils'
 
 describe('reference_annotations filter', () => {
   // Definitions
   const parentObjFieldName = 'parentObj'
-  const nestedId = new ElemID(SALESFORCE, 'nested')
-  const objTypeID = new ElemID(SALESFORCE, 'obj')
+  const objTypeName = 'obj'
 
   const { client } = mockClient()
-  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   let nestedType: ObjectType
   let objType: ObjectType
   beforeAll(async () => {
-    nestedType = new ObjectType({
-      elemID: nestedId,
-      fields: {
-        [parentObjFieldName]: {
-          annotations: {
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [
-              'obj',
-              'unknown',
-            ],
-            [FOREIGN_KEY_DOMAIN]: [
-              objTypeID.typeName,
-              'something',
-            ],
+    nestedType = createMetadataTypeElement(
+      'nested',
+      {
+        fields: {
+          [parentObjFieldName]: {
+            annotations: {
+              [FIELD_ANNOTATIONS.REFERENCE_TO]: [
+                'obj',
+                'unknown',
+              ],
+              [FOREIGN_KEY_DOMAIN]: [
+                objTypeName,
+                'something',
+              ],
+            },
+            type: BuiltinTypes.STRING,
           },
-          type: BuiltinTypes.STRING,
         },
-      },
-    })
-    objType = new ObjectType({
-      annotations: { [METADATA_TYPE]: 'obj' },
-      elemID: objTypeID,
-      fields: {
-        reg: { type: BuiltinTypes.STRING },
-      },
-    })
+      }
+    )
+    objType = createMetadataTypeElement(
+      objTypeName,
+      { fields: { reg: { type: BuiltinTypes.STRING } } }
+    )
     const elements = [nestedType, objType]
     await filter.onFetch(elements)
   })
@@ -71,7 +69,7 @@ describe('reference_annotations filter', () => {
       ).toBeInstanceOf(ReferenceExpression)
       expect(
         nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0].elemId
-      ).toEqual(objTypeID)
+      ).toEqual(new ElemID(SALESFORCE, objTypeName))
       expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][1]).toEqual('unknown')
     })
     it('should convert FOREIGN_KEY_DOMAIN to reference when found', () => {
@@ -83,7 +81,7 @@ describe('reference_annotations filter', () => {
       ).toBeInstanceOf(ReferenceExpression)
       expect(
         nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0].elemId
-      ).toEqual(objTypeID)
+      ).toEqual(new ElemID(SALESFORCE, objTypeName))
       expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][1]).toEqual('something')
     })
   })

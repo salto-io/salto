@@ -14,16 +14,21 @@
 * limitations under the License.
 */
 import {
-  ElemID, Element, Field, isObjectType, ReferenceExpression, ObjectType,
+  ElemID, Element, Field, ReferenceExpression, ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, multiIndex } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../constants'
-import { apiName } from '../transformers/transformer'
+import { FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN, CUSTOM_OBJECT } from '../constants'
+import { apiName, metadataType, isMetadataObjectType, isCustomObject } from '../transformers/transformer'
+import { buildElementsSourceForFetch } from './utils'
 
 const { makeArray } = collections.array
 const { REFERENCE_TO } = FIELD_ANNOTATIONS
+
+const isMetadataTypeOrCustomObject = (elem: Element): elem is ObjectType => (
+  isMetadataObjectType(elem) || isCustomObject(elem)
+)
 
 /**
  * Convert annotations to reference expressions using the known metadata types.
@@ -33,13 +38,14 @@ const { REFERENCE_TO } = FIELD_ANNOTATIONS
  */
 const convertAnnotationsToReferences = (
   elements: Element[],
-  typeToElemID: Record<string, ElemID>,
+  typeToElemID: multiIndex.Index<[string, string], ElemID>,
   annotationNames: string[],
 ): void => {
   const resolveTypeReference = (ref: string | ReferenceExpression):
     string | ReferenceExpression => {
     if (_.isString(ref)) {
-      const referenceElemId = typeToElemID[ref]
+      // Try finding a metadata type and fallback to finding a custom object
+      const referenceElemId = typeToElemID.get(ref, ref) ?? typeToElemID.get(CUSTOM_OBJECT, ref)
       if (referenceElemId !== undefined) {
         return new ReferenceExpression(referenceElemId)
       }
@@ -48,7 +54,7 @@ const convertAnnotationsToReferences = (
   }
 
   elements
-    .filter(isObjectType)
+    .filter(isMetadataTypeOrCustomObject)
     .flatMap((obj: ObjectType) => Object.values(obj.fields))
     .filter((field: Field) => annotationNames.some(name => field.annotations[name] !== undefined))
     .forEach((field: Field): void => {
@@ -58,20 +64,18 @@ const convertAnnotationsToReferences = (
     })
 }
 
-export const apiNameToElemID = (elements: Element[]): Record<string, ElemID> => (
-  Object.fromEntries(
-    elements
-      .filter(isObjectType)
-      .map(e => [apiName(e), e.elemID])
-  )
-)
-
 /**
  * Convert referenceTo and foreignKeyDomain annotations into reference expressions.
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    const typeToElemID = apiNameToElemID(elements)
+    const referenceElements = buildElementsSourceForFetch(elements, config)
+    const typeToElemID = await multiIndex.keyByAsync({
+      iter: await referenceElements.getAll(),
+      filter: isMetadataTypeOrCustomObject,
+      key: obj => [metadataType(obj), apiName(obj)],
+      map: obj => obj.elemID,
+    })
     convertAnnotationsToReferences(elements, typeToElemID, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
   },
 })

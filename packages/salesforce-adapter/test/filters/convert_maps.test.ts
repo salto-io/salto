@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
 import mockClient from '../client'
-import { generateProfileType } from '../utils'
+import { generateProfileType, defaultFilterContext } from '../utils'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -52,7 +51,7 @@ describe('ProfileMaps filter', () => {
   const { client } = mockClient()
 
   describe('on fetch', () => {
-    const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch' | 'preDeploy'>
+    const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy'>
     let profileObj: ObjectType
     let instances: InstanceElement[]
 
@@ -206,7 +205,7 @@ describe('ProfileMaps filter', () => {
   })
 
   describe('deploy (pre + on)', () => {
-    const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'preDeploy' | 'onDeploy'>
+    const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'preDeploy' | 'onDeploy'>
     let beforeProfileObj: ObjectType
     let afterProfileObj: ObjectType
     let beforeInstances: InstanceElement[]
@@ -316,7 +315,7 @@ describe('ProfileMaps filter', () => {
   })
 
   describe('with profile maps disabled', () => {
-    const filter = filterCreator({ client, config: { useOldProfiles: true, fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    const filter = filterCreator({ client, config: { ...defaultFilterContext, useOldProfiles: true } }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
     it('should do nothing onFetch', async () => {
       const profileObj = generateProfileType()

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
@@ -35,6 +36,7 @@ const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceCo
   const adapter = new SalesforceAdapter({
     client,
     config: config ?? {},
+    elementsSource: buildElementsSourceFromElements([]),
     ...adapterParams || { getElemIdFunc: mockGetElemIdFunc },
   })
   return { client, adapter }

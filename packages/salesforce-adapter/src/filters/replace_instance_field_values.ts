@@ -14,21 +14,20 @@
 * limitations under the License.
 */
 import {
-  Element, isInstanceElement, InstanceElement, getChangeElement, Change, isObjectType,
-  Field,
+  Element, isInstanceElement, InstanceElement, getChangeElement, Change, Field, ObjectType,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { collections, multiIndex } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { apiName, metadataType } from '../transformers/transformer'
+import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
-import SalesforceClient from '../client/client'
-import { getIdsForType } from './add_missing_ids'
-import { getInternalId } from './utils'
-import { CUSTOM_FIELD } from '../constants'
+import { getInternalId, hasInternalId, buildElementsSourceForFetch } from './utils'
 
 const log = logger(module)
+const { flatMapAsync, filterAsync } = collections.asynciterable
 
 /*
 The keys represent metadataTypes of the instances to change.
@@ -47,17 +46,36 @@ const fieldSelectMapping = [
  */
 const toShortId = (longId: string): string => (longId.slice(0, -3))
 
-const getApiNameToIdLookup = async (client: SalesforceClient): Promise<Record<string, string>> => (
-  _.mapValues(await getIdsForType(client, CUSTOM_FIELD), toShortId)
-)
+const getRelevantFieldMapping = async (
+  elementsSource: ReadOnlyElementsSource,
+  key: (field: Field) => [string],
+  value: (field: Field) => string,
+): Promise<multiIndex.Index<[string], string>> => {
+  const isReferencedCustomObject = (elem: Element): elem is ObjectType => (
+    isCustomObject(elem)
+    && Object.values(metadataTypeToInstanceName).includes(apiName(elem))
+  )
+
+  return multiIndex.keyByAsync({
+    iter: flatMapAsync(
+      filterAsync(await elementsSource.getAll(), isReferencedCustomObject),
+      obj => Object.values(obj.fields)
+    ),
+    filter: hasInternalId,
+    key,
+    map: value,
+  })
+}
 
 const shouldReplace = (field: Field): boolean => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
   return resolverFinder(field).length > 0
 }
 
-const replaceInstanceValues = (instance: InstanceElement,
-  nameLookup: Record<string, string>): void => {
+const replaceInstanceValues = (
+  instance: InstanceElement,
+  nameLookup: multiIndex.Index<[string], string>
+): void => {
   const transformFunc: TransformFunc = ({ value, field }) => {
     if (_.isUndefined(field) || !shouldReplace(field)) {
       return value
@@ -66,8 +84,8 @@ const replaceInstanceValues = (instance: InstanceElement,
     // if we can't find an item in the lookup it's because
     // it's a standard field that doesn't need translation
     return _.isArray(value)
-      ? value.map(s => nameLookup[s] ?? s)
-      : (nameLookup[value] ?? value)
+      ? value.map(s => nameLookup.get(s) ?? s)
+      : (nameLookup.get(value) ?? value)
   }
 
   const values = instance.value
@@ -81,7 +99,10 @@ const replaceInstanceValues = (instance: InstanceElement,
   ) ?? values
 }
 
-const replaceInstancesValues = (elements: Element[], nameLookUp: Record<string, string>): void => {
+const replaceInstancesValues = (
+  elements: Element[],
+  nameLookUp: multiIndex.Index<[string], string>
+): void => {
   elements
     .filter(isInstanceElement)
     .filter(e => Object.keys(metadataTypeToInstanceName).includes(metadataType(e)))
@@ -91,41 +112,35 @@ const replaceInstancesValues = (elements: Element[], nameLookUp: Record<string, 
     })
 }
 
-const getIdToNameLookupFromAllElements = (elements: Element[]): Record<string, string> => {
-  const lookup: Record<string, string> = {}
-  const fields = elements
-    .filter(isObjectType)
-    .filter(e => Object.values(metadataTypeToInstanceName).includes(apiName(e)))
-    .flatMap(e => Object.values(e.fields))
-
-  Object.assign(lookup, ...fields.map(field => {
-    const id = getInternalId(field)
-    return id === undefined ? {} : {
-      [toShortId(id)]: apiName(field),
-    }
-  }))
-  return lookup
-}
-
 /**
  * Replace specific field values that are fetched as ids, to their names.
  */
-const filter: FilterCreator = ({ client }) => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    const idToApiNameLookUp = getIdToNameLookupFromAllElements(elements)
+    const referenceElements = buildElementsSourceForFetch(elements, config)
+    const idToApiNameLookUp = await getRelevantFieldMapping(
+      referenceElements,
+      field => [toShortId(getInternalId(field))],
+      apiName,
+    )
     replaceInstancesValues(elements, idToApiNameLookUp)
   },
   preDeploy: async (changes: ReadonlyArray<Change>): Promise<void> => {
-    const apiNameToIdLookup = await getApiNameToIdLookup(client)
+    const apiNameToIdLookup = await getRelevantFieldMapping(
+      config.elementsSource,
+      field => [apiName(field)],
+      field => toShortId(getInternalId(field)),
+    )
     replaceInstancesValues(
       changes.map(getChangeElement),
       apiNameToIdLookup
     )
   },
   onDeploy: async changes => {
-    const apiNameToIdLookup = await getApiNameToIdLookup(client)
-    const idToApiNameLookUp = Object.fromEntries( // invert the lookup
-      Object.entries(apiNameToIdLookup).map(([key, value]) => ([value, key]))
+    const idToApiNameLookUp = await getRelevantFieldMapping(
+      config.elementsSource,
+      field => [toShortId(getInternalId(field))],
+      apiName,
     )
     replaceInstancesValues(
       changes.map(getChangeElement),

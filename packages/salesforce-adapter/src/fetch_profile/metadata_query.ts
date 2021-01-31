@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE } from '../constants'
+import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT } from '../constants'
 import { validateRegularExpressions } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams } from '../types'
 
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
+  isPartialFetch: () => boolean
 }
 
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
@@ -38,6 +39,7 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
 
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
+  target?: string[],
 ): MetadataQuery => {
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
 
@@ -55,17 +57,37 @@ export const buildMetadataQuery = (
     && new RegExp(`^${name}$`).test(instance.name)
   }
 
+  const isIncludedInPartialFetch = (type: string): boolean => {
+    if (target === undefined) {
+      return true
+    }
+    if (target.includes(type)) {
+      return true
+    }
+    if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
+      return true
+    }
+    return false
+  }
+  const isTypeIncluded = (type: string): boolean => (
+    include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
+    && isIncludedInPartialFetch(type)
+  )
+  const isTypeExcluded = (type: string): boolean => (
+    fullExcludeList.some(({ metadataType = '.*', namespace = '.*', name = '.*' }) => (
+      namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type)
+    ))
+  )
+
   return {
-    isTypeMatch: type => (
-      include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
-      && !fullExcludeList.some(({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
-        namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type))
-    ),
+    isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
 
     isInstanceMatch: instance => (
       include.some(params => isInstanceMatchQueryParams(instance, params))
       && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
     ),
+
+    isPartialFetch: () => target !== undefined,
   }
 }
 

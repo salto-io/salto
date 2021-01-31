@@ -2123,5 +2123,66 @@
         "type": "EntitlementProcessMilestoneItem"
       }
     ]
+  },
+  {
+    "id": "Holidays",
+    "fields": [
+      {
+        "name": "name",
+        "type": "STRING"
+      },
+      {
+        "name": "description",
+        "type": "STRING"
+      },
+      {
+        "name": "activityDate",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceStartDate",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceEndDate",
+        "type": "STRING"
+      },
+      {
+        "name": "startTime",
+        "type": "STRING"
+      },
+      {
+        "name": "endTime",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceType",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceInterval",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceDayOfWeek",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceDayOfMonth",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceInstance",
+        "type": "STRING"
+      },
+      {
+        "name": "recurrenceMonthOfYear",
+        "type": "STRING"
+      },
+      {
+        "name": "businessHours",
+        "type": "STRING"
+      }
+    ]
   }
 ]

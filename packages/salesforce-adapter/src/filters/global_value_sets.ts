@@ -13,44 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
-  Element, ObjectType, Field, ReferenceExpression, isInstanceElement,
+  Element, ObjectType, Field, ReferenceExpression, ElemID,
 } from '@salto-io/adapter-api'
-import { FilterWith } from '../filter'
-import { VALUE_SET_FIELDS, INSTANCE_FULL_NAME_FIELD } from '../constants'
-import { metadataType, isCustomObject } from '../transformers/transformer'
+import { multiIndex } from '@salto-io/lowerdash'
+import { FilterWith, FilterCreator } from '../filter'
+import { VALUE_SET_FIELDS } from '../constants'
+import { isCustomObject, apiName } from '../transformers/transformer'
+import { isInstanceOfType, buildElementsSourceForFetch } from './utils'
 
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
 export const CUSTOM_VALUE = 'customValue'
 export const MASTER_LABEL = 'master_label'
 
-type GlobalValueSetsLookup = Record<string, ReferenceExpression>
-
-const getValueSetNameToRef = (elements: Element[]): GlobalValueSetsLookup => {
-  const globalValueSets = elements
-    .filter(isInstanceElement)
-    .filter(e => metadataType(e) === GLOBAL_VALUE_SET)
-  return _.fromPairs(globalValueSets
-    .map(gvs => [
-      gvs.value[INSTANCE_FULL_NAME_FIELD],
-      new ReferenceExpression(gvs.elemID),
-    ]))
-}
-
 const addGlobalValueSetRefToObject = (
   object: ObjectType,
-  gvsToRef: GlobalValueSetsLookup
+  gvsToRef: multiIndex.Index<[string], ElemID>
 ): void => {
   const getValueSetName = (field: Field): string | undefined =>
     field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
 
   Object.values(object.fields)
-    .filter(f => getValueSetName(f))
     .forEach(f => {
       const valueSetName = getValueSetName(f)
-      if (valueSetName && gvsToRef[valueSetName]) {
-        f.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = gvsToRef[valueSetName]
+      if (valueSetName === undefined) {
+        return
+      }
+      const valueSetId = gvsToRef.get(valueSetName)
+      if (valueSetId) {
+        f.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(valueSetId)
       }
     })
 }
@@ -58,12 +49,18 @@ const addGlobalValueSetRefToObject = (
 /**
  * Create filter that adds global value set references where needed
  */
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   /**
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const valueSetNameToRef = getValueSetNameToRef(elements)
+    const referenceElements = buildElementsSourceForFetch(elements, config)
+    const valueSetNameToRef = await multiIndex.keyByAsync({
+      iter: await referenceElements.getAll(),
+      filter: isInstanceOfType(GLOBAL_VALUE_SET),
+      key: inst => [apiName(inst)],
+      map: inst => inst.elemID,
+    })
     const customObjects = elements.filter(isCustomObject)
     customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
   },

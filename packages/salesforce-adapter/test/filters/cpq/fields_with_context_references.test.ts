@@ -19,8 +19,8 @@ import SalesforceClient from '../../../src/client/client'
 import { SALESFORCE, CPQ_PRODUCT_RULE, CPQ_LOOKUP_OBJECT_NAME, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, API_NAME_SEPARATOR } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/field_references'
-import mockAdapter from '../../adapter'
-import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
+import mockClient from '../../client'
+import { defaultFilterContext } from '../../utils'
 
 describe('fields with context references filter', () => {
   let client: SalesforceClient
@@ -140,14 +140,8 @@ describe('fields with context references filter', () => {
 
   describe('When all context objects exist in elements', () => {
     beforeAll(async () => {
-      ({ client } = mockAdapter({
-        adapterParams: {
-        },
-      }))
-      filter = filterCreator({
-        client,
-        config: { fetchProfile: buildFetchProfile({}) },
-      }) as FilterType
+      client = mockClient().client
+      filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
       elements = [
         ...getCloneOfAllObjects(),
         productRuleWithBadLookupObjInstance.clone(),

@@ -144,6 +144,7 @@ describe('cli e2e', () => {
   })
 
   afterAll(async () => {
+    // TODO:ORI - add e2e test for salesforce partial fetch
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)
     }

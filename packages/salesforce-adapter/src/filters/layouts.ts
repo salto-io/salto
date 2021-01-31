@@ -17,18 +17,16 @@ import { logger } from '@salto-io/logging'
 import {
   Element, InstanceElement, ObjectType, ElemID,
 } from '@salto-io/adapter-api'
-import {
-  findInstances, naclCase, pathNaclCase,
-} from '@salto-io/adapter-utils'
-import { apiName } from '../transformers/transformer'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { promises, multiIndex } from '@salto-io/lowerdash'
+import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import {
-  addObjectParentReference, generateApiNameToCustomObject,
-} from './utils'
+import { addObjectParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
 
 const log = logger(module)
+const { series } = promises.array
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
 export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
@@ -60,7 +58,7 @@ const fixLayoutPath = (
 * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
 * Fixes references in layout items.
 */
-const filterCreator: FilterCreator = () => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   /**
    * Upon fetch, shorten layout ID and add reference to layout sobjects.
    * Fixes references in layout items.
@@ -68,20 +66,35 @@ const filterCreator: FilterCreator = () => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
-    const apiNameToCustomObject = generateApiNameToCustomObject(elements)
+    const layouts = elements.filter(isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE))
+    if (layouts.length === 0) {
+      return
+    }
 
-    layouts.forEach(layout => {
-      const [layoutObjName, layoutName] = layoutObjAndName(layout)
-      const layoutObj = apiNameToCustomObject.get(layoutObjName)
-      if (layoutObj === undefined) {
-        log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
-        return
-      }
-
-      addObjectParentReference(layout, layoutObj)
-      fixLayoutPath(layout, layoutObj, layoutName)
+    const referenceElements = buildElementsSourceForFetch(elements, config)
+    const apiNameToCustomObject = await multiIndex.keyByAsync({
+      iter: await referenceElements.getAll(),
+      filter: isCustomObject,
+      key: obj => [apiName(obj)],
+      map: obj => obj.elemID,
     })
+
+    await series(
+      layouts.map(layout => async () => {
+        const [layoutObjName, layoutName] = layoutObjAndName(layout)
+        const layoutObjId = apiNameToCustomObject.get(layoutObjName)
+        const layoutObj = layoutObjId === undefined
+          ? undefined
+          : await referenceElements.get(layoutObjId)
+        if (layoutObj === undefined || !isCustomObject(layoutObj)) {
+          log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
+          return
+        }
+
+        addObjectParentReference(layout, layoutObj)
+        fixLayoutPath(layout, layoutObj, layoutName)
+      })
+    )
   },
 })
 

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 
-import { buildMetadataQuery, validateMetadataParams } from '../../src/fetch_profile/metadata_query'
+import { buildMetadataQuery, validateMetadataParams, MetadataQuery } from '../../src/fetch_profile/metadata_query'
+import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -184,5 +185,37 @@ describe('buildMetadataQuery', () => {
     expect(query.isTypeMatch('ccc')).toBeFalsy()
     expect(query.isTypeMatch('aaabbb')).toBeFalsy()
     expect(query.isTypeMatch('aaaccc')).toBeTruthy()
+  })
+
+  describe('with fetch target', () => {
+    let query: MetadataQuery
+    beforeEach(() => {
+      query = buildMetadataQuery(
+        {
+          include: [{ metadataType: '.*' }],
+          exclude: [{ metadataType: 'exclude' }],
+        },
+        ['target', 'exclude', CUSTOM_OBJECT],
+      )
+    })
+    describe('isPartialFetch', () => {
+      it('should return true', () => {
+        expect(query.isPartialFetch()).toBeTruthy()
+      })
+    })
+    describe('isTypeMatch', () => {
+      it('should match types in the fetch target', () => {
+        expect(query.isTypeMatch('target')).toBeTruthy()
+      })
+      it('should not match types that are included but not in the fetch target', () => {
+        expect(query.isTypeMatch('meta')).toBeFalsy()
+      })
+      it('should not match excluded types even if they are in the target', () => {
+        expect(query.isTypeMatch('exclude')).toBeFalsy()
+      })
+      it('should match topics for objects when custom object is in the target', () => {
+        expect(query.isTypeMatch(TOPICS_FOR_OBJECTS_METADATA_TYPE)).toBeTruthy()
+      })
+    })
   })
 })

@@ -29,8 +29,9 @@ export const buildFetchProfile = ({
   metadata = {},
   data,
   fetchAllCustomSettings,
+  target,
 }: FetchParameters): FetchProfile => ({
-  metadataQuery: buildMetadataQuery(metadata),
+  metadataQuery: buildMetadataQuery(metadata, target),
   dataManagement: data && buildDataManagement(data),
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
 })

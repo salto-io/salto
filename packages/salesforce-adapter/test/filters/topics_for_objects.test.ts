@@ -22,7 +22,7 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/topics_for_objects'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
@@ -67,10 +67,7 @@ describe('Topics for objects filter', () => {
 
   describe('onFetch', () => {
     beforeAll(() => {
-      filter = filterCreator({
-        client,
-        config: { fetchProfile: buildFetchProfile({}) },
-      }) as typeof filter
+      filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
     })
     it('should add topicsForObjects to object types and remove topics type & instances', async () => {
       const elements = [mockObject('Test__c'), mockTopicForObject, mockTopic]
@@ -90,10 +87,7 @@ describe('Topics for objects filter', () => {
   describe('preDeploy and onDeploy', () => {
     let changes: Change[]
     beforeAll(() => {
-      filter = filterCreator({
-        client,
-        config: { fetchProfile: buildFetchProfile({}) },
-      }) as typeof filter
+      filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
     })
     describe('preDeploy', () => {
       beforeAll(async () => {

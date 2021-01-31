@@ -27,6 +27,7 @@ import {
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 jest.mock('../../src/constants', () => ({
   ...jest.requireActual<{}>('../../src/constants'),
@@ -176,6 +177,7 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
+            ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               data: {
                 includeObjects: [
@@ -230,6 +232,7 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
+            ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               data: {
                 includeObjects: [
@@ -774,6 +777,7 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
+            ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               data: {
                 includeObjects: [

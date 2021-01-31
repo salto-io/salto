@@ -22,6 +22,7 @@ import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockFileProperties, mockDescribeValueResult, mockValueTypeField } from '../connection'
+import { defaultFilterContext } from '../utils'
 
 
 describe('Test Settings Type', () => {
@@ -31,6 +32,7 @@ describe('Test Settings Type', () => {
     {
       client,
       config: {
+        ...defaultFilterContext,
         fetchProfile: buildFetchProfile({
           metadata: {
             exclude: [

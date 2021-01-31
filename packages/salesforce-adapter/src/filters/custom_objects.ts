@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections, strings } from '@salto-io/lowerdash'
+import { collections, strings, promises, multiIndex } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
-  BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values,
+  BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
@@ -25,7 +25,6 @@ import { findObjectType, transformValues, getParents, pathNaclCase } from '@salt
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import { UNSUPPORTED_SYSTEM_FIELDS, SYSTEM_FIELDS } from '../types'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
@@ -49,12 +48,13 @@ import {
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
-  buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
+  buildAnnotationsObjectType, addObjectParentReference, apiNameParts,
   parentApiName,
   getDataFromChanges,
   isInstanceOfTypeChange,
   isInstanceOfType,
   isMasterDetailField,
+  buildElementsSourceForFetch,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -63,6 +63,7 @@ import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } fro
 
 const log = logger(module)
 const { makeArray } = collections.array
+const { series } = promises.array
 
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
@@ -516,7 +517,10 @@ const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE
 const hasCustomObjectParent = (instance: InstanceElement): boolean =>
   dependentMetadataTypes.has(metadataType(instance))
 
-const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
+const fixDependentInstancesPathAndSetParent = async (
+  elements: Element[],
+  referenceElements: ReadOnlyElementsSource
+): Promise<void> => {
   const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType): void => {
     instance.path = [
       ...getObjectDirectoryPath(customObject),
@@ -533,28 +537,36 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
     ]
   }
 
-  const apiNameToCustomObject = generateApiNameToCustomObject(elements)
+  const apiNameToCustomObject = await multiIndex.keyByAsync({
+    iter: await referenceElements.getAll(),
+    filter: isCustomObject,
+    key: obj => [apiName(obj)],
+    map: obj => obj.elemID,
+  })
 
-  const getDependentCustomObj = (instance: InstanceElement): ObjectType | undefined => {
-    const customObject = apiNameToCustomObject.get(parentApiName(instance))
-    if (_.isUndefined(customObject)
-      && metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE) {
-      return apiNameToCustomObject.get('Lead')
-    }
-    return customObject
+  const getDependentCustomObj = async (
+    instance: InstanceElement
+  ): Promise<ObjectType | undefined> => {
+    const objectID = metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE
+      ? apiNameToCustomObject.get('Lead')
+      : apiNameToCustomObject.get(parentApiName(instance))
+    const object = objectID === undefined ? undefined : await referenceElements.get(objectID)
+    return isObjectType(object) ? object : undefined
   }
 
-  elements
-    .filter(isInstanceElement)
-    .filter(hasCustomObjectParent)
-    .forEach(instance => {
-      const customObj = getDependentCustomObj(instance)
-      if (_.isUndefined(customObj)) {
-        return
-      }
-      setDependingInstancePath(instance, customObj)
-      addObjectParentReference(instance, customObj)
-    })
+  await series(
+    elements
+      .filter(isInstanceElement)
+      .filter(hasCustomObjectParent)
+      .map(instance => async () => {
+        const customObj = await getDependentCustomObj(instance)
+        if (_.isUndefined(customObj)) {
+          return
+        }
+        setDependingInstancePath(instance, customObj)
+        addObjectParentReference(instance, customObj)
+      })
+  )
 }
 
 const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
@@ -830,7 +842,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         _.flatten(Object.values(sObjects)),
         customObjectInstances,
         typesFromInstance,
-        config[SYSTEM_FIELDS] ?? [],
+        config.systemFields ?? [],
       )
 
       const objectTypeNames = new Set(Object.keys(sObjects))
@@ -846,8 +858,11 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       newElements
         .filter(newElem => !elementFullNames.has(id(newElem)))
         .forEach(newElem => elements.push(newElem))
-      fixDependentInstancesPathAndSetParent(elements)
-      removeUnsupportedFields(elements, config[UNSUPPORTED_SYSTEM_FIELDS] ?? [])
+      await fixDependentInstancesPathAndSetParent(
+        elements,
+        buildElementsSourceForFetch(elements, config)
+      )
+      removeUnsupportedFields(elements, config.unsupportedSystemFields ?? [])
     },
 
     preDeploy: async changes => {

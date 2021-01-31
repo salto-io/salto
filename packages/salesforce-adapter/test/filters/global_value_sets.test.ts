@@ -21,6 +21,8 @@ import { FilterWith } from '../../src/filter'
 import filterCreator,
 { GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
+import mockClient from '../client'
+import { defaultFilterContext } from '../utils'
 
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
@@ -48,25 +50,35 @@ const createPicklistObjectType = (
   valueSetName: string,
 ): ObjectType => new ObjectType({
   elemID: mockElemID,
-  fields: { state: {
-    type: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
-    annotations: {
-      [CORE_ANNOTATIONS.REQUIRED]: false,
-      [constants.API_NAME]: apiName,
-      label: 'test label',
-      [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: valueSetName,
-      [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
+  fields: {
+    state: {
+      type: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [constants.API_NAME]: apiName,
+        label: 'test label',
+        [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: valueSetName,
+        [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
+      },
     },
-  } },
+    regular: {
+      type: Types.primitiveDataTypes.Number,
+      annotations: {
+        [constants.API_NAME]: 'Test__c.regular__c',
+      },
+    },
+  },
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     [constants.API_NAME]: 'Test__c',
   },
 })
 
-/* eslint-disable jest/no-focused-tests */
 describe('Global Value Sets filter', () => {
-  const filter = filterCreator() as FilterWith<'onFetch'>
+  const filter = filterCreator({
+    client: mockClient().client,
+    config: defaultFilterContext,
+  }) as FilterWith<'onFetch'>
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   let elements: Element[] = []
 

@@ -13,28 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import wu from 'wu'
-import { isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { lightiningElementsUrlRetreiver } from '../elements_url_retreiver/elements_url_retreiver'
-import { ElementIDResolver } from '../elements_url_retreiver/lightining_url_resolvers'
+import { lightningElementsUrlRetriever } from '../elements_url_retreiver/elements_url_retreiver'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
 
 const log = logger(module)
 
-const createElementIdResolver = (elementsMap: Record<string, Element>): ElementIDResolver =>
-  id => elementsMap[id.getFullName()]
-
-
 const getRelevantElements = (elements: Element[]): wu.WuIterable<Element> =>
-  wu(elements)
-    .map(elem => (isCustomObject(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
-    .flatten(true)
+  wu(elements).map(extractFlatCustomObjectFields).flatten(true)
 
-
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const url = await client.getUrl()
     if (url === undefined) {
@@ -42,23 +33,25 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
 
-    const elementsMap = _.keyBy(elements, element => element.elemID.getFullName())
-    const urlRetreiver = lightiningElementsUrlRetreiver(url, createElementIdResolver(elementsMap))
+    const referenceElements = buildElementsSourceForFetch(elements, config)
+    const urlRetriever = lightningElementsUrlRetriever(url, id => referenceElements.get(id))
 
-    if (urlRetreiver === undefined) {
+    if (urlRetriever === undefined) {
       log.error('Failed to get salesforce URL')
       return
     }
 
-    const updateElementUrl = (element: Element): void => {
-      const elementURL = urlRetreiver.retreiveUrl(element)
+    const updateElementUrl = async (element: Element): Promise<void> => {
+      const elementURL = await urlRetriever.retrieveUrl(element)
 
       if (elementURL !== undefined) {
         element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = elementURL.href
       }
     }
 
-    getRelevantElements(elements).forEach(element => updateElementUrl(element))
+    await Promise.all(
+      getRelevantElements(elements).map(element => updateElementUrl(element))
+    )
   },
 })
 

@@ -24,11 +24,12 @@ import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
   metadataType, apiName, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
-import { extractFullNamesFromValueList } from './utils'
+import { extractFullNamesFromValueList, isInstanceOfType } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
 const { makeArray } = collections.array
+const { filterAsync, toArrayAsync } = collections.asynciterable
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standardValue'
@@ -156,13 +157,12 @@ const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =
     (element: Element) => metadataType(element) === STANDARD_VALUE_SET
   ) as ObjectType | undefined
 
-const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[]): void => {
+const updateSVSReferences = (elements: ObjectType[], svsInstances: InstanceElement[]): void => {
   const svsValuesToName = svsValuesToRef(svsInstances)
-  const customObjectTypeElements = elements.filter(isCustomObject)
 
-  customObjectTypeElements.forEach((custObjType: ObjectType) => {
-    const fieldsToUpdate = calculatePicklistFieldsToUpdate(custObjType.fields, svsValuesToName)
-    _.assign(custObjType, { fields: fieldsToUpdate })
+  elements.forEach(customObjType => {
+    const fieldsToUpdate = calculatePicklistFieldsToUpdate(customObjType.fields, svsValuesToName)
+    _.assign(customObjType, { fields: fieldsToUpdate })
   })
 }
 
@@ -178,6 +178,7 @@ const emptyFileProperties = (fullName: string): FileProperties => ({
   lastModifiedDate: '',
   type: STANDARD_VALUE_SET,
 })
+
 
 /**
 * Declare the StandardValueSets filter that
@@ -195,6 +196,8 @@ export const makeFilter = (
    */
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
+    let configChanges: ConfigChangeSuggestion[] = []
+    let fetchedSVSInstances: InstanceElement[] | undefined
     if (svsMetadataType !== undefined) {
       const svsInstances = await fetchMetadataInstances({
         client,
@@ -203,14 +206,21 @@ export const makeFilter = (
         metadataQuery: config.fetchProfile.metadataQuery,
       })
       elements.push(...svsInstances.elements)
-      updateSVSReferences(elements, svsInstances.elements)
-      return svsInstances.configChanges
+
+      configChanges = svsInstances.configChanges
+      fetchedSVSInstances = svsInstances.elements
     }
-    // [GF] No StandardValueSet MetadataType was found.
-    // Is this considered an error?
-    // Not sure about handling this case,
-    // we want to at least log this for sure.
-    return [] as ConfigChangeSuggestion[]
+
+    const customObjectTypeElements = elements.filter(isCustomObject)
+
+    if (customObjectTypeElements.length > 0) {
+      const svsInstances = fetchedSVSInstances ?? await toArrayAsync(filterAsync(
+        await config.elementsSource.getAll(), isInstanceOfType(STANDARD_VALUE_SET),
+      ))
+      updateSVSReferences(customObjectTypeElements, svsInstances)
+    }
+
+    return configChanges
   },
 })
 

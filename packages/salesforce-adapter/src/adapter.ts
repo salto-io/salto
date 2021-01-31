@@ -16,6 +16,7 @@
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
@@ -24,9 +25,7 @@ import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import {
-  apiName, Types, isMetadataObjectType,
-} from './transformers/transformer'
+import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects'
 import customSettingsFilter from './filters/custom_settings_filter'
@@ -162,6 +161,8 @@ export interface SalesforceAdapterParams {
   unsupportedSystemFields?: string[]
 
   config: SalesforceConfig
+
+  elementsSource: ReadOnlyElementsSource
 }
 
 const metadataToRetrieveAndDeploy = [
@@ -274,6 +275,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     filterCreators = DEFAULT_FILTERS,
     client,
     getElemIdFunc,
+    elementsSource,
     systemFields = allSystemFields,
     unsupportedSystemFields = [
       'LastReferencedDate',
@@ -297,6 +299,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         systemFields,
         useOldProfiles: config.useOldProfiles ?? useOldProfiles,
         fetchProfile: this.fetchProfile,
+        elementsSource,
       },
       filterCreators
     )
@@ -350,6 +353,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     return {
       elements,
       updatedConfig,
+      isPartial: this.userConfig.fetch?.target !== undefined,
     }
   }
 

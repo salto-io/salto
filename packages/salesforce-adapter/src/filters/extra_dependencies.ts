@@ -15,20 +15,20 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, ReferenceExpression, ElementMap, ElemID,
+  Element, isObjectType, ReferenceExpression, ElemID, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues, promises, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { getAllReferencedIds, extendGeneratedDependencies } from '@salto-io/adapter-utils'
+import { getAllReferencedIds, buildElementsSourceFromElements, extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { metadataType, apiName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getInternalId } from './utils'
+import { getInternalId, buildElementsSourceForFetch, extractFlatCustomObjectFields, hasInternalId } from './utils'
 
 const { isDefined } = lowerDashValues
+const { flatMapAsync } = collections.asynciterable
+const { series } = promises.array
 const log = logger(module)
-
-type ElementMapByMetadataType = Record<string, ElementMap>
 
 const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
 
@@ -93,32 +93,6 @@ const getDependencies = async (client: SalesforceClient): Promise<DependencyGrou
 }
 
 /**
- * Generate a lookup for elements by metadata type and id.
- *
- * @param elements  The fetched elements
- */
-const generateElemLookup = (elements: Element[]): ElementMapByMetadataType => (
-  _(elements)
-    .flatMap(e => (isObjectType(e) ? [e, ...Object.values(e.fields)] : [e]))
-    .filter(e => getInternalId(e) !== undefined && getInternalId(e) !== '')
-    .groupBy(metadataType)
-    .mapValues(items => _.keyBy(items, item => getInternalId(item)))
-    .value()
-)
-
-/**
- * Generate a lookup for custom objects by type.
- *
- * @param elements  The fetched elements
- */
-const generateCustomObjectLookup = (elements: Element[]): ElementMap => (
-  _.keyBy(
-    elements.filter(isCustomObject),
-    elem => apiName(elem),
-  )
-)
-
-/**
  * Add references to the generated-dependencies annotation,
  * except for those already referenced elsewhere.
  *
@@ -150,46 +124,87 @@ const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => 
  */
 const addExtraReferences = async (
   groupedDeps: DependencyGroup[],
-  elemLookup: ElementMapByMetadataType,
-  customObjectLookup: ElementMap,
+  fetchedElements: ReadOnlyElementsSource,
+  elemLookup: multiIndex.Index<[string, string], ElemID>,
+  customObjectLookup: multiIndex.Index<[string], ElemID>,
 ): Promise<void> => {
-  const getElem = ({ type, id }: DependencyDetails): Element | undefined => {
+  const getElemId = ({ type, id }: DependencyDetails): ElemID | undefined => {
     // Special case handling:
     // - standard entities are returned with type=StandardEntity and id=<entity name>
     // - User is returned with type=User and id=User
     if (STANDARD_ENTITY_TYPES.includes(type)) {
-      return customObjectLookup[id]
+      return customObjectLookup.get(id)
     }
-    return elemLookup[type]?.[id]
+    return elemLookup.get(type, id)
   }
 
-  groupedDeps.forEach(edge => {
-    const elem = getElem(edge.from)
-    if (elem === undefined) {
-      log.debug(`Element ${edge.from.type}:${edge.from.id} (${edge.from.name}) not found, skipping ${
-        edge.to.length} dependencies`)
-      return
+  const getFetchedElement = async (elemId: ElemID): Promise<Element | undefined> => {
+    if (elemId.idType !== 'field') {
+      return fetchedElements.get(elemId)
     }
-    const dependencies = edge.to.map(dst => ({ dep: dst, elem: getElem(dst) }))
-    const missingDeps = dependencies.filter(item => item.elem === undefined).map(item => item.dep)
-    missingDeps.forEach(dep => {
-      log.debug(`Referenced element ${dep.type}:${dep.id} (${dep.name}) not found for ${
-        elem.elemID.getFullName()}`)
-    })
+    const elem = await fetchedElements.get(elemId.createParentID())
+    return isObjectType(elem)
+      ? elem.fields[elemId.name]
+      : undefined
+  }
 
-    addGeneratedDependencies(elem, dependencies.map(item => item.elem?.elemID).filter(isDefined))
-  })
+  await series(
+    groupedDeps.map(edge => async () => {
+      const elemId = getElemId(edge.from)
+      if (elemId === undefined) {
+        log.debug(
+          'Element %s:%s (%s) no found, skipping %d dependencies',
+          edge.from.type, edge.from.id, edge.from.name, edge.to.length,
+        )
+        return
+      }
+      const elem = await getFetchedElement(elemId)
+      if (elem === undefined) {
+        log.debug(
+          'Element %s was not fetched in this operation, skipping %d dependencies',
+          elemId.getFullName(), edge.to.length,
+        )
+        return
+      }
+      const dependencies = edge.to.map(dst => ({ dep: dst, elemId: getElemId(dst) }))
+      const missingDeps = dependencies
+        .filter(item => item.elemId === undefined)
+        .map(item => item.dep)
+      missingDeps.forEach(dep => {
+        log.debug(`Referenced element ${dep.type}:${dep.id} (${dep.name}) not found for ${
+          elem.elemID.getFullName()}`)
+      })
+
+      addGeneratedDependencies(elem, dependencies.map(item => item.elemId).filter(isDefined))
+    })
+  )
 }
 
 /**
  * Add references using the tooling API.
  */
-const creator: FilterCreator = ({ client }) => ({
+const creator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const groupedDeps = await getDependencies(client)
-    const elemLookup = generateElemLookup(elements)
-    const customObjectLookup = generateCustomObjectLookup(elements)
-    await addExtraReferences(groupedDeps, elemLookup, customObjectLookup)
+    const fetchedElements = buildElementsSourceFromElements(elements)
+    const allElements = buildElementsSourceForFetch(elements, config)
+
+    const { elemLookup, customObjectLookup } = await multiIndex.buildMultiIndex<Element>()
+      .addIndex({
+        name: 'elemLookup',
+        filter: hasInternalId,
+        key: elem => [metadataType(elem), getInternalId(elem)],
+        map: elem => elem.elemID,
+      })
+      .addIndex({
+        name: 'customObjectLookup',
+        filter: isCustomObject,
+        key: elem => [apiName(elem)],
+        map: elem => elem.elemID,
+      })
+      .process(flatMapAsync(await allElements.getAll(), extractFlatCustomObjectFields))
+
+    await addExtraReferences(groupedDeps, fetchedElements, elemLookup, customObjectLookup)
   },
 })
 

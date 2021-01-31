@@ -26,7 +26,7 @@ import {
 import SalesforceClient from '../../src/client/client'
 import { Types } from '../../src/transformers/transformer'
 import { extractFullNamesFromValueList } from '../../src/filters/utils'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({
@@ -83,7 +83,7 @@ describe('Standard Value Sets filter', () => {
   const filterCreator = (sfClient: SalesforceClient): FilterType =>
     makeFilter(
       new Set<string>(['Simpsons', 'Numbers'])
-    )({ client: sfClient, config: { fetchProfile: buildFetchProfile({}) } }) as FilterType
+    )({ client: sfClient, config: defaultFilterContext }) as FilterType
 
   let filter: FilterType
 

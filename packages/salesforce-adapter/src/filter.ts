@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change } from '@salto-io/adapter-api'
+import { Element, Change, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
@@ -47,6 +47,7 @@ export type FilterContext = {
   systemFields?: string[]
   useOldProfiles?: boolean
   fetchProfile: FetchProfile
+  elementsSource: ReadOnlyElementsSource
 }
 
 export const filtersRunner = (client: SalesforceClient,

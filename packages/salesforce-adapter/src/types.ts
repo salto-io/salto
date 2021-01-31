@@ -20,18 +20,17 @@ import {
 import * as constants from './constants'
 import { SALESFORCE } from './constants'
 
-export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
-export const SYSTEM_FIELDS = 'systemFields'
 export const USE_OLD_PROFILES = 'useOldProfiles'
 export const FETCH_CONFIG = 'fetch'
 export const METADATA_CONFIG = 'metadata'
-export const METADATA_INCLUDE_LIST = 'include'
-export const METADATA_EXCLUDE_LIST = 'exclude'
-export const METADATA_TYPE = 'metadataType'
-export const METADATA_NAME = 'name'
-export const METADATA_NAMESPACE = 'namespace'
+const METADATA_INCLUDE_LIST = 'include'
+const METADATA_EXCLUDE_LIST = 'exclude'
+const FETCH_TARGET = 'target'
+const METADATA_TYPE = 'metadataType'
+const METADATA_NAME = 'name'
+const METADATA_NAMESPACE = 'namespace'
 export const DATA_CONFIGURATION = 'data'
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const DATA_MANAGEMENT = 'dataManagement'
@@ -56,6 +55,7 @@ export type FetchParameters = {
   metadata?: MetadataParams
   data?: DataManagementConfig
   fetchAllCustomSettings?: boolean
+  target?: string[]
 }
 
 export type DeprecatedMetadataParams = {
@@ -369,6 +369,7 @@ const fetchConfigType = new ObjectType({
     [METADATA_CONFIG]: { type: metadataConfigType },
     [DATA_CONFIGURATION]: { type: dataManagementType },
     [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: { type: BuiltinTypes.BOOLEAN },
+    [FETCH_TARGET]: { type: new ListType(BuiltinTypes.STRING) },
   },
 })
 

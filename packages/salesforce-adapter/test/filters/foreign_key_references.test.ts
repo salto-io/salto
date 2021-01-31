@@ -16,23 +16,22 @@
 import _ from 'lodash'
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, ListType } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
-import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, METADATA_TYPE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
+import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
 import filterCreator from '../../src/filters/foreign_key_references'
 import mockClient from '../client'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext, createMetadataTypeElement } from '../utils'
 
 // Based on the instance_reference test scenarios
 describe('foregin_key_references filter', () => {
   const { client } = mockClient()
 
-  const refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
-  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
+  const refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   const parentObjFullName = 'parentFullName'
   const parentObjFieldName = 'parentObj'
   const invalidRefFieldName = 'invalidRef'
-  const nestedId = new ElemID(SALESFORCE, 'nested')
   const objTypeID = new ElemID(SALESFORCE, 'obj')
 
   let objType: ObjectType
@@ -44,49 +43,52 @@ describe('foregin_key_references filter', () => {
   let instanceElements: InstanceElement[]
 
   const generateElements = (): void => {
-    nestedType = new ObjectType({
-      elemID: nestedId,
-      fields: {
-        [parentObjFieldName]: {
-          annotations: {
-            [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
+    nestedType = createMetadataTypeElement(
+      'nested',
+      {
+        fields: {
+          [parentObjFieldName]: {
+            annotations: {
+              [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
+            },
+            type: BuiltinTypes.STRING,
           },
-          type: BuiltinTypes.STRING,
-        },
-        [invalidRefFieldName]: {
-          annotations: {
-            [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
+          [invalidRefFieldName]: {
+            annotations: {
+              [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
+            },
+            type: BuiltinTypes.STRING,
           },
-          type: BuiltinTypes.STRING,
         },
-      },
-    })
-    objType = new ObjectType({
-      annotations: { [METADATA_TYPE]: 'obj' },
-      elemID: objTypeID,
-      fields: {
-        reg: { type: BuiltinTypes.STRING },
-        [parentObjFieldName]: {
-          annotations: {
-            [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
+      }
+    )
+    objType = createMetadataTypeElement(
+      'obj',
+      {
+        fields: {
+          reg: { type: BuiltinTypes.STRING },
+          [parentObjFieldName]: {
+            annotations: {
+              [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
+            },
+            type: BuiltinTypes.STRING,
           },
-          type: BuiltinTypes.STRING,
-        },
-        [invalidRefFieldName]: {
-          annotations: {
-            [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
+          [invalidRefFieldName]: {
+            annotations: {
+              [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
+            },
+            type: BuiltinTypes.STRING,
           },
-          type: BuiltinTypes.STRING,
-        },
-        parentObjNested: { type: nestedType },
-        parentObjArr: {
-          annotations: {
-            [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
+          parentObjNested: { type: nestedType },
+          parentObjArr: {
+            annotations: {
+              [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
+            },
+            type: new ListType(BuiltinTypes.STRING),
           },
-          type: new ListType(BuiltinTypes.STRING),
         },
-      },
-    })
+      }
+    )
 
     // Instances
     parentInstance = new InstanceElement('parentInstance', objType, {

@@ -17,85 +17,99 @@ import {
   Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/extra_dependencies'
-import mockAdapter from '../adapter'
+import mockClient from '../client'
+import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import {
-  SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, FIELD_ANNOTATIONS,
-  CUSTOM_FIELD, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
+  SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
+  CUSTOM_FIELD, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_OBJECT,
 } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
+import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
-describe('Internal IDs filter', () => {
+const getGeneratedDeps = (elem: Element): ReferenceExpression[] => (
+  elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+)
+
+describe('extra dependencies filter', () => {
   let client: SalesforceClient
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
-  const objTypeID = new ElemID(SALESFORCE, 'Obj')
-  const otherObjTypeID = new ElemID(SALESFORCE, 'AnotherO')
-  const layoutObjTypeID = new ElemID(SALESFORCE, 'Layout')
 
-  const generateElements = (): Element[] => {
-    const objType = new ObjectType({
-      annotations: { [METADATA_TYPE]: 'obj' },
-      elemID: objTypeID,
+  let customObjType: ObjectType
+  let leadObjType: ObjectType
+  let instances: InstanceElement[]
+  let workspaceInstance: InstanceElement
+  let elements: Element[]
+  beforeAll(() => {
+    const mdType = createMetadataTypeElement(
+      'meta',
+      {
+        fields: {
+          fieldName: { type: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+        },
+      }
+    )
+    const layoutObjType = createMetadataTypeElement('Layout', {})
+    customObjType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'obj__c'),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [API_NAME]: 'obj__c',
+      },
       fields: {
-        standard: { type: BuiltinTypes.STRING },
+        first: {
+          type: Types.primitiveDataTypes.Text,
+          annotations: {
+            [API_NAME]: 'obj__c.first__c',
+            [INTERNAL_ID_ANNOTATION]: 'first field',
+          },
+        },
+        second: {
+          type: Types.primitiveDataTypes.Number,
+          annotations: {
+            [API_NAME]: 'obj__c.second__c',
+            [INTERNAL_ID_ANNOTATION]: 'second field',
+          },
+        },
+      },
+    })
+    leadObjType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'Lead'),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [API_NAME]: 'Lead',
+      },
+      fields: {
         custom: {
+          type: Types.primitiveDataTypes.Text,
           annotations: {
-            [API_NAME]: 'Obj.custom__c',
-            [INTERNAL_ID_ANNOTATION]: 'custom id',
+            [API_NAME]: 'Lead.custom__c',
+            [INTERNAL_ID_ANNOTATION]: 'lead field',
           },
-          type: BuiltinTypes.STRING,
-        },
-        special: {
-          annotations: {
-            [API_NAME]: 'Obj.special__c',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [
-              new ReferenceExpression(new ElemID(SALESFORCE, 'AnotherO', 'field', 'moreSpecial')),
-            ],
-            [INTERNAL_ID_ANNOTATION]: 'special id',
-          },
-          type: BuiltinTypes.STRING,
         },
       },
     })
-    const otherObjType = new ObjectType({
-      annotations: { [METADATA_TYPE]: 'AnotherO' },
-      elemID: otherObjTypeID,
-      fields: {
-        moreSpecial: {
-          annotations: {
-            [API_NAME]: 'AnotherO.moreSpecial__c',
-            [INTERNAL_ID_ANNOTATION]: 'more special id',
-          },
-          type: BuiltinTypes.STRING,
-        },
-      },
-    })
-    const layoutObjType = new ObjectType({
-      annotations: { [METADATA_TYPE]: 'Layout' },
-      elemID: layoutObjTypeID,
-      fields: {},
-    })
-    const instances = [
+    instances = [
       new InstanceElement(
         'inst1',
-        objType,
+        mdType,
         {
-          standard: 'aaa',
-          custom: new ReferenceExpression(objType.fields.custom.elemID),
+          fieldName: new ReferenceExpression(customObjType.fields.first.elemID),
           [INTERNAL_ID_FIELD]: 'inst1 id',
           [INSTANCE_FULL_NAME_FIELD]: 'inst1',
         },
       ),
       new InstanceElement(
         'inst2',
-        objType,
+        mdType,
         {
-          standard: 'aaa',
-          custom: 'Obj.custom__c',
+          fieldName: 'obj__c.first__c',
           [INTERNAL_ID_FIELD]: 'inst2 id',
           [INSTANCE_FULL_NAME_FIELD]: 'inst2',
         },
@@ -108,63 +122,94 @@ describe('Internal IDs filter', () => {
         },
       ),
     ]
-    return [objType, otherObjType, ...instances]
-  }
-
-  beforeAll(() => {
-    ({ client } = mockAdapter({
-      adapterParams: {
-      },
-    }))
+    const otherMdType = createMetadataTypeElement('meta2', {})
+    workspaceInstance = new InstanceElement(
+      'inst3',
+      otherMdType,
+      {
+        [INTERNAL_ID_FIELD]: 'inst3 id',
+        [INSTANCE_FULL_NAME_FIELD]: 'inst3',
+      }
+    )
+    const workspaceElements = buildElementsSourceFromElements([otherMdType, workspaceInstance])
+    elements = [mdType, layoutObjType, customObjType, leadObjType, ...instances]
+    client = mockClient().client
     filter = filterCreator({
       client,
-      config: { fetchProfile: buildFetchProfile({}) },
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({ target: ['meta'] }),
+        elementsSource: workspaceElements,
+      },
     }) as FilterType
   })
 
   describe('resolve internal ids', () => {
-    let elements: Element[]
     let numElements: number
     let mockQueryAll: jest.Mock
 
     async function *mockQueryAllImpl(): AsyncIterable<SalesforceRecord[]> {
       yield [
         {
-          MetadataComponentType: 'obj',
+          MetadataComponentType: 'meta',
           MetadataComponentId: 'inst1 id',
           MetadataComponentName: 'n1',
           RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'custom id',
+          RefMetadataComponentId: 'first field',
           RefMetadataComponentName: 'n2',
         },
         {
-          MetadataComponentType: 'obj',
+          MetadataComponentType: 'meta',
           MetadataComponentId: 'inst1 id',
           MetadataComponentName: 'n3',
           RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'special id',
+          RefMetadataComponentId: 'second field',
           RefMetadataComponentName: 'n4',
         },
         {
-          MetadataComponentType: 'obj',
+          MetadataComponentType: 'meta',
+          MetadataComponentId: 'inst1 id',
+          MetadataComponentName: 'n1',
+          RefMetadataComponentType: 'meta2',
+          RefMetadataComponentId: 'inst3 id',
+          RefMetadataComponentName: 'n2',
+        },
+        {
+          MetadataComponentType: 'meta2',
+          MetadataComponentId: 'inst3 id',
+          MetadataComponentName: 'n1',
+          RefMetadataComponentType: 'meta',
+          RefMetadataComponentId: 'inst2 id',
+          RefMetadataComponentName: 'n2',
+        },
+        {
+          MetadataComponentType: CUSTOM_FIELD,
+          MetadataComponentId: 'lead field',
+          MetadataComponentName: 'n3',
+          RefMetadataComponentType: CUSTOM_FIELD,
+          RefMetadataComponentId: 'second field',
+          RefMetadataComponentName: 'n4',
+        },
+        {
+          MetadataComponentType: 'meta',
           MetadataComponentId: 'inst2 id',
           MetadataComponentName: 'n5',
           RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'custom id',
+          RefMetadataComponentId: 'first field',
           RefMetadataComponentName: 'n6',
         },
       ] as unknown as SalesforceRecord[]
       yield [
         {
-          MetadataComponentType: 'obj',
+          MetadataComponentType: 'meta',
           MetadataComponentId: 'inst2 id',
           MetadataComponentName: 'n7',
           RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'more special id',
+          RefMetadataComponentId: 'lead field',
           RefMetadataComponentName: 'n8',
         },
         {
-          MetadataComponentType: 'obj',
+          MetadataComponentType: 'meta',
           MetadataComponentId: 'inst2 id',
           MetadataComponentName: 'n7',
           RefMetadataComponentType: CUSTOM_FIELD,
@@ -172,7 +217,15 @@ describe('Internal IDs filter', () => {
           RefMetadataComponentName: 'n8',
         },
         {
-          MetadataComponentType: 'obj',
+          MetadataComponentType: 'meta',
+          MetadataComponentId: 'inst2 id',
+          MetadataComponentName: 'n1',
+          RefMetadataComponentType: 'StandardEntity',
+          RefMetadataComponentId: 'Lead',
+          RefMetadataComponentName: 'n2',
+        },
+        {
+          MetadataComponentType: 'meta',
           MetadataComponentId: 'unknown src id',
           MetadataComponentName: 'n1',
           RefMetadataComponentType: CUSTOM_FIELD,
@@ -194,7 +247,7 @@ describe('Internal IDs filter', () => {
           MetadataComponentId: 'layoutId1',
           MetadataComponentName: 'n1',
           RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'custom id',
+          RefMetadataComponentId: 'first field',
           RefMetadataComponentName: 'n2',
         },
       ] as unknown as SalesforceRecord[]
@@ -210,7 +263,6 @@ describe('Internal IDs filter', () => {
         .mockImplementationOnce(mockQueryAllImpl)
       SalesforceClient.prototype.queryAll = mockQueryAll
 
-      elements = generateElements()
       numElements = elements.length
       await filter.onFetch(elements)
     })
@@ -219,33 +271,55 @@ describe('Internal IDs filter', () => {
       expect(elements.length).toEqual(numElements)
     })
 
-    it('should add _generated_dependencies when reference does not already exist, and keep the annotations sorted', () => {
-      expect(elements[2]).toBeInstanceOf(InstanceElement)
-      const inst1Deps = elements[2].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
-      // "custom" is already referenced using a reference expression on a field
-      expect(inst1Deps).toHaveLength(1)
-      expect(inst1Deps[0]).toBeInstanceOf(ReferenceExpression)
-      expect(inst1Deps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.special')
+    it('should add field dependencies to instances', () => {
+      const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
+      const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
+      const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
+      expect(getGeneratedDeps(instances[0])).toContainEqual(secondFieldRef)
+      expect(getGeneratedDeps(instances[1])).toEqual(
+        expect.arrayContaining([firstFieldRef, leadFieldRef])
+      )
+      expect(getGeneratedDeps(instances[2])).toEqual([firstFieldRef])
+    })
 
-      expect(elements[3]).toBeInstanceOf(InstanceElement)
-      const inst2Deps = elements[3].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
-      // "moreSpecial" is not referenced from an instance so it is included
-      // "unknown" is not a real field so it's not included
-      expect(inst2Deps).toHaveLength(2)
-      expect(inst2Deps[0]).toBeInstanceOf(ReferenceExpression)
-      // appears first because we sort by elem id
-      expect(inst2Deps[0].elemId.getFullName()).toEqual('salesforce.AnotherO.field.moreSpecial')
-      expect(inst2Deps[1]).toBeInstanceOf(ReferenceExpression)
-      expect(inst2Deps[1].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
+    it('should not add generated dependencies to targets that already have a reference in the element', () => {
+      expect(getGeneratedDeps(instances[0])).not.toContainEqual(
+        new ReferenceExpression(customObjType.fields.first.elemID)
+      )
+    })
 
-      const layoutInstDeps = elements[4].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
-      expect(layoutInstDeps).toHaveLength(1)
-      expect(layoutInstDeps[0]).toBeInstanceOf(ReferenceExpression)
-      expect(layoutInstDeps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
+    it('should add dependencies to standard objects', () => {
+      expect(getGeneratedDeps(instances[1])).toEqual(
+        expect.arrayContaining([new ReferenceExpression(leadObjType.elemID)])
+      )
+    })
+
+    it('should add generated dependencies annotation to fields', () => {
+      expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
+        [new ReferenceExpression(customObjType.fields.second.elemID)]
+      )
+    })
+
+    it('should sort generated dependencies by name', () => {
+      expect(getGeneratedDeps(instances[1])).toEqual([
+        new ReferenceExpression(leadObjType.elemID),
+        new ReferenceExpression(leadObjType.fields.custom.elemID),
+        new ReferenceExpression(customObjType.fields.first.elemID),
+      ])
     })
 
     it('should have individual queries for types marked for individual query', () => {
       expect(mockQueryAll).toHaveBeenCalledTimes(6)
+    })
+
+    it('should add generated dependencies to elements that were not fetched', () => {
+      expect(getGeneratedDeps(instances[0])).toContainEqual(
+        new ReferenceExpression(workspaceInstance.elemID)
+      )
+    })
+
+    it('should not modify workspace elements that were not fetched', () => {
+      expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
     })
   })
 })

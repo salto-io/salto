@@ -171,55 +171,6 @@ const lightningComponentBundleTargetConfigType = new ObjectType({
 
 export const allMissingSubTypes = [
   new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'BusinessHoursEntry'),
-    fields: {
-      timeZoneId: { type: BuiltinTypes.STRING },
-      name: { type: BuiltinTypes.STRING },
-      default: { type: BuiltinTypes.STRING },
-      mondayStartTime: { type: BuiltinTypes.STRING },
-      mondayEndTime: { type: BuiltinTypes.STRING },
-      tuesdayStartTime: { type: BuiltinTypes.STRING },
-      tuesdayEndTime: { type: BuiltinTypes.STRING },
-      wednesdayStartTime: { type: BuiltinTypes.STRING },
-      wednesdayEndTime: { type: BuiltinTypes.STRING },
-      thursdayStartTime: { type: BuiltinTypes.STRING },
-      thursdayEndTime: { type: BuiltinTypes.STRING },
-      fridayStartTime: { type: BuiltinTypes.STRING },
-      fridayEndTime: { type: BuiltinTypes.STRING },
-      saturdayStartTime: { type: BuiltinTypes.STRING },
-      saturdayEndTime: { type: BuiltinTypes.STRING },
-      sundayStartTime: { type: BuiltinTypes.STRING },
-      sundayEndTime: { type: BuiltinTypes.STRING },
-    },
-    annotations: {
-      [METADATA_TYPE]: 'BusinessHoursEntry',
-    },
-    path: [...subTypesPath, 'BusinessHoursEntry'],
-  }),
-  new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'Holidays'),
-    fields: {
-      name: { type: BuiltinTypes.STRING },
-      description: { type: BuiltinTypes.STRING },
-      activityDate: { type: BuiltinTypes.STRING },
-      recurrenceStartDate: { type: BuiltinTypes.STRING },
-      recurrenceEndDate: { type: BuiltinTypes.STRING },
-      startTime: { type: BuiltinTypes.STRING },
-      endTime: { type: BuiltinTypes.STRING },
-      recurrenceType: { type: BuiltinTypes.STRING },
-      recurrenceInterval: { type: BuiltinTypes.STRING },
-      recurrenceDayOfWeek: { type: BuiltinTypes.STRING },
-      recurrenceDayOfMonth: { type: BuiltinTypes.STRING },
-      recurrenceInstance: { type: BuiltinTypes.STRING },
-      recurrenceMonthOfYear: { type: BuiltinTypes.STRING },
-      businessHours: { type: BuiltinTypes.STRING },
-    },
-    annotations: {
-      [METADATA_TYPE]: 'Holidays',
-    },
-    path: [...subTypesPath, 'Holidays'],
-  }),
-  new ObjectType({
     // taken from https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_configuration_tags
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {

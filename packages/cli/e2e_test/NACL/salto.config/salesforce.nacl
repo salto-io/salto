@@ -1,15 +1,29 @@
 salesforce {
-  metadataTypesSkippedList = [
-    "Report",
-    "ReportType",
-    "ReportFolder",
-    "Dashboard",
-    "DashboardFolder",
-    "Profile",
-  ]
-  instancesRegexSkippedList = [
-    "^EmailTemplate.MarketoEmailTemplates",
-  ]
+  fetch = {
+    exclude = [
+      { 
+        metadataType = "Report"
+      },
+      { 
+        metadataType = "ReportType"
+      },
+      { 
+        metadataType = "ReportFolder"
+      },
+      { 
+        metadataType = "Dashboard"
+      },
+      { 
+        metadataType = "DashboardFolder"
+      },
+      { 
+        metadataType = "Profile"
+      },
+      { 
+        metadataType = "EmailTemplate",
+        name = "MarketoEmailTemplates.*"
+      },
+  }
   maxItemsInRetrieveRequest = 2500
   client = {
     maxConcurrentApiRequests = {

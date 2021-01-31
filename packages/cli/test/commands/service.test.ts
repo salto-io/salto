@@ -30,7 +30,7 @@ jest.mock('../../src/cli_oauth_authenticator', () => ({
   }),
 }))
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   getAdaptersCredentialsTypes: jest.fn().mockImplementation((serviceNames: string[]):
         Record<string, AdapterAuthentication> => {
     if (serviceNames[0] === 'noAdapter') {

@@ -24,11 +24,11 @@ import {
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
-  ...jest.requireActual('@salto-io/workspace'),
+  ...jest.requireActual<{}>('@salto-io/workspace'),
   configSource: jest.fn(),
 }))
 jest.mock('@salto-io/adapter-utils', () => ({
-  ...jest.requireActual('@salto-io/adapter-utils'),
+  ...jest.requireActual<{}>('@salto-io/adapter-utils'),
   createDefaultInstanceFromType: jest.fn(),
 }))
 

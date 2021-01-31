@@ -25,7 +25,7 @@ const { parseResultCache } = parseCache
 type SourceMap = parser.SourceMap
 
 jest.mock('@salto-io/file', () => ({
-  ...jest.requireActual('@salto-io/file'),
+  ...jest.requireActual<{}>('@salto-io/file'),
   stat: jest.fn(),
   exists: jest.fn(),
   readFile: jest.fn(),
@@ -34,7 +34,7 @@ jest.mock('@salto-io/file', () => ({
 }))
 
 jest.mock('@salto-io/workspace', () => ({
-  ...jest.requireActual('@salto-io/workspace'),
+  ...jest.requireActual<{}>('@salto-io/workspace'),
   serialize: jest.fn(),
 }))
 

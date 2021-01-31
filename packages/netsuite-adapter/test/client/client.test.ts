@@ -123,7 +123,7 @@ const mkdirpMock = mkdirp as jest.Mock
 const rmMock = rm as jest.Mock
 
 jest.mock('@salto-io/lowerdash', () => ({
-  ...jest.requireActual('@salto-io/lowerdash'),
+  ...jest.requireActual<{}>('@salto-io/lowerdash'),
   hash: {
     toMD5: jest.fn().mockImplementation(input => input),
   },

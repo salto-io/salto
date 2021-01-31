@@ -22,7 +22,7 @@ import {
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
 jest.mock('@salto-io/file', () => ({
-  ...jest.requireActual('@salto-io/file'),
+  ...jest.requireActual<{}>('@salto-io/file'),
   readdirp: jest.fn(),
   stat: jest.fn(),
   statSync: jest.fn(),

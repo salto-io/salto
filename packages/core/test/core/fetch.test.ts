@@ -29,7 +29,7 @@ import { mockFunction } from '../common/helpers'
 
 jest.mock('pietile-eventemitter')
 jest.mock('@salto-io/adapter-utils', () => ({
-  ...jest.requireActual('@salto-io/adapter-utils'),
+  ...jest.requireActual<{}>('@salto-io/adapter-utils'),
   applyInstancesDefaults: jest.fn(),
 }))
 
@@ -236,7 +236,7 @@ describe('fetch', () => {
         }
       })
 
-      describe('multiple adapters', async () => {
+      describe('multiple adapters', () => {
         const adapters = {
           dummy1: {
             fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: true }),

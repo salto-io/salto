@@ -23,7 +23,7 @@ import { FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
 
 
 describe('instance_references filter', () => {
-  describe('replace values', async () => {
+  describe('replace values', () => {
     let fileInstance: InstanceElement
     let instanceInElementsSource: InstanceElement
     let workflowInstance: InstanceElement

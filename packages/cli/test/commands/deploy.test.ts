@@ -27,7 +27,7 @@ const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
 jest.mock('../../src/callbacks')
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   deploy: jest.fn().mockImplementation((
     ws: Workspace,
     actionPlan: Plan,

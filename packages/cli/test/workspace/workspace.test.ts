@@ -47,7 +47,7 @@ const mockWsFunctions = {
 
 const mockWs = mockWsFunctions as unknown as Workspace
 jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual('@salto-io/core'),
+  ...jest.requireActual<{}>('@salto-io/core'),
   loadLocalWorkspace: jest.fn().mockImplementation(() => mockWs),
 }))
 jest.mock('inquirer', () => ({

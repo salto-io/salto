@@ -37,7 +37,7 @@ import { mockGetElemIdFunc } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
 
 jest.mock('../src/config', () => ({
-  ...jest.requireActual('../src/config'),
+  ...jest.requireActual<{}>('../src/config'),
   getConfigFromConfigChanges: jest.fn(),
 }))
 jest.mock('../src/reference_dependencies')

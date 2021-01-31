@@ -332,3 +332,13 @@ export const deserialize = async (
   }
   return elements
 }
+
+export const deserializeSingleElement = async (
+  data: string, staticFileReviver?: StaticFileReviver
+): Promise<Element> => {
+  const elements = (await deserialize(data, staticFileReviver)) as Element[]
+  if (elements.length !== 1) {
+    throw new Error('Deserialization failed. should receive single element')
+  }
+  return elements[0]
+}

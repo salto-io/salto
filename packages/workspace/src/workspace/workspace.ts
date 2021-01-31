@@ -24,7 +24,7 @@ import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
-import { multiEnvSource, deserializeElement } from './nacl_files/multi_env/multi_env_source'
+import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
@@ -34,7 +34,7 @@ import { MergeError } from '../merger'
 import { RemoteElementSource, ElementsSource } from './elements_source'
 import { buildNewMergedElementsAndErrors } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
-import { serialize, deserializeMergeErrors } from '../serializer/elements'
+import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../serializer/elements'
 
 const log = logger(module)
 
@@ -141,7 +141,7 @@ export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
   elementsSources: EnvironmentsSources,
-  remoteMapCreator: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator,
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -175,17 +175,17 @@ export const loadWorkspace = async (
       const envToUse = env ?? currentEnv()
       const newState = {
         merged: new RemoteElementSource(
-          await remoteMapCreator({
+          await remoteMapCreator<Element>({
             namespace: getRemoteMapNamespace('merged', envToUse),
-            serialize: (element: Element) => serialize([element]),
+            serialize: element => serialize([element]),
             // TODO: we might need to pass static file reviver to the deserialization func
-            deserialize: deserializeElement,
+            deserialize: deserializeSingleElement,
           })
         ),
-        errors: await remoteMapCreator({
+        errors: await remoteMapCreator<MergeError[]>({
           namespace: getRemoteMapNamespace('errors', envToUse),
-          serialize: (mergeErrors: MergeError[]) => serialize(mergeErrors),
-          deserialize: async (data: string) => deserializeMergeErrors(data),
+          serialize: mergeErrors => serialize(mergeErrors),
+          deserialize: async data => deserializeMergeErrors(data),
         }),
       }
       await buildNewMergedElementsAndErrors({
@@ -400,6 +400,9 @@ export const loadWorkspace = async (
     flush: async (): Promise<void> => {
       await state().flush()
       await naclFilesSource.flush()
+      const currentState = await getWorkspaceState()
+      await currentState.merged.flush()
+      await currentState.errors.flush()
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(elementsSources.sources, source =>
@@ -545,7 +548,7 @@ export const initWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
   envs: EnvironmentsSources,
-  remoteMapCreator: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator,
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({

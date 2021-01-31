@@ -31,7 +31,7 @@ import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from '../nacl_
 import { buildNewMergedElementsAndErrors } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
-import { serialize, deserialize } from '../../../serializer/elements'
+import { serialize, deserializeSingleElement } from '../../../serializer/elements'
 
 const { awu } = collections.asynciterable
 const { series } = promises.array
@@ -70,19 +70,11 @@ type MultiEnvSource = Omit<NaclFilesSource, 'getAll' | 'getElementsSource'> & {
   getElementsSource: (env?: string) => Promise<ElementsSource>
 }
 
-export const deserializeElement = async (data: string): Promise<Element> => {
-  const elements = (await deserialize(data)) as Element[]
-  if (elements.length !== 1) {
-    throw new Error('Deserialization failed. should receive single element')
-  }
-  return elements[0]
-}
-
 const buildMultiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-  remoteMapCreator: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator,
   initState?: Promise<MultiEnvState>
 ): MultiEnvSource => {
   const primarySource = (): NaclFilesSource => sources[primarySourceName]
@@ -124,11 +116,11 @@ const buildMultiEnvSource = (
     const allActiveElements = awu(_.values(getActiveSources(env)))
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
-    const elements = new RemoteElementSource(await remoteMapCreator({
+    const elements = new RemoteElementSource(await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged'),
-      serialize: (element: Element) => serialize([element]),
+      serialize: element => serialize([element]),
       // TODO: we might need to pass static file reviver to the deserialization func
-      deserialize: deserializeElement,
+      deserialize: deserializeSingleElement,
     }))
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
@@ -315,6 +307,7 @@ const buildMultiEnvSource = (
       commonSource().flush(),
       ..._.values(secondarySources()).map(src => src.flush()),
     ])
+    await (await getState()).elements.flush()
   }
 
   const isEmpty = async (env?: string): Promise<boolean> => (
@@ -484,7 +477,7 @@ export const multiEnvSource = (
   sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-  remoteMapCreator: RemoteMapCreator<Value>,
+  remoteMapCreator: RemoteMapCreator,
 ): MultiEnvSource => buildMultiEnvSource(
   sources,
   primarySourceName,

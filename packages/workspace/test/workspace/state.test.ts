@@ -16,8 +16,9 @@
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { StateData, buildInMemState } from '../../src/workspace/state'
-import { createPathIndex, PathIndex } from '../../src/workspace/path_index'
+import { Path, getElementsPathHints } from '../../src/workspace/path_index'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+import { InMemoryRemoteMap, RemoteMap } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -25,17 +26,18 @@ describe('state', () => {
   const adapter = 'salesforce'
   const elemID = new ElemID(adapter, 'elem')
   const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-  let pathIndex: PathIndex
-  const servicesUpdateDate = { [adapter]: new Date() }
+  let pathIndex: RemoteMap<Path[]>
+  const updateDate = new Date()
+  const servicesUpdateDate = { [adapter]: updateDate }
   const loadStateData = async (): Promise<StateData> => ({
     elements: createInMemoryElementSource([elem]),
-    servicesUpdateDate,
+    servicesUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
     pathIndex,
-    saltoVersion: '0.0.1',
+    saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
   })
 
   beforeAll(async () => {
-    pathIndex = await await createPathIndex([elem])
+    pathIndex = new InMemoryRemoteMap(await getElementsPathHints([elem]))
   })
   describe('build in-mem state', () => {
     let state: ReturnType<typeof buildInMemState>
@@ -86,7 +88,8 @@ describe('state', () => {
       const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
-      expect(await state.getPathIndex()).toEqual(await createPathIndex([elem, newElem]))
+      const index = await awu((await state.getPathIndex()).entries()).toArray()
+      expect(index).toEqual(await getElementsPathHints([elem, newElem]))
     })
 
     it('updatePathIndex', async () => {
@@ -96,13 +99,14 @@ describe('state', () => {
       await state.overridePathIndex(elements)
       const oneElement = [newElem]
       await state.updatePathIndex(oneElement, ['salesforce'])
-      expect(await state.getPathIndex()).toEqual(await createPathIndex([elem, newElem]))
+      const index = await awu((await state.getPathIndex()).entries()).toArray()
+      expect(index).toEqual(await getElementsPathHints([elem, newElem]))
     })
 
     it('clear should clear all data', async () => {
       await state.clear()
       expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
-      expect((await state.getPathIndex()).size).toEqual(0)
+      expect((await awu((await state.getPathIndex()).keys()).toArray()).length).toEqual(0)
       expect(await state.getServicesUpdateDates()).toEqual({})
     })
 
@@ -112,10 +116,6 @@ describe('state', () => {
 
     it('rename should do nothing', async () => {
       await expect(state.rename('bla')).resolves.not.toThrow()
-    })
-
-    it('getHash should not work on in memory state', async () => {
-      await expect(state.getHash()).rejects.toThrow()
     })
 
     it('should return the salto version that was provided in load data', async () => {

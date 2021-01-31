@@ -21,8 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
-  SDF_CONCURRENCY_LIMIT, SAVED_SEARCH, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
-  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET,
+  SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST, SAVED_SEARCH,
 } from './constants'
 import { NetsuiteQueryParameters } from './query'
 
@@ -100,19 +100,9 @@ export const configType = new ObjectType({
   fields: {
     [TYPES_TO_SKIP]: {
       type: new ListType(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
-          // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
-          // a value for specific customers to use it for moving between envs, backup etc.
-        ],
-      },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
       type: new ListType(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
-      },
     },
     [DEPLOY_REFERENCED_ELEMENTS]: {
       type: BuiltinTypes.BOOLEAN,
@@ -126,6 +116,21 @@ export const configType = new ObjectType({
 
     [FETCH_TARGET]: {
       type: queryConfigType,
+    },
+
+    [SKIP_LIST]: {
+      type: queryConfigType,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: {
+          types: {
+            // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
+            // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
+            // a value for specific customers to use it for moving between envs, backup etc.
+            [SAVED_SEARCH]: ['.*'],
+          },
+          filePaths: [],
+        },
+      },
     },
   },
 })
@@ -143,14 +148,15 @@ export type NetsuiteConfig = {
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
   [CLIENT_CONFIG]?: NetsuiteClientConfig
   [FETCH_TARGET]?: NetsuiteQueryParameters
+  [SKIP_LIST]?: NetsuiteQueryParameters
 }
 
-export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite. '
-  + 'In order to complete the fetch operation, '
-  + 'Salto needs to stop managing these items by applying the following configuration change:'
+export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
+  + ' In order to complete the fetch operation, Salto needs to stop managing these items by adding the items to the configuration skip list.'
 
-// create escaped regex string that will match the new RegExp() input format
-const wrapAsRegex = (str: string): string => `^${_.escapeRegExp(str)}$`
+export const UPDATE_TO_SKIP_LIST_MSG = 'The configuration options "typeToSkip" and "filePathRegexSkipList" are deprecated.'
+  + ' To skip items in fetch, please use the "skipList" option.'
+  + ' The following configuration will update the deprected fields to the "skipList" field.'
 
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
@@ -158,33 +164,126 @@ const toConfigSuggestions = (
 ): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof NetsuiteClientConfig, Value>> => ({
   ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
   ...(!_.isEmpty(failedFilePaths)
-    ? { [FILE_PATHS_REGEX_SKIP_LIST]: failedFilePaths.map(wrapAsRegex) }
+    ? { [FILE_PATHS_REGEX_SKIP_LIST]: failedFilePaths.map(_.escapeRegExp) }
     : {}),
 })
 
 
-export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean,
-  failedFilePaths: string[], currentConfig: NetsuiteConfig): InstanceElement | undefined => {
+const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
+  let newPathRegex = filePathRegex
+  newPathRegex = newPathRegex.startsWith('^')
+    ? newPathRegex.substring(1)
+    : newPathRegex = `.*${newPathRegex}`
+
+  newPathRegex = newPathRegex.endsWith('$')
+    ? newPathRegex = newPathRegex.substring(0, newPathRegex.length - 1)
+    : newPathRegex = `${newPathRegex}.*`
+
+  return newPathRegex
+}
+
+
+const updateConfigFromFailures = (
+  failedToFetchAllAtOnce: boolean,
+  failedFilePaths: string[],
+  configToUpdate: InstanceElement,
+): boolean => {
   const suggestions = toConfigSuggestions(failedToFetchAllAtOnce, failedFilePaths)
   if (_.isEmpty(suggestions)) {
-    return undefined
+    return false
   }
 
-  const clientConfigSuggestion = suggestions[FETCH_ALL_TYPES_AT_ONCE] !== undefined
-    ? _.pickBy({
-      ...(currentConfig[CLIENT_CONFIG] ?? {}),
+  if (suggestions[FETCH_ALL_TYPES_AT_ONCE] !== undefined) {
+    configToUpdate.value[CLIENT_CONFIG] = _.pickBy({
+      ...(configToUpdate.value[CLIENT_CONFIG] ?? {}),
       [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE],
     }, values.isDefined)
-    : currentConfig[CLIENT_CONFIG]
+  }
 
-  return new InstanceElement(
+  const currentSkipList = configToUpdate.value[SKIP_LIST]
+  const newSkipList: Partial<NetsuiteQueryParameters> = currentSkipList !== undefined
+    ? _.cloneDeep(currentSkipList)
+    : {}
+
+  if (!_.isEmpty(suggestions[FILE_PATHS_REGEX_SKIP_LIST])) {
+    if (newSkipList.filePaths === undefined) {
+      newSkipList.filePaths = []
+    }
+    newSkipList.filePaths.push(
+      ...suggestions[FILE_PATHS_REGEX_SKIP_LIST]
+    )
+  }
+  configToUpdate.value[SKIP_LIST] = newSkipList
+  return true
+}
+
+const updateConfigSkipListFormat = (
+  configToUpdate: InstanceElement,
+): boolean => {
+  if (configToUpdate.value[TYPES_TO_SKIP] === undefined
+    && configToUpdate.value[FILE_PATHS_REGEX_SKIP_LIST] === undefined) {
+    return false
+  }
+
+  const currentSkipList = configToUpdate.value[SKIP_LIST]
+  const newSkipList: Partial<NetsuiteQueryParameters> = currentSkipList !== undefined
+    ? _.cloneDeep(currentSkipList)
+    : {}
+
+  const deprecatedTypesToSkip = configToUpdate.value[TYPES_TO_SKIP]
+  if (deprecatedTypesToSkip !== undefined) {
+    if (newSkipList.types === undefined) {
+      newSkipList.types = {}
+    }
+
+    _.assign(newSkipList.types, Object.fromEntries(
+      makeArray(deprecatedTypesToSkip).map((type: string) => [type, ['.*']])
+    ))
+  }
+
+  const deprecatedFilePathRegexSkipList = configToUpdate.value[FILE_PATHS_REGEX_SKIP_LIST]
+  if (deprecatedFilePathRegexSkipList !== undefined) {
+    if (newSkipList.filePaths === undefined) {
+      newSkipList.filePaths = []
+    }
+
+    newSkipList.filePaths.push(
+      ...makeArray(deprecatedFilePathRegexSkipList).map(convertDeprecatedFilePathRegex)
+    )
+  }
+
+  configToUpdate.value[SKIP_LIST] = newSkipList
+  delete configToUpdate.value[TYPES_TO_SKIP]
+  delete configToUpdate.value[FILE_PATHS_REGEX_SKIP_LIST]
+
+  return true
+}
+
+export const getConfigFromConfigChanges = (
+  failedToFetchAllAtOnce: boolean,
+  failedFilePaths: string[],
+  currentConfig: NetsuiteConfig
+): { config: InstanceElement; message: string } | undefined => {
+  const conf = new InstanceElement(
     ElemID.CONFIG_NAME,
     configType,
-    _.pickBy({
-      ...currentConfig,
-      [FILE_PATHS_REGEX_SKIP_LIST]: makeArray(currentConfig[FILE_PATHS_REGEX_SKIP_LIST])
-        .concat(makeArray(suggestions[FILE_PATHS_REGEX_SKIP_LIST])),
-      [CLIENT_CONFIG]: clientConfigSuggestion,
-    }, values.isDefined)
+    _.pickBy(_.cloneDeep(currentConfig), values.isDefined),
   )
+
+  const didUpdateFromFailures = updateConfigFromFailures(
+    failedToFetchAllAtOnce,
+    failedFilePaths,
+    conf
+  )
+  const didUpdateSkipListFormat = updateConfigSkipListFormat(conf)
+  const message = [
+    didUpdateFromFailures
+      ? STOP_MANAGING_ITEMS_MSG
+      : undefined,
+    didUpdateSkipListFormat
+      ? UPDATE_TO_SKIP_LIST_MSG
+      : undefined,
+  ].filter(values.isDefined).join(' In addition, ')
+
+  return message !== '' ? { config: conf, message } : undefined
 }

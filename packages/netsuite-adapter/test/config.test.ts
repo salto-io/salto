@@ -14,17 +14,24 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { configType, getConfigFromConfigChanges } from '../src/config'
+import _ from 'lodash'
+import { NetsuiteQueryParameters } from '../src/query'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_TO_SKIP_LIST_MSG } from '../src/config'
 import {
-  FETCH_ALL_TYPES_AT_ONCE, FILE_PATHS_REGEX_SKIP_LIST, TYPES_TO_SKIP, SDF_CONCURRENCY_LIMIT,
-  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
-  CLIENT_CONFIG,
+  FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
+  CLIENT_CONFIG, SKIP_LIST, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
 } from '../src/constants'
 
 describe('config', () => {
+  const skipList: NetsuiteQueryParameters = {
+    types: {
+      test1: ['.*'],
+    },
+    filePaths: ['SomeRegex'],
+  }
   const currentConfig = {
-    [TYPES_TO_SKIP]: ['test1'],
-    [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*'],
+    [SKIP_LIST]: skipList,
     [DEPLOY_REFERENCED_ELEMENTS]: false,
     [CLIENT_CONFIG]: {
       [SDF_CONCURRENCY_LIMIT]: 2,
@@ -33,31 +40,21 @@ describe('config', () => {
     },
   }
   const newFailedFilePath = '/path/to/file.js'
-  const expectedNewFailedFileRegex = '^/path/to/file\\.js$'
 
   it('should return undefined when having no currentConfig suggestions', () => {
     expect(getConfigFromConfigChanges(false, [], currentConfig)).toBeUndefined()
   })
 
-  it('should have match between generated regex and the failed file', () => {
-    expect(new RegExp(expectedNewFailedFileRegex).test(newFailedFilePath)).toBe(true)
-  })
-
-  it('should not have match between generated regex and the other file paths', () => {
-    expect(new RegExp(expectedNewFailedFileRegex).test('/path/to/fileajs')).toBe(false)
-    expect(new RegExp(expectedNewFailedFileRegex).test('/path/to/file.js/')).toBe(false)
-    expect(new RegExp(expectedNewFailedFileRegex).test('path/to/file.js')).toBe(false)
-    expect(new RegExp(expectedNewFailedFileRegex).test('//path//to//file.js')).toBe(false)
-  })
-
   it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
     const configFromConfigChanges = getConfigFromConfigChanges(true,
-      [newFailedFilePath], {}) as InstanceElement
+      [newFailedFilePath], {})?.config as InstanceElement
     expect(configFromConfigChanges.isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
-        [FILE_PATHS_REGEX_SKIP_LIST]: [expectedNewFailedFileRegex],
+        [SKIP_LIST]: {
+          filePaths: [_.escapeRegExp(newFailedFilePath)],
+        },
         [CLIENT_CONFIG]: {
           [FETCH_ALL_TYPES_AT_ONCE]: false,
         },
@@ -66,13 +63,16 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
-    expect(getConfigFromConfigChanges(true, [newFailedFilePath], currentConfig))
+    const newSkipList = _.cloneDeep(skipList)
+    newSkipList.filePaths.push(_.escapeRegExp(newFailedFilePath))
+
+    const configChange = getConfigFromConfigChanges(true, [newFailedFilePath], currentConfig)
+    expect(configChange?.config)
       .toEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
         {
-          [TYPES_TO_SKIP]: ['test1'],
-          [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*', expectedNewFailedFileRegex],
+          [SKIP_LIST]: newSkipList,
           [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: {
             [FETCH_ALL_TYPES_AT_ONCE]: false,
@@ -82,5 +82,62 @@ describe('config', () => {
           },
         }
       ))
+
+    expect(configChange?.message).toBe(STOP_MANAGING_ITEMS_MSG)
+  })
+
+  it('should convert typesToSkip and filePathsRegexSkipList to skipList', () => {
+    const newSkipList = {
+      types: {
+        someType: ['.*'],
+      },
+      filePaths: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
+    }
+    const config = {
+      ..._.omit(currentConfig, SKIP_LIST),
+      [TYPES_TO_SKIP]: ['someType'],
+      [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
+    }
+
+    const configChange = getConfigFromConfigChanges(
+      false,
+      [],
+      config
+    )
+    expect(configChange?.config)
+      .toEqual(new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        {
+          [SKIP_LIST]: newSkipList,
+          [DEPLOY_REFERENCED_ELEMENTS]: false,
+          [CLIENT_CONFIG]: {
+            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+            [SDF_CONCURRENCY_LIMIT]: 2,
+          },
+        }
+      ))
+
+    expect(configChange?.message).toBe(UPDATE_TO_SKIP_LIST_MSG)
+  })
+
+  it('should combine configuration messages when needed', () => {
+    const newSkipList = _.cloneDeep(skipList)
+    newSkipList.types.someType = ['.*']
+    newSkipList.filePaths.push('.*someRegex.*')
+    const config = {
+      ...currentConfig,
+      [TYPES_TO_SKIP]: ['someType'],
+      [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex'],
+    }
+
+    const configChange = getConfigFromConfigChanges(
+      false,
+      ['someFailedFile'],
+      config
+    )
+
+    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_TO_SKIP_LIST_MSG}`)
   })
 })

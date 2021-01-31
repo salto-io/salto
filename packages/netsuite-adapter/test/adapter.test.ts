@@ -252,7 +252,7 @@ describe('Adapter', () => {
       })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
-      getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
+      getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
       const fetchResult = await netsuiteAdapter.fetch()
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['/path/to/file'], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
@@ -265,7 +265,7 @@ describe('Adapter', () => {
       })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
-      getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
+      getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
       const fetchResult = await netsuiteAdapter.fetch()
       expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)

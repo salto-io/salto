@@ -45,14 +45,14 @@ const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]}
   }
 }
 
-const filterByFile = (
+const filterByFile = async (
   valueID: ElemID,
   value: Value,
   fileElements: Element[],
-): Value => filterByID(
+): Promise<Value> => filterByID(
   valueID,
   value,
-  id => !_.isEmpty((fileElements).filter(
+  async id => !_.isEmpty((fileElements).filter(
     e => resolvePath(
       e,
       getMergeableParentID(id).mergeableID

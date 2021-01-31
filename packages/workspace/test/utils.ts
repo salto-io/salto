@@ -72,38 +72,39 @@ export const mockStaticFilesSource = (): StaticFilesSource => ({
   delete: jest.fn(),
 })
 
-export const mockCreateRemoteMap = async <T>(opts: CreateRemoteMapParams<T>):
-Promise<RemoteMap<T>> => {
-  let data: Record<string, string> = {}
+export const mockCreateRemoteMap = async <T, K extends string = string>(
+  opts: CreateRemoteMapParams<T>
+): Promise<RemoteMap<T, K>> => {
+  let data: Record<K, string> = {} as Record<K, string>
   return {
     setAll: async (
-      entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, string>>
+      entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>
     ): Promise<void> => {
       for await (const entry of entries) {
         data[entry.key] = opts.serialize(entry.value)
       }
     },
-    delete: async (key: string) => {
+    delete: async (key: K) => {
       delete data[key]
     },
-    get: async (key: string): Promise<T | undefined> => {
+    get: async (key: K): Promise<T | undefined> => {
       const value = data[key]
       return value ? opts.deserialize(value) : undefined
     },
-    has: async (key: string): Promise<boolean> => key in data,
-    set: async (key: string, value: T): Promise<void> => {
+    has: async (key: K): Promise<boolean> => key in data,
+    set: async (key: K, value: T): Promise<void> => {
       data[key] = opts.serialize(value)
     },
     clear: async (): Promise<void> => {
-      data = {}
+      data = {} as Record<K, string>
     },
-    entries: (): AsyncIterable<RemoteMapEntry<T, string>> =>
+    entries: (): AsyncIterable<RemoteMapEntry<T, K>> =>
       awu(Object.entries(data))
-        .map(async e =>
-          ({ key: e[0], value: await opts.deserialize(e[1] as unknown as string) })),
-    keys: (): AsyncIterable<string> => toAsyncIterable(Object.keys(data)),
+        .map(async ([key, value]) =>
+          ({ key: key as K, value: await opts.deserialize(value as string) })),
+    keys: (): AsyncIterable<K> => toAsyncIterable(Object.keys(data) as unknown as K[]),
     values: (): AsyncIterable<T> =>
-      awu(Object.values(data)).map(async v => opts.deserialize(v)),
+      awu(Object.values(data)).map(async v => opts.deserialize(v as string)),
     flush: (): Promise<void> => Promise.resolve(undefined),
     revert: (): Promise<void> => Promise.resolve(undefined),
     close: (): Promise<void> => Promise.resolve(undefined),

@@ -66,6 +66,8 @@ export const DEPLOY_REFERENCED_ELEMENTS = 'deployReferencedElements'
 export const SDF_CONCURRENCY_LIMIT = 'sdfConcurrencyLimit'
 export const CLIENT_CONFIG = 'client'
 export const FETCH_TARGET = 'fetchTarget'
+export const SKIP_LIST = 'skipList'
+export const RAW_CONFIG = 'rawConfig'
 
 export const CAPTURE = 'capture'
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'

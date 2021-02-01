@@ -30,6 +30,7 @@ import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, CLIENT_CONFIG,
   FETCH_TARGET,
   FETCH_ALL_TYPES_AT_ONCE,
+  SKIP_LIST,
 } from './constants'
 import { validateParameters } from './query'
 
@@ -61,23 +62,33 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   }
 
   const fetchTargetParameters = config?.value?.[FETCH_TARGET]
-  const filePathsRegexSkipList = makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
+  const skipListParameters = config?.value?.[SKIP_LIST]
+  const filePathsRegexSkipList = config?.value?.[FILE_PATHS_REGEX_SKIP_LIST]
+    && makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
   const clientConfig = config?.value?.[CLIENT_CONFIG]
   if (clientConfig?.[FETCH_ALL_TYPES_AT_ONCE] && fetchTargetParameters !== undefined) {
     log.warn(`${FETCH_ALL_TYPES_AT_ONCE} is not supported with ${FETCH_TARGET}. Ignoring ${FETCH_ALL_TYPES_AT_ONCE}`)
     clientConfig[FETCH_ALL_TYPES_AT_ONCE] = false
   }
   try {
-    validateRegularExpressions(filePathsRegexSkipList)
+    if (filePathsRegexSkipList !== undefined) {
+      validateRegularExpressions(filePathsRegexSkipList)
+    }
     if (fetchTargetParameters !== undefined) {
       validateParameters(fetchTargetParameters)
     }
+
+    if (skipListParameters !== undefined) {
+      validateParameters(skipListParameters)
+    }
+
     const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
-      [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
+      [TYPES_TO_SKIP]: config?.value?.[TYPES_TO_SKIP] && makeArray(config?.value?.[TYPES_TO_SKIP]),
       [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
       [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
       [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
       [FETCH_TARGET]: fetchTargetParameters,
+      [SKIP_LIST]: skipListParameters,
     }
 
     Object.keys(config?.value ?? {})

@@ -27,6 +27,7 @@ import {
   DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES, CLIENT_CONFIG,
   MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
   FETCH_TARGET,
+  SKIP_LIST,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 
@@ -66,6 +67,7 @@ describe('NetsuiteAdapter creator', () => {
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
+      [SKIP_LIST]: {},
       [TYPES_TO_SKIP]: ['test1'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
       [DEPLOY_REFERENCED_ELEMENTS]: false,
@@ -109,6 +111,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
+          [SKIP_LIST]: {},
           [TYPES_TO_SKIP]: ['test1'],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
           [DEPLOY_REFERENCED_ELEMENTS]: false,
@@ -142,8 +145,6 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
-          [TYPES_TO_SKIP]: [],
-          [FILE_PATHS_REGEX_SKIP_LIST]: [],
           [CLIENT_CONFIG]: {
             [FETCH_ALL_TYPES_AT_ONCE]: false,
           },
@@ -162,10 +163,7 @@ describe('NetsuiteAdapter creator', () => {
       })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
-        config: {
-          [TYPES_TO_SKIP]: [],
-          [FILE_PATHS_REGEX_SKIP_LIST]: [],
-        },
+        config: {},
         elementsSource,
         getElemIdFunc: mockGetElemIdFunc,
       })

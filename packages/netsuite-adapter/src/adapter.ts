@@ -18,7 +18,7 @@ import {
   ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import NetsuiteClient from './client/client'
 import {
@@ -29,14 +29,14 @@ import {
 } from './types'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, INTEGRATION, FETCH_TARGET,
+  SKIP_LIST,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import { FilterCreator } from './filter'
 import {
-  getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
-  DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+  getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
@@ -71,6 +71,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
   private readonly fetchTarget?: NetsuiteQueryParameters
+  private readonly skipList?: NetsuiteQueryParameters
 
   public constructor({
     client,
@@ -101,6 +102,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
     this.fetchTarget = config[FETCH_TARGET]
+    this.skipList = config[SKIP_LIST]
   }
 
   /**
@@ -108,14 +110,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<FetchResult> {
-    const skipListQuery = notQuery(buildNetsuiteQuery({
+    const deprecatedSkipList = buildNetsuiteQuery({
       types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
-    }))
+    })
 
-    const fetchQuery = this.fetchTarget !== undefined
-      ? andQuery(buildNetsuiteQuery(this.fetchTarget), skipListQuery)
-      : skipListQuery
+    const fetchQuery = [
+      this.fetchTarget && buildNetsuiteQuery(this.fetchTarget),
+      this.skipList && notQuery(buildNetsuiteQuery(this.skipList)),
+      notQuery(deprecatedSkipList),
+    ].filter(values.isDefined).reduce(andQuery)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),
@@ -142,13 +146,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const isPartial = this.fetchTarget !== undefined
 
     await this.runFiltersOnFetch(elements, this.elementsSource, isPartial)
-    const config = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedFilePaths,
+    const updatedConfig = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedFilePaths,
       this.userConfig)
 
-    if (_.isUndefined(config)) {
+    if (_.isUndefined(updatedConfig)) {
       return { elements, isPartial }
     }
-    return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG }, isPartial }
+    return { elements, updatedConfig, isPartial }
   }
 
   private getAllRequiredReferencedInstances(

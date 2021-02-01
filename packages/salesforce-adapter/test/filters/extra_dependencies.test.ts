@@ -33,6 +33,7 @@ describe('Internal IDs filter', () => {
   let filter: FilterType
   const objTypeID = new ElemID(SALESFORCE, 'Obj')
   const otherObjTypeID = new ElemID(SALESFORCE, 'OtherO')
+  const layoutObjTypeID = new ElemID(SALESFORCE, 'Layout')
 
   const generateElements = (): Element[] => {
     const objType = new ObjectType({
@@ -72,6 +73,11 @@ describe('Internal IDs filter', () => {
         },
       },
     })
+    const layoutObjType = new ObjectType({
+      annotations: { [METADATA_TYPE]: 'Layout' },
+      elemID: layoutObjTypeID,
+      fields: {},
+    })
     const instances = [
       new InstanceElement(
         'inst1',
@@ -91,6 +97,13 @@ describe('Internal IDs filter', () => {
           custom: 'Obj.custom__c',
           [INTERNAL_ID_FIELD]: 'inst2 id',
           [INSTANCE_FULL_NAME_FIELD]: 'inst2',
+        },
+      ),
+      new InstanceElement(
+        'layoutId1',
+        layoutObjType,
+        {
+          [INTERNAL_ID_FIELD]: 'layoutId1',
         },
       ),
     ]
@@ -165,8 +178,31 @@ describe('Internal IDs filter', () => {
       ] as unknown as SalesforceRecord[]
     }
 
+    async function *mockQueryAllImplEmpty(): AsyncIterable<SalesforceRecord[]> {
+      yield [
+      ] as unknown as SalesforceRecord[]
+    }
+
+    async function *mockQueryAllImplLayout(): AsyncIterable<SalesforceRecord[]> {
+      yield [
+        {
+          MetadataComponentType: 'Layout',
+          MetadataComponentId: 'layoutId1',
+          MetadataComponentName: 'n1',
+          RefMetadataComponentType: CUSTOM_FIELD,
+          RefMetadataComponentId: 'custom id',
+          RefMetadataComponentName: 'n2',
+        },
+      ] as unknown as SalesforceRecord[]
+    }
+
     beforeAll(async () => {
       mockQueryAll = jest.fn()
+        .mockImplementationOnce(mockQueryAllImplLayout)
+        .mockImplementationOnce(mockQueryAllImplEmpty)
+        .mockImplementationOnce(mockQueryAllImplEmpty)
+        .mockImplementationOnce(mockQueryAllImplEmpty)
+        .mockImplementationOnce(mockQueryAllImplEmpty)
         .mockImplementationOnce(mockQueryAllImpl)
       SalesforceClient.prototype.queryAll = mockQueryAll
 
@@ -195,6 +231,15 @@ describe('Internal IDs filter', () => {
       expect(inst2Deps[0]).toBeInstanceOf(ReferenceExpression)
       expect(inst2Deps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
       expect(inst2Deps[1].elemId.getFullName()).toEqual('salesforce.OtherO.field.moreSpecial')
+
+      const layoutInstDeps = elements[4].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+      expect(layoutInstDeps).toHaveLength(1)
+      expect(layoutInstDeps[0]).toBeInstanceOf(ReferenceExpression)
+      expect(layoutInstDeps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
+    })
+
+    it('should have individual queries for types marked for individual query', () => {
+      expect(mockQueryAll).toHaveBeenCalledTimes(6)
     })
   })
 })

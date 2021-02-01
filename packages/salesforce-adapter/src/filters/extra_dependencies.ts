@@ -32,6 +32,11 @@ type ElementMapByMetadataType = Record<string, ElementMap>
 
 const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
 
+// temporary workaorund for SALTO-1162 until we switch to using bulk api v2 -
+// there is a max of 2000 entries returned per query, so we separate the heavy
+// types to their own queries to increase the limit (may extend / make this dynamic in the future)
+const REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY = ['Layout', 'Flow', 'ApexClass', 'ApexPage', 'CustomField']
+
 type DependencyDetails = {
   type: string
   id: string
@@ -49,16 +54,19 @@ type DependencyGroup = {
  * @param client  The client to use to run the query
  */
 const getDependencies = async (client: SalesforceClient): Promise<DependencyGroup[]> => {
-  const allDepsIter = await client.queryAll(
-    `SELECT 
-      MetadataComponentId, MetadataComponentType, MetadataComponentName, 
-      RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
-    FROM MetadataComponentDependency`,
-    true,
-  )
+  const allTypes = REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `'${t}'`).join(', ')
+  const whereClauses = [
+    ...REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `MetadataComponentType='${t}'`),
+    `MetadataComponentType NOT IN (${allTypes})`,
+  ]
+  const allQueries = whereClauses.map(clause => `SELECT 
+    MetadataComponentId, MetadataComponentType, MetadataComponentName, 
+    RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
+  FROM MetadataComponentDependency WHERE ${clause}`)
+  const allDepsIters = await Promise.all(allQueries.map(q => client.queryAll(q, true)))
 
-  const allDepsResult = collections.asynciterable.mapAsync(
-    allDepsIter,
+  const allDepsResults = allDepsIters.map(iter => collections.asynciterable.mapAsync(
+    iter,
     recs => recs.map(rec => ({
       from: {
         type: rec.MetadataComponentType,
@@ -71,9 +79,11 @@ const getDependencies = async (client: SalesforceClient): Promise<DependencyGrou
         name: rec.RefMetadataComponentName,
       },
     }))
-  )
+  ))
 
-  const deps = (await collections.asynciterable.toArrayAsync(allDepsResult)).flat()
+  const deps = (await Promise.all(allDepsResults.map(
+    async res => (await collections.asynciterable.toArrayAsync(res)).flat()
+  ))).flat()
   return _.values(
     _.groupBy(deps, dep => Object.entries(dep.from))
   ).map(depArr => ({

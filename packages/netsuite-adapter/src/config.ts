@@ -209,9 +209,10 @@ const updateConfigFromFailures = (
     if (newSkipList.filePaths === undefined) {
       newSkipList.filePaths = []
     }
-    newSkipList.filePaths.push(
-      ...suggestions[FILE_PATHS_REGEX_SKIP_LIST]
-    )
+    newSkipList.filePaths = [
+      ...makeArray(newSkipList.filePaths),
+      ...suggestions[FILE_PATHS_REGEX_SKIP_LIST],
+    ]
   }
   configToUpdate.value[SKIP_LIST] = newSkipList
   return true

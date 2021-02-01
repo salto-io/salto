@@ -2,12 +2,14 @@
 ## Configuration example
 ```hcl
 netsuite {
-  typesToSkip = [
-    "savedsearch",
-  ]
-  filePathRegexSkipList = [
-    "^/Web Site Hosting Files.*",
-  ]
+  skipList = {
+    types = {
+      savedsearch = [".*"]
+    }
+    filePaths = [
+      "^/Web Site Hosting Files.*",
+    ]
+  }
   deployReferencedElements = false
   client = {
     fetchAllTypesAtOnce = false

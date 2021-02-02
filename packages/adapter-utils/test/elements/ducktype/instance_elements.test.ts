@@ -39,7 +39,7 @@ const ADAPTER_NAME = 'myAdapter'
 
 const type = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'bla'), fields: {} })
 
-describe('boostrap_instance_elements', () => {
+describe('ducktype_instance_elements', () => {
   describe('toInstance', () => {
     const entry = {
       id: 54775,
@@ -64,11 +64,11 @@ describe('boostrap_instance_elements', () => {
       })
       expect(inst).toBeDefined()
       expect(inst?.isEqual(new InstanceElement(
-        'abc',
+        'some_other_name@s',
         type,
         entry,
       ))).toBeTruthy()
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'abc'])
+      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name'])
     })
     it('should omit fields from the top level', () => {
       const inst = toInstance({
@@ -81,19 +81,34 @@ describe('boostrap_instance_elements', () => {
       })
       expect(inst).toBeDefined()
       expect(inst?.isEqual(new InstanceElement(
-        'abc',
+        'some_other_name@s',
         type,
         _.omit(entry, 'field_with_complex_type', 'id'),
       ))).toBeTruthy()
       expect(inst?.isEqual(new InstanceElement(
-        'abc',
+        'some_other_name@s',
         type,
         entry,
       ))).toBeFalsy()
     })
+    it('should use default name if name field is not found in entry', () => {
+      const e = _.omit(entry, 'name')
+      const inst = toInstance({
+        adapterName: ADAPTER_NAME,
+        type,
+        nameField: 'name',
+        defaultName: 'abc',
+        entry: e,
+      })
+      expect(inst).toBeDefined()
+      expect(inst?.isEqual(new InstanceElement(
+        'abc',
+        type,
+        e,
+      ))).toBeTruthy()
+    })
     it('should not omit nested fields', () => {
       const e = {
-        id: 54775,
         field_with_complex_type: {
           id: 54775,
           number: 53,
@@ -104,7 +119,10 @@ describe('boostrap_instance_elements', () => {
         type,
         nameField: 'name',
         defaultName: 'abc',
-        entry: e,
+        entry: {
+          id: 54775,
+          ...e,
+        },
         fieldsToOmit: ['id'],
       })
       expect(inst).toBeDefined()

@@ -14,52 +14,53 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ClientOptsBase, ClientGetParams } from './types'
-import { Connection, APIConnection, ConnectionCreator, Credentials, createRetryOptions, createClientConnection } from './http_connection'
+import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue } from './http_connection'
 import { AdapterClientBase } from './base'
-import { GetAllItemsFunc } from './pagination'
-import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig } from './config'
+import { GetAllItemsFunc, ClientGetParams } from './pagination'
+import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig } from './config'
+import { requiresLogin, logDecorator } from './decorators'
+import { throttle } from './rate_limit'
 
 const log = logger(module)
 
-export type ClientOpts<TCred extends Credentials> = ClientOptsBase & {
-  connection?: Connection
-  credentials: TCred
+export type ClientOpts<
+  TCredentials,
+  TRateLimitConfig extends ClientRateLimitConfig,
+> = {
+  config?: ClientBaseConfig<TRateLimitConfig>
+  connection?: Connection<TCredentials>
+  credentials: TCredentials
 }
 
 export interface HTTPClientInterface {
-  get(params: ClientGetParams): Promise<{ result: Values[]; errors: string[]}>
+  get(params: ClientGetParams): Promise<{ result: ResponseValue[]; errors: string[]}>
 }
 
-export const loginFromCredentials = async <TCred>(conn: Connection, creds: TCred):
-    Promise<APIConnection> => (
-  conn.login(creds)
-)
-
 export abstract class AdapterHTTPClient<
-  TCred extends Credentials
-> extends AdapterClientBase implements HTTPClientInterface {
-  protected readonly conn: Connection
-  private readonly credentials: Credentials
+  TCredentials,
+  TRateLimitConfig extends ClientRateLimitConfig,
+> extends AdapterClientBase<TRateLimitConfig> implements HTTPClientInterface {
+  protected readonly conn: Connection<TCredentials>
+  private readonly credentials: TCredentials
 
   constructor(
-    { credentials, connection, config, api }: ClientOpts<TCred>,
-    createConnection: ConnectionCreator,
+    clientName: string,
+    { credentials, connection, config }: ClientOpts<TCredentials, TRateLimitConfig>,
+    createConnection: ConnectionCreator<TCredentials>,
     defaults: {
       retry: Required<ClientRetryConfig>
-      rateLimit: Required<ClientRateLimitConfig>
+      rateLimit: Required<TRateLimitConfig>
       pageSize: Required<ClientPageSizeConfig>
     },
   ) {
     super(
-      { config, api },
+      clientName,
+      config,
       defaults,
     )
     this.conn = createClientConnection({
       connection,
-      apiConfig: this.apiConfig,
       retryOptions: createRetryOptions(_.defaults({}, this.config?.retry, defaults.retry)),
       createConnection,
     })
@@ -71,7 +72,7 @@ export abstract class AdapterHTTPClient<
   protected async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
       if (this.loginPromise === undefined) {
-        this.loginPromise = loginFromCredentials(this.conn, this.credentials)
+        this.loginPromise = this.conn.login(this.credentials)
       }
       const apiClient = await this.loginPromise
       if (this.apiClient === undefined) {
@@ -84,18 +85,21 @@ export abstract class AdapterHTTPClient<
   /**
    * Fetch instances of a specific type
    */
-  @AdapterHTTPClient.throttle('get', ['endpointName', 'queryArgs', 'recursiveQueryArgs'])
-  @AdapterHTTPClient.logDecorator(['endpointName', 'queryArgs', 'recursiveQueryArgs'])
-  @AdapterHTTPClient.requiresLogin
-  public async get(getParams: ClientGetParams): Promise<{ result: Values[]; errors: string[]}> {
+  @throttle<TRateLimitConfig>('get', ['endpointName', 'queryArgs', 'recursiveQueryArgs'])
+  @logDecorator(['endpointName', 'queryArgs', 'recursiveQueryArgs'])
+  @requiresLogin()
+  public async get(getParams: ClientGetParams): Promise<{
+    result: ResponseValue[]
+    errors: string[]
+  }> {
     if (this.apiClient === undefined) {
       // initialized by requiresLogin (through ensureLoggedIn in this case)
-      throw new Error(`uninitialized ${this.clientName()} client`)
+      throw new Error(`uninitialized ${this.clientName} client`)
     }
 
     try {
       const allResults = await this.getAllItems({
-        client: this.apiClient,
+        conn: this.apiClient,
         pageSize: this.getPageSize,
         getParams,
       })

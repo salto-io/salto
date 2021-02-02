@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+export * from './field_finder'
 export * from './instance_elements'
 export * from './resource_config'
 export * from './transformer'

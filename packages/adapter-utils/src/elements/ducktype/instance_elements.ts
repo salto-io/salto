@@ -20,6 +20,15 @@ import {
 import { pathNaclCase, naclCase } from '../../nacl_case_utils'
 import { RECORDS_PATH, NAMESPACE_SEPARATOR } from '../constants'
 
+/**
+ * Generate an instance for a single entry returned for a given type.
+ *
+ * - The elem id is determined based on the name field, with a fallback
+ *    to a default name that might not be multienv-friendly.
+ * - Specialc case: If hasDynamicFields is specified, then the entry is
+ *    nested under a 'value' field in order to allow the type to define
+ *    this as a map type.
+ */
 export const toInstance = ({
   adapterName,
   entry,

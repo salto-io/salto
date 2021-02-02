@@ -14,57 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, Field, isListType, isObjectType, Values } from '@salto-io/adapter-api'
+import { Element, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ClientGetParams, HTTPClientInterface } from '../../client'
 import { naclCase } from '../../nacl_case_utils'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
-import { EndpointConfig } from './resource_config'
+import { EndpointConfig, ElementTranslationConfig, ResourceConfig } from './resource_config'
+import { FindNestedFieldFunc } from './field_finder'
 
 const { makeArray } = collections.array
 const { isDefined } = lowerdashValues
 const log = logger(module)
-
-export type FindNestedFieldFunc = (type: ObjectType, fieldsToIgnore?: string[]) => {
-  field: Field
-  type: ObjectType
-} | undefined
-
-export const findNestedField: FindNestedFieldFunc = (type, fieldsToIgnore) => {
-  const excludedFields = new Set(fieldsToIgnore ?? [])
-  const potentialFields = (Object.values(type.fields)
-    .filter(field => !excludedFields.has(field.name)))
-
-  if (potentialFields.length > 1) {
-    log.info('found more than one nested field for type %s: %s, extracting full entry',
-      type.elemID.name, potentialFields.map(f => f.name))
-    return undefined
-  }
-  if (potentialFields.length === 0) {
-    log.info('could not find nested fields for type %s, extracting full entry',
-      type.elemID.name)
-    return undefined
-  }
-  const nestedField = potentialFields[0]
-  const nestedType = (isListType(nestedField.type)
-    ? nestedField.type.innerType
-    : nestedField.type)
-
-  if (!isObjectType(nestedType)) {
-    log.info('unexpected field type for type %s field %s (%s), extracting full entry',
-      type.elemID.name, nestedField.name, nestedType.elemID.getFullName())
-    return undefined
-  }
-
-  return {
-    field: nestedField,
-    type: nestedType,
-  }
-}
-
-export const returnFullEntry: FindNestedFieldFunc = () => undefined
 
 type ComputeGetArgsFunc = (
   endpoint: EndpointConfig,
@@ -79,10 +41,12 @@ export const simpleGetArgs: ComputeGetArgsFunc = (
     paginationField,
   },
 ) => {
-  const recursiveQueryArgs = _.mapValues(
-    recursiveQueryByResponseField,
-    val => ((entry: Values): string => entry[val])
-  )
+  const recursiveQueryArgs = recursiveQueryByResponseField !== undefined
+    ? _.mapValues(
+      recursiveQueryByResponseField,
+      val => ((entry: Values): string => entry[val])
+    )
+    : undefined
   return [{ endpointName: url, queryArgs: queryParams, recursiveQueryArgs, paginationField }]
 }
 
@@ -93,6 +57,7 @@ export const getTypeAndInstances = async ({
   nestedFieldFinder,
   computeGetArgs,
   endpoint,
+  translation,
   defaultNameField,
   defaultPathField,
   topLevelFieldsToOmit,
@@ -103,7 +68,8 @@ export const getTypeAndInstances = async ({
   client: HTTPClientInterface
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
-  endpoint: EndpointConfig // TODO split into two?
+  endpoint: EndpointConfig
+  translation: ElementTranslationConfig
   defaultNameField: string
   defaultPathField: string
   topLevelFieldsToOmit?: string[]
@@ -111,7 +77,7 @@ export const getTypeAndInstances = async ({
 }): Promise<Element[]> => {
   const {
     fieldsToOmit, hasDynamicFields, nameField, pathField, keepOriginal,
-  } = endpoint
+  } = translation
 
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(endpoint, contextElements)
@@ -128,7 +94,6 @@ export const getTypeAndInstances = async ({
   const entries = await getEntries()
 
   // escape "field" names with '.'
-  // TODO instead handle in filter?
   const naclEntries = entries.map(e => _.mapKeys(e, (_val, key) => naclCase(key)))
 
   // endpoints with dynamic fields will be associated with the dynamic_keys type
@@ -150,7 +115,7 @@ export const getTypeAndInstances = async ({
           type: nestedFieldDetails.type,
           nameField: nameField ?? defaultNameField,
           pathField: pathField ?? defaultPathField,
-          defaultName: `inst_${index}_${nesteIndex}`, // TODO improve
+          defaultName: `unindexed_${index}_${nesteIndex}`, // TODO improve, get as input from adapter?
           fieldsToOmit,
           hasDynamicFields,
         })
@@ -164,11 +129,89 @@ export const getTypeAndInstances = async ({
       type,
       nameField: nameField ?? defaultNameField,
       pathField: pathField ?? defaultPathField,
-      defaultName: `inst_${index}`, // TODO improve
+      defaultName: `unindexed_${index}`, // TODO improve
       // we only omit the pagination fields at the top level
       fieldsToOmit: [...(topLevelFieldsToOmit ?? []), ...(fieldsToOmit ?? [])],
       hasDynamicFields,
     })
   })
   return [type, ...nestedTypes, ...instances].filter(isDefined)
+}
+
+export const getAllElements = async ({
+  adapterName,
+  includeResources,
+  resources,
+  client,
+  nestedFieldFinder,
+  computeGetArgs,
+  defaultExtractionFields,
+}: {
+  adapterName: string
+  includeResources: string[]
+  resources: Record<string, ResourceConfig>
+  client: HTTPClientInterface
+  nestedFieldFinder: FindNestedFieldFunc
+  computeGetArgs: ComputeGetArgsFunc
+  defaultExtractionFields: {
+    nameField: string
+    pathField: string
+    fieldsToOmit: string[]
+    topLevelFieldsToOmit?: string[]
+  }
+}): Promise<Element[]> => {
+  // for now assuming flat dependencies for simplicity.
+  // will replace with a DAG (with support for concurrency) when needed
+  const allResources = includeResources
+    .map(resourceName => ({
+      resourceName,
+      ...resources[resourceName],
+    }))
+    .filter(({ endpoint }) => isDefined(endpoint))
+    .map(({ resourceName, endpoint, translation }) => ({
+      resourceName,
+      endpoint,
+      translation: {
+        ...translation,
+        fieldsToOmit: translation?.fieldsToOmit ?? defaultExtractionFields.fieldsToOmit,
+      },
+    }))
+  const [independentEndpoints, dependentEndpoints] = _.partition(
+    allResources,
+    r => _.isEmpty(r.endpoint.dependsOn)
+  )
+
+  const elementGenerationParams = {
+    adapterName,
+    client,
+    nestedFieldFinder,
+    computeGetArgs,
+    defaultNameField: defaultExtractionFields.nameField,
+    defaultPathField: defaultExtractionFields.pathField,
+    topLevelFieldsToOmit: defaultExtractionFields.topLevelFieldsToOmit,
+  }
+  const contextElements: Record<string, Element[]> = Object.fromEntries(await Promise.all(
+    independentEndpoints.map(async ({ resourceName, endpoint, translation }) => [
+      endpoint.url,
+      await getTypeAndInstances({
+        ...elementGenerationParams,
+        typeName: resourceName,
+        endpoint,
+        translation,
+      }),
+    ])
+  ))
+  const dependentElements = await Promise.all(
+    dependentEndpoints.map(({ resourceName, endpoint, translation }) => getTypeAndInstances({
+      ...elementGenerationParams,
+      typeName: resourceName,
+      endpoint,
+      translation,
+    }))
+  )
+
+  return [
+    ...Object.values(contextElements).flat(),
+    ...dependentElements.flat(),
+  ]
 }

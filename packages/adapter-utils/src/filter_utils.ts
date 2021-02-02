@@ -15,7 +15,6 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { types, promises } from '@salto-io/lowerdash'
-import { AdapterClientBase } from './client'
 
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
@@ -23,11 +22,11 @@ export type Filter = Partial<{
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
 
-export type FilterCreator<TClient extends AdapterClientBase, TContext> = (
+export type FilterCreator<TClient, TContext> = (
   opts: { client: TClient; config: TContext }
 ) => Filter
 
-export const filtersRunner = <TClient extends AdapterClientBase, TContext>(
+export const filtersRunner = <TClient, TContext>(
   client: TClient,
   config: TContext,
   filterCreators: ReadonlyArray<FilterCreator<TClient, TContext>>,

@@ -13,41 +13,41 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ElemID, ObjectType, BuiltinTypes, FieldDefinition,
-} from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 
 /* Client config */
 
 export type ClientRateLimitConfig = Partial<{
   total: number
   get: number
-}> & Record<string, number>
+}>
 
 export type ClientPageSizeConfig = Partial<{
   get: number
-}> & Record<string, number>
+}>
 
 export type ClientRetryConfig = Partial<{
   maxAttempts: number
   retryDelay: number
-  // TODO add retryStrategy
 }>
 
-export type ClientBaseConfig = Partial<{
+export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Partial<{
   retry: ClientRetryConfig
-  rateLimit: ClientRateLimitConfig
+  rateLimit: RateLimitConfig
   pageSize: ClientPageSizeConfig
 }>
 
-export const createClientConfigType = (adapter: string, bucketNames?: string[]): ObjectType => {
+export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>(
+  adapter: string,
+  bucketNames?: (keyof RateLimitConfig)[],
+): ObjectType => {
   const clientRateLimitConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientRateLimitConfig'),
     fields: {
       total: { type: BuiltinTypes.NUMBER },
       get: { type: BuiltinTypes.NUMBER },
       ...Object.fromEntries((bucketNames ?? []).map(name => [name, { type: BuiltinTypes.NUMBER }])),
-    } as Record<keyof ClientRateLimitConfig, FieldDefinition>,
+    },
   })
 
   const clientPageSizeConfigType = new ObjectType({
@@ -55,7 +55,7 @@ export const createClientConfigType = (adapter: string, bucketNames?: string[]):
     fields: {
       // can extend to additional operations when needed
       get: { type: BuiltinTypes.NUMBER },
-    } as Record<keyof ClientPageSizeConfig, FieldDefinition>,
+    },
   })
 
   const clientRetryConfigType = new ObjectType({
@@ -63,7 +63,7 @@ export const createClientConfigType = (adapter: string, bucketNames?: string[]):
     fields: {
       maxAttempts: { type: BuiltinTypes.NUMBER },
       retryDelay: { type: BuiltinTypes.NUMBER },
-    } as Record<keyof ClientRetryConfig, FieldDefinition>,
+    },
   })
 
   const clientConfigType = new ObjectType({
@@ -72,14 +72,14 @@ export const createClientConfigType = (adapter: string, bucketNames?: string[]):
       retry: { type: clientRetryConfigType },
       rateLimit: { type: clientRateLimitConfigType },
       pageSize: { type: clientPageSizeConfigType },
-    } as Record<keyof ClientBaseConfig, FieldDefinition>,
+    },
   })
   return clientConfigType
 }
 
-export const validateClientConfig = (
+export const validateClientConfig = <RateLimitConfig extends ClientRateLimitConfig>(
   clientConfigPath: string,
-  clientConfig?: ClientBaseConfig,
+  clientConfig?: ClientBaseConfig<RateLimitConfig>,
 ): void => {
   if (clientConfig?.rateLimit !== undefined) {
     const invalidValues = (Object.entries(clientConfig.rateLimit)

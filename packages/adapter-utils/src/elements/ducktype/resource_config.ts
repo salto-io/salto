@@ -23,6 +23,9 @@ export type EndpointConfig = {
   recursiveQueryByResponseField?: Record<string, string>
   dependsOn?: string[]
   paginationField?: string
+}
+
+export type ElementTranslationConfig = {
   fieldsToOmit?: string[]
   // fields to convert into their own type and instances.
   // if the field value is a string, first parse it into json
@@ -37,6 +40,7 @@ export type EndpointConfig = {
 
 export type ResourceConfig = {
   endpoint: EndpointConfig
+  translation?: ElementTranslationConfig
 }
 
 export type AdapterApiConfig = {
@@ -51,6 +55,7 @@ export type UserFetchConfig = {
 export const createAdapterApiConfigType = (
   adapter: string,
   additionalEndpointFields?: Record<string, FieldDefinition>,
+  additionalTranslationFields?: Record<string, FieldDefinition>,
 ): ObjectType => {
   const endpointConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'endpointConfig'),
@@ -65,13 +70,20 @@ export const createAdapterApiConfigType = (
       recursiveQueryByResponseField: { type: new MapType(BuiltinTypes.STRING) },
       dependsOn: { type: new ListType(BuiltinTypes.STRING) },
       paginationField: { type: BuiltinTypes.STRING },
+      ...additionalEndpointFields,
+    },
+  })
+
+  const elementTranslationConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'elementTranslationConfig'),
+    fields: {
       fieldsToOmit: { type: new ListType(BuiltinTypes.STRING) },
       fieldsToExtract: { type: new ListType(BuiltinTypes.STRING) },
       hasDynamicFields: { type: BuiltinTypes.BOOLEAN },
       nameField: { type: BuiltinTypes.STRING },
       pathField: { type: BuiltinTypes.STRING },
       keepOriginal: { type: BuiltinTypes.BOOLEAN },
-      ...additionalEndpointFields,
+      ...additionalTranslationFields,
     },
   })
 
@@ -80,6 +92,12 @@ export const createAdapterApiConfigType = (
     fields: {
       endpoint: {
         type: endpointConfigType,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      translation: {
+        type: elementTranslationConfigType,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },

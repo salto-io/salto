@@ -15,27 +15,36 @@
 */
 import _ from 'lodash'
 import { collections, values as lowerfashValues } from '@salto-io/lowerdash'
-import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ClientGetParams } from './types'
-import { APIConnection } from './http_connection'
+import { APIConnection, ResponseValue } from './http_connection'
 import { safeJsonStringify } from '../utils'
 
 const { isDefined } = lowerfashValues
 const { makeArray } = collections.array
 const log = logger(module)
 
+export type ClientGetParams = {
+  endpointName: string
+  queryArgs?: Record<string, string>
+  recursiveQueryArgs?: Record<string, (entry: ResponseValue) => string>
+  paginationField?: string
+}
+
 export type GetAllItemsFunc = ({
-  client,
+  conn,
   pageSize,
   getParams,
 }: {
-  client: APIConnection
+  conn: APIConnection
   pageSize: number
   getParams: ClientGetParams
-}) => Promise<Values[]>
+}) => Promise<ResponseValue[]>
 
-export const getWithOffsetPagination: GetAllItemsFunc = async ({ client, pageSize, getParams }) => {
+export const getWithPageOffsetPagination: GetAllItemsFunc = async ({
+  conn,
+  pageSize,
+  getParams,
+}) => {
   const { endpointName, paginationField, queryArgs, recursiveQueryArgs } = getParams
   const requestQueryArgs: Record<string, string>[] = [{}]
   const allResults = []
@@ -51,15 +60,19 @@ export const getWithOffsetPagination: GetAllItemsFunc = async ({ client, pageSiz
     usedParams.add(serializedArgs)
     const params = { ...queryArgs, ...additionalArgs }
     // eslint-disable-next-line no-await-in-loop
-    const response = await client.get(
+    const response = await conn.get(
       endpointName,
       Object.keys(params).length > 0 ? { params } : undefined
     )
     // TODO remove?
     log.debug(`Full HTTP response for ${endpointName} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
 
-    const results: Values[] = (
-      // TODO is items a generic-enough field?
+    if (response.status !== 200) {
+      log.error(`error getting result for ${endpointName}: %s %o %o`, response.status, response.statusText, response.data)
+      break
+    }
+
+    const results: ResponseValue[] = (
       (_.isObjectLike(response.data) && Array.isArray(response.data.items))
         ? response.data.items
         : makeArray(response.data)
@@ -91,42 +104,43 @@ export const getWithOffsetPagination: GetAllItemsFunc = async ({ client, pageSiz
   return allResults
 }
 
-export const getWithCursorPagination: GetAllItemsFunc = async ({ client, getParams }) => {
+export const getWithCursorPagination: GetAllItemsFunc = async ({ conn, getParams }) => {
   const { endpointName, queryArgs, paginationField } = getParams
-  const nextPageField = paginationField ?? 'nextPage'
 
-  const entries = []
-  let nextPageArgs: Values = {}
+  const entries: ResponseValue[] = []
+  let nextPageArgs: Record<string, string> = {}
   while (true) {
     const params = {
       ...queryArgs,
       ...nextPageArgs,
     }
     // eslint-disable-next-line no-await-in-loop
-    const response = await client.get(
+    const response = await conn.get(
       endpointName,
-      {
-        params,
-      },
+      Object.keys(params).length > 0 ? { params } : undefined
     )
     // TODO remove?
     log.info(`Full HTTP response for ${endpointName} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
 
-    // TODO check if need the 2nd condition. the success field doesn't always exist
     if (response.status !== 200 || response.data.success === false) {
-      // TODO extract better error
       log.error(`error getting result for ${endpointName}: %s %o %o`, response.status, response.statusText, response.data)
       break
     }
+    // TODO can we avoid the cast?
     entries.push(...makeArray(response.data))
-    if (response.data[nextPageField] === undefined) {
+    if (
+      paginationField === undefined
+      || response.data[paginationField] === undefined
+      || !_.isString(response.data[paginationField])
+    ) {
       break
     }
-    const nextPage = new URL(response.data[nextPageField], 'http://localhost')
+    const nextPage = new URL(response.data[paginationField] as string, 'http://localhost')
     // TODO verify pathname is the same
     nextPageArgs = Object.fromEntries(nextPage.searchParams.entries())
   }
-  log.info('Received %d results for endpoint %s', // TODO inaccurate when not extracting nested field
+  // the number of results may be lower than actual if the instances are under a nested field
+  log.info('Received %d results for endpoint %s',
     entries.length, endpointName)
   return entries
 }

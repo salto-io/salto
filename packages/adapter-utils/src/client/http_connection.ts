@@ -13,19 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import axios, { AxiosInstance, AxiosError, AxiosBasicCredentials } from 'axios'
+import axios, { AxiosError, AxiosBasicCredentials } from 'axios'
 import axiosRetry from 'axios-retry'
-import { Values } from '@salto-io/adapter-api'
+import { Values, AccountId } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
-import { ApiConnectionBaseConfig } from './types'
 import { DEFAULT_RETRY_OPTS } from './constants'
 
 const log = logger(module)
 
-export type APIConnection = {
-  // TODO generalize beyond axios when needed
-  get: AxiosInstance['get']
+export type ResponseValue = {
+  [key: string]: unknown
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type APIConnection<T = any> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get: (url: string, config?: { params: Record<string, any> }) => Promise<{
+    data: T
+    status: number
+    statusText: string
+  }>
+}
+
+export type AuthenticatedAPIConnection = APIConnection & {
+  accountId: AccountId
 }
 
 export type RetryOptions = {
@@ -33,24 +45,18 @@ export type RetryOptions = {
   retryDelay?: (retryCount: number, error: AxiosError) => number
 }
 
-// TODO decide if want this / inheritance / something else
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Credentials = any
+export type LoginFunc<TCredentials> = (creds: TCredentials) => Promise<AuthenticatedAPIConnection>
 
-export type LoginFunc = (creds: Credentials) => Promise<APIConnection>
-
-export interface Connection {
-  login: LoginFunc
+export interface Connection<TCredentials> {
+  login: LoginFunc<TCredentials>
 }
 
-export type ConnectionCreator = ({ apiConfig, retryOptions }: {
-  apiConfig: ApiConnectionBaseConfig
-  retryOptions: RetryOptions
-}) => Connection
+export type ConnectionCreator<TCredentials> = (
+  retryOptions: RetryOptions,
+) => Connection<TCredentials>
 
 export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
   retries: retryOptions.maxAttempts,
-  // TODO add retry strategies
   retryDelay: (retryCount, err) => {
     log.error('Failed to run client call to %s for reason: %s (%s). Retrying in %ds (attempt %d).',
       err.config.url,
@@ -62,63 +68,57 @@ export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): R
   },
 })
 
-type ConnectionParams = {
-  connection?: Connection
-  apiConfig: ApiConnectionBaseConfig
+type ConnectionParams<TCredentials> = {
+  connection?: Connection<TCredentials>
   retryOptions?: RetryOptions
-  createConnection: ConnectionCreator
+  createConnection: ConnectionCreator<TCredentials>
 }
 
-export const createClientConnection = ({
+export const createClientConnection = <TCredentials>({
   connection,
-  apiConfig,
   retryOptions,
   createConnection,
-}: ConnectionParams): Connection => (
-  connection ?? createConnection({
-    apiConfig,
-    retryOptions: retryOptions ?? createRetryOptions(DEFAULT_RETRY_OPTS),
-  })
-)
+}: ConnectionParams<TCredentials>): Connection<TCredentials> => (
+    connection ?? createConnection(retryOptions ?? createRetryOptions(DEFAULT_RETRY_OPTS))
+  )
 
-export const validateCredentials = async (
-  creds: Credentials,
-  createConnectionArgs: ConnectionParams,
-): Promise<string> => {
+export const validateCredentials = async <TCredentials>(
+  creds: TCredentials,
+  createConnectionArgs: ConnectionParams<TCredentials>,
+): Promise<AccountId> => {
   const conn = createClientConnection(createConnectionArgs)
-  await conn.login(creds)
-  // should return account id but not used by default flow
-  return '' // TODO needed for SaaS - check details
+  const { accountId } = await conn.login(creds)
+  return accountId
 }
 
-export const axiosConnection = ({
-  apiConfig,
+export const axiosConnection = <TCredentials>({
   retryOptions,
   authParamsFunc,
   baseURLFunc,
   credValidateFunc,
 }: {
-  apiConfig: ApiConnectionBaseConfig
   retryOptions: RetryOptions
-  authParamsFunc: (creds: Credentials) => {
+  authParamsFunc: (creds: TCredentials) => {
     auth?: AxiosBasicCredentials
     headers?: Values
   }
-  baseURLFunc?: (apiConfig: ApiConnectionBaseConfig, creds: Credentials) => string
-  credValidateFunc: (creds: Credentials, conn: APIConnection) => Promise<void>
-}): Connection => {
+  baseURLFunc: (creds: TCredentials) => string
+  credValidateFunc: (creds: TCredentials, conn: APIConnection) => Promise<AccountId>
+}): Connection<TCredentials> => {
   const login = async (
-    creds: Credentials,
-  ): Promise<APIConnection> => {
+    creds: TCredentials,
+  ): Promise<AuthenticatedAPIConnection> => {
     const httpClient = axios.create({
-      // TODO decide if want base-url func (and no base url in config), or to always set it earlier
-      baseURL: baseURLFunc !== undefined ? baseURLFunc(apiConfig, creds) : apiConfig.baseUrl,
+      baseURL: baseURLFunc(creds),
       ...authParamsFunc(creds),
     })
     axiosRetry(httpClient, retryOptions)
 
-    await credValidateFunc(creds, httpClient)
-    return httpClient
+    const accountId = await credValidateFunc(creds, httpClient)
+    return {
+      ...httpClient,
+      accountId,
+    }
   }
 
   return {

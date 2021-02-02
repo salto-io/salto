@@ -36,7 +36,7 @@ import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements/constants'
 /* eslint-disable @typescript-eslint/camelcase */
 const ADAPTER_NAME = 'myAdapter'
 
-describe('boostrap_type_elements', () => {
+describe('ducktype_type_elements', () => {
   describe('generateType', () => {
     it('should generate empty types when no entries are provided', () => {
       const entries: Values[] = []
@@ -134,6 +134,68 @@ describe('boostrap_type_elements', () => {
           another_val: { type: BuiltinTypes.UNKNOWN },
           abc: { type: BuiltinTypes.STRING },
           unknown: { type: BuiltinTypes.UNKNOWN },
+        },
+      }))).toBeTruthy()
+    })
+    it('should ignore nulls when determining types for fields', () => {
+      const entries = [
+        {
+          id: 41619,
+          name: 'ab321',
+          active: false,
+          only_exists_once: null,
+        },
+        {
+          id: null,
+          name: undefined,
+          field_with_complex_type: {
+            number: 53,
+            nested_type: {
+              val: 'agds',
+              another_val: 'dgadgasg',
+            },
+          },
+        },
+        {
+          field_with_complex_type: {
+            number: null,
+            nested_type: {
+              val: null,
+              another_val: 7,
+            },
+          },
+        },
+      ]
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'typeName',
+        entries,
+        hasDynamicFields: false,
+        isSubType: false,
+      })
+      expect(type.isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'typeName'),
+        fields: {
+          id: { type: BuiltinTypes.NUMBER },
+          name: { type: BuiltinTypes.STRING },
+          active: { type: BuiltinTypes.BOOLEAN },
+          only_exists_once: { type: BuiltinTypes.UNKNOWN },
+          field_with_complex_type: { type: nestedTypes[0] },
+        },
+      }))).toBeTruthy()
+      expect(nestedTypes).toHaveLength(2)
+      expect(nestedTypes[0].isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type'),
+        fields: {
+          number: { type: BuiltinTypes.NUMBER },
+          nested_type: { type: nestedTypes[1] },
+        },
+      }))).toBeTruthy()
+      expect(nestedTypes[1].isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type__nested_type'),
+        fields: {
+          val: { type: BuiltinTypes.STRING },
+          another_val: { type: BuiltinTypes.UNKNOWN },
         },
       }))).toBeTruthy()
     })
@@ -263,7 +325,7 @@ describe('boostrap_type_elements', () => {
         fields: {},
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
-      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'parent_type_', 'subtypeName'])
+      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'parent_type', 'subtypeName'])
     })
   })
 })

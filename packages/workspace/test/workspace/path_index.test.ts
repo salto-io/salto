@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
-  updatePathIndex, getElementsPathHints, Path,
+  updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex,
 } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
@@ -81,12 +81,46 @@ const multiPathAnnoObj = new ObjectType({
 
 describe('updatePathIndex', () => {
   it('should add new elements and maintain old ones', async () => {
-    const map = new InMemoryRemoteMap<Path[]>()
-    await map.setAll(await getElementsPathHints([singlePathObject]))
+    const map: PathIndex = new InMemoryRemoteMap()
+    await map.setAll(getElementsPathHints([singlePathObject]))
     await updatePathIndex(map, [multiPathAnnoObj], ['salto'])
     let path = await map.get(singlePathObject.elemID.getFullName())
     expect(path).toEqual([singlePathObject.path])
     path = await map.get(multiPathAnnoObj.elemID.getFullName())
     expect(path).toEqual([multiPathAnnoObj.path])
+  })
+})
+
+describe('getFromPathIndex', () => {
+  const index: PathIndex = new InMemoryRemoteMap()
+  const parentID = new ElemID('salto.parent')
+  const nestedID = parentID.createNestedID('attr', 'one')
+  const nestedPath = ['salto', 'one']
+  const parentPath = ['salto', 'two']
+  beforeAll(async () => {
+    await index.setAll([
+      { key: parentID.getFullName(), value: [nestedPath, parentPath] },
+      { key: nestedID.getFullName(), value: [nestedPath] },
+    ])
+  })
+
+  it('should get an exact elemID match', async () => {
+    expect(await getFromPathIndex(nestedID, index)).toEqual([nestedPath])
+    expect(await getFromPathIndex(parentID, index)).toEqual([nestedPath, parentPath])
+  })
+
+  it('should get the closest parent of the elemID if no exact match', async () => {
+    expect(await getFromPathIndex(
+      nestedID.createNestedID('stam', 'something'),
+      index
+    )).toEqual([nestedPath])
+    expect(await getFromPathIndex(
+      parentID.createNestedID('attr', 'something'),
+      index
+    )).toEqual([nestedPath, parentPath])
+  })
+
+  it('should return an empty array if no parent matches are found', async () => {
+    expect(await getFromPathIndex(new ElemID('salto', 'nothing'), index)).toEqual([])
   })
 })

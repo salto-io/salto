@@ -14,68 +14,148 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import wu from 'wu'
-import { collections } from '@salto-io/lowerdash'
-import { ElemID, Element, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
-import { TransformFunc, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections, values } from '@salto-io/lowerdash'
+import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
+  ObjectType, InstanceElement } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
 
 export type Path = readonly string[]
 
-const getElementPathHints = async (element: Element): Promise<Iterable<RemoteMapEntry<Path[]>>> => {
-  if (element.path === undefined) {
-    return []
+type Fragment<T> = {value: T; path: Path}
+type PathHint = {key: string; value: Path[]}
+export type PathIndex = RemoteMap<Path[]>
+
+const getValuePathHints = (fragments: Fragment<Value>[], elemID: ElemID): PathHint[] => {
+  // We only have 3 cases to handle: Object type (which can be split among files)
+  // or a single list/primitive value.
+  if (fragments.length === 1) {
+    return [{
+      key: elemID.getFullName(),
+      value: [fragments[0].path],
+    }]
   }
-  const pathHints = {
-    [element.elemID.getFullName()]: [element.path],
+  if (_.every(fragments, f => _.isPlainObject(f.value))) {
+    const allKeys = _.uniq(fragments.flatMap(f => Object.keys(f.value)))
+    return allKeys.flatMap(key => getValuePathHints(
+      fragments
+        .filter(f => values.isDefined(f.value[key]))
+        .map(f => ({ value: f.value[key], path: f.path })),
+      elemID.createNestedID(key)
+    ))
   }
-  _.keys(element.annotationRefTypes).forEach(key => {
-    const id = element.elemID.createNestedID('annotation').createNestedID(key)
-    if (element.path) {
-      pathHints[id.getFullName()] = [element.path]
-    }
-  })
-  const transformFunc: TransformFunc = ({ path, value }) => {
-    if (path && element.path) {
-      pathHints[path.getFullName()] = [element.path]
-    }
-    return _.isArrayLikeObject(value) ? undefined : value
-  }
-  await transformElement({
-    element,
-    transformFunc,
-    strict: false,
-    // This transformElement does not need to types so this can be used
-    // Long term we should replace this with not using transformElement
-    elementsSource: placeholderReadonlyElementsSource,
-    // TODO: Does this work with the above?
-    runOnFields: true,
-  })
-  return wu(_.entries(pathHints)).map(e => ({ key: e[0], value: e[1] }))
+  // This will only be called if we have problematic input - different value types, or a list which
+  // is split between different fragments. In each case, a path hint makes no sense.
+  return []
 }
 
-export const getElementsPathHints = async (unmergedElements: Element[]):
-Promise<RemoteMapEntry<Path[]>[]> => {
-  const elementIDsToEntries = await awu(unmergedElements)
-    .flatMap(getElementPathHints)
-    .groupBy(e => e.key)
-  return Object.entries(elementIDsToEntries)
-    .map(entry => ({ key: entry[0], value: entry[1].flatMap(val => val.value) }))
+const getAnnotationTypesPathHints = (
+  fragments: Fragment<Element>[],
+): PathHint[] => fragments
+  .flatMap(f => Object.keys(f.value.annotationRefTypes).map(annoKey => ({
+    key: f.value.elemID.createNestedID('annotation', annoKey).getFullName(),
+    value: [f.path],
+  })))
+
+const getAnnotationPathHints = (
+  fragments: Fragment<Element>[],
+): PathHint[] => getValuePathHints(
+  fragments.map(f => ({ value: f.value.annotations, path: f.path })),
+  fragments[0].value.elemID.createNestedID('attr')
+)
+
+const getFieldPathHints = (
+  fragments: Fragment<Field>[],
+): PathHint[] => {
+  if (fragments.length === 0) {
+    return []
+  }
+  if (fragments.length === 1) {
+    return [{
+      key: fragments[0].value.elemID.getFullName(),
+      value: [fragments[0].path],
+    }]
+  }
+  return [...getValuePathHints(
+    fragments.map(f => ({ value: f.value.annotations, path: f.path })),
+    fragments[0].value.elemID
+  ),
+  {
+    key: fragments[0].value.elemID.getFullName(),
+    value: fragments.map(f => f.path),
+  },
+  ]
+}
+
+const getFieldsPathHints = (
+  fragments: Fragment<ObjectType>[],
+): PathHint[] => {
+  const fieldNames = _.uniq(fragments.flatMap(f => Object.keys(f.value.fields)))
+  return fieldNames.flatMap(fieldName => getFieldPathHints(
+    fragments.filter(f => values.isDefined(f.value.fields[fieldName]))
+      .map(f => ({ value: f.value.fields[fieldName], path: f.path })),
+  ))
+}
+
+const getElementPathHints = (
+  elementFragments: Fragment<Element>[]
+): PathHint[] => {
+  if (elementFragments.length === 0) {
+    return []
+  }
+  if (elementFragments.length === 1) {
+    return [{
+      key: elementFragments[0].value.elemID.getFullName(),
+      value: [elementFragments[0].path],
+    }]
+  }
+  const annoTypesHints = getAnnotationTypesPathHints(elementFragments)
+  const annotationHints = getAnnotationPathHints(elementFragments)
+  const fieldHints = elementFragments.every(f => isObjectType(f.value))
+    ? getFieldsPathHints(elementFragments as Fragment<ObjectType>[])
+    : []
+  const valueHints = elementFragments.every(f => isInstanceElement(f.value))
+    ? getValuePathHints(
+      (elementFragments as Fragment<InstanceElement>[])
+        .map(f => ({ value: f.value.value, path: f.path })),
+      elementFragments[0].value.elemID
+    ) : []
+  return [
+    ...annoTypesHints,
+    ...annotationHints,
+    ...fieldHints,
+    ...valueHints,
+    {
+      key: elementFragments[0].value.elemID.getFullName(),
+      value: elementFragments.map(f => f.path),
+    },
+  ]
+}
+
+export const getElementsPathHints = (unmergedElements: Element[]):
+RemoteMapEntry<Path[]>[] => {
+  const elementsByID = _.groupBy(unmergedElements, e => e.elemID.getFullName())
+  return Object.values(elementsByID)
+    .flatMap(elementFragments => getElementPathHints(
+      elementFragments
+        .filter(element => values.isDefined(element.path))
+        .map(element => ({ value: element, path: element.path as Path }))
+    ))
 }
 
 export const overridePathIndex = async (
-  current: RemoteMap<Path[]>,
+  current: PathIndex,
   unmergedElements: Element[],
 ): Promise<void> => {
-  const entries = await getElementsPathHints(unmergedElements)
+  const entries = getElementsPathHints(unmergedElements)
   await current.clear()
   await current.setAll(entries)
 }
 
 export const updatePathIndex = async (
-  current: RemoteMap<Path[]>,
+  current: PathIndex,
   unmergedElements: Element[],
   servicesToMaintain: string[]
 ): Promise<void> => {
@@ -83,7 +163,7 @@ export const updatePathIndex = async (
     await overridePathIndex(current, unmergedElements)
     return
   }
-  const entries = await getElementsPathHints(unmergedElements)
+  const entries = getElementsPathHints(unmergedElements)
   const oldPathHintsToMaintain = await awu(current.entries())
     .filter(e => servicesToMaintain.includes(ElemID.fromFullName(e.key).adapter))
     .concat(entries)
@@ -104,3 +184,18 @@ Record<string, string> =>
     _.groupBy(Array.from(entries), entry => ElemID.fromFullName(entry.key).adapter),
     e => serializedPathIndex(e),
   )
+export const getFromPathIndex = async (
+  elemID: ElemID,
+  index: PathIndex
+): Promise<Path[]> => {
+  const idParts = elemID.getFullNameParts()
+  for (let i = idParts.length; i > 0; i -= 1) {
+    const key = idParts.slice(0, i).join('.')
+    // eslint-disable-next-line no-await-in-loop
+    const pathHints = await index.get(key)
+    if (pathHints !== undefined) {
+      return pathHints
+    }
+  }
+  return []
+}

@@ -16,9 +16,8 @@
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, hash } from '@salto-io/lowerdash'
-import { updatePathIndex, Path, overridePathIndex } from '../path_index'
+import { updatePathIndex, overridePathIndex, PathIndex } from '../path_index'
 import { State, StateData } from './state'
-import { RemoteMap } from '../remote_map'
 
 const { awu } = collections.asynciterable
 const { toMD5 } = hash
@@ -66,7 +65,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
         currentStateData.pathIndex, unmergedElements, servicesNotToChange
       )
     },
-    getPathIndex: async (): Promise<RemoteMap<Path[]>> =>
+    getPathIndex: async (): Promise<PathIndex> =>
       (await stateData()).pathIndex,
     clear: async () => {
       const currentStateData = await stateData()

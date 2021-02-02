@@ -110,14 +110,15 @@ export const validateWorkspace = async (
 export const formatWorkspaceErrors = async (
   workspace: Workspace,
   errors: Iterable<SaltoError>,
-): Promise<string> => (
-  (await Promise.all(
+): Promise<string> => {
+  const r = (await Promise.all(
     wu(errors)
       .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
       .map(err => workspace.transformError(err))
       .map(async err => formatWorkspaceError(await err))
   )).join('\n')
-)
+  return r
+}
 
 const printWorkspaceErrors = async (
   status: WorkspaceStatusErrors['status'],

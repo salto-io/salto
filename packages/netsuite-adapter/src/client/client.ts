@@ -540,12 +540,9 @@ export default class NetsuiteClient {
   }
 
   private async importFiles(filePaths: string[], executor: CommandActionExecutor):
-    Promise<{ importedPaths: string[]; failedPaths: string[] }> {
+    Promise<string[]> {
     if (filePaths.length === 0) {
-      return {
-        importedPaths: [],
-        failedPaths: [],
-      }
+      return []
     }
     try {
       const actionResult = await this.executeProjectAction(
@@ -553,27 +550,20 @@ export default class NetsuiteClient {
         { paths: filePaths },
         executor
       )
-      return {
-        importedPaths: makeArray(actionResult.data.results)
-          .filter(result => result.loaded)
-          .map(result => result.path),
-        failedPaths: [],
-      }
+      return makeArray(actionResult.data.results)
+        .filter(result => result.loaded)
+        .map(result => result.path)
     } catch (e) {
       if (filePaths.length === 1) {
-        log.debug(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
-        return { importedPaths: [], failedPaths: filePaths }
+        log.error(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
+        throw new Error(`Failed to import file: ${filePaths[0]}. Consider to add it to the skip list.`)
       }
-      const importResults = await withLimitedConcurrency( // limit the number of open promises
-        _.chunk(filePaths, (filePaths.length + 1) / 2)
-          .filter(chunk => !_.isEmpty(chunk))
-          .map(paths => () => this.importFiles(paths, executor)),
-        this.sdfConcurrencyLimit,
-      )
-      return {
-        importedPaths: importResults.flatMap(importResult => importResult.importedPaths),
-        failedPaths: importResults.flatMap(importResult => importResult.failedPaths),
-      }
+      const middle = (filePaths.length + 1) / 2
+      const importResults = await Promise.all([
+        this.importFiles(filePaths.slice(0, middle), executor),
+        this.importFiles(filePaths.slice(middle, filePaths.length), executor),
+      ])
+      return importResults.flat()
     }
   }
 
@@ -614,9 +604,9 @@ export default class NetsuiteClient {
     const listFilesResults = await this.listFilePaths(project.executor)
     const filePathsToImport = listFilesResults.listedPaths
       .filter(path => query.isFileMatch(path))
-    const importFilesResults = await this.importFiles(filePathsToImport, project.executor)
+    const importFilesResult = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
-    const importedPaths = _.uniq(importFilesResults.importedPaths)
+    const importedPaths = _.uniq(importFilesResult)
     const [attributesPaths, filePaths] = _.partition(importedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
@@ -630,7 +620,7 @@ export default class NetsuiteClient {
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
-      failedPaths: [...listFilesResults.failedPaths, ...importFilesResults.failedPaths],
+      failedPaths: listFilesResults.failedPaths,
     }
   }
 

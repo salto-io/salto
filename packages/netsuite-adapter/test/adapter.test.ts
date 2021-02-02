@@ -122,7 +122,6 @@ describe('Adapter', () => {
         })
       client.getCustomObjects = jest.fn().mockResolvedValue({
         elements: [customTypeInfo],
-        failedTypes: [],
         failedToFetchAllAtOnce: false,
       })
       const { elements, isPartial } = await netsuiteAdapter.fetch()
@@ -216,7 +215,6 @@ describe('Adapter', () => {
       const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'unknown')
       client.getCustomObjects = jest.fn().mockResolvedValue({
         elements: [customTypeInfo],
-        failedTypes: [],
         failedToFetchAllAtOnce: false,
       })
       const { elements } = await netsuiteAdapter.fetch()

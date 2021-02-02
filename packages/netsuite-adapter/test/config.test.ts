@@ -39,7 +39,7 @@ describe('config', () => {
       [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
     },
   }
-  const newFailedFilePath = '/path/to/file.js'
+  const newFailedFilePath = '/path/to/file'
 
   it('should return undefined when having no currentConfig suggestions', () => {
     expect(getConfigFromConfigChanges(false, [], currentConfig)).toBeUndefined()

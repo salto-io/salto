@@ -6,7 +6,7 @@ When none of the ```fetchTarget``` parameters is specified, Salto will fetch all
 | Name                           |  Description
 | -------------------------------| ------------------------| -----------
 | netsuite.fetchTarget.filePaths | A list of regular expressions of cabinet file paths. Only files with matching paths will be fetched.
-| netsuite.fetchTarget.types.[type_name]  | A list of script id regular. Only records of type ```type_name``` with matching script ids will be fetched. 
+| netsuite.fetchTarget.types.[type_name]  | A list of script id regular expressions. Only records of type ```type_name``` with matching script ids will be fetched. 
 
 
 ### Examples

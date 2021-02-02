@@ -28,7 +28,8 @@ import {
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import { getNamespace, isMasterDetailField, isLookupField } from './utils'
-import { DataManagementConfig, ConfigChangeSuggestion } from '../types'
+import { ConfigChangeSuggestion } from '../types'
+import { DataManagement } from '../fetch_profile/data_management'
 
 const { mapValuesAsync } = promises.object
 const { isDefined } = values
@@ -355,12 +356,9 @@ const getParentFieldNames = (fields: Field[]): string[] =>
 
 export const getIdFields = (
   type: ObjectType,
-  config: DataManagementConfig
+  dataManagement: DataManagement
 ): { idFields: Field[]; invalidFields?: string[] } => {
-  const typeOverride = makeArray(config.saltoIDSettings?.overrides)
-    .find(objectIdSetting => new RegExp(objectIdSetting.objectsRegex).test(apiName(type)))
-  const idFieldsNames = typeOverride === undefined
-    ? config.saltoIDSettings?.defaultIdFields : typeOverride.idFields
+  const idFieldsNames = dataManagement.getObjectIdsFields(apiName(type))
   const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
     ((fieldName === detectsParentsIndicator)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
@@ -375,23 +373,17 @@ export const getIdFields = (
 
 export const getCustomObjectsFetchSettings = (
   types: ObjectType[],
-  config: DataManagementConfig,
+  dataManagement: DataManagement,
 ): CustomObjectFetchSetting[] => {
-  const allowReferencesToRegexes = makeArray(config.allowReferenceTo).map(e => new RegExp(e))
-  const includeObjectsRegexes = makeArray(config.includeObjects).map(e => new RegExp(e))
-  const excludeObjectsRegexes = makeArray(config.excludeObjects).map(e => new RegExp(e))
-  const isBaseType = (type: ObjectType): boolean =>
-    (includeObjectsRegexes.some(objRegex => objRegex.test(apiName(type)))
-      && !excludeObjectsRegexes.some(objRejex => objRejex.test(apiName(type))))
-  const isReferencedType = (type: ObjectType): boolean =>
-    allowReferencesToRegexes.some(objRegex => objRegex.test(apiName(type)))
   const relevantTypes = types
-    .filter(customObject => isBaseType(customObject) || isReferencedType(customObject))
+    .filter(type => dataManagement.isObjectMatch(apiName(type))
+      || dataManagement.isReferenceAllowed(apiName(type)))
+
   const typeToFetchSettings = (type: ObjectType): CustomObjectFetchSetting => {
-    const fields = getIdFields(type, config)
+    const fields = getIdFields(type, dataManagement)
     return {
       objectType: type,
-      isBase: isBaseType(type),
+      isBase: dataManagement.isObjectMatch(apiName(type)),
       idFields: fields.idFields,
       invalidIdFields: fields.invalidFields,
     }
@@ -401,13 +393,14 @@ export const getCustomObjectsFetchSettings = (
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
-    if (config.dataManagement === undefined) {
+    const { dataManagement } = config.fetchProfile
+    if (dataManagement === undefined) {
       return []
     }
     const customObjects = elements.filter(isCustomObject)
     const customObjectFetchSetting = getCustomObjectsFetchSettings(
       customObjects,
-      config.dataManagement
+      dataManagement
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,

@@ -20,6 +20,7 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { makeFilter, generateAllMissingFields, RawMissingFieldData } from '../../src/filters/missing_fields'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('missing fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
@@ -50,7 +51,7 @@ describe('missing fields filter', () => {
         type: new ElemID('test', 'none'),
       },
     ],
-  })({ client, config: {} }) as FilterWith<'onFetch'>
+  })({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   let testElements: ObjectType[]
 

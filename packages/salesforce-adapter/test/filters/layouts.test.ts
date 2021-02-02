@@ -24,6 +24,7 @@ import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('Test layout filter', () => {
   const { client } = mockClient()
@@ -33,7 +34,7 @@ describe('Test layout filter', () => {
     annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
   })
 
-  const filter = makeFilter({ client, config: {} }) as FilterWith<'onFetch'>
+  const filter = makeFilter({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {

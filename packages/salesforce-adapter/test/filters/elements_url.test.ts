@@ -20,6 +20,7 @@ import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter } from '../../src/filter'
 import elementsUrlFilter from '../../src/filters/elements_url'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 
 describe('elements url filter', () => {
@@ -30,7 +31,7 @@ describe('elements url filter', () => {
 
   beforeEach(() => {
     ({ connection, client } = createClient())
-    filter = elementsUrlFilter({ client, config: {} })
+    filter = elementsUrlFilter({ client, config: { fetchProfile: buildFetchProfile({}) } })
     standardObject = new ObjectType({ elemID: new ElemID('salesforce', 'Account'), annotations: { apiName: 'Account', metadataType: 'CustomObject' } })
   })
 

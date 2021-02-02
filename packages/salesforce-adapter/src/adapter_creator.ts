@@ -13,23 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import SalesforceClient, { validateCredentials } from './client/client'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
-  isAccessTokenConfig, INSTANCES_REGEX_SKIPPED_LIST, SalesforceConfig, accessTokenCredentialsType,
-  DataManagementConfig, DATA_MANAGEMENT, UsernamePasswordCredentials,
-  Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG, SalesforceClientConfig, RetryStrategyName } from './types'
+  isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
+  UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
+  SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES, INSTANCES_REGEX_SKIPPED_LIST, METADATA_CONFIG, METADATA_TYPES_SKIPPED_LIST, DATA_MANAGEMENT, DATA_CONFIGURATION } from './types'
+import { validateFetchParameters } from './fetch_profile/fetch_profile'
+import { ConfigValidationError, validateRegularExpressions } from './config_validation'
+import { validateDataManagementConfig } from './fetch_profile/data_management'
 
-const { makeArray } = collections.array
 const log = logger(module)
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
@@ -48,71 +48,90 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   })
 }
 
+const validateDeprecatedParameters = (config: Readonly<InstanceElement> | undefined): void => {
+  if (config?.value?.[METADATA_TYPES_SKIPPED_LIST] !== undefined) {
+    log.warn(`${METADATA_TYPES_SKIPPED_LIST} configuration option is deprecated. ${FETCH_CONFIG}.${METADATA_CONFIG} should be used instead`)
+  }
+  if (config?.value?.[INSTANCES_REGEX_SKIPPED_LIST] !== undefined) {
+    log.warn(`${INSTANCES_REGEX_SKIPPED_LIST} configuration option is deprecated. ${FETCH_CONFIG}.${METADATA_CONFIG} should be used instead`)
+    try {
+      validateRegularExpressions(config?.value?.[INSTANCES_REGEX_SKIPPED_LIST])
+    } catch (e) {
+      if (e instanceof ConfigValidationError) {
+        e.fieldPath.unshift(INSTANCES_REGEX_SKIPPED_LIST)
+      }
+      throw e
+    }
+  }
+  if (config?.value?.[DATA_MANAGEMENT] !== undefined) {
+    if (config?.value?.[FETCH_CONFIG]?.[DATA_CONFIGURATION] !== undefined) {
+      throw new ConfigValidationError([DATA_MANAGEMENT], `${FETCH_CONFIG}.${DATA_CONFIGURATION} configuration option cannot be used with ${DATA_MANAGEMENT} option. The configuration of ${DATA_MANAGEMENT} should be moved to ${FETCH_CONFIG}.${DATA_CONFIGURATION}`)
+    }
+
+    log.warn(`${DATA_MANAGEMENT} configuration option is deprecated. ${FETCH_CONFIG}.${DATA_CONFIGURATION} should be used instead`)
+
+    try {
+      validateDataManagementConfig(config?.value?.[DATA_MANAGEMENT])
+    } catch (e) {
+      if (e instanceof ConfigValidationError) {
+        e.fieldPath.unshift(DATA_MANAGEMENT)
+      }
+      throw e
+    }
+  }
+}
+
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 SalesforceConfig => {
-  const validateRegularExpressions = (listName: string, regularExpressions: string[]): void => {
-    const invalidRegularExpressions = regularExpressions
-      .filter(strRegex => !regex.isValidRegex(strRegex))
-    if (!_.isEmpty(invalidRegularExpressions)) {
-      const errMessage = `Failed to load config due to an invalid ${listName} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
-      log.error(errMessage)
-      throw Error(errMessage)
-    }
-  }
-
-  const validateDataManagement = (dataManagementConfig: DataManagementConfig | undefined): void => {
-    if (dataManagementConfig !== undefined) {
-      if (dataManagementConfig.includeObjects === undefined) {
-        throw Error('includeObjects is required when dataManagement is configured')
-      }
-      if (dataManagementConfig.saltoIDSettings === undefined) {
-        throw Error('saltoIDSettings is required when dataManagement is configured')
-      }
-      if (dataManagementConfig.saltoIDSettings.defaultIdFields === undefined) {
-        throw Error('saltoIDSettings.defaultIdFields is required when dataManagement is configured')
-      }
-      validateRegularExpressions(`${DATA_MANAGEMENT}.includeObjects`, makeArray(dataManagementConfig.includeObjects))
-      validateRegularExpressions(`${DATA_MANAGEMENT}.excludeObjects`, makeArray(dataManagementConfig.excludeObjects))
-      validateRegularExpressions(`${DATA_MANAGEMENT}.allowReferenceTo`, makeArray(dataManagementConfig.allowReferenceTo))
-      if (dataManagementConfig.saltoIDSettings.overrides !== undefined) {
-        const overridesObjectRegexs = dataManagementConfig.saltoIDSettings.overrides
-          .map(override => override.objectsRegex)
-        validateRegularExpressions(`${DATA_MANAGEMENT}.saltoIDSettings.overrides`, overridesObjectRegexs)
-      }
-    }
-  }
-
   const validateClientConfig = (clientConfig: SalesforceClientConfig | undefined): void => {
     if (clientConfig?.maxConcurrentApiRequests !== undefined) {
       const invalidValues = (Object.entries(clientConfig.maxConcurrentApiRequests)
         .filter(([_name, value]) => value === 0))
       if (invalidValues.length > 0) {
-        throw Error(`${CLIENT_CONFIG}.maxConcurrentApiRequests values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
+        throw new ConfigValidationError([CLIENT_CONFIG, 'maxConcurrentApiRequests'], `maxConcurrentApiRequests values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
       }
     }
 
     if (clientConfig?.retry?.retryStrategy !== undefined
         && RetryStrategyName[clientConfig.retry.retryStrategy] === undefined) {
-      throw Error(`${CLIENT_CONFIG}.clientConfig.retry.retryStrategy value '${clientConfig.retry.retryStrategy}' is not supported`)
+      throw new ConfigValidationError([CLIENT_CONFIG, 'clientConfig', 'retry', 'retryStrategy'], `retryStrategy value '${clientConfig.retry.retryStrategy}' is not supported`)
     }
   }
 
-  const instancesRegexSkippedList = makeArray(config?.value?.instancesRegexSkippedList)
-  validateRegularExpressions(INSTANCES_REGEX_SKIPPED_LIST, instancesRegexSkippedList)
-  validateDataManagement(config?.value?.dataManagement)
-  validateClientConfig(config?.value?.client)
-  const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
-    metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
-    instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
-    maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
-    dataManagement: config?.value?.dataManagement,
-    useOldProfiles: config?.value?.useOldProfiles,
-    client: config?.value?.client,
+  try {
+    validateDeprecatedParameters(config)
+
+    try {
+      validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {})
+    } catch (e) {
+      if (e instanceof ConfigValidationError) {
+        e.fieldPath.unshift(FETCH_CONFIG)
+      }
+      throw e
+    }
+
+    validateClientConfig(config?.value?.client)
+    const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
+      [FETCH_CONFIG]: config?.value?.[FETCH_CONFIG],
+      [MAX_ITEMS_IN_RETRIEVE_REQUEST]: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
+      useOldProfiles: config?.value?.[USE_OLD_PROFILES],
+      client: config?.value?.[CLIENT_CONFIG],
+      [METADATA_TYPES_SKIPPED_LIST]: config?.value?.[METADATA_TYPES_SKIPPED_LIST],
+      [INSTANCES_REGEX_SKIPPED_LIST]: config?.value?.[INSTANCES_REGEX_SKIPPED_LIST],
+      [DATA_MANAGEMENT]: config?.value?.[DATA_MANAGEMENT],
+    }
+    Object.keys(config?.value ?? {})
+      .filter(k => !Object.keys(adapterConfig).includes(k))
+      .forEach(k => log.debug('Unknown config property was found: %s', k))
+    return adapterConfig
+  } catch (e) {
+    if (e instanceof ConfigValidationError) {
+      e.message = `Failed to load config due to an invalid ${e.fieldPath.join('.')} value. ${e.message}`
+    } else {
+      e.message = `Failed to load config. ${e.message}`
+    }
+    throw e
   }
-  Object.keys(config?.value ?? {})
-    .filter(k => !Object.keys(adapterConfig).includes(k))
-    .forEach(k => log.debug('Unknown config property was found: %s', k))
-  return adapterConfig
 }
 
 const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {

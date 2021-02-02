@@ -22,10 +22,11 @@ import filterCreator from '../../src/filters/profile_paths'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('profile paths filter', () => {
   const { client, connection } = mockClient()
-  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
   const origInstance = new InstanceElement(
     'test',
     new ObjectType({ elemID: new ElemID(SALESFORCE, 'instanceType') }),

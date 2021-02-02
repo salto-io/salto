@@ -200,7 +200,7 @@ export const makeFilter = (
         client,
         fileProps: [...standardValueSetNames].map(emptyFileProperties),
         metadataType: svsMetadataType,
-        instancesRegexSkippedList: config.instancesRegexSkippedList,
+        metadataQuery: config.fetchProfile.metadataQuery,
       })
       elements.push(...svsInstances.elements)
       updateSVSReferences(elements, svsInstances.elements)

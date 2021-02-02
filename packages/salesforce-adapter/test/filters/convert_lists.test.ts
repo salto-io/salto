@@ -22,6 +22,7 @@ import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('convert lists filter', () => {
   const { client } = mockClient()
@@ -217,7 +218,7 @@ describe('convert lists filter', () => {
   let testElements: Element[]
 
   const filter = makeFilter(unorderedListFields, unorderedListAnnotations,
-    hardcodedLists)({ client, config: {} }) as FilterWith<'onFetch'>
+    hardcodedLists)({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()

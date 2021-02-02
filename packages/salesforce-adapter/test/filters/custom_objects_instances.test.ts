@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion } from '../../src/types'
+import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -26,6 +26,7 @@ import {
   OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 jest.mock('../../src/constants', () => ({
   ...jest.requireActual<{}>('../../src/constants'),
@@ -175,23 +176,25 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            dataManagement: {
-              includeObjects: [
-              ],
-              excludeObjects: [
-                '^TestNamespace__Exclude.*',
-                excludeOverrideObjectName,
-              ],
-              allowReferenceTo: [
-                '^RefFromNamespace__RefTo.*',
-                refToObjectName,
-                refFromAndToObjectName,
-                emptyRefToObjectName,
-              ],
-              saltoIDSettings: {
-                defaultIdFields: [],
+            fetchProfile: buildFetchProfile({
+              data: {
+                includeObjects: [
+                ],
+                excludeObjects: [
+                  '^TestNamespace__Exclude.*',
+                  excludeOverrideObjectName,
+                ],
+                allowReferenceTo: [
+                  '^RefFromNamespace__RefTo.*',
+                  refToObjectName,
+                  refFromAndToObjectName,
+                  emptyRefToObjectName,
+                ],
+                saltoIDSettings: {
+                  defaultIdFields: [],
+                },
               },
-            },
+            }),
           },
         }
       ) as FilterType
@@ -227,28 +230,30 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            dataManagement: {
-              includeObjects: [
-                createNamespaceRegexFromString(testNamespace),
-                createNamespaceRegexFromString(refFromNamespace),
-                includeObjectName,
-                excludeOverrideObjectName,
-                refFromAndToObjectName,
-              ],
-              excludeObjects: [
-                '^TestNamespace__Exclude.*',
-                excludeOverrideObjectName,
-              ],
-              allowReferenceTo: [
-                '^RefFromNamespace__RefTo.*',
-                refToObjectName,
-                refFromAndToObjectName,
-                emptyRefToObjectName,
-              ],
-              saltoIDSettings: {
-                defaultIdFields: ['Id'],
+            fetchProfile: buildFetchProfile({
+              data: {
+                includeObjects: [
+                  createNamespaceRegexFromString(testNamespace),
+                  createNamespaceRegexFromString(refFromNamespace),
+                  includeObjectName,
+                  excludeOverrideObjectName,
+                  refFromAndToObjectName,
+                ],
+                excludeObjects: [
+                  '^TestNamespace__Exclude.*',
+                  excludeOverrideObjectName,
+                ],
+                allowReferenceTo: [
+                  '^RefFromNamespace__RefTo.*',
+                  refToObjectName,
+                  refFromAndToObjectName,
+                  emptyRefToObjectName,
+                ],
+                saltoIDSettings: {
+                  defaultIdFields: ['Id'],
+                },
               },
-            },
+            }),
           },
         }
       ) as FilterType
@@ -769,29 +774,31 @@ describe('Custom Object Instances filter', () => {
         {
           client,
           config: {
-            dataManagement: {
-              includeObjects: [
-                createNamespaceRegexFromString(nameBasedNamespace),
-                pricebookEntryName,
-                SBQQCustomActionName,
-                productName,
-                badIdFieldsName,
-                notQueryableIdFieldsName,
-              ],
-              allowReferenceTo: [
-                refToObjectName,
-              ],
-              saltoIDSettings: {
-                defaultIdFields: ['##allMasterDetailFields##', 'Name'],
-                overrides: [
-                  { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
-                  { objectsRegex: SBQQCustomActionName, idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
-                  { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
-                  { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
-                  { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
+            fetchProfile: buildFetchProfile({
+              data: {
+                includeObjects: [
+                  createNamespaceRegexFromString(nameBasedNamespace),
+                  pricebookEntryName,
+                  SBQQCustomActionName,
+                  productName,
+                  badIdFieldsName,
+                  notQueryableIdFieldsName,
                 ],
+                allowReferenceTo: [
+                  refToObjectName,
+                ],
+                saltoIDSettings: {
+                  defaultIdFields: ['##allMasterDetailFields##', 'Name'],
+                  overrides: [
+                    { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
+                    { objectsRegex: SBQQCustomActionName, idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
+                    { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
+                    { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
+                    { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
+                  ],
+                },
               },
-            },
+            }),
           },
         }
       ) as FilterType
@@ -863,9 +870,10 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithOrphanValue = changeSuggestions
+          .filter(isDataManagementConfigSuggestions)
           .filter(suggestion => suggestion.value.includes(orphanObjectName))
         expect(changeSuggestionWithOrphanValue).toHaveLength(1)
-        expect(changeSuggestionWithOrphanValue[0].type).toEqual('dataManagement')
+        expect(changeSuggestionWithOrphanValue[0].type).toEqual('dataObjectsExclude')
         expect(changeSuggestionWithOrphanValue[0].reason).toEqual(`${orphanObjectName} has Parent (reference) configured as idField. Failed to resolve some of the references.`)
       })
     })
@@ -881,9 +889,10 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
+          .filter(isDataManagementConfigSuggestions)
           .filter(suggestion => suggestion.value.includes(badIdFieldsName))
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
-        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
+        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataObjectsExclude')
         expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`Bad defined as idFields but are not queryable or do not exist on type ${badIdFieldsName}`)
       })
     })
@@ -899,9 +908,10 @@ describe('Custom Object Instances filter', () => {
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
+          .filter(isDataManagementConfigSuggestions)
           .filter(suggestion => suggestion.value.includes(notQueryableIdFieldsName))
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
-        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataManagement')
+        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataObjectsExclude')
         expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`NotQueryable defined as idFields but are not queryable or do not exist on type ${notQueryableIdFieldsName}`)
       })
     })

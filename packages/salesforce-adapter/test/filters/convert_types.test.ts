@@ -23,6 +23,7 @@ import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('convert types filter', () => {
   const { client } = mockClient()
@@ -110,7 +111,7 @@ describe('convert types filter', () => {
 
   let testElements: Element[]
 
-  const filter = makeFilter({ client, config: {} }) as FilterWith<'onFetch'>
+  const filter = makeFilter({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   describe('on fetch', () => {
     describe('convert', () => {

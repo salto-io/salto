@@ -27,21 +27,24 @@ import { findElements, ZipFile, MockInterface } from './utils'
 import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
-import {
-  INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-} from '../src/types'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
   MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput,
   mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveLocator,
 } from './connection'
+import { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
-  const testMetadataTypesSkippedList = ['Test1', 'Ignored1']
-  const testInstancesRegexSkippedList = [
-    'Test2.instance1', 'SkippedList$', '^ReportFolder.skip$', 'AssignmentRules.MyRules',
+
+  const metadataExclude = [
+    { metadataType: 'Test1' },
+    { metadataType: 'Ignored1' },
+    { metadataType: '.*Test2', name: 'instance1.*' },
+    { name: '.*SkippedList' },
+    { metadataType: 'ReportFolder', name: 'skip' },
+    { metadataType: '.*AssignmentRules', name: 'MyRules.*' },
   ]
 
   const testMaxItemsInRetrieveRequest = 100
@@ -59,8 +62,11 @@ describe('SalesforceAdapter fetch', () => {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
         config: {
-          metadataTypesSkippedList: testMetadataTypesSkippedList,
-          instancesRegexSkippedList: testInstancesRegexSkippedList,
+          fetch: {
+            metadata: {
+              exclude: metadataExclude,
+            },
+          },
           maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
         },
       },
@@ -301,6 +307,17 @@ describe('SalesforceAdapter fetch', () => {
                 bla: { bla: '55', bla2: 'false', bla3: 'true' },
               },
             },
+            {
+              props: {
+                fullName: 'IgnoredNamespace__FlowInstance',
+                fileName: 'flows/IgnoredNamespace__FlowInstance.flow',
+                namespacePrefix: 'IgnoredNamespace',
+              },
+              values: {
+                fullName: 'IgnoredNamespace__FlowInstance',
+                bla: { bla: '55', bla2: 'false', bla3: 'true' },
+              },
+            },
           ]
         )
       }
@@ -313,6 +330,38 @@ describe('SalesforceAdapter fetch', () => {
         expect(flow.value.bla.bla).toBe(55)
         expect(flow.value.bla.bla2).toBe(false)
         expect(flow.value.bla.bla3).toBe(true)
+      })
+
+      it('should not fetch excluded namespaces', async () => {
+        const {
+          connection: connectionMock,
+          client: clientMock,
+          adapter: adapterMock,
+        } = mockAdapter({
+          adapterParams: {
+            config: {
+              fetch: {
+                metadata: {
+                  exclude: [
+                    { namespace: 'IgnoredNamespace' },
+                  ],
+                },
+              },
+            },
+          },
+        })
+        connection = connectionMock
+        mockFlowType()
+        const spyReadMetadata = jest.spyOn(clientMock, 'readMetadata')
+        await adapterMock.fetch(mockFetchOpts)
+        expect(spyReadMetadata).not.toHaveBeenCalledWith(
+          expect.any(String),
+          expect.arrayContaining(['IgnoredNamespace__FlowInstance'])
+        )
+        expect(spyReadMetadata).not.toHaveBeenCalledWith(
+          expect.any(String),
+          'IgnoredNamespace__FlowInstance'
+        )
       })
 
       it('should use existing elemID when fetching metadata instance', async () => {
@@ -889,19 +938,21 @@ public class MyClass${index} {
         expect(config).toBeDefined()
         expect(config.value).toEqual(
           {
-            [INSTANCES_REGEX_SKIPPED_LIST]: [
-              '^Report.testFolder$',
-              '^InstalledPackage.Test2$',
-              '^MetadataTest1.instance1$',
-            ]
-              .concat(testInstancesRegexSkippedList),
-            [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
-              .concat(testMetadataTypesSkippedList),
+            fetch: {
+              metadata: {
+                exclude: [
+                  ...metadataExclude,
+                  { metadataType: 'Report', name: 'testFolder' },
+                  { metadataType: 'InstalledPackage', name: 'Test2' },
+                  { metadataType: 'MetadataTest1', name: 'instance1' },
+                  { metadataType: 'MetadataTest2' },
+                ],
+              },
+            },
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
           }
         )
       })
-
       it('should return correct config when original config is empty', async () => {
         const { connection: connectionMock, adapter: adapterMock } = mockAdapter({
           adapterParams: {
@@ -916,12 +967,16 @@ public class MyClass${index} {
         config = result?.updatedConfig?.config as InstanceElement
         expect(config.value).toEqual(
           {
-            [INSTANCES_REGEX_SKIPPED_LIST]: [
-              '^Report.testFolder$',
-              '^InstalledPackage.Test2$',
-              '^MetadataTest1.instance1$',
-            ],
-            [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2'],
+            fetch: {
+              metadata: {
+                exclude: [
+                  { metadataType: 'Report', name: 'testFolder' },
+                  { metadataType: 'InstalledPackage', name: 'Test2' },
+                  { metadataType: 'MetadataTest1', name: 'instance1' },
+                  { metadataType: 'MetadataTest2' },
+                ],
+              },
+            },
           }
         )
       })

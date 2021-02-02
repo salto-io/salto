@@ -19,13 +19,14 @@ import filterCreator from '../../src/filters/profile_instance_split'
 import { FilterWith } from '../../src/filter'
 import { generateProfileType } from '../utils'
 import mockClient from '../client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 
 describe('Profile Instance Split filter', () => {
   const { client } = mockClient()
 
   describe('Map profile instances', () => {
-    const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
+    const filter = filterCreator({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
     let profileObj: ObjectType
     let profileInstances: InstanceElement[]
@@ -137,7 +138,7 @@ describe('Profile Instance Split filter', () => {
   })
 
   describe('Old (list) profile instances', () => {
-    const filter = filterCreator({ client, config: { useOldProfiles: true } }) as FilterWith<'onFetch'>
+    const filter = filterCreator({ client, config: { useOldProfiles: true, fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
     let profileObj: ObjectType
     let profileInstances: InstanceElement[]

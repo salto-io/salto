@@ -2,45 +2,7 @@
 ## Configuration example
 ```hcl
 salesforce {
-  metadataTypesSkippedList = [
-    "Report",
-    "ReportType",
-    "ReportFolder",
-    "Dashboard",
-    "DashboardFolder",
-    "Profile",
-    "ForecastingSettings",
-    "PermissionSet",
-    "CustomObjectTranslation",
-  ]
-  instancesRegexSkippedList = [
-    "^EmailTemplate.MarketoEmailTemplates",
-    "^StandardValueSet.AddressCountryCode",
-    "^StandardValueSet.AddressStateCode",
-  ]
   maxItemsInRetrieveRequest = 2500
-  dataManagement = {
-    includeObjects = [
-      "SBQQ__CustomAction__c",
-      "PricebookEntry",
-    ],
-    saltoIDSettings = {
-      defaultIdFields = [
-        "##allMasterDetailFields##",
-        "Name",
-      ]
-      overrides = [
-        {
-          objectsRegex = "pricebookEntryName"
-          idFields = ["Pricebook2Id", "Name"]
-        },
-        {
-          objectsRegex = "SBQQCustomActionName"
-          idFields = ["SBQQ__Location__c", "SBQQ__DisplayOrder__c", "Name"]
-        },
-      ]
-    }
-  }
   client = {
     polling = {
       interval = 10000
@@ -67,6 +29,80 @@ salesforce {
       list = -1
     }
   }
+  fetch = {
+    metadata = {
+      exclude = [
+        {
+          metadataType = "Report"
+        },
+        {
+          metadataType = "ReportType"
+        },
+        {
+          metadataType = "ReportFolder"
+        },
+        {
+          metadataType = "Dashboard"
+        },
+        {
+          metadataType = "DashboardFolder"
+        },
+        {
+          metadataType = "Profile"
+        },
+        {
+          metadataType = "ForecastingSettings"
+        },
+        {
+          metadataType = "PermissionSet"
+        },
+        {
+          metadataType = "CustomObjectTranslation"
+        },
+        {
+          metadataType = "EmailTemplate"
+          name = "MarketoEmailTemplates.*"
+        },
+        {
+          metadataType = "StandardValueSet"
+          name = "AddressCountryCode.*"
+        },
+        {
+          metadataType = "StandardValueSet"
+          name = "AddressStateCode.*"
+        },
+      ]
+    }
+    data = {
+      includeObjects = [
+        ".*SBQQ__CustomAction__c.*",
+        ".*PricebookEntry.*",
+      ]
+      saltoIDSettings = {
+        defaultIdFields = [
+          "##allMasterDetailFields##",
+          "Name",
+        ]
+        overrides = [
+          {
+            objectsRegex = ".*pricebookEntryName.*"
+            idFields = [
+              "Pricebook2Id",
+              "Name",
+            ]
+          },
+          {
+            objectsRegex = ".*SBQQCustomActionName.*"
+            idFields = [
+              "SBQQ__Location__c",
+              "SBQQ__DisplayOrder__c",
+              "Name",
+            ]
+          },
+        ]
+      }
+    }
+  }
 }
 ```
 
@@ -74,11 +110,31 @@ salesforce {
 
 | Name                                                     | Default when undefined        | Description
 | ---------------------------------------------------------| ------------------------------| -----------
-| metadataTypesSkippedList                                 | [] (fetch all Metadata Types) | Specified types and their instances will not be fetched
-| instancesRegexSkippedList                                | [] (fetch all instances)      | Matching instances names will not be fetched
 | maxItemsInRetrieveRequest                                | 2500                          | Limits the max number of requested items a single retrieve request
-| [dataManagement](#data-management-configuration-options) | {} (do not manage data)       | Data management configuration 
+| [fetch](#fetch-configuration-options)                    |                               | Fetch configuration 
 | [client](#client-configuration-options)                  | {} (no overrides)             | Configuration relating to the client used to interact with salesforce
+
+## Fetch configuration options
+
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| [metadata](#metadata-configuration-options)                 | Fetch all metdata                                | Specified the metadata fetch
+| [data](#data-management-configuration-options) | {} (do not manage data)       | Data management configuration object names will not be fetched in case they are matched in includeObjects
+
+## Metadata configuration options
+
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| [include](#metadata-query)                                  | Include everything                               | Specified the metadata to fetch. Metadata that does not match any of the include criteria will not be fetched
+| [exclude](#metadata-query)                                  | [] (Exclude nothing)                             | Specified the metadata to not fetch. Metadata that matches any of the exclude criteria will not be fetched even if it also matches some of the include criteria
+
+## Metadata Query
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| namespace                                                   | ".*" (All namespaces)                            | A regular expression of a namespace to query with 
+| metadataType                                                | ".*" (All types)                                 | A regular expression of a metadata type to query with
+| name                                                        | ".*" (All names)                                 | A regular expression of a metadata instance name to query with
+
 
 ### Data management configuration options
 

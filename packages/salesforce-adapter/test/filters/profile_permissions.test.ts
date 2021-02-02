@@ -24,6 +24,7 @@ import { ProfileInfo } from '../../src/client/types'
 import mockClient from '../client'
 import { Types, createInstanceElement, metadataType, apiName } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('Object Permissions filter', () => {
   const { client } = mockClient()
@@ -64,7 +65,10 @@ describe('Object Permissions filter', () => {
   describe('with new object, new fields and no permission change', () => {
     let changes: Change[]
     beforeAll(() => {
-      filter = filterCreator({ client, config: {} }) as typeof filter
+      filter = filterCreator({
+        client,
+        config: { fetchProfile: buildFetchProfile({}) },
+      }) as typeof filter
     })
     describe('preDeploy', () => {
       beforeAll(async () => {
@@ -155,7 +159,10 @@ describe('Object Permissions filter', () => {
       field: 'Test2__c.desc__c', readable: true, editable: false,
     }
     beforeAll(() => {
-      filter = filterCreator({ client, config: {} }) as typeof filter
+      filter = filterCreator({
+        client,
+        config: { fetchProfile: buildFetchProfile({}) },
+      }) as typeof filter
     })
     describe('preDeploy', () => {
       beforeAll(async () => {

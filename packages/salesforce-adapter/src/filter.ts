@@ -17,7 +17,8 @@ import { Element, Change } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
-import { ConfigChangeSuggestion, FilterContext } from './types'
+import { ConfigChangeSuggestion, FetchParameters } from './types'
+import { FetchProfile } from './fetch_profile/fetch_profile'
 
 // Filters run in a specific order and get a mutable list as input which they may modify
 // to affect the overall result as well as the input for subsequent filters.
@@ -40,6 +41,14 @@ export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
 export type FilterCreator = (
   opts: { client: SalesforceClient; config: FilterContext }
 ) => Filter
+
+export type FilterContext = {
+  fetch?: FetchParameters
+  unsupportedSystemFields?: string[]
+  systemFields?: string[]
+  useOldProfiles?: boolean
+  fetchProfile: FetchProfile
+}
 
 export const filtersRunner = (client: SalesforceClient,
   config: FilterContext,

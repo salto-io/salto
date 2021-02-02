@@ -20,6 +20,7 @@ import { SALESFORCE, CPQ_PRODUCT_RULE, CPQ_LOOKUP_OBJECT_NAME, API_NAME, METADAT
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/field_references'
 import mockAdapter from '../../adapter'
+import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 
 describe('fields with context references filter', () => {
   let client: SalesforceClient
@@ -143,7 +144,10 @@ describe('fields with context references filter', () => {
         adapterParams: {
         },
       }))
-      filter = filterCreator({ client, config: {} }) as FilterType
+      filter = filterCreator({
+        client,
+        config: { fetchProfile: buildFetchProfile({}) },
+      }) as FilterType
       elements = [
         ...getCloneOfAllObjects(),
         productRuleWithBadLookupObjInstance.clone(),

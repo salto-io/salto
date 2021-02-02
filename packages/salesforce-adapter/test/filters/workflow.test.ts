@@ -34,12 +34,16 @@ import {
 import { mockTypes } from '../mock_elements'
 import { metadataType, apiName, createInstanceElement, MetadataValues, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import { isInstanceOfTypeChange } from '../../src/filters/utils'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { makeArray } = collections.array
 
 describe('Workflow filter', () => {
   const { client } = mockClient()
-  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  const filter = filterCreator({
+    client,
+    config: { fetchProfile: buildFetchProfile({}) },
+  }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
   const workflowInstanceName = 'Account'
   const generateWorkFlowInstance = (): InstanceElement => (
@@ -194,7 +198,10 @@ describe('Workflow filter', () => {
         ]
 
         // Re-create the filter because it is stateful
-        testFilter = filterCreator({ client, config: {} }) as typeof filter
+        testFilter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as typeof filter
       })
 
       describe('preDeploy', () => {
@@ -252,7 +259,10 @@ describe('Workflow filter', () => {
         changes = _.times(5).map(createInnerChange)
 
         // Re-create the filter because it is stateful
-        testFilter = filterCreator({ client, config: {} }) as typeof filter
+        testFilter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as typeof filter
       })
       describe('preDeploy', () => {
         beforeAll(async () => {

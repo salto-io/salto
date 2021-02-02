@@ -20,6 +20,7 @@ import { makeFilter } from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('remove fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'typeRemoval')
@@ -79,7 +80,7 @@ describe('remove fields filter', () => {
       ['typeWithInstance', ['removeAlsoFromInstance', 'removeAlsoFromInstance2']],
       ['nested', ['remove']],
     ]),
-  )({ client, config: {} }) as FilterWith<'onFetch'>
+  )({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
 
   let testElements: Element[]
 

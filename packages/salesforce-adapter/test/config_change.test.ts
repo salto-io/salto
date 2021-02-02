@@ -14,19 +14,27 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, DATA_MANAGEMENT } from '../src/types'
-import { getConfigFromConfigChanges, getConfigChangeMessage } from '../src/config_change'
+import _ from 'lodash'
+import { ConfigChangeSuggestion, SalesforceConfig } from '../src/types'
+import { getConfigFromConfigChanges, getConfigChangeMessage, DEPRECATED_OPTIONS_MESSAGE, PACKAGES_INSTANCES_REGEX } from '../src/config_change'
 
 describe('Config Changes', () => {
-  const includedObjectName = 'Object'
-  const refToObjectName = 'refTo'
-  const currentConfig = {
-    metadataTypesSkippedList: ['Type1'],
-    dataManagement: {
-      includeObjects: [includedObjectName],
-      allowReferenceTo: [refToObjectName],
-      saltoIDSettings: {
-        defaultIdFields: ['Name'],
+  const includedObjectName = '.*Object.*'
+  const refToObjectName = '.*refTo.*'
+  const currentConfig: SalesforceConfig = {
+    fetch: {
+      metadata: {
+        exclude: [
+          { metadataType: 'Type1' },
+        ],
+      },
+      data: {
+        includeObjects: [includedObjectName],
+        excludeObjects: [],
+        allowReferenceTo: [refToObjectName],
+        saltoIDSettings: {
+          defaultIdFields: ['Name'],
+        },
       },
     },
   }
@@ -40,12 +48,12 @@ describe('Config Changes', () => {
 
   describe('getConfigChangeMessage', () => {
     const configChangeWithoutReason = {
-      type: DATA_MANAGEMENT,
+      type: 'dataObjectsExclude',
       value: 'something',
     } as ConfigChangeSuggestion
 
     const configChangeWithReason = {
-      type: DATA_MANAGEMENT,
+      type: 'dataObjectsExclude',
       value: 'somethingElse',
       reason: 'because',
     } as ConfigChangeSuggestion
@@ -68,28 +76,43 @@ describe('Config Changes', () => {
 
   describe('getConfigFromConfigChanges - dataManagement suggestions', () => {
     describe('when suggestion is about an object that appears in includeObjects', () => {
-      let newConfig: InstanceElement | undefined
+      let newConfig: { config: InstanceElement; message: string } | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
-          type: DATA_MANAGEMENT,
+          type: 'dataObjectsExclude',
           value: includedObjectName,
         } as ConfigChangeSuggestion
-        newConfig = getConfigFromConfigChanges([suggestToRemoveObject], cloneOfCurrentConfig)
+        newConfig = getConfigFromConfigChanges(
+          [suggestToRemoveObject],
+          cloneOfCurrentConfig
+        )
       })
 
       it('should create an instance with values same as original config besides excludeObjects', () => {
         expect(newConfig).toBeDefined()
-        expect(newConfig?.value.metadataTypesSkippedList)
-          .toEqual(currentConfig.metadataTypesSkippedList)
-        expect(newConfig?.value.dataManagement).toMatchObject(currentConfig.dataManagement)
+        expect(newConfig?.config?.value.fetch.metadata)
+          .toEqual(currentConfig.fetch?.metadata)
+
+        const currentConfigClone = _.cloneDeep(currentConfig)
+        delete currentConfigClone.fetch?.data?.excludeObjects
+
+        expect(newConfig?.config?.value.fetch.data)
+          .toMatchObject(currentConfigClone.fetch?.data ?? {})
       })
 
       it('should add the object name to excludeObjects', () => {
-        expect(newConfig?.value.dataManagement.excludeObjects).toContain(includedObjectName)
+        expect(newConfig?.config?.value.fetch.data.excludeObjects)
+          .toContain(includedObjectName)
       })
 
       it('should not change the currentConfig', () => {
         expect(cloneOfCurrentConfig).toEqual(currentConfig)
+      })
+
+      it('should return the message for the suggestion', () => {
+        expect(newConfig?.message).toEqual(`Salto failed to fetch some items from salesforce. 
+
+In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`)
       })
     })
 
@@ -97,29 +120,149 @@ describe('Config Changes', () => {
       let newConfig: InstanceElement | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
-          type: DATA_MANAGEMENT,
+          type: 'dataObjectsExclude',
           value: refToObjectName,
         } as ConfigChangeSuggestion
-        newConfig = getConfigFromConfigChanges([suggestToRemoveObject], currentConfig)
+        newConfig = getConfigFromConfigChanges([suggestToRemoveObject], currentConfig)?.config
       })
 
       it('should create an instance with values same as original config besides excludeObjects and allowReferenceTo', () => {
         expect(newConfig).toBeDefined()
-        expect(newConfig?.value.metadataTypesSkippedList)
-          .toEqual(currentConfig.metadataTypesSkippedList)
-        expect(newConfig?.value.dataManagement.saltoIDSettings)
-          .toMatchObject(currentConfig.dataManagement.saltoIDSettings)
-        expect(newConfig?.value.dataManagement.includeObjects)
-          .toEqual(currentConfig.dataManagement.includeObjects)
+        expect(newConfig?.value.fetch.metadata)
+          .toEqual(currentConfig.fetch?.metadata)
+        expect(newConfig?.value.fetch.data.saltoIDSettings)
+          .toMatchObject(currentConfig.fetch?.data?.saltoIDSettings ?? {})
+        expect(newConfig?.value.fetch.data.includeObjects)
+          .toEqual(currentConfig.fetch?.data?.includeObjects)
       })
 
       it('should add the object name to excludeObjects and remove it from allowReferenceTo', () => {
-        expect(newConfig?.value.dataManagement.excludeObjects).toContain(refToObjectName)
-        expect(newConfig?.value.dataManagement.allowReferenceTo).not.toContain(refToObjectName)
+        expect(newConfig?.value.fetch.data.excludeObjects).toContain(refToObjectName)
+        expect(newConfig?.value.fetch.data.allowReferenceTo).not.toContain(refToObjectName)
       })
 
       it('should not change the currentConfig', () => {
         expect(cloneOfCurrentConfig).toEqual(currentConfig)
+      })
+    })
+
+    describe('convert from old options to new options', () => {
+      it('dataManagement should be converted to fetch.data', () => {
+        const configWithOldOptions = {
+          fetch: {
+            metadata: {
+              exclude: [
+                { metadataType: 'Type1' },
+              ],
+            },
+          },
+          dataManagement: {
+            includeObjects: ['aaa', '^eee', 'hhh\\.*'],
+            excludeObjects: ['bbb.*', 'fff$'],
+            allowReferenceTo: ['.*ccc', '^ggg$'],
+            saltoIDSettings: {
+              defaultIdFields: ['Name'],
+              overrides: [
+                {
+                  objectsRegex: '.*ddd.*',
+                  idFields: [],
+                },
+              ],
+            },
+          },
+        }
+
+        const updatedConfig = {
+          fetch: {
+            metadata: {
+              exclude: [
+                { metadataType: 'Type1' },
+              ],
+            },
+            data: {
+              includeObjects: ['.*aaa.*', 'eee.*', '.*hhh\\.*.*'],
+              excludeObjects: ['.*bbb.*', '.*fff'],
+              allowReferenceTo: ['.*ccc.*', 'ggg'],
+              saltoIDSettings: {
+                defaultIdFields: ['Name'],
+                overrides: [
+                  {
+                    objectsRegex: '.*ddd.*',
+                    idFields: [],
+                  },
+                ],
+              },
+            },
+          },
+        }
+
+        const config = getConfigFromConfigChanges([], configWithOldOptions)
+        expect(config?.config?.value).toEqual(updatedConfig)
+        expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
+      })
+
+      it('metadataTypesSkippedList should be converted to fetch.metadata.exclude', () => {
+        const configWithOldOptions = _.cloneDeep(currentConfig)
+        configWithOldOptions.metadataTypesSkippedList = ['a', 'b']
+
+        const expectedConfig = _.cloneDeep(currentConfig)
+        // eslint-disable-next-line no-unused-expressions
+        expectedConfig.fetch?.metadata?.exclude?.push(...[{ metadataType: 'a' }, { metadataType: 'b' }])
+
+        const config = getConfigFromConfigChanges([], configWithOldOptions)
+        expect(config?.config?.value).toEqual(expectedConfig)
+        expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
+      })
+
+      it('instancesRegexSkippedList should be converted correctly', () => {
+        const configWithOldOptions = _.cloneDeep(currentConfig)
+        configWithOldOptions.instancesRegexSkippedList = ['a', 'a.b', 'a.b.c', PACKAGES_INSTANCES_REGEX]
+
+        const expectedConfig = _.cloneDeep(currentConfig)
+        // eslint-disable-next-line no-unused-expressions
+        expectedConfig.fetch?.metadata?.exclude?.push(...[
+          { name: '.*a.*' },
+          { metadataType: '.*a', name: 'b.*' },
+          { metadataType: '.*a', name: 'b.c.*' },
+        ])
+
+        _.assign(
+          expectedConfig.fetch?.metadata,
+          {
+            include: [{ name: '.*', metadataType: '.*', namespace: '' }],
+          }
+        )
+
+        const config = getConfigFromConfigChanges([], configWithOldOptions)
+        expect(config?.config?.value).toEqual(expectedConfig)
+        expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
+      })
+    })
+
+    describe('old configuration option with suggestions', () => {
+      const suggestToRemoveObject = {
+        type: 'dataObjectsExclude',
+        value: refToObjectName,
+      } as ConfigChangeSuggestion
+
+      const configWithOldOptions = _.cloneDeep(currentConfig)
+      configWithOldOptions.dataManagement = configWithOldOptions.fetch?.data
+      delete configWithOldOptions.fetch?.data
+
+      const config = getConfigFromConfigChanges([suggestToRemoveObject], configWithOldOptions)
+      it('apply all changes', () => {
+        const expectedConfig = _.cloneDeep(currentConfig)
+        _.remove(expectedConfig.fetch?.data?.allowReferenceTo ?? [], val => val === refToObjectName)
+        // eslint-disable-next-line no-unused-expressions
+        expectedConfig.fetch?.data?.excludeObjects?.push(refToObjectName)
+
+        expect(config?.config?.value).toEqual(expectedConfig)
+      })
+      it('return combined message', () => {
+        expect(config?.message).toBe(`The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprected options to the "fetch" configuration option.
+In Addition, Salto failed to fetch some items from salesforce. 
+
+In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`)
       })
     })
   })

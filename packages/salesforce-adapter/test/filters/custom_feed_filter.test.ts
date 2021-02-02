@@ -23,13 +23,25 @@ import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import SalesforceClient from '../../src/client/client'
 import { apiName } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 
 describe('Test CustomFeedFilter', () => {
   const { client } = mockClient()
 
   const filter = filterCreator(
-    { client, config: { instancesRegexSkippedList: [/^CustomFeedFilter.Case.skipped$/] } }
+    {
+      client,
+      config: {
+        fetchProfile: buildFetchProfile({
+          metadata: {
+            exclude: [
+              { metadataType: 'CustomFeedFilter', name: 'Case.skipped' },
+            ],
+          },
+        }),
+      },
+    }
   ) as FilterWith<'onFetch'>
   const mockObject = new ObjectType({
     elemID: CUSTOM_FEED_FILTER_METADATA_TYPE_ID,

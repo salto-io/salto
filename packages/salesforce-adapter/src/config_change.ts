@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, DATA_MANAGEMENT, configType, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, configType, DataManagementConfig, DeprecatedMetadataParams, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, MetadataParams, SalesforceConfig } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -27,6 +27,9 @@ const MESSAGE_INTRO = 'Salto failed to fetch some items from salesforce. '
 const MESSAGE_REASONS_INTRO = 'Due to the following issues: '
 const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
 + 'Salto needs to stop managing these items by applying the following configuration change:'
+export const DEPRECATED_OPTIONS_MESSAGE = 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated.'
++ ' The following changes will update the deprected options to the "fetch" configuration option.'
+
 
 const formatReason = (reason: string): string =>
   `    * ${reason}`
@@ -45,8 +48,8 @@ export const createInvlidIdFieldConfigChange = (
   invalidFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: DATA_MANAGEMENT,
-    value: `^${typeName}$`,
+    type: 'dataObjectsExclude',
+    value: typeName,
     reason: `${invalidFields} defined as idFields but are not queryable or do not exist on type ${typeName}`,
   })
 
@@ -55,8 +58,8 @@ export const createUnresolvedRefIdFieldConfigChange = (
   unresolvedRefIdFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: DATA_MANAGEMENT,
-    value: `^${typeName}$`,
+    type: 'dataObjectsExclude',
+    value: typeName,
     reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
 
@@ -64,13 +67,13 @@ export const createSkippedListConfigChange = (type: string, instance?: string):
   ConfigChangeSuggestion => {
   if (_.isUndefined(instance)) {
     return {
-      type: METADATA_TYPES_SKIPPED_LIST,
-      value: type,
+      type: 'metadataExclude',
+      value: { metadataType: type },
     }
   }
   return {
-    type: INSTANCES_REGEX_SKIPPED_LIST,
-    value: `^${type}.${instance}$`,
+    type: 'metadataExclude',
+    value: { metadataType: type, name: instance },
   }
 }
 
@@ -86,24 +89,104 @@ export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChange
       regexRes?.groups?.instance as string
     ))
 
+const convertDeprecatedRegex = (filePathRegex: string): string => {
+  let newPathRegex = filePathRegex
+
+  newPathRegex = filePathRegex.startsWith('^')
+    ? newPathRegex.substring(1)
+    : newPathRegex
+
+  newPathRegex = !filePathRegex.startsWith('.*') && !filePathRegex.startsWith('^')
+    ? `.*${newPathRegex}`
+    : newPathRegex
+
+  newPathRegex = filePathRegex.endsWith('$')
+    ? newPathRegex.substring(0, newPathRegex.length - 1)
+    : newPathRegex
+
+  newPathRegex = !filePathRegex.endsWith('$') && (!filePathRegex.endsWith('.*') || filePathRegex.endsWith('\\.*'))
+    ? `${newPathRegex}.*`
+    : newPathRegex
+
+  return newPathRegex
+}
+
+export const convertDeprecatedDataConf = (conf: DataManagementConfig): DataManagementConfig => {
+  const updatedConf = _.cloneDeep(conf)
+  updatedConf.includeObjects = updatedConf.includeObjects.map(convertDeprecatedRegex)
+  updatedConf.excludeObjects = updatedConf?.excludeObjects?.map(convertDeprecatedRegex)
+  updatedConf.allowReferenceTo = updatedConf?.allowReferenceTo?.map(convertDeprecatedRegex)
+  updatedConf.saltoIDSettings.overrides = updatedConf.saltoIDSettings.overrides?.map(
+    override => ({ ...override, objectsRegex: convertDeprecatedRegex(override.objectsRegex) })
+  )
+  return updatedConf
+}
+
+// Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
+const INSTANCE_SUFFIXES = [
+  'c', 'r', 'ka', 'kav', 'Feed', 'ViewStat', 'VoteStat', 'DataCategorySelection', 'x', 'xo', 'mdt', 'Share', 'Tag',
+  'History', 'pc', 'pr', 'hd', 'hqr', 'hst', 'b', 'latitude__s', 'longitude__s', 'e', 'p', 'ChangeEvent', 'chn',
+]
+export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})([^a-zA-Z\\d_]+|$)).+$`
+
+export const convertDeprecatedMetadataParams = (
+  currentParams: MetadataParams,
+  deprecatedParams: DeprecatedMetadataParams,
+): MetadataParams => {
+  const excludes = [
+    ...makeArray(deprecatedParams.instancesRegexSkippedList)
+      .filter(re => re !== PACKAGES_INSTANCES_REGEX)
+      .map(re => {
+        const regexParts = re.split('.')
+        if (regexParts.length < 2) {
+          return { name: convertDeprecatedRegex(re) }
+        }
+        return { metadataType: convertDeprecatedRegex(`${regexParts[0]}$`), name: convertDeprecatedRegex(`^${regexParts.slice(1).join('.')}`) }
+      }),
+    ...makeArray(deprecatedParams.metadataTypesSkippedList).map(type => ({ metadataType: type })),
+  ]
+
+  const includes = makeArray(deprecatedParams.instancesRegexSkippedList)
+    .includes(PACKAGES_INSTANCES_REGEX)
+    ? [{ namespace: '', name: '.*', metadataType: '.*' }]
+    : []
+
+  return _.pickBy({
+    include: [
+      ...(currentParams.include ?? []),
+      ...includes,
+    ],
+    exclude: [
+      ...(currentParams.exclude ?? []),
+      ...excludes,
+    ],
+  }, value => value.length !== 0)
+}
+
 export const getConfigFromConfigChanges = (
   configChanges: ConfigChangeSuggestion[],
   currentConfig: Readonly<SalesforceConfig>,
-): InstanceElement | undefined => {
-  const configChangesByType = _.groupBy(configChanges, 'type')
-  const currentMetadataTypesSkippedList = makeArray(currentConfig.metadataTypesSkippedList)
-  const currentInstancesRegexSkippedList = makeArray(currentConfig.instancesRegexSkippedList)
-  const currentDataManagement = currentConfig.dataManagement
-  const metadataTypesSkippedList = makeArray(configChangesByType.metadataTypesSkippedList)
+): { config: InstanceElement ; message: string } | undefined => {
+  const currentMetadataExclude = makeArray(currentConfig.fetch?.metadata?.exclude)
+
+  const currentDataManagement = currentConfig.fetch?.data
+    ?? (currentConfig.dataManagement && convertDeprecatedDataConf(currentConfig.dataManagement))
+
+  const newMetadataExclude = makeArray(configChanges)
+    .filter(isMetadataConfigSuggestions)
     .map(e => e.value)
-    .filter(e => !currentMetadataTypesSkippedList.includes(e))
-  const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
-    .map(e => e.value)
-    .filter(e => !currentInstancesRegexSkippedList.includes(e))
-  const dataObjectsToExclude = makeArray(configChangesByType.dataManagement)
+    .filter(e => !currentMetadataExclude.includes(e))
+
+  const dataObjectsToExclude = makeArray(configChanges)
+    .filter(isDataManagementConfigSuggestions)
     .map(config => config.value)
-  if ([metadataTypesSkippedList, instancesRegexSkippedList, dataObjectsToExclude]
-    .every(_.isEmpty)) {
+
+  const didUseDeprecatedFields = currentConfig.metadataTypesSkippedList !== undefined
+    || currentConfig.instancesRegexSkippedList !== undefined
+    || currentConfig.dataManagement !== undefined
+
+  if ([newMetadataExclude, dataObjectsToExclude]
+    .every(_.isEmpty) && !didUseDeprecatedFields) {
     return undefined
   }
   const dataManagementOverrides = {
@@ -119,21 +202,51 @@ export const getConfigFromConfigChanges = (
       }
     )
   }
-  return new InstanceElement(
-    ElemID.CONFIG_NAME,
-    configType,
-    _.pickBy({
-      metadataTypesSkippedList: metadataTypesSkippedList
-        .concat(currentMetadataTypesSkippedList),
-      instancesRegexSkippedList: instancesRegexSkippedList
-        .concat(currentInstancesRegexSkippedList),
-      maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
-      useOldProfiles: currentConfig.useOldProfiles,
-      dataManagement: currentDataManagement === undefined ? undefined : {
-        ...currentDataManagement,
-        ...dataManagementOverrides,
-      },
-      client: currentConfig.client,
-    }, isDefined)
+
+  const messageParts: string[] = []
+  if (didUseDeprecatedFields) {
+    messageParts.push(DEPRECATED_OPTIONS_MESSAGE)
+  }
+
+  if (configChanges.length !== 0) {
+    messageParts.push(getConfigChangeMessage(configChanges))
+  }
+
+  const message = messageParts.join('\nIn Addition, ')
+
+  const data = currentDataManagement === undefined ? undefined : _.pickBy({
+    ...currentDataManagement,
+    ...dataManagementOverrides,
+  }, isDefined)
+
+  const metadata = convertDeprecatedMetadataParams(
+    {
+      ...currentConfig.fetch?.metadata,
+      exclude: [
+        ...currentMetadataExclude,
+        ...newMetadataExclude,
+      ],
+    },
+    currentConfig,
   )
+
+  return {
+    config: new InstanceElement(
+      ElemID.CONFIG_NAME,
+      configType,
+      _.pickBy({
+        fetch: _.pickBy({
+          metadata,
+          data: data === undefined ? undefined : {
+            ...data,
+            saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
+          },
+        }, isDefined),
+        maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
+        useOldProfiles: currentConfig.useOldProfiles,
+        client: currentConfig.client,
+      }, isDefined)
+    ),
+    message,
+  }
 }

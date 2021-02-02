@@ -22,6 +22,7 @@ import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/value_to_static_file'
 import mockAdapter from '../adapter'
 import { SALESFORCE, WEBLINK_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const LINK_TYPE_FIELD = 'linkType'
 const JAVASCRIPT = 'javascript'
@@ -109,7 +110,10 @@ describe('value to static file filter', () => {
       let filter: FilterType
 
       beforeAll(() => {
-        filter = filterCreator({ client, config: {} }) as FilterType
+        filter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as FilterType
       })
 
       describe('extract code to static file', () => {

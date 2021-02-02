@@ -545,6 +545,7 @@ export default class NetsuiteClient {
       return []
     }
     try {
+      log.info(`Going to import ${filePaths.length} files`)
       const actionResult = await this.executeProjectAction(
         COMMANDS.IMPORT_FILES,
         { paths: filePaths },
@@ -559,11 +560,11 @@ export default class NetsuiteClient {
         throw new Error(`Failed to import file: ${filePaths[0]}. Consider to add it to the skip list.`)
       }
       const middle = (filePaths.length + 1) / 2
-      const importResults = await Promise.all([
-        this.importFiles(filePaths.slice(0, middle), executor),
-        this.importFiles(filePaths.slice(middle, filePaths.length), executor),
-      ])
-      return importResults.flat()
+      const firstChunkImportResults = await this.importFiles(filePaths.slice(0, middle), executor)
+      const secondChunkImportResults = await this.importFiles(
+        filePaths.slice(middle, filePaths.length), executor
+      )
+      return [...firstChunkImportResults, ...secondChunkImportResults]
     }
   }
 

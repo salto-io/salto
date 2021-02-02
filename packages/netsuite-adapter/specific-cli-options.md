@@ -1,11 +1,13 @@
 # NetSuite Specific CLI options
-## Partial Fetch
-Salto CLI allows the user to fetch only specific netsuite configuration elements and/or file cabinet items by appending the below CLI parameters following the ```-C``` CLI option:
+## Fetch Target
+Salto CLI allows the user to fetch only specific netsuite configuration elements and/or file cabinet items by appending the ```netsuite.fetchTarget.filePaths``` and ```netsuite.fetchTarget.types.[type_name]``` parameters following the ```-C``` CLI option.
+When none of the ```fetchTarget``` parameters is specified, Salto will fetch all configuration elements.
 
-| Name                           | Default when undefined  | Description
+| Name                           |  Description
 | -------------------------------| ------------------------| -----------
-| netsuite.fetchTarget.filePaths                          | fetch all cabinet files                     | A list of regexes of cabinet file paths. Any file whose path matches any of the regexes will be fetched
-| netsuite.fetchTarget.types.[type_name]                      | fetch all records of all types                      | A list of script id regexes. Only records of ```type_name``` with matching script ids will be fetched. 
+| netsuite.fetchTarget.filePaths | A list of regular expressions of cabinet file paths. Only files with matching paths will be fetched.
+| netsuite.fetchTarget.types.[type_name]  | A list of script id regular. Only records of type ```type_name``` with matching script ids will be fetched. 
+
 
 ### Examples
 **Fetch only 2 address forms identified by script ids ```custform_2_t1440050_248``` and ```custform_7_2239021_592```:**

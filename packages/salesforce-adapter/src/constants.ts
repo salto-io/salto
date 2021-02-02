@@ -13,6 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { client as clientUtils } from '@salto-io/adapter-utils'
+
+export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
@@ -268,7 +271,6 @@ export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
 
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
-export const RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS = -1
 export const DEFAULT_MAX_CONCURRENT_API_REQUESTS = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   retrieve: 3,

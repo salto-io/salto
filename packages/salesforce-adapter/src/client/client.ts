@@ -24,7 +24,7 @@ import {
   ListMetadataQuery, UpsertResult, QueryResult, DescribeValueTypeResult,
   BatchResultInfo, BulkLoadOperation,
 } from 'jsforce'
-import { flatValues } from '@salto-io/adapter-utils'
+import { flatValues, client as clientUtils } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
@@ -39,6 +39,7 @@ import Connection from './jsforce'
 const { makeArray } = collections.array
 
 const log = logger(module)
+const { logDecorator, throttle, requiresLogin } = clientUtils
 
 export const API_VERSION = '50.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
@@ -305,28 +306,13 @@ export const validateCredentials = async (
   return orgId
 }
 
-type LogDescFunc = (origCall: decorators.OriginalCall) => string
-const logDecorator = (keys?: string[]): LogDescFunc => ((
-  { name, args }: decorators.OriginalCall,
-) => {
-  const printableArgs = args
-    .map(arg => {
-      const keysValues = (keys ?? [])
-        .map(key => _.get(arg, key))
-        .filter(_.isString)
-      return _.isEmpty(keysValues) ? arg : keysValues.join(', ')
-    })
-    .filter(_.isString)
-    .join(', ')
-  return `client.${name}(${printableArgs})`
-})
-
 export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
-  private readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
+  readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
+  readonly clientName: string
 
   constructor(
     { credentials, connection, config }: SalesforceClientOpts
@@ -341,65 +327,21 @@ export default class SalesforceClient {
     this.rateLimiters = createRateLimitersFromConfig(
       _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS)
     )
+    this.clientName = 'SFDC'
   }
 
-  private async ensureLoggedIn(): Promise<void> {
+  async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
       await loginFromCredentialsAndReturnOrgId(this.conn, this.credentials)
       this.isLoggedIn = true
     }
   }
 
-  protected static requiresLogin = decorators.wrapMethodWith(
-    async function withLogin(
-      this: SalesforceClient,
-      originalMethod: decorators.OriginalCall
-    ): Promise<unknown> {
-      await this.ensureLoggedIn()
-      return originalMethod.call()
-    }
-  )
-
-  private static throttle = (
-    bucketName?: RateLimitBucketName,
-    keys?: string[],
-  ): decorators.InstanceMethodDecorator =>
-    decorators.wrapMethodWith(
-      async function withRateLimit(
-        this: SalesforceClient,
-        originalMethod: decorators.OriginalCall,
-      ): Promise<unknown> {
-        log.debug('%s enqueued', logDecorator(keys)(originalMethod))
-        const wrappedCall = this.rateLimiters.total.wrap(async () => originalMethod.call())
-        if (bucketName !== undefined && bucketName !== 'total') {
-          return this.rateLimiters[bucketName].wrap(async () => wrappedCall())()
-        }
-        return wrappedCall()
-      }
-    )
-
-  private static logDecorator = (keys?: string[]): decorators.InstanceMethodDecorator =>
-    decorators.wrapMethodWith(
-      // eslint-disable-next-line prefer-arrow-callback
-      async function logFailure(
-        this: SalesforceClient,
-        originalMethod: decorators.OriginalCall,
-      ): Promise<unknown> {
-        const desc = logDecorator(keys)(originalMethod)
-        try {
-          return await log.time(originalMethod.call, desc)
-        } catch (e) {
-          log.error('failed to run SFDC client call %s: %s', desc, e.message)
-          throw e
-        }
-      }
-    )
-
   /**
    * Extract metadata object names
    */
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @logDecorator()
+  @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = this.conn.metadata.describe()
     return flatValues((await describeResult).metadataObjects)
@@ -409,17 +351,17 @@ export default class SalesforceClient {
    * Read information about a value type
    * @param type The name of the metadata type for which you want metadata
    */
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @logDecorator()
+  @requiresLogin()
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = await this.conn.metadata.describeValueType(fullName)
     return flatValues(describeResult)
   }
 
-  @SalesforceClient.throttle('list', ['type', '0.type'])
-  @SalesforceClient.logDecorator(['type', '0.type'])
-  @SalesforceClient.requiresLogin
+  @throttle<ClientRateLimitConfig>('list', ['type', '0.type'])
+  @logDecorator(['type', '0.type'])
+  @requiresLogin()
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
@@ -433,7 +375,7 @@ export default class SalesforceClient {
     })
   }
 
-  @SalesforceClient.requiresLogin
+  @requiresLogin()
   public getUrl(): URL | undefined {
     try {
       return new URL(this.conn.instanceUrl)
@@ -446,9 +388,9 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  @SalesforceClient.throttle('read')
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @throttle<ClientRateLimitConfig>('read')
+  @logDecorator()
+  @requiresLogin()
   public async readMetadata(
     type: string,
     name: string | string[],
@@ -470,14 +412,14 @@ export default class SalesforceClient {
   /**
    * Extract sobject names
    */
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @logDecorator()
+  @requiresLogin()
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return flatValues((await this.conn.describeGlobal()).sobjects)
   }
 
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @logDecorator()
+  @requiresLogin()
   public async describeSObjects(objectNames: string[]):
   Promise<DescribeSObjectResult[]> {
     return (await sendChunked({
@@ -494,9 +436,9 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested creation
    */
-  @SalesforceClient.logDecorator(['fullName'])
+  @logDecorator(['fullName'])
   @validateSaveResult
-  @SalesforceClient.requiresLogin
+  @requiresLogin()
   public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<UpsertResult[]> {
     const result = await sendChunked({
@@ -515,9 +457,9 @@ export default class SalesforceClient {
    * @param fullNames The full names of the metadata components
    * @returns The save result of the requested deletion
    */
-  @SalesforceClient.logDecorator()
+  @logDecorator()
   @validateDeleteResult
-  @SalesforceClient.requiresLogin
+  @requiresLogin()
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     const result = await sendChunked({
       operationInfo: `delete (${type})`,
@@ -528,9 +470,9 @@ export default class SalesforceClient {
     return result.result
   }
 
-  @SalesforceClient.throttle('retrieve')
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @throttle<ClientRateLimitConfig>('retrieve')
+  @logDecorator()
+  @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
     return flatValues(await this.conn.metadata.retrieve(retrieveRequest).complete())
   }
@@ -540,8 +482,8 @@ export default class SalesforceClient {
    * @param zip The package zip
    * @returns The save result of the requested update
    */
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @logDecorator()
+  @requiresLogin()
   public async deploy(zip: Buffer): Promise<DeployResult> {
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete',
@@ -558,8 +500,8 @@ export default class SalesforceClient {
    * Queries for all the available Records given a query string
    * @param queryString the string to query with for records
    */
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @logDecorator()
+  @requiresLogin()
   public async *queryAll(
     queryString: string,
     useToolingApi = false,
@@ -580,8 +522,8 @@ export default class SalesforceClient {
     }
   }
 
-  @SalesforceClient.logDecorator()
-  @SalesforceClient.requiresLogin
+  @logDecorator()
+  @requiresLogin()
   public async bulkLoadOperation(
     type: string,
     operation: BulkLoadOperation,

@@ -396,6 +396,8 @@ The following flags are available for all commands:
 * `--version -V` :  Show version number
 * `--help, -h` :    Show help
 * `--verbose, -v` : Output extra logs 
+* `--config, -C` :  Override adapter configuration value. format: `<service>.<path>=<value>`<br>
+  Can also be done by setting an environment variable named `SALTO_<service>_<path>=<value>`
 
 ## Workspace directory structure
 

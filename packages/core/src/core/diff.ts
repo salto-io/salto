@@ -16,6 +16,7 @@
 import { Element, DetailedChange, ElemID } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import wu from 'wu'
 import { getDetailedChanges } from './fetch'
 
@@ -37,13 +38,17 @@ const filterRelevantParts = (elementIds: ElemID[],
 
 const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
   selectorsToVerify: Set<string>): Element[] => {
-  const topLevelIds = new Set<string>(relevantIds
-    .map(id => id.createTopLevelParentID().parent.getFullName()))
+  const topLevelIdToRelevantIds = _.groupBy(
+    relevantIds, id => id.createTopLevelParentID().parent.getFullName()
+  )
+  const topLevelIds = new Set<string>(Object.keys(topLevelIdToRelevantIds))
   return elements.filter(elem => topLevelIds.has(elem.elemID.getFullName())).map(elem => {
     selectorsToVerify.delete(elem.elemID.getFullName())
     return transformElement({
       element: elem,
-      transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
+      transformFunc: filterRelevantParts(
+        topLevelIdToRelevantIds[elem.elemID.getFullName()], selectorsToVerify
+      ),
     })
   })
 }

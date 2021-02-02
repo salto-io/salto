@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex,
@@ -61,8 +61,9 @@ const singlePathObject = new ObjectType({
 })
 // multiPathObject
 // singlePathObject
+const multiPathObjID = new ElemID('salto', 'multiPathObj')
 const multiPathAnnoObj = new ObjectType({
-  elemID: new ElemID('salto', 'multiPathObj'),
+  elemID: multiPathObjID,
   annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
@@ -79,15 +80,80 @@ const multiPathAnnoObj = new ObjectType({
   path: ['salto', 'obj', 'multi', 'anno'],
 })
 
+const multiPathFieldsObj = new ObjectType({
+  elemID: multiPathObjID,
+  fields: {
+    field: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+  },
+  path: ['salto', 'obj', 'multi', 'fields'],
+})
+
+const multiPathInstanceTypeID = new ElemID('salto', 'obj')
+
+const multiPathInstanceA = new InstanceElement(
+  'inst',
+  new ReferenceExpression(multiPathInstanceTypeID),
+  {
+    a: 'A',
+  },
+  ['salto', 'inst', 'A']
+)
+
+const multiPathInstanceB = new InstanceElement(
+  'inst',
+  new ReferenceExpression(multiPathInstanceTypeID),
+  {
+    b: 'B',
+  },
+  ['salto', 'inst', 'B']
+)
+
 describe('updatePathIndex', () => {
-  it('should add new elements and maintain old ones', async () => {
-    const map: PathIndex = new InMemoryRemoteMap()
-    await map.setAll(getElementsPathHints([singlePathObject]))
-    await updatePathIndex(map, [multiPathAnnoObj], ['salto'])
-    let path = await map.get(singlePathObject.elemID.getFullName())
-    expect(path).toEqual([singlePathObject.path])
-    path = await map.get(multiPathAnnoObj.elemID.getFullName())
-    expect(path).toEqual([multiPathAnnoObj.path])
+  let index: PathIndex
+  beforeAll(async () => {
+    index = new InMemoryRemoteMap()
+    await index.setAll(getElementsPathHints([singlePathObject]))
+    await updatePathIndex(index, [
+      multiPathAnnoObj,
+      multiPathFieldsObj,
+      multiPathInstanceA,
+      multiPathInstanceB,
+    ], ['salto'])
+  })
+  it('should add new elements with proper paths', async () => {
+    expect(await index.get(multiPathObjID.getFullName()))
+      .toEqual([
+        ['salto', 'obj', 'multi', 'anno'],
+        ['salto', 'obj', 'multi', 'fields'],
+      ])
+    expect(await index.get(multiPathFieldsObj.fields.field.elemID.getFullName()))
+      .toEqual([
+        ['salto', 'obj', 'multi', 'fields'],
+      ])
+    expect(await index.get(multiPathObjID.createNestedID('attr', 'simple').getFullName()))
+      .toEqual([
+        ['salto', 'obj', 'multi', 'anno'],
+      ])
+    expect(await index.get(multiPathInstanceA.elemID.getFullName()))
+      .toEqual([
+        ['salto', 'inst', 'A'],
+        ['salto', 'inst', 'B'],
+      ])
+    expect(await index.get(multiPathInstanceA.elemID.createNestedID('a').getFullName()))
+      .toEqual([
+        ['salto', 'inst', 'A'],
+      ])
+    expect(await index.get(multiPathInstanceA.elemID.createNestedID('b').getFullName()))
+      .toEqual([
+        ['salto', 'inst', 'B'],
+      ])
+  })
+
+  it('should maintatin old elements', async () => {
+    expect(await index.get(singlePathObject.elemID.getFullName()))
+      .toEqual([singlePathObject.path])
   })
 })
 

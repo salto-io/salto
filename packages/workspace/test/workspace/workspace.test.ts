@@ -29,18 +29,19 @@ import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { mockStaticFilesSource, mockCreateRemoteMap } from '../utils'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
-import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
+import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
+import { createParseResultCache } from '../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 const { awu } = collections.asynciterable
 
@@ -96,8 +97,10 @@ const createWorkspace = async (
   credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
-): Promise<Workspace> =>
-  loadWorkspace(
+): Promise<Workspace> => {
+  const persMockCreateRemoteMap = persistentMockCreateRemoteMap()
+  const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
+  return loadWorkspace(
     configSource || mockWorkspaceConfigSource(),
     credentials || mockCredentialsSource(),
     {
@@ -107,9 +110,13 @@ const createWorkspace = async (
           naclFiles: await naclFilesSource(
             '',
             dirStore || mockDirStore(),
-            mockParseCache(),
-            staticFilesSource || mockStaticFilesSource(),
-            mockCreateRemoteMap,
+            createParseResultCache(
+              'name',
+              persMockCreateRemoteMap,
+              actualStaticFilesSource,
+            ),
+            actualStaticFilesSource,
+            persMockCreateRemoteMap,
           ),
         },
         default: {
@@ -118,8 +125,9 @@ const createWorkspace = async (
         },
       },
     },
-    mockCreateRemoteMap,
+    persMockCreateRemoteMap,
   )
+}
 
 const getElemMap = async (
   elements: ElementsSource

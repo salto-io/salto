@@ -13,8 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-// import _ from 'lodash'
-// import { logger } from '@salto-io/logging'
 import { Value, Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash, collections, types } from '@salto-io/lowerdash'
@@ -27,8 +25,6 @@ import { RemoteElementSource } from '../elements_source'
 import { ParsedNaclFile, ParsedNaclFileDataKeys } from './parsed_nacl_file'
 
 const { awu } = collections.asynciterable
-
-// const log = logger(module)
 
 type FileCacheMetdata = {
   timestamp: number
@@ -158,6 +154,66 @@ const getAllFilesSources = async (
     )))
 }
 
+const copyFileSourcesToNewName = async (
+  oldName: string,
+  newName: string,
+  filename: string,
+  remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StaticFilesSource,
+): Promise<void> => {
+  const oldNameSources = await getFileSources(
+    oldName,
+    filename,
+    remoteMapCreator,
+    staticFilesSource
+  )
+  const newNameSources = await getFileSources(
+    newName,
+    filename,
+    remoteMapCreator,
+    staticFilesSource
+  )
+  await newNameSources.data.setAll(oldNameSources.data.entries())
+  await newNameSources.sourceMap.setAll(oldNameSources.sourceMap.entries())
+  await newNameSources.elementsSource.setAll(await oldNameSources.elementsSource.getAll())
+}
+
+const copyAllSourcesToNewName = async (
+  oldName: string,
+  newName: string,
+  remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StaticFilesSource,
+): Promise<void> => {
+  const oldNameFiles = await getCacheFilesList(oldName, remoteMapCreator)
+  oldNameFiles.forEach(async filename =>
+    copyFileSourcesToNewName(
+      oldName,
+      newName,
+      filename,
+      remoteMapCreator,
+      staticFilesSource
+    ))
+  const oldMetadata = await getMetadata(oldName, remoteMapCreator)
+  const newMetatadata = await getMetadata(newName, remoteMapCreator)
+  await newMetatadata.setAll(oldMetadata.entries())
+}
+
+const clearAllSources = async (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StaticFilesSource,
+): Promise<void> => {
+  const filesSources = await getAllFilesSources(
+    cacheName,
+    remoteMapCreator,
+    staticFilesSource
+  )
+  await filesSources.forEach(async source =>
+    source.clear())
+  const metadata = await getMetadata(cacheName, remoteMapCreator)
+  await metadata.clear()
+}
+
 export const createParseResultCache = (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
@@ -181,7 +237,7 @@ export const createParseResultCache = (
           await fileSources.sourceMap.set(sourceKey, sourceRanges)
         })
       }
-      // Should consider not accepting this as an elements source
+      // Should consider not accepting this as an elements source cause it requires clear
       await fileSources.elementsSource.clear()
       await fileSources.elementsSource.setAll(await value.elements.getAll())
       const metadata = await getMetadata(actualCacheName, remoteMapCreator)
@@ -220,22 +276,20 @@ export const createParseResultCache = (
       await metadata.delete(filename)
     },
     list: async () => getCacheFilesList(actualCacheName, remoteMapCreator),
-    clear: async () => {
-      const filesSources = await getAllFilesSources(
-        actualCacheName,
-        remoteMapCreator,
-        staticFilesSource
-      )
-      await filesSources.forEach(async source =>
-        source.clear())
-      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
-      await metadata.clear()
-    },
+    clear: async () => clearAllSources(actualCacheName, remoteMapCreator, staticFilesSource),
     rename: async (newName: string) => {
+      const oldName = actualCacheName
+      // Clearing leftover data in sources with the same name as the new one
+      // Before copying the current cache data to it
+      await clearAllSources(newName, remoteMapCreator, staticFilesSource)
+      await copyAllSourcesToNewName(
+        oldName,
+        newName,
+        remoteMapCreator,
+        staticFilesSource,
+      )
+      await clearAllSources(oldName, remoteMapCreator, staticFilesSource)
       actualCacheName = newName
-      // TODO:
-      // 1. Remove the data from current name namespaces
-      // 2. Copy the data from the current
     },
     flush: async () => {
       const filesSources = await getAllFilesSources(

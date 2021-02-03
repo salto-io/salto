@@ -321,7 +321,7 @@ const buildNaclFilesState = async ({
     delete currentState.parsedNaclFiles[naclFile.filename]
   }
 
-  // Add data from bew additions
+  // Add data from new additions
   await awu(Object.values(newParsed)).forEach(async naclFile => {
     const isDeletion = await awu(await naclFile.elements.getAll()).isEmpty()
       && _.isEmpty(await naclFile.data.get('errors'))
@@ -518,7 +518,7 @@ const buildNaclFilesSource = (
         { key: 'errors', value: [] },
         { key: 'timestamp', value: Date.now() },
       ]),
-      sourceMap: await getSourceMap(filename),
+      // sourceMap: await getSourceMap(filename),
     }
     const key = cacheResultKey({
       filename: parsed.filename,
@@ -593,8 +593,10 @@ const buildNaclFilesSource = (
             const parsed = shouldNotParse
               ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>,
                 buffer)
-              : await toParsedNaclFile({ filename },
-                await parseNaclFile({ filename, buffer }, cache, functions))
+              : await toParsedNaclFile(
+                { filename },
+                await parseNaclFile({ filename, buffer }, cache, functions),
+              )
             if ((await parsed.data.get('errors') ?? []).length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }

@@ -112,6 +112,9 @@ const getCacheFilesList = async (
   return awu(metadata.keys()).toArray()
 }
 
+const toNamespaceApprovedStr = (str: string): string =>
+  str.replace(/[\W_]+/g, '-')
+
 const getFileSources = async (
   cacheName: string,
   fileName: string,
@@ -120,7 +123,7 @@ const getFileSources = async (
 ): Promise<FileSources> => ({
   // This should be per element?
   elementsSource: new RemoteElementSource(await remoteMapCreator({
-    namespace: getRemoteMapCacheNamespace(cacheName, 'elements', fileName),
+    namespace: getRemoteMapCacheNamespace(cacheName, 'elements', toNamespaceApprovedStr(fileName)),
     serialize: (element: Element) => serialize([element]),
     deserialize: async data => (await deserialize(
       data,
@@ -128,12 +131,12 @@ const getFileSources = async (
     ))[0],
   })),
   sourceMap: (await remoteMapCreator({
-    namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap'),
+    namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap', toNamespaceApprovedStr(fileName)),
     serialize: (sourceRanges: SourceRange[]) => safeJsonStringify(sourceRanges),
     deserialize: data => JSON.parse(data),
   })),
   data: (await remoteMapCreator({
-    namespace: getRemoteMapCacheNamespace(cacheName, 'data'),
+    namespace: getRemoteMapCacheNamespace(cacheName, 'data', toNamespaceApprovedStr(fileName)),
     serialize: (val: Value) => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
   })) as RemoteMap<Value, ParsedNaclFileDataKeys>,

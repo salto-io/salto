@@ -69,7 +69,7 @@ describe('Nacl Files Source', () => {
 
   beforeEach(() => {
     mockCache = {
-      get: jest.fn().mockResolvedValue({ elements: [] }),
+      get: jest.fn().mockResolvedValue(undefined),
       put: jest.fn().mockResolvedValue(undefined),
       clone: () => mockCache,
       flush: () => Promise.resolve(),
@@ -331,10 +331,6 @@ describe('Nacl Files Source', () => {
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
       const elements = [elem];
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData);
-      // (mockCache.get as jest.Mock).mockResolvedValue({
-      //   elements: createInMemoryElementSource(elements),
-      //   errors: [],
-      // })
       (mockCache.get as jest.Mock).mockImplementation(async () => toParsedNaclFile(
         mockFileData,
         {

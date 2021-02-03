@@ -113,15 +113,14 @@ export const serialize = (elements: Element[],
     if (isElement(e.value)) {
       return saltoClassReplacer(new ReferenceExpression(e.value.elemID))
     }
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     return e.value
   }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resolveCircles = (v: any): any =>
-    (isPrimitiveType(v)
+  const resolveCircles = (v: any): any => (
+    isPrimitiveType(v)
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
-      : new ObjectType({ elemID: v.elemID }))
+      : new ObjectType({ elemID: v.elemID })
+  )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const replacer = (v: any, k: any): any => {
@@ -134,6 +133,9 @@ export const serialize = (elements: Element[],
       }
       if (isStaticFile(v)) {
         return staticFileReplacer(v)
+      }
+      if (isSaltoSerializable(v)) {
+        return saltoClassReplacer(_.cloneDeepWith(v, replacer))
       }
     }
     return undefined
@@ -156,6 +158,7 @@ export type StaticFileReviver =
 const reviveElemID = (v: {[key: string]: any}): ElemID => (
   new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
 )
+
 let staticFiles: Record<string, StaticFile> = {}
 
 const revivers: ReviverMap = {
@@ -166,14 +169,13 @@ const revivers: ReviverMap = {
     undefined,
     v.annotations,
   ),
-  ObjectType: v =>
-    new ObjectType({
-      elemID: reviveElemID(v.elemID),
-      fields: v.fields,
-      annotationTypes: v.annotationTypes,
-      annotations: v.annotations,
-      isSettings: v.isSettings,
-    }),
+  ObjectType: v => new ObjectType({
+    elemID: reviveElemID(v.elemID),
+    fields: v.fields,
+    annotationTypes: v.annotationTypes,
+    annotations: v.annotations,
+    isSettings: v.isSettings,
+  }),
   Variable: v => (
     new Variable(reviveElemID(v.elemID), v.value)
   ),

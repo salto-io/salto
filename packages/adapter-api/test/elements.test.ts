@@ -168,6 +168,14 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(inst, ot)).toBeFalsy()
     })
 
+    it('should identify different instances with id change', () => {
+      const instClone = new InstanceElement(
+        'different_name',
+        inst.type,
+        inst.value
+      )
+      expect(isEqualElements(inst, instClone)).toBeFalsy()
+    })
     it('should identify different instances with value change', () => {
       const instClone = inst.clone()
       instClone.value.newVal = 1

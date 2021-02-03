@@ -345,9 +345,9 @@ export class InstanceElement extends Element {
   }
 
   isEqual(other: InstanceElement): boolean {
-    return _.isEqual(this.type.elemID, other.type.elemID)
+    return super.isEqual(other)
+      && _.isEqual(this.type.elemID, other.type.elemID)
       && isEqualValues(this.value, other.value)
-      && isEqualValues(this.annotations, other.annotations)
   }
 
   /**

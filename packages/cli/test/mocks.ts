@@ -514,7 +514,7 @@ export const preview = (): Plan => {
     [
       createChange('add', 'lead', 'do_you_have_a_sales_team'),
       createChange('modify', 'lead', 'how_many_sales_people'),
-      createChange('remove', 'lead', 'status'),
+      createChange('remove', 'lead', 'field', 'status'),
     ],
     [
       detailedChange('modify', ['lead', 'field', 'label'], 'old', 'new'),
@@ -537,6 +537,13 @@ export const preview = (): Plan => {
     ]
   )
   result.addNode(_.uniqueId('account'), [], accountPlanItem)
+
+  const activityPlanItem = toPlanItem(
+    createChange('add', 'activity', 'field', 'name'),
+    [],
+    []
+  )
+  result.addNode(_.uniqueId('activity'), [], activityPlanItem)
 
   const employeeInstance = elements()[4] as InstanceElement
   const updatedEmployee = _.cloneDeep(employeeInstance)
@@ -568,10 +575,11 @@ export const preview = (): Plan => {
   }]
   Object.assign(result, {
     itemsByEvalOrder(): Iterable<PlanItem> {
-      return [leadPlanItem, accountPlanItem, instancePlanItem]
+      return [leadPlanItem, accountPlanItem, activityPlanItem, instancePlanItem]
     },
     getItem(id: string): PlanItem {
       if (id.startsWith('lead')) return leadPlanItem
+      if (id.startsWith('activity')) return activityPlanItem
       return id.startsWith('account') ? accountPlanItem : instancePlanItem
     },
     changeErrors,

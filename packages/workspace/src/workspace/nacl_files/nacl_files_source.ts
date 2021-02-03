@@ -518,7 +518,6 @@ const buildNaclFilesSource = (
         { key: 'errors', value: [] },
         { key: 'timestamp', value: Date.now() },
       ]),
-      // sourceMap: await getSourceMap(filename),
     }
     const key = cacheResultKey({
       filename: parsed.filename,

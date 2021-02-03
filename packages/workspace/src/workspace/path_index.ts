@@ -53,11 +53,24 @@ const getValuePathHints = (fragments: Fragment<Value>[], elemID: ElemID): PathHi
 
 const getAnnotationTypesPathHints = (
   fragments: Fragment<Element>[],
-): PathHint[] => fragments
-  .flatMap(f => Object.keys(f.value.annotationRefTypes).map(annoKey => ({
-    key: f.value.elemID.createNestedID('annotation', annoKey).getFullName(),
-    value: [f.path],
-  })))
+): PathHint[] => {
+  const fragmentsWithNonEmptyAnnoTypes = fragments.filter(
+    f => !_.isEmpty(f.value.annotationRefTypes)
+  )
+
+  if (fragmentsWithNonEmptyAnnoTypes.length === 1) {
+    return [{
+      key: fragmentsWithNonEmptyAnnoTypes[0].value.elemID
+        .createNestedID('annotation').getFullName(),
+      value: [fragmentsWithNonEmptyAnnoTypes[0].path],
+    }]
+  }
+  return fragmentsWithNonEmptyAnnoTypes
+    .flatMap(f => Object.keys(f.value.annotationRefTypes).map(annoKey => ({
+      key: f.value.elemID.createNestedID('annotation', annoKey).getFullName(),
+      value: [f.path],
+    })))
+}
 
 const getAnnotationPathHints = (
   fragments: Fragment<Element>[],
@@ -92,7 +105,14 @@ const getFieldPathHints = (
 const getFieldsPathHints = (
   fragments: Fragment<ObjectType>[],
 ): PathHint[] => {
-  const fieldNames = _.uniq(fragments.flatMap(f => Object.keys(f.value.fields)))
+  const fragmentsWithFields = fragments.filter(f => !_.isEmpty(f.value.fields))
+  if (fragmentsWithFields.length === 1) {
+    return [{
+      key: fragmentsWithFields[0].value.elemID.createNestedID('field').getFullName(),
+      value: [fragmentsWithFields[0].path],
+    }]
+  }
+  const fieldNames = _.uniq(fragmentsWithFields.flatMap(f => Object.keys(f.value.fields)))
   return fieldNames.flatMap(fieldName => getFieldPathHints(
     fragments.filter(f => values.isDefined(f.value.fields[fieldName]))
       .map(f => ({ value: f.value.fields[fieldName], path: f.path })),
@@ -189,13 +209,16 @@ export const getFromPathIndex = async (
   index: PathIndex
 ): Promise<Path[]> => {
   const idParts = elemID.getFullNameParts()
-  for (let i = idParts.length; i > 0; i -= 1) {
-    const key = idParts.slice(0, i).join('.')
+  const topLevelKey = elemID.createTopLevelParentID().parent.getFullName()
+  let key: string
+  do {
+    key = idParts.join('.')
     // eslint-disable-next-line no-await-in-loop
     const pathHints = await index.get(key)
     if (pathHints !== undefined) {
       return pathHints
     }
-  }
+    idParts.pop()
+  } while (idParts.length > 0 && key !== topLevelKey)
   return []
 }

@@ -128,7 +128,7 @@ describe('updatePathIndex', () => {
         ['salto', 'obj', 'multi', 'anno'],
         ['salto', 'obj', 'multi', 'fields'],
       ])
-    expect(await index.get(multiPathFieldsObj.fields.field.elemID.getFullName()))
+    expect(await index.get(multiPathFieldsObj.elemID.createNestedID('field').getFullName()))
       .toEqual([
         ['salto', 'obj', 'multi', 'fields'],
       ])

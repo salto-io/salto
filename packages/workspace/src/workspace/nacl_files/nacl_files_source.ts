@@ -446,7 +446,6 @@ const buildNaclFilesSource = (
     const visitedFiles = new Set<string>()
     await awu(cacheFilenames).concat(naclFilenames).forEach(async filename => {
       if (!visitedFiles.has(filename)) {
-        visitedFiles.add(filename)
         const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
         const validCache = await cache.get(cacheResultKey(naclFile))
         const latestCache = validCache ?? await cache.get(cacheResultKey(naclFile), true)

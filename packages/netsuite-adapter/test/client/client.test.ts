@@ -630,7 +630,7 @@ describe('netsuite client', () => {
       expect(failedPaths).toHaveLength(0)
     })
 
-    it('should succeed to importFiles when failing to import a certain file', async () => {
+    it('should fail to importFiles when failing to import a certain file', async () => {
       const failedPath = 'error'
       const filesPathResult = [
         MOCK_FILE_PATH,
@@ -679,8 +679,8 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
-      expect(mockExecuteAction).toHaveBeenCalledTimes(9)
+      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
+      expect(mockExecuteAction).toHaveBeenCalledTimes(8)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
@@ -689,10 +689,6 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importFilesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, deleteAuthIdCommandMatcher)
-      expect(elements).toHaveLength(2)
-      expect(failedPaths).toEqual([failedPath])
-      expect(rmMock).toHaveBeenCalledTimes(1)
     })
 
     it('should succeed when having duplicated paths', async () => {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Value, Element } from '@salto-io/adapter-api'
+import { Value, Element, ElemID } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash, collections, types } from '@salto-io/lowerdash'
 import { SourceMap, SourceRange } from '../../parser'
@@ -112,6 +112,11 @@ const getCacheFilesList = async (
   return awu(metadata.keys()).toArray()
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isParsedElemIDArray = (parsed: any): boolean =>
+  Array.isArray(parsed) && parsed.every(val =>
+    (val.adapter !== undefined && val.typeName !== undefined && val.idType !== undefined))
+
 const toNamespaceApprovedStr = (str: string): string =>
   str.replace(/[\W_]+/g, '-')
 
@@ -138,7 +143,17 @@ const getFileSources = async (
   data: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'data', toNamespaceApprovedStr(fileName)),
     serialize: (val: Value) => safeJsonStringify(val),
-    deserialize: data => JSON.parse(data),
+    deserialize: data => {
+      const parsed = JSON.parse(data)
+      if (isParsedElemIDArray(parsed)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return parsed.map((e: {[key: string]: any}) =>
+          (new ElemID(
+            e.adapter, e.typeName, e.idType, ...(e.nameParts ?? []),
+          )))
+      }
+      return parsed
+    },
   })) as RemoteMap<Value, ParsedNaclFileDataKeys>,
 })
 

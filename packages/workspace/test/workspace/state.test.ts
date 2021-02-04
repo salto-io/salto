@@ -16,9 +16,9 @@
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { StateData, buildInMemState } from '../../src/workspace/state'
-import { Path, getElementsPathHints } from '../../src/workspace/path_index'
+import { PathIndex, getElementsPathHints } from '../../src/workspace/path_index'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
-import { InMemoryRemoteMap, RemoteMap } from '../../src/workspace/remote_map'
+import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -26,7 +26,7 @@ describe('state', () => {
   const adapter = 'salesforce'
   const elemID = new ElemID(adapter, 'elem')
   const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-  let pathIndex: RemoteMap<Path[]>
+  let pathIndex: PathIndex
   const updateDate = new Date()
   const servicesUpdateDate = { [adapter]: updateDate }
   const loadStateData = async (): Promise<StateData> => ({

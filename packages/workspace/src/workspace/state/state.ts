@@ -15,7 +15,7 @@
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
-import { Path } from '../path_index'
+import { PathIndex } from '../path_index'
 import { RemoteMap } from '../remote_map'
 
 export type StateMetadataKey = 'version' | 'hash'
@@ -24,7 +24,7 @@ export type StateData = {
   elements: RemoteElementSource
   // The date of the last fetch
   servicesUpdateDate: RemoteMap<Date>
-  pathIndex: RemoteMap<Path[]>
+  pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
 }
 
@@ -36,7 +36,7 @@ export interface State extends ElementsSource {
   existingServices(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
   updatePathIndex(unmergedElements: Element[], servicesToMaintain: string[]): Promise<void>
-  getPathIndex(): Promise<RemoteMap<Path[]>>
+  getPathIndex(): Promise<PathIndex>
   getHash(): Promise<string>
   setHash(hash: string): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>

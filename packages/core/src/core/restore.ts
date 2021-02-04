@@ -19,20 +19,18 @@ import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 
-type Path = pathIndex.Path
-
 const splitChangeByPath = async (
   change: DetailedChange,
-  index: remoteMap.RemoteMap<Path[]>
+  index: pathIndex.PathIndex
 ): Promise<DetailedChange[]> => {
-  const changeHints = _.uniqWith(await index.get(change.id.getFullName()), _.isEqual)
+  const changeHints = await pathIndex.getFromPathIndex(change.id, index)
   if (_.isEmpty(changeHints)) {
     return [change]
   }
   return Promise.all(changeHints.map(async hint => {
     const filterByPathHint = async (id: ElemID): Promise<boolean> => {
-      const idHints = await index.get(id.getFullName()) as string[][]
-      return _.some(idHints, idHint => _.isEqual(idHint, hint))
+      const idHint = await pathIndex.getFromPathIndex(id, index)
+      return _.isEqual(idHint, hint)
     }
     const filteredChange = await applyFunctionToChangeData(
       change,

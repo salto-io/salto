@@ -58,6 +58,7 @@ const readFromPaths = async (paths: string[]): Promise<string[][]> => {
   const updateDateData: string[] = []
   const pathIndexData: string[] = []
   const versions: string[] = []
+  // TODO fix?
   const readResults = await Promise.all(paths.map(async (p: string) =>
     ((await exists(p)) ? readZipFile(p) : undefined)))
   readResults.forEach(readResult => {
@@ -124,9 +125,7 @@ export const localState = (
     newHash: string
   }): Promise<void> => {
     const [elementsData, updateDateData, pathIndexData, versions] = await readFromPaths(filePaths)
-    const deserializedElements = _.flatten(await Promise.all(
-      elementsData.map((d: string) => deserializeAndFlatten(d))
-    ))
+    const deserializedElements = awu(elementsData).flatMap(deserializeAndFlatten)
     await stateData.elements.clear()
     await stateData.elements.setAll(awu(deserializedElements))
     await stateData.pathIndex.clear()
@@ -168,6 +167,7 @@ export const localState = (
     toMD5(safeJsonStringify(contents.map(toMD5).sort()))
 
   const getHash = async (filePaths: string[]): Promise<string> =>
+    // TODO fix?
     getHashFromContent((await Promise.all(filePaths.map(readTextFile))))
 
   const loadStateData = async (): Promise<state.StateData> => {
@@ -228,13 +228,12 @@ export const localState = (
     },
     rename: async (newPrefix: string): Promise<void> => {
       const stateFiles = await findStateFiles(currentFilePrefix)
-      await Promise.all(
-        stateFiles.map(async filename => {
-          const newFilePath = filename.replace(currentFilePrefix,
-            path.join(path.dirname(currentFilePrefix), newPrefix))
-          await rename(filename, newFilePath)
-        })
-      )
+      await awu(stateFiles).forEach(async filename => {
+        const newFilePath = filename.replace(currentFilePrefix,
+          path.join(path.dirname(currentFilePrefix), newPrefix))
+        await rename(filename, newFilePath)
+      })
+
       currentFilePrefix = newPrefix
     },
     flush: async (): Promise<void> => {
@@ -243,12 +242,12 @@ export const localState = (
       }
       await mkdirp(path.dirname(currentFilePrefix))
       const stateTextPerService = await createStateTextPerService()
-      const filePathToContent = await Promise.all(Object.keys(stateTextPerService)
+      const filePathToContent = await awu(Object.keys(stateTextPerService))
         .map(async service => [
           `${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
           await generateZipString(stateTextPerService[service]),
-        ] as [string, string]))
-      await Promise.all(filePathToContent.map(f => replaceContents(...f)))
+        ] as [string, string]).toArray()
+      await awu(filePathToContent).forEach(f => replaceContents(...f))
       if (pathToClean !== '') {
         await rm(pathToClean)
       }

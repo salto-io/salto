@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
+import chalk from 'chalk'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
   formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign } from '../src/formatter'
@@ -72,6 +73,9 @@ describe('formatter', () => {
     })
     it('should have titles for all level of nested modifications', () => {
       expect(output).toMatch(/|[^\n]+salesforce.lead.*|[^\n]+how_many_sales_people.*M[^\n]+label/s)
+    })
+    it('should return the number of impacted types and instances', () => {
+      expect(output).toMatch(`${chalk.bold('Impacts:')} 3 types and 1 instance.`)
     })
   })
 

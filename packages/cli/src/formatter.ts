@@ -186,12 +186,11 @@ const formatCountPlanItemTypes = (plan: Plan): string => {
     .flatten(true) as WuIterable<Change<ChangeDataType>>)
     .map(getChangeElement)
     .map(({ elemID }) => ({
-      type: elemID.idType,
-      name: elemID.getFullName(),
+      type: elemID.createTopLevelParentID().parent.idType,
+      name: elemID.createTopLevelParentID().parent.getFullName(),
     }))
-    .unique()
     .toArray()
-  const counter = _.countBy(items, 'type')
+  const counter = _(items).uniqBy(item => item.name).countBy('type').value()
   return `${chalk.bold('Impacts:')} ${singleOrPluralString(counter.type || 0, 'type', 'types')} `
     + `and ${singleOrPluralString(counter.instance || 0, 'instance', 'instances')}.`
 }

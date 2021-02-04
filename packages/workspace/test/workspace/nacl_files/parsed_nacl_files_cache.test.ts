@@ -249,6 +249,7 @@ describe('ParsedNaclFileCache', () => {
   })
 
   describe('flush', () => {
+    let remoteMapsFlushFuncs: jest.SpyInstance<Promise<void>>[]
     beforeEach(async () => {
       // Put stuff in the cache so there will be remoteMaps
       await cache.put(
@@ -259,14 +260,22 @@ describe('ParsedNaclFileCache', () => {
         toDeleteKey,
         parsedToDelete,
       )
+      remoteMapsFlushFuncs = Object.values(remoteMaps).map(remoteMap =>
+        jest.spyOn(remoteMap, 'flush'))
     })
 
     it('Should call flush on all created remoteMaps', async () => {
-      const remoteMapsFlushFuncs = Object.values(remoteMaps).map(remoteMap =>
-        jest.spyOn(remoteMap, 'flush'))
       await cache.flush()
       remoteMapsFlushFuncs.forEach(flushSpy =>
         expect(flushSpy).toHaveBeenCalled())
+    })
+
+    it('Should also flush deleted files remoteMaps', async () => {
+      await cache.delete(dummyParsedKey.filename)
+      await cache.flush()
+      remoteMapsFlushFuncs.forEach(flushSpy => {
+        expect(flushSpy).toHaveBeenCalled()
+      })
     })
   })
 

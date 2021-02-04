@@ -88,10 +88,10 @@ const parseResultFromFileSources = async (
 
 const getRemoteMapCacheNamespace = (
   cacheName: string,
-  type: string,
+  dataType: string,
   fileName?: string,
 ): string =>
-  (fileName === undefined ? `parsedResultCache-${cacheName}-${type}` : `parsedResultCache-${cacheName}-${type}-${fileName}`)
+  (fileName === undefined ? `parsedResultCache-${cacheName}-${dataType}` : `parsedResultCache-${cacheName}-${dataType}-${fileName}`)
 
 const getMetadata = async (
   cacheName: string,
@@ -104,12 +104,31 @@ const getMetadata = async (
   })
 )
 
+const getUnflushedDeletedFiles = async (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+): Promise<RemoteMap<boolean>> => (
+  remoteMapCreator({
+    namespace: getRemoteMapCacheNamespace(cacheName, 'deleted-files'),
+    serialize: (val: boolean) => safeJsonStringify(val),
+    deserialize: data => JSON.parse(data),
+  })
+)
+
 const getCacheFilesList = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
 ): Promise<string[]> => {
   const metadata = await getMetadata(cacheName, remoteMapCreator)
   return awu(metadata.keys()).toArray()
+}
+
+const getDeletedFilesList = async (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+): Promise<string[]> => {
+  const deletedFiles = await getUnflushedDeletedFiles(cacheName, remoteMapCreator)
+  return awu(deletedFiles.keys()).toArray()
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -161,8 +180,12 @@ const getAllFilesSources = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
   staticFilesSource: StaticFilesSource,
+  withDeleted = false,
 ): Promise<collections.asynciterable.AwuIterable<types.ValueOf<FileSources>>> => {
-  const fileNames = await getCacheFilesList(cacheName, remoteMapCreator)
+  const fileNames = [
+    ...await getCacheFilesList(cacheName, remoteMapCreator),
+    ...(withDeleted ? await getDeletedFilesList(cacheName, remoteMapCreator) : []),
+  ]
   return awu(fileNames).flatMap(async filename =>
     Object.values(await getFileSources(
       cacheName,
@@ -292,9 +315,18 @@ export const createParseResultCache = (
         source.clear())
       const metadata = await getMetadata(actualCacheName, remoteMapCreator)
       await metadata.delete(filename)
+      const deletedFiles = await getUnflushedDeletedFiles(actualCacheName, remoteMapCreator)
+      await deletedFiles.set(filename, true)
     },
     list: async () => getCacheFilesList(actualCacheName, remoteMapCreator),
-    clear: async () => clearAllSources(actualCacheName, remoteMapCreator, staticFilesSource),
+    clear: async () => {
+      const activeFileNames = await getCacheFilesList(actualCacheName, remoteMapCreator)
+      await clearAllSources(actualCacheName, remoteMapCreator, staticFilesSource)
+      const deletedFiles = await getUnflushedDeletedFiles(actualCacheName, remoteMapCreator)
+      const filenamesEntries = activeFileNames.map(filename =>
+        ({ key: filename, value: true }))
+      await deletedFiles.setAll(filenamesEntries)
+    },
     rename: async (newName: string) => {
       const oldName = actualCacheName
       // Clearing leftover data in sources with the same name as the new one
@@ -313,12 +345,16 @@ export const createParseResultCache = (
       const filesSources = await getAllFilesSources(
         actualCacheName,
         remoteMapCreator,
-        staticFilesSource
+        staticFilesSource,
+        true,
       )
       await filesSources.forEach(async source =>
         source.flush())
       const metadata = await getMetadata(actualCacheName, remoteMapCreator)
       await metadata.flush()
+      const deletedFiles = await getUnflushedDeletedFiles(actualCacheName, remoteMapCreator)
+      await deletedFiles.clear()
+      await deletedFiles.flush()
     },
     // This is not right cause it will use the same remoteMaps
     clone: (): ParsedNaclFileCache =>

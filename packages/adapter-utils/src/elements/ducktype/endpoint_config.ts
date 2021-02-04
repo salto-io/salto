@@ -17,7 +17,7 @@ import {
   ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType, FieldDefinition,
 } from '@salto-io/adapter-api'
 
-export type EndpointConfig = {
+export type RequestConfig = {
   url: string
   queryParams?: Record<string, string>
   recursiveQueryByResponseField?: Record<string, string>
@@ -38,18 +38,18 @@ export type ElementTranslationConfig = {
   keepOriginal?: boolean
 }
 
-export type ResourceConfig = {
-  endpoint: EndpointConfig
+export type EndpointConfig = {
+  request: RequestConfig
   translation?: ElementTranslationConfig
 }
 
 export type AdapterApiConfig = {
-  resources: Record<string, ResourceConfig>
+  endpoints: Record<string, EndpointConfig>
   apiVersion?: string
 }
 
 export type UserFetchConfig = {
-  includeResources: string[]
+  includeEndpoints: string[]
 }
 
 export const createAdapterApiConfigType = (
@@ -57,8 +57,8 @@ export const createAdapterApiConfigType = (
   additionalEndpointFields?: Record<string, FieldDefinition>,
   additionalTranslationFields?: Record<string, FieldDefinition>,
 ): ObjectType => {
-  const endpointConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'endpointConfig'),
+  const requestConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'requestConfig'),
     fields: {
       url: {
         type: BuiltinTypes.STRING,
@@ -87,11 +87,11 @@ export const createAdapterApiConfigType = (
     },
   })
 
-  const resourceConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'resourceConfig'),
+  const endpointConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'endpointConfig'),
     fields: {
       endpoint: {
-        type: endpointConfigType,
+        type: requestConfigType,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -108,8 +108,8 @@ export const createAdapterApiConfigType = (
   const adapterApiConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'adapterApiConfig'),
     fields: {
-      resources: {
-        type: new MapType(resourceConfigType),
+      endpoints: {
+        type: new MapType(endpointConfigType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -128,7 +128,7 @@ export const createUserFetchConfigType = (
   new ObjectType({
     elemID: new ElemID(adapter, 'userFetchConfig'),
     fields: {
-      includeResources: { type: new ListType(BuiltinTypes.STRING) },
+      includeEndpoints: { type: new ListType(BuiltinTypes.STRING) },
     },
   })
 )
@@ -138,11 +138,11 @@ export const validateFetchConfig = (
   userFetchConfig: UserFetchConfig,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
-  const resourceNames = new Set(Object.keys(adapterApiConfig.resources))
-  const invalidIncludeResources = userFetchConfig.includeResources.filter(
-    name => !resourceNames.has(name)
+  const endpointNames = new Set(Object.keys(adapterApiConfig.endpoints))
+  const invalidIncludeEndpoints = userFetchConfig.includeEndpoints.filter(
+    name => !endpointNames.has(name)
   )
-  if (invalidIncludeResources.length > 0) {
-    throw Error(`Invalid resource names in ${fetchConfigPath}: ${invalidIncludeResources}`)
+  if (invalidIncludeEndpoints.length > 0) {
+    throw Error(`Invalid endpoint names in ${fetchConfigPath}: ${invalidIncludeEndpoints}`)
   }
 }

@@ -21,7 +21,7 @@ import { ClientGetParams, HTTPClientInterface } from '../../client'
 import { naclCase } from '../../nacl_case_utils'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
-import { EndpointConfig, ElementTranslationConfig, ResourceConfig } from './resource_config'
+import { RequestConfig, ElementTranslationConfig, EndpointConfig } from './endpoint_config'
 import { FindNestedFieldFunc } from './field_finder'
 
 const { makeArray } = collections.array
@@ -29,7 +29,7 @@ const { isDefined } = lowerdashValues
 const log = logger(module)
 
 type ComputeGetArgsFunc = (
-  endpoint: EndpointConfig,
+  request: RequestConfig,
   contextElements?: Record<string, Element[]>,
 ) => ClientGetParams[]
 
@@ -56,7 +56,7 @@ export const getTypeAndInstances = async ({
   client,
   nestedFieldFinder,
   computeGetArgs,
-  endpoint,
+  request,
   translation,
   defaultNameField,
   defaultPathField,
@@ -68,7 +68,7 @@ export const getTypeAndInstances = async ({
   client: HTTPClientInterface
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
-  endpoint: EndpointConfig
+  request: RequestConfig
   translation: ElementTranslationConfig
   defaultNameField: string
   defaultPathField: string
@@ -80,7 +80,7 @@ export const getTypeAndInstances = async ({
   } = translation
 
   const getEntries = async (): Promise<Values[]> => {
-    const getArgs = computeGetArgs(endpoint, contextElements)
+    const getArgs = computeGetArgs(request, contextElements)
     // TODO add error handling
     return (await Promise.all(
       getArgs.map(args => client.get(args))
@@ -140,16 +140,16 @@ export const getTypeAndInstances = async ({
 
 export const getAllElements = async ({
   adapterName,
-  includeResources,
-  resources,
+  includeEndpoints,
+  endpoints,
   client,
   nestedFieldFinder,
   computeGetArgs,
   defaultExtractionFields,
 }: {
   adapterName: string
-  includeResources: string[]
-  resources: Record<string, ResourceConfig>
+  includeEndpoints: string[]
+  endpoints: Record<string, EndpointConfig>
   client: HTTPClientInterface
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
@@ -162,23 +162,23 @@ export const getAllElements = async ({
 }): Promise<Element[]> => {
   // for now assuming flat dependencies for simplicity.
   // will replace with a DAG (with support for concurrency) when needed
-  const allResources = includeResources
-    .map(resourceName => ({
-      resourceName,
-      ...resources[resourceName],
+  const allEndpoints = includeEndpoints
+    .map(endpointName => ({
+      endpointName,
+      ...endpoints[endpointName],
     }))
-    .filter(({ endpoint }) => isDefined(endpoint))
-    .map(({ resourceName, endpoint, translation }) => ({
-      resourceName,
-      endpoint,
+    .filter(({ request }) => isDefined(request))
+    .map(({ endpointName, request, translation }) => ({
+      endpointName,
+      request,
       translation: {
         ...translation,
         fieldsToOmit: translation?.fieldsToOmit ?? defaultExtractionFields.fieldsToOmit,
       },
     }))
   const [independentEndpoints, dependentEndpoints] = _.partition(
-    allResources,
-    r => _.isEmpty(r.endpoint.dependsOn)
+    allEndpoints,
+    r => _.isEmpty(r.request.dependsOn)
   )
 
   const elementGenerationParams = {
@@ -191,21 +191,21 @@ export const getAllElements = async ({
     topLevelFieldsToOmit: defaultExtractionFields.topLevelFieldsToOmit,
   }
   const contextElements: Record<string, Element[]> = Object.fromEntries(await Promise.all(
-    independentEndpoints.map(async ({ resourceName, endpoint, translation }) => [
-      endpoint.url,
+    independentEndpoints.map(async ({ endpointName, request, translation }) => [
+      request.url,
       await getTypeAndInstances({
         ...elementGenerationParams,
-        typeName: resourceName,
-        endpoint,
+        typeName: endpointName,
+        request,
         translation,
       }),
     ])
   ))
   const dependentElements = await Promise.all(
-    dependentEndpoints.map(({ resourceName, endpoint, translation }) => getTypeAndInstances({
+    dependentEndpoints.map(({ endpointName, request, translation }) => getTypeAndInstances({
       ...elementGenerationParams,
-      typeName: resourceName,
-      endpoint,
+      typeName: endpointName,
+      request,
       translation,
     }))
   )

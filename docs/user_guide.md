@@ -131,7 +131,7 @@ You can also run `salto fetch` again, to fetch some changes which were auto-gene
 
 Typically, a Salto workspace maps to a Git repository. Once you have an initial Salto workspace, you would usually run `git init` to create a new git repository. Then you would run `git add .` to add all the currently fetched files (note that your Salto state-files will be saved in the repo!) and `git commit` to record the baseline of your workspace to the repository.
 
-From now on, you can use standard Git commands to record changes, create feature-branches for development work, revert to old versions, compare versions, etc. If you use a platform like GitHub, you can also utilize features like pull requests to perform code reviews and enforce checks on your repository (see [here](https://help.github.com/en/github/administering-a-repository/configuring-protected-branches)).
+From now on, you can use standard Git commands to record changes, create feature-branches for development work, revert to old versions, compare versions, etc. If you use a platform like GitHub, you can also utilize features like pull requests to perform code reviews and enforce checks on your repository (see [here](https://docs.github.com/en/github/administering-a-repository/about-protected-branches)).
 
 ## Advanced Concepts
 

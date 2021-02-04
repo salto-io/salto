@@ -305,12 +305,11 @@ const buildMultiEnvSource = (
   }
 
   const flush = async (): Promise<void> => {
-    // TODO fix?
-    await Promise.all([
-      primarySource().flush(),
-      commonSource().flush(),
-      ..._.values(secondarySources()).map(src => src.flush()),
-    ])
+    await awu([
+      primarySource(),
+      commonSource(),
+      ..._.values(secondarySources()),
+    ]).forEach(src => src.flush())
     await (await getState()).elements.flush()
   }
 

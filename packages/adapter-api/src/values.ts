@@ -157,25 +157,33 @@ export type TemplatePart = string | Expression
 const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
   (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
-export const isEqualValues = (first: Value, second: Value): boolean => _.isEqualWith(
+export const compareSpecialValues = (
+  first: Value,
+  second: Value
+): boolean | undefined => {
+  if (first instanceof StaticFile && second instanceof StaticFile) {
+    return first.isEqual(second)
+  }
+  if (first instanceof ReferenceExpression || second instanceof ReferenceExpression) {
+    const fValue = first instanceof ReferenceExpression ? first.value : first
+    const sValue = second instanceof ReferenceExpression ? second.value : second
+    return (first instanceof ReferenceExpression && second instanceof ReferenceExpression)
+      ? first.elemID.isEqual(second.elemID)
+      : _.isEqualWith(fValue, sValue, compareSpecialValues)
+  }
+  if (typeof first === 'string' && typeof second === 'string') {
+    return compareStringsIgnoreNewlineDifferences(first, second)
+  }
+  return undefined
+}
+
+export const isEqualValues = (
+  first: Value,
+  second: Value
+): boolean => _.isEqualWith(
   first,
   second,
-  (f, s) => {
-    if (f instanceof StaticFile && s instanceof StaticFile) {
-      return f.isEqual(s)
-    }
-    if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
-      const fValue = f instanceof ReferenceExpression ? f.value : f
-      const sValue = s instanceof ReferenceExpression ? s.value : s
-      return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
-        ? f.elemID.isEqual(s.elemID)
-        : isEqualValues(fValue, sValue)
-    }
-    if (typeof f === 'string' && typeof s === 'string') {
-      return compareStringsIgnoreNewlineDifferences(f, s)
-    }
-    return undefined
-  }
+  compareSpecialValues
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

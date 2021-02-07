@@ -18,10 +18,10 @@ import {
   ChangeValidator, Change, isAdditionChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES } from '../constants'
-import { isFieldOfCustomObject, toCustomField } from '../transformers/transformer'
+import { isFieldOfCustomObject, fieldTypeName } from '../transformers/transformer'
 
 const isInvalidTypeChange = (change: Change<Field>): boolean => {
-  const afterFieldType = toCustomField(getChangeElement(change)).type
+  const afterFieldType = fieldTypeName(getChangeElement(change).type.elemID.name)
   const isAfterTypeAllowed = CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
   if (isAfterTypeAllowed) {
     return false

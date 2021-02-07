@@ -238,9 +238,8 @@ const resolveNodeElements = (
       afterItemsToResolve.push(change.data.after)
     }
   })
-
-  await resolve(awu(beforeItemsToResolve), before)
-  await resolve(awu(afterItemsToResolve), after)
+  await resolve(awu(beforeItemsToResolve), before, true)
+  await resolve(awu(afterItemsToResolve), after, true)
   return graph
 }
 
@@ -348,8 +347,8 @@ export const getPlan = async ({
 }: GetPlanParameters): Promise<Plan> => log.time(async () => {
   const diffGraph = await buildDiffGraph(
     addDifferentElements(before, after, topLevelFilters),
+    resolveNodeElements(before, after),
     addModifyNodes(addNodeDependencies(dependencyChangers)),
-    resolveNodeElements(before, after)
   )
 
   const filterResult = await filterInvalidChanges(

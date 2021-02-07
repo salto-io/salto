@@ -49,11 +49,15 @@ const compareValuesAndLazyResolveRefs = async (
   firstSrc: ReadOnlyElementsSource,
   secondSrc: ReadOnlyElementsSource
 ): Promise<boolean> => {
-  const resolvedFirst = isReferenceExpression(first)
+  const shouldResolve = (value: Value): boolean => isReferenceExpression(value)
+    && !(value.elemID.isTopLevel() && value.elemID.idType === 'field')
+    && value.value === undefined
+
+  const resolvedFirst = shouldResolve(first)
     ? await resolveReferenceExpression(first, firstSrc, {})
     : first
-  const resolvedSecond = isReferenceExpression(first)
-    ? await resolveReferenceExpression(first, secondSrc, {})
+  const resolvedSecond = shouldResolve(second)
+    ? await resolveReferenceExpression(second, secondSrc, {})
     : second
 
   const specialCompareRes = compareSpecialValues(resolvedFirst, resolvedSecond)

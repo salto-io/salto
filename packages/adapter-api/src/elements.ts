@@ -18,6 +18,13 @@ import { ElemID } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
 import { Values, isEqualValues, Value } from './values'
+import { CORE_ANNOTATIONS } from './core_annotations'
+
+export const transformForComparison = (val: Values, omitCoreAnnotations: boolean): Values => (
+  omitCoreAnnotations
+    ? _.omit(val, Object.values(CORE_ANNOTATIONS))
+    : val
+)
 
 /**
  * An abstract class that represent the base element.
@@ -66,14 +73,17 @@ export abstract class Element {
     return _.cloneDeep(this.annotations)
   }
 
-  isEqual(other: Element): boolean {
+  isEqual(other: Element, omitCoreAnnotations = false): boolean {
     return _.isEqual(this.elemID, other.elemID)
-      && this.isAnnotationsEqual(other)
+      && this.isAnnotationsEqual(other, omitCoreAnnotations)
   }
 
-  isAnnotationsEqual(other: Element): boolean {
+  isAnnotationsEqual(other: Element, omitCoreAnnotations = false): boolean {
     return this.isAnnotationsTypesEqual(other)
-      && isEqualValues(this.annotations, other.annotations)
+      && isEqualValues(
+        transformForComparison(this.annotations, omitCoreAnnotations),
+        transformForComparison(other.annotations, omitCoreAnnotations),
+      )
   }
 
   isAnnotationsTypesEqual(other: Element): boolean {
@@ -124,9 +134,10 @@ export class ListType extends Element {
     this.setInnerType(innerType)
   }
 
-  isEqual(other: ListType): boolean {
+  isEqual(other: ListType, omitCoreAnnotations = false): boolean {
+    return (super.isEqual(other, omitCoreAnnotations)
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+    && isEqualTypes(this.innerType, other.innerType))
   }
 
   clone(): ListType {
@@ -159,9 +170,10 @@ export class MapType extends Element {
     this.setInnerType(innerType)
   }
 
-  isEqual(other: MapType): boolean {
+  isEqual(other: MapType, omitCoreAnnotations = false): boolean {
+    return (super.isEqual(other, omitCoreAnnotations)
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+    && isEqualTypes(this.innerType, other.innerType, omitCoreAnnotations))
   }
 
   clone(): MapType {
@@ -194,10 +206,13 @@ export class Field extends Element {
     super({ elemID: parent.elemID.createNestedID('field', name), annotations })
   }
 
-  isEqual(other: Field): boolean {
+  isEqual(other: Field, omitCoreAnnotations = false): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
       && _.isEqual(this.elemID, other.elemID)
-      && isEqualValues(this.annotations, other.annotations)
+      && isEqualValues(
+        transformForComparison(this.annotations, omitCoreAnnotations),
+        transformForComparison(other.annotations, omitCoreAnnotations),
+      )
   }
 
   /**
@@ -238,8 +253,8 @@ export class PrimitiveType extends Element {
     this.primitive = primitive
   }
 
-  isEqual(other: PrimitiveType): boolean {
-    return super.isEqual(other)
+  isEqual(other: PrimitiveType, omitCoreAnnotations = false): boolean {
+    return super.isEqual(other, omitCoreAnnotations)
       && this.primitive === other.primitive
   }
 
@@ -301,14 +316,16 @@ export class ObjectType extends Element {
     return clonedFields
   }
 
-  isEqual(other: ObjectType): boolean {
-    return super.isEqual(other)
+  isEqual(other: ObjectType, omitCoreAnnotations = false): boolean {
+    return super.isEqual(other, omitCoreAnnotations)
       && _.isEqual(
         _.mapValues(this.fields, f => f.elemID),
         _.mapValues(other.fields, f => f.elemID)
       )
       && _.isEqual(this.isSettings, other.isSettings)
-      && _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n])))
+      && _.every(Object.keys(this.fields).map(
+        n => this.fields[n].isEqual(other.fields[n], omitCoreAnnotations)
+      ))
   }
 
   /**
@@ -344,8 +361,8 @@ export class InstanceElement extends Element {
     super({ elemID: type.elemID.createNestedID('instance', name), annotations, path })
   }
 
-  isEqual(other: InstanceElement): boolean {
-    return super.isEqual(other)
+  isEqual(other: InstanceElement, omitCoreAnnotations = false): boolean {
+    return super.isEqual(other, omitCoreAnnotations)
       && _.isEqual(this.type.elemID, other.type.elemID)
       && isEqualValues(this.value, other.value)
   }
@@ -367,8 +384,8 @@ export class Variable extends Element {
     super({ elemID, path })
   }
 
-  isEqual(other: Variable): boolean {
-    return super.isEqual(other) && isEqualValues(this.value, other.value)
+  isEqual(other: Variable, omitCoreAnnotations = false): boolean {
+    return (super.isEqual(other, omitCoreAnnotations) && isEqualValues(this.value, other.value))
   }
 
   clone(): Variable {
@@ -428,34 +445,38 @@ export function isField(element: any): element is Field {
   return element instanceof Field
 }
 
-const isEqualTypes = (first: TypeElement, second: TypeElement): boolean => {
+const isEqualTypes = (
+  first: TypeElement,
+  second: TypeElement,
+  omitCoreAnnotations = false,
+): boolean => {
   if (isPrimitiveType(first) && isPrimitiveType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, omitCoreAnnotations)
   } if (isObjectType(first) && isObjectType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, omitCoreAnnotations)
   } if (isListType(first) && isListType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, omitCoreAnnotations)
   } if (isMapType(first) && isMapType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, omitCoreAnnotations)
   }
   return false
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isEqualElements(first?: any, second?: any): boolean {
+export function isEqualElements(first?: any, second?: any, omitCoreAnnotations = false): boolean {
   if (!(first && second)) {
     return false
   }
   // first.isEqual line appears multiple times since the compiler is not smart
   // enough to understand the 'they are the same type' concept when using or
   if (isType(first) && isType(second)) {
-    return isEqualTypes(first, second)
+    return isEqualTypes(first, second, omitCoreAnnotations)
   } if (isField(first) && isField(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, omitCoreAnnotations)
   } if (isInstanceElement(first) && isInstanceElement(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, omitCoreAnnotations)
   } if (isVariable(first) && isVariable(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, omitCoreAnnotations)
   }
   return false
 }

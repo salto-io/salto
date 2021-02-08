@@ -39,7 +39,10 @@ const getGroupAction = (group: Group<Change>): ActionName => {
     : 'modify'
 }
 
-export const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.assign(group, {
+export const addPlanItemAccessors = (
+  group: Group<Change>,
+  omitCoreAnnotations = false,
+): PlanItem => Object.assign(group, {
   action: getGroupAction(group),
   changes() {
     return group.items.values()
@@ -51,7 +54,7 @@ export const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.a
         if (change.action !== 'modify') {
           return { ...change, id: elem.elemID }
         }
-        return detailedCompare(change.data.before, change.data.after)
+        return detailedCompare(change.data.before, change.data.after, false, omitCoreAnnotations)
       })
       .flatten()
   },

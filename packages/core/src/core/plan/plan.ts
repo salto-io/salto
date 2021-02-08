@@ -78,36 +78,42 @@ const addElements = (
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
-const isEqualsNode = (node1: ChangeDataType, node2: ChangeDataType): boolean => {
+const isEqualsNode = (
+  node1: ChangeDataType,
+  node2: ChangeDataType,
+  omitCoreAnnotations: boolean,
+): boolean => {
   if (isObjectType(node1) && isObjectType(node2)) {
     // We would like to check equality only on type level prop (annotations) and not fields
-    return node1.isAnnotationsEqual(node2)
+    return node1.isAnnotationsEqual(node2, omitCoreAnnotations)
   }
   if (isPrimitiveType(node1) && isPrimitiveType(node2)) {
-    return node1.isEqual(node2)
+    return node1.isEqual(node2, omitCoreAnnotations)
   }
   if (isInstanceElement(node1) && isInstanceElement(node2)) {
-    return node1.isEqual(node2)
+    return node1.isEqual(node2, omitCoreAnnotations)
   }
   if (isField(node1) && isField(node2)) {
-    return node1.isEqual(node2)
+    return node1.isEqual(node2, omitCoreAnnotations)
   }
   // Assume we shouldn't reach this point
   return _.isEqual(node1, node2)
 }
 
 const addPlanFunctions = (
-  groupGraph: GroupedNodeMap<Change>, changeErrors: ReadonlyArray<ChangeError>
+  groupGraph: GroupedNodeMap<Change>,
+  changeErrors: ReadonlyArray<ChangeError>,
+  omitCoreAnnotations: boolean,
 ): Plan => Object.assign(groupGraph,
   {
     itemsByEvalOrder(): Iterable<PlanItem> {
       return wu(groupGraph.evaluationOrder())
         .map(group => groupGraph.getData(group))
-        .map(group => addPlanItemAccessors(group))
+        .map(group => addPlanItemAccessors(group, omitCoreAnnotations))
     },
 
     getItem(planItemId: PlanItemId): PlanItem {
-      return addPlanItemAccessors(groupGraph.getData(planItemId))
+      return addPlanItemAccessors(groupGraph.getData(planItemId), omitCoreAnnotations)
     },
     changeErrors,
   })
@@ -135,7 +141,7 @@ export const defaultDependencyChangers = [
 ]
 
 const addModifyNodes = (
-  addDependencies: PlanTransformer
+  addDependencies: PlanTransformer,
 ): PlanTransformer => {
   const runMergeStep: PlanTransformer = async stepGraph => {
     const mergedGraph = await addDependencies(stepGraph)
@@ -193,6 +199,7 @@ type GetPlanParameters = {
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
   additionalResolveContext?: AdditionalResolveContext
+  omitCoreAnnotations?: boolean
 }
 export const getPlan = async ({
   before,
@@ -201,6 +208,7 @@ export const getPlan = async ({
   dependencyChangers = defaultDependencyChangers,
   customGroupIdFunctions = {},
   additionalResolveContext,
+  omitCoreAnnotations = false,
 }: GetPlanParameters): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
   const resolvedBefore = resolve(before, additionalResolveContext?.before)
@@ -209,7 +217,7 @@ export const getPlan = async ({
   const diffGraph = await buildDiffGraph(
     addElements(resolvedBefore, 'remove'),
     addElements(resolvedAfter, 'add'),
-    removeEqualNodes(isEqualsNode),
+    removeEqualNodes((node1, node2) => isEqualsNode(node1, node2, omitCoreAnnotations)),
     addModifyNodes(addNodeDependencies(dependencyChangers)),
   )
 
@@ -230,5 +238,5 @@ export const getPlan = async ({
   )
 
   // build plan
-  return addPlanFunctions(groupedGraph, filterResult.changeErrors)
+  return addPlanFunctions(groupedGraph, filterResult.changeErrors, omitCoreAnnotations)
 }, 'get plan with %o -> %o elements', before.length, after.length)

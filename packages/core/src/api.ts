@@ -103,6 +103,7 @@ export const preview = async (
     changeValidators: getAdapterChangeValidators(),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),
+    omitCoreAnnotations: true,
   })
 }
 

@@ -38,7 +38,7 @@ export const createPlan = (changeGroups: Change[][]): Plan => {
     {
       itemsByEvalOrder: () => wu(graph.keys())
         .map(id => graph.getData(id))
-        .map(addPlanItemAccessors),
+        .map(group => addPlanItemAccessors(group)),
       getItem: (id: PlanItemId) => addPlanItemAccessors(graph.getData(id)),
       changeErrors: [],
     }

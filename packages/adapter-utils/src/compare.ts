@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType, isType,
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
+  transformForComparison,
 } from '@salto-io/adapter-api'
 import { setPath } from './utils'
 
@@ -94,7 +95,8 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
 export const detailedCompare = (
   before: ChangeDataType,
   after: ChangeDataType,
-  createFieldChanges = false
+  createFieldChanges = false,
+  omitCoreAnnotations = false,
 ): DetailedChange[] => {
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
@@ -115,7 +117,9 @@ export const detailedCompare = (
 
     const modifyChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] !== undefined)
-      .map(fieldName => detailedCompare(beforeObj.fields[fieldName], afterObj.fields[fieldName]))
+      .map(fieldName => detailedCompare(
+        beforeObj.fields[fieldName], afterObj.fields[fieldName], false, omitCoreAnnotations,
+      ))
 
     return [
       ...removeChanges,
@@ -142,7 +146,8 @@ export const detailedCompare = (
 
   const annotationChanges = getValuesChanges(
     isType(after) ? after.elemID.createNestedID('attr') : after.elemID,
-    before.annotations, after.annotations
+    transformForComparison(before.annotations, omitCoreAnnotations),
+    transformForComparison(after.annotations, omitCoreAnnotations),
   )
 
   const fieldChanges = createFieldChanges && isObjectType(before) && isObjectType(after)

@@ -32,13 +32,14 @@ import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
 
 export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
-  const question = {
+  const question: inquirer.Question = {
     name: 'userInput',
-    message: prompt,
-    type: 'confirm',
+    message: `${prompt} (y/n)`,
+    type: 'input',
+    validate: input => (!['y', 'n'].includes(input.toLowerCase()) ? 'Answer must be \'y\' for yes or \'n\' for no' : true),
   }
   const answers = await inquirer.prompt(question)
-  return answers.userInput
+  return answers.userInput.toLowerCase() === 'y'
 }
 
 type YesNoCancelAnswer = 'yes' | 'no' | 'cancel operation'

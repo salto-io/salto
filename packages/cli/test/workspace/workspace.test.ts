@@ -51,7 +51,7 @@ jest.mock('@salto-io/core', () => ({
   loadLocalWorkspace: jest.fn().mockImplementation(() => mockWs),
 }))
 jest.mock('inquirer', () => ({
-  prompt: jest.fn().mockResolvedValue({ userInput: false }),
+  prompt: jest.fn().mockResolvedValue({ userInput: 'n' }),
 }))
 describe('workspace', () => {
   let cliOutput: { stderr: MockWriteStream; stdout: MockWriteStream }

@@ -5,6 +5,7 @@ orbs:
   aws-s3: circleci/aws-s3@1.0.15
   aws-cli: circleci/aws-cli@1.0.0
   coveralls: coveralls/coveralls@1.0.6
+  node: circleci/node@4.1.0
 
 commands:
   set_s3_pkg_urls:
@@ -155,6 +156,16 @@ jobs:
     working_directory: /mnt/ramdisk/project
 
     steps:
+      - node/install:
+          install-yarn: true
+          install-npm: false
+          node-version: v14.15.4
+      - run:
+          name: Setup default nvm version
+          command: nvm alias default 14.15.4
+      - run:
+          name: Print nodejs environment
+          command: node --version
       - attach_workspace:
           at: .
 

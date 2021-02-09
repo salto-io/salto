@@ -22,6 +22,7 @@ import { NaclFilesSource } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 
 const { awu } = collections.asynciterable
 
@@ -75,5 +76,5 @@ export const createMockNaclFileSource = (
   getElementNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.nacl')])),
   clone: jest.fn().mockImplementation(() => Promise.resolve()),
   getElementReferencedFiles: jest.fn().mockResolvedValue([]),
-  load: jest.fn().mockResolvedValue([]),
+  load: jest.fn().mockResolvedValue(elements.map(e => createAddChange(e, e.elemID))),
 })

@@ -221,7 +221,6 @@ export const createWorkspaceCommand = <T>(
       args.workspacePath,
       getConfigOverrideChanges(args.input),
     )
-
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     args.cliTelemetry.start(workspaceTags)
 

@@ -23,7 +23,7 @@ import { mergeElements, DuplicateAnnotationError } from '../src/merger'
 import { ConflictingFieldTypesError, DuplicateAnnotationFieldDefinitionError,
   DuplicateAnnotationTypeError } from '../src/merger/internal/object_types'
 import { DuplicateInstanceKeyError } from '../src/merger/internal/instances'
-import { MultiplePrimitiveTypesUnsupportedError } from '../src/merger/internal/primitives'
+import { MultiplePrimitiveTypesError } from '../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../src/merger/internal/variables'
 
 const { awu } = collections.asynciterable
@@ -341,22 +341,22 @@ describe('merger', () => {
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
-      annotations: { _default: 'type' },
+      annotations: { somethingElse: 'type' },
     })
 
     const duplicateType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
-      primitive: PrimitiveTypes.STRING,
+      primitive: PrimitiveTypes.NUMBER,
       annotations: { _default: 'type' },
     })
-    it('should fail when more then one primitive is defined with same elemID', async () => {
+    it('should fail when more then one primitive is defined with same elemID and different primitives', async () => {
       const elements = [strType, duplicateType]
       const errors = await awu(
         (await mergeElements(awu(elements))
         ).errors.values()
       ).flat().toArray()
       expect(errors).toHaveLength(1)
-      expect(errors[0]).toBeInstanceOf(MultiplePrimitiveTypesUnsupportedError)
+      expect(errors[0]).toBeInstanceOf(MultiplePrimitiveTypesError)
     })
   })
 

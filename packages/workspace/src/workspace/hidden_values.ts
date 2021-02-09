@@ -20,12 +20,16 @@ import { transformElement, TransformFunc, transformValues, applyFunctionToChange
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
-  ReadOnlyElementsSource } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource,
+  ReferenceMap,
+  isPrimitiveType,
+  PrimitiveType,
+  InstanceElement } from '@salto-io/adapter-api'
+import { addedDiff } from 'deep-object-diff'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
-
 
 const { pickAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -35,7 +39,7 @@ const isHiddenValue = (element?: Element): boolean => (
   element?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
 )
 
-const isHidden = async (
+export const isHidden = async (
   element?: Element,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<boolean> => (
@@ -44,7 +48,7 @@ const isHidden = async (
     && isHiddenValue(await element.getType(elementsSource)))
 )
 
-const getElementHiddenParts = async <T extends Element>(
+export const getElementHiddenParts = async <T extends Element>(
   stateElement: T,
   elementsSource: ReadOnlyElementsSource,
   workspaceElement?: T,
@@ -175,7 +179,7 @@ const removeHiddenValue = (): TransformFunc =>
   ({ value, field }) => (
     isHiddenValue(field) ? undefined : value)
 
-const removeHiddenFromElement = <T extends Element>(
+export const removeHiddenFromElement = <T extends Element>(
   element: T,
   elementsSource: ReadOnlyElementsSource
 ): Promise<T> => (
@@ -383,15 +387,71 @@ const isHiddenField = async (
       || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue, elementsSource)
 }
 
+const diffElements = <T extends Element>(fullElem: T, visibleElem: T): T | undefined => {
+  if (fullElem === undefined) {
+    return undefined
+  }
+  if (visibleElem === undefined) {
+    return fullElem
+  }
+  const diffAnno = addedDiff(visibleElem.annotations, fullElem.annotations)
+  const diffAnnoTypes = {}
+  if (isObjectType(fullElem) && isObjectType(visibleElem)) {
+    const diffFields = _.pickBy(_.mapValues(
+      fullElem.fields,
+      (field, name) => diffElements(field, visibleElem.fields[name])
+    ), values.isDefined)
+    return [diffAnno, diffAnnoTypes, diffFields].every(_.isEmpty) ? undefined : new ObjectType({
+      elemID: fullElem.elemID,
+      annotationRefsOrTypes: diffAnnoTypes as ReferenceMap,
+      annotations: diffAnno,
+      fields: diffFields,
+      path: fullElem.path,
+      isSettings: fullElem.isSettings,
+    }) as unknown as T
+  }
+  if (isPrimitiveType(fullElem) && isPrimitiveType(visibleElem)) {
+    return [diffAnno, diffAnnoTypes].every(_.isEmpty) ? undefined : new PrimitiveType({
+      elemID: fullElem.elemID,
+      primitive: fullElem.primitive,
+      annotationRefsOrTypes: diffAnnoTypes as ReferenceMap,
+      annotations: diffAnno,
+      path: fullElem.path,
+    }) as unknown as T
+  }
+  if (isInstanceElement(fullElem) && isInstanceElement(visibleElem)) {
+    const diffValue = addedDiff(visibleElem.value, fullElem.value)
+    if ([diffAnno, diffAnnoTypes, diffValue].every(_.isEmpty)) {
+      return undefined
+    }
+    const res = fullElem.clone() as InstanceElement
+    res.value = addedDiff(visibleElem.value, fullElem.value)
+    res.annotations = diffAnno
+    return res as unknown as T
+  }
+  if (isField(fullElem) && isField(visibleElem)) {
+    if ([diffAnno, diffAnnoTypes].every(_.isEmpty)) {
+      return undefined
+    }
+    const res = fullElem.clone()
+    res.annotations = diffAnno
+    res.annotationRefTypes = diffAnnoTypes as ReferenceMap
+    return res as unknown as T
+  }
+  return fullElem
+}
+
 const filterOutHiddenChanges = async (
   changes: DetailedChange[],
   state: State,
-): Promise<DetailedChange[]> => {
-  const filterOutHidden = async (change: DetailedChange): Promise<DetailedChange | undefined> => {
+): Promise<{visible?: DetailedChange; hidden?: DetailedChange}[]> => {
+  const filterOutHidden = async (
+    change: DetailedChange
+  ): Promise<{visible?: DetailedChange; hidden?: DetailedChange}> => {
     if (isRemovalChange(change)) {
       // There should be no harm in letting remove changes through here. remove should be resilient
       // to its subject not existing
-      return change
+      return { visible: change }
     }
 
     const { parent, path } = change.id.createTopLevelParentID()
@@ -399,20 +459,29 @@ const filterOutHiddenChanges = async (
 
     if (baseElem === undefined) {
       // If something is not in the state it cannot be hidden
-      return change
+      return { visible: change }
     }
 
     if ((isType(baseElem) || isInstanceElement(baseElem)) && await isHidden(baseElem, state)) {
       // A change of a hidden type or instance should be omitted completely
-      return undefined
+      return { hidden: change }
     }
 
     if (isElement(change.data.after)) {
       // Remove nested hidden parts of instances, object types and fields
-      return applyFunctionToChangeData(
+      const visible = await applyFunctionToChangeData(
         change,
         element => removeHiddenFromElement(element, state),
       )
+      const after = diffElements(change.data.after, visible.data.after)
+      return { visible,
+        hidden: after && {
+          ...change,
+          data: {
+            ...change.data,
+            after: diffElements(change.data.after, visible.data.after),
+          },
+        } as DetailedChange }
     }
 
     if (isInstanceElement(baseElem)
@@ -446,12 +515,12 @@ const filterOutHiddenChanges = async (
       const { changeType, changePath } = await getChangeTypeAndPath()
       if (changeType === undefined) {
         // a value without a type cannot be hidden
-        return change
+        return { visible: change }
       }
 
       if (isHiddenValue(changeType)) {
         // The change is in a hidden annotation, omit it
-        return undefined
+        return { hidden: change }
       }
 
       if (await isHiddenField(
@@ -461,13 +530,13 @@ const filterOutHiddenChanges = async (
         state
       )) {
         // The change is inside a hidden field value, omit the change
-        return undefined
+        return { hidden: change }
       }
 
       const fieldType = changeType
         && await (await getField(changeType, changePath, state))?.getType(state)
       if (isObjectType(fieldType)) {
-        return applyFunctionToChangeData(
+        const visible = await applyFunctionToChangeData(
           change,
           value => removeHiddenFromValues(
             fieldType,
@@ -476,22 +545,42 @@ const filterOutHiddenChanges = async (
             state,
           ),
         )
+        // const hidden = await applyFunctionToChangeData(
+        //   change,
+        //   value => removeVisibleFromValues(
+        //     fieldType,
+        //     value,
+        //     change.id,
+        //     state,
+        //   ),
+        // )
+        return { visible,
+          hidden: {
+            ...change,
+            data: {
+              after: addedDiff(visible.data.after, change.data.after),
+            },
+          } as DetailedChange }
       }
     }
 
-    return change
+    return { visible: change }
   }
 
-  return awu(changes).map(filterOutHidden).filter(values.isDefined).toArray()
+  return awu(changes).map(filterOutHidden).toArray()
 }
 
 export const handleHiddenChanges = async (
   changes: DetailedChange[],
   state: State,
   getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
-): Promise<DetailedChange[]> => {
+): Promise<{visible: DetailedChange[]; hidden: DetailedChange[]}> => {
   const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
     changes, state, getWorkspaceElements,
   )
-  return filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)
+  const filteredChanges = await filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)
+  return {
+    visible: filteredChanges.map(change => change.visible).filter(values.isDefined),
+    hidden: filteredChanges.map(change => change.hidden).filter(values.isDefined),
+  }
 }

@@ -49,12 +49,11 @@ type InstanceAndResult = {
 const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => (
   instancesAndResults.forEach(({ instance, result }) => {
     if (result.errors !== undefined) {
-      log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - 
-    \t${result.errors.join('\n\t')}
+      log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
          
-    and values -
-    ${safeJsonStringify(instance.value, undefined, 2,)}
-    `)
+and values -
+${safeJsonStringify(instance.value, undefined, 2,)}
+`)
     }
   })
 )

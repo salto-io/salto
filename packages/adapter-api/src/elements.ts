@@ -345,9 +345,19 @@ export class InstanceElement extends Element {
   }
 
   isEqual(other: InstanceElement): boolean {
-    return super.isEqual(other)
-      && _.isEqual(this.type.elemID, other.type.elemID)
+    return _.isEqual(this.type.elemID, other.type.elemID)
       && isEqualValues(this.value, other.value)
+  }
+
+  /**
+   * Find all values that are in this.values and not in prev (this.values / prevValues)
+   * Or different (same key and different value).
+   *
+   * @param prevValues to compare
+   * @return All values which unique (not in prev) or different.
+   */
+  getValuesThatNotInPrevOrDifferent(prevValues: Values): Values {
+    return _.pickBy(this.value, (val, key) => !isEqualValues(val, prevValues[key]))
   }
 
   /**

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, PrimitiveTypes, Field, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, PrimitiveTypes, Field } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '../src/compare'
 
 describe('detailedCompare', () => {
@@ -32,11 +32,6 @@ describe('detailedCompare', () => {
       {
         before: 'Before',
         modify: 'Before',
-      },
-      undefined,
-      {
-        [INSTANCE_ANNOTATIONS.HIDDEN]: true,
-        [INSTANCE_ANNOTATIONS.SERVICE_URL]: 'before',
       }
     )
     const after = new InstanceElement(
@@ -45,11 +40,6 @@ describe('detailedCompare', () => {
       {
         after: 'Before',
         modify: 'After',
-      },
-      undefined,
-      {
-        [INSTANCE_ANNOTATIONS.SERVICE_URL]: 'after',
-        [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [],
       }
     )
     const changes = detailedCompare(before, after)
@@ -64,21 +54,6 @@ describe('detailedCompare', () => {
     it('should create modify changes for values that were only present both instances', () => {
       expect(hasChange(changes, 'modify', before.elemID.createNestedID('modify')))
         .toBeTruthy()
-    })
-    it('should create add changes for new annotation values', () => {
-      expect(
-        hasChange(changes, 'add', after.elemID.createNestedID(INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES))
-      ).toBeTruthy()
-    })
-    it('should create modify changes for changed annotation values', () => {
-      expect(
-        hasChange(changes, 'modify', after.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL))
-      ).toBeTruthy()
-    })
-    it('should create remove changes for removed annotation values', () => {
-      expect(
-        hasChange(changes, 'remove', before.elemID.createNestedID(INSTANCE_ANNOTATIONS.HIDDEN))
-      ).toBeTruthy()
     })
   })
 

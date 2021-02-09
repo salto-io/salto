@@ -407,12 +407,9 @@ const buildNaclFilesSource = (
   const buildInitState = async (): Promise<buildNaclFilesStateResult> => {
     const modifiedNaclFiles: NaclFile[] = []
 
-    sniffer.startSection('naclFileSource.buildInitState.lists')
     const cacheFilenames = await cache.list()
     const naclFilenames = await naclFilesStore.list()
-    sniffer.endSection('naclFileSource.buildInitState.lists')
 
-    sniffer.startSection('naclFileSource.buildInitState.checkHash')
     const fileNames = new Set([...cacheFilenames, ...naclFilenames])
     await awu(fileNames).forEach(async filename => {
       const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
@@ -421,7 +418,6 @@ const buildNaclFilesSource = (
         modifiedNaclFiles.push(naclFile)
       }
     })
-    sniffer.endSection('naclFileSource.buildInitState.checkHash')
     const parsedModifiedFiles = await parseNaclFiles(modifiedNaclFiles, cache, functions)
     return buildNaclFilesState({
       newNaclFiles: parsedModifiedFiles,

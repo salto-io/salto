@@ -41,7 +41,6 @@ import {
   getMetadataInstance, getMetadata, removeMetadataIfAlreadyExists, createAndVerify,
   removeElementAndVerify, fetchTypes, runFiltersOnFetch,
 } from './utils'
-import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { makeArray } = collections.array
 
@@ -183,7 +182,7 @@ describe('workflow filter', () => {
         baseCustomObject)
       expect(rawWorkflowInstance).toBeDefined()
       fetchResult = [...rawWorkflowTypes, rawWorkflowInstance as InstanceElement]
-      await runFiltersOnFetch(client, { fetchProfile: buildFetchProfile({}) }, fetchResult)
+      await runFiltersOnFetch(client, {}, fetchResult)
       const workflows = findElements(fetchResult, WORKFLOW_METADATA_TYPE, baseCustomObject)
       workflow = workflows[0] as InstanceElement
     })

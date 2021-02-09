@@ -17,7 +17,7 @@ import { Element, Change } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
-import { ConfigChangeSuggestion, FetchParameters } from './types'
+import { ConfigChangeSuggestion } from './types'
 import { FetchProfile } from './fetch_profile/fetch_profile'
 
 // Filters run in a specific order and get a mutable list as input which they may modify
@@ -43,7 +43,6 @@ export type FilterCreator = (
 ) => Filter
 
 export type FilterContext = {
-  fetch?: FetchParameters
   unsupportedSystemFields?: string[]
   systemFields?: string[]
   useOldProfiles?: boolean

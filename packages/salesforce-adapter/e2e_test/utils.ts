@@ -240,7 +240,7 @@ const defaultFilterContext: FilterContext = {
 
 export const runFiltersOnFetch = async (
   client: SalesforceClient,
-  context: FilterContext,
+  context: Partial<FilterContext>,
   elements: Element[],
   filterCreators = DEFAULT_FILTERS
 ): Promise<void | ConfigChangeSuggestion[]> =>

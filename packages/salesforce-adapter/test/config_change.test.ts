@@ -259,7 +259,7 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
         expect(config?.config?.value).toEqual(expectedConfig)
       })
       it('return combined message', () => {
-        expect(config?.message).toBe(`The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprected options to the "fetch" configuration option.
+        expect(config?.message).toBe(`The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.
 In Addition, Salto failed to fetch some items from salesforce. 
 
 In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`)

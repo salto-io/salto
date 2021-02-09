@@ -112,13 +112,13 @@ SalesforceConfig => {
 
     validateClientConfig(config?.value?.client)
     const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
-      [FETCH_CONFIG]: config?.value?.[FETCH_CONFIG],
-      [MAX_ITEMS_IN_RETRIEVE_REQUEST]: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
+      fetch: config?.value?.[FETCH_CONFIG],
+      maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
       useOldProfiles: config?.value?.[USE_OLD_PROFILES],
       client: config?.value?.[CLIENT_CONFIG],
-      [METADATA_TYPES_SKIPPED_LIST]: config?.value?.[METADATA_TYPES_SKIPPED_LIST],
-      [INSTANCES_REGEX_SKIPPED_LIST]: config?.value?.[INSTANCES_REGEX_SKIPPED_LIST],
-      [DATA_MANAGEMENT]: config?.value?.[DATA_MANAGEMENT],
+      metadataTypesSkippedList: config?.value?.[METADATA_TYPES_SKIPPED_LIST],
+      instancesRegexSkippedList: config?.value?.[INSTANCES_REGEX_SKIPPED_LIST],
+      dataManagement: config?.value?.[DATA_MANAGEMENT],
     }
     Object.keys(config?.value ?? {})
       .filter(k => !Object.keys(adapterConfig).includes(k))

@@ -98,6 +98,10 @@ const getFullName = (obj: FileProperties): string => {
   return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
 }
 
+const getNamespace = (obj: FileProperties): string => (
+  obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
+)
+
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
 }: {
@@ -116,7 +120,7 @@ export const fetchMetadataInstances = async ({
     fileProps.map(
       prop => ({
         name: getFullName(prop),
-        namespace: prop.namespacePrefix === undefined || prop.namespacePrefix === '' ? DEFAULT_NAMESPACE : prop.namespacePrefix,
+        namespace: getNamespace(prop),
       })
     ).filter(
       ({ name, namespace }) => metadataQuery.isInstanceMatch({
@@ -182,7 +186,7 @@ export const retrieveMetadataInstances = async ({
 
   const notInSkipList = (file: FileProperties): boolean => (
     metadataQuery.isInstanceMatch({
-      namespace: file.namespacePrefix === undefined || file.namespacePrefix === '' ? DEFAULT_NAMESPACE : file.namespacePrefix,
+      namespace: getNamespace(file),
       metadataType: file.type,
       name: file.fullName,
     })

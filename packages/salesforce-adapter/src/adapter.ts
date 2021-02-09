@@ -63,7 +63,7 @@ import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
-import { ConfigChangeSuggestion, FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { addDefaults } from './filters/utils'
@@ -324,11 +324,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
 
-    this.fetchProfile = buildFetchProfile(config[FETCH_CONFIG] ?? {}, config)
+    this.fetchProfile = buildFetchProfile(config.fetch ?? {}, config)
     this.filtersRunner = filtersRunner(
       this.client,
       {
-        fetch: config.fetch,
         unsupportedSystemFields,
         systemFields,
         useOldProfiles: config.useOldProfiles ?? useOldProfiles,

@@ -28,7 +28,7 @@ const MESSAGE_REASONS_INTRO = 'Due to the following issues: '
 const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
 + 'Salto needs to stop managing these items by applying the following configuration change:'
 export const DEPRECATED_OPTIONS_MESSAGE = 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated.'
-+ ' The following changes will update the deprected options to the "fetch" configuration option.'
++ ' The following changes will update the deprecated options to the "fetch" configuration option.'
 
 
 const formatReason = (reason: string): string =>
@@ -111,16 +111,18 @@ const convertDeprecatedRegex = (filePathRegex: string): string => {
   return newPathRegex
 }
 
-export const convertDeprecatedDataConf = (conf: DataManagementConfig): DataManagementConfig => {
-  const updatedConf = _.cloneDeep(conf)
-  updatedConf.includeObjects = updatedConf.includeObjects.map(convertDeprecatedRegex)
-  updatedConf.excludeObjects = updatedConf?.excludeObjects?.map(convertDeprecatedRegex)
-  updatedConf.allowReferenceTo = updatedConf?.allowReferenceTo?.map(convertDeprecatedRegex)
-  updatedConf.saltoIDSettings.overrides = updatedConf.saltoIDSettings.overrides?.map(
-    override => ({ ...override, objectsRegex: convertDeprecatedRegex(override.objectsRegex) })
-  )
-  return updatedConf
-}
+export const convertDeprecatedDataConf = (conf: DataManagementConfig): DataManagementConfig => ({
+  ...conf,
+  includeObjects: conf.includeObjects.map(convertDeprecatedRegex),
+  excludeObjects: conf?.excludeObjects?.map(convertDeprecatedRegex),
+  allowReferenceTo: conf?.allowReferenceTo?.map(convertDeprecatedRegex),
+  saltoIDSettings: {
+    ...conf.saltoIDSettings,
+    overrides: conf.saltoIDSettings.overrides?.map(
+      override => ({ ...override, objectsRegex: convertDeprecatedRegex(override.objectsRegex) })
+    ),
+  },
+})
 
 // Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
 const INSTANCE_SUFFIXES = [
@@ -169,9 +171,6 @@ export const getConfigFromConfigChanges = (
 ): { config: InstanceElement ; message: string } | undefined => {
   const currentMetadataExclude = makeArray(currentConfig.fetch?.metadata?.exclude)
 
-  const currentDataManagement = currentConfig.fetch?.data
-    ?? (currentConfig.dataManagement && convertDeprecatedDataConf(currentConfig.dataManagement))
-
   const newMetadataExclude = makeArray(configChanges)
     .filter(isMetadataConfigSuggestions)
     .map(e => e.value)
@@ -189,6 +188,22 @@ export const getConfigFromConfigChanges = (
     .every(_.isEmpty) && !didUseDeprecatedFields) {
     return undefined
   }
+
+  const currentDataManagement = currentConfig.fetch?.data
+    ?? (currentConfig.dataManagement && convertDeprecatedDataConf(currentConfig.dataManagement))
+
+  const metadata = convertDeprecatedMetadataParams(
+    {
+      ...currentConfig.fetch?.metadata,
+      exclude: [
+        ...currentMetadataExclude,
+        ...newMetadataExclude,
+      ],
+    },
+    currentConfig,
+  )
+
+
   const dataManagementOverrides = {
     excludeObjects: makeArray(currentDataManagement?.excludeObjects)
       .concat(dataObjectsToExclude),
@@ -218,17 +233,6 @@ export const getConfigFromConfigChanges = (
     ...currentDataManagement,
     ...dataManagementOverrides,
   }, isDefined)
-
-  const metadata = convertDeprecatedMetadataParams(
-    {
-      ...currentConfig.fetch?.metadata,
-      exclude: [
-        ...currentMetadataExclude,
-        ...newMetadataExclude,
-      ],
-    },
-    currentConfig,
-  )
 
   return {
     config: new InstanceElement(

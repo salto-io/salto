@@ -34,7 +34,7 @@ export type ClientOpts<
 }
 
 export interface HTTPClientInterface {
-  get(params: ClientGetParams): Promise<{ result: ResponseValue[]; errors: string[]}>
+  get(params: ClientGetParams): AsyncIterable<ResponseValue[]>
 }
 
 export abstract class AdapterHTTPClient<
@@ -85,35 +85,24 @@ export abstract class AdapterHTTPClient<
   /**
    * Fetch instances of a specific type
    */
-  @throttle<TRateLimitConfig>('get', ['endpointName', 'queryArgs', 'recursiveQueryArgs'])
-  @logDecorator(['endpointName', 'queryArgs', 'recursiveQueryArgs'])
+  @throttle<TRateLimitConfig>('get', ['url', 'queryParams', 'recursiveQueryParams'])
+  @logDecorator(['url', 'queryParams', 'recursiveQueryParams'])
   @requiresLogin()
-  public async get(getParams: ClientGetParams): Promise<{
-    result: ResponseValue[]
-    errors: string[]
-  }> {
+  public async *get(getParams: ClientGetParams): AsyncIterable<ResponseValue[]> {
     if (this.apiClient === undefined) {
       // initialized by requiresLogin (through ensureLoggedIn in this case)
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
     try {
-      const allResults = await this.getAllItems({
+      yield* await this.getAllItems({
         conn: this.apiClient,
         pageSize: this.getPageSize,
         getParams,
       })
-
-      return {
-        result: allResults,
-        errors: [],
-      }
     } catch (e) {
-      log.error(`failed to get ${getParams.endpointName}: ${e}, stack: ${e.stack}`)
-      return {
-        result: [],
-        errors: [e],
-      }
+      log.error(`failed to get ${getParams.url}: ${e}, stack: ${e.stack}`)
+      throw new Error(`Failed to get ${getParams.url} with error: ${e}`)
     }
   }
 }

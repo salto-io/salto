@@ -29,7 +29,7 @@
 * limitations under the License.
 */
 import moxios from 'moxios'
-import { validateCredentials } from '../../src/client/http_connection'
+import { validateCredentials } from '../../src/client'
 import { createConnection } from './common'
 
 describe('client_http_connection', () => {

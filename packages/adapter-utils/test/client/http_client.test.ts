@@ -28,12 +28,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { collections } from '@salto-io/lowerdash'
 import moxios from 'moxios'
 import { ClientRateLimitConfig } from '../../src/client/config'
-import { AdapterHTTPClient, ClientOpts } from '../../src/client/http_client'
-import { ConnectionCreator } from '../../src/client/http_connection'
-import { GetAllItemsFunc } from '../../src/client/pagination'
+import { AdapterHTTPClient, ClientOpts, ConnectionCreator, GetAllItemsFunc } from '../../src/client'
 import { createConnection, Credentials } from './common'
+
+const { toArrayAsync } = collections.asynciterable
 
 describe('client_http_client', () => {
   beforeEach(() => {
@@ -45,9 +46,9 @@ describe('client_http_client', () => {
   })
 
   describe('get', () => {
-    const getPage: GetAllItemsFunc = jest.fn(async () => {
+    const getPage: GetAllItemsFunc = jest.fn(async function *x() {
       await new Promise(resolve => setTimeout(resolve, 10))
-      return []
+      yield []
     })
 
     const mockCreateConnection: ConnectionCreator<Credentials> = jest.fn(createConnection)
@@ -77,7 +78,7 @@ describe('client_http_client', () => {
       expect(mockCreateConnection).not.toHaveBeenCalled()
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
       expect(mockCreateConnection).toHaveBeenCalledTimes(1)
-      const getRes = client.get({ endpointName: '/ep' })
+      const getRes = client.get({ url: '/ep' })
 
       // should not call getPage until auth succeeds
       expect(getPage).toHaveBeenCalledTimes(0)
@@ -94,16 +95,16 @@ describe('client_http_client', () => {
         })
       })
 
-      await getRes
-      await client.get({ endpointName: '/ep2', paginationField: 'page', queryArgs: { a: 'AAA' } })
+      await toArrayAsync(await getRes)
+      await toArrayAsync(await client.get({ url: '/ep2', paginationField: 'page', queryParams: { a: 'AAA' } }))
       expect(getPage).toHaveBeenCalledTimes(2)
       expect(getPage).toHaveBeenCalledWith({
-        conn: expect.anything(), pageSize: 123, getParams: { endpointName: '/ep' },
+        conn: expect.anything(), pageSize: 123, getParams: { url: '/ep' },
       })
       expect(getPage).toHaveBeenCalledWith({
         conn: expect.anything(),
         pageSize: 123,
-        getParams: { endpointName: '/ep2', paginationField: 'page', queryArgs: { a: 'AAA' } },
+        getParams: { url: '/ep2', paginationField: 'page', queryParams: { a: 'AAA' } },
       })
       expect(mockCreateConnection).toHaveBeenCalledTimes(1)
     })

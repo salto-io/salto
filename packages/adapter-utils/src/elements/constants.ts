@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 
-// NACL files path
+// NaCl files path
 export const RECORDS_PATH = 'Records'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
-export const OBJECTS_PATH = 'Objects'
 
 export const NAMESPACE_SEPARATOR = '__'

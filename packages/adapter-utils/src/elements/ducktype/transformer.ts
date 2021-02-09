@@ -25,6 +25,7 @@ import { RequestConfig, ElementTranslationConfig, EndpointConfig } from './endpo
 import { FindNestedFieldFunc } from './field_finder'
 
 const { makeArray } = collections.array
+const { toArrayAsync } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
@@ -33,6 +34,10 @@ type ComputeGetArgsFunc = (
   contextElements?: Record<string, Element[]>,
 ) => ClientGetParams[]
 
+/**
+ * Convert an endpoint's request details into get argumets.
+ * Supports recursive queries (subsequent queries to the same endpoint based on response data).
+ */
 export const simpleGetArgs: ComputeGetArgsFunc = (
   {
     url,
@@ -41,15 +46,19 @@ export const simpleGetArgs: ComputeGetArgsFunc = (
     paginationField,
   },
 ) => {
-  const recursiveQueryArgs = recursiveQueryByResponseField !== undefined
+  const recursiveQueryParams = recursiveQueryByResponseField !== undefined
     ? _.mapValues(
       recursiveQueryByResponseField,
       val => ((entry: Values): string => entry[val])
     )
     : undefined
-  return [{ endpointName: url, queryArgs: queryParams, recursiveQueryArgs, paginationField }]
+  return [{ url, queryParams, recursiveQueryParams, paginationField }]
 }
 
+/**
+ * Given a type and the corresponding endpoint definition, make the relevant HTTP requests and
+ * use the responses to create elements for the endpoint's type (and nested types) and instances.
+ */
 export const getTypeAndInstances = async ({
   adapterName,
   typeName,
@@ -81,10 +90,9 @@ export const getTypeAndInstances = async ({
 
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(request, contextElements)
-    // TODO add error handling
     return (await Promise.all(
-      getArgs.map(args => client.get(args))
-    )).flatMap(r => r.result.map(entry =>
+      getArgs.map(async args => (await toArrayAsync(await client.get(args))).flat())
+    )).flatMap(r => r.map(entry =>
       (fieldsToOmit !== undefined
         ? _.omit(entry, fieldsToOmit)
         : entry
@@ -108,14 +116,14 @@ export const getTypeAndInstances = async ({
 
   const instances = naclEntries.flatMap((entry, index) => {
     if (nestedFieldDetails !== undefined && !keepOriginal) {
-      return makeArray(entry[nestedFieldDetails.field.name]).flatMap(
+      return makeArray(entry[nestedFieldDetails.field.name]).map(
         (nestedEntry, nesteIndex) => toInstance({
           adapterName,
           entry: nestedEntry,
           type: nestedFieldDetails.type,
           nameField: nameField ?? defaultNameField,
           pathField: pathField ?? defaultPathField,
-          defaultName: `unindexed_${index}_${nesteIndex}`, // TODO improve, get as input from adapter?
+          defaultName: `unindexed_${index}_${nesteIndex}`, // TODO improve
           fieldsToOmit,
           hasDynamicFields,
         })
@@ -130,7 +138,7 @@ export const getTypeAndInstances = async ({
       nameField: nameField ?? defaultNameField,
       pathField: pathField ?? defaultPathField,
       defaultName: `unindexed_${index}`, // TODO improve
-      // we only omit the pagination fields at the top level
+      // we omit the pagination fields only from the top level and not from inner ones
       fieldsToOmit: [...(topLevelFieldsToOmit ?? []), ...(fieldsToOmit ?? [])],
       hasDynamicFields,
     })
@@ -138,6 +146,14 @@ export const getTypeAndInstances = async ({
   return [type, ...nestedTypes, ...instances].filter(isDefined)
 }
 
+/**
+ * Helper function for the adapter fetch implementation:
+ * Given api definitions and a list of endpoints, make the relevant API calls and convert the
+ * response data into a list of elements (for the type, nested types and instances).
+ *
+ * Supports one level of dependency between the endpoints, using the dependsOn field
+ * (note that it will need to be extended in order to support longer dependency chains).
+ */
 export const getAllElements = async ({
   adapterName,
   includeEndpoints,
@@ -190,23 +206,24 @@ export const getAllElements = async ({
     defaultPathField: defaultExtractionFields.pathField,
     topLevelFieldsToOmit: defaultExtractionFields.topLevelFieldsToOmit,
   }
-  const contextElements: Record<string, Element[]> = Object.fromEntries(await Promise.all(
-    independentEndpoints.map(async ({ endpointName, request, translation }) => [
-      request.url,
+  const contextElements = Object.fromEntries(await Promise.all(independentEndpoints.map(
+    async ({ endpointName, request, translation }): Promise<[string, Element[]]> => [
+      endpointName,
       await getTypeAndInstances({
         ...elementGenerationParams,
         typeName: endpointName,
         request,
         translation,
       }),
-    ])
-  ))
+    ]
+  )))
   const dependentElements = await Promise.all(
     dependentEndpoints.map(({ endpointName, request, translation }) => getTypeAndInstances({
       ...elementGenerationParams,
       typeName: endpointName,
       request,
       translation,
+      contextElements,
     }))
   )
 

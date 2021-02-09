@@ -29,7 +29,7 @@
 * limitations under the License.
 */
 import { ObjectType } from '@salto-io/adapter-api'
-import { createClientConfigType, validateClientConfig } from '../../src/client/config'
+import { createClientConfigType, validateClientConfig } from '../../src/client'
 
 describe('client_config', () => {
   describe('createClientConfigType', () => {

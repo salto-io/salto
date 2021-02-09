@@ -30,8 +30,8 @@
 */
 import { ObjectType, Values, ElemID, BuiltinTypes, MapType } from '@salto-io/adapter-api'
 // eslint-disable-next-line
-import { generateType } from '../../../src/elements/ducktype/type_elements'
-import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements/constants'
+import { generateType } from '../../../src/elements/ducktype'
+import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements'
 
 /* eslint-disable @typescript-eslint/camelcase */
 const ADAPTER_NAME = 'myAdapter'

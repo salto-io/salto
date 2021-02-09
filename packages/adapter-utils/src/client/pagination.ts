@@ -23,10 +23,12 @@ const { isDefined } = lowerfashValues
 const { makeArray } = collections.array
 const log = logger(module)
 
+type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
+
 export type ClientGetParams = {
-  endpointName: string
-  queryArgs?: Record<string, string>
-  recursiveQueryArgs?: Record<string, (entry: ResponseValue) => string>
+  url: string
+  queryParams?: Record<string, string>
+  recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
 }
 
@@ -38,17 +40,44 @@ export type GetAllItemsFunc = ({
   conn: APIConnection
   pageSize: number
   getParams: ClientGetParams
-}) => Promise<ResponseValue[]>
+}) => AsyncIterable<ResponseValue[]>
 
-export const getWithPageOffsetPagination: GetAllItemsFunc = async ({
+/**
+ * Helper function for generating individual recursive queries based on past responses.
+ *
+ * For example, the endpoint /folder may have an optional parent_id parameter that is called
+ * to list the folders under parent_id. So for each item returned from /folder, we should make
+ * a subsequent call to /folder?parent_id=<id>
+ */
+const computeRecursiveArgs = (
+  recursiveQueryParams: RecursiveQueryArgFunc,
+  responses: ResponseValue[],
+): Record<string, string>[] => (
+  responses
+    .map(res => _.pickBy(
+      _.mapValues(
+        recursiveQueryParams,
+        mapper => mapper(res),
+      ),
+      isDefined,
+    ))
+    .filter(args => Object.keys(args).length > 0)
+)
+
+/**
+ * Make paginated requests using the specified pagination field, assuming the
+ * next page is prev+1 and first page is 1.
+ * Also supports recursive queries (see example under computeRecursiveArgs).
+ */
+export const getWithPageOffsetPagination: GetAllItemsFunc = async function *getWithOffset({
   conn,
   pageSize,
   getParams,
-}) => {
-  const { endpointName, paginationField, queryArgs, recursiveQueryArgs } = getParams
+}) {
+  const { url, paginationField, queryParams, recursiveQueryParams } = getParams
   const requestQueryArgs: Record<string, string>[] = [{}]
-  const allResults = []
   const usedParams = new Set<string>()
+  let numResults = 0
 
   while (requestQueryArgs.length > 0) {
     const additionalArgs = requestQueryArgs.pop() as Record<string, string>
@@ -58,76 +87,91 @@ export const getWithPageOffsetPagination: GetAllItemsFunc = async ({
       continue
     }
     usedParams.add(serializedArgs)
-    const params = { ...queryArgs, ...additionalArgs }
+    const params = { ...queryParams, ...additionalArgs }
     // eslint-disable-next-line no-await-in-loop
     const response = await conn.get(
-      endpointName,
+      url,
       Object.keys(params).length > 0 ? { params } : undefined
     )
-    // TODO remove?
-    log.debug(`Full HTTP response for ${endpointName} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
+
+    log.debug(`Full HTTP response for ${url} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
 
     if (response.status !== 200) {
-      log.error(`error getting result for ${endpointName}: %s %o %o`, response.status, response.statusText, response.data)
+      log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
       break
     }
 
-    const results: ResponseValue[] = (
+    const page: ResponseValue[] = (
       (_.isObjectLike(response.data) && Array.isArray(response.data.items))
         ? response.data.items
         : makeArray(response.data)
     )
 
-    allResults.push(...results)
+    yield page
+    numResults += page.length
 
-    if (paginationField !== undefined && results.length >= pageSize) {
+    if (paginationField !== undefined && page.length >= pageSize) {
       requestQueryArgs.unshift({
         ...additionalArgs,
         [paginationField]: (additionalArgs[paginationField] ?? 1) + 1,
       })
     }
 
-    if (recursiveQueryArgs !== undefined && Object.keys(recursiveQueryArgs).length > 0) {
-      const newArgs = (results
-        .map(res => _.pickBy(
-          _.mapValues(
-            recursiveQueryArgs,
-            mapper => mapper(res),
-          ),
-          isDefined,
-        ))
-        .filter(args => Object.keys(args).length > 0)
-      )
-      requestQueryArgs.unshift(...newArgs)
+    if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
+      requestQueryArgs.unshift(...computeRecursiveArgs(recursiveQueryParams, page))
     }
   }
-  return allResults
+  log.info('Received %d results for endpoint %s', numResults, url)
 }
 
-export const getWithCursorPagination: GetAllItemsFunc = async ({ conn, getParams }) => {
-  const { endpointName, queryArgs, paginationField } = getParams
+/**
+ * Make paginated requests using the specified paginationField, assuming the next page is specified
+ * as either a full URL or just the path and query prameters.
+ * Only supports next pages under the same endpoint (and uses the same host).
+ */
+export const getWithCursorPagination: GetAllItemsFunc = async function *getWithCursor({
+  conn,
+  getParams,
+}) {
+  const { url, queryParams, paginationField } = getParams
 
-  const entries: ResponseValue[] = []
   let nextPageArgs: Record<string, string> = {}
+  let numResults = 0
+
+  const computeNextPageArgs = (
+    nextPagePath: string,
+    params: Record<string, string>,
+  ): Record<string, string> => {
+    const nextPage = new URL(nextPagePath, 'http://localhost')
+    if (nextPage.pathname !== url) {
+      log.error('unexpected next page received for endpoint %s params %o: %s', url, params, nextPage.pathname)
+      throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+    }
+    return Object.fromEntries(nextPage.searchParams.entries())
+  }
+
   while (true) {
     const params = {
-      ...queryArgs,
+      ...queryParams,
       ...nextPageArgs,
     }
     // eslint-disable-next-line no-await-in-loop
     const response = await conn.get(
-      endpointName,
+      url,
       Object.keys(params).length > 0 ? { params } : undefined
     )
-    // TODO remove?
-    log.info(`Full HTTP response for ${endpointName} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
+
+    log.debug(`Full HTTP response for ${url} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
 
     if (response.status !== 200 || response.data.success === false) {
-      log.error(`error getting result for ${endpointName}: %s %o %o`, response.status, response.statusText, response.data)
+      log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
       break
     }
-    // TODO can we avoid the cast?
-    entries.push(...makeArray(response.data))
+
+    const page = makeArray(response.data)
+    yield page
+    numResults += page.length
+
     if (
       paginationField === undefined
       || response.data[paginationField] === undefined
@@ -135,12 +179,8 @@ export const getWithCursorPagination: GetAllItemsFunc = async ({ conn, getParams
     ) {
       break
     }
-    const nextPage = new URL(response.data[paginationField] as string, 'http://localhost')
-    // TODO verify pathname is the same
-    nextPageArgs = Object.fromEntries(nextPage.searchParams.entries())
+    nextPageArgs = computeNextPageArgs(response.data[paginationField] as string, params)
   }
   // the number of results may be lower than actual if the instances are under a nested field
-  log.info('Received %d results for endpoint %s',
-    entries.length, endpointName)
-  return entries
+  log.info('Received %d results for endpoint %s', numResults, url)
 }

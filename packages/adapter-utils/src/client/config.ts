@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, createRestriction, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 
 /* Client config */
 
@@ -41,27 +41,36 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
   adapter: string,
   bucketNames?: (keyof RateLimitConfig)[],
 ): ObjectType => {
+  const createFieldDefWithMin = (min: number): FieldDefinition => ({
+    type: BuiltinTypes.NUMBER,
+    // note: not enforced yet
+    [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+      min,
+    }),
+  })
+
   const clientRateLimitConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientRateLimitConfig'),
     fields: {
-      total: { type: BuiltinTypes.NUMBER },
-      get: { type: BuiltinTypes.NUMBER },
-      ...Object.fromEntries((bucketNames ?? []).map(name => [name, { type: BuiltinTypes.NUMBER }])),
+      total: createFieldDefWithMin(-1),
+      get: createFieldDefWithMin(-1),
+      ...Object.fromEntries((bucketNames ?? []).map(name => [name, createFieldDefWithMin(-1)])),
     },
   })
 
+  const clientPageSizeFields: Record<keyof Required<ClientPageSizeConfig>, FieldDefinition> = {
+    // can extend to additional operations when needed
+    get: createFieldDefWithMin(1),
+  }
   const clientPageSizeConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientPageSizeConfig'),
-    fields: {
-      // can extend to additional operations when needed
-      get: { type: BuiltinTypes.NUMBER },
-    },
+    fields: clientPageSizeFields,
   })
 
   const clientRetryConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientRetryConfig'),
     fields: {
-      maxAttempts: { type: BuiltinTypes.NUMBER },
+      maxAttempts: createFieldDefWithMin(1),
       retryDelay: { type: BuiltinTypes.NUMBER },
     },
   })

@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials } from 'axios'
 import axiosRetry from 'axios-retry'
-import { Values, AccountId } from '@salto-io/adapter-api'
+import { AccountId } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
 import { DEFAULT_RETRY_OPTS } from './constants'
@@ -28,6 +29,7 @@ export type ResponseValue = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type APIConnection<T = any> = {
+  // based on https://github.com/axios/axios/blob/f472e5da5fe76c72db703d6a0f5190e4ad31e642/index.d.ts#L140
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get: (url: string, config?: { params: Record<string, any> }) => Promise<{
     data: T
@@ -36,16 +38,16 @@ export type APIConnection<T = any> = {
   }>
 }
 
-export type AuthenticatedAPIConnection = APIConnection & {
+type AuthenticatedAPIConnection = APIConnection & {
   accountId: AccountId
 }
 
-export type RetryOptions = {
+type RetryOptions = {
   retries: number
   retryDelay?: (retryCount: number, error: AxiosError) => number
 }
 
-export type LoginFunc<TCredentials> = (creds: TCredentials) => Promise<AuthenticatedAPIConnection>
+type LoginFunc<TCredentials> = (creds: TCredentials) => Promise<AuthenticatedAPIConnection>
 
 export interface Connection<TCredentials> {
   login: LoginFunc<TCredentials>
@@ -79,7 +81,9 @@ export const createClientConnection = <TCredentials>({
   retryOptions,
   createConnection,
 }: ConnectionParams<TCredentials>): Connection<TCredentials> => (
-    connection ?? createConnection(retryOptions ?? createRetryOptions(DEFAULT_RETRY_OPTS))
+    connection ?? createConnection(
+      _.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS))
+    )
   )
 
 export const validateCredentials = async <TCredentials>(
@@ -100,7 +104,7 @@ export const axiosConnection = <TCredentials>({
   retryOptions: RetryOptions
   authParamsFunc: (creds: TCredentials) => {
     auth?: AxiosBasicCredentials
-    headers?: Values
+    headers?: Record<string, unknown>
   }
   baseURLFunc: (creds: TCredentials) => string
   credValidateFunc: (creds: TCredentials, conn: APIConnection) => Promise<AccountId>

@@ -31,8 +31,8 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 // eslint-disable-next-line
-import { toInstance } from '../../../src/elements/ducktype/instance_elements'
-import { RECORDS_PATH } from '../../../src/elements/constants'
+import { toInstance } from '../../../src/elements/ducktype'
+import { RECORDS_PATH } from '../../../src/elements'
 
 /* eslint-disable @typescript-eslint/camelcase */
 const ADAPTER_NAME = 'myAdapter'
@@ -130,6 +130,34 @@ describe('ducktype_instance_elements', () => {
         'abc',
         type,
         e,
+      ))).toBeTruthy()
+    })
+    it('should omit null field values', () => {
+      const e = {
+        a: null,
+        field_with_complex_type: {
+          id: 54775,
+          number: 53,
+          null: null,
+        },
+      }
+      const inst = toInstance({
+        adapterName: ADAPTER_NAME,
+        type,
+        nameField: 'name',
+        defaultName: 'abc',
+        entry: e,
+      })
+      expect(inst).toBeDefined()
+      expect(inst?.isEqual(new InstanceElement(
+        'abc',
+        type,
+        {
+          field_with_complex_type: {
+            id: 54775,
+            number: 53,
+          },
+        },
       ))).toBeTruthy()
     })
     it('should not generate instance if value is empty', () => {

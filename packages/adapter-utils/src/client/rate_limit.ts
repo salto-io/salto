@@ -22,9 +22,7 @@ import { logOperationDecorator } from './decorators'
 
 const log = logger(module)
 
-type RateLimitExtendedConfig = ClientRateLimitConfig & {
-  [k: string ]: number | undefined
-}
+type RateLimitExtendedConfig = ClientRateLimitConfig & Record<string, number | undefined>
 
 export type BottleneckBuckets<TRateLimitConfig> = {
   [P in keyof Required<TRateLimitConfig>]: Bottleneck
@@ -63,7 +61,7 @@ export const throttle = <TRateLimitConfig extends ClientRateLimitConfig>(
         },
         originalMethod: decorators.OriginalCall,
       ): Promise<unknown> {
-        log.debug('%s enqueued', logOperationDecorator(this.clientName, keys)(originalMethod))
+        log.debug('%s enqueued', logOperationDecorator(originalMethod, this.clientName, keys))
         const wrappedCall = this.rateLimiters.total.wrap(async () => originalMethod.call())
         if (bucketName !== undefined && bucketName !== 'total') {
           // we already verified that the bucket exists

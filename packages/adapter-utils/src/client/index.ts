@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './base'
-export * from './config'
-export * from './constants'
-export * from './decorators'
-export * from './http_client'
-export * from './http_connection'
-export * from './pagination'
-export * from './rate_limit'
+export { AdapterClientBase } from './base'
+export { ClientBaseConfig, ClientRateLimitConfig, ClientPageSizeConfig, createClientConfigType, validateClientConfig } from './config'
+export { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from './constants'
+export { logDecorator, requiresLogin } from './decorators'
+export { AdapterHTTPClient, ClientOpts, HTTPClientInterface } from './http_client'
+export { APIConnection, ConnectionCreator, axiosConnection, createClientConnection, createRetryOptions, validateCredentials } from './http_connection'
+export { ClientGetParams, getWithCursorPagination, getWithPageOffsetPagination, GetAllItemsFunc } from './pagination'
+export { createRateLimitersFromConfig, throttle, BottleneckBuckets } from './rate_limit'

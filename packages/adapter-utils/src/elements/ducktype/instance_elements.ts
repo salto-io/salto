@@ -19,13 +19,14 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '../../nacl_case_utils'
 import { RECORDS_PATH, NAMESPACE_SEPARATOR } from '../constants'
+import { transformValues } from '../../utils'
 
 /**
  * Generate an instance for a single entry returned for a given type.
  *
  * - The elem id is determined based on the name field, with a fallback
  *    to a default name that might not be multienv-friendly.
- * - Specialc case: If hasDynamicFields is specified, then the entry is
+ * - Special case: If hasDynamicFields is specified, then the entry is
  *    nested under a 'value' field in order to allow the type to define
  *    this as a map type.
  */
@@ -51,7 +52,9 @@ export const toInstance = ({
   nameSuffix?: string
 }): InstanceElement | undefined => {
   const name = entry[nameField] ?? defaultName
-  const path = pathField ? entry[pathField]?.slice(0, 100) : undefined
+  const path = ((pathField && _.isString(entry[pathField]))
+    ? entry[pathField].slice(0, 100)
+    : undefined)
   const entryData = fieldsToOmit !== undefined
     ? _.omit(entry, fieldsToOmit)
     : entry
@@ -68,7 +71,13 @@ export const toInstance = ({
   return new InstanceElement(
     naclName,
     type,
-    hasDynamicFields ? { value: entryData } : entryData,
+    transformValues({
+      values: hasDynamicFields ? { value: entryData } : entryData,
+      type,
+      // omit nulls from returned value
+      transformFunc: ({ value }) => (value === null ? undefined : value),
+      strict: false,
+    }),
     [
       adapterName,
       RECORDS_PATH,

@@ -29,7 +29,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
-import { findNestedField, returnFullEntry } from '../../../src/elements/ducktype/field_finder'
+import { findNestedField, returnFullEntry } from '../../../src/elements/ducktype'
 
 const ADAPTER_NAME = 'myAdapter'
 

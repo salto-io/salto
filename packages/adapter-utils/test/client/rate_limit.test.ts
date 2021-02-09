@@ -29,7 +29,7 @@
 * limitations under the License.
 */
 import Bottleneck from 'bottleneck'
-import { createRateLimitersFromConfig, throttle, BottleneckBuckets } from '../../src/client/rate_limit'
+import { createRateLimitersFromConfig, throttle, BottleneckBuckets } from '../../src/client'
 
 type MyRateLimitConfig = {
   total: number

@@ -31,10 +31,11 @@ export const requiresLogin = (): decorators.InstanceMethodDecorator => (
   )
 )
 
-type LogDescFunc = (origCall: decorators.OriginalCall) => string
-export const logOperationDecorator = (clientName: string, keys?: string[]): LogDescFunc => ((
+export const logOperationDecorator = (
   { name, args }: decorators.OriginalCall,
-) => {
+  clientName: string,
+  keys?: string[],
+): string => {
   const printableArgs = args
     .map(arg => {
       const keysValues = (keys ?? [])
@@ -45,18 +46,17 @@ export const logOperationDecorator = (clientName: string, keys?: string[]): LogD
     .filter(_.isString)
     .join(', ')
   return `${clientName}:client.${name}(${printableArgs})`
-})
+}
 
 export const logDecorator = (
   keys?: string[]
 ): decorators.InstanceMethodDecorator => (
   decorators.wrapMethodWith(
-    // eslint-disable-next-line prefer-arrow-callback
     async function logFailure(
       this: { clientName: string },
       originalMethod: decorators.OriginalCall,
     ): Promise<unknown> {
-      const desc = logOperationDecorator(this.clientName, keys)(originalMethod)
+      const desc = logOperationDecorator(originalMethod, this.clientName, keys)
       try {
         return await log.time(originalMethod.call, desc)
       } catch (e) {

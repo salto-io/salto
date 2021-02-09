@@ -29,7 +29,7 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createAdapterApiConfigType, createUserFetchConfigType, validateFetchConfig } from '../../../src/elements/ducktype/endpoint_config'
+import { createAdapterApiConfigType, createUserFetchConfigType, validateFetchConfig } from '../../../src/elements/ducktype'
 
 describe('ducktype_endpoint_config', () => {
   describe('createAdapterApiConfigType', () => {

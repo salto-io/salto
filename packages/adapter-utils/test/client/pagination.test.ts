@@ -28,10 +28,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { APIConnection } from '../../src/client/http_connection'
-import { getWithCursorPagination, getWithPageOffsetPagination } from '../../src/client/pagination'
+import { collections } from '@salto-io/lowerdash'
+import { APIConnection, getWithCursorPagination, getWithPageOffsetPagination } from '../../src/client'
 import { MockInterface } from '../common'
 
+const { toArrayAsync } = collections.asynciterable
 
 describe('client_pagination', () => {
   describe('getWithPageOffsetPagination', () => {
@@ -48,13 +49,13 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination({
         conn,
         pageSize: 123,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(conn.get).toHaveBeenCalledTimes(1)
       expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
@@ -68,17 +69,17 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination({
         conn,
         pageSize: 123,
         getParams: {
-          endpointName: '/ep',
-          queryArgs: {
+          url: '/ep',
+          queryParams: {
             arg1: 'val1',
             arg2: 'val2',
           },
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(conn.get).toHaveBeenCalledTimes(1)
       expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1', arg2: 'val2' } })
@@ -118,16 +119,16 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination({
         conn,
         pageSize: 5,
         getParams: {
-          endpointName: '/ep',
-          recursiveQueryArgs: {
+          url: '/ep',
+          recursiveQueryParams: {
             parentId: (entry => entry.id as string),
           },
         },
-      })
+      }))).flat()
       expect(result).toEqual([
         { a: 'a1', id: 123 },
         { a: 'a2', id: 456 },
@@ -149,14 +150,14 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination({
         conn,
         pageSize: 123,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
           paginationField: 'page',
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(conn.get).toHaveBeenCalledTimes(1)
       expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
@@ -197,14 +198,14 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination({
         conn,
         pageSize: 1,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
           paginationField: 'page',
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ a: 'a1' }, { a: 'a2', b: 'b2' }, { a: 'a3' }])
       expect(conn.get).toHaveBeenCalledTimes(4)
       expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
@@ -227,17 +228,17 @@ describe('client_pagination', () => {
         status: 404,
         statusText: 'Not Found',
       }))
-      const result = await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination({
         conn,
         pageSize: 1,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
           paginationField: 'page',
-          queryArgs: {
+          queryParams: {
             arg1: 'val1',
           },
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ a: 'a1' }])
       expect(conn.get).toHaveBeenCalledTimes(2)
       expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1' } })
@@ -259,13 +260,13 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination({
         conn,
         pageSize: 123,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'] }])
       expect(conn.get).toHaveBeenCalledTimes(1)
       expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
@@ -279,18 +280,18 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination({
         conn,
         pageSize: 123,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
           paginationField: 'nextPage',
-          queryArgs: {
+          queryParams: {
             arg1: 'val1',
             arg2: 'val2',
           },
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(conn.get).toHaveBeenCalledTimes(1)
       expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1', arg2: 'val2' } })
@@ -311,14 +312,14 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination({
         conn,
         pageSize: 123,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
           paginationField: 'nextPage',
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep?page=p1' }, { products: ['c', 'd'] }])
       expect(conn.get).toHaveBeenCalledTimes(2)
       expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
@@ -338,17 +339,17 @@ describe('client_pagination', () => {
         status: 404,
         statusText: 'Not Found',
       }))
-      const result = await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination({
         conn,
         pageSize: 1,
         getParams: {
-          endpointName: '/ep',
+          url: '/ep',
           paginationField: 'nextPage',
-          queryArgs: {
+          queryParams: {
             arg1: 'val1',
           },
         },
-      })
+      }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep?page=p1' }])
       expect(conn.get).toHaveBeenCalledTimes(2)
       expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1' } })

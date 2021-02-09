@@ -29,7 +29,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { logDecorator, requiresLogin } from '../../src/client/decorators'
+import { logDecorator, requiresLogin } from '../../src/client'
 
 const logging = logger('adapter-utils/client/decorators')
 

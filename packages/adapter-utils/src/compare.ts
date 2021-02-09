@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType, isType,
+  ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType,
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { setPath } from './utils'
@@ -129,9 +129,9 @@ export const detailedCompare = (
     return [{ action: 'modify', data: { before, after }, id: after.elemID }]
   }
 
-  const valueChanges = isInstanceElement(before) && isInstanceElement(after)
-    ? getValuesChanges(after.elemID, before.value, after.value)
-    : []
+  if (isInstanceElement(before) && isInstanceElement(after)) {
+    return getValuesChanges(after.elemID, before.value, after.value)
+  }
 
   // A special case to handle changes in annotationType.
   const annotationTypeChanges = getAnnotationTypeChanges(
@@ -141,14 +141,14 @@ export const detailedCompare = (
   )
 
   const annotationChanges = getValuesChanges(
-    isType(after) ? after.elemID.createNestedID('attr') : after.elemID,
+    after.elemID.isTopLevel() ? after.elemID.createNestedID('attr') : after.elemID,
     before.annotations, after.annotations
   )
 
   const fieldChanges = createFieldChanges && isObjectType(before) && isObjectType(after)
     ? getFieldsChanges(before, after)
     : []
-  return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges, ...valueChanges]
+  return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges]
 }
 
 export const applyDetailedChanges = (

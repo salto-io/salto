@@ -20,7 +20,7 @@ import {
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
   isVariable, isMapType, MapType, isContainerType,
 } from '../src/elements'
-import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
+import { ElemID } from '../src/element_id'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -70,6 +70,87 @@ describe('Test elements.ts', () => {
     expect(ot.elemID).toEqual(otID)
     expect(ot.fields.num_field.type).toBeInstanceOf(PrimitiveType)
     expect(ot.fields.str_field.type).toBeInstanceOf(PrimitiveType)
+  })
+
+  it('Should test getValuesThatNotInPrevOrDifferent func', () => {
+    const prevInstance = new InstanceElement('diff', new ObjectType({
+      elemID: new ElemID('test', 'diff'),
+      annotationTypes: {},
+      annotations: {},
+    }),
+    {
+      userPermissions: [
+        {
+          enabled: false,
+          name: 'ConvertLeads',
+        },
+      ],
+      fieldPermissions: [
+        {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+      ],
+      description: 'old unit test instance profile',
+    },)
+
+    const newInstance = new InstanceElement('diff', new ObjectType({
+      elemID: new ElemID('test', 'diff'),
+      annotationTypes: {},
+      annotations: {},
+    }),
+    {
+      userPermissions: [
+        {
+          enabled: false,
+          name: 'ConvertLeads',
+        },
+      ],
+      fieldPermissions: [
+        {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+        {
+          editable: false,
+          field: 'Account.AccountNumber',
+          readable: false,
+        },
+      ],
+      applicationVisibilities: [
+        {
+          application: 'standard__ServiceConsole',
+          default: false,
+          visible: true,
+        },
+      ],
+      description: 'new unit test instance profile',
+    },)
+
+    expect(newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)).toMatchObject({
+      fieldPermissions: [
+        {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+        {
+          editable: false,
+          field: 'Account.AccountNumber',
+          readable: false,
+        },
+      ],
+      applicationVisibilities: [
+        {
+          application: 'standard__ServiceConsole',
+          default: false,
+          visible: true,
+        },
+      ],
+      description: 'new unit test instance profile',
+    },)
   })
 
   describe('isEqualElements and type guards', () => {
@@ -166,18 +247,6 @@ describe('Test elements.ts', () => {
 
     it('should identify different elements as false', () => {
       expect(isEqualElements(inst, ot)).toBeFalsy()
-    })
-
-    it('should identify different instances with value change', () => {
-      const instClone = inst.clone()
-      instClone.value.newVal = 1
-      expect(isEqualElements(inst, instClone)).toBeFalsy()
-    })
-
-    it('should identify different instances with annotation change', () => {
-      const instClone = inst.clone()
-      instClone.annotations[INSTANCE_ANNOTATIONS.SERVICE_URL] = 'asd'
-      expect(isEqualElements(inst, instClone)).toBeFalsy()
     })
 
     it('should identify equal variable elements', () => {

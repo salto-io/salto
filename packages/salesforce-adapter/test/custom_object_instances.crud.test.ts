@@ -176,6 +176,10 @@ describe('Custom Object Instances CRUD', () => {
     let connection: Connection
     let mockBulkLoad: jest.Mock
     let partialBulkLoad: jest.Mock
+    const errorMsgs = [
+      'Error message1',
+      'Error message2',
+    ]
     const getBulkLoadMock = (mode: string): jest.Mock<Batch> =>
       (jest.fn().mockImplementation(
         (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
@@ -198,12 +202,19 @@ describe('Custom Object Instances CRUD', () => {
             then: () => (Promise.resolve(input?.map((res, index) => ({
               id: res.Id || `newId${index}`,
               success: !isError(index),
-              errors: isError(index) ? ['Error message'] : [],
+              errors: isError(index) ? errorMsgs : [],
             })))),
             job: loadEmitter,
           }
         }
       ))
+
+    // Should include the error msgs and the instance name
+    const validateErrorMsg = (errMsg: string, instName: string): void => {
+      expect(errMsg.includes(instName)).toBeTruthy()
+      errorMsgs.forEach(msg =>
+        expect(errMsg.includes(msg)))
+    }
     beforeEach(() => {
       ({ connection, adapter } = mockAdapter({
         adapterParams: {
@@ -637,9 +648,9 @@ describe('Custom Object Instances CRUD', () => {
 
         it('Should have three errors (1 for update and 2 for add)', () => {
           expect(result.errors).toHaveLength(3)
-          expect(result.errors[0]).toEqual(new Error('Error message'))
-          expect(result.errors[1]).toEqual(new Error('Error message'))
-          expect(result.errors[2]).toEqual(new Error('Error message'))
+          validateErrorMsg(result.errors[0].message, 'newInstanceWithRef')
+          validateErrorMsg(result.errors[1].message, 'newInstanceWithRef')
+          validateErrorMsg(result.errors[2].message, 'Instance')
         })
 
         it('Should have three applied add change with the right ids', () => {
@@ -702,7 +713,7 @@ describe('Custom Object Instances CRUD', () => {
 
         it('should return one error and one applied change', async () => {
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Error message'))
+          validateErrorMsg(result.errors[0].message, 'Instance')
           expect(result.appliedChanges).toHaveLength(1)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
           const changeElement = getChangeElement(result.appliedChanges[0])
@@ -717,10 +728,10 @@ describe('Custom Object Instances CRUD', () => {
           result = await adapter.deploy({ changeGroup: modifyDeployGroup })
         })
 
-        it('should return only an error', async () => {
+        it('should return only errors', async () => {
           expect(result.errors).toHaveLength(2)
-          expect(result.errors[0]).toEqual(new Error('Error message'))
-          expect(result.errors[1]).toEqual(new Error('Error message'))
+          validateErrorMsg(result.errors[0].message, 'Instance')
+          validateErrorMsg(result.errors[1].message, 'AnotherInstance')
           expect(result.appliedChanges).toHaveLength(0)
         })
       })
@@ -766,7 +777,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('should return one error', () => {
             expect(result.errors).toHaveLength(1)
-            expect(result.errors[0]).toEqual(new Error('Error message'))
+            validateErrorMsg(result.errors[0].message, 'Instance')
           })
 
           it('should return one applied change', () => {
@@ -784,10 +795,10 @@ describe('Custom Object Instances CRUD', () => {
             result = await adapter.deploy({ changeGroup: removeChangeGroup })
           })
 
-          it('should return only an error', () => {
+          it('should return only errors', () => {
             expect(result.errors).toHaveLength(2)
-            expect(result.errors[0]).toEqual(new Error('Error message'))
-            expect(result.errors[1]).toEqual(new Error('Error message'))
+            validateErrorMsg(result.errors[1].message, 'Instance')
+            validateErrorMsg(result.errors[1].message, 'AnotherInstance')
             expect(result.appliedChanges).toHaveLength(0)
           })
         })

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { values, collections, hash, strings } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { collections, hash, strings } from '@salto-io/lowerdash'
 import {
   getChangeElement, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
@@ -31,29 +32,60 @@ import { getIdFields, buildSelectStr, transformRecordToValues } from './filters/
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 
-const { isDefined } = values
 const { toArrayAsync } = collections.asynciterable
 const { toMD5 } = hash
+const log = logger(module)
 
 type ActionResult = {
   successInstances: InstanceElement[]
   errorMessages: string[]
 }
 
-const getErrorMessagesFromResults = (results: BatchResultInfo[]): string[] =>
-  results
-    .filter(result => !result.success)
-    .flatMap(erroredResult => erroredResult.errors)
-    .filter(isDefined)
+type InstanceAndResult = {
+  instance: InstanceElement
+  result: BatchResultInfo
+}
 
-const getActionResult = (
-  results: BatchResultInfo[],
-  instances: InstanceElement[]
-): ActionResult => {
-  const successIds = results.filter(result => result.success).map(result => result.id)
-  const successInstances = instances.filter(instance => successIds.includes(apiName(instance)))
-  const errorMessages = getErrorMessagesFromResults(results)
-  return { successInstances, errorMessages }
+const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => (
+  instancesAndResults.forEach(({ instance, result }) => {
+    if (result.errors !== undefined) {
+      log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - 
+    \t${result.errors.join('\n\t')}
+         
+    and values -
+    ${safeJsonStringify(instance.value, undefined, 2,)}
+    `)
+    }
+  })
+)
+
+const getErrorMessagesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): string[] =>
+  instancesAndResults
+    .map(({ instance, result }) => `${instance.elemID.name}:
+    \t${result.errors?.join('\n\t')}`)
+
+const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): string[] => {
+  const errored = instancesAndResults
+    .filter(({ result }) => !result.success && result.errors !== undefined)
+  logErroredInstances(errored)
+  return getErrorMessagesFromInstAndResults(errored)
+}
+
+const groupInstancesAndResultsByIndex = (
+  results: BatchResultInfo[], instances: InstanceElement[],
+): InstanceAndResult[] =>
+  (instances.map((instance, index) =>
+    ({ instance, result: results[index] })))
+
+const getActionResult = (instancesAndResults: InstanceAndResult[]): ActionResult => {
+  const successInstances = instancesAndResults
+    .filter(({ result }) => result.success)
+    .map((({ instance }) => instance))
+  const errorMessages = getAndLogErrors(instancesAndResults)
+  return {
+    successInstances,
+    errorMessages,
+  }
 }
 
 const escapeWhereStr = (str: string): string =>
@@ -137,15 +169,17 @@ const insertInstances = async (
     'insert',
     instancesToCreateRecords(instances)
   )
-  const successInstanceAndIndexes = instances
-    .map((instance, index) => ({ instance, index }))
-    .filter((_instance, index) => results[index]?.success)
-  successInstanceAndIndexes.forEach(({ instance, index }) => {
-    instance.value[CUSTOM_OBJECT_ID_FIELD] = results[index].id
+  const instancesAndResults = groupInstancesAndResultsByIndex(results, instances)
+
+  // Add IDs to success instances
+  const successInstAndRes = instancesAndResults
+    .filter(instAndRes => instAndRes.result.success)
+  successInstAndRes.forEach(({ instance, result }) => {
+    instance.value[CUSTOM_OBJECT_ID_FIELD] = result.id
   })
-  const errorMessages = getErrorMessagesFromResults(results)
+  const errorMessages = getAndLogErrors(instancesAndResults)
   return {
-    successInstances: successInstanceAndIndexes.map(({ instance }) => instance),
+    successInstances: successInstAndRes.map(({ instance }) => instance),
     errorMessages,
   }
 }
@@ -163,7 +197,7 @@ const updateInstances = async (
     'update',
     instancesToUpdateRecords(instances)
   )
-  return getActionResult(results, instances)
+  return getActionResult(groupInstancesAndResultsByIndex(results, instances))
 }
 
 const deleteInstances = async (
@@ -176,7 +210,7 @@ const deleteInstances = async (
     'delete',
     instancesToDeleteRecords(instances),
   )
-  return getActionResult(results, instances)
+  return getActionResult(groupInstancesAndResultsByIndex(results, instances))
 }
 
 const cloneWithoutNulls = (val: Values): Values =>

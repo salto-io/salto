@@ -25,7 +25,7 @@ import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
-import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
+import { multiEnvSource, EnvChanges } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
@@ -165,14 +165,15 @@ export const loadWorkspace = async (
   )
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
     currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
-  let workspaceState: Promise<WorkspaceState> | undefined
+  let workspaceStates: Record<string, Promise<WorkspaceState>> = {}
 
   const buildWorkspaceState = async ({ changes = [], env, hiddenElementsChangesIDs = [] }: {
     changes?: Change<Element>[]
     env?: string
     hiddenElementsChangesIDs?: ElemID[]
   }): Promise<WorkspaceState> => {
-    if (_.isUndefined(workspaceState) || (env !== undefined && env !== currentEnv())) {
+    const actualEnv = env ?? currentEnv()
+    if (_.isUndefined(workspaceStates[actualEnv])) {
       const envToUse = env ?? currentEnv()
       const newState = {
         merged: new RemoteElementSource(
@@ -189,33 +190,40 @@ export const loadWorkspace = async (
           deserialize: async data => deserializeMergeErrors(data),
         }),
       }
-      await buildNewMergedElementsAndErrors({
-        currentElements: newState.merged,
-        currentErrors: newState.errors,
-        mergeFunc: elements => mergeWithHidden(
-          elements,
-          state(envToUse)
-        ),
-        newElements: await naclFilesSource.getAll(envToUse),
-        relevantElementIDs: awu(await naclFilesSource.list()).concat(await state(envToUse).list()),
-      })
-      if (envToUse !== currentEnv()) {
-        return newState
+      if ((env !== undefined && env !== currentEnv())) {
+        await buildNewMergedElementsAndErrors({
+          currentElements: newState.merged,
+          currentErrors: newState.errors,
+          mergeFunc: elements => mergeWithHidden(
+            elements,
+            state(envToUse)
+          ),
+          newElements: await naclFilesSource.getAll(envToUse),
+          relevantElementIDs: awu(await naclFilesSource.list())
+            .concat(await state(envToUse).list()),
+        })
+        if (envToUse !== currentEnv()) {
+          return newState
+        }
       }
-      workspaceState = Promise.resolve(newState)
+      workspaceStates[actualEnv] = Promise.resolve(newState)
     }
-
-    const current = (await workspaceState) as WorkspaceState
+    const current = (await workspaceStates[actualEnv])
     const changedElementIDs = changes.map(getChangeElement).map(e => e.elemID)
 
     const newElements = awu(changes.filter(isAdditionOrModificationChange).map(getChangeElement))
+    // We can run partial fetch as long as the changes provided will include all of the
+    // changes to the hidden types. This will happen in every fetch, or a load from files
+    // of an existing workspace. (Since a state can't be changed via file editing.)
+    // If the workspace cache is empty - we need to run a full build.
+    const partial = !(await awu(await current.merged.getAll()).isEmpty())
     await buildNewMergedElementsAndErrors({
       currentElements: current.merged,
       currentErrors: current.errors,
       mergeFunc: elements => mergeWithHidden(
         elements,
         state(),
-        true,
+        partial,
         hiddenElementsChangesIDs
       ),
       newElements,
@@ -225,14 +233,27 @@ export const loadWorkspace = async (
     return current
   }
 
+  const buildWorkspaceStates = (
+    changes: EnvChanges,
+    hiddenElementsChangesIDs: ElemID[] = []
+  ): Record<string, Promise<WorkspaceState>> => _.mapValues(
+    changes,
+    (envChanges, env) => buildWorkspaceState({
+      changes: envChanges,
+      env,
+      hiddenElementsChangesIDs: env === currentEnv() ? hiddenElementsChangesIDs : [],
+    })
+  )
+
   const initChanges = await naclFilesSource.load()
-  await buildWorkspaceState({ changes: initChanges })
+  workspaceStates = buildWorkspaceStates(initChanges)
+  await workspaceStates.default
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
-    if (_.isUndefined(workspaceState)) {
-      workspaceState = buildWorkspaceState({})
+    if (_.isUndefined(workspaceStates[currentEnv()])) {
+      workspaceStates[currentEnv()] = buildWorkspaceState({})
     }
-    return workspaceState
+    return workspaceStates[currentEnv()]
   }
 
   const elements = async (env?: string): Promise<WorkspaceState> => {
@@ -256,20 +277,20 @@ export const loadWorkspace = async (
     const hiddenTopLevelChanges = changes
       .filter(c => c.id.isTopLevel() && !topLevelChangesIDSet.has(c.id.getFullName()))
     const elementChanges = await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
-    workspaceState = buildWorkspaceState({
-      changes: elementChanges,
-      hiddenElementsChangesIDs: hiddenTopLevelChanges.map(c => c.id),
-    })
+    workspaceStates = buildWorkspaceStates(
+      elementChanges,
+      hiddenTopLevelChanges.map(c => c.id),
+    )
   }
 
   const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<void> => {
     const elementChanges = await naclFilesSource.setNaclFiles(...naclFiles)
-    workspaceState = buildWorkspaceState({ changes: elementChanges })
+    workspaceStates = buildWorkspaceStates(elementChanges)
   }
 
   const removeNaclFiles = async (...names: string[]): Promise<void> => {
     const elementChanges = await naclFilesSource.removeNaclFiles(...names)
-    workspaceState = buildWorkspaceState({ changes: elementChanges })
+    workspaceStates = buildWorkspaceStates(elementChanges)
   }
 
   const getSourceFragment = async (
@@ -424,7 +445,7 @@ export const loadWorkspace = async (
       if (args.credentials) {
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
-      workspaceState = undefined
+      delete workspaceStates[currentEnv()]
     },
     addService: async (service: string): Promise<void> => {
       const currentServices = services() || []
@@ -516,9 +537,7 @@ export const loadWorkspace = async (
       if (persist) {
         await config.setWorkspaceConfig(workspaceConfig)
       }
-      naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-        currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
-      workspaceState = undefined
+      naclFilesSource.setCurrentEnv(env)
     },
 
     getStateRecency: async (serviceName: string): Promise<StateRecency> => {

@@ -52,6 +52,7 @@ export type ParsedNaclFileCache = {
   delete: (filename: string) => Promise<void>
   get(key: ParseResultKey, allowInvalid?: boolean): Promise<ParsedNaclFile | undefined>
   put(key: ParseResultKey, value: ParsedNaclFile): Promise<void>
+  hasValid(key: ParseResultKey): Promise<boolean>
 }
 
 const isMD5Equal = (
@@ -286,6 +287,11 @@ export const createParseResultCache = (
         hash: hash.toMD5(key.buffer),
         timestamp: Date.now(),
       })
+    },
+    hasValid: async (key: ParseResultKey): Promise<boolean> => {
+      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
+      const fileMetadata = await metadata.get(key.filename)
+      return fileMetadata !== undefined && shouldReturnCacheData(key, fileMetadata)
     },
     get: async (key: ParseResultKey, allowInvalid = false): Promise<ParsedNaclFile | undefined> => {
       const fileSources = await getFileSources(

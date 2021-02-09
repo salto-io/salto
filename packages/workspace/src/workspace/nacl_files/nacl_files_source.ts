@@ -56,21 +56,21 @@ export type NaclFile = {
   timestamp?: number
 }
 
-export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Change<Element>[]>
+export type NaclFilesSource<CHANGES=Change<Element>[]> = Omit<ElementsSource, 'clear'> & {
+  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<CHANGES>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change<Element>[]>
-  removeNaclFiles: (...names: string[]) => Promise<Change<Element>[]>
+  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<CHANGES>
+  removeNaclFiles: (...names: string[]) => Promise<CHANGES>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
-  clone: () => NaclFilesSource
+  clone: () => NaclFilesSource<CHANGES>
   isEmpty: () => Promise<boolean>
   clear(args?: {
     nacl?: boolean
@@ -78,7 +78,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
     cache?: boolean
   }): Promise<void>
   getElementsSource: () => Promise<ElementsSource>
-  load: () => Promise<Change<Element>[]>
+  load: () => Promise<CHANGES>
 }
 
 type ParsedNaclFileMap = {
@@ -406,36 +406,26 @@ const buildNaclFilesSource = (
 
   const buildInitState = async (): Promise<buildNaclFilesStateResult> => {
     const modifiedNaclFiles: NaclFile[] = []
-    const parsedNaclFilesFromCache: ParsedNaclFile[] = []
 
+    sniffer.startSection('naclFileSource.buildInitState.lists')
     const cacheFilenames = await cache.list()
     const naclFilenames = await naclFilesStore.list()
+    sniffer.endSection('naclFileSource.buildInitState.lists')
 
+    sniffer.startSection('naclFileSource.buildInitState.checkHash')
     const fileNames = new Set([...cacheFilenames, ...naclFilenames])
     await awu(fileNames).forEach(async filename => {
       const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
-      const validCache = await cache.get(cacheResultKey(naclFile))
-      const latestCache = validCache ?? await cache.get(cacheResultKey(naclFile), true)
-      if (latestCache !== undefined) {
-        parsedNaclFilesFromCache.push(latestCache)
-      }
-      if (validCache === undefined) {
+      const validCache = await cache.hasValid(cacheResultKey(naclFile))
+      if (!validCache) {
         modifiedNaclFiles.push(naclFile)
       }
     })
-
-    const cacheOnlyState = (await buildNaclFilesState({
-      newNaclFiles: parsedNaclFilesFromCache,
-      remoteMapCreator,
-      staticFilesSource,
-      sourceName,
-    })
-    ).state
+    sniffer.endSection('naclFileSource.buildInitState.checkHash')
     const parsedModifiedFiles = await parseNaclFiles(modifiedNaclFiles, cache, functions)
     return buildNaclFilesState({
       newNaclFiles: parsedModifiedFiles,
       remoteMapCreator,
-      existingState: cacheOnlyState,
       staticFilesSource,
       sourceName,
     })

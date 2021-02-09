@@ -243,4 +243,5 @@ export const mockParseCache = (): ParsedNaclFileCache => ({
   clone: () => mockParseCache(),
   delete: () => Promise.resolve(),
   list: () => Promise.resolve([]),
+  hasValid: () => Promise.resolve(false),
 })

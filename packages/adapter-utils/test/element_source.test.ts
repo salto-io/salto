@@ -16,7 +16,7 @@
 
 import { ElemID, ObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements } from '../src/elements'
+import { buildElementsSourceFromElements } from '../src/element_source'
 
 describe('buildElementsSourceFromElements', () => {
   const elements = [

@@ -16,6 +16,11 @@
 export * from './src/utils'
 export * from './src/nacl_case_utils'
 export * from './src/change_validator'
+export * from './src/decorators'
 export * from './src/deploy'
 export * from './src/compare'
-export * from './src/elements'
+export * from './src/element_source'
+
+export * as client from './src/client'
+export * as elements from './src/elements'
+export * as filterUtils from './src/filter_utils'

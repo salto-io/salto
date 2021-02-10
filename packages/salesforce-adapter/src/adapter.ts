@@ -17,11 +17,11 @@ import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
 } from '@salto-io/adapter-api'
-import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import { resolveChangeElement, restoreChangeElement, logDuration } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { decorators, collections, values } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
@@ -176,13 +176,6 @@ export interface SalesforceAdapterParams {
 
   config: SalesforceConfig
 }
-
-const logDuration = (message: string): decorators.InstanceMethodDecorator =>
-  decorators.wrapMethodWith(
-    async (original: decorators.OriginalCall): Promise<unknown> => (
-      log.time(original.call, message)
-    )
-  )
 
 const metadataToRetrieveAndDeploy = [
   // Metadata with content - we use retrieve to get the StaticFiles properly

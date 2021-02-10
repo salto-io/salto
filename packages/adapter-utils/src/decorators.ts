@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,17 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const deepMerge = require('../../build_utils/deep_merge')
-const path = require('path')
+import { logger } from '@salto-io/logging'
+import { decorators } from '@salto-io/lowerdash'
 
-module.exports = deepMerge(
-  require('../../eslintrc.js'),
-  require('../../eslint/adapter-api.rules.js'),
-  {
-    parserOptions: {
-      tsconfigRootDir: __dirname,
-      project: path.resolve(__dirname, './tsconfig.json'),
-    },
-  },
-)
+const log = logger(module)
 
+export const logDuration = (message: string): decorators.InstanceMethodDecorator =>
+  decorators.wrapMethodWith(
+    async (original: decorators.OriginalCall): Promise<unknown> => (
+      log.time(original.call, message)
+    )
+  )

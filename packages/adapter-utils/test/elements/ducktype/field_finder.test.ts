@@ -33,19 +33,22 @@ import { findNestedField, returnFullEntry } from '../../../src/elements/ducktype
 
 const ADAPTER_NAME = 'myAdapter'
 
+const nestedType = new ObjectType({
+  elemID: new ElemID(ADAPTER_NAME, 'nested'),
+  fields: {
+    str: { type: BuiltinTypes.STRING },
+    list: { type: new ListType(BuiltinTypes.NUMBER) },
+  },
+})
+
 const sampleType = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'bla'),
   fields: {
     str: { type: BuiltinTypes.STRING },
     nested: {
-      type: new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'nested'),
-        fields: {
-          str: { type: BuiltinTypes.STRING },
-          list: { type: new ListType(BuiltinTypes.NUMBER) },
-        },
-      }),
+      type: nestedType,
     },
+    nestedList: { type: new ListType(nestedType) },
     nestedMap: { type: new MapType(BuiltinTypes.STRING) },
   },
 })
@@ -56,21 +59,32 @@ describe('ducktype_field_finder', () => {
       const fieldDetails = findNestedField(sampleType)
       expect(fieldDetails).toBeUndefined()
     })
-    it('should return inner type when the matching field is a list', () => {
-      const fieldDetails = findNestedField(sampleType, ['str', 'nestedMap'])
+    it('should return field type when the matching field is an object', () => {
+      const fieldDetails = findNestedField(sampleType, ['str', 'nestedMap', 'nestedList'])
       expect(fieldDetails).toEqual({
         field: sampleType.fields.nested,
-        type: sampleType.fields.nested.type,
+        type: nestedType,
+      })
+    })
+    it('should return undefined when keepOriginal is true', () => {
+      const fieldDetails = findNestedField(sampleType, ['str', 'nestedMap', 'nestedList'], true)
+      expect(fieldDetails).toBeUndefined()
+    })
+    it('should return inner type when the matching field is a list', () => {
+      const fieldDetails = findNestedField(sampleType, ['str', 'nestedMap', 'nested'])
+      expect(fieldDetails).toEqual({
+        field: sampleType.fields.nestedList,
+        type: nestedType,
       })
     })
     it('should return undefined when the only relevant field is a primitive type', () => {
-      const fieldDetails = findNestedField(sampleType, ['nested', 'nestedMap'])
+      const fieldDetails = findNestedField(sampleType, ['nested', 'nestedMap', 'nestedList'])
       expect(fieldDetails).toBeUndefined()
     })
     it('should return undefined when the only relevant field is a map type', () => {
       // this test is here to verify this case is handled gracefully.
       // if this becomes a real scenario, it should be changed according to the chosen structure.
-      const fieldDetails = findNestedField(sampleType, ['str', 'nested'])
+      const fieldDetails = findNestedField(sampleType, ['str', 'nested', 'nestedList'])
       expect(fieldDetails).toBeUndefined()
     })
     it('should return undefined when the object is empty', () => {

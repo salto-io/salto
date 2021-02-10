@@ -30,7 +30,7 @@
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { simpleGetArgs, getTypeAndInstances, getAllElements, returnFullEntry } from '../../../src/elements/ducktype'
+import { simpleGetArgs, getTypeAndInstances, getAllElements, returnFullEntry, findNestedField } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
@@ -79,21 +79,26 @@ describe('ducktype_transformer', () => {
   })
 
   describe('getTypeAndInstances', () => {
-    const mockClient: HTTPClientInterface = {
-      get: jest.fn().mockImplementation(async function *get() {
-        yield [{ name: 'bla1' }]
-        yield [{ missing: 'something' }]
-      }),
-    }
+    let mockClient: HTTPClientInterface
 
     beforeEach(() => {
-      jest.spyOn(typeElements, 'generateType').mockImplementation(({ adapterName, name }) => ({
-        type: new ObjectType({ elemID: new ElemID(adapterName, name) }),
-        nestedTypes: [
-          new ObjectType({ elemID: new ElemID(adapterName, `${name}__some_nested`) }),
-          new ObjectType({ elemID: new ElemID(adapterName, `${name}__another_nested`) }),
-        ],
-      }))
+      mockClient = {
+        get: jest.fn().mockImplementationOnce(async function *get() {
+          yield [{ name: 'bla1' }]
+          yield [{ missing: 'something' }]
+        }),
+      }
+      jest.spyOn(typeElements, 'generateType').mockImplementation(({ adapterName, name }) => {
+        const someNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__some_nested`) })
+        const anotherNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__another_nested`) })
+        return {
+          type: new ObjectType({
+            elemID: new ElemID(adapterName, name),
+            fields: { someNested: { type: someNested } },
+          }),
+          nestedTypes: [someNested, anotherNested],
+        }
+      })
       jest.spyOn(instanceElements, 'toInstance').mockImplementation(({
         type, entry, nameField,
       }) => new InstanceElement(
@@ -156,6 +161,119 @@ describe('ducktype_transformer', () => {
         pathField: 'also_name',
         defaultName: 'unindexed_1',
         fieldsToOmit: [],
+      })
+    })
+
+    it('should omit fieldsToOmit from instances but not from type', async () => {
+      const res = await getTypeAndInstances({
+        adapterName: 'something',
+        client: mockClient,
+        computeGetArgs: simpleGetArgs,
+        defaultNameField: 'name',
+        defaultPathField: 'also_name',
+        typeName: 'myType',
+        nestedFieldFinder: returnFullEntry,
+        request: {
+          url: 'url',
+        },
+        translation: {
+          fieldsToOmit: ['missing'],
+        },
+      })
+      expect(res).toHaveLength(5)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        'something.myType',
+        'something.myType__some_nested',
+        'something.myType__another_nested',
+        'something.myType.instance.bla1',
+        'something.myType.instance.bla',
+      ])
+      expect(mockClient.get).toHaveBeenCalledTimes(1)
+      expect(mockClient.get).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(typeElements.generateType).toHaveBeenCalledTimes(1)
+      expect(typeElements.generateType).toHaveBeenCalledWith({
+        adapterName: 'something',
+        name: 'myType',
+        entries: [{ name: 'bla1' }, {}],
+        hasDynamicFields: false,
+      })
+      expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
+      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+        adapterName: 'something',
+        entry: { name: 'bla1' },
+        type: res[0],
+        nameField: 'name',
+        pathField: 'also_name',
+        defaultName: 'unindexed_0',
+        fieldsToOmit: ['missing'],
+      })
+      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+        adapterName: 'something',
+        entry: {},
+        type: res[0],
+        nameField: 'name',
+        pathField: 'also_name',
+        defaultName: 'unindexed_1',
+        fieldsToOmit: ['missing'],
+      })
+    })
+
+    it('should return nested instances when nestedFieldFinder returns a specific field\'s details', async () => {
+      mockClient = {
+        get: jest.fn().mockImplementation(async function *get() {
+          yield [{ someNested: { name: 'bla1' } }]
+          yield [{ someNested: [{ missing: 'something' }] }]
+        }),
+      }
+
+      const res = await getTypeAndInstances({
+        adapterName: 'something',
+        client: mockClient,
+        computeGetArgs: simpleGetArgs,
+        defaultNameField: 'name',
+        defaultPathField: 'also_name',
+        typeName: 'myType',
+        nestedFieldFinder: findNestedField,
+        request: {
+          url: 'url',
+        },
+        translation: {},
+      })
+      expect(res).toHaveLength(5)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        'something.myType',
+        'something.myType__some_nested',
+        'something.myType__another_nested',
+        'something.myType__some_nested.instance.bla1',
+        'something.myType__some_nested.instance.bla',
+      ])
+      expect(mockClient.get).toHaveBeenCalledTimes(1)
+      expect(mockClient.get).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(typeElements.generateType).toHaveBeenCalledTimes(1)
+      expect(typeElements.generateType).toHaveBeenCalledWith({
+        adapterName: 'something',
+        name: 'myType',
+        entries: [{ someNested: { name: 'bla1' } }, { someNested: [{ missing: 'something' }] }],
+        hasDynamicFields: false,
+      })
+      expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
+      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+        adapterName: 'something',
+        entry: { name: 'bla1' },
+        type: res[1],
+        nameField: 'name',
+        pathField: 'also_name',
+        defaultName: 'unindexed_0_0',
+        fieldsToOmit: undefined,
+      })
+      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+        adapterName: 'something',
+        entry: { missing: 'something' },
+        type: res[1],
+        nameField: 'name',
+        pathField: 'also_name',
+        defaultName: 'unindexed_1_0',
+        fieldsToOmit: undefined,
       })
     })
   })

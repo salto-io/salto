@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import * as ducktype from './ducktype'
+import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH } from './constants'
 
-export * from './constants'
 export {
   ducktype,
+  RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH,
 }

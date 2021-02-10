@@ -18,5 +18,3 @@
 export const RECORDS_PATH = 'Records'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
-
-export const NAMESPACE_SEPARATOR = '__'

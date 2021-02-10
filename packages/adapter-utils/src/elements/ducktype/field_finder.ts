@@ -18,7 +18,11 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
-export type FindNestedFieldFunc = (type: ObjectType, fieldsToIgnore?: string[]) => {
+export type FindNestedFieldFunc = (
+  type: ObjectType,
+  fieldsToIgnore?: string[],
+  keepOriginal?: boolean,
+) => {
   field: Field
   type: ObjectType
 } | undefined
@@ -30,7 +34,11 @@ export type FindNestedFieldFunc = (type: ObjectType, fieldsToIgnore?: string[]) 
  * If more than one potential field is found, or if no field matches the requirements,
  * returns undefined to signal that the full entry should be used.
  */
-export const findNestedField: FindNestedFieldFunc = (type, fieldsToIgnore) => {
+export const findNestedField: FindNestedFieldFunc = (type, fieldsToIgnore, keepOriginal) => {
+  if (keepOriginal) {
+    return undefined
+  }
+
   const excludedFields = new Set(fieldsToIgnore ?? [])
   const potentialFields = (Object.values(type.fields)
     .filter(field => !excludedFields.has(field.name)))

@@ -28,7 +28,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, Values, ElemID, BuiltinTypes, MapType } from '@salto-io/adapter-api'
+import { ObjectType, Values, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
 // eslint-disable-next-line
 import { generateType } from '../../../src/elements/ducktype'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements'
@@ -57,6 +57,7 @@ describe('ducktype_type_elements', () => {
           id: 41619,
           api_collection_id: 11815,
           flow_id: 1381119,
+          flow_ids: [1381119, 1382229],
           name: 'ab321',
           method: 'GET',
           url: 'https://some.url.com/a/bbb/user/{id}',
@@ -72,6 +73,7 @@ describe('ducktype_type_elements', () => {
           id: 54775,
           api_collection_id: 22,
           flow_id: 890,
+          flow_ids: [890, 980],
           name: 'some other name',
           field_with_complex_type: {
             number: 53,
@@ -80,6 +82,9 @@ describe('ducktype_type_elements', () => {
               another_val: 'dgadgasg',
             },
           },
+          field_with_complex_list_type: [{
+            number: 53,
+          }],
         },
         {
           field_with_complex_type: {
@@ -106,6 +111,7 @@ describe('ducktype_type_elements', () => {
           id: { type: BuiltinTypes.NUMBER },
           api_collection_id: { type: BuiltinTypes.NUMBER },
           flow_id: { type: BuiltinTypes.NUMBER },
+          flow_ids: { type: new ListType(BuiltinTypes.NUMBER) },
           name: { type: BuiltinTypes.STRING },
           method: { type: BuiltinTypes.STRING },
           url: { type: BuiltinTypes.STRING },
@@ -117,9 +123,10 @@ describe('ducktype_type_elements', () => {
           created_at: { type: BuiltinTypes.STRING },
           updated_at: { type: BuiltinTypes.STRING },
           field_with_complex_type: { type: nestedTypes[0] },
+          field_with_complex_list_type: { type: new ListType(nestedTypes[2]) },
         },
       }))).toBeTruthy()
-      expect(nestedTypes).toHaveLength(2)
+      expect(nestedTypes).toHaveLength(3)
       expect(nestedTypes[0].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type'),
         fields: {
@@ -134,6 +141,12 @@ describe('ducktype_type_elements', () => {
           another_val: { type: BuiltinTypes.UNKNOWN },
           abc: { type: BuiltinTypes.STRING },
           unknown: { type: BuiltinTypes.UNKNOWN },
+        },
+      }))).toBeTruthy()
+      expect(nestedTypes[2].isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_list_type'),
+        fields: {
+          number: { type: BuiltinTypes.NUMBER },
         },
       }))).toBeTruthy()
     })

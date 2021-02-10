@@ -18,8 +18,10 @@ import {
   InstanceElement, Values, ObjectType,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '../../nacl_case_utils'
-import { RECORDS_PATH, NAMESPACE_SEPARATOR } from '../constants'
+import { RECORDS_PATH } from '../constants'
 import { transformValues } from '../../utils'
+
+const ID_SEPARATOR = '__'
 
 /**
  * Generate an instance for a single entry returned for a given type.
@@ -65,7 +67,7 @@ export const toInstance = ({
 
   const naclName = naclCase(String(
     nameSuffix
-      ? `${name}${NAMESPACE_SEPARATOR}${nameSuffix}`
+      ? `${name}${ID_SEPARATOR}${nameSuffix}`
       : name
   ).slice(0, 100))
   return new InstanceElement(

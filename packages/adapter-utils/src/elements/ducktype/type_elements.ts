@@ -18,7 +18,13 @@ import {
   ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '../../nacl_case_utils'
-import { TYPES_PATH, SUBTYPES_PATH, NAMESPACE_SEPARATOR } from '../constants'
+import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
+
+const ID_SEPARATOR = '__'
+
+export const toNestedTypeName = (parentName: string, nestedTypeName: string): string => (
+  `${parentName}${ID_SEPARATOR}${nestedTypeName}`
+)
 
 type ObjectTypeWithNestedTypes = {
   type: ObjectType
@@ -38,7 +44,7 @@ const generateNestedType = ({ adapterName, typeName, parentName, entries, hasDyn
   hasDynamicFields: boolean
 }): NestedTypeWithNestedTypes => {
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
-  const name = `${parentName}${NAMESPACE_SEPARATOR}${typeName}`
+  const name = toNestedTypeName(parentName, typeName)
   if (validEntries.length > 0) {
     if (validEntries.every(entry => Array.isArray(entry))) {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -125,7 +131,7 @@ export const generateType = ({
   const path = [
     adapterName, TYPES_PATH,
     ...(isSubType
-      ? [SUBTYPES_PATH, ...naclName.split(NAMESPACE_SEPARATOR).map(pathNaclCase)]
+      ? [SUBTYPES_PATH, ...naclName.split(ID_SEPARATOR).map(pathNaclCase)]
       : [pathNaclCase(naclName)])]
 
   const nestedTypes: ObjectType[] = []

@@ -30,6 +30,7 @@
 */
 import Bottleneck from 'bottleneck'
 import { createRateLimitersFromConfig, throttle, BottleneckBuckets } from '../../src/client'
+import { Resolvable, makeResolvablePromise } from '../common'
 
 type MyRateLimitConfig = {
   total: number
@@ -67,22 +68,7 @@ class A {
   }
 }
 
-type Resolvable<T> = {
-  promise: Promise<T>
-  resolve: () => void
-}
-
 const RATE_LIMITER_UPDATE_DELAY = 100
-
-const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  let resolve: () => void = () => {}
-  // Unsafe assumption - promise constructor calls the paramter function synchronously
-  const promise = new Promise<T>(resolveFunc => {
-    resolve = () => resolveFunc(resolveValue)
-  })
-  return { promise, resolve }
-}
 
 const isCurrentLimitEqual = async (b: Bottleneck, limit: number | undefined): Promise<boolean> => {
   // all the numbers we use are lower

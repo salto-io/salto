@@ -21,6 +21,7 @@ export type RequestConfig = {
   url: string
   queryParams?: Record<string, string>
   recursiveQueryByResponseField?: Record<string, string>
+  // not finalized - do not use yet
   dependsOn?: string[]
   paginationField?: string
 }
@@ -68,7 +69,8 @@ export const createAdapterApiConfigType = (
       },
       queryParams: { type: new MapType(BuiltinTypes.STRING) },
       recursiveQueryByResponseField: { type: new MapType(BuiltinTypes.STRING) },
-      dependsOn: { type: new ListType(BuiltinTypes.STRING) },
+      // not finalized - not exposing in config yet
+      // dependsOn: { type: new ListType(BuiltinTypes.STRING) },
       paginationField: { type: BuiltinTypes.STRING },
       ...additionalEndpointFields,
     },

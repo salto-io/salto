@@ -75,6 +75,7 @@ describe('ducktype_instance_elements', () => {
         adapterName: ADAPTER_NAME,
         type,
         nameField: 'name',
+        pathField: 'name',
         defaultName: 'abc',
         entry,
         fieldsToOmit: ['field_with_complex_type', 'id'],

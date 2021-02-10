@@ -31,7 +31,7 @@ export type ResponseValue = {
 export type APIConnection<T = any> = {
   // based on https://github.com/axios/axios/blob/f472e5da5fe76c72db703d6a0f5190e4ad31e642/index.d.ts#L140
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get: (url: string, config?: { params: Record<string, any> }) => Promise<{
+  get: (url: string, config?: { params: Record<string, unknown> }) => Promise<{
     data: T
     status: number
     statusText: string

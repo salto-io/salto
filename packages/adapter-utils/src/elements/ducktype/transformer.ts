@@ -112,10 +112,11 @@ export const getTypeAndInstances = async ({
     entries: naclEntries,
     hasDynamicFields: hasDynamicFields === true,
   })
-  const nestedFieldDetails = nestedFieldFinder(type, topLevelFieldsToOmit)
+  // find the field and type containing the actual instances
+  const nestedFieldDetails = nestedFieldFinder(type, topLevelFieldsToOmit, keepOriginal)
 
   const instances = naclEntries.flatMap((entry, index) => {
-    if (nestedFieldDetails !== undefined && !keepOriginal) {
+    if (nestedFieldDetails !== undefined) {
       return makeArray(entry[nestedFieldDetails.field.name]).map(
         (nestedEntry, nesteIndex) => toInstance({
           adapterName,

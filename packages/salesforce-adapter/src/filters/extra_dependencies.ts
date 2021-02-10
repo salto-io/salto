@@ -136,10 +136,13 @@ const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => 
     .map(elemId => new ReferenceExpression(elemId))
 
   if (newDependencies.length !== 0) {
-    elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = [
-      ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
-      ...newDependencies,
-    ]
+    elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = _.sortBy(
+      [
+        ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
+        ...newDependencies,
+      ],
+      ref => ref.elemId.getFullName(),
+    )
   }
 }
 

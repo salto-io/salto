@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE } from '../constants'
-import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
+import { validateRegularExpressions } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams } from '../types'
 
 export type MetadataQuery = {
@@ -69,26 +69,22 @@ export const buildMetadataQuery = (
   }
 }
 
-const validateMetadataQueryParams = (field: string, params: MetadataQueryParams[]): void => {
+const validateMetadataQueryParams = (params: MetadataQueryParams[], fieldPath: string[]): void => {
   params.forEach(
     queryParams => Object.entries(queryParams)
       .forEach(([queryField, regex]) => {
         if (regex === undefined) {
           return
         }
-        try {
-          validateRegularExpressions([regex])
-        } catch (e) {
-          if (e instanceof ConfigValidationError) {
-            e.fieldPath.unshift(field, queryField)
-          }
-          throw e
-        }
+        validateRegularExpressions([regex], [...fieldPath, queryField])
       })
   )
 }
 
-export const validateMetadataParams = (params: Partial<MetadataParams>): void => {
-  validateMetadataQueryParams('include', params.include ?? [])
-  validateMetadataQueryParams('exclude', params.exclude ?? [])
+export const validateMetadataParams = (
+  params: Partial<MetadataParams>,
+  fieldPath: string[],
+): void => {
+  validateMetadataQueryParams(params.include ?? [], [...fieldPath, 'include'])
+  validateMetadataQueryParams(params.exclude ?? [], [...fieldPath, 'include'])
 }

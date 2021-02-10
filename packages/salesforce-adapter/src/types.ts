@@ -128,7 +128,7 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [USE_OLD_PROFILES]?: boolean
   [CLIENT_CONFIG]?: SalesforceClientConfig
-} & DeprecatedFetchParameters
+}
 
 export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
 

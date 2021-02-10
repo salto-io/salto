@@ -42,34 +42,26 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
   }
 )
 
-const validateRegexes = (fieldPath: string[], regexes: string[]): void => {
-  try {
-    validateRegularExpressions(regexes)
-  } catch (e) {
-    if (e instanceof ConfigValidationError) {
-      e.fieldPath.unshift(...fieldPath)
-    }
-    throw e
-  }
-}
-
-export const validateDataManagementConfig = (dataManagementConfig: Partial<DataManagementConfig>):
+export const validateDataManagementConfig = (
+  dataManagementConfig: Partial<DataManagementConfig>,
+  fieldPath: string[],
+):
   void => {
   if (dataManagementConfig.includeObjects === undefined) {
-    throw new ConfigValidationError(['includeObjects'], 'includeObjects is required when dataManagement is configured')
+    throw new ConfigValidationError([...fieldPath, 'includeObjects'], 'includeObjects is required when dataManagement is configured')
   }
   if (dataManagementConfig.saltoIDSettings === undefined) {
-    throw new ConfigValidationError(['saltoIDSettings'], 'saltoIDSettings is required when dataManagement is configured')
+    throw new ConfigValidationError([...fieldPath, 'saltoIDSettings'], 'saltoIDSettings is required when dataManagement is configured')
   }
   if (dataManagementConfig.saltoIDSettings.defaultIdFields === undefined) {
-    throw new ConfigValidationError(['saltoIDSettings', 'defaultIdFields'], 'saltoIDSettings.defaultIdFields is required when dataManagement is configured')
+    throw new ConfigValidationError([...fieldPath, 'saltoIDSettings', 'defaultIdFields'], 'saltoIDSettings.defaultIdFields is required when dataManagement is configured')
   }
-  validateRegexes(['includeObjects'], makeArray(dataManagementConfig.includeObjects))
-  validateRegexes(['excludeObjects'], makeArray(dataManagementConfig.excludeObjects))
-  validateRegexes(['allowReferenceTo'], makeArray(dataManagementConfig.allowReferenceTo))
+  validateRegularExpressions(makeArray(dataManagementConfig.includeObjects), [...fieldPath, 'includeObjects'])
+  validateRegularExpressions(makeArray(dataManagementConfig.excludeObjects), [...fieldPath, 'excludeObjects'])
+  validateRegularExpressions(makeArray(dataManagementConfig.allowReferenceTo), [...fieldPath, 'allowReferenceTo'])
   if (dataManagementConfig.saltoIDSettings.overrides !== undefined) {
     const overridesObjectRegexs = dataManagementConfig.saltoIDSettings.overrides
       .map(override => override.objectsRegex)
-    validateRegexes(['saltoIDSettings', 'overrides'], overridesObjectRegexs)
+    validateRegularExpressions(overridesObjectRegexs, [...fieldPath, 'saltoIDSettings', 'overrides'])
   }
 }

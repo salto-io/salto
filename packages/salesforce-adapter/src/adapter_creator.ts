@@ -25,12 +25,14 @@ import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
-  SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES, INSTANCES_REGEX_SKIPPED_LIST, METADATA_CONFIG, METADATA_TYPES_SKIPPED_LIST, DATA_MANAGEMENT, DATA_CONFIGURATION } from './types'
+  SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
-import { ConfigValidationError, validateRegularExpressions } from './config_validation'
-import { validateDataManagementConfig } from './fetch_profile/data_management'
+import { ConfigValidationError } from './config_validation'
+import { updateDeprecatedConfiguration } from './deprecated_config'
+import { ConfigChange } from './config_change'
 
 const log = logger(module)
+
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
@@ -46,39 +48,6 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
     isSandbox: config.value.sandbox,
     apiToken: config.value.token,
   })
-}
-
-const validateDeprecatedParameters = (config: Readonly<InstanceElement> | undefined): void => {
-  if (config?.value?.[METADATA_TYPES_SKIPPED_LIST] !== undefined) {
-    log.warn(`${METADATA_TYPES_SKIPPED_LIST} configuration option is deprecated. ${FETCH_CONFIG}.${METADATA_CONFIG} should be used instead`)
-  }
-  if (config?.value?.[INSTANCES_REGEX_SKIPPED_LIST] !== undefined) {
-    log.warn(`${INSTANCES_REGEX_SKIPPED_LIST} configuration option is deprecated. ${FETCH_CONFIG}.${METADATA_CONFIG} should be used instead`)
-    try {
-      validateRegularExpressions(config?.value?.[INSTANCES_REGEX_SKIPPED_LIST])
-    } catch (e) {
-      if (e instanceof ConfigValidationError) {
-        e.fieldPath.unshift(INSTANCES_REGEX_SKIPPED_LIST)
-      }
-      throw e
-    }
-  }
-  if (config?.value?.[DATA_MANAGEMENT] !== undefined) {
-    if (config?.value?.[FETCH_CONFIG]?.[DATA_CONFIGURATION] !== undefined) {
-      throw new ConfigValidationError([DATA_MANAGEMENT], `${FETCH_CONFIG}.${DATA_CONFIGURATION} configuration option cannot be used with ${DATA_MANAGEMENT} option. The configuration of ${DATA_MANAGEMENT} should be moved to ${FETCH_CONFIG}.${DATA_CONFIGURATION}`)
-    }
-
-    log.warn(`${DATA_MANAGEMENT} configuration option is deprecated. ${FETCH_CONFIG}.${DATA_CONFIGURATION} should be used instead`)
-
-    try {
-      validateDataManagementConfig(config?.value?.[DATA_MANAGEMENT])
-    } catch (e) {
-      if (e instanceof ConfigValidationError) {
-        e.fieldPath.unshift(DATA_MANAGEMENT)
-      }
-      throw e
-    }
-  }
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
@@ -98,40 +67,21 @@ SalesforceConfig => {
     }
   }
 
-  try {
-    validateDeprecatedParameters(config)
+  validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {}, [FETCH_CONFIG])
 
-    try {
-      validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {})
-    } catch (e) {
-      if (e instanceof ConfigValidationError) {
-        e.fieldPath.unshift(FETCH_CONFIG)
-      }
-      throw e
-    }
+  validateClientConfig(config?.value?.client)
 
-    validateClientConfig(config?.value?.client)
-    const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
-      fetch: config?.value?.[FETCH_CONFIG],
-      maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
-      useOldProfiles: config?.value?.[USE_OLD_PROFILES],
-      client: config?.value?.[CLIENT_CONFIG],
-      metadataTypesSkippedList: config?.value?.[METADATA_TYPES_SKIPPED_LIST],
-      instancesRegexSkippedList: config?.value?.[INSTANCES_REGEX_SKIPPED_LIST],
-      dataManagement: config?.value?.[DATA_MANAGEMENT],
-    }
-    Object.keys(config?.value ?? {})
-      .filter(k => !Object.keys(adapterConfig).includes(k))
-      .forEach(k => log.debug('Unknown config property was found: %s', k))
-    return adapterConfig
-  } catch (e) {
-    if (e instanceof ConfigValidationError) {
-      e.message = `Failed to load config due to an invalid ${e.fieldPath.join('.')} value. ${e.message}`
-    } else {
-      e.message = `Failed to load config. ${e.message}`
-    }
-    throw e
+  const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
+    fetch: config?.value?.[FETCH_CONFIG],
+    maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
+    useOldProfiles: config?.value?.[USE_OLD_PROFILES],
+    client: config?.value?.[CLIENT_CONFIG],
   }
+  Object.keys(config?.value ?? {})
+    .filter(k => !Object.keys(adapterConfig).includes(k))
+    .forEach(k => log.debug('Unknown config property was found: %s', k))
+
+  return adapterConfig
 }
 
 const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
@@ -143,15 +93,45 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
   }
 }
 
+export const getConfigChange = (
+  configFromFetch?: ConfigChange,
+  configWithoutDeprecated?: ConfigChange,
+): ConfigChange | undefined => {
+  if (configWithoutDeprecated !== undefined && configFromFetch !== undefined) {
+    return {
+      config: configFromFetch.config,
+      message: `${configWithoutDeprecated.message}
+In Addition, ${configFromFetch.message}`,
+    }
+  }
+
+  if (configWithoutDeprecated !== undefined) {
+    return configWithoutDeprecated
+  }
+
+  return undefined
+}
+
 export const adapter: Adapter = {
   operations: context => {
-    const config = adapterConfigFromConfig(context.config)
+    const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
+    const config = adapterConfigFromConfig(updatedConfig?.config ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
-    return new SalesforceAdapter({
+    const salesforceAdapter = new SalesforceAdapter({
       client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
       config,
       getElemIdFunc: context.getElemIdFunc,
     })
+
+    return {
+      fetch: async opts => {
+        const fetchResults = await salesforceAdapter.fetch(opts)
+        fetchResults.updatedConfig = getConfigChange(fetchResults.updatedConfig, updatedConfig)
+        return fetchResults
+      },
+
+      deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
+    }
   },
   validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
   authenticationMethods: {

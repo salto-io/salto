@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, configType, DataManagementConfig, DeprecatedMetadataParams, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, MetadataParams, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -27,8 +27,6 @@ const MESSAGE_INTRO = 'Salto failed to fetch some items from salesforce. '
 const MESSAGE_REASONS_INTRO = 'Due to the following issues: '
 const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
 + 'Salto needs to stop managing these items by applying the following configuration change:'
-export const DEPRECATED_OPTIONS_MESSAGE = 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated.'
-+ ' The following changes will update the deprecated options to the "fetch" configuration option.'
 
 
 const formatReason = (reason: string): string =>
@@ -89,86 +87,15 @@ export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChange
       regexRes?.groups?.instance as string
     ))
 
-const convertDeprecatedRegex = (filePathRegex: string): string => {
-  let newPathRegex = filePathRegex
-
-  newPathRegex = filePathRegex.startsWith('^')
-    ? newPathRegex.substring(1)
-    : newPathRegex
-
-  newPathRegex = !filePathRegex.startsWith('.*') && !filePathRegex.startsWith('^')
-    ? `.*${newPathRegex}`
-    : newPathRegex
-
-  newPathRegex = filePathRegex.endsWith('$')
-    ? newPathRegex.substring(0, newPathRegex.length - 1)
-    : newPathRegex
-
-  newPathRegex = !filePathRegex.endsWith('$') && (!filePathRegex.endsWith('.*') || filePathRegex.endsWith('\\.*'))
-    ? `${newPathRegex}.*`
-    : newPathRegex
-
-  return newPathRegex
-}
-
-export const convertDeprecatedDataConf = (conf: DataManagementConfig): DataManagementConfig => ({
-  ...conf,
-  includeObjects: conf.includeObjects.map(convertDeprecatedRegex),
-  excludeObjects: conf?.excludeObjects?.map(convertDeprecatedRegex),
-  allowReferenceTo: conf?.allowReferenceTo?.map(convertDeprecatedRegex),
-  saltoIDSettings: {
-    ...conf.saltoIDSettings,
-    overrides: conf.saltoIDSettings.overrides?.map(
-      override => ({ ...override, objectsRegex: convertDeprecatedRegex(override.objectsRegex) })
-    ),
-  },
-})
-
-// Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
-const INSTANCE_SUFFIXES = [
-  'c', 'r', 'ka', 'kav', 'Feed', 'ViewStat', 'VoteStat', 'DataCategorySelection', 'x', 'xo', 'mdt', 'Share', 'Tag',
-  'History', 'pc', 'pr', 'hd', 'hqr', 'hst', 'b', 'latitude__s', 'longitude__s', 'e', 'p', 'ChangeEvent', 'chn',
-]
-export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})([^a-zA-Z\\d_]+|$)).+$`
-
-export const convertDeprecatedMetadataParams = (
-  currentParams: MetadataParams,
-  deprecatedParams: DeprecatedMetadataParams,
-): MetadataParams => {
-  const excludes = [
-    ...makeArray(deprecatedParams.instancesRegexSkippedList)
-      .filter(re => re !== PACKAGES_INSTANCES_REGEX)
-      .map(re => {
-        const regexParts = re.split('.')
-        if (regexParts.length < 2) {
-          return { name: convertDeprecatedRegex(re) }
-        }
-        return { metadataType: convertDeprecatedRegex(`${regexParts[0]}$`), name: convertDeprecatedRegex(`^${regexParts.slice(1).join('.')}`) }
-      }),
-    ...makeArray(deprecatedParams.metadataTypesSkippedList).map(type => ({ metadataType: type })),
-  ]
-
-  const includes = makeArray(deprecatedParams.instancesRegexSkippedList)
-    .includes(PACKAGES_INSTANCES_REGEX)
-    ? [{ namespace: '', name: '.*', metadataType: '.*' }]
-    : []
-
-  return _.pickBy({
-    include: [
-      ...(currentParams.include ?? []),
-      ...includes,
-    ],
-    exclude: [
-      ...(currentParams.exclude ?? []),
-      ...excludes,
-    ],
-  }, value => value.length !== 0)
+export type ConfigChange = {
+  config: InstanceElement
+  message: string
 }
 
 export const getConfigFromConfigChanges = (
   configChanges: ConfigChangeSuggestion[],
   currentConfig: Readonly<SalesforceConfig>,
-): { config: InstanceElement ; message: string } | undefined => {
+): ConfigChange | undefined => {
   const currentMetadataExclude = makeArray(currentConfig.fetch?.metadata?.exclude)
 
   const newMetadataExclude = makeArray(configChanges)
@@ -180,29 +107,12 @@ export const getConfigFromConfigChanges = (
     .filter(isDataManagementConfigSuggestions)
     .map(config => config.value)
 
-  const didUseDeprecatedFields = currentConfig.metadataTypesSkippedList !== undefined
-    || currentConfig.instancesRegexSkippedList !== undefined
-    || currentConfig.dataManagement !== undefined
-
   if ([newMetadataExclude, dataObjectsToExclude]
-    .every(_.isEmpty) && !didUseDeprecatedFields) {
+    .every(_.isEmpty)) {
     return undefined
   }
 
   const currentDataManagement = currentConfig.fetch?.data
-    ?? (currentConfig.dataManagement && convertDeprecatedDataConf(currentConfig.dataManagement))
-
-  const metadata = convertDeprecatedMetadataParams(
-    {
-      ...currentConfig.fetch?.metadata,
-      exclude: [
-        ...currentMetadataExclude,
-        ...newMetadataExclude,
-      ],
-    },
-    currentConfig,
-  )
-
 
   const dataManagementOverrides = {
     excludeObjects: makeArray(currentDataManagement?.excludeObjects)
@@ -218,17 +128,6 @@ export const getConfigFromConfigChanges = (
     )
   }
 
-  const messageParts: string[] = []
-  if (didUseDeprecatedFields) {
-    messageParts.push(DEPRECATED_OPTIONS_MESSAGE)
-  }
-
-  if (configChanges.length !== 0) {
-    messageParts.push(getConfigChangeMessage(configChanges))
-  }
-
-  const message = messageParts.join('\nIn Addition, ')
-
   const data = currentDataManagement === undefined ? undefined : _.pickBy({
     ...currentDataManagement,
     ...dataManagementOverrides,
@@ -240,7 +139,13 @@ export const getConfigFromConfigChanges = (
       configType,
       _.pickBy({
         fetch: _.pickBy({
-          metadata,
+          metadata: {
+            ...currentConfig.fetch?.metadata,
+            exclude: [
+              ...currentMetadataExclude,
+              ...newMetadataExclude,
+            ],
+          },
           data: data === undefined ? undefined : {
             ...data,
             saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
@@ -251,6 +156,6 @@ export const getConfigFromConfigChanges = (
         client: currentConfig.client,
       }, isDefined)
     ),
-    message,
+    message: getConfigChangeMessage(configChanges),
   }
 }

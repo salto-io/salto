@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType, OAuthMethod } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, OAuthMethod, FetchOptions, ProgressReporter } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { adapter } from '../src/adapter_creator'
+import { adapter, getConfigChange } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
-import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType } from '../src/types'
+import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType, METADATA_TYPES_SKIPPED_LIST } from '../src/types'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { MockFunction, MockInterface } from './utils'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -549,6 +550,104 @@ describe('SalesforceAdapter creator', () => {
           elementsSource: buildElementsSourceFromElements([]),
           config: configClone,
         })).not.toThrow()
+      })
+    })
+  })
+
+  describe('deprecated configuration', () => {
+    SalesforceAdapter.prototype.fetch = jest.fn().mockResolvedValue({ elements: [] })
+
+    const deprecatedConfig = config.clone()
+    deprecatedConfig.value[METADATA_TYPES_SKIPPED_LIST] = ['aaa']
+    const operations = adapter.operations({
+      credentials,
+      config: deprecatedConfig,
+      elementsSource: buildElementsSourceFromElements([]),
+    })
+    it('pass to the adapter operation configuration without deprecated fields', () => {
+      expect(SalesforceAdapter).toHaveBeenCalledWith({
+        config: {
+          fetch: {
+            metadata: {
+              exclude: [
+                { metadataType: 'test1' },
+                { name: 'test2' },
+                { name: 'test3' },
+                { metadataType: 'aaa' },
+              ],
+            },
+          },
+          client: {
+            maxConcurrentApiRequests: {
+              list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+              read: 55,
+              retrieve: 3,
+              total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+            },
+          },
+        },
+        client: expect.any(Object),
+        getElemIdFunc: undefined,
+      })
+    })
+
+    it('return update from fetch', async () => {
+      const mockReportProgress: MockFunction<ProgressReporter['reportProgress']> = jest.fn()
+      const mockFetchOpts: MockInterface<FetchOptions> = {
+        progressReporter: { reportProgress: mockReportProgress },
+      }
+      expect((await operations.fetch(mockFetchOpts)).updatedConfig).toBeDefined()
+    })
+  })
+
+  describe('getConfigChange', () => {
+    describe('both configFromFetch and configWithoutDeprecated are defined', () => {
+      const configFromFetch = config.clone()
+      const updatedConfig = getConfigChange(
+        {
+          config,
+          message: `Salto failed to fetch some items from salesforce.
+
+In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`,
+        },
+        {
+          config: configFromFetch,
+          message: 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
+        },
+      )
+
+      it('return fetch configuration', () => {
+        expect(updatedConfig?.config).toBe(config)
+      })
+      it('return combined message', () => {
+        expect(updatedConfig?.message).toBe(`The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.
+In Addition, Salto failed to fetch some items from salesforce.
+
+In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`)
+      })
+    })
+
+    describe('only configWithoutDeprecated is defined', () => {
+      const configChange = {
+        config,
+        message: 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
+      }
+      const updatedConfig = getConfigChange(
+        undefined,
+        configChange,
+      )
+      it('return configWithoutDeprecated', () => {
+        expect(updatedConfig).toBe(configChange)
+      })
+    })
+
+    describe('both configFromFetch and configWithoutDeprecated are undefined', () => {
+      const updatedConfig = getConfigChange(
+        undefined,
+        undefined,
+      )
+      it('return undefined', () => {
+        expect(updatedConfig).toBe(undefined)
       })
     })
   })

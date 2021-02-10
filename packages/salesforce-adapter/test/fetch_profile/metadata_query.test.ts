@@ -14,105 +14,58 @@
 * limitations under the License.
 */
 
-import { ConfigValidationError } from '../../src/config_validation'
 import { buildMetadataQuery, validateMetadataParams } from '../../src/fetch_profile/metadata_query'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
-    let error: Error | undefined
-    beforeEach(() => {
-      error = undefined
-    })
-
     it('invalid metadataType', () => {
-      try {
-        validateMetadataParams({
-          include: [
-            { metadataType: '(' },
-          ],
-        })
-      } catch (e) {
-        error = e
-      }
-      expect(error instanceof ConfigValidationError).toBeTruthy()
-      expect((error as ConfigValidationError).fieldPath).toEqual(['include', 'metadataType'])
+      expect(() => validateMetadataParams({
+        include: [
+          { metadataType: '(' },
+        ],
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.metadataType value. The following regular expressions are invalid: (')
     })
 
     it('invalid namespace', () => {
-      try {
-        validateMetadataParams({
-          include: [
-            { namespace: '(' },
-          ],
-        })
-      } catch (e) {
-        error = e
-      }
-      expect(error instanceof ConfigValidationError).toBeTruthy()
-      expect((error as ConfigValidationError).fieldPath).toEqual(['include', 'namespace'])
+      expect(() => validateMetadataParams({
+        include: [
+          { namespace: '(' },
+        ],
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.namespace value. The following regular expressions are invalid: (')
     })
 
     it('invalid name', () => {
-      try {
-        validateMetadataParams({
-          include: [
-            { name: '(' },
-          ],
-        })
-      } catch (e) {
-        error = e
-      }
-      expect(error instanceof ConfigValidationError).toBeTruthy()
-      expect((error as ConfigValidationError).fieldPath).toEqual(['include', 'name'])
+      expect(() => validateMetadataParams({
+        include: [
+          { name: '(' },
+        ],
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.name value. The following regular expressions are invalid: (')
     })
   })
 
   describe('invalid regex in exclude list', () => {
-    let error: Error | undefined
-    beforeEach(() => {
-      error = undefined
-    })
-
     it('invalid metadataType', () => {
-      try {
-        validateMetadataParams({
-          exclude: [
-            { metadataType: '(' },
-          ],
-        })
-      } catch (e) {
-        error = e
-      }
-      expect(error instanceof ConfigValidationError).toBeTruthy()
-      expect((error as ConfigValidationError).fieldPath).toEqual(['exclude', 'metadataType'])
+      expect(() => validateMetadataParams({
+        exclude: [
+          { metadataType: '(' },
+        ],
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.metadataType value. The following regular expressions are invalid: (')
     })
 
     it('invalid namespace', () => {
-      try {
-        validateMetadataParams({
-          exclude: [
-            { namespace: '(' },
-          ],
-        })
-      } catch (e) {
-        error = e
-      }
-      expect(error instanceof ConfigValidationError).toBeTruthy()
-      expect((error as ConfigValidationError).fieldPath).toEqual(['exclude', 'namespace'])
+      expect(() => validateMetadataParams({
+        exclude: [
+          { namespace: '(' },
+        ],
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.namespace value. The following regular expressions are invalid: (')
     })
 
     it('invalid name', () => {
-      try {
-        validateMetadataParams({
-          exclude: [
-            { name: '(' },
-          ],
-        })
-      } catch (e) {
-        error = e
-      }
-      expect(error instanceof ConfigValidationError).toBeTruthy()
-      expect((error as ConfigValidationError).fieldPath).toEqual(['exclude', 'name'])
+      expect(() => validateMetadataParams({
+        exclude: [
+          { name: '(' },
+        ],
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.name value. The following regular expressions are invalid: (')
     })
   })
 
@@ -121,7 +74,7 @@ describe('validateMetadataParams', () => {
       exclude: [
         { name: '.*', metadataType: 'aaaa', namespace: undefined },
       ],
-    })).not.toThrow()
+    }, ['aaa'])).not.toThrow()
   })
 })
 

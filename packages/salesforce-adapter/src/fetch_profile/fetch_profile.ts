@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 
-import { convertDeprecatedDataConf, convertDeprecatedMetadataParams } from '../config_change'
-import { ConfigValidationError } from '../config_validation'
-import { DATA_CONFIGURATION, DeprecatedFetchParameters, FetchParameters, METADATA_CONFIG } from '../types'
+import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
 
@@ -29,38 +27,18 @@ export type FetchProfile = {
 export const buildFetchProfile = ({
   metadata = {},
   data,
-}: FetchParameters, deprecatedParams?: DeprecatedFetchParameters): FetchProfile => {
-  const dataManagementParameters = data ?? (
-    deprecatedParams?.dataManagement && convertDeprecatedDataConf(deprecatedParams.dataManagement)
-  )
+}: FetchParameters): FetchProfile => ({
+  metadataQuery: buildMetadataQuery(metadata),
+  dataManagement: data && buildDataManagement(data),
+})
 
-  const metadataParameters = deprecatedParams !== undefined
-    ? convertDeprecatedMetadataParams(metadata, deprecatedParams)
-    : metadata
+export const validateFetchParameters = (
+  params: Partial<FetchParameters>,
+  fieldPath: string[]
+): void => {
+  validateMetadataParams(params.metadata ?? {}, [...fieldPath, METADATA_CONFIG])
 
-  return {
-    metadataQuery: buildMetadataQuery(metadataParameters),
-    dataManagement: dataManagementParameters && buildDataManagement(dataManagementParameters),
-  }
-}
-
-export const validateFetchParameters = (params: Partial<FetchParameters>): void => {
-  try {
-    validateMetadataParams(params.metadata ?? {})
-  } catch (e) {
-    if (e instanceof ConfigValidationError) {
-      e.fieldPath.unshift(METADATA_CONFIG)
-    }
-    throw e
-  }
   if (params.data !== undefined) {
-    try {
-      validateDataManagementConfig(params.data)
-    } catch (e) {
-      if (e instanceof ConfigValidationError) {
-        e.fieldPath.unshift(DATA_CONFIGURATION)
-      }
-      throw e
-    }
+    validateDataManagementConfig(params.data, [...fieldPath, DATA_CONFIGURATION])
   }
 }

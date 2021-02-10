@@ -324,7 +324,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
 
-    this.fetchProfile = buildFetchProfile(config.fetch ?? {}, config)
+    this.fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.filtersRunner = filtersRunner(
       this.client,
       {

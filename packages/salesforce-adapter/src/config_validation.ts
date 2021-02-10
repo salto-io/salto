@@ -17,19 +17,19 @@ import { regex } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
 export class ConfigValidationError extends Error {
-  fieldPath: string[]
-
-  constructor(filePath: string[], message: string) {
-    super(message)
-    this.fieldPath = filePath
+  constructor(fieldPath: string[], message: string) {
+    super(`Failed to load config due to an invalid ${fieldPath.join('.')} value. ${message}`)
   }
 }
 
-export const validateRegularExpressions = (regularExpressions: string[]): void => {
+export const validateRegularExpressions = (
+  regularExpressions: string[],
+  fieldPath: string[],
+): void => {
   const invalidRegularExpressions = regularExpressions
     .filter(strRegex => !regex.isValidRegex(strRegex))
   if (!_.isEmpty(invalidRegularExpressions)) {
     const errMessage = `The following regular expressions are invalid: ${invalidRegularExpressions}`
-    throw new ConfigValidationError([], errMessage)
+    throw new ConfigValidationError(fieldPath, errMessage)
   }
 }

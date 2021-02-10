@@ -32,7 +32,7 @@ describe('Internal IDs filter', () => {
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
   const objTypeID = new ElemID(SALESFORCE, 'Obj')
-  const otherObjTypeID = new ElemID(SALESFORCE, 'OtherO')
+  const otherObjTypeID = new ElemID(SALESFORCE, 'AnotherO')
   const layoutObjTypeID = new ElemID(SALESFORCE, 'Layout')
 
   const generateElements = (): Element[] => {
@@ -52,7 +52,7 @@ describe('Internal IDs filter', () => {
           annotations: {
             [API_NAME]: 'Obj.special__c',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: [
-              new ReferenceExpression(new ElemID(SALESFORCE, 'OtherO', 'field', 'moreSpecial')),
+              new ReferenceExpression(new ElemID(SALESFORCE, 'AnotherO', 'field', 'moreSpecial')),
             ],
             [INTERNAL_ID_ANNOTATION]: 'special id',
           },
@@ -61,12 +61,12 @@ describe('Internal IDs filter', () => {
       },
     })
     const otherObjType = new ObjectType({
-      annotations: { [METADATA_TYPE]: 'OtherO' },
+      annotations: { [METADATA_TYPE]: 'AnotherO' },
       elemID: otherObjTypeID,
       fields: {
         moreSpecial: {
           annotations: {
-            [API_NAME]: 'OtherO.moreSpecial__c',
+            [API_NAME]: 'AnotherO.moreSpecial__c',
             [INTERNAL_ID_ANNOTATION]: 'more special id',
           },
           type: BuiltinTypes.STRING,
@@ -215,7 +215,7 @@ describe('Internal IDs filter', () => {
       expect(elements.length).toEqual(numElements)
     })
 
-    it('should add _generated_dependencies when reference does not already exist', () => {
+    it('should add _generated_dependencies when reference does not already exist, and keep the annotations sorted', () => {
       expect(elements[2]).toBeInstanceOf(InstanceElement)
       const inst1Deps = elements[2].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
       // "custom" is already referenced using a reference expression on a field
@@ -229,8 +229,10 @@ describe('Internal IDs filter', () => {
       // "unknown" is not a real field so it's not included
       expect(inst2Deps).toHaveLength(2)
       expect(inst2Deps[0]).toBeInstanceOf(ReferenceExpression)
-      expect(inst2Deps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
-      expect(inst2Deps[1].elemId.getFullName()).toEqual('salesforce.OtherO.field.moreSpecial')
+      // appears first because we sort by elem id
+      expect(inst2Deps[0].elemId.getFullName()).toEqual('salesforce.AnotherO.field.moreSpecial')
+      expect(inst2Deps[1]).toBeInstanceOf(ReferenceExpression)
+      expect(inst2Deps[1].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
 
       const layoutInstDeps = elements[4].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
       expect(layoutInstDeps).toHaveLength(1)

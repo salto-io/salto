@@ -35,39 +35,45 @@ export interface ElementsSource {
   delete(id: ElemID): Promise<void>
 }
 
+export const shouldResolveAsContainerType = (elemName: string): boolean =>
+  (elemName.startsWith(Keywords.LIST_PREFIX)
+    || elemName.startsWith(Keywords.MAP_PREFIX))
+    && (elemName.endsWith(Keywords.GENERICS_SUFFIX))
+
+const getContainerType = async (fullName: string,
+  source: ElementsSource): Promise<Value> => {
+  if (fullName.startsWith(Keywords.LIST_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
+    const innerElem = await source.get(
+      ElemID.fromFullName(fullName.substring(
+        Keywords.LIST_PREFIX.length,
+        fullName.length - Keywords.GENERICS_SUFFIX.length
+      ))
+    )
+    if (innerElem === undefined) {
+      return undefined
+    }
+    return new ListType(innerElem)
+  }
+  if (fullName.startsWith(Keywords.MAP_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
+    const innerElem = await source.get(
+      ElemID.fromFullName(fullName.substring(
+        Keywords.MAP_PREFIX.length,
+        fullName.length - Keywords.GENERICS_SUFFIX.length
+      ))
+    )
+    if (innerElem === undefined) {
+      return undefined
+    }
+    return new MapType(innerElem)
+  }
+  throw new Error('Not a container type')
+}
+
 export class RemoteElementSource implements ElementsSource {
   private elements: RemoteMap<Element>
 
   constructor(elementsMap: RemoteMap<Element>) {
     this.elements = elementsMap
-  }
-
-  private async getContainerType(fullName: string): Promise<Value> {
-    if (fullName.startsWith(Keywords.LIST_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
-      const innerElem = await this.get(
-        ElemID.fromFullName(fullName.substring(
-          Keywords.LIST_PREFIX.length,
-          fullName.length - Keywords.GENERICS_SUFFIX.length
-        ))
-      )
-      if (innerElem === undefined) {
-        return undefined
-      }
-      return new ListType(innerElem)
-    }
-    if (fullName.startsWith(Keywords.MAP_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
-      const innerElem = await this.get(
-        ElemID.fromFullName(fullName.substring(
-          Keywords.MAP_PREFIX.length,
-          fullName.length - Keywords.GENERICS_SUFFIX.length
-        ))
-      )
-      if (innerElem === undefined) {
-        return undefined
-      }
-      return new MapType(innerElem)
-    }
-    throw new Error('Not a container type')
   }
 
   async list(): Promise<AsyncIterable<ElemID>> {
@@ -83,10 +89,8 @@ export class RemoteElementSource implements ElementsSource {
     if (BuiltinTypesByFullName[elemFullName] !== undefined) {
       return BuiltinTypesByFullName[elemFullName]
     }
-    if ((elemFullName.startsWith(Keywords.LIST_PREFIX)
-      || elemFullName.startsWith(Keywords.MAP_PREFIX))
-     && (elemFullName.endsWith(Keywords.GENERICS_SUFFIX))) {
-      return this.getContainerType(elemFullName)
+    if (shouldResolveAsContainerType(elemFullName)) {
+      return getContainerType(elemFullName, this)
     }
     const { parent } = id.createTopLevelParentID()
     const topLevel = await this.elements.get(parent.getFullName())

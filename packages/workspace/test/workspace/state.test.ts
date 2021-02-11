@@ -72,7 +72,7 @@ describe('state', () => {
       const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
       await state.override(awu([newElem]), [newAdapter])
       expect(await awu(await state.getAll()).toArray()).toEqual([newElem])
-      expect(Object.keys(await state.getServicesUpdateDates())).toEqual([adapter, newAdapter])
+      expect(Object.keys(await state.getServicesUpdateDates())).toEqual([newAdapter, adapter])
     })
     it('getServicesUpdateDates', async () => {
       expect(await state.getServicesUpdateDates()).toEqual(servicesUpdateDate)
@@ -89,7 +89,7 @@ describe('state', () => {
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
       const index = await awu((await state.getPathIndex()).entries()).toArray()
-      expect(index).toEqual(await getElementsPathHints([elem, newElem]))
+      expect(index).toEqual(await getElementsPathHints([newElem, elem]))
     })
 
     it('updatePathIndex', async () => {
@@ -100,7 +100,7 @@ describe('state', () => {
       const oneElement = [newElem]
       await state.updatePathIndex(oneElement, ['salesforce'])
       const index = await awu((await state.getPathIndex()).entries()).toArray()
-      expect(index).toEqual(await getElementsPathHints([elem, newElem]))
+      expect(index).toEqual(await getElementsPathHints([newElem, elem]))
     })
 
     it('clear should clear all data', async () => {

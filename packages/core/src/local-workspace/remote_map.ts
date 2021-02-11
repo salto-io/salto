@@ -18,13 +18,19 @@ import { promisify } from 'util'
 import LRU from 'lru-cache'
 import { remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import uuidv4 from 'uuid/v4'
+
 
 const { asynciterable } = collections
 const { awu } = asynciterable
 const NAMESPACE_SEPARATOR = '::'
 const TEMP_PREFIX = '~TEMP~'
-
+const UNIQUE_ID_SEPARATOR = '%%'
+const DELETE_OPERATION = 1
+const SET_OPERATION = 0
 type RocksDBValue = string | Buffer | undefined
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+const cache = new LRU<string, any>({ max: 5000 })
 
 type CreateIteratorOpts = remoteMap.IterationOpts & {
   keys: boolean
@@ -87,7 +93,7 @@ const dbConnections: Record<string, rocksdb> = {}
 
 export const createRemoteMapCreator = (location: string):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
-  { namespace, batchInterval = 1000, LRUSize = 500, serialize, deserialize }:
+  { namespace, batchInterval = 1000, serialize, deserialize }:
   remoteMap.CreateRemoteMapParams<T>
 ): Promise<remoteMap.RemoteMap<T, K>> => {
   if (!/^[a-z0-9-_/]+$/i.test(namespace)) {
@@ -95,14 +101,13 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`
     )
   }
-  const cache = new LRU<string, T>({ max: LRUSize })
   let db: rocksdb
-
-  const keyToDBKey = (key: string): string =>
-    namespace.concat(NAMESPACE_SEPARATOR).concat(key)
-
-  const keyToTempDBKey = (key: string): string =>
-    TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR).concat(key))
+  const uniqueId = uuidv4()
+  const keyPrefix = namespace.concat(NAMESPACE_SEPARATOR)
+  const tempKeyPrefix = TEMP_PREFIX.concat(UNIQUE_ID_SEPARATOR, uniqueId, UNIQUE_ID_SEPARATOR,
+    keyPrefix)
+  const keyToDBKey = (key: string): string => namespace.concat(NAMESPACE_SEPARATOR, key)
+  const keyToTempDBKey = (key: string): string => tempKeyPrefix.concat(key)
 
   // We calculate a different key according to whether we're
   // looking for a temp value or a regular value
@@ -129,7 +134,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       ...(opts.after ? { after: keyToTempDBKey(opts.after) } : {}),
     }
     return createIterator(
-      TEMP_PREFIX.concat(namespace.concat(NAMESPACE_SEPARATOR)),
+      tempKeyPrefix,
       normalizedOpts
     )
   }
@@ -139,19 +144,24 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       ...opts,
       ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
     }
-    return createIterator(namespace.concat(NAMESPACE_SEPARATOR), normalizedOpts)
+    return createIterator(keyPrefix, normalizedOpts)
   }
 
-  const setAllImpl = async (
-    elementsEntries: AsyncIterable<remoteMap.RemoteMapEntry<T, K>>,
+  const batchUpdate = async (
+    batchInsertIterator: AsyncIterable<remoteMap.RemoteMapEntry<string, string>>,
     temp = true,
+    operation = SET_OPERATION,
   ): Promise<void> => {
     let i = 0
     let batch = db.batch()
-    for await (const entry of elementsEntries) {
+    for await (const entry of batchInsertIterator) {
       i += 1
-      cache.set(entry.key, entry.value)
-      batch.put(getAppropriateKey(entry.key, temp), serialize(entry.value))
+      if (operation === SET_OPERATION) {
+        batch.put(getAppropriateKey(entry.key, temp), entry.value)
+      } else {
+        batch.del(getAppropriateKey(entry.key, true))
+        batch.del(getAppropriateKey(entry.key, false))
+      }
       if (i % batchInterval === 0) {
         await promisify(batch.write.bind(batch))()
         batch = db.batch()
@@ -160,6 +170,16 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     if (i % batchInterval !== 0) {
       await promisify(batch.write.bind(batch))()
     }
+  }
+  const setAllImpl = async (
+    elementsEntries: AsyncIterable<remoteMap.RemoteMapEntry<T, K>>,
+    temp = true,
+  ): Promise<void> => {
+    const batchInsertIterator = awu(elementsEntries).map(entry => {
+      cache.set(keyToTempDBKey(entry.key), entry.value)
+      return { key: entry.key, value: serialize(entry.value) }
+    })
+    await batchUpdate(batchInsertIterator, temp)
   }
 
   const valuesImpl = (tempOnly = false, iterationOpts?: remoteMap.IterationOpts):
@@ -190,6 +210,14 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       })
     })
 
+  const keysImpl = (iterationOpts?: remoteMap.IterationOpts): AsyncIterable<K> => {
+    const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
+    const tempKeyIter = createTempIterator(opts)
+    const keyIter = createPersistentIterator(opts)
+    return awu(aggregatedIterable([tempKeyIter, keyIter]))
+      .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
+  }
+
   const createDBIfNotCreated = async (loc: string): Promise<void> => {
     if (!(loc in dbConnections)) {
       db = rocksdb(loc)
@@ -201,15 +229,14 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     }
   }
   await createDBIfNotCreated(location)
-
   return {
     get: async (key: string): Promise<T | undefined> => new Promise(resolve => {
-      if (cache.has(key)) {
-        resolve(cache.get(key) as T)
+      if (cache.has(keyToTempDBKey(key))) {
+        resolve(cache.get(keyToTempDBKey(key)) as T)
       } else {
         const resolveRet = async (value: Buffer | string): Promise<void> => {
           const ret = (await deserialize(value.toString()))
-          cache.set(key, ret)
+          cache.set(keyToTempDBKey(key), ret)
           resolve(ret)
         }
         db.get(keyToTempDBKey(key), async (error, value) => {
@@ -230,41 +257,39 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     values: (iterationOpts?: remoteMap.IterationOpts) => valuesImpl(false, iterationOpts),
     entries: (iterationOpts?: remoteMap.IterationOpts) => entriesImpl(iterationOpts),
     set: async (key: string, element: T): Promise<void> => {
-      cache.set(key, element)
+      cache.set(keyToTempDBKey(key), element)
       await promisify(db.put.bind(db))(keyToTempDBKey(key), serialize(element))
     },
     setAll: setAllImpl,
-    keys: (iterationOpts?: remoteMap.IterationOpts) => {
-      const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
-      const tempKeyIter = createTempIterator(opts)
-      const keyIter = createPersistentIterator(opts)
-      return awu(aggregatedIterable([tempKeyIter, keyIter]))
-        .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
+    deleteAll: async (iterator: AsyncIterable<K>) => {
+      await batchUpdate(awu(iterator).map(async key => ({ key, value: key })),
+        false, DELETE_OPERATION)
     },
+    keys: keysImpl,
     flush: async () => {
-      await setAllImpl(entriesImpl(), false)
-      await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
+      await batchUpdate(awu(aggregatedIterable(
+        [createTempIterator({ keys: true, values: true })]
+      )), false)
+      await clearImpl(tempKeyPrefix)
     },
     revert: async () => {
       cache.reset()
-      await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
+      await clearImpl(tempKeyPrefix)
     },
     clear: async () => {
       cache.reset()
-      await clearImpl(namespace.concat(NAMESPACE_SEPARATOR))
-      await clearImpl(TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR))
+      await clearImpl(keyPrefix)
+      await clearImpl(tempKeyPrefix)
     },
     delete: async (key: string) => {
-      cache.del(key)
-      const dbKey = namespace.concat(NAMESPACE_SEPARATOR).concat(key)
-      const tmpDBKey = TEMP_PREFIX.concat(namespace).concat(NAMESPACE_SEPARATOR).concat(key)
-      await clearImpl(dbKey, dbKey)
-      await clearImpl(tmpDBKey, tmpDBKey)
+      cache.del(keyToTempDBKey(key))
+      await clearImpl(keyToDBKey(key), keyToDBKey(key))
+      await clearImpl(keyToTempDBKey(key), keyToTempDBKey(key))
     },
     close: () => promisify(db.close.bind(db))(),
 
     has: async (key: string): Promise<boolean> => {
-      if (cache.has(key)) {
+      if (cache.has(keyToTempDBKey(key))) {
         return true
       }
       const hasKeyImpl = (k: string): boolean => {

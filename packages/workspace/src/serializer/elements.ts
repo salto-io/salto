@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types } from '@salto-io/lowerdash'
+import { types, collections } from '@salto-io/lowerdash'
 import {
   PrimitiveType, ElemID, Field, Element, ListType, MapType,
   ObjectType, InstanceElement, isType, isElement, isContainerType,
@@ -31,6 +31,7 @@ import { MultiplePrimitiveTypesUnsupportedError } from '../merger/internal/primi
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
 
+const { awu } = collections.asynciterable
 // There are two issues with naive json stringification:
 //
 // 1) The class type information and methods are lost
@@ -304,9 +305,9 @@ export const deserialize = async (
 
   if (staticFileReviver) {
     staticFiles = _.fromPairs(
-      (await Promise.all(
-        _.entries(staticFiles).map(async ([key, val]) => ([key, await staticFileReviver(val)]))
-      ))
+      await awu(Object.entries(staticFiles))
+        .map(async ([key, val]) => ([key, await staticFileReviver(val)]))
+        .toArray()
     )
   }
 

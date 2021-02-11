@@ -159,80 +159,79 @@ const reviveElemID = (v: {[key: string]: any}): ElemID => (
   new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
 )
 
-let staticFiles: Record<string, StaticFile> = {}
-
-const revivers: ReviverMap = {
-  InstanceElement: v => new InstanceElement(
-    reviveElemID(v.elemID).name,
-    v.type,
-    v.value,
-    undefined,
-    v.annotations,
-  ),
-  ObjectType: v => new ObjectType({
-    elemID: reviveElemID(v.elemID),
-    fields: v.fields,
-    annotationTypes: v.annotationTypes,
-    annotations: v.annotations,
-    isSettings: v.isSettings,
-  }),
-  Variable: v => (
-    new Variable(reviveElemID(v.elemID), v.value)
-  ),
-  PrimitiveType: v => new PrimitiveType({
-    elemID: reviveElemID(v.elemID),
-    primitive: v.primitive,
-    annotationTypes: v.annotationTypes,
-    annotations: v.annotations,
-  }),
-  ListType: v => new ListType(
-    v.innerType
-  ),
-  MapType: v => new MapType(
-    v.innerType
-  ),
-  Field: v => new Field(
-    new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
-    v.name,
-    v.type,
-    v.annotations,
-  ),
-  TemplateExpression: v => (
-    new TemplateExpression({ parts: v.parts })
-  ),
-  ReferenceExpression: v => (
-    new ReferenceExpression(reviveElemID(v.elemId))
-  ),
-  VariableExpression: v => (
-    new VariableExpression(reviveElemID(v.elemId))
-  ),
-  StaticFile: v => {
-    const staticFile = new StaticFile(
-      { filepath: v.filepath, hash: v.hash, encoding: v.encoding }
-    )
-    staticFiles[staticFile.filepath] = staticFile
-    return staticFile
-  },
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const elementReviver = (_k: string, v: any): any => {
-  if (isSerializedClass(v)) {
-    const reviver = revivers[v[SALTO_CLASS_FIELD]]
-    const e = reviver(v)
-    if (isType(e) || isInstanceElement(e)) {
-      e.path = v.path
-    }
-    return e
-  }
-  return v
-}
-
 export const deserialize = async (
   data: string,
   staticFileReviver?: StaticFileReviver,
 ): Promise<Element[]> => {
-  staticFiles = {}
+  let staticFiles: Record<string, StaticFile> = {}
+
+  const revivers: ReviverMap = {
+    InstanceElement: v => new InstanceElement(
+      reviveElemID(v.elemID).name,
+      v.type,
+      v.value,
+      undefined,
+      v.annotations,
+    ),
+    ObjectType: v => new ObjectType({
+      elemID: reviveElemID(v.elemID),
+      fields: v.fields,
+      annotationTypes: v.annotationTypes,
+      annotations: v.annotations,
+      isSettings: v.isSettings,
+    }),
+    Variable: v => (
+      new Variable(reviveElemID(v.elemID), v.value)
+    ),
+    PrimitiveType: v => new PrimitiveType({
+      elemID: reviveElemID(v.elemID),
+      primitive: v.primitive,
+      annotationTypes: v.annotationTypes,
+      annotations: v.annotations,
+    }),
+    ListType: v => new ListType(
+      v.innerType
+    ),
+    MapType: v => new MapType(
+      v.innerType
+    ),
+    Field: v => new Field(
+      new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
+      v.name,
+      v.type,
+      v.annotations,
+    ),
+    TemplateExpression: v => (
+      new TemplateExpression({ parts: v.parts })
+    ),
+    ReferenceExpression: v => (
+      new ReferenceExpression(reviveElemID(v.elemId))
+    ),
+    VariableExpression: v => (
+      new VariableExpression(reviveElemID(v.elemId))
+    ),
+    StaticFile: v => {
+      const staticFile = new StaticFile(
+        { filepath: v.filepath, hash: v.hash, encoding: v.encoding }
+      )
+      staticFiles[staticFile.filepath] = staticFile
+      return staticFile
+    },
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const elementReviver = (_k: string, v: any): any => {
+    if (isSerializedClass(v)) {
+      const reviver = revivers[v[SALTO_CLASS_FIELD]]
+      const e = reviver(v)
+      if (isType(e) || isInstanceElement(e)) {
+        e.path = v.path
+      }
+      return e
+    }
+    return v
+  }
+
   const elements = JSON.parse(data, elementReviver) as Element[]
 
   if (staticFileReviver) {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
@@ -25,7 +25,7 @@ import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
 import { createInMemoryElementSource } from '../../../src/workspace/elements_source'
 import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
-import { ParsedNaclFileDataKeys, ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
+import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 const { awu } = collections.asynciterable
@@ -56,7 +56,7 @@ const validateParsedNaclFile = async (
   if (parsed) {
     const parsedElements = await awu(await parsed.elements.getAll()).toArray()
     expect(parsedElements).toEqual(elements)
-    expect(await parsed.data.get('errors')).toEqual(errors)
+    expect(parsed.data.errors).toEqual(errors)
     expect(parsed.filename).toEqual(filename)
   }
 }
@@ -271,11 +271,11 @@ describe('Nacl Files Source', () => {
           filename,
           elements,
           buffer: '',
-          data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-            { key: 'errors', value: [] },
-            { key: 'timestamp', value: 0 },
-            { key: 'referenced', value: [] },
-          ]),
+          data: {
+            errors: [],
+            timestamp: 0,
+            referenced: [],
+          },
         },
       ]
       const naclSource = naclFilesSource(

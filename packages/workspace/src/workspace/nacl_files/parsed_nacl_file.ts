@@ -13,19 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Value } from '@salto-io/adapter-api'
-import { RemoteMap } from '../remote_map'
-import { SourceMap } from '../../parser'
+import { ElemID } from '@salto-io/adapter-api'
+import { SourceMap, ParseError } from '../../parser'
 
 import { RemoteElementSource } from '../elements_source'
 
 
 export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
 
+export type ParsedNaclFileData = {
+  errors: ParseError[]
+  timestamp: number
+  referenced: ElemID[]
+}
+
 export type ParsedNaclFile = {
   filename: string
   elements: RemoteElementSource
-  data: RemoteMap<Value, ParsedNaclFileDataKeys>
+  data: ParsedNaclFileData
+  // data: RemoteMap<Value, ParsedNaclFileDataKeys>
   buffer?: string
   sourceMap?: SourceMap // TODO: Change to RemoteMap
 }

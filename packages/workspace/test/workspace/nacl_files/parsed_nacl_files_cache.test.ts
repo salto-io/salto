@@ -17,12 +17,10 @@ import { ObjectType, ElemID, Value } from '@salto-io/adapter-api'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { InMemoryRemoteMap, CreateRemoteMapParams, RemoteMap } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
-import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { SourceMap } from '../../../src/parser'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 describe('ParsedNaclFileCache', () => {
-  const mockedStaticFilesSource = { clone: jest.fn() } as unknown as StaticFilesSource
   // This is the "DB" for the cache and it is currently emptied per each "it"
   let remoteMaps: Record<string, InMemoryRemoteMap<Value, string>> = {}
   const inMemoryRemoteMapsCreator = async <T, K extends string = string>(
@@ -113,7 +111,6 @@ describe('ParsedNaclFileCache', () => {
     cache = createParseResultCache(
       'mockCache',
       inMemoryRemoteMapsCreator,
-      mockedStaticFilesSource
     )
   })
 

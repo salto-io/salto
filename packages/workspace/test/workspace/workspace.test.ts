@@ -113,7 +113,6 @@ const createWorkspace = async (
             createParseResultCache(
               'name',
               persMockCreateRemoteMap,
-              actualStaticFilesSource,
             ),
             actualStaticFilesSource,
             persMockCreateRemoteMap,

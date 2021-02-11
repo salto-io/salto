@@ -94,7 +94,6 @@ export const getNaclFilesSourceParams = (
     cache: createParseResultCache(
       cacheName,
       createRemoteMapCreator(cacheDir),
-      staticFileSource,
     ),
     staticFileSource,
   }

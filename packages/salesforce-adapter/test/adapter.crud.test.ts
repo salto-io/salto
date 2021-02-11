@@ -77,10 +77,12 @@ describe('SalesforceAdapter CRUD', () => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
         config: {
-          dataManagement: {
-            includeObjects: ['Test'],
-            saltoIDSettings: {
-              defaultIdFields: ['Name'],
+          fetch: {
+            data: {
+              includeObjects: ['Test'],
+              saltoIDSettings: {
+                defaultIdFields: ['Name'],
+              },
             },
           },
         },

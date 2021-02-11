@@ -19,11 +19,12 @@ import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD } from './constants'
+import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
+import { MetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -97,13 +98,17 @@ const getFullName = (obj: FileProperties): string => {
   return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
 }
 
+const getNamespace = (obj: FileProperties): string => (
+  obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
+)
+
 export const fetchMetadataInstances = async ({
-  client, metadataType, fileProps, instancesRegexSkippedList,
+  client, metadataType, fileProps, metadataQuery,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
-  instancesRegexSkippedList: ReadonlyArray<RegExp> | undefined
+  metadataQuery: MetadataQuery
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -112,9 +117,18 @@ export const fetchMetadataInstances = async ({
 
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
-    fileProps.map(getFullName)
-      .filter(name => !((instancesRegexSkippedList ?? [])
-        .some(re => re.test(`${metadataTypeName}.${name}`)))),
+    fileProps.map(
+      prop => ({
+        name: getFullName(prop),
+        namespace: getNamespace(prop),
+      })
+    ).filter(
+      ({ name, namespace }) => metadataQuery.isInstanceMatch({
+        namespace,
+        metadataType: metadataTypeName,
+        name,
+      })
+    ).map(({ name }) => name)
   )
 
   const fullNameToNamespaceAndId = Object.fromEntries(
@@ -159,19 +173,23 @@ type RetrieveMetadataInstancesArgs = {
   client: SalesforceClient
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
-  instancesRegexSkippedList: ReadonlyArray<RegExp>
+  metadataQuery: MetadataQuery
 }
 
 export const retrieveMetadataInstances = async ({
   client,
   types,
   maxItemsInRetrieveRequest,
-  instancesRegexSkippedList,
+  metadataQuery,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
   const notInSkipList = (file: FileProperties): boolean => (
-    !instancesRegexSkippedList.some(re => re.test(`${file.type}.${file.fullName}`))
+    metadataQuery.isInstanceMatch({
+      namespace: getNamespace(file),
+      metadataType: file.type,
+      name: file.fullName,
+    })
   )
 
   const getFolders = async (type: MetadataObjectType): Promise<(FileProperties | undefined)[]> => {

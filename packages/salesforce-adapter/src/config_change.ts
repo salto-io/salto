@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, DATA_MANAGEMENT, configType, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -27,6 +27,7 @@ const MESSAGE_INTRO = 'Salto failed to fetch some items from salesforce. '
 const MESSAGE_REASONS_INTRO = 'Due to the following issues: '
 const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
 + 'Salto needs to stop managing these items by applying the following configuration change:'
+
 
 const formatReason = (reason: string): string =>
   `    * ${reason}`
@@ -45,8 +46,8 @@ export const createInvlidIdFieldConfigChange = (
   invalidFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: DATA_MANAGEMENT,
-    value: `^${typeName}$`,
+    type: 'dataObjectsExclude',
+    value: typeName,
     reason: `${invalidFields} defined as idFields but are not queryable or do not exist on type ${typeName}`,
   })
 
@@ -55,8 +56,8 @@ export const createUnresolvedRefIdFieldConfigChange = (
   unresolvedRefIdFields: string[]
 ): ConfigChangeSuggestion =>
   ({
-    type: DATA_MANAGEMENT,
-    value: `^${typeName}$`,
+    type: 'dataObjectsExclude',
+    value: typeName,
     reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
 
@@ -64,13 +65,13 @@ export const createSkippedListConfigChange = (type: string, instance?: string):
   ConfigChangeSuggestion => {
   if (_.isUndefined(instance)) {
     return {
-      type: METADATA_TYPES_SKIPPED_LIST,
-      value: type,
+      type: 'metadataExclude',
+      value: { metadataType: type },
     }
   }
   return {
-    type: INSTANCES_REGEX_SKIPPED_LIST,
-    value: `^${type}.${instance}$`,
+    type: 'metadataExclude',
+    value: { metadataType: type, name: instance },
   }
 }
 
@@ -86,26 +87,33 @@ export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChange
       regexRes?.groups?.instance as string
     ))
 
+export type ConfigChange = {
+  config: InstanceElement
+  message: string
+}
+
 export const getConfigFromConfigChanges = (
   configChanges: ConfigChangeSuggestion[],
   currentConfig: Readonly<SalesforceConfig>,
-): InstanceElement | undefined => {
-  const configChangesByType = _.groupBy(configChanges, 'type')
-  const currentMetadataTypesSkippedList = makeArray(currentConfig.metadataTypesSkippedList)
-  const currentInstancesRegexSkippedList = makeArray(currentConfig.instancesRegexSkippedList)
-  const currentDataManagement = currentConfig.dataManagement
-  const metadataTypesSkippedList = makeArray(configChangesByType.metadataTypesSkippedList)
+): ConfigChange | undefined => {
+  const currentMetadataExclude = makeArray(currentConfig.fetch?.metadata?.exclude)
+
+  const newMetadataExclude = makeArray(configChanges)
+    .filter(isMetadataConfigSuggestions)
     .map(e => e.value)
-    .filter(e => !currentMetadataTypesSkippedList.includes(e))
-  const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
-    .map(e => e.value)
-    .filter(e => !currentInstancesRegexSkippedList.includes(e))
-  const dataObjectsToExclude = makeArray(configChangesByType.dataManagement)
+    .filter(e => !currentMetadataExclude.includes(e))
+
+  const dataObjectsToExclude = makeArray(configChanges)
+    .filter(isDataManagementConfigSuggestions)
     .map(config => config.value)
-  if ([metadataTypesSkippedList, instancesRegexSkippedList, dataObjectsToExclude]
+
+  if ([newMetadataExclude, dataObjectsToExclude]
     .every(_.isEmpty)) {
     return undefined
   }
+
+  const currentDataManagement = currentConfig.fetch?.data
+
   const dataManagementOverrides = {
     excludeObjects: makeArray(currentDataManagement?.excludeObjects)
       .concat(dataObjectsToExclude),
@@ -119,21 +127,35 @@ export const getConfigFromConfigChanges = (
       }
     )
   }
-  return new InstanceElement(
-    ElemID.CONFIG_NAME,
-    configType,
-    _.pickBy({
-      metadataTypesSkippedList: metadataTypesSkippedList
-        .concat(currentMetadataTypesSkippedList),
-      instancesRegexSkippedList: instancesRegexSkippedList
-        .concat(currentInstancesRegexSkippedList),
-      maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
-      useOldProfiles: currentConfig.useOldProfiles,
-      dataManagement: currentDataManagement === undefined ? undefined : {
-        ...currentDataManagement,
-        ...dataManagementOverrides,
-      },
-      client: currentConfig.client,
-    }, isDefined)
-  )
+
+  const data = currentDataManagement === undefined ? undefined : _.pickBy({
+    ...currentDataManagement,
+    ...dataManagementOverrides,
+  }, isDefined)
+
+  return {
+    config: new InstanceElement(
+      ElemID.CONFIG_NAME,
+      configType,
+      _.pickBy({
+        fetch: _.pickBy({
+          metadata: {
+            ...currentConfig.fetch?.metadata,
+            exclude: [
+              ...currentMetadataExclude,
+              ...newMetadataExclude,
+            ],
+          },
+          data: data === undefined ? undefined : {
+            ...data,
+            saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
+          },
+        }, isDefined),
+        maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
+        useOldProfiles: currentConfig.useOldProfiles,
+        client: currentConfig.client,
+      }, isDefined)
+    ),
+    message: getConfigChangeMessage(configChanges),
+  }
 }

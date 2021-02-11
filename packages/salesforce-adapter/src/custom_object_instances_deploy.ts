@@ -27,10 +27,10 @@ import { isInstanceOfCustomObject, instancesToCreateRecords, apiName,
   instancesToDeleteRecords, instancesToUpdateRecords, Types } from './transformers/transformer'
 import SalesforceClient from './client/client'
 import { CUSTOM_OBJECT_ID_FIELD } from './constants'
-import { DataManagementConfig } from './types'
 import { getIdFields, buildSelectStr, transformRecordToValues } from './filters/custom_objects_instances'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
+import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
 
 const { toArrayAsync } = collections.asynciterable
 const { toMD5 } = hash
@@ -147,8 +147,8 @@ const getRecordsBySaltoIds = async (
   return (await toArrayAsync(recordsIterable)).flat()
 }
 
-const getDataManagementConfigForCustomSettings = (instances: InstanceElement[]):
-  DataManagementConfig => ({
+const getDataManagementFromCustomSettings = (instances: InstanceElement[]):
+  DataManagement => buildDataManagement({
   includeObjects: [`^${apiName(instances[0].type)}`],
   saltoIDSettings: {
     defaultIdFields: ['Name'],
@@ -339,7 +339,7 @@ const isModificationChangeList = <T>(
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
-  dataManagementConfig?: DataManagementConfig,
+  dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
   try {
     const instances = changes.map(change => getChangeElement(change))
@@ -348,7 +348,7 @@ export const deployCustomObjectInstancesGroup = async (
       throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
     }
     const actualDataManagement = isListCustomSettingsObject(instances[0].type)
-      ? getDataManagementConfigForCustomSettings(instances) : dataManagementConfig
+      ? getDataManagementFromCustomSettings(instances) : dataManagement
     if (actualDataManagement === undefined) {
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }

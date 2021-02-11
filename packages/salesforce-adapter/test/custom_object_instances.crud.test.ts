@@ -220,10 +220,12 @@ describe('Custom Object Instances CRUD', () => {
         adapterParams: {
           filterCreators: [],
           config: {
-            dataManagement: {
-              includeObjects: ['Test'],
-              saltoIDSettings: {
-                defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name'],
+            fetch: {
+              data: {
+                includeObjects: ['Test'],
+                saltoIDSettings: {
+                  defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name'],
+                },
               },
             },
           },
@@ -903,10 +905,12 @@ describe('Custom Object Instances CRUD', () => {
         adapterParams: {
           filterCreators: [],
           config: {
-            dataManagement: {
-              includeObjects: ['Test'],
-              saltoIDSettings: {
-                defaultIdFields: ['NonExistingFields'],
+            fetch: {
+              data: {
+                includeObjects: ['Test'],
+                saltoIDSettings: {
+                  defaultIdFields: ['NonExistingFields'],
+                },
               },
             },
           },

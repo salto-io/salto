@@ -78,9 +78,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       elements.filter(isObjectType).map(e => [apiName(e), e])
     )
 
-    const settingsTypeInfos = settingsList.filter(info => (
-      !(config.metadataTypesSkippedList ?? []).includes(getSettingsTypeName(info.fullName))
-    ))
+    const settingsTypeInfos = settingsList.filter(
+      info => (config.fetchProfile.metadataQuery)
+        .isTypeMatch(getSettingsTypeName(info.fullName))
+    )
 
     // Create settings types
     const settingsTypes = (await Promise.all(
@@ -100,7 +101,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           client,
           metadataType: type,
           fileProps: [info],
-          instancesRegexSkippedList: config.instancesRegexSkippedList,
+          metadataQuery: config.fetchProfile.metadataQuery,
         }))
     )
     const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)

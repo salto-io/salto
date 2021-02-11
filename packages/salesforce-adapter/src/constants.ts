@@ -30,6 +30,7 @@ export const API_NAME_SEPARATOR = '.'
 export const CUSTOM_OBJECT_ID_FIELD = 'Id'
 export const INTERNAL_ID_FIELD = 'internalId'
 export const XML_ATTRIBUTE_PREFIX = 'attr_'
+export const DEFAULT_NAMESPACE = 'standard'
 
 export enum FIELD_TYPE_NAMES {
   AUTONUMBER = 'AutoNumber',

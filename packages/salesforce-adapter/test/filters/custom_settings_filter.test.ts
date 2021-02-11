@@ -24,6 +24,7 @@ import {
   CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, CUSTOM_SETTINGS_TYPE,
   LIST_CUSTOM_SETTINGS_TYPE,
 } from '../../src/constants'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const customSettingsWithNoNameFieldName = 'noNameField'
 const customSettingsWithNoNameField = new ObjectType({
@@ -87,7 +88,7 @@ describe('Custom settings filter', () => {
         {
           client,
           config: {
-            dataManagement: undefined,
+            fetchProfile: buildFetchProfile({}),
           },
         }
       ) as FilterType
@@ -129,7 +130,7 @@ describe('Custom settings filter', () => {
         {
           client,
           config: {
-            dataManagement: undefined,
+            fetchProfile: buildFetchProfile({}),
           },
         }
       ) as FilterType

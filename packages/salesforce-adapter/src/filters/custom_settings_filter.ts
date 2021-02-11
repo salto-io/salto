@@ -21,6 +21,7 @@ import { isCustomSettingsObject, apiName } from '../transformers/transformer'
 import { ConfigChangeSuggestion } from '../types'
 import { getAllInstances, getCustomObjectsFetchSettings, CustomObjectFetchSetting } from './custom_objects_instances'
 import { CUSTOM_SETTINGS_TYPE, LIST_CUSTOM_SETTINGS_TYPE } from '../constants'
+import { buildDataManagement } from '../fetch_profile/data_management'
 
 const log = logger(module)
 
@@ -42,12 +43,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .map(customSetting => apiName(customSetting))
     const customSettingsFetchSettings = getCustomObjectsFetchSettings(
       customSettingsObjects,
-      {
+      buildDataManagement({
         includeObjects: customSettingsObjectNames,
         saltoIDSettings: {
           defaultIdFields: ['Name'],
         },
-      }
+      }),
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customSettingsFetchSettings,

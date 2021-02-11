@@ -21,13 +21,25 @@ import mockClient from '../client'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import SalesforceClient from '../../src/client/client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 
 describe('Test Settings Type', () => {
   const { client } = mockClient()
 
   const filter = filterCreator(
-    { client, config: { metadataTypesSkippedList: ['CaseSettings'] } }
+    {
+      client,
+      config: {
+        fetchProfile: buildFetchProfile({
+          metadata: {
+            exclude: [
+              { metadataType: 'CaseSettings' },
+            ],
+          },
+        }),
+      },
+    }
   ) as FilterWith<'onFetch'>
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'settingsTest')

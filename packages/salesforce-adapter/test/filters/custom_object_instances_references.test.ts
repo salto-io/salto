@@ -23,6 +23,7 @@ import filterCreator from '../../src/filters/custom_object_instances_references'
 import mockAdapter from '../adapter'
 import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('Custom Object Instances References filter', () => {
   let client: SalesforceClient
@@ -120,7 +121,10 @@ describe('Custom Object Instances References filter', () => {
       adapterParams: {
       },
     }))
-    filter = filterCreator({ client, config: {} }) as FilterType
+    filter = filterCreator({
+      client,
+      config: { fetchProfile: buildFetchProfile({}) },
+    }) as FilterType
   })
 
   describe('lookup ref to', () => {

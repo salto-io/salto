@@ -26,6 +26,7 @@ import {
   CUSTOM_FIELD, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
 } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('Internal IDs filter', () => {
   let client: SalesforceClient
@@ -115,7 +116,10 @@ describe('Internal IDs filter', () => {
       adapterParams: {
       },
     }))
-    filter = filterCreator({ client, config: {} }) as FilterType
+    filter = filterCreator({
+      client,
+      config: { fetchProfile: buildFetchProfile({}) },
+    }) as FilterType
   })
 
   describe('resolve internal ids', () => {

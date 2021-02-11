@@ -29,6 +29,7 @@ import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
 import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
+import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('custom object instances e2e', () => {
@@ -42,19 +43,25 @@ describe('custom object instances e2e', () => {
   let elements: Element[]
   let credLease: CredsLease<UsernamePasswordCredentials>
 
-  const filtersContext = {
-    dataManagement: {
-      includeObjects: [productTwoMetadataName],
-      saltoIDSettings: {
-        defaultIdFields: ['Id'],
+  const config = {
+    fetch: {
+      data: {
+        includeObjects: [productTwoMetadataName],
+        saltoIDSettings: {
+          defaultIdFields: ['Id'],
+        },
       },
     },
+  }
+
+  const filtersContext = {
+    fetchProfile: buildFetchProfile(config.fetch),
   }
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
     const adapterParams = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
-    }, filtersContext)
+    }, config)
     adapter = adapterParams.adapter
     client = adapterParams.client
 

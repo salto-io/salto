@@ -26,6 +26,7 @@ import {
   CUSTOM_OBJECT, INTERNAL_ID_FIELD, CUSTOM_FIELD, API_NAME,
 } from '../../src/constants'
 import { metadataType } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const FORECASTING_METADATA_TYPE = 'ForecastingSettings'
 const BEFORE_ID_1 = '00N4K000004woj7'
@@ -290,7 +291,10 @@ describe('replace instance field values filter', () => {
       nonForecastingInstance = elements[elements.length - 1]
       orjNumElements = elements.length
       beforeNonForecastingInstance = nonForecastingInstance.clone()
-      filter = filterCreator({ client, config: {} }) as FilterType
+      filter = filterCreator({
+        client,
+        config: { fetchProfile: buildFetchProfile({}) },
+      }) as FilterType
       await filter.onFetch(elements)
 
       namesAfterFilter = []
@@ -331,7 +335,10 @@ describe('replace instance field values filter', () => {
     let filter: FilterType
 
     beforeAll(() => {
-      filter = filterCreator({ client, config: {} }) as FilterType
+      filter = filterCreator({
+        client,
+        config: { fetchProfile: buildFetchProfile({}) },
+      }) as FilterType
     })
 
     describe('replace names of forecasting settings to ids', () => {
@@ -425,7 +432,10 @@ describe('replace instance field values filter', () => {
       let filter: FilterType
 
       beforeAll(() => {
-        filter = filterCreator({ client, config: {} }) as FilterType
+        filter = filterCreator({
+          client,
+          config: { fetchProfile: buildFetchProfile({}) },
+        }) as FilterType
       })
 
       describe('replace ids of forecasting settings to names', () => {

@@ -124,7 +124,7 @@ describe('local state', () => {
     })
 
     it('should have two items in service update list', async () => {
-      expect(Object.keys(await (state.getServicesUpdateDates()))).toEqual(['salesforce', 'netsuite'])
+      expect(Object.keys(await (state.getServicesUpdateDates()))).toEqual(['netsuite', 'salesforce'])
     })
 
     it('should write two files', async () => {
@@ -215,7 +215,7 @@ describe('local state', () => {
 
       const fromState = await awu(await state.getAll()).toArray()
       expect(fromState.length).toBe(2)
-      expect(fromState[1].elemID.name).toBe('new')
+      expect(fromState[0].elemID.name).toBe('new')
     })
 
     it('should remove from state', async () => {
@@ -335,7 +335,7 @@ describe('local state', () => {
       mockExists.mockResolvedValueOnce(true)
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
       const now = new Date(2013, 6, 4).getTime()
-      jest.spyOn(Date, 'now').mockImplementationOnce(() => now)
+      jest.spyOn(Date, 'now').mockImplementation(() => now)
       const state = localState('filename', '', remoteMapCreator)
 
       const beforeOverrideDate = await state.getServicesUpdateDates()
@@ -377,7 +377,7 @@ describe('local state', () => {
     it('should return all adapters in a full state', async () => {
       const state = localState('mutiple_adapters', '', remoteMapCreator)
       const adapters = await state.existingServices()
-      expect(adapters).toEqual(['salto', 'hubspot'])
+      expect(adapters).toEqual(['hubspot', 'salto'])
     })
   })
 

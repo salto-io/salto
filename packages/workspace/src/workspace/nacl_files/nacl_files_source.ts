@@ -273,15 +273,15 @@ const buildNaclFilesState = async ({
     deletions: Record<string, Set<T>>,
   ): Promise<void> => {
     const changedKeys = _.uniq(Object.keys(additions).concat(Object.keys(deletions)))
-    return awu(changedKeys).forEach(async key => {
+    return index.setAll(awu(changedKeys).map(async key => {
       const currentValues = (await index.get(key)) ?? []
       const keyDeletionsSet = deletions[key] ?? new Set()
       const keyAdditions = Array.from(additions[key]?.values() ?? [])
       const newValues = currentValues
         .filter(value => !keyDeletionsSet.has(value))
         .concat(keyAdditions)
-      await index.set(key, _.uniq(newValues))
-    })
+      return { key, value: _.uniq(newValues) }
+    }))
   }
 
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {

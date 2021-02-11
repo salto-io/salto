@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 
 const { toAsyncIterable, awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -29,7 +31,6 @@ export type RemoteMapType = 'workspace' | 'state'
 export interface CreateRemoteMapParams<T> {
   namespace: string
   batchInterval?: number
-  LRUSize?: number
   serialize: (value: T) => string
   deserialize: (s: string) => Promise<T>
 }
@@ -40,6 +41,7 @@ export type RemoteMap<T, K extends string = string> = {
   has(key: K): Promise<boolean>
   set(key: K, value: T): Promise<void>
   setAll(values: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void>
+  deleteAll(keys: ThenableIterable<K>): Promise<void>
   entries(opts?: IterationOpts): AsyncIterable<RemoteMapEntry<T, K>>
   keys(opts?: IterationOpts): AsyncIterable<K>
   values(opts?: IterationOpts): AsyncIterable<T>
@@ -70,6 +72,12 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     this.data.delete(key)
   }
 
+  async deleteAll(keys: ThenableIterable<K>): Promise<void> {
+    for await (const key of keys) {
+      this.data.delete(key)
+    }
+  }
+
   async get(key: K): Promise<T | undefined> {
     return this.data.get(key)
   }
@@ -86,16 +94,19 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     this.data = new Map()
   }
 
+  getSortedEntries = (): AwuIterable<[K, T]> => awu(_.sortBy(Array
+    .from(this.data.entries()), [e => e[0]]))
+
   entries(): AsyncIterable<RemoteMapEntry<T, K>> {
-    return awu(this.data.entries()).map(e => ({ key: e[0], value: e[1] }))
+    return this.getSortedEntries().map(e => ({ key: e[0], value: e[1] }))
   }
 
   keys(): AsyncIterable<K> {
-    return toAsyncIterable(this.data.keys())
+    return toAsyncIterable(Array.from(this.data.keys()).sort())
   }
 
   values(): AsyncIterable<T> {
-    return toAsyncIterable(this.data.values())
+    return this.getSortedEntries().map(e => e[1])
   }
 
   // eslint-disable-next-line class-methods-use-this

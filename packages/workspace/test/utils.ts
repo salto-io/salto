@@ -84,6 +84,13 @@ export const mockCreateRemoteMap = async <T, K extends string = string>(
         data[entry.key] = opts.serialize(entry.value)
       }
     },
+    deleteAll: async (
+      keys: collections.asynciterable.ThenableIterable<K>
+    ): Promise<void> => {
+      for await (const key of keys) {
+        delete data[key]
+      }
+    },
     delete: async (key: K) => {
       delete data[key]
     },

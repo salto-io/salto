@@ -50,7 +50,7 @@ const compareValuesAndLazyResolveRefs = async (
   secondSrc: ReadOnlyElementsSource
 ): Promise<boolean> => {
   const shouldResolve = (value: Value): boolean => isReferenceExpression(value)
-    && !(value.elemID.isTopLevel() && value.elemID.idType === 'field')
+    && !(value.elemID.isTopLevel() || value.elemID.idType === 'field')
     && value.value === undefined
 
   const resolvedFirst = shouldResolve(first)
@@ -72,21 +72,21 @@ const compareValuesAndLazyResolveRefs = async (
     // The double negation and the double await might seem like this was created using a random
     // code generator, but its here in order for the method to "fail fast" as some
     // can stop when the first non equal values are encountered.
-    return !(await awu(_.range(0, resolvedFirst.length))
-      .some(async i => !await compareValuesAndLazyResolveRefs(
-        resolvedFirst[i],
-        resolvedSecond[i],
+    return !(await awu(resolvedFirst).some(
+      async (value, index) => !await compareValuesAndLazyResolveRefs(
+        value,
+        resolvedSecond[index],
         firstSrc,
         secondSrc
-      )))
+      )
+    ))
   }
 
   if (_.isPlainObject(resolvedFirst) && _.isPlainObject(resolvedSecond)) {
-    const allKeys = new Set([
-      ...Object.keys(resolvedFirst),
-      ...Object.keys(resolvedSecond),
-    ])
-    return !await awu(allKeys.values()).some(
+    if (!_.isEqual(Object.keys(resolvedFirst), Object.keys(resolvedSecond))) {
+      return false
+    }
+    return !await awu(Object.keys(resolvedFirst)).some(
       async key => !await compareValuesAndLazyResolveRefs(
         resolvedFirst[key],
         resolvedSecond[key],
@@ -105,24 +105,30 @@ const isEqualsNode = async (
   src1: ReadOnlyElementsSource,
   src2: ReadOnlyElementsSource,
 ): Promise<boolean> => {
-  if (!(values.isDefined(node1) && values.isDefined(node2))) {
+  if (!values.isDefined(node1) || !values.isDefined(node2)) {
     // Theoratically we should return true if both are undefined, but pratically
     // this makes no sense, so we return false,
     return false
   }
 
   if (!node1.elemID.isEqual(node2.elemID)) {
-    // This shouldn't happen but its still good ID to verify this.
+    log.warn(
+      'attempted to compare the values of two elements with different elemID (%o and %o)',
+      node1.elemID.getFullName(),
+      node2.elemID.getFullName()
+    )
     return false
   }
 
-  if (!(node1.isAnnotationsTypesEqual(node2)
-    && await compareValuesAndLazyResolveRefs(
-      node1.annotations,
-      node2.annotations,
-      src1,
-      src2
-    ))) {
+  if (!node1.isAnnotationsTypesEqual(node2)) {
+    return false
+  }
+  if (!await compareValuesAndLazyResolveRefs(
+    node1.annotations,
+    node2.annotations,
+    src1,
+    src2
+  )) {
     return false
   }
 

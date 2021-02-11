@@ -146,6 +146,11 @@ export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { 
 
 export type Expression = ReferenceExpression | TemplateExpression
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isStaticFile = (value: any): value is StaticFile => (
+  value instanceof StaticFile
+)
+
 export type TemplatePart = string | Expression
 /*
   Benchmarking reveals that looping on strings is extremely expensive.
@@ -161,7 +166,7 @@ export const compareSpecialValues = (
   first: Value,
   second: Value
 ): boolean | undefined => {
-  if (first instanceof StaticFile && second instanceof StaticFile) {
+  if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
   }
   if (first instanceof ReferenceExpression || second instanceof ReferenceExpression) {
@@ -204,11 +209,6 @@ export const isTemplateExpression = (value: any): value is TemplateExpression =>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isExpression = (value: any): value is Expression => (
   isReferenceExpression(value) || isTemplateExpression(value)
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isStaticFile = (value: any): value is StaticFile => (
-  value instanceof StaticFile
 )
 
 export const isPrimitiveValue = (value: Value): value is PrimitiveValue => (

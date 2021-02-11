@@ -213,30 +213,6 @@ const resolveElement = async (
       resolvedElements,
       resolvedSet,
     ))
-    // element.fields = await mapValuesAsync(
-    //   element.fields,
-    //   async field => {
-    //     const fieldType = await resolveElement(
-    //       await field.getType(contextedElementsGetter),
-    //       elementsSource,
-    //       resolvedElements,
-    //       resolvedSet
-    //     )
-    //     return new Field(
-    //       element,
-    //       field.name,
-    //       fieldType as TypeElement,
-    //       (await transformValues({
-    //         transformFunc: referenceCloner,
-    //         values: field.annotations,
-    //         elementsSource,
-    //         strict: false,
-    //         type: await field.getAnnotationTypes(contextedElementsGetter),
-    //         allowEmpty: true,
-    //       })) ?? {}
-    //     )
-    //   },
-    // )
   }
 
   if (isVariable(element)) {
@@ -253,12 +229,16 @@ export const resolve = async (
   inPlace = false
 ): Promise<AsyncIterable<Element>> => {
   // intentionally shallow clone because in resolve element we replace only top level properties
-  const clonedElements = inPlace
+  const elementsToClone = inPlace
     ? elements
     : await awu(elements).map(_.clone).toArray()
-  const resolvedElements = await awu(clonedElements).keyBy(
+  const resolvedElements = await awu(elementsToClone).keyBy(
     elm => elm.elemID.getFullName()
   )
-  await awu(clonedElements).forEach(e => resolveElement(e, elementsSource, resolvedElements))
-  return awu(clonedElements)
+  await awu(elementsToClone).forEach(e => resolveElement(
+    e,
+    elementsSource,
+    resolvedElements
+  ))
+  return awu(elementsToClone)
 }

@@ -554,8 +554,8 @@ const buildNaclFilesSource = (
       naclFiles,
       naclFile => _.isEmpty(naclFile.buffer.trim())
     )
-    await Promise.all(nonEmptyNaclFiles.map(naclFile => naclFilesStore.set(naclFile)))
-    await Promise.all(emptyNaclFiles.map(naclFile => naclFilesStore.delete(naclFile.filename)))
+    await awu(nonEmptyNaclFiles).forEach(naclFile => naclFilesStore.set(naclFile))
+    await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
   }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<Change[]> => {
@@ -574,10 +574,11 @@ const buildNaclFilesSource = (
         .flat()
         .forEach(file => staticFilesSource.delete(file))
     }
-
-    const naclFiles = _(await Promise.all(changes.map(change => change.id)
-      .map(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))))
-      .flatten().uniq().value()
+    const naclFiles = _.uniq(
+      await awu(changes).map(change => change.id)
+        .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
+        .toArray()
+    )
     const { parsedNaclFiles } = await getState()
     const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(
       await withLimitedConcurrency(naclFiles
@@ -699,7 +700,7 @@ const buildNaclFilesSource = (
     },
 
     removeNaclFiles: async (...names: string[]) => {
-      await Promise.all(names.map(name => naclFilesStore.delete(name)))
+      await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), cache, functions),
       )

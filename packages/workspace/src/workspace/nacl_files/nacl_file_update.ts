@@ -237,8 +237,7 @@ export const updateNaclFileData = async (
   const replaceBufferPart = (data: string, change: BufferChange): string => (
     data.slice(0, change.start) + change.newData + data.slice(change.end)
   )
-
-  const bufferChanges = await Promise.all(changes.map(toBufferChange))
+  const bufferChanges = await awu(changes).map(toBufferChange).toArray()
 
   // We want to replace buffers from last to first, that way we won't have to re-calculate
   // the source locations after every change

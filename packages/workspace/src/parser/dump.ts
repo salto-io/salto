@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import { Field, isObjectType, PrimitiveTypes, isPrimitiveType, Element, ReferenceExpression, isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, ElemID, ReferenceMap } from '@salto-io/adapter-api'
-import { promises } from '@salto-io/lowerdash'
+import { promises, collections } from '@salto-io/lowerdash'
+
 
 import { dump as hclDump, dumpValue } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
@@ -26,6 +27,7 @@ import {
   FunctionExpression,
 } from './functions'
 
+const { awu } = collections.asynciterable
 const { object: { mapValuesAsync } } = promises
 
 /**
@@ -161,7 +163,7 @@ export const dumpElements = async (
   elements: Element[], functions: Functions = {}, indentationLevel = 0
 ): Promise<string> =>
   hclDump(
-    wrapBlocks(await Promise.all(elements.map(e => dumpElementBlock(e, functions)))),
+    wrapBlocks(await awu(elements).map(e => dumpElementBlock(e, functions)).toArray()),
     indentationLevel
   )
 

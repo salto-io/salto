@@ -119,9 +119,10 @@ const createUpdateChanges = async (
         && change.id.nestingLevel > 0
         && !(await targetSource.get(change.id.createTopLevelParentID().parent)))
   )
-  const modifiedAdditions = await Promise.all(_(nestedAdditions)
-    .groupBy(addition => addition.id.createTopLevelParentID().parent.getFullName())
-    .entries()
+  const modifiedAdditions = await awu(Object.entries(_.groupBy(
+    nestedAdditions,
+    addition => addition.id.createTopLevelParentID().parent.getFullName()
+  )))
     .map(async ([parentID, elementAdditions]) => {
       const commonElement = await commonSource.get(ElemID.fromFullName(parentID))
       const targetElement = await targetSource.get(ElemID.fromFullName(parentID))
@@ -130,7 +131,8 @@ const createUpdateChanges = async (
       }
       return elementAdditions
     })
-    .value())
+    .toArray()
+
   return [
     ...otherChanges,
     ..._.flatten(modifiedAdditions),
@@ -301,7 +303,7 @@ const addToSource = async ({
   valuesOverrides?: Record<string, Value>
 }): Promise<DetailedChange[]> => {
   const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
-  const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
+  const fullChanges = await awu(Object.values(idsByParent)).flatMap(async gids => {
     const topLevelGid = gids[0].createTopLevelParentID().parent
     const topLevelElement = valuesOverrides[topLevelGid.getFullName()]
       ?? await originSource.get(topLevelGid)
@@ -309,10 +311,10 @@ const addToSource = async ({
     if (before === undefined) {
       // If there is no top level element to merge into, we best let the nacl file source
       // handle the nested changes
-      return Promise.all(gids.map(async id => createAddChange(
+      return awu(gids).map(async id => createAddChange(
         valuesOverrides[id.getFullName()] ?? resolvePath(topLevelElement, id),
         id
-      )))
+      ))
     }
     if (topLevelElement === undefined) {
       throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
@@ -352,11 +354,11 @@ const addToSource = async ({
     }
     const after = await awu(mergeResult.merged.values()).peek() as ChangeDataType
     return detailedCompare(before, after, true)
-  })))
-  return (await Promise.all(fullChanges.map(change => separateChangeByFiles(
+  }).flatMap(change => separateChangeByFiles(
     change,
     change.action === 'remove' ? targetSource : originSource
-  )))).flat()
+  )).toArray()
+  return fullChanges
 }
 
 const getChangePathHint = async (
@@ -452,11 +454,12 @@ const toMergeableChanges = async (
   )
   return [
     ...mergeableChanges,
-    ...await Promise.all(_(nonMergeableChanges)
-      .groupBy(c => getMergeableParentID(c.id).mergeableID.getFullName())
-      .values()
+    ...await awu(Object.values(_.groupBy(
+      nonMergeableChanges,
+      c => getMergeableParentID(c.id).mergeableID.getFullName()
+    )))
       .map(c => createMergeableChange(c, primarySource, commonSource))
-      .value()),
+      .toArray(),
   ]
 }
 
@@ -471,14 +474,14 @@ export const routeChanges = async (
     ? await toMergeableChanges(rawChanges, primarySource, commonSource)
     : rawChanges
 
-  const routedChanges = await Promise.all(changes.map(c => {
+  const routedChanges = await awu(changes).map(c => {
     switch (mode) {
       case 'isolated': return routeIsolated(c, primarySource, commonSource, secondarySources)
       case 'align': return routeAlign(c, primarySource)
       case 'override': return routeOverride(c, primarySource, commonSource, secondarySources)
       default: return routeDefault(c, primarySource, commonSource, secondarySources)
     }
-  }))
+  }).toArray()
 
   const secondaryEnvsChanges = _.mergeWith(
     {},
@@ -514,16 +517,14 @@ const removeFromSource = async (
   targetSource: NaclFilesSource
 ): Promise<DetailedChange[]> => {
   const groupedByTopLevel = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
-  return (await Promise.all(
-    Object.entries(groupedByTopLevel)
-      .flatMap(async ([key, groupedIds]) => {
-        const targetTopElement = await targetSource.get(ElemID.fromFullName(key))
-        if (targetTopElement === undefined) {
-          return []
-        }
-        return groupedIds.map(id => createRemoveChange(resolvePath(targetTopElement, id), id))
-      })
-  )).flat()
+  return awu(Object.entries(groupedByTopLevel))
+    .flatMap(async ([key, groupedIds]) => {
+      const targetTopElement = await targetSource.get(ElemID.fromFullName(key))
+      if (targetTopElement === undefined) {
+        return []
+      }
+      return groupedIds.map(id => createRemoveChange(resolvePath(targetTopElement, id), id))
+    }).flat().toArray()
 }
 
 export const routePromote = async (

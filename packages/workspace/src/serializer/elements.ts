@@ -16,10 +16,11 @@
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import {
-  PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType, MapType,
+  PrimitiveType, ElemID, Field, Element, ListType, MapType,
   ObjectType, InstanceElement, isType, isElement, isContainerType,
   ReferenceExpression, TemplateExpression, VariableExpression,
-  isInstanceElement, isReferenceExpression, Variable, StaticFile, isStaticFile, TypeElement,
+  isReferenceExpression, Variable, StaticFile, isStaticFile,
+  BuiltinTypes, TypeElement, isInstanceElement, isPrimitiveType,
 } from '@salto-io/adapter-api'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
@@ -56,6 +57,9 @@ const NameToType = {
   VariableExpression: VariableExpression,
   StaticFile: StaticFile,
 }
+const nameToTypeEntries = Object.entries(NameToType)
+const possibleTypes = Object.values(NameToType)
+
 
 type SerializedName = keyof typeof NameToType
 type Serializable = InstanceType<types.ValueOf<typeof NameToType>>
@@ -78,7 +82,7 @@ type ReviverMap = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isSaltoSerializable(value: any): value is Serializable {
-  return _.some(Object.values(NameToType).map(t => value instanceof t))
+  return _.some(possibleTypes, t => value instanceof t)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,9 +95,9 @@ export const serialize = (elements: Element[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'): string => {
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
-    const o = e as T & SerializedClass
+    const o = _.clone(e as T & SerializedClass)
     o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name]
-      || Object.entries(NameToType).find(([_name, type]) => e instanceof type)?.[0]
+      || nameToTypeEntries.find(([_name, type]) => e instanceof type)?.[0]
     return o
   }
   const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => (
@@ -109,45 +113,56 @@ export const serialize = (elements: Element[],
     if (isElement(e.value)) {
       return saltoClassReplacer(new ReferenceExpression(e.value.elemID))
     }
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return generalReplacer(e.value)
+    return e.value
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const resolveCircles = (v: any): any => (
+    isPrimitiveType(v)
+      ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
+      : new ObjectType({ elemID: v.elemID })
+  )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const generalReplacer = (e: any): any => {
-    if (isReferenceExpression(e)) {
-      return referenceExpressionReplacer(e)
+  const replacer = (v: any, k: any): any => {
+    if (k !== undefined) {
+      if (isType(v) && !isContainerType(v)) {
+        return saltoClassReplacer(resolveCircles(v))
+      }
+      if (isReferenceExpression(v)) {
+        return referenceExpressionReplacer(v)
+      }
+      if (isStaticFile(v)) {
+        return staticFileReplacer(v)
+      }
+      if (isSaltoSerializable(v)) {
+        return saltoClassReplacer(_.cloneDeepWith(v, replacer))
+      }
     }
-    if (isStaticFile(e)) {
-      return staticFileReplacer(e)
-    }
-    if (isSaltoSerializable(e)) {
-      return saltoClassReplacer(e)
-    }
-    return e
+    return undefined
   }
-
-  const weakElements = elements.map(element => _.cloneDeepWith(
-    element,
-    (v, k) => ((k !== undefined && isType(v) && !isContainerType(v))
-      ? new ObjectType({ elemID: v.elemID }) : undefined)
-  ))
-  const sortedElements = _.sortBy(weakElements, e => e.elemID.getFullName())
-  return JSON.stringify(sortedElements, (_k, e) => generalReplacer(e))
+  const cloneElements = elements.map(element => {
+    const clone = _.cloneDeepWith(element, replacer)
+    return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
+  })
+  const sortedElements = _.sortBy(cloneElements, e => e.elemID.getFullName())
+  // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
+  // circles
+  // eslint-disable-next-line no-restricted-syntax
+  return JSON.stringify(sortedElements)
 }
 
 export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const reviveElemID = (v: {[key: string]: any}): ElemID => (
+  new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
+)
+
 export const deserialize = async (
   data: string,
   staticFileReviver?: StaticFileReviver,
 ): Promise<Element[]> => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const reviveElemID = (v: {[key: string]: any}): ElemID => (
-    new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
-  )
-
   let staticFiles: Record<string, StaticFile> = {}
 
   const revivers: ReviverMap = {

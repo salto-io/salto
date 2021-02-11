@@ -117,13 +117,16 @@ const buildMultiEnvSource = (
   const getRelevantElems = async (
     envElemIDsToElems: Record<string, Record<string, Element | undefined>>,
     relevantElementIDs: ElemID[],
-  ): Promise<Element[]> => (await Promise.all(
-    Object.entries(envElemIDsToElems).flatMap(([envName, elemIDToElems]) =>
-      relevantElementIDs.map(async id =>
-        (id.getFullName() in elemIDToElems
+  ): Promise<Element[]> => awu(Object.entries(envElemIDsToElems))
+    .flatMap(
+      ([envName, elemIDToElems]) => awu(relevantElementIDs).map(
+        async id => (id.getFullName() in elemIDToElems
           ? elemIDToElems[id.getFullName()]
-          : sources[envName].get(id))))
-  )).filter(values.isDefined)
+          : sources[envName].get(id))
+      )
+    )
+    .filter(values.isDefined)
+    .toArray()
 
   const buildState = async (env?: string): Promise<MultiEnvState> => {
     const allActiveElements = awu(_.values(getActiveSources(env)))
@@ -316,11 +319,11 @@ const buildMultiEnvSource = (
   }
 
   const flush = async (): Promise<void> => {
-    await Promise.all([
-      primarySource().flush(),
-      commonSource().flush(),
-      ..._.values(secondarySources()).map(src => src.flush()),
-    ])
+    await awu([
+      primarySource(),
+      commonSource(),
+      ..._.values(secondarySources()),
+    ]).forEach(src => src.flush())
     await (await getState()).elements.flush()
   }
 
@@ -375,9 +378,9 @@ const buildMultiEnvSource = (
         : (await buildMultiEnvState({ env })).state.elements
     ),
     listNaclFiles: async (): Promise<string[]> => (
-      _.flatten(await Promise.all(_.entries(getActiveSources())
-        .map(async ([prefix, source]) => (
-          await source.listNaclFiles()).map(p => buidFullPath(prefix, p)))))
+      awu(Object.entries(getActiveSources()))
+        .flatMap(async ([prefix, source]) => (
+          (await source.listNaclFiles()).map(p => buidFullPath(prefix, p)))).toArray()
     ),
     getTotalSize: async (): Promise<number> =>
       _.sum(await Promise.all(Object.values(sources).map(s => s.getTotalSize()))),
@@ -416,13 +419,15 @@ const buildMultiEnvSource = (
         ] as [string, SourceRange[]]))
     },
     getSourceRanges: async (elemID: ElemID): Promise<SourceRange[]> => (
-      _.flatten(await Promise.all(_.entries(getActiveSources())
-        .map(async ([prefix, source]) =>
-          (await source.getSourceRanges(elemID)).map(sourceRange => (
-            { ...sourceRange, filename: buidFullPath(prefix, sourceRange.filename) })))))
+      awu(Object.entries(getActiveSources()))
+        .flatMap(async ([prefix, source]) => (
+          await source.getSourceRanges(elemID)).map(sourceRange => ({
+          ...sourceRange,
+          filename: buidFullPath(prefix, sourceRange.filename),
+        }))).toArray()
     ),
     getErrors: async (): Promise<Errors> => {
-      const srcErrors = _.flatten(await Promise.all(_.entries(getActiveSources())
+      const srcErrors = await awu(_.entries(getActiveSources()))
         .map(async ([prefix, source]) => {
           const errors = await source.getErrors()
           return {
@@ -439,7 +444,8 @@ const buildMultiEnvSource = (
               },
             })),
           }
-        })))
+        })
+        .toArray()
       const { mergeErrors } = await getState()
       return new Errors(_.reduce(srcErrors, (acc, errors) => ({
         ...acc,
@@ -457,14 +463,16 @@ const buildMultiEnvSource = (
       return source.getParsedNaclFile(relPath)
     },
     getElementNaclFiles: async (id: ElemID): Promise<string[]> => (
-      _.flatten(await Promise.all(_.entries(getActiveSources())
-        .map(async ([prefix, source]) => (
-          await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))))
+      awu(Object.entries(getActiveSources()))
+        .flatMap(async ([prefix, source]) => (
+          await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))
+        .toArray()
     ),
     getElementReferencedFiles: async (id: ElemID): Promise<string[]> => _.flatten(
-      await Promise.all(_.entries(getActiveSources())
+      await awu(Object.entries(getActiveSources()))
         .map(async ([prefix, source]) => (
-          await source.getElementReferencedFiles(id)).map(p => buidFullPath(prefix, p))))
+          await source.getElementReferencedFiles(id)).map(p => buidFullPath(prefix, p)))
+        .toArray()
     ),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
       // We use series here since we don't want to perform too much delete operation concurrently

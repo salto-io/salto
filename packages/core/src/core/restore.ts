@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import { ElemID, DetailedChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
+
+const { awu } = collections.asynciterable
 
 const splitChangeByPath = async (
   change: DetailedChange,
@@ -56,8 +59,8 @@ export const createRestoreChanges = async (
     elementSelectors,
     [id => (services?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE]
   )
-  const detailedChanges = _.flatten(await Promise.all(
-    changes.map(change => splitChangeByPath(change, index))
-  ))
+  const detailedChanges = awu(changes)
+    .flatMap(change => splitChangeByPath(change, index))
+    .toArray()
   return detailedChanges
 }

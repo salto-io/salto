@@ -230,27 +230,25 @@ const isHiddenChangeOnField = (change: DetailedChange): boolean => (
 const getHiddenTypeChanges = async (
   changes: DetailedChange[],
   state: State,
-): Promise<DetailedChange[]> => (
-  (await Promise.all(
-    changes
-      .filter(c => isHiddenChangeOnElement(c, false))
-      .map(async change => {
-        const elemId = change.id.createTopLevelParentID().parent
-        const elem = await state.get(elemId)
-        if (!isElement(elem)) {
-          // Should never happen
-          log.warn(
-            'Element %s was changed to hidden %s but was not found in state',
-            elemId.getFullName(), isChangeToHidden(change, false),
-          )
-          return change
-        }
-        return isChangeToHidden(change, false)
-          ? createRemoveChange(elem, elemId)
-          : createAddChange(elem, elemId)
-      })
-  )).filter(values.isDefined)
-)
+): Promise<DetailedChange[]> => awu(changes)
+  .filter(c => isHiddenChangeOnElement(c, false))
+  .map(async change => {
+    const elemId = change.id.createTopLevelParentID().parent
+    const elem = await state.get(elemId)
+    if (!isElement(elem)) {
+      // Should never happen
+      log.warn(
+        'Element %s was changed to hidden %s but was not found in state',
+        elemId.getFullName(), isChangeToHidden(change, false),
+      )
+      return change
+    }
+    return isChangeToHidden(change, false)
+      ? createRemoveChange(elem, elemId)
+      : createAddChange(elem, elemId)
+  })
+  .filter(values.isDefined)
+  .toArray()
 
 /**
  * When a field or annotation changes from/to hidden, we need to create changes that add/remove
@@ -483,7 +481,7 @@ export const filterOutHiddenChanges = async (
     return change
   }
 
-  return (await Promise.all(changes.map(filterOutHidden))).filter(values.isDefined)
+  return awu(changes).map(filterOutHidden).filter(values.isDefined).toArray()
 }
 
 export const handleHiddenChanges = async (

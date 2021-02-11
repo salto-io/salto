@@ -312,8 +312,9 @@ export const loadWorkspace = async (
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
     const sourceRanges = await naclFilesSource.getSourceRanges(saltoElemErr.elemID)
-
-    const sourceFragments = await Promise.all(sourceRanges.map(range => getSourceFragment(range)))
+    const sourceFragments = await awu(sourceRanges)
+      .map(range => getSourceFragment(range))
+      .toArray()
 
     return {
       ...saltoElemErr,

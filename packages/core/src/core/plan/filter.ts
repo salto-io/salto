@@ -162,11 +162,10 @@ export const filterInvalidChanges = async (
     change => getChangeElement(change).elemID.adapter,
   )
 
-  const errorPromises = [...changesByAdapter.entries()]
+  const changeErrors = await awu(changesByAdapter.entries())
     .filter(([adapter]) => adapter in changeValidators)
-    .map(([adapter, changes]) => changeValidators[adapter](changes))
-
-  const changeErrors = _.flatten(await Promise.all(errorPromises))
+    .flatMap(([adapter, changes]) => changeValidators[adapter](changes))
+    .toArray()
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
   const nodeIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))

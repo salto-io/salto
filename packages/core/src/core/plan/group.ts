@@ -18,6 +18,8 @@ import { collections } from '@salto-io/lowerdash'
 import { DataNodeMap, GroupedNodeMap, NodeId, buildGroupedGraph } from '@salto-io/dag'
 import { Change, getChangeElement, isField, ChangeGroupId, ChangeId, ChangeGroupIdFunction } from '@salto-io/adapter-api'
 
+const { awu } = collections.asynciterable
+
 export const getCustomGroupIds = async (
   changes: DataNodeMap<Change>,
   customGroupIdFunctions: Record<string, ChangeGroupIdFunction>,
@@ -31,14 +33,16 @@ export const getCustomGroupIds = async (
     ({ change }) => getChangeElement(change).elemID.adapter,
   )
 
-  const changeGroupIds = wu(changesPerAdapter.entries())
+  const changeGroupIds = awu(changesPerAdapter.entries())
     .filter(([adapterName]) => adapterName in customGroupIdFunctions)
     .map(([name, adapterChanges]) => (
       customGroupIdFunctions[name](new Map(adapterChanges.map(({ id, change }) => [id, change])))
     ))
 
   return new Map(
-    (await Promise.all(changeGroupIds)).flatMap(changeIdsMap => [...changeIdsMap.entries()])
+    await awu(changeGroupIds)
+      .flatMap(changeIdsMap => [...changeIdsMap.entries()])
+      .toArray()
   )
 }
 

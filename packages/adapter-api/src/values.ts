@@ -151,6 +151,11 @@ export const isStaticFile = (value: any): value is StaticFile => (
   value instanceof StaticFile
 )
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isReferenceExpression = (value: any): value is ReferenceExpression => (
+  value instanceof ReferenceExpression
+)
+
 export type TemplatePart = string | Expression
 /*
   Benchmarking reveals that looping on strings is extremely expensive.
@@ -169,10 +174,10 @@ export const compareSpecialValues = (
   if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
   }
-  if (first instanceof ReferenceExpression || second instanceof ReferenceExpression) {
-    const fValue = first instanceof ReferenceExpression ? first.value : first
-    const sValue = second instanceof ReferenceExpression ? second.value : second
-    return (first instanceof ReferenceExpression && second instanceof ReferenceExpression)
+  if (isReferenceExpression(first) || isReferenceExpression(second)) {
+    const fValue = isReferenceExpression(first) ? first.value : first
+    const sValue = isReferenceExpression(second) ? second.value : second
+    return (isReferenceExpression(first) && isReferenceExpression(second))
       ? first.elemID.isEqual(second.elemID)
       : _.isEqualWith(fValue, sValue, compareSpecialValues)
   }
@@ -189,11 +194,6 @@ export const isEqualValues = (
   first,
   second,
   compareSpecialValues
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isReferenceExpression = (value: any): value is ReferenceExpression => (
-  value instanceof ReferenceExpression
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

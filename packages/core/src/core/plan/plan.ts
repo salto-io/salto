@@ -50,7 +50,8 @@ const compareValuesAndLazyResolveRefs = async (
   secondSrc: ReadOnlyElementsSource
 ): Promise<boolean> => {
   const shouldResolve = (value: Value): boolean => isReferenceExpression(value)
-    && !(value.elemID.isTopLevel() || value.elemID.idType === 'field')
+    && (!(value.elemID.isTopLevel() || value.elemID.idType === 'field')
+      || value.elemID.idType === 'var')
     && value.value === undefined
 
   const resolvedFirst = shouldResolve(first)
@@ -61,6 +62,9 @@ const compareValuesAndLazyResolveRefs = async (
     : second
 
   const specialCompareRes = compareSpecialValues(resolvedFirst, resolvedSecond)
+  if (specialCompareRes === false) {
+    compareSpecialValues(resolvedFirst, resolvedSecond)
+  }
   if (values.isDefined(specialCompareRes)) {
     return specialCompareRes
   }

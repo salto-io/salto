@@ -26,9 +26,6 @@ import { transformElement, detailedCompare, TransformFunc } from '@salto-io/adap
 const { validateElements } = validator
 export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
 
-const isWorkspaceFile = (filePath: string): boolean =>
-  !filePath.startsWith(CONFIG_DIR_NAME)
-
 export class EditorWorkspace {
   private workspace: Workspace
   // Indicates that the workspace is not the active workspace
@@ -61,6 +58,10 @@ export class EditorWorkspace {
 
   private editorFilename(filename: string): string {
     return path.resolve(this.baseDir, filename)
+  }
+
+  private isWorkspaceFile(filePath: string): boolean {
+    return !this.workspaceFilename(filePath).startsWith(CONFIG_DIR_NAME)
   }
 
   private editorNaclFile(naclFile: nacl.NaclFile): nacl.NaclFile {
@@ -210,12 +211,12 @@ export class EditorWorkspace {
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
-      const opDeletesWorkspaceFiles = Array.from(opDeletes).filter(isWorkspaceFile)
+      const opDeletesWorkspaceFiles = Array.from(opDeletes).filter(f => this.isWorkspaceFile(f))
       const removeChanges = (!_.isEmpty(opDeletesWorkspaceFiles))
         ? await this.workspace.removeNaclFiles(...opDeletesWorkspaceFiles)
         : []
       // Now add the waiting changes
-      const opUpdatesWorkspaceFiles = _.pickBy(opUpdates, (_val, key) => isWorkspaceFile(key))
+      const opUpdatesWorkspaceFiles = _.pickBy(opUpdates, (_val, key) => this.isWorkspaceFile(key))
       const updateChanges = (!_.isEmpty(opUpdatesWorkspaceFiles))
         ? await this.workspace.setNaclFiles(...Object.values(opUpdatesWorkspaceFiles))
         : []
@@ -312,14 +313,10 @@ export class EditorWorkspace {
     if (_.isUndefined(this.wsErrors)) {
       return this.errors()
     }
+    const relevantFilenames = filenames.filter(f => this.isWorkspaceFile(f))
     const currentErrors = await this.wsErrors
-    const workspaceElements = new Set(
-      (await this.workspace.elements(false)).map(e => e.elemID.getFullName())
-    )
     const elements = new Set(
-      (await this.elementsInFiles(filenames))
-        .map(e => e.getFullName())
-        .filter(e => workspaceElements.has(e))
+      (await this.elementsInFiles(relevantFilenames)).map(e => e.getFullName())
     )
     const validation = currentErrors.validation
       .filter(e => !elements.has(e.elemID.createTopLevelParentID().parent.getFullName()))

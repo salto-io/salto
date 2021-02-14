@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import path from 'path'
 import { workspaceConfigSource as wcs,
-  WorkspaceConfig, configSource } from '@salto-io/workspace'
+  WorkspaceConfig, configSource, CONFIG_DIR_NAME } from '@salto-io/workspace'
 import { InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
+import { getSaltoHome } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
   USER_CONFIG_NAME, UserDataConfig, WorkspaceMetadataConfig, envsConfigInstance,
   userDataConfigInstance, workspaceMetadataConfigInstance, ADAPTERS_CONFIG_NAME } from './workspace_config_types'

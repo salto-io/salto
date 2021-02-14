@@ -19,9 +19,10 @@ import uuidv4 from 'uuid/v4'
 import { DetailedChange } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
-  configSource as cs, parseCache, staticFiles, dirStore, WorkspaceComponents } from '@salto-io/workspace'
+  configSource as cs, parseCache, staticFiles, dirStore, WorkspaceComponents,
+  CONFIG_DIR_NAME } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
+import { getSaltoHome, getConfigDir } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'

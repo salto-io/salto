@@ -41,6 +41,7 @@ const log = logger(module)
 
 const { makeArray } = collections.array
 
+export const CONFIG_DIR_NAME = 'salto.config'
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 

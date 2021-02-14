@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
-import { parser } from '@salto-io/workspace'
+import { parser, CONFIG_DIR_NAME } from '@salto-io/workspace'
 import { TelemetryConfig } from './telemetry'
 
 const { dumpElements, parse } = parser
@@ -36,7 +36,6 @@ class AppConfigParseError extends Error {
 
 export const SALTO_HOME_VAR = 'SALTO_HOME'
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
-export const CONFIG_DIR_NAME = 'salto.config'
 const CONFIG_FILENAME = 'config.nacl'
 
 export const getConfigDir = (baseDir: string): string => (

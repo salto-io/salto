@@ -229,16 +229,16 @@ export const resolve = async (
   inPlace = false
 ): Promise<AsyncIterable<Element>> => {
   // intentionally shallow clone because in resolve element we replace only top level properties
-  const elementsToClone = inPlace
+  const elementsToResolve = inPlace
     ? elements
     : await awu(elements).map(_.clone).toArray()
-  const resolvedElements = await awu(elementsToClone).keyBy(
+  const resolvedElements = await awu(elementsToResolve).keyBy(
     elm => elm.elemID.getFullName()
   )
-  await awu(elementsToClone).forEach(e => resolveElement(
+  await awu(elementsToResolve).forEach(e => resolveElement(
     e,
     elementsSource,
     resolvedElements
   ))
-  return awu(elementsToClone)
+  return awu(elementsToResolve)
 }

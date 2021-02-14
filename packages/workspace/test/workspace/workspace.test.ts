@@ -1850,6 +1850,37 @@ describe('workspace', () => {
       await expect(workspace.hasElementsInEnv('noSuchEnv')).resolves.toBeFalsy()
     })
   })
+
+  describe('fileInActiveSource', () => {
+    let workspace: Workspace
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        undefined, undefined, undefined, undefined, undefined,
+        {
+          '': {
+            naclFiles: naclFilesSource(mockDirStore(), mockParseCache(), mockStaticFilesSource()),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource([]),
+            state: createState([]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource([]),
+            state: createState([]),
+          },
+        }
+      )
+    })
+    it('should return true if file is in the current env', () => {
+      expect(workspace.fileInActiveSource('envs/default/test.nacl')).toEqual(true)
+    })
+    it('should return true if file is in the common env', () => {
+      expect(workspace.fileInActiveSource('test.nacl')).toEqual(true)
+    })
+    it('should return false if file is in inactive env', () => {
+      expect(workspace.fileInActiveSource('envs/inactive/test.nacl')).toEqual(false)
+    })
+  })
 })
 
 describe('getElementNaclFiles', () => {

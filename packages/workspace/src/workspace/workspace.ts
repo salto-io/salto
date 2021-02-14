@@ -28,7 +28,7 @@ import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
 import { calcNewMerged, calcChanges } from './nacl_files/elements_cache'
-import { multiEnvSource } from './nacl_files/multi_env/multi_env_source'
+import { multiEnvSource, getSourceNameForFilename } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError,
   UnknownEnvError, DeleteCurrentEnvError } from './errors'
@@ -93,6 +93,7 @@ export type Workspace = {
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
   hasElementsInServices(serviceNames: string[]): Promise<boolean>
   hasElementsInEnv(envName: string): Promise<boolean>
+  fileInActiveSource(filename: string): boolean
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
   errors(validate?: boolean): Promise<Readonly<Errors>>
@@ -339,6 +340,12 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         return false
       }
       return !(await envSource.naclFiles.isEmpty())
+    },
+    fileInActiveSource: filename => {
+      const env = getSourceNameForFilename(
+        filename, envs() as string[], elementsSources.commonSourceName
+      )
+      return [elementsSources.commonSourceName, currentEnv()].includes(env)
     },
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.

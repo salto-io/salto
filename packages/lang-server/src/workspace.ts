@@ -222,7 +222,8 @@ export class EditorWorkspace {
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(
-          [...opDeletes, ...Object.keys(opUpdatesWorkspaceFiles)],
+          [...opDeletesWorkspaceFiles, ...Object.keys(opUpdatesWorkspaceFiles)]
+            .filter(f => this.workspace.fileInActiveSource(f)),
           [...removeChanges, ...updateChanges],
         )
         const errorsWithoutValidation = await this.workspace.errors(false)
@@ -313,7 +314,9 @@ export class EditorWorkspace {
     if (_.isUndefined(this.wsErrors)) {
       return this.errors()
     }
-    const relevantFilenames = filenames.filter(f => this.isWorkspaceFile(f))
+    const relevantFilenames = filenames
+      .filter(f => this.isWorkspaceFile(f))
+      .filter(f => this.workspace.fileInActiveSource(this.workspaceFilename(f)))
     const currentErrors = await this.wsErrors
     const elements = new Set(
       (await this.elementsInFiles(relevantFilenames)).map(e => e.getFullName())

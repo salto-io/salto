@@ -98,6 +98,50 @@ describe('deprecated config', () => {
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
     })
 
+    it('dataManagement without all the properties should be converted to fetch.data', () => {
+      const configWithOldOptions = {
+        fetch: {
+          metadata: {
+            exclude: [
+              { metadataType: 'Type1' },
+            ],
+          },
+        },
+        dataManagement: {
+          includeObjects: ['aaa', '^eee', 'hhh\\.*'],
+          saltoIDSettings: {
+            defaultIdFields: ['Name'],
+          },
+        },
+      }
+
+      const updatedConfig = {
+        fetch: {
+          metadata: {
+            exclude: [
+              { metadataType: 'Type1' },
+            ],
+          },
+          data: {
+            includeObjects: ['.*aaa.*', 'eee.*', '.*hhh\\.*.*'],
+            saltoIDSettings: {
+              defaultIdFields: ['Name'],
+            },
+          },
+        },
+      }
+
+      const config = updateDeprecatedConfiguration(new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        configWithOldOptions
+      ))
+      // _.isEqual is used instead of '.toEqual' because '.toEqual'
+      // will return true of objects like {a: undefined} and {}
+      expect(_.isEqual(config?.config.value, updatedConfig)).toBeTruthy()
+      expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
+    })
+
     it('metadataTypesSkippedList should be converted to fetch.metadata.exclude', () => {
       const configWithOldOptions = _.cloneDeep(currentConfig)
       configWithOldOptions.metadataTypesSkippedList = ['a', 'b']

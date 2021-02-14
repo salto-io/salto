@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, Field, TypeElement, isContainerType } from '@salto-io/adapter-api'
+import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField } from '@salto-io/adapter-api'
 import { resolvePath, TransformFunc, createRefToElmWithValue, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
@@ -41,7 +41,6 @@ const getResolvedElement = async (
 ): Promise<Element | undefined> =>
   (resolvedElements[elemID.getFullName()] ?? elementsSource.get(elemID))
 
-let resolveReferenceExpression: Resolver<ReferenceExpression>
 let resolveTemplateExpression: Resolver<TemplateExpression>
 
 const resolveMaybeExpression: Resolver<Value> = async (
@@ -51,6 +50,7 @@ const resolveMaybeExpression: Resolver<Value> = async (
   visited: Set<string> = new Set<string>(),
 ): Promise<Value> => {
   if (isReferenceExpression(value)) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     return resolveReferenceExpression(value, elementsSource, resolvedElements, visited)
   }
 
@@ -67,7 +67,7 @@ const resolveMaybeExpression: Resolver<Value> = async (
   return value
 }
 
-resolveReferenceExpression = async (
+export const resolveReferenceExpression = async (
   expression: ReferenceExpression,
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
@@ -183,7 +183,8 @@ const resolveElement = async (
     )
   }
 
-  if (isInstanceElement(element)) {
+
+  if (isInstanceElement(element) || isField(element)) {
     element.refType = createRefToElmWithValue(
       await resolveElement(
         await element.getType(contextedElementsGetter),
@@ -192,6 +193,9 @@ const resolveElement = async (
         resolvedSet
       )
     )
+  }
+
+  if (isInstanceElement(element)) {
     element.value = (await transformValues({
       transformFunc: referenceCloner,
       values: element.value,
@@ -203,30 +207,12 @@ const resolveElement = async (
   }
 
   if (isObjectType(element)) {
-    element.fields = await mapValuesAsync(
-      element.fields,
-      async field => {
-        const fieldType = await resolveElement(
-          await field.getType(contextedElementsGetter),
-          elementsSource,
-          resolvedElements,
-          resolvedSet
-        )
-        return new Field(
-          element,
-          field.name,
-          fieldType as TypeElement,
-          (await transformValues({
-            transformFunc: referenceCloner,
-            values: field.annotations,
-            elementsSource,
-            strict: false,
-            type: await field.getAnnotationTypes(contextedElementsGetter),
-            allowEmpty: true,
-          })) ?? {}
-        )
-      },
-    )
+    await awu(Object.values(element.fields)).forEach(field => resolveElement(
+      field,
+      elementsSource,
+      resolvedElements,
+      resolvedSet,
+    ))
   }
 
   if (isVariable(element)) {
@@ -240,13 +226,19 @@ const resolveElement = async (
 export const resolve = async (
   elements: AsyncIterable<Element>,
   elementsSource: ReadOnlyElementsSource,
+  inPlace = false
 ): Promise<AsyncIterable<Element>> => {
   // intentionally shallow clone because in resolve element we replace only top level properties
-  const clonedElements = await awu(elements).map(_.clone).toArray()
-  const resolvedElements = _.keyBy(
-    clonedElements,
+  const elementsToResolve = inPlace
+    ? elements
+    : await awu(elements).map(_.clone).toArray()
+  const resolvedElements = await awu(elementsToResolve).keyBy(
     elm => elm.elemID.getFullName()
   )
-  await awu(clonedElements).forEach(e => resolveElement(e, elementsSource, resolvedElements))
-  return awu(clonedElements)
+  await awu(elementsToResolve).forEach(e => resolveElement(
+    e,
+    elementsSource,
+    resolvedElements
+  ))
+  return awu(elementsToResolve)
 }

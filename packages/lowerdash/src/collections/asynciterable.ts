@@ -220,7 +220,7 @@ export const keyByAsync = async<T>(
 
 export const someAsync = async<T>(
   itr: ThenableIterable<T>,
-  func: (t: T) => Thenable<unknown>
+  func: (t: T, i: number) => Thenable<unknown>
 ): Promise<boolean> => await findAsync(mapAsync(itr, func), res => res) !== undefined
 
 export const everyAsync = async<T>(
@@ -254,7 +254,7 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   // This is the way wu handles the flat function types as well...
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   flat(): AwuIterable<any>
-  some(func: (t: T) => Thenable<unknown>): Promise<boolean>
+  some(func: (t: T, i: number) => Thenable<unknown>): Promise<boolean>
   every(func: (t: T) => Thenable<unknown>): Promise<boolean>
   keyBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T>>
   groupBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T[]>>

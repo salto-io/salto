@@ -286,6 +286,14 @@ describe('asynciterable', () => {
         await someAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n === 5))
       ).toBe(false)
     })
+    it('should allow some function to get an index', async () => {
+      expect(
+        await someAsync(toAsyncIterable([1, 2, 3, 4]), (n, i) => Promise.resolve(n === i))
+      ).toBe(false)
+      expect(
+        await someAsync(toAsyncIterable([1, 1, 3, 4]), (n, i) => Promise.resolve(n === i))
+      ).toBe(true)
+    })
   })
 
   describe('everyAsync', () => {

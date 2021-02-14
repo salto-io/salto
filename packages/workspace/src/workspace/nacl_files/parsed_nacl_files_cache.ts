@@ -129,8 +129,8 @@ const getCacheSources = async (
   }),
   sourceMap: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap'),
-    serialize: (sourceMap: SourceMap) => safeJsonStringify(sourceMap),
-    deserialize: data => JSON.parse(data),
+    serialize: (sourceMap: SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
+    deserialize: async data => (new SourceMap(JSON.parse(data))),
   })),
   data: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'data'),

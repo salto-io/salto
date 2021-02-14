@@ -146,6 +146,16 @@ export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { 
 
 export type Expression = ReferenceExpression | TemplateExpression
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isStaticFile = (value: any): value is StaticFile => (
+  value instanceof StaticFile
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isReferenceExpression = (value: any): value is ReferenceExpression => (
+  value instanceof ReferenceExpression
+)
+
 export type TemplatePart = string | Expression
 /*
   Benchmarking reveals that looping on strings is extremely expensive.
@@ -157,30 +167,33 @@ export type TemplatePart = string | Expression
 const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
   (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
-export const isEqualValues = (first: Value, second: Value): boolean => _.isEqualWith(
+export const compareSpecialValues = (
+  first: Value,
+  second: Value
+): boolean | undefined => {
+  if (isStaticFile(first) && isStaticFile(second)) {
+    return first.isEqual(second)
+  }
+  if (isReferenceExpression(first) || isReferenceExpression(second)) {
+    const fValue = isReferenceExpression(first) ? first.value : first
+    const sValue = isReferenceExpression(second) ? second.value : second
+    return (isReferenceExpression(first) && isReferenceExpression(second))
+      ? first.elemID.isEqual(second.elemID)
+      : _.isEqualWith(fValue, sValue, compareSpecialValues)
+  }
+  if (typeof first === 'string' && typeof second === 'string') {
+    return compareStringsIgnoreNewlineDifferences(first, second)
+  }
+  return undefined
+}
+
+export const isEqualValues = (
+  first: Value,
+  second: Value
+): boolean => _.isEqualWith(
   first,
   second,
-  (f, s) => {
-    if (f instanceof StaticFile && s instanceof StaticFile) {
-      return f.isEqual(s)
-    }
-    if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
-      const fValue = f instanceof ReferenceExpression ? f.value : f
-      const sValue = s instanceof ReferenceExpression ? s.value : s
-      return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
-        ? f.elemID.isEqual(s.elemID)
-        : isEqualValues(fValue, sValue)
-    }
-    if (typeof f === 'string' && typeof s === 'string') {
-      return compareStringsIgnoreNewlineDifferences(f, s)
-    }
-    return undefined
-  }
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isReferenceExpression = (value: any): value is ReferenceExpression => (
-  value instanceof ReferenceExpression
+  compareSpecialValues
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -196,11 +209,6 @@ export const isTemplateExpression = (value: any): value is TemplateExpression =>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isExpression = (value: any): value is Expression => (
   isReferenceExpression(value) || isTemplateExpression(value)
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isStaticFile = (value: any): value is StaticFile => (
-  value instanceof StaticFile
 )
 
 export const isPrimitiveValue = (value: Value): value is PrimitiveValue => (

@@ -122,15 +122,22 @@ const convertDeprecatedMetadataParams = (
 }
 
 const convertDeprecatedDataConf = (conf: DataManagementConfig): DataManagementConfig => ({
-  ...conf,
+  ..._.pickBy({
+    ...conf,
+    excludeObjects: conf?.excludeObjects?.map(convertDeprecatedRegex),
+    allowReferenceTo: conf?.allowReferenceTo?.map(convertDeprecatedRegex),
+  }, values.isDefined),
   includeObjects: conf.includeObjects.map(convertDeprecatedRegex),
-  excludeObjects: conf?.excludeObjects?.map(convertDeprecatedRegex),
-  allowReferenceTo: conf?.allowReferenceTo?.map(convertDeprecatedRegex),
   saltoIDSettings: {
-    ...conf.saltoIDSettings,
-    overrides: conf.saltoIDSettings.overrides?.map(
-      override => ({ ...override, objectsRegex: convertDeprecatedRegex(override.objectsRegex) })
-    ),
+    ..._.pickBy({
+      ...conf.saltoIDSettings,
+      overrides:
+        conf.saltoIDSettings.overrides?.map(override => ({
+          ...override,
+          objectsRegex: convertDeprecatedRegex(override.objectsRegex),
+        })),
+    }, values.isDefined),
+    defaultIdFields: conf.saltoIDSettings.defaultIdFields,
   },
 })
 

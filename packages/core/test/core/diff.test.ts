@@ -40,6 +40,9 @@ describe('diff', () => {
     fields: {
       simple: {
         type: BuiltinTypes.STRING,
+        annotations: {
+          description: 'description',
+        },
       },
       nested: {
         type: nestedType,
@@ -226,6 +229,20 @@ describe('diff', () => {
         expect(changes).toHaveLength(2)
         expect(changes.map(change => change.id.getFullName())
           .sort()).toEqual([nestedID, simpleId].sort())
+      })
+
+      it('includes field inner annotations when the field is selected', async () => {
+        const newSinglePathObjMerged = singlePathObjMerged.clone() as ObjectType
+        newSinglePathObjMerged.fields.simple.annotations.description = 'new description'
+        const simpleFieldId = newSinglePathObjMerged.elemID.createNestedID('field', 'simple')
+        const selectors = [
+          createElementSelector(simpleFieldId.getFullName()),
+        ]
+        const changes = await createDiffChanges(
+          [newSinglePathObjMerged], [singlePathObjMerged], selectors
+        )
+        expect(changes.map(change => change.id.getFullName()))
+          .toEqual([simpleFieldId.createNestedID('description').getFullName()])
       })
     })
   })

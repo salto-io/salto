@@ -15,6 +15,7 @@
 */
 import chalk from 'chalk'
 import moment from 'moment'
+import os from 'os'
 
 export default class Prompts {
   public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to perform these actions?'
@@ -235,9 +236,35 @@ ${Prompts.SERVICE_ADD_HELP}`
     ? `Unknown target environment: ${unknownEnvs[0]}`
     : `Unknown target environments: ${unknownEnvs?.join(' ')}`)
 
+  private static readonly LIST_IDS = (
+    ids: readonly string[],
+  ): string =>
+    [...ids].sort().map(id => `  - ${id}`).join(os.EOL)
+
+  public static readonly MOVE_MESSAGE = (
+    to: string,
+    ids: readonly string[],
+  ): string =>
+    `The following configuration elements will be moved to ${to}:
+${Prompts.LIST_IDS(ids)}
+
+
+`
+
   public static readonly MOVE_START = (
     to: string,
-  ): string => `Moving the specified elements to ${to}.`
+  ): string => `Moving the specified elements to ${to}.
+`
+
+  private static readonly SHOULD_RUN_ELEMENTS_OPERATION = (operation: string): string =>
+    `Would you like to complete the ${operation} operation?`
+
+  public static readonly SHOULD_MOVE_QUESTION = (to: string): string =>
+    Prompts.SHOULD_RUN_ELEMENTS_OPERATION(`move to ${to}`)
+
+  public static readonly NO_ELEMENTS_MESSAGE = `Did not find any configuration elements that matches your criteria.
+Nothing to do.
+`
 
   public static readonly MOVE_FAILED = (
     error: string
@@ -251,7 +278,19 @@ ${Prompts.SERVICE_ADD_HELP}`
     targetEnvs: string[] = []
   ): string => `Cloning the specified elements to ${
     targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
-  }.`
+  }.
+`
+
+  public static readonly CLONE_MESSAGE = (
+    ids: readonly string[],
+  ): string =>
+    `The following configuration elements will be cloned:
+${Prompts.LIST_IDS(ids)}
+
+
+`
+
+  public static readonly SHOULD_CLONE_QUESTION = Prompts.SHOULD_RUN_ELEMENTS_OPERATION('clone')
 
   public static readonly LIST_UNRESOLVED_START = (env: string): string => `Looking for unresolved references in ${env}`
   public static readonly LIST_UNRESOLVED_NONE = (env: string): string => `All references in ${env} were resolved successfully!`

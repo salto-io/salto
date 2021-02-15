@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { validator, CONFIG_DIR_NAME } from '@salto-io/workspace'
+import { validator } from '@salto-io/workspace'
 import { EditorWorkspace } from '../src/workspace'
 import { mockWorkspace } from './workspace'
 
@@ -26,7 +26,7 @@ describe('workspace', () => {
   const validation3FileName = path.join(workspaceBaseDir, 'validation3.nacl')
   const splitted1FileName = path.join(workspaceBaseDir, 'splitted1.nacl')
   const splitted2FileName = path.join(workspaceBaseDir, 'splitted2.nacl')
-  const configFileName = path.join(workspaceBaseDir, CONFIG_DIR_NAME, 'config.nacl')
+  const inactiveFileName = path.join(workspaceBaseDir, 'inactive', 'test.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
@@ -193,28 +193,6 @@ describe('workspace', () => {
         expect(ve).toBeInstanceOf(validator.UnresolvedReferenceValidationError)
       })
     })
-    it('should not calculate errors on config files', async () => {
-      const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
-      const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-      const currentValidationErrors = (await workspace.errors()).validation
-      expect(currentValidationErrors).toHaveLength(1)
-      const buffer = `
-      vs.type inst {
-        field = "4"
-      }
-      
-      vs.type referenced {
-      }
-      
-      vs.type referencedField {
-      }
-    
-      `
-      workspace.setNaclFiles({ filename: configFileName, buffer })
-      await workspace.awaitAllUpdates()
-      const newValidationErrors = (await workspace.errors()).validation
-      expect(newValidationErrors).toHaveLength(1)
-    })
   })
 
   describe('validate files', () => {
@@ -288,7 +266,7 @@ describe('workspace', () => {
       const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
       const errors = await newWorkspace.errors()
       expect(errors.validation).toHaveLength(0)
-      const newErrors = await workspace.validateFiles([configFileName])
+      const newErrors = await workspace.validateFiles([inactiveFileName])
       expect(newErrors.validation).toHaveLength(0)
     })
   })

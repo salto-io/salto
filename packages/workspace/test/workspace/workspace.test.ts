@@ -34,7 +34,8 @@ import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
-import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource } from '../../src/workspace/workspace'
+import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
+  COMMON_ENV_PREFIX } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
 
@@ -1851,7 +1852,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('fileInActiveSource', () => {
+  describe('envOfFile', () => {
     let workspace: Workspace
     beforeEach(async () => {
       workspace = await createWorkspace(
@@ -1871,14 +1872,14 @@ describe('workspace', () => {
         }
       )
     })
-    it('should return true if file is in the current env', () => {
-      expect(workspace.fileInActiveSource('envs/default/test.nacl')).toEqual(true)
+    it('should return the correct env if the file belongs to the current env', () => {
+      expect(workspace.envOfFile('envs/default/test.nacl')).toEqual('default')
     })
-    it('should return true if file is in the common env', () => {
-      expect(workspace.fileInActiveSource('test.nacl')).toEqual(true)
+    it('should return the correct env if the file belongs to the common env', () => {
+      expect(workspace.envOfFile('test.nacl')).toEqual(COMMON_ENV_PREFIX)
     })
-    it('should return false if file is in inactive env', () => {
-      expect(workspace.fileInActiveSource('envs/inactive/test.nacl')).toEqual(false)
+    it('should return the correct env if the file belongs to an inactive env', () => {
+      expect(workspace.envOfFile('envs/inactive/test.nacl')).toEqual('inactive')
     })
   })
 })

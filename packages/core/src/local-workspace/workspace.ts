@@ -20,9 +20,9 @@ import { DetailedChange } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
   configSource as cs, parseCache, staticFiles, dirStore, WorkspaceComponents,
-  CONFIG_DIR_NAME } from '@salto-io/workspace'
+  COMMON_ENV_PREFIX } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, getConfigDir } from '../app_config'
+import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
@@ -32,7 +32,6 @@ const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
 const { parseResultCache } = parseCache
 const { buildStaticFilesSource } = staticFiles
 
-export const COMMON_ENV_PREFIX = ''
 export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
 export const CACHE_DIR_NAME = 'cache'

@@ -41,8 +41,8 @@ const log = logger(module)
 
 const { makeArray } = collections.array
 
-export const CONFIG_DIR_NAME = 'salto.config'
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
+export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
@@ -93,7 +93,7 @@ export type Workspace = {
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
   hasElementsInServices(serviceNames: string[]): Promise<boolean>
   hasElementsInEnv(envName: string): Promise<boolean>
-  fileInActiveSource(filename: string): boolean
+  envOfFile(filename: string): string
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
   errors(validate?: boolean): Promise<Readonly<Errors>>
@@ -341,12 +341,9 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       }
       return !(await envSource.naclFiles.isEmpty())
     },
-    fileInActiveSource: filename => {
-      const env = getSourceNameForFilename(
-        filename, envs() as string[], elementsSources.commonSourceName
-      )
-      return [elementsSources.commonSourceName, currentEnv()].includes(env)
-    },
+    envOfFile: filename => getSourceNameForFilename(
+      filename, envs() as string[], elementsSources.commonSourceName
+    ),
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.
     // Passing direct pointer for these functions would have resulted in pointers to a nullified

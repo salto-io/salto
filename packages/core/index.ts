@@ -21,7 +21,7 @@ export { getAdaptersCredentialsTypes, getDefaultAdapterConfig } from './src/core
 export { createDiffChanges } from './src/core/diff'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
-  CACHE_DIR_NAME, COMMON_ENV_PREFIX, locateWorkspaceRoot,
+  CACHE_DIR_NAME, locateWorkspaceRoot,
 } from './src/local-workspace/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,

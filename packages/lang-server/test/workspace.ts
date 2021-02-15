@@ -110,12 +110,29 @@ Promise<Workspace> => {
           saltoVersion: '0.0.1',
         })),
       },
+      inactive: {
+        naclFiles: nacl.naclFilesSource(
+          mockDirStore({}),
+          mockParseCache(),
+          staticFiles.buildStaticFilesSource(
+            mockDirStore({}),
+            mockStaticFilesCache
+          )
+        ),
+        state: state.buildInMemState(async () => ({
+          elements: {},
+          pathIndex: new pathIndex.PathIndex(),
+          servicesUpdateDate: {},
+          saltoVersion: '0.0.1',
+        })),
+      },
     },
   } as EnvironmentsSources
   const mockConfSource = {
     getWorkspaceConfig: jest.fn().mockImplementation(() => ({
       envs: [
         { name: 'default', services: [] },
+        { name: 'inactive', services: [] },
       ],
       uid: '',
       name: 'test',

@@ -230,7 +230,7 @@ export const loadWorkspace = async (
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
-      workspaceState = buildWorkspaceState({})
+      workspaceState = buildWorkspaceState({ changes: initChanges })
     }
     return workspaceState
   }

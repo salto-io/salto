@@ -264,7 +264,7 @@ describe('workspace', () => {
       expect(await workspace.hasErrors()).toBeFalsy()
     })
     it('should contain parse errors', async () => {
-      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl']))
+      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl', 'reference_error.nacl']))
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -279,8 +279,23 @@ describe('workspace', () => {
       expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
       expect(workspaceErrors[0].sourceFragments).toHaveLength(1)
     })
+    it('should contain validation errors', async () => {
+      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl', 'error.nacl']))
+
+      const errors = await erroredWorkspace.errors()
+      expect(errors.hasErrors()).toBeTruthy()
+      expect(errors.strings()).toEqual(['unresolved reference some.type.instance.notExists'])
+      expect(errors.validation[0].message).toBe('Error validating "some.type.instance.instance.a": unresolved reference some.type.instance.notExists')
+
+      expect(await erroredWorkspace.hasErrors()).toBeTruthy()
+      const workspaceErrors = await Promise.all(
+        wu(errors.all()).map(error => erroredWorkspace.transformError(error))
+      )
+      expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
+      expect(workspaceErrors[0].sourceFragments).toHaveLength(1)
+    })
     it('should contain merge errors', async () => {
-      const erroredWorkspace = await createWorkspace(mockDirStore(['error.nacl']))
+      const erroredWorkspace = await createWorkspace(mockDirStore(['error.nacl', 'reference_error.nacl']))
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()

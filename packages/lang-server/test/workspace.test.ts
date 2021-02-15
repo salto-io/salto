@@ -26,6 +26,7 @@ describe('workspace', () => {
   const validation3FileName = path.join(workspaceBaseDir, 'validation3.nacl')
   const splitted1FileName = path.join(workspaceBaseDir, 'splitted1.nacl')
   const splitted2FileName = path.join(workspaceBaseDir, 'splitted2.nacl')
+  const inactiveFileName = path.join(workspaceBaseDir, 'inactive', 'test.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
@@ -258,6 +259,15 @@ describe('workspace', () => {
       await newWorkspace.awaitAllUpdates()
       const newErrors = await newWorkspace.errors()
       expect(newErrors.validation).toHaveLength(1)
+    })
+
+    it('should not validate elements that are not already in the workspace', async () => {
+      const baseWs = await mockWorkspace([splitted1FileName, splitted2FileName])
+      const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+      const errors = await newWorkspace.errors()
+      expect(errors.validation).toHaveLength(0)
+      const newErrors = await workspace.validateFiles([inactiveFileName])
+      expect(newErrors.validation).toHaveLength(0)
     })
   })
 

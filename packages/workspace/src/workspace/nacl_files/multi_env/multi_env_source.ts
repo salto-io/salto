@@ -37,6 +37,19 @@ const { resolveValues, mapValuesAsync } = promises.object
 
 export const ENVS_PREFIX = 'envs'
 
+export const getSourceNameForFilename = (relativeFilename: string, envs: string[], common: string):
+string => {
+  const isContained = (relPath: string, basePath: string): boolean => {
+    const baseDirParts = basePath.split(path.sep)
+    const relPathParts = relPath.split(path.sep)
+    return _.isEqual(baseDirParts, relPathParts.slice(0, baseDirParts.length))
+  }
+
+  return envs.filter(srcPrefix => srcPrefix !== common)
+    .find(srcPrefix =>
+      isContained(relativeFilename, path.join(ENVS_PREFIX, srcPrefix))) ?? common
+}
+
 export class UnknownEnviornmentError extends Error {
   constructor(envName: string) {
     super(`Unknown enviornment ${envName}`)
@@ -155,17 +168,8 @@ const buildMultiEnvSource = (
     return state
   }
 
-  const getSourceNameForNaclFile = (fullName: string): string => {
-    const isContained = (relPath: string, basePath: string): boolean => {
-      const baseDirParts = basePath.split(path.sep)
-      const relPathParts = relPath.split(path.sep)
-      return _.isEqual(baseDirParts, relPathParts.slice(0, baseDirParts.length))
-    }
-
-    return Object.keys(sources).filter(srcPrefix => srcPrefix !== commonSourceName)
-      .find(srcPrefix =>
-        isContained(fullName, path.join(ENVS_PREFIX, srcPrefix))) ?? commonSourceName
-  }
+  const getSourceNameForNaclFile = (fullName: string): string =>
+    getSourceNameForFilename(fullName, Object.keys(sources), commonSourceName)
 
   const getSourceFromEnvName = (envName: string): NaclFilesSource =>
     sources[envName] ?? commonSource()

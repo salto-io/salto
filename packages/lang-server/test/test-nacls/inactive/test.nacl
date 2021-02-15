@@ -1,0 +1,8 @@
+
+type vs.user {
+    number id {}
+}
+
+vs.user test {
+    id = "value"
+}

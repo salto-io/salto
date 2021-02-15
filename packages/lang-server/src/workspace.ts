@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
-import { Workspace, nacl, errors, parser, validator } from '@salto-io/workspace'
+import { Workspace, nacl, errors, parser, validator, COMMON_ENV_PREFIX } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange } from '@salto-io/adapter-api'
@@ -58,6 +58,11 @@ export class EditorWorkspace {
 
   private editorFilename(filename: string): string {
     return path.resolve(this.baseDir, filename)
+  }
+
+  private isWorkspaceFile(filePath: string): boolean {
+    return [this.workspace.currentEnv(), COMMON_ENV_PREFIX]
+      .includes(this.workspace.envOfFile(this.workspaceFilename(filePath)))
   }
 
   private editorNaclFile(naclFile: nacl.NaclFile): nacl.NaclFile {
@@ -203,7 +208,7 @@ export class EditorWorkspace {
   private async runAggregatedSetOperation(): Promise<void> {
     if (this.hasPendingUpdates() && this.workspace !== undefined) {
       const opDeletes = this.pendingDeletes
-      const opNaclFiles = this.pendingSets
+      const opUpdates = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
@@ -211,12 +216,13 @@ export class EditorWorkspace {
         ? await this.workspace.removeNaclFiles(...opDeletes)
         : []
       // Now add the waiting changes
-      const updateChanges = (!_.isEmpty(opNaclFiles))
-        ? await this.workspace.setNaclFiles(...Object.values(opNaclFiles))
+      const updateChanges = (!_.isEmpty(opUpdates))
+        ? await this.workspace.setNaclFiles(...Object.values(opUpdates))
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(
-          [...opDeletes, ...Object.keys(opNaclFiles)], [...removeChanges, ...updateChanges]
+          [...opDeletes, ...Object.keys(opUpdates)].filter(f => this.isWorkspaceFile(f)),
+          [...removeChanges, ...updateChanges],
         )
         const errorsWithoutValidation = await this.workspace.errors(false)
         this.wsErrors = Promise.resolve(new errors.Errors({
@@ -306,8 +312,12 @@ export class EditorWorkspace {
     if (_.isUndefined(this.wsErrors)) {
       return this.errors()
     }
+    const relevantFilenames = filenames
+      .filter(f => this.isWorkspaceFile(f))
     const currentErrors = await this.wsErrors
-    const elements = new Set((await this.elementsInFiles(filenames)).map(e => e.getFullName()))
+    const elements = new Set(
+      (await this.elementsInFiles(relevantFilenames)).map(e => e.getFullName())
+    )
     const validation = currentErrors.validation
       .filter(e => !elements.has(e.elemID.createTopLevelParentID().parent.getFullName()))
       .concat(await this.validateElements(elements))

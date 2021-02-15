@@ -308,6 +308,7 @@ export const mockWorkspace = ({
     isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
     hasElementsInServices: mockFunction<Workspace['hasElementsInServices']>().mockResolvedValue(true),
     hasElementsInEnv: mockFunction<Workspace['hasElementsInEnv']>().mockResolvedValue(false),
+    envOfFile: mockFunction<Workspace['envOfFile']>().mockReturnValue(''),
     getSourceFragment: mockFunction<Workspace['getSourceFragment']>().mockImplementation(
       async sourceRange => ({ sourceRange, fragment: '' })
     ),

@@ -49,7 +49,7 @@ export const FILE_EXTENSION = '.nacl'
 const PARSE_CONCURRENCY = 20
 const DUMP_CONCURRENCY = 20
 // TODO: this should moved into cache implemenation
-const CACHE_READ_CONCURRENCY = 20
+const CACHE_READ_CONCURRENCY = 100
 
 export type NaclFile = {
   buffer: string

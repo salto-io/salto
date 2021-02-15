@@ -221,8 +221,7 @@ export class EditorWorkspace {
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(
-          [...opDeletes, ...Object.keys(opUpdates)]
-            .filter(f => this.workspace.envOfFile(f)),
+          [...opDeletes, ...Object.keys(opUpdates)].filter(f => this.isWorkspaceFile(f)),
           [...removeChanges, ...updateChanges],
         )
         const errorsWithoutValidation = await this.workspace.errors(false)

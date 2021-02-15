@@ -37,7 +37,7 @@ const { resolveValues, mapValuesAsync } = promises.object
 
 export const ENVS_PREFIX = 'envs'
 
-export const getSourceNameForFilename = (fullName: string, envs: string[], common: string):
+export const getSourceNameForFilename = (relativeFilename: string, envs: string[], common: string):
 string => {
   const isContained = (relPath: string, basePath: string): boolean => {
     const baseDirParts = basePath.split(path.sep)
@@ -47,7 +47,7 @@ string => {
 
   return envs.filter(srcPrefix => srcPrefix !== common)
     .find(srcPrefix =>
-      isContained(fullName, path.join(ENVS_PREFIX, srcPrefix))) ?? common
+      isContained(relativeFilename, path.join(ENVS_PREFIX, srcPrefix))) ?? common
 }
 
 export class UnknownEnviornmentError extends Error {

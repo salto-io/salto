@@ -297,7 +297,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       .groupBy(error => error.constructor.name)
       .entries()
       .forEach(([errorType, errorsGroup]) => {
-        log.error(`Invalid elements, error type: ${errorType}, element IDs: ${errorsGroup.map(e => e.elemID.getFullName())}`)
+        log.error(`Invalid elements, error type: ${errorType}, element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`)
       })
 
     return new Errors({

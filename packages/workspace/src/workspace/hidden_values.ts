@@ -161,7 +161,7 @@ const removeHiddenValue: TransformFunc = ({ value, field }) => (
   isHiddenValue(field) ? undefined : value
 )
 
-const removeHiddenFromElement = <T extends Element>(element: T): T => (
+export const removeHiddenFromElement = <T extends Element>(element: T): T => (
   transformElement({
     element,
     transformFunc: isInstanceElement(element) ? removeHiddenValue : removeHidden,

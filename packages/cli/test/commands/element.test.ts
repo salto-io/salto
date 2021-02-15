@@ -55,7 +55,7 @@ describe('Element command group', () => {
             elementSelector: ['salto.Account'],
             toEnvs: ['inactive'],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace,
         })
@@ -73,6 +73,7 @@ describe('Element command group', () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
+        workspace.getElementIdsBySelectors.mockResolvedValue([new ElemID('salto', 'Account')])
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
@@ -80,7 +81,7 @@ describe('Element command group', () => {
             elementSelector: ['salto.Account'],
             toEnvs: ['inactive'],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace,
         })
@@ -112,7 +113,7 @@ describe('Element command group', () => {
             elementSelector: ['a.b.c.d'],
             toEnvs: ['inactive'],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace,
         })
@@ -144,6 +145,37 @@ describe('Element command group', () => {
       })
     })
 
+    describe('when user answer no', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
+
+        const cliArgs = mocks.mockCliArgs()
+        workspace = mocks.mockWorkspace({})
+        workspace.getElementIdsBySelectors.mockResolvedValue([selector])
+        result = await cloneAction({
+          ...mocks.mockCliCommandArgs(cloneName, cliArgs),
+          input: {
+            elementSelector: [selector.getFullName()],
+            toEnvs: ['inactive'],
+            env: 'active',
+            force: false,
+          },
+          workspace,
+        })
+      })
+
+      it('should return success', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+
+      it('should not clone', () => {
+        expect(workspace.copyTo).not.toHaveBeenCalled()
+      })
+    })
+
     describe('valid clone', () => {
       let result: CliExitCode
       let workspace: mocks.MockWorkspace
@@ -160,7 +192,7 @@ describe('Element command group', () => {
             elementSelector: [selector.getFullName()],
             toEnvs: ['inactive'],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace,
         })
@@ -178,7 +210,12 @@ describe('Element command group', () => {
       })
 
       it('should print clone to console', () => {
-        expect(output.stdout.content).toContain('Cloning the specified elements to inactive.')
+        expect(output.stdout.content).toBe(`The following configuration elements will be cloned:
+  - salto.Account
+
+
+Cloning the specified elements to inactive.
+`)
       })
     })
 
@@ -195,7 +232,7 @@ describe('Element command group', () => {
             elementSelector: [selector.getFullName()],
             toEnvs: ['inactive', 'unknown', 'unknown2'],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -224,7 +261,7 @@ describe('Element command group', () => {
             elementSelector: [selector.getFullName()],
             toEnvs: ['inactive', 'unknown'],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -252,7 +289,7 @@ describe('Element command group', () => {
             elementSelector: [selector.getFullName()],
             toEnvs: [],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -280,7 +317,7 @@ describe('Element command group', () => {
             elementSelector: [selector.getFullName()],
             toEnvs: ['active'],
             env: 'active',
-            force: false,
+            force: true,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -306,11 +343,13 @@ describe('Element command group', () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
+        workspace.getElementIdsBySelectors.mockResolvedValue([new ElemID('salto', 'Account')])
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await moveToEnvsAction({
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
           input: {
             elementSelector: ['salto.Account'],
+            force: true,
           },
           workspace,
         })
@@ -338,6 +377,7 @@ describe('Element command group', () => {
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
           input: {
             elementSelector: ['a.b.c.d'],
+            force: true,
           },
           workspace,
         })
@@ -359,6 +399,34 @@ describe('Element command group', () => {
       })
     })
 
+    describe('when user answer no', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      const selector = new ElemID('salto', 'Account')
+      beforeAll(async () => {
+        jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
+        const cliArgs = mocks.mockCliArgs()
+        workspace = mocks.mockWorkspace({})
+        workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
+        result = await moveToEnvsAction({
+          ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
+          input: {
+            elementSelector: [selector.getFullName()],
+            force: false,
+          },
+          workspace,
+        })
+      })
+
+      it('should return success', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+
+      it('should not move', () => {
+        expect(workspace.demote).not.toHaveBeenCalled()
+      })
+    })
+
     describe('valid move to envs', () => {
       let result: CliExitCode
       let workspace: mocks.MockWorkspace
@@ -373,6 +441,7 @@ describe('Element command group', () => {
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
           input: {
             elementSelector: [selector.getFullName()],
+            force: true,
           },
           workspace,
         })
@@ -390,7 +459,12 @@ describe('Element command group', () => {
       })
 
       it('should print deployment to console', () => {
-        expect(output.stdout.content).toContain('Moving the specified elements to environment-specific folders.')
+        expect(output.stdout.content).toBe(`The following configuration elements will be moved to envs:
+  - salto.Account
+
+
+Moving the specified elements to envs.
+`)
       })
     })
   })
@@ -404,11 +478,13 @@ describe('Element command group', () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
+        workspace.getElementIdsBySelectors.mockResolvedValue([new ElemID('salto', 'Account')])
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
           input: {
             elementSelector: ['salto.Account'],
+            force: true,
           },
           workspace,
         })
@@ -436,6 +512,7 @@ describe('Element command group', () => {
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
           input: {
             elementSelector: ['a.b.c.d', 'e.f.g.h'],
+            force: true,
           },
           workspace,
         })
@@ -472,6 +549,7 @@ describe('Element command group', () => {
           input: {
             elementSelector: ['salto.Account'],
             env: 'active',
+            force: true,
           },
           workspace,
         })
@@ -507,6 +585,7 @@ describe('Element command group', () => {
           input: {
             elementSelector: ['salto.Account'],
             env: 'active',
+            force: true,
           },
           workspace,
         })
@@ -524,7 +603,12 @@ describe('Element command group', () => {
       })
 
       it('should print deployment to console', () => {
-        expect(output.stdout.content).toContain('Moving the specified elements to common')
+        expect(output.stdout.content).toBe(`The following configuration elements will be moved to common:
+  - salto.Account
+
+
+Moving the specified elements to common.
+`)
       })
     })
   })
@@ -543,6 +627,7 @@ describe('Element command group', () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         userBooleanInput = jest.spyOn(callbacks, 'getUserBooleanInput')
+        userBooleanInput.mockRestore()
         workspace = mocks.mockWorkspace({})
         // Should ignore unresolved reference errors
         workspace.errors.mockResolvedValue(mocks.mockErrors([

@@ -26,6 +26,7 @@ import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTarget
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
+import { shouldCloneElements, shouldMoveElements } from '../callbacks'
 
 const log = logger(module)
 
@@ -57,14 +58,20 @@ const moveElement = async (
   output: CliOutput,
   to: CommonOrEnvs,
   elmSelectors: ElementSelector[],
+  cliOutput: CliOutput,
+  force: boolean
 ): Promise<CliExitCode> => {
   try {
+    const elemIds = await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs')
+
+    if (!await shouldMoveElements(to, elemIds, cliOutput, force)) {
+      return CliExitCode.Success
+    }
+
     if (to === 'common') {
-      outputLine(Prompts.MOVE_START('common'), output)
-      await workspace.promote(await workspace.getElementIdsBySelectors(elmSelectors))
+      await workspace.promote(elemIds)
     } else if (to === 'envs') {
-      outputLine(Prompts.MOVE_START('environment-specific folders'), output)
-      await workspace.demote(await workspace.getElementIdsBySelectors(elmSelectors, true))
+      await workspace.demote(elemIds)
     }
     await workspace.flush()
     return CliExitCode.Success
@@ -77,6 +84,7 @@ const moveElement = async (
 // Move to common
 type ElementMoveToCommonArgs = {
   elementSelector: string[]
+  force?: boolean
 } & EnvArg
 
 export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs> = async ({
@@ -85,7 +93,7 @@ export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs>
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { elementSelector } = input
+  const { elementSelector, force } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
@@ -95,13 +103,13 @@ export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs>
   await validateAndSetEnv(workspace, input, output)
 
   const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator, force: false }
+    { workspace, cliOutput: output, spinnerCreator, force }
   )
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
 
-  return moveElement(workspace, output, 'common', validSelectors)
+  return moveElement(workspace, output, 'common', validSelectors, output, force ?? false)
 }
 
 const moveToCommonDef = createWorkspaceCommand({
@@ -118,6 +126,13 @@ const moveToCommonDef = createWorkspaceCommand({
     ],
     keyedOptions: [
       ENVIRONMENT_OPTION,
+      {
+        name: 'force',
+        alias: 'f',
+        required: false,
+        description: 'Do not prompt for confirmation during the move-to-common operation',
+        type: 'boolean',
+      },
     ],
   },
   action: moveToCommonAction,
@@ -126,6 +141,7 @@ const moveToCommonDef = createWorkspaceCommand({
 // Move to envs
 type ElementMoveToEnvsArgs = {
   elementSelector: string[]
+  force?: boolean
 }
 
 export const moveToEnvsAction: WorkspaceCommandAction<ElementMoveToEnvsArgs> = async ({
@@ -134,7 +150,7 @@ export const moveToEnvsAction: WorkspaceCommandAction<ElementMoveToEnvsArgs> = a
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { elementSelector } = input
+  const { elementSelector, force } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
@@ -142,12 +158,12 @@ export const moveToEnvsAction: WorkspaceCommandAction<ElementMoveToEnvsArgs> = a
   }
 
   const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator, force: false }
+    { workspace, cliOutput: output, spinnerCreator, force }
   )
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
-  return moveElement(workspace, output, 'envs', validSelectors)
+  return moveElement(workspace, output, 'envs', validSelectors, output, force ?? false)
 }
 
 const moveToEnvsDef = createWorkspaceCommand({
@@ -160,6 +176,15 @@ const moveToEnvsDef = createWorkspaceCommand({
         description: 'Array of config element patterns',
         type: 'stringsList',
         required: true,
+      },
+    ],
+    keyedOptions: [
+      {
+        name: 'force',
+        alias: 'f',
+        required: false,
+        description: 'Do not prompt for confirmation during the move-to-envs operation',
+        type: 'boolean',
       },
     ],
   },
@@ -198,8 +223,12 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   }
 
   try {
-    outputLine(Prompts.CLONE_TO_ENV_START(toEnvs), output)
-    await workspace.copyTo(await workspace.getElementIdsBySelectors(validSelectors), toEnvs)
+    const elemIds = await workspace.getElementIdsBySelectors(validSelectors)
+    if (!await shouldCloneElements(toEnvs, elemIds, output, force ?? false)) {
+      return CliExitCode.Success
+    }
+
+    await workspace.copyTo(elemIds, toEnvs)
     await workspace.flush()
     return CliExitCode.Success
   } catch (e) {
@@ -233,7 +262,7 @@ const cloneDef = createWorkspaceCommand({
         name: 'force',
         alias: 'f',
         required: false,
-        description: 'Apply even if workspace has issues',
+        description: 'Do not prompt for confirmation during the cloning operation',
         type: 'boolean',
       },
     ],

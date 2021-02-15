@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import os from 'os'
 // TODO: This import breaks the abstraction of CliOutput as it communicate directly with console
 import * as inquirer from 'inquirer'
 import {
@@ -94,6 +95,61 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
   }
   return shouldContinue
 }
+
+const runElementsOperationMessages = async (
+  elemIds: readonly ElemID[],
+  { stdout }: CliOutput,
+  nothingToDoMessage: string,
+  informationMessage: string,
+  questionMessage: string,
+  startMessage: string,
+  force: boolean
+): Promise<boolean> => {
+  if (elemIds.length === 0) {
+    stdout.write(`${nothingToDoMessage}${os.EOL}`)
+    return false
+  }
+  stdout.write(`${informationMessage}${os.EOL}`)
+
+  const shouldStart = force || await getUserBooleanInput(questionMessage)
+  if (shouldStart) {
+    stdout.write(`${startMessage}${os.EOL}`)
+  }
+
+  return shouldStart
+}
+
+export const shouldMoveElements = async (
+  to: string,
+  elemIds: readonly ElemID[],
+  output: CliOutput,
+  force: boolean,
+): Promise<boolean> =>
+  runElementsOperationMessages(
+    elemIds,
+    output,
+    Prompts.NO_ELEMENTS_MESSAGE,
+    Prompts.MOVE_MESSAGE(to, elemIds.map(id => id.getFullName())),
+    Prompts.SHOULD_MOVE_QUESTION(to),
+    Prompts.MOVE_START(to),
+    force,
+  )
+
+export const shouldCloneElements = async (
+  targetEnvs: string[],
+  elemIds: readonly ElemID[],
+  output: CliOutput,
+  force: boolean,
+): Promise<boolean> =>
+  runElementsOperationMessages(
+    elemIds,
+    output,
+    Prompts.NO_ELEMENTS_MESSAGE,
+    Prompts.CLONE_MESSAGE(elemIds.map(id => id.getFullName())),
+    Prompts.SHOULD_CLONE_QUESTION,
+    Prompts.CLONE_TO_ENV_START(targetEnvs),
+    force,
+  )
 
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
   Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))

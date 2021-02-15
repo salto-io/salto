@@ -288,10 +288,22 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   const errors = async (validate = true): Promise<Errors> => {
     const resolvedElements = await elements()
     const errorsFromSource = await naclFilesSource.getErrors()
+
+    const validationErrors = validate
+      ? validateElements(Object.values(resolvedElements.elements))
+      : []
+
+    _(validationErrors)
+      .groupBy(error => error.constructor.name)
+      .entries()
+      .forEach(([errorType, errorsGroup]) => {
+        log.error(`Invalid elements, error type: ${errorType}, element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`)
+      })
+
     return new Errors({
       ...errorsFromSource,
       merge: [...errorsFromSource.merge, ...resolvedElements.mergeErrors],
-      validation: validate ? validateElements(Object.values(resolvedElements.elements)) : [],
+      validation: validationErrors,
     })
   }
 

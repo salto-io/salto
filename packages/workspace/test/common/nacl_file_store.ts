@@ -194,6 +194,17 @@ type multi.loc { b = 1 }`,
 
   'error.nacl': 'invalid syntax }}',
 
+  'reference_error.nacl': `
+type some.type {
+  string a {
+  }
+}
+
+some.type instance {
+  a = some.type.instance.notExists
+}
+`,
+
   'dup.nacl': `
 type salesforce.lead {
   string base_field {}
@@ -205,7 +216,7 @@ type salesforce.lead {
 }
 
 export const mockDirStore = (
-  exclude: string[] = ['error.nacl', 'dup.nacl'],
+  exclude: string[] = ['error.nacl', 'dup.nacl', 'reference_error.nacl'],
   empty = false,
   files?: Record<string, string>,
 ):

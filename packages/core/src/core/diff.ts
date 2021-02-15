@@ -49,6 +49,8 @@ const filterElementsByRelevance = (elements: Element[], relevantIds: ElemID[],
       transformFunc: filterRelevantParts(
         topLevelIdToRelevantIds[elem.elemID.getFullName()], selectorsToVerify
       ),
+      runOnFields: true,
+      strict: false,
     })
   })
 }

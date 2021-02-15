@@ -248,11 +248,13 @@ ${Prompts.SERVICE_ADD_HELP}`
     `The following configuration elements will be moved to ${to}:
 ${Prompts.LIST_IDS(ids)}
 
+
 `
 
   public static readonly MOVE_START = (
     to: string,
-  ): string => `Moving the specified elements to ${to}.`
+  ): string => `Moving the specified elements to ${to}.
+`
 
   private static readonly SHOULD_RUN_ELEMENTS_OPERATION = (operation: string): string =>
     `Would you like to complete the ${operation} operation?`
@@ -261,7 +263,8 @@ ${Prompts.LIST_IDS(ids)}
     Prompts.SHOULD_RUN_ELEMENTS_OPERATION(`move to ${to}`)
 
   public static readonly NO_ELEMENTS_MESSAGE = `Did not find any configuration elements that matches your criteria.
-Nothing to do.`
+Nothing to do.
+`
 
   public static readonly MOVE_FAILED = (
     error: string
@@ -275,13 +278,15 @@ Nothing to do.`
     targetEnvs: string[] = []
   ): string => `Cloning the specified elements to ${
     targetEnvs.length > 0 ? targetEnvs.join(', ') : 'all environments'
-  }.`
+  }.
+`
 
   public static readonly CLONE_MESSAGE = (
     ids: readonly string[],
   ): string =>
     `The following configuration elements will be cloned:
 ${Prompts.LIST_IDS(ids)}
+
 
 `
 

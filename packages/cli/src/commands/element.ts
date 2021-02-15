@@ -26,7 +26,7 @@ import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTarget
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
-import { shouldCloneElements, shouldMoveElements } from '../callbacks'
+import { getUserBooleanInput } from '../callbacks'
 
 const log = logger(module)
 
@@ -52,6 +52,46 @@ const validateEnvs = (
   }
   return true
 }
+
+
+const runElementsOperationMessages = async (
+  elemIds: readonly ElemID[],
+  { stdout }: CliOutput,
+  nothingToDoMessage: string,
+  informationMessage: string,
+  questionMessage: string,
+  startMessage: string,
+  force: boolean
+): Promise<boolean> => {
+  if (elemIds.length === 0) {
+    stdout.write(nothingToDoMessage)
+    return false
+  }
+  stdout.write(informationMessage)
+
+  const shouldStart = force || await getUserBooleanInput(questionMessage)
+  if (shouldStart) {
+    stdout.write(startMessage)
+  }
+
+  return shouldStart
+}
+
+const shouldMoveElements = async (
+  to: string,
+  elemIds: readonly ElemID[],
+  output: CliOutput,
+  force: boolean,
+): Promise<boolean> =>
+  runElementsOperationMessages(
+    elemIds,
+    output,
+    Prompts.NO_ELEMENTS_MESSAGE,
+    Prompts.MOVE_MESSAGE(to, elemIds.map(id => id.getFullName())),
+    Prompts.SHOULD_MOVE_QUESTION(to),
+    Prompts.MOVE_START(to),
+    force,
+  )
 
 const moveElement = async (
   workspace: Workspace,
@@ -190,6 +230,22 @@ const moveToEnvsDef = createWorkspaceCommand({
   },
   action: moveToEnvsAction,
 })
+
+const shouldCloneElements = async (
+  targetEnvs: string[],
+  elemIds: readonly ElemID[],
+  output: CliOutput,
+  force: boolean,
+): Promise<boolean> =>
+  runElementsOperationMessages(
+    elemIds,
+    output,
+    Prompts.NO_ELEMENTS_MESSAGE,
+    Prompts.CLONE_MESSAGE(elemIds.map(id => id.getFullName())),
+    Prompts.SHOULD_CLONE_QUESTION,
+    Prompts.CLONE_TO_ENV_START(targetEnvs),
+    force,
+  )
 
 // Clone
 type ElementCloneArgs = {

@@ -124,7 +124,7 @@ export const getTypeAndInstances = async ({
           type: nestedFieldDetails.type,
           nameField: nameField ?? defaultNameField,
           pathField: pathField ?? defaultPathField,
-          defaultName: `unindexed_${index}_${nesteIndex}`, // TODO improve
+          defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
           fieldsToOmit,
           hasDynamicFields,
         })
@@ -138,7 +138,7 @@ export const getTypeAndInstances = async ({
       type,
       nameField: nameField ?? defaultNameField,
       pathField: pathField ?? defaultPathField,
-      defaultName: `unindexed_${index}`, // TODO improve
+      defaultName: `unnamed_${index}`, // TODO improve
       // we omit the pagination fields only from the top level and not from inner ones
       fieldsToOmit: [...(topLevelFieldsToOmit ?? []), ...(fieldsToOmit ?? [])],
       hasDynamicFields,

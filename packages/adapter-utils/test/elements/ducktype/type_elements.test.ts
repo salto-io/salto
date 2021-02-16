@@ -30,7 +30,7 @@
 */
 import { ObjectType, Values, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
 // eslint-disable-next-line
-import { generateType } from '../../../src/elements/ducktype'
+import { generateType, toNestedTypeName } from '../../../src/elements/ducktype'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements'
 
 /* eslint-disable @typescript-eslint/camelcase */
@@ -339,6 +339,12 @@ describe('ducktype_type_elements', () => {
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
       expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'parent_type', 'subtypeName'])
+    })
+  })
+
+  describe('toNestedTypeName', () => {
+    it('should concatenate the parent and child types', () => {
+      expect(toNestedTypeName('aaa', 'bbb')).toEqual('aaa__bbb')
     })
   })
 })

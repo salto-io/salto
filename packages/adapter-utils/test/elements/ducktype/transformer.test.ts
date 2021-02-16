@@ -150,7 +150,7 @@ describe('ducktype_transformer', () => {
         type: res[0],
         nameField: 'name',
         pathField: 'also_name',
-        defaultName: 'unindexed_0',
+        defaultName: 'unnamed_0',
         fieldsToOmit: [],
       })
       expect(instanceElements.toInstance).toHaveBeenCalledWith({
@@ -159,7 +159,7 @@ describe('ducktype_transformer', () => {
         type: res[0],
         nameField: 'name',
         pathField: 'also_name',
-        defaultName: 'unindexed_1',
+        defaultName: 'unnamed_1',
         fieldsToOmit: [],
       })
     })
@@ -204,7 +204,7 @@ describe('ducktype_transformer', () => {
         type: res[0],
         nameField: 'name',
         pathField: 'also_name',
-        defaultName: 'unindexed_0',
+        defaultName: 'unnamed_0',
         fieldsToOmit: ['missing'],
       })
       expect(instanceElements.toInstance).toHaveBeenCalledWith({
@@ -213,7 +213,7 @@ describe('ducktype_transformer', () => {
         type: res[0],
         nameField: 'name',
         pathField: 'also_name',
-        defaultName: 'unindexed_1',
+        defaultName: 'unnamed_1',
         fieldsToOmit: ['missing'],
       })
     })
@@ -263,7 +263,7 @@ describe('ducktype_transformer', () => {
         type: res[1],
         nameField: 'name',
         pathField: 'also_name',
-        defaultName: 'unindexed_0_0',
+        defaultName: 'unnamed_0_0',
         fieldsToOmit: undefined,
       })
       expect(instanceElements.toInstance).toHaveBeenCalledWith({
@@ -272,7 +272,7 @@ describe('ducktype_transformer', () => {
         type: res[1],
         nameField: 'name',
         pathField: 'also_name',
-        defaultName: 'unindexed_1_0',
+        defaultName: 'unnamed_1_0',
         fieldsToOmit: undefined,
       })
     })

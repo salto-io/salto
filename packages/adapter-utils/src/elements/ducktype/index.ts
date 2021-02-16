@@ -17,4 +17,4 @@ export { findNestedField, returnFullEntry, FindNestedFieldFunc } from './field_f
 export { toInstance } from './instance_elements'
 export { createAdapterApiConfigType, createUserFetchConfigType, validateFetchConfig, ElementTranslationConfig, AdapterApiConfig, EndpointConfig, RequestConfig, UserFetchConfig } from './endpoint_config'
 export { getAllElements, getTypeAndInstances, simpleGetArgs } from './transformer'
-export { generateType } from './type_elements'
+export { generateType, toNestedTypeName } from './type_elements'

@@ -55,7 +55,7 @@ export const toInstance = ({
 }): InstanceElement | undefined => {
   const name = entry[nameField] ?? defaultName
   const path = ((pathField && _.isString(entry[pathField]))
-    ? entry[pathField].slice(0, 100)
+    ? entry[pathField]
     : undefined)
   const entryData = fieldsToOmit !== undefined
     ? _.omit(entry, fieldsToOmit)
@@ -69,7 +69,7 @@ export const toInstance = ({
     nameSuffix
       ? `${name}${ID_SEPARATOR}${nameSuffix}`
       : name
-  ).slice(0, 100))
+  ))
   return new InstanceElement(
     naclName,
     type,
@@ -84,7 +84,7 @@ export const toInstance = ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),
-      path ? pathNaclCase(naclCase(path)) : pathNaclCase(naclName),
+      (path ? pathNaclCase(naclCase(path)) : pathNaclCase(naclName)).slice(0, 100),
     ],
   )
 }

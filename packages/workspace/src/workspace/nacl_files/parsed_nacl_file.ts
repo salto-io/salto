@@ -31,7 +31,6 @@ export type ParsedNaclFile = {
   filename: string
   elements: RemoteElementSource
   data: ParsedNaclFileData
-  // data: RemoteMap<Value, ParsedNaclFileDataKeys>
   buffer?: string
   sourceMap?: SourceMap // TODO: Change to RemoteMap
 }

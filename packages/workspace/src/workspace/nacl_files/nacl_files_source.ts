@@ -182,8 +182,6 @@ const parseNaclFile = async (
   naclFile: NaclFile, cache: ParsedNaclFileCache, functions: Functions
 ): Promise<Required<ParseResult>> => {
   const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename, functions)
-  // const key = cacheResultKey(naclFile)
-  // await cache.put(key, await toParsedNaclFile(naclFile, parseResult))
   await cache.put(naclFile.filename, await toParsedNaclFile(naclFile, parseResult))
   return parseResult
 }
@@ -489,12 +487,13 @@ const buildNaclFilesSource = (
   ): Promise<string[]> => await (await getState()).referencedIndex.get(elemID.getFullName()) ?? []
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
-    // const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
-    // const key = cacheResultKey(parsedNaclFile)
-    // const cachedResult = await cache.get(key)
-    const cachedResult = await cache.get(filename)
-    if (values.isDefined(cachedResult) && values.isDefined(cachedResult.sourceMap)) {
-      return cachedResult.sourceMap
+    const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
+    const isCacheValueValid = await cache.hasValid(cacheResultKey(parsedNaclFile))
+    if (isCacheValueValid) {
+      const cachedResult = await cache.get(filename)
+      if (values.isDefined(cachedResult) && values.isDefined(cachedResult.sourceMap)) {
+        return cachedResult.sourceMap
+      }
     }
     const naclFile = (await naclFilesStore.get(filename))
     if (_.isUndefined(naclFile)) {
@@ -523,12 +522,6 @@ const buildNaclFilesSource = (
       },
       buffer: fileData,
     }
-    // const key = cacheResultKey({
-    //   filename: parsed.filename,
-    //   buffer: fileData,
-    //   timestamp: parsed.data.timestamp,
-    // })
-    // await cache.put(key, parsed)
     await cache.put(filename, parsed)
     return parsed
   }

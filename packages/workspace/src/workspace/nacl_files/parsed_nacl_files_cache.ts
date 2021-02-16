@@ -16,18 +16,19 @@
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash, collections } from '@salto-io/lowerdash'
-import { SourceMap } from '../../parser'
+import { SourceMap, ParseError } from '../../parser'
 import { ContentType } from '../dir_store'
 import { serialize, deserialize } from '../../serializer/elements'
 import { StaticFilesSource } from '../static_files'
 import { RemoteMapCreator, RemoteMap } from '../remote_map'
-import { ParsedNaclFile, ParsedNaclFileData } from './parsed_nacl_file'
+import { ParsedNaclFile } from './parsed_nacl_file'
 import { createInMemoryElementSource } from '../elements_source'
 
 const { awu } = collections.asynciterable
 
 type FileCacheMetdata = {
   timestamp: number
+  lastModified: number
   hash: string
 }
 
@@ -39,9 +40,11 @@ export type ParseResultKey = {
 
 type CacheSources = {
   elements: RemoteMap<Element[]>
-  data: RemoteMap<ParsedNaclFileData>
+  // data: RemoteMap<ParsedNaclFileData>
   sourceMap: RemoteMap<SourceMap>
   metadata: RemoteMap<FileCacheMetdata>
+  errors: RemoteMap<ParseError[]>
+  referenced: RemoteMap<ElemID[]>
 }
 
 export type ParsedNaclFileCache = {
@@ -51,8 +54,12 @@ export type ParsedNaclFileCache = {
   rename: (name: string) => Promise<void>
   list: () => Promise<string[]>
   delete: (filename: string) => Promise<void>
-  get(key: ParseResultKey, allowInvalid?: boolean): Promise<ParsedNaclFile | undefined>
-  put(key: ParseResultKey, value: ParsedNaclFile): Promise<void>
+  // getO(key: ParseResultKey, allowInvalid?: boolean): Promise<ParsedNaclFile | undefined>
+  get(filename: string): Promise<ParsedNaclFile | undefined>
+  // putO(key: ParseResultKey, value: ParsedNaclFile): Promise<void>
+  put(filename: string, value: ParsedNaclFile): Promise<void>
+  getAllErrors(): Promise<ParseError[]> // TEMP
+  hasValid(key: ParseResultKey): Promise<boolean>
 }
 
 const isMD5Equal = (
@@ -63,10 +70,8 @@ const isMD5Equal = (
 const shouldReturnCacheData = (
   key: ParseResultKey,
   fileCacheMetadata: FileCacheMetdata,
-  allowInvalid = false
 ): boolean => (
-  allowInvalid
-  || isMD5Equal(fileCacheMetadata.hash, key.buffer)
+  isMD5Equal(fileCacheMetadata.hash, key.buffer)
   || fileCacheMetadata.timestamp >= key.lastModified
 )
 
@@ -82,7 +87,11 @@ const parseNaclFileFromCacheSources = async (
   return {
     filename,
     elements,
-    data: await cacheSources.data.get(filename) ?? { timestamp: 0, errors: [], referenced: [] },
+    data: {
+      errors: await cacheSources.errors.get(filename) ?? [],
+      referenced: await cacheSources.referenced.get(filename) ?? [],
+      timestamp: (await cacheSources.metadata.get(filename))?.lastModified ?? Date.now(),
+    },
     sourceMap: await cacheSources.sourceMap.get(filename),
   }
 }
@@ -101,6 +110,17 @@ const getMetadata = async (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'metadata'),
     serialize: (val: FileCacheMetdata) => safeJsonStringify(val),
+    deserialize: data => JSON.parse(data),
+  })
+)
+
+const getErrors = async (
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+): Promise<RemoteMap<ParseError[]>> => (
+  remoteMapCreator({
+    namespace: getRemoteMapCacheNamespace(cacheName, 'errors'),
+    serialize: (errors: ParseError[]) => safeJsonStringify(errors),
     deserialize: data => JSON.parse(data),
   })
 )
@@ -132,22 +152,36 @@ const getCacheSources = async (
     serialize: (sourceMap: SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
     deserialize: async data => (new SourceMap(JSON.parse(data))),
   })),
-  data: (await remoteMapCreator({
-    namespace: getRemoteMapCacheNamespace(cacheName, 'data'),
-    serialize: (val: ParsedNaclFileData) => safeJsonStringify(val),
+  errors: await getErrors(cacheName, remoteMapCreator),
+  referenced: (await remoteMapCreator({
+    namespace: getRemoteMapCacheNamespace(cacheName, 'referenced'),
+    serialize: (val: ElemID[]) => safeJsonStringify(val),
     deserialize: data => {
       const parsed = JSON.parse(data)
-      return {
-        ...parsed,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        referenced: parsed.referenced?.map((e: {[key: string]: any}) =>
-          (new ElemID(
-            e.adapter, e.typeName, e.idType, ...(e.nameParts ?? []),
-          ))),
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return parsed.referenced?.map((e: {[key: string]: any}) =>
+        (new ElemID(
+          e.adapter, e.typeName, e.idType, ...(e.nameParts ?? []),
+        )))
     },
   })),
 })
+
+
+const getFileMatadata = async (
+  filename: string,
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+): Promise<FileCacheMetdata | undefined> => {
+  const metadata = await getMetadata(cacheName, remoteMapCreator)
+  return metadata.get(filename)
+}
+const doesFileExist = async (
+  filename: string,
+  cacheName: string,
+  remoteMapCreator: RemoteMapCreator,
+): Promise<boolean> =>
+  ((await getFileMatadata(filename, cacheName, remoteMapCreator)) !== undefined)
 
 const copyAllSourcesToNewName = async (
   oldName: string,
@@ -157,7 +191,8 @@ const copyAllSourcesToNewName = async (
 ): Promise<void> => {
   const oldCacheSources = await getCacheSources(oldName, remoteMapCreator, staticFilesSource)
   const newCacheSources = await getCacheSources(newName, remoteMapCreator, staticFilesSource)
-  await newCacheSources.data.setAll(oldCacheSources.data.entries())
+  await newCacheSources.errors.setAll(oldCacheSources.errors.entries())
+  await newCacheSources.referenced.setAll(oldCacheSources.referenced.entries())
   await newCacheSources.elements.setAll(oldCacheSources.elements.entries())
   await newCacheSources.metadata.setAll(oldCacheSources.metadata.entries())
   await newCacheSources.sourceMap.setAll(oldCacheSources.sourceMap.entries())
@@ -184,39 +219,54 @@ export const createParseResultCache = (
   // To allow renames
   let actualCacheName = cacheName
   return {
-    put: async (key: Required<ParseResultKey>, value: ParsedNaclFile): Promise<void> => {
-      const { metadata, data, sourceMap, elements } = await getCacheSources(
+    put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
+      const { metadata, errors, referenced, sourceMap, elements } = await getCacheSources(
         actualCacheName,
         remoteMapCreator,
         staticFilesSource
       )
-      await data.set(value.filename, value.data)
+      await errors.set(value.filename, value.data.errors)
+      await referenced.set(value.filename, value.data.referenced)
       if (value.sourceMap !== undefined) {
         await sourceMap.set(value.filename, value.sourceMap)
       } else {
         await sourceMap.delete(value.filename)
       }
       await elements.set(value.filename, await awu(await value.elements.getAll()).toArray())
-      await metadata.set(key.filename, {
-        hash: hash.toMD5(key.buffer),
+      await metadata.set(filename, {
+        hash: hash.toMD5(value.buffer ?? ''),
         timestamp: Date.now(),
+        lastModified: value.data.timestamp,
       })
     },
-    get: async (key: ParseResultKey, allowInvalid = false): Promise<ParsedNaclFile | undefined> => {
-      const metadata = await getMetadata(actualCacheName, remoteMapCreator)
-      const fileMetadata = await metadata.get(key.filename)
+    // isValidValue - filename, buffer, lastModified
+    // isValidKey(key: ParsedResultKey)
+
+    // hasValid(filename, buffer, timestamp)
+    // get(filename: string)
+    // put(filename: string, value: ParsedNaclFile)
+    // getAllErrors() TEMP
+    hasValid: async (key: ParseResultKey): Promise<boolean> => {
+      const fileMetadata = await getFileMatadata(key.filename, actualCacheName, remoteMapCreator)
       if (fileMetadata === undefined) {
+        return false
+      }
+      return shouldReturnCacheData(key, fileMetadata)
+    },
+    getAllErrors: async (): Promise<ParseError[]> => {
+      const errorsSources = await getErrors(actualCacheName, remoteMapCreator)
+      return (await awu(errorsSources.values()).toArray()).flat()
+    },
+    get: async (filename: string): Promise<ParsedNaclFile | undefined> => {
+      if (!(await doesFileExist(filename, actualCacheName, remoteMapCreator))) {
         return undefined
       }
-      if (!shouldReturnCacheData(key, fileMetadata, allowInvalid)) {
-        return undefined
-      }
-      const cacheSources = await getCacheSources(
-        actualCacheName,
-        remoteMapCreator,
-        staticFilesSource
+      return parseNaclFileFromCacheSources(
+        await getCacheSources(
+          actualCacheName, remoteMapCreator, staticFilesSource,
+        ),
+        filename,
       )
-      return parseNaclFileFromCacheSources(cacheSources, key.filename)
     },
     delete: async (filename: string): Promise<void> => {
       const cacheSources = await getCacheSources(

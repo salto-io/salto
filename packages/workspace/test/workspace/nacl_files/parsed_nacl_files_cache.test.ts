@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Value } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Value, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { InMemoryRemoteMap, CreateRemoteMapParams, RemoteMap } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
@@ -42,11 +42,10 @@ describe('ParsedNaclFileCache', () => {
   const afterTimestamp = someDateTimestamp + 10
   const beforeTimestamp = someDateTimestamp - 10
 
-  const filename = 'dummy.nacl'
+  const dummyFilename = 'dummy.nacl'
   const mockCacheFileContent = 'content'
-  const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
-  sourceMap.push(new ElemID('salesforce', 'dummy').getFullName(), {
-    filename,
+  const mockSourceRange = {
+    filename: dummyFilename,
     start: {
       line: 1,
       col: 1,
@@ -57,14 +56,16 @@ describe('ParsedNaclFileCache', () => {
       col: 3,
       byte: 4,
     },
-  })
+  }
+  const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
+  sourceMap.push(new ElemID('salesforce', 'dummy').getFullName(), mockSourceRange)
   const parseResultWithoutMD5 = {
     elements: [dummyObjectType],
     errors: [],
     sourceMap,
   }
   const dummyParsedKey = {
-    filename,
+    filename: dummyFilename,
     buffer: mockCacheFileContent,
     lastModified: beforeTimestamp,
   }
@@ -97,6 +98,12 @@ describe('ParsedNaclFileCache', () => {
   }
   let parsedToDelete: ParsedNaclFile
 
+  const parsedWithoutBuffer = (parsed: ParsedNaclFile): ParsedNaclFile => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { buffer, ...parsedWithoutBuff } = parsed
+    return parsedWithoutBuff
+  }
+
   beforeAll(async () => {
     jest.spyOn(Date, 'now').mockImplementation(() => someDateTimestamp)
     parsedDummy = await toParsedNaclFile(
@@ -120,82 +127,82 @@ describe('ParsedNaclFileCache', () => {
   describe('put', () => {
     it('Should return the same value as inserted', async () => {
       await cache.put(
-        dummyParsedKey,
+        dummyFilename,
         parsedDummy,
       )
-      expect(await cache.get(dummyParsedKey)).toEqual(parsedDummy)
+      expect(await cache.get(dummyFilename)).toEqual(parsedWithoutBuffer(parsedDummy))
+    })
+  })
+
+  describe('hasValid', () => {
+    beforeEach(async () => {
+      await cache.put(
+        dummyFilename,
+        parsedDummy,
+      )
+    })
+
+    it('Should be true if exists and newer', async () => {
+      expect(await cache.hasValid(dummyParsedKey)).toBeTruthy()
+    })
+
+    it('Should be true if content did not change regardless of timestamp', async () => {
+      expect(await cache.hasValid({
+        ...dummyParsedKey,
+        lastModified: afterTimestamp,
+      })).toBeTruthy()
+    })
+
+    it('Should be false if content changed and timestap later', async () => {
+      const newerDummyKey = {
+        filename: dummyFilename,
+        buffer: 'changed',
+        lastModified: afterTimestamp,
+      }
+      expect(await cache.hasValid(newerDummyKey)).toBeFalsy()
     })
   })
 
   describe('get', () => {
     beforeEach(async () => {
       await cache.put(
-        dummyParsedKey,
+        dummyFilename,
         parsedDummy,
       )
     })
-    it('Should get value if exists and newer', async () => {
-      expect(await cache.get(dummyParsedKey)).toBeDefined()
-    })
-
-    it('Should get value if content did not change regardless of timestamp', async () => {
-      expect(await cache.get({
-        ...dummyParsedKey,
-        lastModified: afterTimestamp,
-      })).toBeDefined()
+    it('Should get value if exists', async () => {
+      expect(await cache.get(dummyFilename)).toBeDefined()
     })
 
     it('Should return undefined if file was not inserted', async () => {
-      expect(await cache.get({
-        filename: 'lala/noexist.nacl',
-        buffer: mockCacheFileContent,
-        lastModified: beforeTimestamp,
-      })).toBeUndefined()
-    })
-
-    it('Should return undefined if content changed and timestap later', async () => {
-      const newerDummyKey = {
-        filename,
-        buffer: 'changed',
-        lastModified: afterTimestamp,
-      }
-      expect(await cache.get(newerDummyKey)).toBeUndefined()
-    })
-
-    it('Should return value if allowInvalid is true even if timestamp & buffer are "wrong"', async () => {
-      const newerDummyKey = {
-        filename,
-        buffer: 'changed',
-        lastModified: afterTimestamp,
-      }
-      expect(await cache.get(newerDummyKey, true)).toBeDefined()
+      expect(await cache.get('lala/noexist.nacl')).toBeUndefined()
     })
   })
 
   describe('delete', () => {
     it('Should delete by a specific key', async () => {
       await cache.put(
-        toDeleteKey,
+        toDeleteFilename,
         parsedToDelete,
       )
-      expect(await cache.get(toDeleteKey)).toBeDefined()
+      expect(await cache.get(toDeleteFilename)).toBeDefined()
       await cache.delete(toDeleteKey.filename)
-      expect(await cache.get(toDeleteKey)).toBeUndefined()
+      expect(await cache.get(toDeleteFilename)).toBeUndefined()
     })
   })
 
   describe('list', () => {
     it('Should list all filenames', async () => {
       await cache.put(
-        dummyParsedKey,
+        dummyFilename,
         parsedDummy,
       )
       await cache.put(
-        toDeleteKey,
+        toDeleteFilename,
         parsedToDelete,
       )
       const filesList = await cache.list()
-      const currentFileNames = [filename, toDeleteFilename]
+      const currentFileNames = [dummyFilename, toDeleteFilename]
       expect(filesList.length).toEqual(currentFileNames.length)
       filesList.forEach(name =>
         expect(currentFileNames.includes(name)).toBeTruthy())
@@ -205,16 +212,16 @@ describe('ParsedNaclFileCache', () => {
   describe('clear', () => {
     it('Should not return value for any key after clear', async () => {
       await cache.put(
-        dummyParsedKey,
+        dummyFilename,
         parsedDummy,
       )
       await cache.put(
-        toDeleteKey,
+        toDeleteFilename,
         parsedToDelete,
       )
       await cache.clear()
-      expect(await cache.get(dummyParsedKey)).toBeUndefined()
-      expect(await cache.get(toDeleteKey)).toBeUndefined()
+      expect(await cache.get(dummyFilename)).toBeUndefined()
+      expect(await cache.get(toDeleteFilename)).toBeUndefined()
     })
   })
 
@@ -222,23 +229,23 @@ describe('ParsedNaclFileCache', () => {
     let clearFnsBeforeRename: jest.SpyInstance<Promise<void>>[]
     beforeEach(async () => {
       await cache.put(
-        dummyParsedKey,
+        dummyFilename,
         parsedDummy,
       )
       await cache.put(
-        toDeleteKey,
+        toDeleteFilename,
         parsedToDelete,
       )
-      expect(await cache.get(dummyParsedKey)).toEqual(parsedDummy)
-      expect(await cache.get(toDeleteKey)).toEqual(parsedToDelete)
+      expect(await cache.get(dummyFilename)).toEqual(parsedWithoutBuffer(parsedDummy))
+      expect(await cache.get(toDeleteFilename)).toEqual(parsedWithoutBuffer(parsedToDelete))
       clearFnsBeforeRename = Object.values(remoteMaps).map(remoteMap =>
         jest.spyOn(remoteMap, 'clear'))
       await cache.rename('newName')
     })
 
     it('Should return the same values before and after rename', async () => {
-      expect(await cache.get(dummyParsedKey)).toEqual(parsedDummy)
-      expect(await cache.get(toDeleteKey)).toEqual(parsedToDelete)
+      expect(await cache.get(dummyFilename)).toEqual(parsedWithoutBuffer(parsedDummy))
+      expect(await cache.get(toDeleteFilename)).toEqual(parsedWithoutBuffer(parsedToDelete))
     })
 
     // This is impl specific but we need to check we cleared the old remoteMaps
@@ -253,11 +260,11 @@ describe('ParsedNaclFileCache', () => {
     beforeEach(async () => {
       // Put stuff in the cache so there will be remoteMaps
       await cache.put(
-        dummyParsedKey,
+        dummyFilename,
         parsedDummy,
       )
       await cache.put(
-        toDeleteKey,
+        toDeleteFilename,
         parsedToDelete,
       )
       remoteMapsFlushFuncs = Object.values(remoteMaps).map(remoteMap =>
@@ -276,6 +283,53 @@ describe('ParsedNaclFileCache', () => {
       remoteMapsFlushFuncs.forEach(flushSpy => {
         expect(flushSpy).toHaveBeenCalled()
       })
+    })
+  })
+
+  describe('getAllErrors', () => {
+    const errorA = {
+      message: 'MessageA',
+      severity: 'Warning' as SaltoErrorSeverity,
+      summary: 'summary',
+      subject: mockSourceRange,
+      context: mockSourceRange,
+    }
+    const errorB = {
+      message: 'MessageB',
+      severity: 'Warning' as SaltoErrorSeverity,
+      summary: 'summary',
+      subject: mockSourceRange,
+      context: mockSourceRange,
+    }
+    beforeEach(async () => {
+      await cache.put(
+        dummyFilename,
+        await toParsedNaclFile(
+          dummyParsedKey,
+          {
+            elements: [dummyObjectType],
+            errors: [errorA],
+            sourceMap,
+          },
+        )
+      )
+      await cache.put(
+        toDeleteFilename,
+        await toParsedNaclFile(
+          toDeleteKey,
+          {
+            elements: [toDeleteObjectType],
+            errors: [errorB],
+            sourceMap,
+          },
+        )
+      )
+    })
+
+    it('Should return all errors', async () => {
+      const errors = await cache.getAllErrors()
+      expect(errors.includes(errorA)).toBeTruthy()
+      expect(errors.includes(errorB)).toBeTruthy()
     })
   })
 

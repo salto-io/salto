@@ -36,7 +36,7 @@ import { createConnection } from './common'
 describe('client_http_connection', () => {
   let mockAxiosAdapter: MockAdapter
   beforeEach(() => {
-    mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 20, onNoMatch: 'throwException' })
+    mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
   })
 
   afterEach(() => {

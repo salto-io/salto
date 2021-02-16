@@ -46,6 +46,8 @@ describe('Nacl Files Source', () => {
       rename: () => Promise.resolve(),
       delete: () => Promise.resolve(),
       list: () => Promise.resolve([]),
+      getAllErrors: () => Promise.resolve([]),
+      hasValid: () => Promise.resolve(true),
     }
     mockDirStore = {
       list: () => Promise.resolve([]),

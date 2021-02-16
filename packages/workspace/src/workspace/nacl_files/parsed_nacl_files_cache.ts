@@ -40,7 +40,6 @@ export type ParseResultKey = {
 
 type CacheSources = {
   elements: RemoteMap<Element[]>
-  // data: RemoteMap<ParsedNaclFileData>
   sourceMap: RemoteMap<SourceMap>
   metadata: RemoteMap<FileCacheMetdata>
   errors: RemoteMap<ParseError[]>
@@ -54,12 +53,10 @@ export type ParsedNaclFileCache = {
   rename: (name: string) => Promise<void>
   list: () => Promise<string[]>
   delete: (filename: string) => Promise<void>
-  // getO(key: ParseResultKey, allowInvalid?: boolean): Promise<ParsedNaclFile | undefined>
   get(filename: string): Promise<ParsedNaclFile | undefined>
-  // putO(key: ParseResultKey, value: ParsedNaclFile): Promise<void>
   put(filename: string, value: ParsedNaclFile): Promise<void>
-  getAllErrors(): Promise<ParseError[]> // TEMP
   hasValid(key: ParseResultKey): Promise<boolean>
+  getAllErrors(): Promise<ParseError[]> // TEMP
 }
 
 const isMD5Equal = (
@@ -120,7 +117,7 @@ const getErrors = async (
 ): Promise<RemoteMap<ParseError[]>> => (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'errors'),
-    serialize: (errors: ParseError[]) => safeJsonStringify(errors),
+    serialize: (errors: ParseError[]) => safeJsonStringify(errors ?? []),
     deserialize: data => JSON.parse(data),
   })
 )
@@ -141,7 +138,7 @@ const getCacheSources = async (
   metadata: await getMetadata(cacheName, remoteMapCreator),
   elements: await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'elements'),
-    serialize: (elements: Element[]) => serialize(elements),
+    serialize: (elements: Element[]) => serialize(elements ?? []),
     deserialize: async data => (deserialize(
       data,
       async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding),
@@ -155,7 +152,7 @@ const getCacheSources = async (
   errors: await getErrors(cacheName, remoteMapCreator),
   referenced: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'referenced'),
-    serialize: (val: ElemID[]) => safeJsonStringify(val),
+    serialize: (val: ElemID[]) => safeJsonStringify(val ?? []),
     deserialize: data => {
       const parsed = JSON.parse(data)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -239,13 +236,6 @@ export const createParseResultCache = (
         lastModified: value.data.timestamp,
       })
     },
-    // isValidValue - filename, buffer, lastModified
-    // isValidKey(key: ParsedResultKey)
-
-    // hasValid(filename, buffer, timestamp)
-    // get(filename: string)
-    // put(filename: string, value: ParsedNaclFile)
-    // getAllErrors() TEMP
     hasValid: async (key: ParseResultKey): Promise<boolean> => {
       const fileMetadata = await getFileMatadata(key.filename, actualCacheName, remoteMapCreator)
       if (fileMetadata === undefined) {

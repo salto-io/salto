@@ -160,7 +160,7 @@ const getElementReferenced = async (element: Element): Promise<ElemID[]> => {
 }
 
 export const toParsedNaclFile = async (
-  naclFile: Omit<NaclFile, 'buffer'>,
+  naclFile: Omit<NaclFile, 'buffer'> & { buffer?: string},
   parseResult: ParseResult
 ): Promise<ParsedNaclFile> => {
   const elements = createInMemoryElementSource()
@@ -173,6 +173,7 @@ export const toParsedNaclFile = async (
       errors: parseResult.errors,
       referenced: await awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
     },
+    buffer: naclFile.buffer,
     sourceMap: parseResult.sourceMap,
   }
 }
@@ -181,8 +182,9 @@ const parseNaclFile = async (
   naclFile: NaclFile, cache: ParsedNaclFileCache, functions: Functions
 ): Promise<Required<ParseResult>> => {
   const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename, functions)
-  const key = cacheResultKey(naclFile)
-  await cache.put(key, await toParsedNaclFile(naclFile, parseResult))
+  // const key = cacheResultKey(naclFile)
+  // await cache.put(key, await toParsedNaclFile(naclFile, parseResult))
+  await cache.put(naclFile.filename, await toParsedNaclFile(naclFile, parseResult))
   return parseResult
 }
 
@@ -190,10 +192,10 @@ const parseNaclFiles = async (
   naclFiles: NaclFile[], cache: ParsedNaclFileCache, functions: Functions
 ): Promise<ParsedNaclFile[]> =>
   withLimitedConcurrency(naclFiles.map(naclFile => async () => {
-    const key = cacheResultKey(naclFile)
-    const cachedResult = await cache.get(key)
-    return cachedResult
-      ?? toParsedNaclFile(naclFile, await parseNaclFile(naclFile, cache, functions))
+    const hasValid = await cache.hasValid(cacheResultKey(naclFile))
+    const cachedResult = hasValid && await cache.get(naclFile.filename)
+    return (cachedResult && values.isDefined(cachedResult))
+      ? cachedResult : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, cache, functions))
   }), PARSE_CONCURRENCY)
 
 export const getFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
@@ -414,12 +416,12 @@ const buildNaclFilesSource = (
     const fileNames = new Set([...cacheFilenames, ...naclFilenames])
     await awu(fileNames).forEach(async filename => {
       const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
-      const validCache = await cache.get(cacheResultKey(naclFile))
-      const latestCache = validCache ?? await cache.get(cacheResultKey(naclFile), true)
-      if (latestCache !== undefined) {
-        parsedNaclFilesFromCache.push(latestCache)
+      const cacheVal = await cache.get(filename)
+      if (cacheVal !== undefined) {
+        parsedNaclFilesFromCache.push(cacheVal)
       }
-      if (validCache === undefined) {
+      const cacheHasValidVal = await cache.hasValid(cacheResultKey(naclFile))
+      if (!cacheHasValidVal) {
         modifiedNaclFiles.push(naclFile)
       }
     })
@@ -487,10 +489,11 @@ const buildNaclFilesSource = (
   ): Promise<string[]> => await (await getState()).referencedIndex.get(elemID.getFullName()) ?? []
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
-    const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
-    const key = cacheResultKey(parsedNaclFile)
-    const cachedResult = await cache.get(key)
-    if (cachedResult && cachedResult.sourceMap) {
+    // const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
+    // const key = cacheResultKey(parsedNaclFile)
+    // const cachedResult = await cache.get(key)
+    const cachedResult = await cache.get(filename)
+    if (values.isDefined(cachedResult) && values.isDefined(cachedResult.sourceMap)) {
       return cachedResult.sourceMap
     }
     const naclFile = (await naclFilesStore.get(filename))
@@ -518,13 +521,15 @@ const buildNaclFilesSource = (
         errors: [],
         referenced: await awu(await elements.getAll()).flatMap(getElementReferenced).toArray(),
       },
-    }
-    const key = cacheResultKey({
-      filename: parsed.filename,
       buffer: fileData,
-      timestamp: parsed.data.timestamp,
-    })
-    await cache.put(key, parsed)
+    }
+    // const key = cacheResultKey({
+    //   filename: parsed.filename,
+    //   buffer: fileData,
+    //   timestamp: parsed.data.timestamp,
+    // })
+    // await cache.put(key, parsed)
+    await cache.put(filename, parsed)
     return parsed
   }
 

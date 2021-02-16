@@ -20,12 +20,12 @@ import filterCreator, { } from '../../src/filters/settings_type'
 import mockClient from '../client'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
-import SalesforceClient from '../../src/client/client'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { mockFileProperties, mockDescribeValueResult, mockValueTypeField } from '../connection'
 
 
 describe('Test Settings Type', () => {
-  const { client } = mockClient()
+  const { client, connection } = mockClient()
 
   const filter = filterCreator(
     {
@@ -77,62 +77,33 @@ describe('Test Settings Type', () => {
   const testElements = [mockInstance, mockObject, anotherMockInstance]
 
   describe('on discover', () => {
-    let mockDescribeMetadata: jest.Mock
-    let mockListMetadataObjects: jest.Mock
-    let mockReadMetadata: jest.Mock
-
     beforeEach(() => {
-      mockListMetadataObjects = jest.fn()
-        .mockImplementationOnce(async () => ({ result: [{ fullName: 'Macro' }, { fullName: 'Case' }] }))
+      connection.metadata.list.mockResolvedValue(
+        ['Macro', 'Case'].map(fullName => mockFileProperties({ fullName, type: 'Settings' }))
+      )
+      connection.metadata.describeValueType.mockResolvedValue(
+        mockDescribeValueResult({
+          valueTypeFields: [
+            { name: 'fullName', soapType: 'string' },
+            { name: 'enableAdvancedSearch', soapType: 'boolean' },
+            { name: 'macrosInFolders', soapType: 'boolean' },
+          ].map(mockValueTypeField),
+        })
+      )
 
-      mockDescribeMetadata = jest.fn().mockImplementationOnce(async () => [
-        {
-          isForeignKey: false,
-          isNameField: true,
-          minOccurs: 0,
-          name: 'fullName',
-          soapType: 'string',
-          valueRequired: true,
-          fields: [],
-          picklistValues: [],
-        },
-        {
-          isForeignKey: false,
-          isNameField: false,
-          minOccurs: 0,
-          name: 'enableAdvancedSearch',
-          soapType: 'boolean',
-          valueRequired: true,
-          fields: [],
-          picklistValues: [],
-        },
-        {
-          isForeignKey: false,
-          isNameField: false,
-          minOccurs: 0,
-          name: 'macrosInFolders',
-          soapType: 'boolean',
-          valueRequired: true,
-          fields: [],
-          picklistValues: [],
-        },
-      ])
-
-      mockReadMetadata = jest.fn()
-        .mockImplementationOnce(() => ({ result: [
-          { fullName: 'Macro', enableAdvancedSearch: false, macrosInFolders: false },
-        ] }))
-
-      SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
-      SalesforceClient.prototype.describeMetadataType = mockDescribeMetadata
-      SalesforceClient.prototype.readMetadata = mockReadMetadata
+      const settingsInstValue = {
+        fullName: 'Macro',
+        enableAdvancedSearch: false,
+        macrosInFolders: false,
+      }
+      connection.metadata.read.mockResolvedValue(settingsInstValue)
     })
 
     it('should generate all settings type', async () => {
       await filter.onFetch(testElements)
-      expect(mockDescribeMetadata.mock.calls).toHaveLength(1)
-      expect(mockDescribeMetadata.mock.calls[0]).toHaveLength(1)
-      expect(mockDescribeMetadata.mock.calls[0][0]).toEqual('MacroSettings')
+      expect(connection.metadata.describeValueType).toHaveBeenCalledWith(
+        expect.stringMatching(/.*MacroSettings$/)
+      )
       expect(testElements).toHaveLength(5)
       expect(isObjectType(testElements[3])).toBeTruthy()
       const { path } = testElements[3]

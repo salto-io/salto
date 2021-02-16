@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
   CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType,
+  createRestriction,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from 'jsforce'
@@ -25,7 +26,7 @@ import {
 } from '@salto-io/adapter-utils'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,
-  getValueTypeFieldElement, createMetadataTypeElements,
+  getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
 } from '../../src/transformers/transformer'
@@ -48,6 +49,7 @@ import { createValueSetEntry, MockInterface } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import { mockValueTypeField, mockDescribeValueResult } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
+import { convertRawMissingFields } from '../../src/transformers/missing_fields'
 
 
 const { makeArray } = collections.array
@@ -1365,6 +1367,112 @@ describe('transformer', () => {
       const baseField = elements[0]
       expect(baseField.fields[referenceField.name].annotations?.foreignKeyDomain).toEqual(
         ['ReferencedTypeName', 'OtherReferencedTypeName']
+      )
+    })
+  })
+
+  describe('missing fields', () => {
+    let connection: MockInterface<Connection>
+    let baseType: MetadataObjectType
+    let complexType: MetadataObjectType
+    let emptyComplexType: MetadataObjectType
+    beforeEach(async () => {
+      const clientAndConn = mockClient()
+      connection = clientAndConn.connection
+      connection.metadata.describeValueType.mockImplementation(async typeName => (
+        typeName.endsWith('ComplexType')
+          ? mockDescribeValueResult({ valueTypeFields: [mockValueTypeField({ name: 'compField', soapType: 'string' })] })
+          : mockDescribeValueResult({ valueTypeFields: [] })
+      ))
+      const missingFields = convertRawMissingFields([
+        {
+          id: 'BaseType',
+          fields: [
+            { name: 'str', type: 'string' },
+            { name: 'num', type: 'integer' },
+            { boolean: ['bool1', 'bool2'] },
+            { name: 'enum', type: 'MyEnumType', picklistValues: ['v1', 'v2'] },
+            { name: 'complex', type: 'ComplexType' },
+            { name: 'emptyComplex', type: 'ComplexTypeEmpty' },
+          ],
+        },
+        {
+          id: 'ComplexType',
+          fields: [{ name: 'str', type: 'string' }],
+        },
+        {
+          id: 'ComplexTypeEmpty',
+          fields: [{ name: 'str', type: 'string' }],
+        },
+      ])
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [mockValueTypeField({ name: 'normal', soapType: 'string' })],
+        baseTypeNames: new Set(['BaseType']),
+        childTypeNames: new Set(),
+        client: clientAndConn.client,
+        missingFields,
+      })
+      const elementsByTypeName = _.keyBy(elements, elem => elem.elemID.typeName)
+      baseType = elementsByTypeName.BaseType
+      complexType = elementsByTypeName.ComplexType
+      emptyComplexType = elementsByTypeName.ComplexTypeEmpty
+
+      expect(baseType).toBeDefined()
+      expect(complexType).toBeDefined()
+      expect(emptyComplexType).toBeDefined()
+    })
+    it('should keep existing fields', () => {
+      expect(baseType.fields).toHaveProperty(
+        'normal', expect.objectContaining({ type: BuiltinTypes.STRING })
+      )
+      expect(complexType.fields).toHaveProperty(
+        'compField', expect.objectContaining({ type: BuiltinTypes.STRING })
+      )
+    })
+    it('should add missing fields with builtin types', () => {
+      expect(baseType.fields).toHaveProperty(
+        'str', expect.objectContaining({ type: BuiltinTypes.STRING })
+      )
+      expect(baseType.fields).toHaveProperty(
+        'num', expect.objectContaining({ type: BuiltinTypes.NUMBER })
+      )
+    })
+    it('should add missing boolean fields', () => {
+      expect(baseType.fields).toHaveProperty(
+        'bool1', expect.objectContaining({ type: BuiltinTypes.BOOLEAN })
+      )
+      expect(baseType.fields).toHaveProperty(
+        'bool2', expect.objectContaining({ type: BuiltinTypes.BOOLEAN })
+      )
+    })
+    it('should add missing enum fields', () => {
+      expect(baseType.fields).toHaveProperty(
+        'enum',
+        expect.objectContaining({
+          type: BuiltinTypes.STRING,
+          annotations: expect.objectContaining({
+            [CORE_ANNOTATIONS.RESTRICTION]: expect.objectContaining(
+              createRestriction({ values: ['v1', 'v2'] }),
+            ),
+          }),
+        })
+      )
+    })
+    it('should add complex fields with recursive describe calls', () => {
+      expect(connection.metadata.describeValueType).toHaveBeenCalledWith(
+        expect.stringMatching(/.*ComplexType$/)
+      )
+      expect(complexType.fields).toHaveProperty(
+        'str', expect.objectContaining({ type: BuiltinTypes.STRING })
+      )
+    })
+    it('should add complex fields even when describe on them is empty', () => {
+      expect(connection.metadata.describeValueType).toHaveBeenCalledWith(
+        expect.stringMatching(/.*ComplexTypeEmpty$/)
+      )
+      expect(emptyComplexType.fields).toHaveProperty(
+        'str', expect.objectContaining({ type: BuiltinTypes.STRING })
       )
     })
   })

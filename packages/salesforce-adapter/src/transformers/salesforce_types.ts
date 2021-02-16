@@ -26,6 +26,9 @@ const lightningComponentBundleObjectType = new ObjectType({
   fields: {
     object: { type: BuiltinTypes.STRING },
   },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleObject',
+  },
   path: [...subTypesPath, 'LightningComponentBundleObject'],
 })
 
@@ -106,6 +109,9 @@ const lightningComponentBundlePropertyType = new ObjectType({
       },
     },
   },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleProperty',
+  },
   path: [...subTypesPath, 'LightningComponentBundleProperty'],
 })
 
@@ -121,6 +127,9 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
       },
     },
   },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleSupportedFormFactor',
+  },
   path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactor'],
 })
 
@@ -128,6 +137,9 @@ const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactors'),
   fields: {
     supportedFormFactor: { type: new ListType(lightningComponentBundleSupportedFormFactorType) },
+  },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleSupportedFormFactors',
   },
   path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactors'],
 })
@@ -150,6 +162,9 @@ const lightningComponentBundleTargetConfigType = new ObjectType({
     objects: { type: new ListType(lightningComponentBundleObjectType) },
     property: { type: lightningComponentBundlePropertyType },
     supportedFormFactors: { type: lightningComponentBundleSupportedFormFactorsType },
+  },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleTargetConfig',
   },
   path: [...subTypesPath, 'LightningComponentBundleTargetConfig'],
 })
@@ -210,6 +225,9 @@ export const allMissingSubTypes = [
       settingName: { type: BuiltinTypes.STRING },
       settingValue: { type: BuiltinTypes.STRING },
     },
+    annotations: {
+      [METADATA_TYPE]: 'OrganizationSettingsDetail',
+    },
     path: [...subTypesPath, 'OrganizationSettingsDetail'],
   }),
   new ObjectType({
@@ -217,6 +235,9 @@ export const allMissingSubTypes = [
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {
       targetConfig: { type: new ListType(lightningComponentBundleTargetConfigType) },
+    },
+    annotations: {
+      [METADATA_TYPE]: 'TargetConfigs',
     },
     path: [...subTypesPath, 'TargetConfigs'],
   }),

@@ -13,7 +13,7 @@
               "../netsuite-adapter/types/suitecloud-cli"
             ]
         },
-        "resolveJsonModule": true,
+        "resolveJsonModule": true
     },
     "include": [
         "src/**/*",
@@ -33,6 +33,7 @@
         { "path": "../lowerdash" },
         { "path": "../salesforce-adapter" },
         { "path": "../marketo-adapter" },
+        { "path": "../workato-adapter" },
         { "path": "../dummy-adapter" }
     ]
 }

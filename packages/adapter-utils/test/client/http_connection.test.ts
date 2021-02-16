@@ -28,38 +28,39 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import moxios from 'moxios'
+import axios from 'axios'
+import MockAdapter from 'axios-mock-adapter'
 import { validateCredentials } from '../../src/client'
 import { createConnection } from './common'
 
 describe('client_http_connection', () => {
+  let mockAxiosAdapter: MockAdapter
   beforeEach(() => {
-    moxios.install()
+    mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
   })
 
   afterEach(() => {
-    moxios.uninstall()
+    mockAxiosAdapter.restore()
   })
 
   describe('validateCredentials with axiosConnection', async () => {
     it('should login', async () => {
-      const validateRes = validateCredentials({ username: 'user123', password: 'pass' }, { createConnection })
-      moxios.withMock(() => {
-        moxios.wait(async () => {
-          const req = moxios.requests.mostRecent()
-          await req.respondWith({
-            status: 200,
-            response: {
-              accountId: 'ACCOUNT_ID',
-            },
-          })
+      mockAxiosAdapter.onGet(
+        '/users/me',
+        undefined,
+        expect.objectContaining({
+          customheader1: 'user123',
         })
+      ).reply(200, {
+        accountId: 'ACCOUNT_ID',
       })
+      const validateRes = validateCredentials({ username: 'user123', password: 'pass' }, { createConnection })
       expect(await validateRes).toEqual('ACCOUNT_ID:user123')
-      const req = moxios.requests.mostRecent()
+      expect(mockAxiosAdapter.history.get.length).toBe(1)
+      const req = mockAxiosAdapter.history.get[0]
       expect(req.url).toEqual('/users/me')
-      expect(req.headers.Authorization).toContain('Basic ')
-      expect(req.headers.customheader1).toEqual('user123')
+      expect(req.auth).toEqual({ username: 'user123', password: 'pass' })
+      // already verified the customheader1 header in the onGet header matcher
     })
   })
 })

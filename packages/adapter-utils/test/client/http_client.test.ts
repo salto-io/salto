@@ -28,8 +28,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import axios from 'axios'
+import MockAdapter from 'axios-mock-adapter'
 import { collections } from '@salto-io/lowerdash'
-import moxios from 'moxios'
 import { ClientRateLimitConfig } from '../../src/client/config'
 import { AdapterHTTPClient, ClientOpts, ConnectionCreator, GetAllItemsFunc } from '../../src/client'
 import { createConnection, Credentials } from './common'
@@ -37,12 +38,13 @@ import { createConnection, Credentials } from './common'
 const { toArrayAsync } = collections.asynciterable
 
 describe('client_http_client', () => {
+  let mockAxiosAdapter: MockAdapter
   beforeEach(() => {
-    moxios.install()
+    mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
   })
 
   afterEach(() => {
-    moxios.uninstall()
+    mockAxiosAdapter.restore()
   })
 
   describe('get', () => {
@@ -78,23 +80,14 @@ describe('client_http_client', () => {
       expect(mockCreateConnection).not.toHaveBeenCalled()
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
       expect(mockCreateConnection).toHaveBeenCalledTimes(1)
-      const getRes = client.get({ url: '/ep' })
 
-      // should not call getPage until auth succeeds
-      expect(getPage).toHaveBeenCalledTimes(0)
-
-      moxios.withMock(() => {
-        moxios.wait(async () => {
-          const req = moxios.requests.mostRecent()
-          await req.respondWith({
-            status: 200,
-            response: {
-              accountId: 'ACCOUNT_ID',
-            },
-          })
-        })
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
       })
 
+      const getRes = client.get({ url: '/ep' })
+      // should not call getPage until auth succeeds
+      expect(getPage).toHaveBeenCalledTimes(0)
       await toArrayAsync(await getRes)
       await toArrayAsync(await client.get({ url: '/ep2', paginationField: 'page', queryParams: { a: 'AAA' } }))
       expect(getPage).toHaveBeenCalledTimes(2)

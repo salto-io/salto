@@ -94,7 +94,9 @@ export const getWithPageOffsetPagination: GetAllItemsFunc = async function *getW
       Object.keys(params).length > 0 ? { params } : undefined
     )
 
-    log.debug(`Full HTTP response for ${url} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
+    log.debug('Full HTTP response for %s: %s', url, safeJsonStringify({
+      url, params, response: response.data,
+    }))
 
     if (response.status !== 200) {
       log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
@@ -161,7 +163,9 @@ export const getWithCursorPagination: GetAllItemsFunc = async function *getWithC
       Object.keys(params).length > 0 ? { params } : undefined
     )
 
-    log.debug(`Full HTTP response for ${url} ${safeJsonStringify(params)}: ${safeJsonStringify(response.data)}`)
+    log.debug('Full HTTP response for %s: %s', url, safeJsonStringify({
+      url, params, response: response.data,
+    }))
 
     if (response.status !== 200 || response.data.success === false) {
       log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)

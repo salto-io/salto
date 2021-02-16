@@ -28,7 +28,7 @@ export const createMockNaclFileSource = (
   changes: Change[] = [],
 ): NaclFilesSource => {
   const getElementNaclFiles = (elemID: ElemID): string[] =>
-    _.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
+    Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
     ) !== undefined).map(([filename, _elements]) => filename)
   return {
@@ -53,7 +53,7 @@ export const createMockNaclFileSource = (
     removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(changes)),
     getSourceMap: jest.fn().mockImplementation(() => Promise.resolve(new Map())),
     getSourceRanges: jest.fn().mockImplementation(async elemID => sourceRanges
-      || getElementNaclFiles(elemID).map(filename => ({ filename, start: {}, end: {} }))),
+      ?? getElementNaclFiles(elemID).map(filename => ({ filename, start: {}, end: {} }))),
     getErrors: jest.fn().mockImplementation(() => Promise.resolve(errors)),
     getParsedNaclFile: jest.fn().mockImplementation(
       filename => Promise.resolve({

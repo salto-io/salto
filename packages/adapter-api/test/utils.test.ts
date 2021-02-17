@@ -13,11 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { collections } from '@salto-io/lowerdash'
 import { getDeepInnerType, getField, getFieldType } from '../src/utils'
-import { ObjectType, ListType, isElement, isField, isListType, isMapType, MapType, PrimitiveType, PrimitiveTypes } from '../src/elements'
+import { ObjectType, ListType, isElement, isField, isListType, isMapType, MapType, PrimitiveType, PrimitiveTypes, ReadOnlyElementsSource } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { ReferenceExpression, Value } from '../src/values'
+import { ReferenceExpression } from '../src/values'
+
+const { awu } = collections.asynciterable
 
 describe('Test utils.ts & isXXX in elements.ts', () => {
   const mockElemID = new ElemID('test-utils', 'obj')
@@ -69,18 +72,20 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
   const mockMap = new MapType(BuiltinTypes.NUMBER)
   const mockListList = new ListType(mockList)
   const mockMapMap = new MapType(mockMap)
-  const elmSource = {
-    async get(elemID: ElemID): Promise<Value> {
-      return [
-        mockObjectType,
-        mapOfPrimitiveNum,
-        BuiltinTypes.NUMBER,
-        mockList,
-        mockMap,
-        mockListList,
-        mockMapMap,
-      ].find(e => e.elemID.isEqual(elemID))
-    },
+  const srcElements = [
+    mockObjectType,
+    mapOfPrimitiveNum,
+    BuiltinTypes.NUMBER,
+    mockList,
+    mockMap,
+    mockListList,
+    mockMapMap,
+  ]
+  const elmSource: ReadOnlyElementsSource = {
+    get: async elemID => srcElements.find(e => e.elemID.isEqual(elemID)),
+    getAll: async () => awu(srcElements),
+    has: async elemID => srcElements.find(e => e.elemID.isEqual(elemID)) !== undefined,
+    list: async () => awu(srcElements).map(e => e.elemID),
   }
   describe('isElement func', () => {
     it('should return false for undefined', () => {

@@ -247,10 +247,12 @@ describe('workspace', () => {
             },
           },
         )
-        const currentEnvElements = await newWorkspace.elements()
+        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll())
+          .toArray()
         expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
         expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
-        const inactiveEnvElements = await newWorkspace.elements(undefined, 'inactive')
+        const inactiveEnvElements = await awu(await (await newWorkspace.elements(undefined, 'inactive'))
+          .getAll()).toArray()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
       })
@@ -453,12 +455,16 @@ describe('workspace', () => {
     })
 
     it('should update elements', () => {
-      expect(elemMap).toEqual({
+      const refMap: Record<string, Element> = {
         'multi.loc': mutliLocObject,
         'salesforce.lead': salesforceLeadObject,
         'salesforce.new': newAddedObject,
         'salesforce.RenamedType1': new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
-      })
+      }
+      expect(Object.keys(refMap).sort()).toEqual(Object.keys(elemMap).sort())
+      Object.keys(refMap).forEach(
+        key => expect(elemMap[key].isEqual(refMap[key])).toBeTruthy()
+      )
     })
 
     it('should create Nacl files that were added', async () => {
@@ -472,7 +478,7 @@ describe('workspace', () => {
     })
 
     it('should return the correct changes', async () => {
-      expect(changes).toHaveLength(24)
+      expect(changes).toHaveLength(23)
       expect((changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
       const multiLocChange = changes.find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
@@ -1879,6 +1885,7 @@ describe('workspace', () => {
       'usedAsNestedReference.nacl': usedAsNestedReference,
       'unmerged.nacl': usedInUnmerged,
     }
+
     describe('getElementReferencedFiles', () => {
       let workspace: Workspace
       let referencedFiles: string[]
@@ -1928,10 +1935,33 @@ describe('workspace', () => {
     let workspace: Workspace
     beforeEach(async () => {
       workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined,
+        undefined,
+        undefined,
+        {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+            envs: [
+              { name: 'default', services: ['test'] },
+              { name: 'full', services: ['test'] },
+            ],
+            uid: '',
+            name: 'test',
+            currentEnv: 'full',
+          })),
+          setWorkspaceConfig: jest.fn(),
+          getAdapter: jest.fn(),
+          setAdapter: jest.fn(),
+        },
+        undefined,
+        undefined,
         {
           '': {
-            naclFiles: naclFilesSource(mockDirStore(), mockParseCache(), mockStaticFilesSource()),
+            naclFiles: await naclFilesSource(
+              '',
+              mockDirStore(),
+              mockParseCache(),
+              mockStaticFilesSource(),
+              mockCreateRemoteMap,
+            ),
           },
           empty: {
             naclFiles: createMockNaclFileSource([]),
@@ -1962,7 +1992,13 @@ describe('workspace', () => {
         undefined, undefined, undefined, undefined, undefined,
         {
           '': {
-            naclFiles: naclFilesSource(mockDirStore(), mockParseCache(), mockStaticFilesSource()),
+            naclFiles: await naclFilesSource(
+              '',
+              mockDirStore(),
+              mockParseCache(),
+              mockStaticFilesSource(),
+              mockCreateRemoteMap,
+            ),
           },
           default: {
             naclFiles: createMockNaclFileSource([]),

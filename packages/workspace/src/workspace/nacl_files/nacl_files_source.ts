@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
-import { resolvePath, TransformFuncArgs, transformElement } from '@salto-io/adapter-utils'
+import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { MergeError, mergeElements } from '../../merger'
@@ -35,7 +35,6 @@ import { buildNewMergedElementsAndErrors } from './elements_cache'
 import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../../serializer/elements'
 import { Functions } from '../../parser/functions'
 import { RemoteMap, InMemoryRemoteMap, RemoteMapCreator } from '../remote_map'
-import { ThenableIterable } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 
 const { awu, concatAsync } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
@@ -78,7 +77,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
     cache?: boolean
   }): Promise<void>
   getElementsSource: () => Promise<ElementsSource>
-  load: () => Promise<Change<Element>[]>
+  load: () => Promise<Change[]>
 }
 
 export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
@@ -112,22 +111,32 @@ const getRemoteMapNamespace = (
   namespace: string, name: string
 ): string => `naclFileSource-${name}-${namespace}`
 
+const getInnerTypePrefixStartIndex = (fullName: string): number => {
+  const nestedMap = fullName.lastIndexOf('Map<')
+  const nestedList = fullName.lastIndexOf('List<')
+  if (nestedList > nestedMap) {
+    return nestedList + 'List<'.length
+  }
+  if (nestedList > nestedMap) {
+    return nestedMap + 'Map<'.length
+  }
+  return -1
+}
 // This assumes List</Map< will only be in container types' ElemID and that they have closing >
 const getTypeOrContainerTypeID = (elemID: ElemID): ElemID => {
   const fullName = elemID.getFullName()
-  const deepInnerTypeStart = _.max([
-    fullName.lastIndexOf('List<'),
-    fullName.lastIndexOf('Map<'),
-  ])
+  const deepInnerTypeStart = getInnerTypePrefixStartIndex(fullName)
   const deepInnerTypeEnd = fullName.indexOf('>')
-  if ((deepInnerTypeStart === -1 || deepInnerTypeStart === undefined) && deepInnerTypeEnd === -1) {
+  if (deepInnerTypeStart === -1 && deepInnerTypeEnd === -1) {
     return elemID
   }
-  if (deepInnerTypeStart === undefined || deepInnerTypeStart === -1
-    || deepInnerTypeEnd < deepInnerTypeStart) {
+  if (deepInnerTypeStart === -1 || deepInnerTypeEnd < deepInnerTypeStart) {
     throw new Error(`Invalid < > structure in ElemID - ${fullName}`)
   }
-  return ElemID.fromFullName(fullName.substr(deepInnerTypeStart, deepInnerTypeEnd))
+  return ElemID.fromFullName(fullName.slice(
+    deepInnerTypeStart,
+    deepInnerTypeEnd
+  ))
 }
 
 const getElementReferenced = async (element: Element): Promise<Set<string>> => {
@@ -168,14 +177,6 @@ const getElementReferenced = async (element: Element): Promise<Set<string>> => {
     })
   }
   return referenced
-}
-
-const getElementsReferences = async (elements: ThenableIterable<Element>): Promise<ElemID[]> => {
-  const referenced = new Set<string>()
-  await awu(elements).forEach(async elem => {
-    (await getElementReferenced(elem)).forEach(r => referenced.add(r))
-  })
-  return [...referenced].map(r => ElemID.fromFullName(r))
 }
 
 export const toParsedNaclFile = async (
@@ -230,7 +231,7 @@ export const getParsedNaclFiles = async (
   return parseNaclFiles(naclFiles, cache, functions)
 }
 
-type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change<Element>[] }
+type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change[] }
 
 const buildNaclFilesState = async ({
   newNaclFiles, remoteMapCreator, existingState, staticFilesSource, sourceName,
@@ -244,7 +245,7 @@ const buildNaclFilesState = async ({
   const currentState = existingState ?? {
     elementsIndex: await remoteMapCreator<string[]>({
       namespace: getRemoteMapNamespace('elements_index', sourceName),
-      serialize: val => JSON.stringify(val),
+      serialize: val => safeJsonStringify(val),
       deserialize: data => JSON.parse(data),
     }),
     mergeErrors: await remoteMapCreator<MergeError[]>({
@@ -263,7 +264,7 @@ const buildNaclFilesState = async ({
     parsedNaclFiles: {} as ParsedNaclFileMap,
     referencedIndex: await remoteMapCreator<string[]>({
       namespace: getRemoteMapNamespace('referenced_index', sourceName),
-      serialize: val => JSON.stringify(val),
+      serialize: val => safeJsonStringify(val),
       deserialize: data => JSON.parse(data),
     }),
   }
@@ -296,8 +297,7 @@ const buildNaclFilesState = async ({
   }
 
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {
-    (await naclFile.data.get('referenced') ?? []).forEach((elemID: ElemID) => {
-      const elementFullName = elemID.getFullName()
+    (await naclFile.data.get('referenced') ?? []).forEach((elementFullName: string) => {
       referencedIndexAdditions[elementFullName] = referencedIndexAdditions[elementFullName]
         ?? new Set<string>()
       referencedIndexAdditions[elementFullName].add(naclFile.filename)
@@ -324,8 +324,7 @@ const buildNaclFilesState = async ({
     if (oldNaclFile === undefined) {
       return
     }
-    (await oldNaclFile.data.get('referenced') ?? []).forEach((elemID: ElemID) => {
-      const elementFullName = elemID.getFullName()
+    (await oldNaclFile.data.get('referenced') ?? []).forEach((elementFullName: string) => {
       referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
         ?? new Set<string>()
       referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
@@ -378,7 +377,7 @@ const buildNaclFilesState = async ({
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,
     mergeFunc: elements => mergeElements(elements),
-  })
+  }) as Change[]
   return {
     state: currentState,
     changes,

@@ -232,6 +232,23 @@ export const transformValues = async (
   return _.isEmpty(result) ? undefined : result
 }
 
+export const elementAnnotationTypes = async (
+  element: Element,
+  elementsSource?: ReadOnlyElementsSource
+): Promise<TypeMap> => {
+  if (isInstanceElement(element)) {
+    return InstanceAnnotationTypes
+  }
+
+  return {
+    ...InstanceAnnotationTypes,
+    ...CoreAnnotationTypes,
+    ...(isField(element)
+      ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
+      : await element.getAnnotationTypes(elementsSource)),
+  }
+}
+
 export const transformElementAnnotations = async <T extends Element>(
   {
     element,
@@ -245,23 +262,9 @@ export const transformElementAnnotations = async <T extends Element>(
     elementsSource?: ReadOnlyElementsSource
   }
 ): Promise<Values> => {
-  const elementAnnotationTypes = async (): Promise<TypeMap> => {
-    if (isInstanceElement(element)) {
-      return InstanceAnnotationTypes
-    }
-
-    return {
-      ...InstanceAnnotationTypes,
-      ...CoreAnnotationTypes,
-      ...(isField(element)
-        ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
-        : await element.getAnnotationTypes(elementsSource)),
-    }
-  }
-
   return await transformValues({
     values: element.annotations,
-    type: await elementAnnotationTypes(),
+    type: await elementAnnotationTypes(element, elementsSource),
     transformFunc,
     strict,
     pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,

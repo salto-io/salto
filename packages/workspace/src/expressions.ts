@@ -140,8 +140,9 @@ const resolveElement = async (
   // Create a ReadonlyElementSource (ElementsGetter) with the proper context
   // to be used to resolve types. If it was already resolved use the reolsved and if not
   // fallback to the elementsSource
-  const contextedElementsGetter = {
-    get: (id: ElemID): Promise<Value> =>
+  const contextedElementsGetter: ReadOnlyElementsSource = {
+    ...elementsSource,
+    get: id =>
       (getResolvedElement(id, elementsSource, resolvedElements)),
   }
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(

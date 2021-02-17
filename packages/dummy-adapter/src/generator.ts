@@ -156,7 +156,7 @@ const profileType = new ObjectType({
 
 export const generateElements = async (
   params: GeneratorParams,
-  progressReporter?: ProgressReporter
+  progressReporter: ProgressReporter
 ): Promise<Element[]> => {
   seedrandom(params.seed.toString(), { global: true })
   const elementRanks: Record<string, number> = {}
@@ -604,21 +604,18 @@ export const generateElements = async (
     )
     return [envSpecificObj, envSpecificInst, sharedObj, sharedInst]
   }
-  const reportProgress = (details: string, completedPercents: number): void => {
-    if (progressReporter) progressReporter.reportProgress({ details, completedPercents })
-  }
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
-  progressReporter?.reportProgress({ message: 'Generating primitive types' })
+  progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = await generatePrimitiveTypes()
-  progressReporter?.reportProgress({ message: 'Generating types' })
+  progressReporter.reportProgress({ message: 'Generating types' })
   const types = await generateTypes()
-  progressReporter?.reportProgress({ message: 'Generating objects' })
+  progressReporter.reportProgress({ message: 'Generating objects' })
   const objects = await generateObjects()
-  progressReporter?.reportProgress({ message: 'Generating records' })
+  progressReporter.reportProgress({ message: 'Generating records' })
   const records = await generateRecords()
-  progressReporter?.reportProgress({ message: 'Generating profile likes' })
+  progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
-  progressReporter?.reportProgress({ message: 'Generation done' })
+  progressReporter.reportProgress({ message: 'Generation done' })
   const envObjects = generateEnvElements()
   return [
     ...defaultTypes,

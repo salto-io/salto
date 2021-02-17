@@ -100,7 +100,7 @@ describe('client_rate_limit', () => {
     }
     it('should throttle when bucket is limited', async () => {
       const resolvables: Resolvable<number>[] = []
-
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       // wait for the rate limiters to update
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
@@ -111,6 +111,7 @@ describe('client_rate_limit', () => {
       expect(await a1.rateLimiters.total.queued()).toEqual(0)
       expect(await a1.rateLimiters.total.done()).toEqual(0)
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
       expect(await a1.rateLimiters.b.running()).toEqual(2)
@@ -120,6 +121,7 @@ describe('client_rate_limit', () => {
       expect(await a1.rateLimiters.total.queued()).toEqual(0)
       expect(await a1.rateLimiters.total.done()).toEqual(0)
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runB(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
       expect(await a1.rateLimiters.b.running()).toEqual(2)
@@ -129,6 +131,7 @@ describe('client_rate_limit', () => {
       expect(await a1.rateLimiters.total.queued()).toEqual(0)
       expect(await a1.rateLimiters.total.done()).toEqual(0)
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runSomething(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
       expect(await a1.rateLimiters.b.running()).toEqual(2)
@@ -138,6 +141,7 @@ describe('client_rate_limit', () => {
       expect(await a1.rateLimiters.total.queued()).toEqual(0)
       expect(await a1.rateLimiters.total.done()).toEqual(0)
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       a1.runSomething(addPromise(resolvables))
       await new Promise(resolve => setTimeout(resolve, RATE_LIMITER_UPDATE_DELAY))
       expect(await a1.rateLimiters.b.running()).toEqual(2)

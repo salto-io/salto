@@ -16,7 +16,6 @@
 import { Element, DetailedChange, ElemID } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal, elementSource } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { getDetailedChanges } from './fetch'
@@ -51,6 +50,8 @@ const filterElementsByRelevance = (elements: AsyncIterable<Element>, relevantIds
     return transformElement({
       element: elem,
       transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
+      runOnFields: true,
+      strict: false,
     })
   }).toArray()
 }

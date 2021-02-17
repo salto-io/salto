@@ -23,15 +23,15 @@ export type FindNestedFieldFunc = (
   type: ObjectType,
   fieldsToIgnore?: FieldToOmitType[],
   dataField?: string,
-) => {
+) => Promise<{
   field: Field
   type: ObjectType
-} | undefined
+} | undefined>
 
 /**
  * Field finder that always returns the full entry.
  */
-export const returnFullEntry: FindNestedFieldFunc = () => undefined
+export const returnFullEntry: FindNestedFieldFunc = async () => undefined
 
 /**
  * Logic for finding the nested field that contains the response data,
@@ -40,7 +40,7 @@ export const returnFullEntry: FindNestedFieldFunc = () => undefined
  * If more than one potential field is found, or if no field matches the requirements,
  * returns undefined to signal that the full entry should be used.
  */
-export const findDataField: FindNestedFieldFunc = (type, fieldsToIgnore, dataField) => {
+export const findDataField: FindNestedFieldFunc = async (type, fieldsToIgnore, dataField) => {
   if (dataField === DATA_FIELD_ENTIRE_OBJECT) {
     return undefined
   }
@@ -48,7 +48,7 @@ export const findDataField: FindNestedFieldFunc = (type, fieldsToIgnore, dataFie
   const shouldIgnoreField = (field: Field): boolean => (
     (fieldsToIgnore ?? []).some(({ fieldName, fieldType }) => (
       fieldName === field.name
-      && (fieldType === undefined || fieldType === field.type.elemID.name)
+      && (fieldType === undefined || fieldType === field.refType.elemID.name)
     ))
   )
   const isObjectTypeDeep = (fieldType: TypeElement): boolean => (
@@ -77,10 +77,11 @@ export const findDataField: FindNestedFieldFunc = (type, fieldsToIgnore, dataFie
     return undefined
   }
   const nestedField = potentialFields[0]
-  const nestedType = (isListType(nestedField.type)
-    ? nestedField.type.innerType
+  const nestedFieldType = await nestedField.getType()
+  const nestedType = isListType(nestedFieldType)
+    ? await nestedFieldType.getInnerType()
     // map type currently cannot be returned from nested fields
-    : nestedField.type)
+    : nestedFieldType
 
   if (!isObjectType(nestedType)) {
     log.info('unexpected field type for type %s field %s (%s), extracting full entry',

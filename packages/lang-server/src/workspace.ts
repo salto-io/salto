@@ -20,11 +20,11 @@ import { Workspace, nacl, errors, parser, validator, COMMON_ENV_PREFIX, elementS
 import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { transformElement, detailedCompare, TransformFunc } from '@salto-io/adapter-utils'
 
+
 const { validateElements } = validator
-]import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
 
@@ -111,36 +111,42 @@ export class EditorWorkspace {
   }
 
   private async elementsInFiles(filenames: string[]): Promise<ElemID[]> {
-    return (await Promise.all(
-      filenames.map(f => this.workspace.getParsedNaclFile(this.workspaceFilename(f)))
-    )).filter(values.isDefined)
+    return awu(filenames)
+      .map(f => this.workspace.getParsedNaclFile(this.workspaceFilename(f)))
+      .filter(values.isDefined)
       .flatMap(parsed => parsed.elements)
       .map(e => e.elemID)
+      .toArray()
   }
 
   private async getUnresolvedRefOfFile(filename: string, elements: ElemID[]):
   Promise<errors.UnresolvedReferenceValidationError[]> {
-    const fileElements = (await this.workspace.getParsedNaclFile(
+    const fileElements = (await (await this.workspace.getParsedNaclFile(
       this.workspaceFilename(filename)
-    ))?.elements ?? []
+    ))?.elements) ?? awu([])
     const validationErrors: errors.UnresolvedReferenceValidationError[] = []
     const getReferenceExpressions: TransformFunc = ({ value, path: elemPath }): Value => {
       if (isReferenceExpression(value) && elemPath) {
         elements.forEach(elem => {
-          if (elem.isEqual(value.elemId) || elem.isParentOf(value.elemId)) {
+          if (elem.isEqual(value.elemID) || elem.isParentOf(value.elemID)) {
             validationErrors.push(new errors.UnresolvedReferenceValidationError(
-              { elemID: elemPath, target: value.elemId }
+              { elemID: elemPath, target: value.elemID }
             ))
           }
         })
       }
       return value
     }
-    fileElements
+    await awu(fileElements)
       .filter(e => !isContainerType(e))
-      .forEach(element => {
-        transformElement({ element, transformFunc: getReferenceExpressions, strict: false })
-      })
+      .forEach(async element => (
+        transformElement({
+          element,
+          transformFunc: getReferenceExpressions,
+          strict: false,
+          elementsSource: await this.elements,
+        })
+      ))
     return validationErrors
   }
 
@@ -164,10 +170,11 @@ export class EditorWorkspace {
   }
 
   private async validateElements(ids: Set<string>): Promise<errors.ValidationError[]> {
-    const workspaceElements = await this.workspace.elements()
-    const elementsToValidate = workspaceElements
+    const workspaceElements = await (await this.workspace.elements()).getAll()
+    const elementsToValidate = await awu(workspaceElements)
       .filter(elem => ids.has(elem.elemID.getFullName()))
-    return validateElements(elementsToValidate, workspaceElements)
+      .toArray()
+    return validateElements(elementsToValidate, await this.workspace.elements())
   }
 
   private async getValidationErrors(files: string[], changes: Change[]):
@@ -263,9 +270,10 @@ export class EditorWorkspace {
   }
 
   async getElements(filename: string): Promise<AsyncIterable<Element>> {
-    return (
+    const elements = (
       await this.workspace.getParsedNaclFile(this.workspaceFilename(filename))
-      )?.elements.getAll() ?? awu([])
+      )?.elements ?? []
+    return awu(elements)
   }
 
   async getSourceMap(filename: string): Promise<parser.SourceMap> {

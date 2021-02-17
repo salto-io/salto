@@ -623,23 +623,21 @@ export const generateElements = async (
     )
     return [envSpecificObj, envSpecificInst, sharedObj, sharedInst]
   }
-
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
-  progressReporter?.reportProgress({ message: 'Generating primitive types' })
+  progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = await generatePrimitiveTypes()
-  progressReporter?.reportProgress({ message: 'Generating types' })
+  progressReporter.reportProgress({ message: 'Generating types' })
   const types = await generateTypes()
-  progressReporter?.reportProgress({ message: 'Generating objects' })
+  progressReporter.reportProgress({ message: 'Generating objects' })
   const objects = await generateObjects()
-  progressReporter?.reportProgress({ message: 'Generating records' })
+  progressReporter.reportProgress({ message: 'Generating records' })
   const records = await generateRecords()
-  progressReporter?.reportProgress({ message: 'Generating profile likes' })
+  progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
   const extraElements = params.extraNaclPath
     ? await generateExtraElements(params.extraNaclPath)
     : []
   const defaultExtraElements = await generateExtraElements(path.join(__dirname, 'data', 'fixtures'))
-  progressReporter?.reportProgress({ message: 'Generation done' })
   const envObjects = generateEnvElements()
   return [
     ...defaultTypes,

@@ -16,6 +16,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Field, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE, RECORD_TYPE,
@@ -24,6 +25,7 @@ import { customrecordtype_permissions_permission } from '../types/custom_types/c
 import { entryForm } from '../types/custom_types/entryForm'
 import { transactionForm } from '../types/custom_types/transactionForm'
 
+const { awu } = collections.asynciterable
 type InconsistentFieldMapping = {
   field: Field
   inconsistentValues: Value[]
@@ -86,7 +88,7 @@ const typeToFieldMappings: Record<string, InconsistentFieldMapping[]> = {
   [TRANSACTION_FORM]: [transactionFormRecordType],
 }
 
-const setConsistentValues = (instance: InstanceElement): void => {
+const setConsistentValues = async (instance: InstanceElement): Promise<void> => {
   const transformFunc = (
     fieldMappings: InconsistentFieldMapping[]
   ): TransformFunc => ({ value, field }) => {
@@ -98,11 +100,11 @@ const setConsistentValues = (instance: InstanceElement): void => {
     return value
   }
 
-  const fieldMappings = typeToFieldMappings[instance.type.elemID.name]
+  const fieldMappings = typeToFieldMappings[instance.refType.elemID.name]
   if (!fieldMappings) return
   instance.value = transformValues({
     values: instance.value,
-    type: instance.type,
+    type: await instance.getType(),
     transformFunc: transformFunc(fieldMappings),
     strict: false,
   }) ?? instance.value
@@ -117,7 +119,7 @@ const filterCreator: FilterCreator = () => ({
    * @param elements the already fetched elements
    */
   onFetch: async ({ elements }) => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
       .forEach(setConsistentValues)
   },

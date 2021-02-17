@@ -36,15 +36,15 @@ export const buildNewMergedElementsAndErrors = async ({
   currentErrors: RemoteMap<SaltoError[]>
   relevantElementIDs: AsyncIterable<ElemID>
   mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
-}): Promise<Change<Element>[]> => {
+}): Promise<Change[]> => {
   log.info('going to merge new elements to the existing elements')
-  const changes: Change<Element>[] = []
+  const changes: Change[] = []
   const newMergedElementsResult = await mergeFunc(newElements)
   const hasCurrentElements = !(await awu(await currentElements.getAll()).isEmpty())
   const hasCurrentErrors = !(await awu(currentErrors.values()).flat().isEmpty())
   if (!hasCurrentElements && !hasCurrentErrors) {
     await awu(newMergedElementsResult.merged.values()).forEach(async element => {
-      changes.push(toChange({ after: element }))
+      changes.push(toChange({ after: element }) as Change)
       await currentElements.set(element)
     })
     await currentErrors.setAll(newMergedElementsResult.errors.entries())

@@ -24,15 +24,15 @@ import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
-import { multiEnvSource, getSourceNameForFilename, deserializeElement } from './nacl_files/multi_env/multi_env_source'
-=import { ElementSelector } from './element_selector'
+import { multiEnvSource, getSourceNameForFilename } from './nacl_files/multi_env/multi_env_source'
+import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { mergeWithHidden, handleHiddenChanges } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
-import { updateMergedTypes, MergeError } from '../merger'
-import { InMemoryRemoteElementSource, RemoteElementSource, ElementsSource } from './elements_source'
-import { buildNewMergedElementsAndErrors, calcNewMerged, calcChanges } from './nacl_files/elements_cache'
+import { MergeError } from '../merger'
+import { RemoteElementSource, ElementsSource } from './elements_source'
+import { buildNewMergedElementsAndErrors } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../serializer/elements'
 
@@ -228,7 +228,7 @@ export const loadWorkspace = async (
   }
 
   const initChanges = await naclFilesSource.load()
-  await buildWorkspaceState({ changes: initChanges })
+  workspaceState = buildWorkspaceState({ changes: initChanges })
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
@@ -265,24 +265,17 @@ export const loadWorkspace = async (
     return elementChanges.length
   }
 
-  const updateStateAndReturnChanges = async (elementChanges: Change[]):
-  Promise<Change[]> => {
-    const changedElementIDs = elementChanges.map(e => getChangeElement(e).elemID.getFullName())
-    const allElements = (await getWorkspaceState()).elements
-    workspaceState = buildWorkspaceState({ changes: elementChanges })
-    const allElementsAfterChanges = (await getWorkspaceState()).elements
-    const newElements = _.pick(allElementsAfterChanges, changedElementIDs)
-    return calcChanges(changedElementIDs, allElements, newElements)
-  }
 
   const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<Change[]> => {
     const elementChanges = await naclFilesSource.setNaclFiles(...naclFiles)
-    return updateStateAndReturnChanges(elementChanges)
+    workspaceState = buildWorkspaceState({ changes: elementChanges })
+    return elementChanges
   }
 
   const removeNaclFiles = async (...names: string[]): Promise<Change[]> => {
     const elementChanges = await naclFilesSource.removeNaclFiles(...names)
-    return updateStateAndReturnChanges(elementChanges)
+    workspaceState = buildWorkspaceState({ changes: elementChanges })
+    return elementChanges
   }
 
   const getSourceFragment = async (
@@ -337,8 +330,10 @@ export const loadWorkspace = async (
     const errorsFromSource = await naclFilesSource.getErrors()
 
     const validationErrors = validate
-      ? validateElements(Object.values(resolvedElements.elements))
-      : []
+      ? await validateElements(
+        await awu(await resolvedElements.merged.getAll()).toArray(),
+        resolvedElements.merged
+      ) : []
 
     _(validationErrors)
       .groupBy(error => error.constructor.name)

@@ -23,7 +23,6 @@ import { ParseResultCache } from '../../../src/workspace/cache'
 
 import { mockStaticFilesSource } from '../../utils'
 import * as parser from '../../../src/parser'
-import { createInMemoryElementSource } from '../../../src/workspace/elements_source'
 import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
 import { ParsedNaclFileDataKeys } from '../../../src/workspace/nacl_files/nacl_files_source'
 
@@ -53,7 +52,7 @@ const validateParsedNaclFile = async (
   errors: SaltoError[],
 ): Promise<void> => {
   if (parsed) {
-    const parsedElements = await awu(await parsed.elements.getAll()).toArray()
+    const parsedElements = await awu(parsed.elements).toArray()
     expect(parsedElements).toEqual(elements)
     expect(await parsed.data.get('errors')).toEqual(errors)
     expect(parsed.filename).toEqual(filename)
@@ -264,7 +263,7 @@ describe('Nacl Files Source', () => {
       const filename = 'mytest.nacl'
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = createInMemoryElementSource([elem])
+      const elements = [elem]
       const parsedFiles = [
         {
           filename,
@@ -288,7 +287,7 @@ describe('Nacl Files Source', () => {
       const parsed = await (await naclSource).getParsedNaclFile(filename)
       expect(parsed).toBeDefined()
       expect(
-        await awu(await (parsed as ParsedNaclFile).elements.getAll()).toArray()
+        (parsed as ParsedNaclFile).elements
       ).toEqual([elem])
     })
   })

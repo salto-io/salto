@@ -60,7 +60,7 @@ export const toBasicInstance = ({
         ?? transformationDefaultConfig.fieldsToOmit
       )?.find(({ fieldName, fieldType }) => (
         fieldName === field.name
-        && (fieldType === undefined || fieldType === field.type.elemID.name)
+        && (fieldType === undefined || fieldType === field.refType.elemID.name)
       ))
       if (shouldOmit) {
         return undefined

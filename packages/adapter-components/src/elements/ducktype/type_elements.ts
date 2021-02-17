@@ -18,7 +18,7 @@ import {
   ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
   FieldDefinition,
 } from '@salto-io/adapter-api'
-import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { pathNaclCase, naclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault } from '../../config'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
 import { hideFields } from '../type_elements'
@@ -169,7 +169,7 @@ export const generateType = ({
   const fields: Record<string, FieldDefinition> = hasDynamicFields
     ? {
       value: {
-        type: new MapType(addNestedType(generateNestedType({
+        refType: createRefToElmWithValue(new MapType(addNestedType(generateNestedType({
           adapterName,
           typeName: 'value',
           parentName: name,
@@ -177,7 +177,7 @@ export const generateType = ({
           transformationConfigByType,
           transformationDefaultConfig,
           hasDynamicFields: false,
-        }))),
+        })))),
       },
     }
     : Object.fromEntries(
@@ -185,7 +185,7 @@ export const generateType = ({
         .map(fieldName => [
           fieldName,
           {
-            type: addNestedType(generateNestedType({
+            refType: createRefToElmWithValue(addNestedType(generateNestedType({
               adapterName,
               typeName: fieldName,
               parentName: name,
@@ -193,7 +193,7 @@ export const generateType = ({
               transformationConfigByType,
               transformationDefaultConfig,
               hasDynamicFields: false,
-            })),
+            }))),
           },
         ])
     )

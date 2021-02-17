@@ -120,10 +120,6 @@ const getLocalEnvName = (env: string): string => (env === COMMON_ENV_PREFIX
   ? env
   : path.join(ENVS_PREFIX, env))
 
-const getEnvPath = (baseDir: string, env: string): string => (
-  path.resolve(baseDir, getLocalEnvName(env))
-)
-
 export const loadLocalElementsSources = async (
   baseDir: string,
   localStorage: string,

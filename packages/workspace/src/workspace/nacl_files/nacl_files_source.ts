@@ -81,10 +81,6 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   load: () => Promise<Change<Element>[]>
 }
 
-// type ParsedNaclFileMap = {
-//   [key: string]: ParsedNaclFile
-// }
-
 type NaclFilesState = {
   parsedNaclFiles: ParsedNaclFileCache
   elementsIndex: RemoteMap<string[]>
@@ -182,7 +178,6 @@ const parseNaclFile = async (
   naclFile: NaclFile, _cache: ParsedNaclFileCache, functions: Functions
 ): Promise<Required<ParseResult>> => {
   const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename, functions)
-  // await cache.put(naclFile.filename, await toParsedNaclFile(naclFile, parseResult))
   return parseResult
 }
 
@@ -555,7 +550,6 @@ const buildNaclFilesSource = (
         .toArray()
     )
     const { parsedNaclFiles } = await getState()
-    // TODO: Not sure why we can't use the filename directly
     const changedFileToSourceMap: Record<string, SourceMap> = Object.fromEntries(
       (await withLimitedConcurrency(naclFiles
         .map(naclFile => async () => {

@@ -61,9 +61,11 @@ export type ParsedNaclFileCache = {
 const isMD5Equal = (
   cacheMD5: string,
   buffer?: ContentType
-): boolean => (buffer === undefined ? false : (hash.toMD5(buffer) === cacheMD5))
+): boolean => ((buffer === undefined || buffer === '')
+  ? false
+  : (hash.toMD5(buffer) === cacheMD5))
 
-const shouldReturnCacheData = (
+const isCacheDataRelevant = (
   key: ParseResultKey,
   fileCacheMetadata: FileCacheMetdata,
 ): boolean => (
@@ -239,7 +241,7 @@ export const createParseResultCache = (
       if (fileMetadata === undefined) {
         return false
       }
-      return shouldReturnCacheData(key, fileMetadata)
+      return isCacheDataRelevant(key, fileMetadata)
     },
     getAllErrors: async (): Promise<ParseError[]> => {
       const errorsSources = await getErrors(actualCacheName, remoteMapCreator)

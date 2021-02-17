@@ -315,12 +315,15 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...Types.getAllMissingTypes(),
       ...Types.getAnnotationTypes(),
     ]
-    const metadataTypeInfos = this.listMetadataTypes()
+    const metadataTypeInfosPromise = this.listMetadataTypes()
     const metadataTypesPromise = this.fetchMetadataTypes(
-      metadataTypeInfos,
+      metadataTypeInfosPromise,
       hardCodedTypes,
     )
-    const metadataInstances = this.fetchMetadataInstances(metadataTypeInfos, metadataTypesPromise)
+    const metadataInstancesPromise = this.fetchMetadataInstances(
+      metadataTypeInfosPromise,
+      metadataTypesPromise
+    )
 
     const metadataTypes = await metadataTypesPromise
     progressReporter.reportProgress({ message: 'Finished fetching types. Fetching instances' })
@@ -328,7 +331,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const {
       elements: metadataInstancesElements,
       configChanges: metadataInstancesConfigInstances,
-    } = await metadataInstances
+    } = await metadataInstancesPromise
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
     const elements = [

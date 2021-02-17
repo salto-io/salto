@@ -1363,7 +1363,7 @@ export const createMetadataTypeElements = async ({
   )
 
   const allFields = fields.concat(missingFields[name] ?? [])
-  if (!allFields || _.isEmpty(allFields)) {
+  if (_.isEmpty(allFields)) {
     if (shouldCreateIdField()) {
       createIdField(element)
     }

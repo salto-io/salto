@@ -16,29 +16,31 @@
 import { ValueTypeField } from 'jsforce-types'
 import missingFieldsData from './missing_fields.json'
 
-
-type FullRawFieldData = {
+// The following types describe the data in missing_fields.json
+type FullMissingFieldDefinition = {
   name: string
   type: string
   picklistValues?: string[]
 }
 
-type BooleanRawFieldData = {
+type BooleanMissingFieldDefinition = {
   boolean: string[]
 }
 
-type RawFieldData = FullRawFieldData | BooleanRawFieldData
+type MissingFieldDefinition = FullMissingFieldDefinition | BooleanMissingFieldDefinition
 
-export type RawMissingFieldData = {
+export type MissingFieldsDataItem = {
   id: string
-  fields: (RawFieldData | BooleanRawFieldData)[]
+  fields: MissingFieldDefinition[]
 }
 
-const isBooleanRawFieldData = (fieldData: RawFieldData): fieldData is BooleanRawFieldData => (
+const isBooleanRawFieldData = (
+  fieldData: MissingFieldDefinition
+): fieldData is BooleanMissingFieldDefinition => (
   'boolean' in fieldData
 )
 
-const toValueTypeField = (fieldData: FullRawFieldData): ValueTypeField => ({
+const toValueTypeField = (fieldData: FullMissingFieldDefinition): ValueTypeField => ({
   name: fieldData.name,
   soapType: fieldData.type,
   valueRequired: false,
@@ -52,18 +54,18 @@ const toValueTypeField = (fieldData: FullRawFieldData): ValueTypeField => ({
     : [],
 })
 
-const getFieldsFromFieldData = (fieldData: RawFieldData): ValueTypeField[] => (
+const getFieldsFromFieldData = (fieldData: MissingFieldDefinition): ValueTypeField[] => (
   isBooleanRawFieldData(fieldData)
     ? fieldData.boolean.map(name => toValueTypeField({ name, type: 'boolean' }))
     : [toValueTypeField(fieldData)]
 )
 
 export const convertRawMissingFields = (
-  rawMissingFields: RawMissingFieldData[]
+  missingFieldDefinitions: MissingFieldsDataItem[]
 ): Record<string, ValueTypeField[]> => Object.fromEntries(
-  rawMissingFields.map(({ id, fields }) => [id, fields.flatMap(getFieldsFromFieldData)])
+  missingFieldDefinitions.map(({ id, fields }) => [id, fields.flatMap(getFieldsFromFieldData)])
 )
 
 export const defaultMissingFields = (): Record<string, ValueTypeField[]> => (
-  convertRawMissingFields(missingFieldsData as unknown as RawMissingFieldData[])
+  convertRawMissingFields(missingFieldsData as unknown as MissingFieldsDataItem[])
 )

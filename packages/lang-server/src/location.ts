@@ -94,7 +94,6 @@ export const getStaticLocations = (
   if (_.isUndefined(staticFileAttributes)) {
     return undefined
   }
-
   if (staticFileAttributes.staticFile instanceof staticFiles.AbsoluteStaticFile
     && token.type === 'content'
     && staticFileAttributes.staticFile.filepath === token.value) {

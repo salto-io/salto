@@ -66,12 +66,11 @@ export const createMockNaclFileSource = (
     }))),
   getErrors: jest.fn().mockImplementation(() => Promise.resolve(errors)),
   getParsedNaclFile: jest.fn().mockImplementation(async filename => {
-    const elementsRc = createInMemoryElementSource(naclFiles[filename] || [])
     return {
       filename,
       errors: [],
       timestamp: Date.now(),
-      elements: elementsRc,
+      elements: naclFiles[filename] || [],
       buffer: '',
     }
   }),

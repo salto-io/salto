@@ -478,7 +478,7 @@ describe('workspace', () => {
     })
 
     it('should return the correct changes', async () => {
-      expect(changes).toHaveLength(23)
+      expect(changes).toHaveLength(24)
       expect((changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
       const multiLocChange = changes.find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))

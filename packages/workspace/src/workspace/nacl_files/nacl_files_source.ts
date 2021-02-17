@@ -25,7 +25,7 @@ import { MergeError, mergeElements } from '../../merger'
 import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
   getNestedStaticFiles } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
-import { ElementsSource, RemoteElementSource, createInMemoryElementSource } from '../elements_source'
+import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { ParseResultCache, ParseResultKey } from '../cache'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
@@ -83,7 +83,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
 export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
 export type ParsedNaclFile = {
   filename: string
-  elements: RemoteElementSource
+  elements: Element[]
   data: RemoteMap<Value, ParsedNaclFileDataKeys>
   buffer?: string
 }
@@ -183,11 +183,9 @@ export const toParsedNaclFile = async (
   naclFile: Omit<NaclFile, 'buffer'>,
   parseResult: ParseResult
 ): Promise<ParsedNaclFile> => {
-  const elements = createInMemoryElementSource()
-  await elements.overide(parseResult.elements)
   return {
     filename: naclFile.filename,
-    elements,
+    elements: await awu(parseResult.elements).toArray(),
     data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
       { key: 'timestamp', value: naclFile.timestamp || Date.now() },
       { key: 'errors', value: parseResult.errors },
@@ -302,20 +300,18 @@ const buildNaclFilesState = async ({
         ?? new Set<string>()
       referencedIndexAdditions[elementFullName].add(naclFile.filename)
     })
-    await awu(await naclFile.elements.getAll()).forEach(element => {
+    await awu(await naclFile.elements).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexAdditions[elementFullName] = elementsIndexAdditions[elementFullName]
         ?? new Set<string>()
       elementsIndexAdditions[elementFullName].add(naclFile.filename)
     })
     relevantElementIDs.push(
-      ...await awu(await naclFile.elements.list()).toArray(),
-      ...await awu(
-        await currentState.parsedNaclFiles[naclFile.filename]?.elements.list() ?? []
-      ).toArray(),
+      ... naclFile.elements.map(e => e.elemID),
+      ... currentState.parsedNaclFiles[naclFile.filename]?.elements.map(e => e.elemID) ?? []
     )
 
-    newElementsToMerge.push(await naclFile.elements.getAll())
+    newElementsToMerge.push(awu(naclFile.elements))
     currentState.parsedNaclFiles[naclFile.filename] = naclFile
   }
 
@@ -329,19 +325,19 @@ const buildNaclFilesState = async ({
         ?? new Set<string>()
       referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
-    await awu(await oldNaclFile.elements.getAll()).forEach(element => {
+    await awu(await oldNaclFile.elements).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName]
         ?? new Set<string>()
       elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
-    relevantElementIDs.push(...await awu(await oldNaclFile.elements.list()).toArray())
+    relevantElementIDs.push(...oldNaclFile.elements.map(e => e.elemID))
     delete currentState.parsedNaclFiles[naclFile.filename]
   }
 
   // Add data from bew additions
   await awu(Object.values(newParsed)).forEach(async naclFile => {
-    const isDeletion = await awu(await naclFile.elements.getAll()).isEmpty()
+    const isDeletion = await awu(naclFile.elements).isEmpty()
       && _.isEmpty(await naclFile.data.get('errors'))
     if (isDeletion) {
       await handleDeletion(naclFile)
@@ -358,7 +354,7 @@ const buildNaclFilesState = async ({
       ).filter((filename: string) => newParsed[filename] === undefined)
 
       return awu(unmodifiedFilesWithElem)
-        .map(filename => currentState.parsedNaclFiles[filename].elements.get(elemID))
+        .map(filename => currentState.parsedNaclFiles[filename].elements.find(e => e.elemID.isEqual(elemID)))
     }).filter(values.isDefined) as AsyncIterable<Element>
 
   await updateIndex(
@@ -419,14 +415,14 @@ const buildNaclFilesSource = (
     change: AdditionDiff<Element>,
     fileData: string,
   ): Promise<ParsedNaclFile> => {
-    const elements = createInMemoryElementSource([
+    const elements = [
       (change as AdditionDiff<Element>).data.after,
-    ])
+    ]
     const parsed = {
       filename,
       elements,
       data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-        { key: 'referenced', value: await awu(await elements.getAll()).flatMap(getElementReferenced).toArray() },
+        { key: 'referenced', value: await awu(elements).flatMap(getElementReferenced).toArray() },
         { key: 'errors', value: [] },
         { key: 'timestamp', value: Date.now() },
       ]),
@@ -434,7 +430,7 @@ const buildNaclFilesSource = (
     const key = cacheResultKey({ filename: parsed.filename,
       buffer: fileData,
       timestamp: await parsed.data.get('timestamp') })
-    await cache.put(key, { elements: await elements.getAll(), errors: [] })
+    await cache.put(key, { elements, errors: [] })
     return parsed
   }
 
@@ -519,7 +515,7 @@ const buildNaclFilesSource = (
       topLevelID.parent.getFullName()
     ) ?? []
     return (await Promise.all(topLevelFiles.map(async filename => {
-      const fragments = await (await getParsedNaclFile(filename))?.elements.getAll() ?? []
+      const fragments = (await getParsedNaclFile(filename))?.elements ?? []
       return values.isDefined(
         await awu(fragments).find(fragment => resolvePath(fragment, elemID) !== undefined)
       ) ? filename : undefined

@@ -21,12 +21,11 @@ import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
+import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
-import { mockStaticFilesSource } from '../../utils'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
 import * as parser from '../../../src/parser'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
-import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -37,18 +36,6 @@ describe('Nacl Files Source', () => {
   const mockDirStoreGet = jest.fn()
 
   beforeEach(() => {
-    mockCache = {
-      get: jest.fn().mockResolvedValue(undefined),
-      put: jest.fn().mockResolvedValue(undefined),
-      clone: () => mockCache,
-      flush: () => Promise.resolve(),
-      clear: () => Promise.resolve(),
-      rename: () => Promise.resolve(),
-      delete: () => Promise.resolve(),
-      list: () => Promise.resolve([]),
-      getAllErrors: () => Promise.resolve([]),
-      hasValid: () => Promise.resolve(true),
-    }
     mockDirStore = {
       list: () => Promise.resolve([]),
       isEmpty: () => Promise.resolve(false),
@@ -66,6 +53,11 @@ describe('Nacl Files Source', () => {
       getFullPath: filename => filename,
     }
     mockedStaticFilesSource = mockStaticFilesSource()
+    mockCache = createParseResultCache(
+      'test',
+      persistentMockCreateRemoteMap(),
+      mockStaticFilesSource(),
+    )
   })
 
   describe('change inner state', () => {
@@ -122,7 +114,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockCache,
         mockedStaticFilesSource,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        persistentMockCreateRemoteMap(),
         parsedNaclFiles
       )
       await naclFileSourceTest.getAll()
@@ -328,7 +320,7 @@ describe('Nacl Files Source', () => {
               mockDirStore,
               mockCache,
               mockedStaticFilesSource,
-              () => Promise.resolve(new InMemoryRemoteMap()),
+              persistentMockCreateRemoteMap(),
               parsedNaclFiles,
             )
           })

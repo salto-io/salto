@@ -19,9 +19,9 @@ import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
+import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
-import { mockStaticFilesSource } from '../../utils'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
 import * as parser from '../../../src/parser'
 import { createInMemoryElementSource } from '../../../src/workspace/elements_source'
 import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
@@ -68,18 +68,18 @@ describe('Nacl Files Source', () => {
   const mockParse = parser.parse as jest.Mock
 
   beforeEach(() => {
-    mockCache = {
-      get: jest.fn().mockResolvedValue(undefined),
-      put: jest.fn().mockResolvedValue(undefined),
-      clone: () => mockCache,
-      flush: () => Promise.resolve(),
-      clear: () => Promise.resolve(),
-      rename: () => Promise.resolve(),
-      delete: () => Promise.resolve(),
-      list: () => Promise.resolve([]),
-      getAllErrors: () => Promise.resolve([]),
-      hasValid: () => Promise.resolve(true),
-    }
+    // mockCache = {
+    //   get: jest.fn().mockResolvedValue(undefined),
+    //   put: jest.fn().mockResolvedValue(undefined),
+    //   clone: () => mockCache,
+    //   flush: () => Promise.resolve(),
+    //   clear: () => Promise.resolve(),
+    //   rename: () => Promise.resolve(),
+    //   delete: () => Promise.resolve(),
+    //   list: () => Promise.resolve([]),
+    //   getAllErrors: () => Promise.resolve([]),
+    //   hasValid: () => Promise.resolve(true),
+    // }
     mockDirStore = {
       list: () => Promise.resolve([]),
       isEmpty: () => Promise.resolve(false),
@@ -97,6 +97,11 @@ describe('Nacl Files Source', () => {
       getFullPath: filename => filename,
     }
     mockedStaticFilesSource = mockStaticFilesSource()
+    mockCache = createParseResultCache(
+      'test',
+      persistentMockCreateRemoteMap(),
+      mockStaticFilesSource(),
+    )
     mockParse.mockResolvedValue({ elements: [], errors: [] })
   })
 
@@ -316,8 +321,8 @@ describe('Nacl Files Source', () => {
     it('should return parseResult when parse cache is not updated', async () => {
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = [elem];
-      (mockCache.get as jest.Mock).mockResolvedValueOnce(undefined);
+      const elements = [elem]
+      jest.spyOn(mockCache, 'get').mockResolvedValueOnce(undefined);
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
       mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
       await validateParsedNaclFile(
@@ -332,14 +337,17 @@ describe('Nacl Files Source', () => {
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
       const elements = [elem];
-      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData);
-      (mockCache.get as jest.Mock).mockImplementation(async () => toParsedNaclFile(
-        mockFileData,
-        {
-          elements,
-          errors: [],
-        }
-      ))
+      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
+      await mockCache.put(
+        mockFileData.filename,
+        await toParsedNaclFile(
+          mockFileData,
+          {
+            elements,
+            errors: [],
+          }
+        )
+      )
       await validateParsedNaclFile(
         await naclSource.getParsedNaclFile(mockFileData.filename),
         mockFileData.filename,

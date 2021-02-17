@@ -17,9 +17,10 @@ import _ from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes } from '@salto-io/adapter-utils'
-import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField, DetailedChange, isRemovalChange,
-  ElemID, isObjectType, ObjectType, Values, isRemovalOrModificationChange, isAdditionOrModificationChange, 
-  isElement, isField, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
+  DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
+  isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
+  ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -115,10 +116,8 @@ const getElementHiddenParts = async <T extends Element>(
     strict: true,
     elementsSource,
   })
-
   // remove all annotation types from the hidden element so they don't cause merge conflicts
   hidden.annotationRefTypes = {}
-
   if (isObjectType(hidden) && isObjectType(workspaceElement)) {
     // filter out fields that were deleted in the workspace (unless the field itself is hidden)
     const workspaceFields = new Set(Object.keys(workspaceElement.fields))
@@ -154,7 +153,7 @@ export const mergeWithHidden = async (
   const hiddenStateElements = partial
     ? awu(hiddenChangedElemIDs).map(id => state.get(id))
     : awu(await state.getAll())
-      .filter(async element => isHidden(element, state))
+      .filter(element => isHidden(element, state))
   const workspaceElementsWithHiddenParts = awu(workspaceElements)
     .flatMap(async (elem): Promise<Element[]> => {
       const stateElement = await state.get(elem.elemID)
@@ -168,9 +167,9 @@ export const mergeWithHidden = async (
   )
 }
 
-const removeHidden = (): TransformFunc =>
-  ({ value, field }) => (
-    isHiddenValue(field) ? undefined : value)
+const removeHidden = (elementsSource: ReadOnlyElementsSource): TransformFunc =>
+  async ({ value, field }) => (
+    await isHidden(field, elementsSource) ? undefined : value)
 
 const removeHiddenValue = (): TransformFunc =>
   ({ value, field }) => (
@@ -178,13 +177,17 @@ const removeHiddenValue = (): TransformFunc =>
 
 const removeHiddenFromElement = <T extends Element>(
   element: T,
+  elementsSource: ReadOnlyElementsSource
 ): Promise<T> => (
-  transformElement({
-    element,
-    transformFunc: isInstanceElement(element) ? removeHiddenValue : removeHidden,
-    strict: false,
-  })
-)
+    transformElement({
+      element,
+      transformFunc: isInstanceElement(element)
+        ? removeHiddenValue()
+        : removeHidden(elementsSource),
+      strict: false,
+      elementsSource,
+    })
+  )
 
 const removeHiddenFromValues = (
   type: ObjectType,
@@ -408,7 +411,7 @@ const filterOutHiddenChanges = async (
       // Remove nested hidden parts of instances, object types and fields
       return applyFunctionToChangeData(
         change,
-        element => removeHiddenFromElement(element),
+        element => removeHiddenFromElement(element, state),
       )
     }
 
@@ -421,7 +424,7 @@ const filterOutHiddenChanges = async (
       }> => {
         if (change.id.isAttrID()) {
           return {
-            changeType: elementAnnotationTypes(baseElem)[path[0]],
+            changeType: (await elementAnnotationTypes(baseElem, state))[path[0]],
             changePath: path.slice(1),
           }
         }
@@ -435,7 +438,7 @@ const filterOutHiddenChanges = async (
         // idType === 'field'
         return {
           // changeType will be undefined if the path is too short
-          changeType: elementAnnotationTypes(baseElem.fields[path[0]])[path[1]],
+          changeType: (await elementAnnotationTypes(baseElem.fields[path[0]], state))[path[1]],
           changePath: path.slice(2),
         }
       }
@@ -454,7 +457,7 @@ const filterOutHiddenChanges = async (
       if (await isHiddenField(
         changeType,
         changePath,
-        isInstanceElement(baseElem), 
+        isInstanceElement(baseElem),
         state
       )) {
         // The change is inside a hidden field value, omit the change

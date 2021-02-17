@@ -49,7 +49,6 @@ module.exports = {
     },
     plugins: ['react', 'import', 'jest', '@typescript-eslint', 'header'],
     rules: {
-        '@typescript-eslint/no-floating-promises': 2,
         'header/header': [2, "block",
             [
                 "",

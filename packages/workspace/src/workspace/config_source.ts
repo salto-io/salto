@@ -60,16 +60,17 @@ export const configSource = (
       log.error('failed to parse %s due to %o', name, parseResult.errors)
       throw new ConfigParseError(name)
     }
-    if (parseResult.elements.length > 1) {
+    const elements = await awu(parseResult.elements).toArray()
+    if (elements.length > 1) {
       log.warn('%s has more than a single element in the config file; returning the first element',
         name)
     }
-    const configInstance = parseResult.elements.find(isInstanceElement)
+    const configInstance = elements.find(isInstanceElement)
     if (configInstance === undefined) {
       log.warn(
         'failed to find config instance for %s, found the following elements: %s',
         name,
-        parseResult.elements.map(elem => elem.elemID.getFullName()).join(','),
+        elements.map(elem => elem.elemID.getFullName()).join(','),
       )
       return undefined
     }

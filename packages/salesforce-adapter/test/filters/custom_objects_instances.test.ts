@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'

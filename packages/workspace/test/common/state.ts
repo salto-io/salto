@@ -13,18 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
-import { PathIndex } from '../../src/workspace/path_index'
 import { State, buildInMemState } from '../../src/workspace/state'
+import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
+import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 
 export const mockState = (
   elements: Element[] = [],
 ): State => (
   buildInMemState(async () => ({
-    elements: _.keyBy(elements, elem => elem.elemID.getFullName()),
-    pathIndex: new PathIndex(),
-    servicesUpdateDate: {},
+    elements: createInMemoryElementSource(elements),
+    pathIndex: new InMemoryRemoteMap(),
+    servicesUpdateDate: new InMemoryRemoteMap(),
     saltoVersion: '0.0.1',
+    saltoMetadata: new InMemoryRemoteMap(),
   }))
 )

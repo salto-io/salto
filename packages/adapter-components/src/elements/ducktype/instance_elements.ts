@@ -24,9 +24,9 @@ import { toBasicInstance, InstanceCreationParams } from '../instance_elements'
  *    nested under a 'value' field in order to allow the type to define
  *    this as a map type.
  */
-export const toInstance = (args: InstanceCreationParams & {
+export const toInstance = async (args: InstanceCreationParams & {
   hasDynamicFields?: boolean
-}): InstanceElement | undefined => {
+}): Promise<InstanceElement | undefined> => {
   const inst = toBasicInstance({
     ...args,
     entry: args.hasDynamicFields ? { value: args.entry } : args.entry,

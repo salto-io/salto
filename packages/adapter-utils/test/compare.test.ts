@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes, 
+import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes,
   PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '../src/compare'
 

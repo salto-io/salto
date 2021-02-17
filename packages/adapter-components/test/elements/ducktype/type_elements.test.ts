@@ -32,6 +32,7 @@ import { ObjectType, Values, ElemID, BuiltinTypes, MapType, ListType } from '@sa
 // eslint-disable-next-line
 import { generateType, toNestedTypeName } from '../../../src/elements/ducktype'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements'
+import { createRefToElmWithValue } from '../../../src/utils'
 
 /* eslint-disable @typescript-eslint/camelcase */
 const ADAPTER_NAME = 'myAdapter'
@@ -108,45 +109,47 @@ describe('ducktype_type_elements', () => {
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
         fields: {
-          id: { type: BuiltinTypes.NUMBER },
-          api_collection_id: { type: BuiltinTypes.NUMBER },
-          flow_id: { type: BuiltinTypes.NUMBER },
-          flow_ids: { type: new ListType(BuiltinTypes.NUMBER) },
-          name: { type: BuiltinTypes.STRING },
-          method: { type: BuiltinTypes.STRING },
-          url: { type: BuiltinTypes.STRING },
-          legacy_url: { type: BuiltinTypes.UNKNOWN },
-          base_path: { type: BuiltinTypes.STRING },
-          path: { type: BuiltinTypes.STRING },
-          active: { type: BuiltinTypes.BOOLEAN },
-          legacy: { type: BuiltinTypes.BOOLEAN },
-          created_at: { type: BuiltinTypes.STRING },
-          updated_at: { type: BuiltinTypes.STRING },
-          field_with_complex_type: { type: nestedTypes[0] },
-          field_with_complex_list_type: { type: new ListType(nestedTypes[2]) },
+          id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          api_collection_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          flow_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          flow_ids: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
+          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          method: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          url: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          legacy_url: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
+          base_path: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          path: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          active: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+          legacy: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+          created_at: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          updated_at: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          field_with_complex_type: { refType: createRefToElmWithValue(nestedTypes[0]) },
+          field_with_complex_list_type: {
+            refType: createRefToElmWithValue(new ListType(nestedTypes[2])),
+          },
         },
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(3)
       expect(nestedTypes[0].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type'),
         fields: {
-          number: { type: BuiltinTypes.NUMBER },
-          nested_type: { type: nestedTypes[1] },
+          number: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          nested_type: { refType: createRefToElmWithValue(nestedTypes[1]) },
         },
       }))).toBeTruthy()
       expect(nestedTypes[1].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type__nested_type'),
         fields: {
-          val: { type: BuiltinTypes.STRING },
-          another_val: { type: BuiltinTypes.UNKNOWN },
-          abc: { type: BuiltinTypes.STRING },
-          unknown: { type: BuiltinTypes.UNKNOWN },
+          val: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          another_val: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
+          abc: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          unknown: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
         },
       }))).toBeTruthy()
       expect(nestedTypes[2].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_list_type'),
         fields: {
-          number: { type: BuiltinTypes.NUMBER },
+          number: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
         },
       }))).toBeTruthy()
     })
@@ -189,26 +192,26 @@ describe('ducktype_type_elements', () => {
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
         fields: {
-          id: { type: BuiltinTypes.NUMBER },
-          name: { type: BuiltinTypes.STRING },
-          active: { type: BuiltinTypes.BOOLEAN },
-          only_exists_once: { type: BuiltinTypes.UNKNOWN },
-          field_with_complex_type: { type: nestedTypes[0] },
+          id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          active: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+          only_exists_once: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
+          field_with_complex_type: { refType: createRefToElmWithValue(nestedTypes[0]) },
         },
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(2)
       expect(nestedTypes[0].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type'),
         fields: {
-          number: { type: BuiltinTypes.NUMBER },
-          nested_type: { type: nestedTypes[1] },
+          number: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          nested_type: { refType: createRefToElmWithValue(nestedTypes[1]) },
         },
       }))).toBeTruthy()
       expect(nestedTypes[1].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type__nested_type'),
         fields: {
-          val: { type: BuiltinTypes.STRING },
-          another_val: { type: BuiltinTypes.UNKNOWN },
+          val: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          another_val: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
         },
       }))).toBeTruthy()
     })
@@ -229,7 +232,7 @@ describe('ducktype_type_elements', () => {
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
         fields: {
-          value: { type: new MapType(BuiltinTypes.STRING) },
+          value: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
         },
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
@@ -261,24 +264,24 @@ describe('ducktype_type_elements', () => {
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
         fields: {
-          value: { type: new MapType(nestedTypes[0]) },
+          value: { refType: createRefToElmWithValue(new MapType(nestedTypes[0])) },
         },
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(2)
       expect(nestedTypes[0].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__value'),
         fields: {
-          a: { type: BuiltinTypes.STRING },
-          b: { type: BuiltinTypes.NUMBER },
-          c: { type: BuiltinTypes.BOOLEAN },
-          complex: { type: nestedTypes[1] },
+          a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          b: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          c: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+          complex: { refType: createRefToElmWithValue(nestedTypes[1]) },
         },
       }))).toBeTruthy()
       expect(nestedTypes[1].isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName__value__complex'),
         fields: {
-          str: { type: BuiltinTypes.STRING },
-          num: { type: BuiltinTypes.NUMBER },
+          str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
         },
       }))).toBeTruthy()
     })
@@ -303,7 +306,7 @@ describe('ducktype_type_elements', () => {
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
         fields: {
-          value: { type: new MapType(BuiltinTypes.UNKNOWN) },
+          value: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.UNKNOWN)) },
         },
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)

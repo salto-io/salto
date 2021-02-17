@@ -13,5 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { State, StateData } from './state'
+export { State, StateData, StateMetadataKey } from './state'
 export { buildInMemState } from './in_mem'

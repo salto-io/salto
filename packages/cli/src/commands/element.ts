@@ -19,9 +19,9 @@ import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { listUnresolvedReferences } from '@salto-io/core'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
-import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { collections } from '@salto-io/lowerdash'
-import { CliOutput, CliExitCode, CliTelemetry } from '../types'
+import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
+import { CliOutput, CliExitCode } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
 import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
@@ -105,7 +105,9 @@ const moveElement = async (
   force: boolean
 ): Promise<CliExitCode> => {
   try {
-    const elemIds = await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs')
+    const elemIds = await awu(
+      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs')
+    ).toArray()
 
     if (!await shouldMoveElements(to, elemIds, cliOutput, force)) {
       return CliExitCode.Success
@@ -282,7 +284,9 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   }
 
   try {
-    const elemIds = await workspace.getElementIdsBySelectors(validSelectors)
+    const elemIds = await awu(
+      await workspace.getElementIdsBySelectors(validSelectors)
+    ).toArray()
     if (!await shouldCloneElements(toEnvs, elemIds, output, force ?? false)) {
       return CliExitCode.Success
     }

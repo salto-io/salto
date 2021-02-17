@@ -85,12 +85,12 @@ export const getDetailedChanges = async (
 const getChangeMap = async (
   before: elementSource.ElementsSource,
   after: elementSource.ElementsSource,
+  idFilters: IDFilter[]
 ): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
-    wu(await getDetailedChanges(
-      before,
-      after,
-    )).map(change => [change.id.getFullName(), change]).toArray(),
+    wu(await getDetailedChanges(before, after, idFilters))
+      .map(change => [change.id.getFullName(), change])
+      .toArray(),
   )
 
 const findNestedElementPath = (
@@ -369,14 +369,16 @@ const fetchAndProcessMergeErrors = async (
   }
 }
 
-export const getAdaptersFirstFetchPartial = (
-  elements: readonly Element[],
+export const getAdaptersFirstFetchPartial = async (
+  elements: ReadOnlyElementsSource,
   partiallyFetchedAdapters: Set<string>,
-): Set<string> => {
+): Promise<Set<string>> => {
   if (_.isEmpty(partiallyFetchedAdapters)) {
     return new Set()
   }
-  const adaptersWithElements = new Set(wu(elements).map(e => e.elemID.adapter))
+  const adaptersWithElements = new Set(
+    await awu(await elements.list()).map(elemID => elemID.adapter).toArray()
+  )
   return collections.set.difference(partiallyFetchedAdapters, adaptersWithElements)
 }
 
@@ -400,20 +402,27 @@ const calcFetchChanges = async (
   const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
   const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
 
+  const paritalFetchFilter: IDFilter = id => (
+    !partiallyFetchedAdapters.has(id.adapter) || mergedServiceElements.has(id)
+  )
+
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
       filteredStateElements,
       mergedServiceElements,
+      [paritalFetchFilter]
     ),
   'finished to calculate service-state changes')]
   const pendingChanges = await log.time(() => getChangeMap(
     filteredStateElements,
     filteredWorkspaceElements,
+    [paritalFetchFilter]
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     filteredWorkspaceElements,
     mergedServiceElements,
+    [paritalFetchFilter]
   ), 'finished to calculate service-workspace changes')
   const serviceElementsMap = _.groupBy(
     serviceElements,
@@ -450,7 +459,11 @@ export const fetchChanges = async (
     progressEmitter
   )
 
-  getAdaptersFirstFetchPartial(filteredStateElements, partiallyFetchedAdapters).forEach(
+  const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(
+    stateElements,
+    partiallyFetchedAdapters
+  )
+  adaptersFirstFetchPartial.forEach(
     adapter => log.warn('Received partial results from %s before full fetch', adapter)
   )
 
@@ -493,7 +506,7 @@ export const fetchChanges = async (
     .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
 
   const elements = partiallyFetchedAdapters.size !== 0
-    ? _(filteredStateElements)
+    ? _(await awu(await stateElements.getAll()).toArray())
       .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
       .unshift(...processErrorsResult.keptElements)
       .uniqBy(e => e.elemID.getFullName())

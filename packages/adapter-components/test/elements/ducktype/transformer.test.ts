@@ -37,6 +37,7 @@ import * as instanceElements from '../../../src/elements/ducktype/instance_eleme
 import * as transformer from '../../../src/elements/ducktype/transformer'
 import { HTTPClientInterface } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
+import { createRefToElmWithValue } from '../../../src/utils'
 
 describe('ducktype_transformer', () => {
   describe('simpleGetArgs', () => {
@@ -96,7 +97,7 @@ describe('ducktype_transformer', () => {
         return {
           type: new ObjectType({
             elemID: new ElemID(adapterName, name),
-            fields: { someNested: { type: someNested } },
+            fields: { someNested: { refType: createRefToElmWithValue(someNested) } },
           }),
           nestedTypes: [someNested, anotherNested],
         }
@@ -106,14 +107,14 @@ describe('ducktype_transformer', () => {
         transformationConfigByType,
         transformationDefaultConfig,
         entry,
-      }) => new InstanceElement(
+      }) => Promise.resolve(new InstanceElement(
         ((
           transformationConfigByType[type.elemID.name]?.idFields
           ?? transformationDefaultConfig.idFields
         ).map(f => entry[f]).filter(e => e !== undefined)).join('_') || 'bla',
         type,
         entry,
-      ))
+      )))
     })
 
     afterEach(() => {

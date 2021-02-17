@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { mockState } from '../common/state'
-import { mockFunction } from '../common/helpers'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { State } from '../../src/workspace/state'
+import { mockState } from '../common/state'
+import { mockFunction } from '../common/helpers'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
@@ -130,7 +129,7 @@ describe('mergeWithHidden', () => {
 
   describe('hidden annotation in field', () => {
     let result: MergeResult
-    beforeEach(() => {
+    beforeEach(async () => {
       const workspaceObject = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
@@ -151,13 +150,16 @@ describe('mergeWithHidden', () => {
       })
 
 
-      result = await mergeWithHidden([workspaceObject], [stateObject])
+      result = await mergeWithHidden(
+        awu([workspaceObject]),
+        createInMemoryElementSource([stateObject])
+      )
     })
-    it('should not have merge errors', () => {
-      expect(result.errors).toHaveLength(0)
+    it('should not have merge errors', async () => {
+      expect(await awu(result.errors.values()).flat().isEmpty()).toBeTruthy()
     })
-    it('should have the hidden annotation value', () => {
-      const object = result.merged.find(isObjectType)
+    it('should have the hidden annotation value', async () => {
+      const object = await awu(result.merged.values()).find(isObjectType) as ObjectType
       expect(object?.fields?.field?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('someUrl')
     })
   })
@@ -196,8 +198,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState(),
-          mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
-          new InMemoryRemoteElementSource([instance, instanceType])
+          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
         )
         expect(result).toHaveLength(1)
         filteredInstance = getChangeElement(result[0])
@@ -222,8 +223,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
-          mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
-          new InMemoryRemoteElementSource([instance, instanceType])
+          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
         )
       })
       it('should omit the whole change', () => {
@@ -253,8 +253,7 @@ describe('handleHiddenChanges', () => {
       const result = await handleHiddenChanges(
         [change],
         mockState([object]),
-        mockFunction<() => Promise<Element[]>>().mockResolvedValue([]),
-        new InMemoryRemoteElementSource([object])
+        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
       )
       expect(result.length).toBe(0)
     })

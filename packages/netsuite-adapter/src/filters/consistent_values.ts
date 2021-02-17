@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ENTRY_FORM, TRANSACTION_FORM, RECORD_TYPE } from '../constants'
 
+const { awu } = collections.asynciterable
 type InconsistentFieldMapping = {
   field: string
   inconsistentValues: Value[]
@@ -40,8 +42,8 @@ const typeToFieldsMapping: Record<string, InconsistentFieldMapping[]> = {
   [TRANSACTION_FORM]: [transactionFormRecordType],
 }
 
-const setConsistentValues = (instance: InstanceElement): void => {
-  const fieldsMappings = typeToFieldsMapping[instance.type.elemID.name]
+const setConsistentValues = async (instance: InstanceElement): Promise<void> => {
+  const fieldsMappings = typeToFieldsMapping[(await instance.getType()).elemID.name]
   if (!fieldsMappings) return
   fieldsMappings.forEach(fieldMapping => {
     if (fieldMapping.inconsistentValues.includes(instance.value[fieldMapping.field])) {
@@ -59,7 +61,7 @@ const filterCreator: FilterCreator = () => ({
    * @param elements the already fetched elements
    */
   onFetch: async ({ elements }) => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
       .forEach(setConsistentValues)
   },

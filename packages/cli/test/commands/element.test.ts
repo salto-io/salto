@@ -17,6 +17,7 @@ import open from 'open'
 import * as core from '@salto-io/core'
 import { ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { errors } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { CliExitCode } from '../../src/types'
 import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
@@ -24,6 +25,7 @@ import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
 import { formatTargetEnvRequired } from '../../src/formatter'
 
+const { awu } = collections.asynciterable
 
 const mockedList: typeof core.listUnresolvedReferences = (_workspace, completeFromEnv) => (
   completeFromEnv !== undefined
@@ -73,7 +75,7 @@ describe('Element command group', () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
-        workspace.getElementIdsBySelectors.mockResolvedValue([new ElemID('salto', 'Account')])
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
@@ -154,7 +156,7 @@ describe('Element command group', () => {
 
         const cliArgs = mocks.mockCliArgs()
         workspace = mocks.mockWorkspace({})
-        workspace.getElementIdsBySelectors.mockResolvedValue([selector])
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
           input: {
@@ -185,7 +187,7 @@ describe('Element command group', () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        workspace.getElementIdsBySelectors.mockResolvedValue([selector])
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
           input: {
@@ -343,7 +345,7 @@ Cloning the specified elements to inactive.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
-        workspace.getElementIdsBySelectors.mockResolvedValue([new ElemID('salto', 'Account')])
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await moveToEnvsAction({
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
@@ -478,7 +480,7 @@ Moving the specified elements to envs.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
-        workspace.getElementIdsBySelectors.mockResolvedValue([new ElemID('salto', 'Account')])
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
@@ -543,7 +545,7 @@ Moving the specified elements to envs.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        workspace.getElementIdsBySelectors.mockResolvedValue([selector])
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
           input: {
@@ -579,7 +581,7 @@ Moving the specified elements to envs.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        workspace.getElementIdsBySelectors.mockResolvedValue([selector])
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
           input: {

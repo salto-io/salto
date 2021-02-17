@@ -185,7 +185,6 @@ export const valueSuggestions = async (
 ): Promise<Suggestions> => {
   // If the annotating element is a list and we are not in a list content
   // we need to created one
-
   if (!_.isEmpty(valueToken)) return []
 
   if (isListType(valueType) && attrName) {
@@ -219,11 +218,12 @@ export const valueSuggestions = async (
 
 export const fieldSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
-  return getFieldNames(
+  const r = await getFieldNames(
     await params.ref.element.getType(params.elements),
     params.ref.path,
     params.elements
   )
+  return r
 }
 
 export const fieldValueSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
@@ -271,7 +271,6 @@ export const annoSuggestions = async (params: SuggestionsParams): Promise<Sugges
 
 export const annoValueSuggestions = async (params: SuggestionsParams): Promise<Suggestions> => {
   if (!params.ref) return []
-
   const attrName = params.tokens[0]
   const refPathWithAttr = getRefPathWithAttr(attrName, params.ref)
   const [annoName, ...refPath] = refPathWithAttr

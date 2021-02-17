@@ -234,14 +234,14 @@ describe('Internal IDs filter', () => {
       expect(inst2Deps).toHaveLength(2)
       expect(inst2Deps[0]).toBeInstanceOf(ReferenceExpression)
       // appears first because we sort by elem id
-      expect(inst2Deps[0].elemId.getFullName()).toEqual('salesforce.AnotherO.field.moreSpecial')
+      expect(inst2Deps[0].elemID.getFullName()).toEqual('salesforce.AnotherO.field.moreSpecial')
       expect(inst2Deps[1]).toBeInstanceOf(ReferenceExpression)
-      expect(inst2Deps[1].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
+      expect(inst2Deps[1].elemID.getFullName()).toEqual('salesforce.Obj.field.custom')
 
       const layoutInstDeps = elements[4].annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
       expect(layoutInstDeps).toHaveLength(1)
       expect(layoutInstDeps[0]).toBeInstanceOf(ReferenceExpression)
-      expect(layoutInstDeps[0].elemId.getFullName()).toEqual('salesforce.Obj.field.custom')
+      expect(layoutInstDeps[0].elemID.getFullName()).toEqual('salesforce.Obj.field.custom')
     })
 
     it('should have individual queries for types marked for individual query', () => {

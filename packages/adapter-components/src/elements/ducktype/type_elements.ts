@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
+import { createRefToElmWithValue } from '../../utils'
 
 const ID_SEPARATOR = '__'
 
@@ -148,13 +149,13 @@ export const generateType = ({
   const fields = hasDynamicFields
     ? {
       value: {
-        type: new MapType(addNestedType(generateNestedType({
+        refType: createRefToElmWithValue(new MapType(addNestedType(generateNestedType({
           adapterName,
           typeName: 'value',
           parentName: name,
           entries: entries.flatMap(Object.values).filter(entry => entry !== undefined),
           hasDynamicFields: false,
-        }))),
+        })))),
       },
     }
     : Object.fromEntries(
@@ -162,13 +163,13 @@ export const generateType = ({
         .map(fieldName => [
           fieldName,
           {
-            type: addNestedType(generateNestedType({
+            refType: createRefToElmWithValue(addNestedType(generateNestedType({
               adapterName,
               typeName: fieldName,
               parentName: name,
               entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
               hasDynamicFields: false,
-            })),
+            }))),
           },
         ])
     )

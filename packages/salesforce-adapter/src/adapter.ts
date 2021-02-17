@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement, 
-  FetchOptions, DeployOptions,ElemIdGetter, FetchResult, AdapterOperations, DeployResult, Change,
+  TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement,
+  FetchOptions, DeployOptions, ElemIdGetter, FetchResult, AdapterOperations, DeployResult, Change,
 } from '@salto-io/adapter-api'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
@@ -395,7 +395,7 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const result = await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
-        resolvedChanges as Change<InstanceElement>[], this.client,  this.fetchProfile.dataManagement,
+        resolvedChanges as Change<InstanceElement>[], this.client, this.fetchProfile.dataManagement,
       )
       : await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)

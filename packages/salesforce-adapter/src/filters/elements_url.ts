@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { CORE_ANNOTATIONS, Element, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { isCustomObject } from '../transformers/transformer'

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { values, collections, hash, strings, promises } from '@salto-io/lowerdash'
+import { collections, hash, strings, promises } from '@salto-io/lowerdash'
 import {
   getChangeElement, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,

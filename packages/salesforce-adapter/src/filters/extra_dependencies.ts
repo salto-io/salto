@@ -144,7 +144,7 @@ const addGeneratedDependencies = async (elem: Element, refElemIDs: ElemID[]): Pr
         ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
         ...newDependencies,
       ],
-      ref => ref.elemId.getFullName(),
+      ref => ref.elemID.getFullName(),
     )
   }
 }

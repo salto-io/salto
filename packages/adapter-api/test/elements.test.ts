@@ -73,89 +73,6 @@ describe('Test elements.ts', () => {
     expect(await ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
   })
 
-  //added in rebase
-  it('Should test getValuesThatNotInPrevOrDifferent func', () => {
-    const prevObjType = new ObjectType({
-      elemID: new ElemID('test', 'diff'),
-      annotationRefsOrTypes: {},
-      annotations: {},
-    })
-    const prevInstance = new InstanceElement('diff', new ReferenceExpression(prevObjType.elemID, prevObjType),
-      {
-        userPermissions: [
-          {
-            enabled: false,
-            name: 'ConvertLeads',
-          },
-        ],
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: false,
-            editable: false,
-          },
-        ],
-        description: 'old unit test instance profile',
-      },)
-    const newObjType = new ObjectType({
-      elemID: new ElemID('test', 'diff'),
-      annotationRefsOrTypes: {},
-      annotations: {},
-    })
-    const newInstance = new InstanceElement('diff', new ReferenceExpression(newObjType.elemID, newObjType),
-      {
-        userPermissions: [
-          {
-            enabled: false,
-            name: 'ConvertLeads',
-          },
-        ],
-        fieldPermissions: [
-          {
-            field: 'Lead.Fax',
-            readable: false,
-            editable: false,
-          },
-          {
-            editable: false,
-            field: 'Account.AccountNumber',
-            readable: false,
-          },
-        ],
-        applicationVisibilities: [
-          {
-            application: 'standard__ServiceConsole',
-            default: false,
-            visible: true,
-          },
-        ],
-        description: 'new unit test instance profile',
-      },)
-
-    expect(newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)).toMatchObject({
-      fieldPermissions: [
-        {
-          field: 'Lead.Fax',
-          readable: false,
-          editable: false,
-        },
-        {
-          editable: false,
-          field: 'Account.AccountNumber',
-          readable: false,
-        },
-      ],
-      applicationVisibilities: [
-        {
-          application: 'standard__ServiceConsole',
-          default: false,
-          visible: true,
-        },
-      ],
-      description: 'new unit test instance profile',
-    },)
-  })
-
   describe('isEqualElements and type guards', () => {
     const objT = new ObjectType({
       elemID: new ElemID('test', 'obj'),
@@ -261,7 +178,7 @@ describe('Test elements.ts', () => {
     it('should identify different instances with id change', () => {
       const instClone = new InstanceElement(
         'different_name',
-        inst.type,
+        inst.refType,
         inst.value
       )
       expect(isEqualElements(inst, instClone)).toBeFalsy()

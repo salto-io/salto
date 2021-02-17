@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
-import { promises } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
+
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
@@ -444,7 +444,8 @@ export class InstanceElement extends PlaceholderTypeElement {
   }
 
   isEqual(other: InstanceElement): boolean {
-    return this.refType.elemID.isEqual(other.refType.elemID)
+    return super.isEqual(other)
+      && this.refType.elemID.isEqual(other.refType.elemID)
       && isEqualValues(this.value, other.value)
   }
 
@@ -565,7 +566,6 @@ export type ReadOnlyElementsSource = {
   list: () => Promise<AsyncIterable<ElemID>>
   getAll: () => Promise<AsyncIterable<Element>>
   has: (id: ElemID) => Promise<boolean>
-  getSync(id: ElemID): Value
   get(id: ElemID): Promise<Value>
 }
 
@@ -585,5 +585,5 @@ export const placeholderReadonlyElementsSource = {
   },
   async has(_id: ElemID): Promise<boolean> {
     return true
-  }
+  },
 }

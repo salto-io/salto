@@ -28,7 +28,6 @@ const { awu } = collections.asynciterable
 
 type FileCacheMetdata = {
   timestamp: number
-  lastModified: number
   hash: string
 }
 
@@ -68,8 +67,8 @@ const shouldReturnCacheData = (
   key: ParseResultKey,
   fileCacheMetadata: FileCacheMetdata,
 ): boolean => (
-  isMD5Equal(fileCacheMetadata.hash, key.buffer)
-  || fileCacheMetadata.timestamp >= key.lastModified
+  fileCacheMetadata.timestamp >= key.lastModified
+  || isMD5Equal(fileCacheMetadata.hash, key.buffer)
 )
 
 const parseNaclFileFromCacheSources = async (
@@ -87,7 +86,7 @@ const parseNaclFileFromCacheSources = async (
     data: {
       errors: await cacheSources.errors.get(filename) ?? [],
       referenced: await cacheSources.referenced.get(filename) ?? [],
-      timestamp: (await cacheSources.metadata.get(filename))?.lastModified ?? Date.now(),
+      timestamp: (await cacheSources.metadata.get(filename))?.timestamp ?? Date.now(),
     },
     sourceMap: await cacheSources.sourceMap.get(filename),
   }
@@ -232,8 +231,7 @@ export const createParseResultCache = (
       await elements.set(value.filename, await awu(await value.elements.getAll()).toArray())
       await metadata.set(filename, {
         hash: hash.toMD5(value.buffer ?? ''),
-        timestamp: Date.now(),
-        lastModified: value.data.timestamp,
+        timestamp: value.data.timestamp,
       })
     },
     hasValid: async (key: ParseResultKey): Promise<boolean> => {

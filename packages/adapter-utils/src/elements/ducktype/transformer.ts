@@ -25,7 +25,7 @@ import { RequestConfig, ElementTranslationConfig, EndpointConfig } from './endpo
 import { FindNestedFieldFunc } from './field_finder'
 
 const { makeArray } = collections.array
-const { toArrayAsync } = collections.asynciterable
+const { toArrayAsync, awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
@@ -113,11 +113,11 @@ export const getTypeAndInstances = async ({
     hasDynamicFields: hasDynamicFields === true,
   })
   // find the field and type containing the actual instances
-  const nestedFieldDetails = nestedFieldFinder(type, topLevelFieldsToOmit, keepOriginal)
+  const nestedFieldDetails = await nestedFieldFinder(type, topLevelFieldsToOmit, keepOriginal)
 
-  const instances = naclEntries.flatMap((entry, index) => {
+  const instances = await awu(naclEntries).flatMap(async (entry, index) => {
     if (nestedFieldDetails !== undefined) {
-      return makeArray(entry[nestedFieldDetails.field.name]).map(
+      return awu(makeArray(entry[nestedFieldDetails.field.name])).map(
         (nestedEntry, nesteIndex) => toInstance({
           adapterName,
           entry: nestedEntry,
@@ -128,11 +128,11 @@ export const getTypeAndInstances = async ({
           fieldsToOmit,
           hasDynamicFields,
         })
-      ).filter(isDefined)
+      ).filter(isDefined).toArray()
     }
 
     log.info(`storing full entry for ${type.elemID.name}`)
-    return toInstance({
+    return [await toInstance({
       adapterName,
       entry,
       type,
@@ -142,8 +142,8 @@ export const getTypeAndInstances = async ({
       // we omit the pagination fields only from the top level and not from inner ones
       fieldsToOmit: [...(topLevelFieldsToOmit ?? []), ...(fieldsToOmit ?? [])],
       hasDynamicFields,
-    })
-  })
+    })]
+  }).toArray()
   return [type, ...nestedTypes, ...instances].filter(isDefined)
 }
 

@@ -16,6 +16,7 @@
 import {
   ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType, FieldDefinition,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '../../utils'
 
 export type RequestConfig = {
   url: string
@@ -62,16 +63,18 @@ export const createAdapterApiConfigType = (
     elemID: new ElemID(adapter, 'requestConfig'),
     fields: {
       url: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
-      queryParams: { type: new MapType(BuiltinTypes.STRING) },
-      recursiveQueryByResponseField: { type: new MapType(BuiltinTypes.STRING) },
+      queryParams: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
+      recursiveQueryByResponseField: {
+        refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)),
+      },
       // not finalized - not exposing in config yet
-      // dependsOn: { type: new ListType(BuiltinTypes.STRING) },
-      paginationField: { type: BuiltinTypes.STRING },
+      // dependsOn: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+      paginationField: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       ...additionalEndpointFields,
     },
   })
@@ -79,12 +82,12 @@ export const createAdapterApiConfigType = (
   const elementTranslationConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'elementTranslationConfig'),
     fields: {
-      fieldsToOmit: { type: new ListType(BuiltinTypes.STRING) },
-      fieldsToExtract: { type: new ListType(BuiltinTypes.STRING) },
-      hasDynamicFields: { type: BuiltinTypes.BOOLEAN },
-      nameField: { type: BuiltinTypes.STRING },
-      pathField: { type: BuiltinTypes.STRING },
-      keepOriginal: { type: BuiltinTypes.BOOLEAN },
+      fieldsToOmit: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+      fieldsToExtract: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+      hasDynamicFields: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      nameField: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      pathField: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      keepOriginal: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
       ...additionalTranslationFields,
     },
   })
@@ -93,13 +96,13 @@ export const createAdapterApiConfigType = (
     elemID: new ElemID(adapter, 'endpointConfig'),
     fields: {
       endpoint: {
-        type: requestConfigType,
+        refType: createRefToElmWithValue(requestConfigType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       translation: {
-        type: elementTranslationConfigType,
+        refType: createRefToElmWithValue(elementTranslationConfigType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -111,13 +114,13 @@ export const createAdapterApiConfigType = (
     elemID: new ElemID(adapter, 'adapterApiConfig'),
     fields: {
       endpoints: {
-        type: new MapType(endpointConfigType),
+        refType: createRefToElmWithValue(new MapType(endpointConfigType)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       apiVersion: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
     },
   })
@@ -130,7 +133,7 @@ export const createUserFetchConfigType = (
   new ObjectType({
     elemID: new ElemID(adapter, 'userFetchConfig'),
     fields: {
-      includeEndpoints: { type: new ListType(BuiltinTypes.STRING) },
+      includeEndpoints: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
     },
   })
 )

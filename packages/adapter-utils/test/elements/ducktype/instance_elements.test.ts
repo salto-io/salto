@@ -32,7 +32,7 @@ import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 // eslint-disable-next-line
 import { toInstance } from '../../../src/elements/ducktype'
-import { RECORDS_PATH } from '../../../src/elements'
+import { RECORDS_PATH } from '../../../src/elements/constants'
 
 /* eslint-disable @typescript-eslint/camelcase */
 const ADAPTER_NAME = 'myAdapter'
@@ -54,8 +54,8 @@ describe('ducktype_instance_elements', () => {
         },
       },
     }
-    it('should generate instance based on response', () => {
-      const inst = toInstance({
+    it('should generate instance based on response', async () => {
+      const inst = await toInstance({
         adapterName: ADAPTER_NAME,
         type,
         nameField: 'name',
@@ -70,8 +70,8 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name'])
     })
-    it('should omit fields from the top level', () => {
-      const inst = toInstance({
+    it('should omit fields from the top level', async () => {
+      const inst = await toInstance({
         adapterName: ADAPTER_NAME,
         type,
         nameField: 'name',
@@ -92,9 +92,9 @@ describe('ducktype_instance_elements', () => {
         entry,
       ))).toBeFalsy()
     })
-    it('should use default name if name field is not found in entry', () => {
+    it('should use default name if name field is not found in entry', async () => {
       const e = _.omit(entry, 'name')
-      const inst = toInstance({
+      const inst = await toInstance({
         adapterName: ADAPTER_NAME,
         type,
         nameField: 'name',
@@ -108,14 +108,14 @@ describe('ducktype_instance_elements', () => {
         e,
       ))).toBeTruthy()
     })
-    it('should not omit nested fields', () => {
+    it('should not omit nested fields', async () => {
       const e = {
         field_with_complex_type: {
           id: 54775,
           number: 53,
         },
       }
-      const inst = toInstance({
+      const inst = await toInstance({
         adapterName: ADAPTER_NAME,
         type,
         nameField: 'name',
@@ -133,7 +133,7 @@ describe('ducktype_instance_elements', () => {
         e,
       ))).toBeTruthy()
     })
-    it('should omit null field values', () => {
+    it('should omit null field values', async () => {
       const e = {
         a: null,
         field_with_complex_type: {
@@ -142,7 +142,7 @@ describe('ducktype_instance_elements', () => {
           null: null,
         },
       }
-      const inst = toInstance({
+      const inst = await toInstance({
         adapterName: ADAPTER_NAME,
         type,
         nameField: 'name',
@@ -161,8 +161,8 @@ describe('ducktype_instance_elements', () => {
         },
       ))).toBeTruthy()
     })
-    it('should not generate instance if value is empty', () => {
-      const inst = toInstance({
+    it('should not generate instance if value is empty', async () => {
+      const inst = await toInstance({
         adapterName: ADAPTER_NAME,
         type,
         nameField: 'name',

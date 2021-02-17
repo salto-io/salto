@@ -35,6 +35,7 @@ import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
 import { HTTPClientInterface } from '../../../src/client'
+import { createRefToElmWithValue } from '../../../src/utils'
 
 describe('ducktype_transformer', () => {
   describe('simpleGetArgs', () => {
@@ -94,18 +95,18 @@ describe('ducktype_transformer', () => {
         return {
           type: new ObjectType({
             elemID: new ElemID(adapterName, name),
-            fields: { someNested: { type: someNested } },
+            fields: { someNested: { refType: createRefToElmWithValue(someNested) } },
           }),
           nestedTypes: [someNested, anotherNested],
         }
       })
       jest.spyOn(instanceElements, 'toInstance').mockImplementation(({
         type, entry, nameField,
-      }) => new InstanceElement(
+      }) => Promise.resolve(new InstanceElement(
         entry[nameField] ?? 'bla',
         type,
         entry,
-      ))
+      )))
     })
 
     afterEach(() => {

@@ -19,8 +19,8 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, BuiltinTypes, ObjectType, toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType, ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, InMemoryRemoteElementSource, elementSource } from '@salto-io/workspace'
-import { collections, values } from '@salto-io/lowerdash'
+import { merger, elementSource } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import {
@@ -86,9 +86,10 @@ export const getDetailedChanges = async (
 const getChangeMap = async (
   before: elementSource.ElementsSource,
   after: elementSource.ElementsSource,
+  idFilters: IDFilter[]
 ): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
-    wu(await getDetailedChanges(before, after))
+    wu(await getDetailedChanges(before, after, idFilters))
       .map(change => [change.id.getFullName(), change])
       .toArray(),
   )
@@ -298,14 +299,16 @@ const fetchAndProcessMergeErrors = async (
   }
 }
 
-export const getAdaptersFirstFetchPartial = (
-  elements: readonly Element[],
+export const getAdaptersFirstFetchPartial = async (
+  elements: ReadOnlyElementsSource,
   partiallyFetchedAdapters: Set<string>,
-): Set<string> => {
+): Promise<Set<string>> => {
   if (_.isEmpty(partiallyFetchedAdapters)) {
     return new Set()
   }
-  const adaptersWithElements = new Set(wu(elements).map(e => e.elemID.adapter))
+  const adaptersWithElements = new Set(
+    await awu(await elements.list()).map(elemID => elemID.adapter).toArray()
+  )
   return collections.set.difference(partiallyFetchedAdapters, adaptersWithElements)
 }
 
@@ -318,20 +321,27 @@ const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
+  const paritalFetchFilter: IDFilter = id => (
+    !partiallyFetchedAdapters.has(id.adapter) || mergedServiceElements.has(id)
+  )
+
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
       stateElements,
       mergedServiceElements,
+      [paritalFetchFilter]
     ),
   'finished to calculate service-state changes')]
   const pendingChanges = await log.time(() => getChangeMap(
     stateElements,
     workspaceElements,
+    [paritalFetchFilter]
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     workspaceElements,
     mergedServiceElements,
+    [paritalFetchFilter]
   ), 'finished to calculate service-workspace changes')
   const serviceElementsMap = _.groupBy(
     serviceElements,
@@ -366,7 +376,11 @@ export const fetchChanges = async (
     progressEmitter
   )
 
-  getAdaptersFirstFetchPartial(stateElements, partiallyFetchedAdapters).forEach(
+  const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(
+    stateElements,
+    partiallyFetchedAdapters
+  )
+  adaptersFirstFetchPartial.forEach(
     adapter => log.warn('Received partial results from %s before full fetch', adapter)
   )
 
@@ -409,7 +423,7 @@ export const fetchChanges = async (
     .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
 
   const elements = partiallyFetchedAdapters.size !== 0
-    ? _(stateElements)
+    ? _(await awu(await stateElements.getAll()).toArray())
       .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
       .unshift(...processErrorsResult.keptElements)
       .uniqBy(e => e.elemID.getFullName())

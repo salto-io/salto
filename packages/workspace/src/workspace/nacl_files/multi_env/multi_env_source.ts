@@ -323,7 +323,7 @@ const buildMultiEnvSource = (
     )).every(e => e)
   )
 
-  const load = async (): Promise<Change<Element>[]> => {
+  const load = async (): Promise<Change[]> => {
     const changes = await mapValuesAsync(getActiveSources(), src => src.load())
     const buildRes = await buildMultiEnvState({ changes })
     state = Promise.resolve(buildRes.state)

@@ -36,7 +36,7 @@ describe('workspace', () => {
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace([naclFileName]))
-    await validate(workspace, 20)
+    await validate(workspace, 18)
   })
 
   it('should collect errors', async () => {
@@ -49,13 +49,9 @@ describe('workspace', () => {
   it('should update a single file', async () => {
     const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-<<<<<<< HEAD
     const filename = 'new'
     const buffer = 'test'
-    workspace.setNaclFiles({ filename, buffer })
-=======
-    await workspace.setNaclFiles({ filename: 'new', buffer: '' })
->>>>>>> 56162519... Use element source (#1735)
+    await workspace.setNaclFiles({ filename, buffer })
     await workspace.awaitAllUpdates()
     expect((await workspace.getNaclFile(filename))?.buffer).toEqual(buffer)
   })
@@ -68,17 +64,13 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    await validate(workspace, 20)
+    await validate(workspace, 18)
   })
 
   it('should support file removal', async () => {
     const baseWs = await mockWorkspace([naclFileName])
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-<<<<<<< HEAD
-    workspace.removeNaclFiles(naclFileName)
-=======
-    await workspace.removeNaclFiles(path.basename(naclFileName))
->>>>>>> 56162519... Use element source (#1735)
+    await workspace.removeNaclFiles(naclFileName)
     await workspace.awaitAllUpdates()
     expect(await workspace.getNaclFile(naclFileName)).toEqual(undefined)
   })
@@ -97,7 +89,7 @@ describe('workspace', () => {
           _parent = vs.type.instance.referenced
       }
       `
-      workspace.setNaclFiles({ filename: validation1FileName, buffer })
+      await workspace.setNaclFiles({ filename: validation1FileName, buffer })
       await workspace.awaitAllUpdates()
       expect((await workspace.errors()).validation).toHaveLength(0)
     })
@@ -115,7 +107,7 @@ describe('workspace', () => {
       vs.type oldReferenced {
       }
       `
-      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.setNaclFiles({ filename: validation2FileName, buffer })
       await workspace.awaitAllUpdates()
       const newValidationErrors = (await workspace.errors()).validation
       expect(newValidationErrors).toHaveLength(3)
@@ -142,7 +134,7 @@ describe('workspace', () => {
       }
     
       `
-      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.setNaclFiles({ filename: validation2FileName, buffer })
       await workspace.awaitAllUpdates()
       const newValidationErrors = (await workspace.errors()).validation
       expect(newValidationErrors).toHaveLength(2)
@@ -161,7 +153,7 @@ describe('workspace', () => {
       vs.type oldReferenced {
       }
       `
-      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.setNaclFiles({ filename: validation2FileName, buffer })
       await workspace.awaitAllUpdates()
       const newValidationErrors = (await workspace.errors()).validation
       expect(newValidationErrors).toHaveLength(3)
@@ -183,7 +175,7 @@ describe('workspace', () => {
       vs.type referenced {
       }
       `
-      workspace.setNaclFiles({ filename: validation2FileName, buffer })
+      await workspace.setNaclFiles({ filename: validation2FileName, buffer })
       await workspace.awaitAllUpdates()
       const firstUpdateValidationErrors = (await workspace.errors()).validation
       expect(firstUpdateValidationErrors).toHaveLength(2)
@@ -195,7 +187,7 @@ describe('workspace', () => {
         field = "4"
       }
       `
-      workspace.setNaclFiles({ filename: validation2FileName, buffer: newBuffer })
+      await workspace.setNaclFiles({ filename: validation2FileName, buffer: newBuffer })
       await workspace.awaitAllUpdates()
       const newValidationErrors = (await workspace.errors()).validation
       expect(newValidationErrors).toHaveLength(3)
@@ -216,7 +208,7 @@ describe('workspace', () => {
         string field {}
       }
       `
-      workspace.setNaclFiles({ filename: validation3FileName, buffer })
+      await workspace.setNaclFiles({ filename: validation3FileName, buffer })
       await workspace.awaitAllUpdates()
     })
     it('should validate specific files correctly', async () => {
@@ -242,7 +234,7 @@ describe('workspace', () => {
           boolean field {}
         }
       `
-      newWorkspace.setNaclFiles({ filename: validation1FileName, buffer })
+      await newWorkspace.setNaclFiles({ filename: validation1FileName, buffer })
       await newWorkspace.awaitAllUpdates()
       const currentErrors = (await newWorkspace.errors()).validation
       expect(currentErrors).toHaveLength(1)
@@ -265,7 +257,7 @@ describe('workspace', () => {
       const errors = await newWorkspace.errors()
       expect(errors.validation).toHaveLength(0)
       const buffer = ''
-      newWorkspace.setNaclFiles({ filename: splitted2FileName, buffer })
+      await newWorkspace.setNaclFiles({ filename: splitted2FileName, buffer })
       await newWorkspace.awaitAllUpdates()
       const newErrors = await newWorkspace.errors()
       expect(newErrors.validation).toHaveLength(1)

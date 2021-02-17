@@ -167,7 +167,6 @@ const addDifferentElements = (
 ): PlanTransformer => graph => log.time(async () => {
   const outputGraph = graph.clone()
   const sieve = new Set<string>()
-
   const toChange = (
     elem: ChangeDataType,
     action: Change['action'] & ('add' | 'remove')
@@ -182,7 +181,7 @@ const addDifferentElements = (
     elem: ChangeDataType,
     action: Change['action'] & ('add' | 'remove')
   ): void => {
-    outputGraph.addNode(changeId(elem, action), [], toChange(elem, action))
+    outputGraph.addNode(changeId(elem, action), [], toChange(elem.clone(), action))
   }
 
   const addNodeIfDifferent = async (
@@ -370,7 +369,12 @@ export const getPlan = async ({
     before, after, diffGraph, changeValidators,
   )
   const customGroupKeys = await getCustomGroupIds(
-    filterResult.validDiffGraph, customGroupIdFunctions,
+    // We need to resolve the fileted graph again.
+    // Will be removed once the everything will use element source.
+    await resolveNodeElements(before, after)(
+      filterResult.validDiffGraph
+    ),
+    customGroupIdFunctions,
   )
   // build graph
   const groupedGraph = removeRedundantFieldChanges(

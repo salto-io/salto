@@ -25,15 +25,21 @@ import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
-import { Workspace, errors as wsErrors, state as wsState, pathIndex, parser } from '@salto-io/workspace'
+import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import realCli from '../src/cli'
 import commandDefinitions from '../src/commands/index'
 import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
 import { Spinner, SpinnerCreator } from '../src/types'
 import { getCliTelemetry } from '../src/telemetry'
 import { version as currentVersion } from '../src/generated/version.json'
+
+
+const { InMemoryRemoteMap } = remoteMap
+const { createInMemoryElementSource } = elementSource
+const { awu } = collections.asynciterable
 
 export type MockFunction<T extends (...args: never[]) => unknown> =
   jest.Mock<ReturnType<T>, Parameters<T>>
@@ -290,16 +296,20 @@ export const mockWorkspace = ({
 }: MockWorkspaceArgs): MockWorkspace => {
   const state = wsState.buildInMemState(
     async () => ({
-      elements: {},
-      pathIndex: new pathIndex.PathIndex(),
-      servicesUpdateDate: {},
-      saltoVersion: currentVersion,
+      elements: createInMemoryElementSource(),
+      pathIndex: new InMemoryRemoteMap(),
+      servicesUpdateDate: new InMemoryRemoteMap(),
+      saltoMetadata: new InMemoryRemoteMap([
+        { key: 'version', value: currentVersion },
+      ] as {key: wsState.StateMetadataKey; value: string}[]),
     })
   )
   return {
     uid,
     name,
-    elements: mockFunction<Workspace['elements']>().mockResolvedValue(elements()),
+    elements: mockFunction<Workspace['elements']>().mockResolvedValue(
+      createInMemoryElementSource(elements())
+    ),
     state: mockFunction<Workspace['state']>().mockReturnValue(state),
     envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),
     currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue(envs[0]),
@@ -331,7 +341,7 @@ export const mockWorkspace = ({
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockResolvedValue([]),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
     getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([]),
-    getElementIdsBySelectors: mockFunction<Workspace['getElementIdsBySelectors']>().mockResolvedValue([]),
+    getElementIdsBySelectors: mockFunction<Workspace['getElementIdsBySelectors']>().mockResolvedValue(awu([])),
     getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>(),
     flush: mockFunction<Workspace['flush']>(),
     clone: mockFunction<Workspace['clone']>(),

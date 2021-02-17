@@ -16,25 +16,31 @@
 import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
-import { Workspace, parser, errors as wsErrors, parseCache, state, nacl, staticFiles, dirStore, pathIndex, loadWorkspace, EnvironmentsSources } from '@salto-io/workspace'
+import { Workspace, parser, errors as wsErrors, parseCache, state, nacl, staticFiles, dirStore,
+  loadWorkspace, EnvironmentsSources, remoteMap, elementSource } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
-import { createInMemoryElementSource } from '@salto-io/workspace/dist/src/workspace/elements_source'
 import { collections } from '@salto-io/lowerdash'
 
+const { toAsyncIterable } = collections.asynciterable
+const { createInMemoryElementSource } = elementSource
+const { InMemoryRemoteMap } = remoteMap
+type RemoteMapEntry<T, K extends string> = remoteMap.RemoteMapEntry<T, K>
+type CreateRemoteMapParams<T> = remoteMap.CreateRemoteMapParams<T>
+type RemoteMap<T, K extends string> = remoteMap.RemoteMap<T, K>
 const { awu } = collections.asynciterable
 
-//RB const { parse } = parser
-//RB const { mergeElements } = merger
-//RB const SERVICES = ['salesforce']
+// RB const { parse } = parser
+// RB const { mergeElements } = merger
+// RB const SERVICES = ['salesforce']
 
-//RB const configID = new ElemID(SERVICES[0])
-//RB const mockConfigType = new ObjectType({
-//RB   elemID: configID,
-//RB   fields: { username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
-//RB })
-//RB const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
-//RB   username: 'test@test',
-//RB })
+// RB const configID = new ElemID(SERVICES[0])
+// RB const mockConfigType = new ObjectType({
+// RB   elemID: configID,
+// RB   fields: { username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+// RB })
+// RB const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
+// RB   username: 'test@test',
+// RB })
 
 export const mockErrors = (
   errors: SaltoError[], parseErrors: parser.ParseError[] = []
@@ -83,8 +89,47 @@ const mockParseCache = (): parseCache.ParseResultCache => ({
   rename: () => Promise.resolve(),
   clone: () => mockParseCache(),
   delete: () => Promise.resolve(),
-  list: () => Promise.resolve([])
+  list: () => Promise.resolve([]),
 })
+
+const mockCreateRemoteMap = async <T, K extends string = string>(
+  opts: CreateRemoteMapParams<T>
+): Promise<RemoteMap<T, K>> => {
+  let data: Record<K, string> = {} as Record<K, string>
+  return {
+    setAll: async (
+      entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>
+    ): Promise<void> => {
+      for await (const entry of entries) {
+        data[entry.key] = opts.serialize(entry.value)
+      }
+    },
+    delete: async (key: K) => {
+      delete data[key]
+    },
+    get: async (key: K): Promise<T | undefined> => {
+      const value = data[key]
+      return value ? opts.deserialize(value) : undefined
+    },
+    has: async (key: K): Promise<boolean> => key in data,
+    set: async (key: K, value: T): Promise<void> => {
+      data[key] = opts.serialize(value)
+    },
+    clear: async (): Promise<void> => {
+      data = {} as Record<K, string>
+    },
+    entries: (): AsyncIterable<RemoteMapEntry<T, K>> =>
+      awu(Object.entries(data))
+        .map(async ([key, value]) =>
+          ({ key: key as K, value: await opts.deserialize(value as string) })),
+    keys: (): AsyncIterable<K> => toAsyncIterable(Object.keys(data) as unknown as K[]),
+    values: (): AsyncIterable<T> =>
+      awu(Object.values(data)).map(async v => opts.deserialize(v as string)),
+    flush: (): Promise<void> => Promise.resolve(undefined),
+    revert: (): Promise<void> => Promise.resolve(undefined),
+    close: (): Promise<void> => Promise.resolve(undefined),
+  }
+}
 
 const buildMockWorkspace = async (files: Record<string, string>, staticFileNames: string[]):
 Promise<Workspace> => {
@@ -99,12 +144,14 @@ Promise<Workspace> => {
 
   const mockedDirStore = mockDirStore(files)
   const commonNaclFilesSource = await nacl.naclFilesSource(
+    '',
     mockedDirStore,
     mockParseCache(),
     staticFiles.buildStaticFilesSource(
       mockDirStore(Object.fromEntries(staticFileNames.map(f => [f, Buffer.from(f)]))),
       mockStaticFilesCache
-    )
+    ),
+    mockCreateRemoteMap
   )
   const elementsSources = {
     commonSourceName: '',
@@ -114,34 +161,42 @@ Promise<Workspace> => {
       },
       default: {
         naclFiles: await nacl.naclFilesSource(
+          'default',
           mockDirStore({}),
           mockParseCache(),
           staticFiles.buildStaticFilesSource(
             mockDirStore({}),
             mockStaticFilesCache
-          )
+          ),
+          mockCreateRemoteMap
         ),
         state: state.buildInMemState(async () => ({
-          elements: createInMemoryElementSource(await awu(await commonNaclFilesSource.getAll()).toArray()),
-          pathIndex: new pathIndex.PathIndex(),
-          servicesUpdateDate: {},
+          elements: createInMemoryElementSource(
+            await awu(await commonNaclFilesSource.getAll()).toArray()
+          ),
+          pathIndex: new InMemoryRemoteMap(),
+          servicesUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
+          saltoMetadata: new InMemoryRemoteMap(),
         })),
       },
       inactive: {
         naclFiles: await nacl.naclFilesSource(
+          'inactive',
           mockDirStore({}),
           mockParseCache(),
           staticFiles.buildStaticFilesSource(
             mockDirStore({}),
             mockStaticFilesCache
-          )
+          ),
+          mockCreateRemoteMap
         ),
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource([]),
-          pathIndex: new pathIndex.PathIndex(),
-          servicesUpdateDate: {},
+          pathIndex: new InMemoryRemoteMap(),
+          servicesUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
+          saltoMetadata: new InMemoryRemoteMap(),
         })),
       },
     },
@@ -166,7 +221,7 @@ Promise<Workspace> => {
     delete: jest.fn(),
     rename: jest.fn(),
   }
-  return loadWorkspace(mockConfSource, mockCredentialsSource, elementsSources)
+  return loadWorkspace(mockConfSource, mockCredentialsSource, elementsSources, mockCreateRemoteMap)
 }
 
 export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []):

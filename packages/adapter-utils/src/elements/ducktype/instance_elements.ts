@@ -32,7 +32,7 @@ const ID_SEPARATOR = '__'
  *    nested under a 'value' field in order to allow the type to define
  *    this as a map type.
  */
-export const toInstance = ({
+export const toInstance = async ({
   adapterName,
   entry,
   type,
@@ -52,7 +52,7 @@ export const toInstance = ({
   fieldsToOmit?: string[]
   hasDynamicFields?: boolean
   nameSuffix?: string
-}): InstanceElement | undefined => {
+}): Promise<InstanceElement | undefined> => {
   const name = entry[nameField] ?? defaultName
   const path = ((pathField && _.isString(entry[pathField]))
     ? entry[pathField].slice(0, 100)
@@ -73,7 +73,7 @@ export const toInstance = ({
   return new InstanceElement(
     naclName,
     type,
-    transformValues({
+    await transformValues({
       values: hasDynamicFields ? { value: entryData } : entryData,
       type,
       // omit nulls from returned value

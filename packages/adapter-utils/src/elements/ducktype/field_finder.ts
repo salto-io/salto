@@ -22,10 +22,10 @@ export type FindNestedFieldFunc = (
   type: ObjectType,
   fieldsToIgnore?: string[],
   keepOriginal?: boolean,
-) => {
+) => Promise<{
   field: Field
   type: ObjectType
-} | undefined
+} | undefined>
 
 /**
  * Logic for finding the nested field that contains the response data,
@@ -34,7 +34,7 @@ export type FindNestedFieldFunc = (
  * If more than one potential field is found, or if no field matches the requirements,
  * returns undefined to signal that the full entry should be used.
  */
-export const findNestedField: FindNestedFieldFunc = (type, fieldsToIgnore, keepOriginal) => {
+export const findNestedField: FindNestedFieldFunc = async (type, fieldsToIgnore, keepOriginal) => {
   if (keepOriginal) {
     return undefined
   }
@@ -54,10 +54,11 @@ export const findNestedField: FindNestedFieldFunc = (type, fieldsToIgnore, keepO
     return undefined
   }
   const nestedField = potentialFields[0]
-  const nestedType = (isListType(nestedField.type)
-    ? nestedField.type.innerType
+  const nestedFieldType = await nestedField.getType()
+  const nestedType = isListType(nestedFieldType)
+    ? await nestedFieldType.getInnerType()
     // map type currently cannot be returned from nested fields
-    : nestedField.type)
+    : nestedFieldType
 
   if (!isObjectType(nestedType)) {
     log.info('unexpected field type for type %s field %s (%s), extracting full entry',
@@ -74,4 +75,4 @@ export const findNestedField: FindNestedFieldFunc = (type, fieldsToIgnore, keepO
 /**
  * Field finder that always returns the full entry.
  */
-export const returnFullEntry: FindNestedFieldFunc = () => undefined
+export const returnFullEntry: FindNestedFieldFunc = () => Promise.resolve(undefined)

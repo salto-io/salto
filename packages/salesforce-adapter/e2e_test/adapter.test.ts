@@ -3647,9 +3647,10 @@ describe('Salesforce adapter E2E with real account', () => {
     })
     describe('Deploy BusinessHoursSettings', () => {
       let oldElement: InstanceElement
-      beforeAll(() => {
-        oldElement = result.find(
-          e => metadataType(e) === constants.BUSINESS_HOURS_METADATA_TYPE && isInstanceElement(e)
+      beforeAll(async () => {
+        oldElement = await awu(result).find(
+          async e => await metadataType(e) === constants.BUSINESS_HOURS_METADATA_TYPE
+            && isInstanceElement(e)
         ) as InstanceElement
       })
       it('should modify BusinessHoursSettings', async () => {

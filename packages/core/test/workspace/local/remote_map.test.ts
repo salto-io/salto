@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,8 @@ import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
-import { serialization, remoteMap as rm } from '@salto-io/workspace'
+import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
+
 import { createRemoteMapCreator } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
@@ -32,8 +33,12 @@ const createElements = async (): Promise<Element[]> => {
   params.numOfObjs = 1
   params.numOfPrimitiveTypes = 1
   params.numOfTypes = 1
-  const generatedElements = await generateElements(params)
-  const elements = generatedElements.slice(0, generatedElements.length - 1)
+  const generatedElements = await generateElements(params, {
+    reportProgress: jest.fn(),
+  })
+  const merged = await merger.mergeElements(awu(generatedElements))
+  const elements = await awu(merged.merged.values()).toArray()
+  // generatedElements.slice(0, generatedElements.length - 1)
   return elements
 }
 
@@ -142,7 +147,7 @@ describe('test operations on remote db', () => {
       for await (const elemId of remoteMap.keys({ first: 5, after })) {
         nextPageRes.push(elemId)
       }
-      expect(nextPageRes).toHaveLength(3)
+      expect(nextPageRes).toHaveLength(4)
       expect(nextPageRes).toEqual(sortedElements.slice(5))
     })
   })
@@ -172,7 +177,7 @@ describe('test operations on remote db', () => {
       for await (const element of remoteMap.values({ first: 5, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(3)
+      expect(nextPageRes).toHaveLength(4)
       expect(nextPageRes.map(e => e.elemID.getFullName())).toEqual(sortedElements.slice(5))
     })
   })
@@ -206,7 +211,7 @@ describe('test operations on remote db', () => {
       for await (const element of remoteMap.entries({ first: 5, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(3)
+      expect(nextPageRes).toHaveLength(4)
       expect(nextPageRes.map(e => e.value.elemID.getFullName())).toEqual(sortedElements.slice(5))
       expect(nextPageRes.map(e => e.key)).toEqual(sortedElements.slice(5))
     })
@@ -238,7 +243,7 @@ describe('full integration', () => {
     remoteMap = await createMap('integration')
     const elements = await createElements()
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
-    await remoteMap.setAll(await createAsyncIterable(elements.slice(1, elements.length)))
+    await remoteMap.setAll(createAsyncIterable(elements.slice(1, elements.length)))
     await remoteMap.flush()
     const iter = remoteMap.values()
     const res: Element[] = []

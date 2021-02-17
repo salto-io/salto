@@ -16,12 +16,15 @@
 import semver from 'semver'
 import moment from 'moment'
 import { Plan, PlanItem } from '@salto-io/core'
-import { Workspace, state, pathIndex } from '@salto-io/workspace'
+import { Workspace, state, remoteMap, elementSource } from '@salto-io/workspace'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
 import { version as currentVersion } from '../../src/generated/version.json'
+
+const { InMemoryRemoteMap } = remoteMap
+const { createInMemoryElementSource } = elementSource
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -234,16 +237,21 @@ describe('deploy command', () => {
     })
   })
   describe('recommend fetch flow', () => {
-    const mockState = ({
-      saltoVersion, servicesUpdateDate,
-    }: Partial<state.StateData>): state.State => (
-      state.buildInMemState(async () => ({
-        elements: {},
-        pathIndex: new pathIndex.PathIndex(),
-        servicesUpdateDate: servicesUpdateDate ?? {},
-        saltoVersion,
+    const mockState = (
+      data: Partial<state.StateData>,
+      saltoVersion?: string
+    ): state.State => {
+      const metaData = saltoVersion ? [
+        { key: 'version', value: saltoVersion },
+      ] as {key: state.StateMetadataKey; value: string}[] : []
+      const saltoMetadata = new InMemoryRemoteMap<string, state.StateMetadataKey>(metaData)
+      return state.buildInMemState(async () => ({
+        elements: createInMemoryElementSource(),
+        pathIndex: new InMemoryRemoteMap(),
+        servicesUpdateDate: data.servicesUpdateDate ?? new InMemoryRemoteMap(),
+        saltoMetadata,
       }))
-    )
+    }
     const inputOptions = {
       force: false,
       dryRun: false,
@@ -266,9 +274,8 @@ describe('deploy command', () => {
     describe('when state version is newer than the current version', () => {
       beforeEach(async () => {
         mockShouldCancel.mockResolvedValue(true)
-        workspace.state.mockReturnValue(mockState({
-          saltoVersion: semver.inc(currentVersion, 'patch') as string,
-        }))
+        workspace.state.mockReturnValue(mockState({},
+          semver.inc(currentVersion, 'patch') as string,))
         await action({
           ...cliCommandArgs,
           input: inputOptions,
@@ -284,9 +291,8 @@ describe('deploy command', () => {
         // answer false so we do not continue with deploy
         mockGetUserBooleanInput.mockResolvedValue(false)
 
-        workspace.state.mockReturnValue(mockState({
-          saltoVersion: currentVersion,
-        }))
+        workspace.state.mockReturnValue(mockState({ },
+          currentVersion,))
       })
       describe('when all services are valid', () => {
         beforeEach(async () => {
@@ -349,9 +355,8 @@ describe('deploy command', () => {
         mockShouldCancel.mockResolvedValue(true)
         const prevVersion = decreaseVersion(semver.parse(currentVersion) as semver.SemVer)
 
-        workspace.state.mockReturnValue(mockState({
-          saltoVersion: prevVersion.format(),
-        }))
+        workspace.state.mockReturnValue(mockState({},
+          prevVersion.format(),))
         await action({
           ...cliCommandArgs,
           input: inputOptions,

@@ -25,6 +25,7 @@ import { Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
 import { simpleGetArgs } from '../../../src/elements/request_parameters'
 import { mockFunction } from '../../common'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
@@ -41,7 +42,7 @@ describe('ducktype_transformer', () => {
         return {
           type: new ObjectType({
             elemID: new ElemID(adapterName, name),
-            fields: { someNested: { type: someNested } },
+            fields: { someNested: { refType: createRefToElmWithValue(someNested) } },
           }),
           nestedTypes: [someNested, anotherNested],
         }
@@ -51,14 +52,14 @@ describe('ducktype_transformer', () => {
         transformationConfigByType,
         transformationDefaultConfig,
         entry,
-      }) => new InstanceElement(
+      }) => Promise.resolve(new InstanceElement(
         ((
           transformationConfigByType[type.elemID.name]?.idFields
           ?? transformationDefaultConfig.idFields
         ).map(f => entry[f]).filter(e => e !== undefined)).join('_') || 'bla',
         type,
         entry,
-      ))
+      )))
     })
 
     afterEach(() => {

@@ -235,6 +235,23 @@ export const transformValues = async (
   return _.isEmpty(result) ? undefined : result
 }
 
+export const elementAnnotationTypes = async (
+  element: Element,
+  elementsSource?: ReadOnlyElementsSource
+): Promise<TypeMap> => {
+  if (isInstanceElement(element)) {
+    return InstanceAnnotationTypes
+  }
+
+  return {
+    ...InstanceAnnotationTypes,
+    ...CoreAnnotationTypes,
+    ...(isField(element)
+      ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
+      : await element.getAnnotationTypes(elementsSource)),
+  }
+}
+
 export const transformElementAnnotations = async <T extends Element>(
   {
     element,
@@ -247,31 +264,15 @@ export const transformElementAnnotations = async <T extends Element>(
     strict?: boolean
     elementsSource?: ReadOnlyElementsSource
   }
-): Promise<Values> => {
-  const elementAnnotationTypes = async (): Promise<TypeMap> => {
-    if (isInstanceElement(element)) {
-      return InstanceAnnotationTypes
-    }
-
-    return {
-      ...InstanceAnnotationTypes,
-      ...CoreAnnotationTypes,
-      ...(isField(element)
-        ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
-        : await element.getAnnotationTypes(elementsSource)),
-    }
-  }
-
-  return await transformValues({
-    values: element.annotations,
-    type: await elementAnnotationTypes(),
-    transformFunc,
-    strict,
-    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
-    elementsSource,
-    isTopLevel: false,
-  }) || {}
-}
+): Promise<Values> => await transformValues({
+  values: element.annotations,
+  type: await elementAnnotationTypes(element, elementsSource),
+  transformFunc,
+  strict,
+  pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+  elementsSource,
+  isTopLevel: false,
+}) || {}
 
 export const transformElement = async <T extends Element>(
   {
@@ -897,8 +898,8 @@ export const extendGeneratedDependencies = (
         ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
         ...newDependencies,
       ],
-      ref => ref.elemId.getFullName(),
+      ref => ref.elemID.getFullName(),
     ),
-    ref => ref.elemId.getFullName(),
+    ref => ref.elemID.getFullName(),
   )
 }

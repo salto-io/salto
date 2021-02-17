@@ -906,10 +906,13 @@ describe('Test utils.ts', () => {
         })
       })
 
-      it('should copy the annotation type annotations to the field annotations', () => {
+      it('should copy the annotation type annotations to the field annotations', async () => {
         const callArgs = transformFunc.mock.calls.flat().find(args => args.value === 'someUrl')
         expect(callArgs?.field).toBeDefined()
-        expect(callArgs?.field?.annotations).toEqual(callArgs?.field?.getType().annotations)
+        const fieldArg = callArgs?.field
+        const fieldType = fieldArg !== undefined && await fieldArg.getType()
+        const annotations = fieldType && fieldType.annotations
+        expect(callArgs?.field?.annotations).toEqual(annotations)
         expect(_.isEmpty(callArgs?.field?.annotations)).toBeFalsy()
       })
     })

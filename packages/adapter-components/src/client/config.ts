@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, createRestriction, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '../utils'
 
 /* Client config */
 
@@ -42,7 +43,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
   bucketNames?: (keyof RateLimitConfig)[],
 ): ObjectType => {
   const createFieldDefWithMin = (min: number): FieldDefinition => ({
-    type: BuiltinTypes.NUMBER,
+    refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
     // note: not enforced yet
     [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
       min,
@@ -71,16 +72,16 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
     elemID: new ElemID(adapter, 'clientRetryConfig'),
     fields: {
       maxAttempts: createFieldDefWithMin(1),
-      retryDelay: { type: BuiltinTypes.NUMBER },
+      retryDelay: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
 
   const clientConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientConfig'),
     fields: {
-      retry: { type: clientRetryConfigType },
-      rateLimit: { type: clientRateLimitConfigType },
-      pageSize: { type: clientPageSizeConfigType },
+      retry: { refType: createRefToElmWithValue(clientRetryConfigType) },
+      rateLimit: { refType: createRefToElmWithValue(clientRateLimitConfigType) },
+      pageSize: { refType: createRefToElmWithValue(clientPageSizeConfigType) },
     },
   })
   return clientConfigType

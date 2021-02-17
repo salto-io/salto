@@ -13,12 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isContainerType } from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
 import { generateElements } from '../src/generator'
 import testParams from './test_params'
 
+const { awu } = collections.asynciterable
 const mockProgressReporter = { reportProgress: jest.fn() }
 const EXTRA_NACL_PATH = path.join(__dirname, '../../test/mocks')
 describe('elements generator', () => {
@@ -69,12 +71,9 @@ describe('elements generator', () => {
         listFieldFreq: 0,
         mapFieldFreq: 1,
       }, mockProgressReporter)
-      const [maps, lists] = _.partition(
-        [...run1, ...run2].filter(isObjectType).flatMap(e => _.values(e.fields)).filter(
-          f => isContainerType(f.getType())
-        ),
-        f => isMapType(f.getType()),
-      )
+      const fields = ([...run1, ...run2]).filter(isObjectType).flatMap(e => _.values(e.fields))
+      const maps = await awu(fields).filter(async f => isMapType(await f.getType())).toArray()
+      const lists = await awu(fields).filter(async f => isListType(await f.getType())).toArray()
       expect(lists.length).toBeGreaterThan(0)
       expect(maps.length).toBeGreaterThan(0)
     })
@@ -124,7 +123,7 @@ describe('elements generator', () => {
     it('should create env variables if the env variable is set', async () => {
       const envName = 'env'
       process.env.SALTO_ENV = envName
-      const elements = await generateElements(testParams)
+      const elements = await generateElements(testParams, mockProgressReporter)
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj'))
         .toBeDefined()
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj.instance.envEnvInst'))

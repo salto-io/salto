@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value, isContainerType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
-import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
@@ -107,6 +106,7 @@ export const getUsageInFile = async (
 ): Promise<ElemID[]> =>
   awu(await workspace.getElements(filename))
     .flatMap(async e => getElemIDUsages(e, id, await workspace.elements))
+    .map(fullname => ElemID.fromFullName(fullname))
     .toArray()
 
 export const getWorkspaceReferences = async (

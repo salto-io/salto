@@ -28,7 +28,7 @@ import { ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
 
 const { makeArray } = collections.array
-const { toArrayAsync } = collections.asynciterable
+const { toArrayAsync, awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
@@ -101,15 +101,15 @@ export const getTypeAndInstances = async ({
     transformationDefaultConfig,
   })
   // find the field and type containing the actual instances
-  const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
+  const nestedFieldDetails = await nestedFieldFinder(type, fieldsToOmit, dataField)
 
   if (nestedFieldDetails === undefined) {
     log.debug(`storing full entries for ${type.elemID.name}`)
   }
 
-  const instances = naclEntries.flatMap((entry, index) => {
+  const instances = await awu(naclEntries).flatMap(async (entry, index) => {
     if (nestedFieldDetails !== undefined) {
-      return makeArray(entry[nestedFieldDetails.field.name]).map(
+      return awu(makeArray(entry[nestedFieldDetails.field.name])).map(
         (nestedEntry, nesteIndex) => toInstance({
           entry: nestedEntry,
           type: nestedFieldDetails.type,
@@ -118,18 +118,19 @@ export const getTypeAndInstances = async ({
           defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
           hasDynamicFields,
         })
-      ).filter(isDefined)
+      ).filter(isDefined).toArray()
     }
 
-    return toInstance({
+    log.info(`storing full entry for ${type.elemID.name}`)
+    return [await toInstance({
       entry,
       type,
       transformationConfigByType,
       transformationDefaultConfig,
       defaultName: `unnamed_${index}`, // TODO improve
       hasDynamicFields,
-    })
-  })
+    })]
+  }).toArray()
   return [type, ...nestedTypes, ...instances].filter(isDefined)
 }
 

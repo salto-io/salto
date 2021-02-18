@@ -116,10 +116,8 @@ const getElementHiddenParts = async <T extends Element>(
     strict: true,
     elementsSource,
   })
-
   // remove all annotation types from the hidden element so they don't cause merge conflicts
   hidden.annotationRefTypes = {}
-
   if (isObjectType(hidden) && isObjectType(workspaceElement)) {
     // filter out fields that were deleted in the workspace (unless the field itself is hidden)
     const workspaceFields = new Set(Object.keys(workspaceElement.fields))
@@ -155,7 +153,7 @@ export const mergeWithHidden = async (
   const hiddenStateElements = partial
     ? awu(hiddenChangedElemIDs).map(id => state.get(id))
     : awu(await state.getAll())
-      .filter(async element => isHidden(element, state))
+      .filter(element => isHidden(element, state))
   const workspaceElementsWithHiddenParts = awu(workspaceElements)
     .flatMap(async (elem): Promise<Element[]> => {
       const stateElement = await state.get(elem.elemID)
@@ -169,9 +167,9 @@ export const mergeWithHidden = async (
   )
 }
 
-const removeHidden = (): TransformFunc =>
-  ({ value, field }) => (
-    isHiddenValue(field) ? undefined : value)
+const removeHidden = (elementsSource: ReadOnlyElementsSource): TransformFunc =>
+  async ({ value, field }) => (
+    await isHidden(field, elementsSource) ? undefined : value)
 
 const removeHiddenValue = (): TransformFunc =>
   ({ value, field }) => (
@@ -179,11 +177,15 @@ const removeHiddenValue = (): TransformFunc =>
 
 const removeHiddenFromElement = <T extends Element>(
   element: T,
+  elementsSource: ReadOnlyElementsSource
 ): Promise<T> => (
     transformElement({
       element,
-      transformFunc: isInstanceElement(element) ? removeHiddenValue() : removeHidden(),
+      transformFunc: isInstanceElement(element)
+        ? removeHiddenValue()
+        : removeHidden(elementsSource),
       strict: false,
+      elementsSource,
     })
   )
 
@@ -409,7 +411,7 @@ const filterOutHiddenChanges = async (
       // Remove nested hidden parts of instances, object types and fields
       return applyFunctionToChangeData(
         change,
-        element => removeHiddenFromElement(element),
+        element => removeHiddenFromElement(element, state),
       )
     }
 

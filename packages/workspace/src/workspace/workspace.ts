@@ -228,7 +228,7 @@ export const loadWorkspace = async (
   }
 
   const initChanges = await naclFilesSource.load()
-  await buildWorkspaceState({ changes: initChanges })
+  workspaceState = buildWorkspaceState({ changes: initChanges })
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {

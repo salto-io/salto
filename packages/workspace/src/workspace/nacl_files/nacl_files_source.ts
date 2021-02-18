@@ -117,7 +117,7 @@ const getInnerTypePrefixStartIndex = (fullName: string): number => {
   if (nestedList > nestedMap) {
     return nestedList + 'List<'.length
   }
-  if (nestedList > nestedMap) {
+  if (nestedMap > nestedList) {
     return nestedMap + 'Map<'.length
   }
   return -1

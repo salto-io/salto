@@ -45,6 +45,7 @@ import {
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
+import { defaultMissingFields } from './missing_fields'
 
 const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
@@ -189,7 +190,17 @@ export class Types {
     elemID: Types.filterItemElemID,
     fields: {
       [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
-      [FILTER_ITEM_FIELDS.OPERATION]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.OPERATION]: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: [
+              'contains', 'equals', 'excludes', 'greaterOrEqual', 'greaterThan', 'includes',
+              'lessOrEqual', 'lessThan', 'notContain', 'notEqual', 'startsWith', 'within',
+            ],
+          }),
+        },
+      },
       [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
       [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
     },
@@ -692,6 +703,7 @@ export class Types {
     int: BuiltinTypes.NUMBER,
     integer: BuiltinTypes.NUMBER,
     boolean: BuiltinTypes.BOOLEAN,
+    unknown: BuiltinTypes.UNKNOWN, // only relevant for missing fields
   }
 
   static setElemIdGetter(getElemIdFunc: ElemIdGetter): void {
@@ -1319,10 +1331,11 @@ type CreateMetadataTypeParams = {
   client: SalesforceClient
   isSettings?: boolean
   annotations?: Partial<MetadataTypeAnnotations>
+  missingFields?: Record<string, ValueTypeField[]>
 }
 export const createMetadataTypeElements = async ({
   name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
-  isSettings = false, annotations = {},
+  isSettings = false, annotations = {}, missingFields = defaultMissingFields(),
 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
@@ -1349,7 +1362,8 @@ export const createMetadataTypeElements = async ({
     && element.fields[INTERNAL_ID_FIELD] === undefined
   )
 
-  if (!fields || _.isEmpty(fields)) {
+  const allFields = fields.concat(missingFields[name] ?? [])
+  if (_.isEmpty(allFields)) {
     if (shouldCreateIdField()) {
       createIdField(element)
     }
@@ -1376,18 +1390,17 @@ export const createMetadataTypeElements = async ({
   // We need to create embedded types BEFORE creating this element's fields
   // in order to make sure all internal types we may need are updated in the
   // knownTypes map
-  const enrichedFields = await Promise.all(fields.map(async field => {
+  const enrichedFields = await Promise.all(allFields.map(async field => {
     if (shouldEnrichFieldValue(field)) {
       const innerFields = await client.describeMetadataType(field.soapType)
-      return { ...field,
-        fields: innerFields.valueTypeFields }
+      return { ...field, fields: innerFields.valueTypeFields }
     }
     return field
   }))
 
   const embeddedTypes = await Promise.all(enrichedFields
     .filter(field => !baseTypeNames.has(field.soapType))
-    .filter(field => !_.isEmpty(field.fields))
+    .filter(field => !_.isEmpty(field.fields.concat(missingFields[field.soapType] ?? [])))
     .flatMap(field => createMetadataTypeElements({
       name: field.soapType,
       fields: makeArray(field.fields),
@@ -1395,6 +1408,7 @@ export const createMetadataTypeElements = async ({
       baseTypeNames,
       childTypeNames,
       client,
+      missingFields,
     })))
 
   // Enum fields sometimes show up with a type name that is not primitive but also does not

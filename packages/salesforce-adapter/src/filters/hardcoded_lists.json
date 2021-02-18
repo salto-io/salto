@@ -10,6 +10,7 @@
   "salesforce.ApprovalProcess.field.approvalStep",
   "salesforce.AppWorkspaceConfig.field.mappings",
   "salesforce.AssignmentRules.field.assignmentRule",
+  "salesforce.BusinessHoursSettings.field.holidays",
   "salesforce.BusinessProcess.field.values",
   "salesforce.CleanDataService.field.cleanRules",
   "salesforce.CleanRule.field.fieldMappings",

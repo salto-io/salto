@@ -126,6 +126,7 @@ const buildMultiEnvSource = (
       // TODO: we might need to pass static file reviver to the deserialization func
       deserialize: deserializeSingleElement,
     }))
+    await elements.clear()
     await elements.setAll(applyInstancesDefaults(
       merged.values(),
       new RemoteElementSource(merged)

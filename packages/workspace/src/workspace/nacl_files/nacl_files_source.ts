@@ -295,7 +295,11 @@ const buildNaclFilesState = async ({
     )
 
     newElementsToMerge.push(await naclFile.elements.getAll())
-    await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
+    // This is temp and should be removed when we change the init flow
+    // This happens now cause we get here with ParsedNaclFiles that originate from the cache
+    if (values.isDefined(naclFile.buffer)) {
+      await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
+    }
   }
 
   const handleDeletion = async (naclFile: ParsedNaclFile): Promise<void> => {
@@ -513,7 +517,6 @@ const buildNaclFilesSource = (
       },
       buffer: fileData,
     }
-    await cache.put(filename, parsed)
     return parsed
   }
 

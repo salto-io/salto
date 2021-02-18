@@ -182,17 +182,15 @@ const getElementReferenced = async (element: Element): Promise<Set<string>> => {
 export const toParsedNaclFile = async (
   naclFile: Omit<NaclFile, 'buffer'>,
   parseResult: ParseResult
-): Promise<ParsedNaclFile> => {
-  return {
-    filename: naclFile.filename,
-    elements: await awu(parseResult.elements).toArray(),
-    data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-      { key: 'timestamp', value: naclFile.timestamp || Date.now() },
-      { key: 'errors', value: parseResult.errors },
-      { key: 'referenced', value: await awu(parseResult.elements).flatMap(getElementReferenced).toArray() },
-    ]),
-  }
-}
+): Promise<ParsedNaclFile> => ({
+  filename: naclFile.filename,
+  elements: await awu(parseResult.elements).toArray(),
+  data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
+    { key: 'timestamp', value: naclFile.timestamp || Date.now() },
+    { key: 'errors', value: parseResult.errors },
+    { key: 'referenced', value: await awu(parseResult.elements).flatMap(getElementReferenced).toArray() },
+  ]),
+})
 
 const parseNaclFile = async (
   naclFile: NaclFile, cache: ParseResultCache, functions: Functions
@@ -307,8 +305,8 @@ const buildNaclFilesState = async ({
       elementsIndexAdditions[elementFullName].add(naclFile.filename)
     })
     relevantElementIDs.push(
-      ... naclFile.elements.map(e => e.elemID),
-      ... currentState.parsedNaclFiles[naclFile.filename]?.elements.map(e => e.elemID) ?? []
+      ...naclFile.elements.map(e => e.elemID),
+      ...currentState.parsedNaclFiles[naclFile.filename]?.elements.map(e => e.elemID) ?? []
     )
 
     newElementsToMerge.push(awu(naclFile.elements))
@@ -354,7 +352,11 @@ const buildNaclFilesState = async ({
       ).filter((filename: string) => newParsed[filename] === undefined)
 
       return awu(unmodifiedFilesWithElem)
-        .map(filename => currentState.parsedNaclFiles[filename].elements.find(e => e.elemID.isEqual(elemID)))
+        .map(
+          filename => currentState.parsedNaclFiles[filename].elements.find(
+            e => e.elemID.isEqual(elemID)
+          )
+        )
     }).filter(values.isDefined) as AsyncIterable<Element>
 
   await updateIndex(

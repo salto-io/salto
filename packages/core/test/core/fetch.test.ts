@@ -23,6 +23,7 @@ import {
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource } from '@salto-io/workspace'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
@@ -30,6 +31,7 @@ import {
 import { getPlan, Plan } from '../../src/core/plan'
 import { mockFunction, createElementSource } from '../common/helpers'
 
+const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable
 const mockAwu = awu
 jest.mock('pietile-eventemitter')
@@ -142,8 +144,8 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            [newTypeBaseModified, typeWithField],
-            [],
+            createInMemoryElementSource([newTypeBaseModified, typeWithField]),
+            createInMemoryElementSource([]),
             [],
           )
           expect(Array.from(fetchChangesResult.changes).length).toBe(0)
@@ -155,8 +157,8 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            [],
-            [newTypeBase, typeWithField],
+            createInMemoryElementSource([]),
+            createInMemoryElementSource([newTypeBase, typeWithField]),
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
@@ -169,8 +171,8 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            [newTypeBaseModified, typeWithField],
-            [],
+            createInMemoryElementSource([newTypeBaseModified, typeWithField]),
+            createInMemoryElementSource([]),
             [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
@@ -184,8 +186,8 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            [],
-            [newTypeBase, typeWithField],
+            createInMemoryElementSource([]),
+            createInMemoryElementSource([newTypeBase, typeWithField]),
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
@@ -198,7 +200,7 @@ describe('fetch', () => {
           new ObjectType({
             elemID: new ElemID('dummy', 'type'),
             fields: {
-              field: { type: BuiltinTypes.NUMBER },
+              field: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
             },
           }),
           { field: new ReferenceExpression(new ElemID('dummy', 'type', 'instance', 'referenced', 'field')) }
@@ -209,7 +211,7 @@ describe('fetch', () => {
           new ObjectType({
             elemID: new ElemID('dummy', 'type'),
             fields: {
-              field: { type: BuiltinTypes.NUMBER },
+              field: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
             },
           }),
           { field: 5 }
@@ -225,8 +227,8 @@ describe('fetch', () => {
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          [beforeElement, workspaceReferencedElement],
-          [beforeElement, stateReferencedElement],
+          createInMemoryElementSource([beforeElement, workspaceReferencedElement]),
+          createInMemoryElementSource([beforeElement, stateReferencedElement]),
           [],
         )
 
@@ -263,11 +265,11 @@ describe('fetch', () => {
         it('should ignore deletions only for adapter with partial results', async () => {
           const fetchChangesResult = await fetchChanges(
             adapters,
-            [
+            createInMemoryElementSource([
               new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
               new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
-            ],
-            [],
+            ]),
+            createInMemoryElementSource([]),
             [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
@@ -278,14 +280,16 @@ describe('fetch', () => {
       })
 
       describe('getAdaptersFirstFetchPartial', () => {
-        const elements = [
+        const elements = createInMemoryElementSource([
           new ObjectType({ elemID: new ElemID('adapter1', 'type') }),
-        ]
+        ])
         const partiallyFetchedAdapters = new Set(['adapter1', 'adapter3'])
 
-        const resultAdapters = getAdaptersFirstFetchPartial(elements, partiallyFetchedAdapters)
-
-        it('results should only include adapter which is first fetch is partial', () => {
+        it('results should only include adapter which is first fetch is partial', async () => {
+          const resultAdapters = await getAdaptersFirstFetchPartial(
+            elements,
+            partiallyFetchedAdapters
+          )
           expect(resultAdapters).toEqual(new Set(['adapter3']))
         })
       })

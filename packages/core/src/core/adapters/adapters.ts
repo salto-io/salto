@@ -104,7 +104,7 @@ export const getAdaptersCreatorConfigs = async (
       const adapterConfig = config[adapter]
       return ([adapter, {
         credentials: credentials[adapter],
-        config: adapterConfig ?? getDefaultAdapterConfig(adapter),
+        config: adapterConfig ?? await getDefaultAdapterConfig(adapter),
         elementsSource: filterElementsSourceAdapter(workspaceElementsSource, adapter),
         getElemIdFunc: elemIdGetter,
       }])

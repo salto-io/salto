@@ -37,6 +37,8 @@ export const formatPrimitiveLogTagValue = (value: unknown): string => {
   return ''
 }
 
+export const isErrorType = (value: unknown): value is Error =>
+  value instanceof Error
 
 const formatKeyValue = (key: string, value: string): string =>
   `${key}=${value}`
@@ -52,6 +54,11 @@ export const formatLogTags = (logTags: Record<string, unknown>, baseKeys: string
     .map(([logTagKey, logTagValue]) => {
       if (isPrimitiveType(logTagValue)) {
         return formatKeyValue(logTagKey, formatPrimitiveLogTagValue(logTagValue))
+      }
+      if (isErrorType(logTagValue)) {
+        return formatObjectLogTag(
+          { error: logTagValue, stack: logTagValue.stack, message: logTagValue.message }
+        )
       }
       if (typeof logTagValue === 'object') {
         return formatObjectLogTag({ [logTagKey]: logTagValue })

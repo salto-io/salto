@@ -39,5 +39,11 @@ describe('logTags', () => {
     it('should return empty string for function value', () => {
       expect(formatLogTags({ some: undefined }, [])).toEqual('')
     })
+    it('should print error stack-trace and message', () => {
+      const tagValue = formatLogTags({ error: new Error('something bad') }, [])
+      expect(tagValue).toContain('stack')
+      expect(tagValue).toContain('.ts')
+      expect(tagValue).toContain('something bad')
+    })
   })
 })

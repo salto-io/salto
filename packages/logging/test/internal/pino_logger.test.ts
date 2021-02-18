@@ -685,6 +685,47 @@ describe('pino based logger', () => {
         })
       })
     })
+
+    describe('logging errors in tags', () => {
+      beforeEach(() => {
+        logger = createLogger()
+        logger.error('hello world', { error })
+      })
+
+      afterEach(() => repo.end())
+
+      it('should print error stacktrace, message, and error', () => {
+        const contents = consoleStream.contents()
+        expect(contents).toContain('hello world')
+        expect(contents).toContain('.ts')
+        expect(contents).toContain('stack')
+        expect(contents).toContain('testing 123')
+      })
+    })
+    describe('logging errors in tags in json format', () => {
+      beforeEach(() => {
+        initialConfig.format = 'json'
+        logger = createLogger()
+        logger.error('hello world', { error })
+        const [line1] = consoleStream.contents().split('\n')
+        jsonLine = JSON.parse(line1)
+      })
+
+      it('should print error stacktrace, message, and error', () => {
+        console.info('got')
+        console.info(jsonLine)
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'error',
+          message: 'hello world',
+          error: {
+            stack: error.stack,
+            customProp1: 'customVal1',
+            customProp2: { aNumber: 42 },
+          },
+        })
+      })
+    })
   })
   describe('JSON format', () => {
     beforeEach(async () => {

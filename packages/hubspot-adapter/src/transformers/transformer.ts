@@ -16,8 +16,8 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isContainerType, isMapType } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase, pathNaclCase, 
-  safeJsonStringify,createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase, pathNaclCase,
+  safeJsonStringify, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { isFormInstance } from '../filters/form_field'
 import {

@@ -261,17 +261,15 @@ export const transformElementAnnotations = async <T extends Element>(
     strict?: boolean
     elementsSource?: ReadOnlyElementsSource
   }
-): Promise<Values> => {
-  return await transformValues({
-    values: element.annotations,
-    type: await elementAnnotationTypes(element, elementsSource),
-    transformFunc,
-    strict,
-    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
-    elementsSource,
-    isTopLevel: false,
-  }) || {}
-}
+): Promise<Values> => await transformValues({
+  values: element.annotations,
+  type: await elementAnnotationTypes(element, elementsSource),
+  transformFunc,
+  strict,
+  pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+  elementsSource,
+  isTopLevel: false,
+}) || {}
 
 export const transformElement = async <T extends Element>(
   {

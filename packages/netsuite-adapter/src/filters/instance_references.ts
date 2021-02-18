@@ -82,7 +82,9 @@ const customTypeServiceIdsToElemIds = async (
   return serviceIdsToElemIds
 }
 
-const getInstanceServiceIdRecords = async (instance: InstanceElement): Promise<Record<string, ElemID>> => (
+const getInstanceServiceIdRecords = async (
+  instance: InstanceElement
+): Promise<Record<string, ElemID>> => (
   isCustomType(instance.refType.elemID)
     ? customTypeServiceIdsToElemIds(instance)
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
@@ -167,7 +169,8 @@ const filterCreator: FilterCreator = () => ({
         await instance.getType(),
         fetchedElemenentsServiceIdToElemID,
         elementsSourceServiceIdToElemID
-    )})
+      )
+    })
   },
 })
 

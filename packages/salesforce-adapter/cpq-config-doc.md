@@ -27,7 +27,7 @@ Salesforce data configuration includes the following information:
 * `includeObjects`: A list of object name patterns. Data records of matching salesforce objects will be managed in the salto workspace.
 * `excludeObjects`: A list of objects name patterns. Data records of matching salesforce objects will be excluded from the salto workspace.
 * `allowReferenceTo`: A list of objects name patterns. Data records of matching salesforce objects will be managed in the salto workspace only in case they are referenced from other managed data records. 
-* `saltoIDSettings`: Define cross environment id for data records by providing a list of object fields to construct the cross environment id from. Use `##allMasterDetailFields##` in order to include the `name` fields for all parent records.
+* `saltoIDSettings`: Define cross environment id for data records by providing a list of object fields to construct the cross environment id from. Use `##allMasterDetailFields##` in order to include the SaltoID of referenced MasterDetail records.
 
 ### Example Salto Salesforce/CPQ Configuration 
 ```

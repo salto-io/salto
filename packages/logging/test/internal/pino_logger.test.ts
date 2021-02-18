@@ -712,14 +712,12 @@ describe('pino based logger', () => {
       })
 
       it('should print error stacktrace, message, and error', () => {
-        console.info('got')
-        console.info(jsonLine)
         expect(jsonLine).toMatchObject({
-          time: expect.stringMatching(TIMESTAMP_REGEX),
           level: 'error',
           message: 'hello world',
           error: {
             stack: error.stack,
+            message: 'testing 123',
             customProp1: 'customVal1',
             customProp2: { aNumber: 42 },
           },

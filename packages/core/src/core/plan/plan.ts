@@ -369,7 +369,12 @@ export const getPlan = async ({
     before, after, diffGraph, changeValidators,
   )
   const customGroupKeys = await getCustomGroupIds(
-    filterResult.validDiffGraph, customGroupIdFunctions,
+    // We need to resolve the fileted graph again.
+    // Will be removed once the everything will use element source.
+    await resolveNodeElements(before, after)(
+      filterResult.validDiffGraph
+    ),
+    customGroupIdFunctions,
   )
   // build graph
   const groupedGraph = removeRedundantFieldChanges(

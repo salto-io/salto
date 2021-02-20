@@ -424,7 +424,7 @@ const filterOutHiddenChanges = async (
       }> => {
         if (change.id.isAttrID()) {
           return {
-            changeType: (await elementAnnotationTypes(baseElem))[path[0]],
+            changeType: (await elementAnnotationTypes(baseElem, state))[path[0]],
             changePath: path.slice(1),
           }
         }
@@ -438,7 +438,7 @@ const filterOutHiddenChanges = async (
         // idType === 'field'
         return {
           // changeType will be undefined if the path is too short
-          changeType: (await elementAnnotationTypes(baseElem.fields[path[0]]))[path[1]],
+          changeType: (await elementAnnotationTypes(baseElem.fields[path[0]], state))[path[1]],
           changePath: path.slice(2),
         }
       }

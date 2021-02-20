@@ -167,7 +167,6 @@ const addDifferentElements = (
 ): PlanTransformer => graph => log.time(async () => {
   const outputGraph = graph.clone()
   const sieve = new Set<string>()
-
   const toChange = (
     elem: ChangeDataType,
     action: Change['action'] & ('add' | 'remove')
@@ -182,7 +181,7 @@ const addDifferentElements = (
     elem: ChangeDataType,
     action: Change['action'] & ('add' | 'remove')
   ): void => {
-    outputGraph.addNode(changeId(elem, action), [], toChange(elem, action))
+    outputGraph.addNode(changeId(elem, action), [], toChange(elem.clone(), action))
   }
 
   const addNodeIfDifferent = async (

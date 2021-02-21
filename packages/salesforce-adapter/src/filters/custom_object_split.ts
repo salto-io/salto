@@ -18,40 +18,33 @@ import { Element, ObjectType, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { isCustomObject, isCustom, relativeApiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { SALESFORCE, INSTALLED_PACKAGES_PATH, OBJECTS_PATH, API_NAME } from '../constants'
+import { API_NAME } from '../constants'
 import { getNamespace, getNamespaceFromString } from './utils'
+import { getObjectDirectoryPath } from './custom_objects'
 
 export const annotationsFileName = (objectName: string): string => `${pathNaclCase(objectName)}Annotations`
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
-const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
-  const elemFileName = pathNaclCase(obj.elemID.name)
-  if (namespace) {
-    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, elemFileName]
-  }
-  return [SALESFORCE, OBJECTS_PATH, elemFileName]
-}
-
-const createCustomFieldsObjects = (
-  customObject: ObjectType,
-  objNamespace?: string
-): ObjectType[] => {
+const createCustomFieldsObjects = (customObject: ObjectType): ObjectType[] => {
   const createCustomFieldObject = (fields: Record<string, Field>, namespace?: string): ObjectType =>
     (new ObjectType(
       {
         elemID: customObject.elemID,
         fields,
-        path: [...getObjectDirectoryPath(customObject, namespace),
-          customFieldsFileName(customObject.elemID.name)],
+        path: [
+          ...getObjectDirectoryPath(customObject, namespace),
+          customFieldsFileName(customObject.elemID.name),
+        ],
       }
     ))
   const customFields = _.pickBy(
     customObject.fields,
-    (f: Field) => isCustom(f.elemID.getFullName())
-  ) as Record<string, Field>
+    f => isCustom(f.elemID.getFullName())
+  )
 
   // When there's an object namespace, all the custom fields are in the same object
+  const objNamespace = getNamespace(customObject)
   if (!_.isUndefined(objNamespace) && !_.isEmpty(customFields)) {
     return [createCustomFieldObject(customFields, objNamespace)]
   }
@@ -80,21 +73,24 @@ const createCustomFieldsObjects = (
 }
 
 const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] => {
-  const namespace = getNamespace(customObject)
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
     annotationTypes: customObject.annotationTypes,
     annotations: customObject.annotations,
-    path: [...getObjectDirectoryPath(customObject, namespace),
-      annotationsFileName(customObject.elemID.name)],
+    path: [
+      ...getObjectDirectoryPath(customObject),
+      annotationsFileName(customObject.elemID.name),
+    ],
   })
   const standardFieldsObject = new ObjectType({
     elemID: customObject.elemID,
-    fields: _.pickBy(customObject.fields, (f: Field) => !isCustom(f.elemID.getFullName())),
-    path: [...getObjectDirectoryPath(customObject, namespace),
-      standardFieldsFileName(customObject.elemID.name)],
+    fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
+    path: [
+      ...getObjectDirectoryPath(customObject),
+      standardFieldsFileName(customObject.elemID.name),
+    ],
   })
-  const customFieldsObjects = createCustomFieldsObjects(customObject, namespace)
+  const customFieldsObjects = createCustomFieldsObjects(customObject)
   return [...customFieldsObjects, standardFieldsObject, annotationsObject]
 }
 

@@ -26,6 +26,7 @@ import {
   addObjectParentReference, generateApiNameToCustomObject,
 } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
+import { getObjectDirectoryPath } from './custom_objects'
 
 const log = logger(module)
 
@@ -45,14 +46,11 @@ const layoutObjAndName = (layout: InstanceElement): [string, string] => {
 
 const fixLayoutPath = (
   layout: InstanceElement,
-  { path: objectPath }: ObjectType,
+  customObject: ObjectType,
   layoutName: string,
 ): void => {
-  if (objectPath === undefined) {
-    return
-  }
   layout.path = [
-    ...objectPath.slice(0, -1),
+    ...getObjectDirectoryPath(customObject),
     layout.elemID.typeName,
     pathNaclCase(naclCase(layoutName)),
   ]

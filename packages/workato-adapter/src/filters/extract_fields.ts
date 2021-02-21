@@ -109,16 +109,19 @@ const filter: FilterCreator = ({ config }) => ({
       fieldsToExtract => !_.isEmpty(fieldsToExtract),
     ) as Record<string, string[]>
 
-    const allTypes = elements.filter(isObjectType)
-    const allInstances = elements.filter(isInstanceElement)
+    const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.getFullName())
+    const allInstancesbyType = _.groupBy(
+      elements.filter(isInstanceElement),
+      e => e.type.elemID.getFullName()
+    )
 
     Object.entries(typesWithFieldsToExtract).forEach(([typeName, fieldsToExtract]) => {
-      const type = allTypes.find(e => e.elemID.isEqual(new ElemID(WORKATO, typeName)))
+      const type = allTypes[new ElemID(WORKATO, typeName).getFullName()]
       if (type === undefined) {
         log.error('could not find type %s', typeName)
         return
       }
-      const instances = allInstances.filter(e => e.type.elemID.isEqual(type.elemID))
+      const instances = allInstancesbyType[type.elemID.getFullName()] ?? []
 
       // first convert the fields to the right structure
       instances.forEach(inst => convertStringToObject(inst, fieldsToExtract))

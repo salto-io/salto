@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,10 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-module.exports = {
-  semi: false,
-  singleQuote: true,
-  tabWidth: 2,
-  jsxSingleQuote: true,
+export type MockFunction<T extends (...args: never[]) => unknown> =
+  jest.Mock<ReturnType<T>, Parameters<T>>
+
+export type MockInterface<T extends {}> = {
+  [k in keyof T]: T[k] extends (...args: never[]) => unknown
+    ? MockFunction<T[k]>
+    : MockInterface<T[k]>
 }
 
+export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
+  jest.fn()
+)

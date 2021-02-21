@@ -20,13 +20,14 @@ def to_mock_details(logpath):
 
 def main():
   if (len(sys.argv) != 3):
-    print(f'Usage: {sys.argv[0]} <input log file> <output jsonl file>')
-    print(f'\tExample: {sys.argv[0]} log.txt mocks.jsonl')
+    print(f'Usage: {sys.argv[0]} <input log file> <output json file>')
+    print(f'\tExample: {sys.argv[0]} log.txt mocks.json')
     return
   (logpath, mockpath) = sys.argv[1:]
   with open(mockpath, 'w') as mockfile:
     response_details = to_mock_details(logpath)
-    mockfile.writelines([f'{l}\n' for l in response_details])
+    mocks = ',\n'.join([f'\t{l}' for l in response_details])
+    mockfile.writelines(f'[\n{mocks}\n]\n')
 
 if __name__ == '__main__':
   main()

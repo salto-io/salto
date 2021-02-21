@@ -32,12 +32,12 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-utils'
 import { createConnection, validateCredentials } from '../../src/client/connection'
+import { mockFunction } from '../utils'
 
 describe('client connection', () => {
   describe('validateCredentials', () => {
     const mockConnection: clientUtils.APIConnection = {
-      get: jest.fn<ReturnType<clientUtils.APIConnection['get']>,
-        Parameters<clientUtils.APIConnection['get']>>()
+      get: mockFunction<clientUtils.APIConnection['get']>()
         .mockImplementationOnce(url => Promise.resolve(
           url === '/users/me'
             // eslint-disable-next-line @typescript-eslint/camelcase

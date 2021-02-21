@@ -40,17 +40,6 @@ export type WorkatoConfig = {
   [API_DEFINITIONS_CONFIG]?: WorkatoApiConfig
 }
 
-export type ConfigChangeSuggestion = {
-  type: keyof WorkatoConfig
-  value: string
-  reason?: string
-}
-
-export type FetchElements<T> = {
-  configChanges: ConfigChangeSuggestion[]
-  elements: T
-}
-
 export const DEFAULT_ENDPOINTS: Record<string, elementUtils.ducktype.EndpointConfig> = {
   connection: {
     request: {

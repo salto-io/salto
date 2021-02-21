@@ -18,23 +18,18 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { readTextFile } from '@salto-io/file'
 import { adapter } from '../../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../../src/auth'
 import { configType, FETCH_CONFIG, DEFAULT_ENDPOINTS } from '../../src/config'
+import mockReplies from './mock_replies.json'
 
-const getMockReplies = async (): Promise<{
+type MockReply = {
   url: string
   params: Record<string, string>
   response: unknown
-}[]> => {
-  // TODO improve path
-  const replyDefs = (await readTextFile(`${__dirname.replace('/dist', '')}/mock_replies.jsonl`)).split('\n')
-  const parsedDefs = replyDefs.filter(def => !_.isEmpty(def)).map(def => JSON.parse(def))
-  return parsedDefs
 }
 
-describe('adapter creator', () => {
+describe('workato fetch', () => {
   let mockAxiosAdapter: MockAdapter
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
@@ -42,9 +37,8 @@ describe('adapter creator', () => {
       '/users/me', undefined, expect.objectContaining({ 'x-user-email': 'user123', 'x-user-token': 'token456' }),
     ).reply(200, {
       id: 'user123',
-    })
-    const mockReplies = await getMockReplies()
-    mockReplies.forEach(({ url, params, response }) => {
+    });
+    (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
       mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(
         200, response
       )
@@ -55,7 +49,7 @@ describe('adapter creator', () => {
     mockAxiosAdapter.restore()
   })
 
-  it('should generate the right elements', async () => {
+  it('should generate the right elements on fetch', async () => {
     const { elements } = await adapter.operations({
       credentials: new InstanceElement(
         'config',

@@ -41,23 +41,11 @@ const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName = (
-  'none'
-)
-
-type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
-type MetadataTypeArgs = {
-  type: string
-  typeContext: ReferenceContextStrategyName
-}
-type MetadataParentArgs = {
-  parent?: string
-  parentContext?: ReferenceContextStrategyName
-}
 type ReferenceTargetDefinition = {
   name?: string
-} & (PickOne<MetadataTypeArgs, 'type'> | PickOne<MetadataTypeArgs, 'typeContext'>)
-  & (PickOne<MetadataParentArgs, 'parent'> | PickOne<MetadataParentArgs, 'parentContext'>)
+  type: string
+  parent?: string
+}
 export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
 
 type SourceDef = {

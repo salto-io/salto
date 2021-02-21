@@ -46,12 +46,12 @@ const { dumpElements } = parser
 describe('multi env tests', () => {
   jest.setTimeout(15 * 60 * 1000)
 
-  const WS_NAME = 'e2eWorkspace'
   const ENV1_NAME = 'env1'
   const ENV2_NAME = 'env2'
   let baseDir: string
   let saltoHomeDir: string
   const tempID = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
+  const WS_NAME = `e2eWorkspace${tempID}`
   const commonObjName = `TestObj${tempID}`
   const commonWithDiffName = `TestDiffObj${tempID}`
   const env1ObjName = `Env1TestObj${tempID}`

@@ -50,6 +50,8 @@ const filterElementsByRelevance = (elements: AsyncIterable<Element>, relevantIds
     return transformElement({
       element: elem,
       transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
+      runOnFields: true,
+      strict: false,
     })
   }).toArray()
 }

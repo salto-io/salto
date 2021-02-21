@@ -156,7 +156,7 @@ const getElementReferenced = async (element: Element): Promise<ElemID[]> => {
 }
 
 export const toParsedNaclFile = async (
-  naclFile: Omit<NaclFile, 'buffer'> & { buffer?: string},
+  naclFile: NaclFile,
   parseResult: ParseResult
 ): Promise<ParsedNaclFile> => {
   const elements = createInMemoryElementSource()
@@ -175,11 +175,9 @@ export const toParsedNaclFile = async (
 }
 
 const parseNaclFile = async (
-  naclFile: NaclFile, _cache: ParsedNaclFileCache, functions: Functions
-): Promise<Required<ParseResult>> => {
-  const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename, functions)
-  return parseResult
-}
+  naclFile: NaclFile, functions: Functions
+): Promise<Required<ParseResult>> =>
+  (parse(Buffer.from(naclFile.buffer), naclFile.filename, functions))
 
 const parseNaclFiles = async (
   naclFiles: NaclFile[], cache: ParsedNaclFileCache, functions: Functions
@@ -188,7 +186,7 @@ const parseNaclFiles = async (
     const hasValid = await cache.hasValid(cacheResultKey(naclFile))
     const cachedResult = hasValid && await cache.get(naclFile.filename)
     return (cachedResult && values.isDefined(cachedResult))
-      ? cachedResult : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, cache, functions))
+      ? cachedResult : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
   }), PARSE_CONCURRENCY)
 
 export const getFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
@@ -495,7 +493,7 @@ const buildNaclFilesSource = (
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
     }
-    const parsedResult = await parseNaclFile(naclFile, cache, functions)
+    const parsedResult = await parseNaclFile(naclFile, functions)
     return parsedResult.sourceMap
   }
 
@@ -590,8 +588,8 @@ const buildNaclFilesSource = (
               ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>,
                 buffer)
               : await toParsedNaclFile(
-                { filename },
-                await parseNaclFile({ filename, buffer }, cache, functions),
+                { filename, buffer },
+                await parseNaclFile({ filename, buffer }, functions),
               )
             if ((parsed.data.errors ?? []).length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)

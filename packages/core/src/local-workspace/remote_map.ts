@@ -87,7 +87,7 @@ const dbConnections: Record<string, rocksdb> = {}
 
 export const createRemoteMapCreator = (location: string):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
-  { namespace, batchInterval = 1000, LRUSize = 0, serialize, deserialize }:
+  { namespace, batchInterval = 1000, LRUSize = 500, serialize, deserialize }:
   remoteMap.CreateRemoteMapParams<T>
 ): Promise<remoteMap.RemoteMap<T, K>> => {
   if (!/^[a-z0-9-_/]+$/i.test(namespace)) {

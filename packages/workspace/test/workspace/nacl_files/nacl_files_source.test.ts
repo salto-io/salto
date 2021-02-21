@@ -68,18 +68,6 @@ describe('Nacl Files Source', () => {
   const mockParse = parser.parse as jest.Mock
 
   beforeEach(() => {
-    // mockCache = {
-    //   get: jest.fn().mockResolvedValue(undefined),
-    //   put: jest.fn().mockResolvedValue(undefined),
-    //   clone: () => mockCache,
-    //   flush: () => Promise.resolve(),
-    //   clear: () => Promise.resolve(),
-    //   rename: () => Promise.resolve(),
-    //   delete: () => Promise.resolve(),
-    //   list: () => Promise.resolve([]),
-    //   getAllErrors: () => Promise.resolve([]),
-    //   hasValid: () => Promise.resolve(true),
-    // }
     mockDirStore = {
       list: () => Promise.resolve([]),
       isEmpty: () => Promise.resolve(false),

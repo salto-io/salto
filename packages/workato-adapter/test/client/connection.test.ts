@@ -50,9 +50,9 @@ describe('client connection', () => {
             : { data: {}, status: 200, statusText: 'OK' }
         )),
     }
-    it('should extract the right account id', async () => {
-      expect(await validateCredentials({ username: 'user123', token: 'token456' }, mockConnection)).toEqual('company123')
-      expect(await validateCredentials({ username: 'user123', token: 'token456' }, mockConnection)).toEqual('id456')
+    it('should always extract empty account id', async () => {
+      expect(await validateCredentials({ username: 'user123', token: 'token456' }, mockConnection)).toEqual('')
+      expect(await validateCredentials({ username: 'user123', token: 'token456' }, mockConnection)).toEqual('')
     })
   })
 
@@ -78,7 +78,7 @@ describe('client connection', () => {
         something: 'bla',
       })
       const apiConn = await conn.login({ username: 'user123', token: 'token123' })
-      expect(apiConn.accountId).toEqual('user123')
+      expect(apiConn.accountId).toEqual('')
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
       const getRes = apiConn.get('/a/b')

@@ -37,7 +37,7 @@ export type WorkatoApiConfig = elementUtils.ducktype.AdapterApiConfig
 export type WorkatoConfig = {
   [CLIENT_CONFIG]?: WorkatoClientConfig
   [FETCH_CONFIG]: WorkatoFetchConfig
-  [API_DEFINITIONS_CONFIG]?: WorkatoApiConfig
+  [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
 }
 
 export const DEFAULT_ENDPOINTS: Record<string, elementUtils.ducktype.EndpointConfig> = {

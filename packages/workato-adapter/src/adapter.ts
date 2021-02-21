@@ -20,7 +20,7 @@ import { elements as elementUtils, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import { WorkatoConfig, DEFAULT_ENDPOINTS, DEFAULT_NAME_FIELD, DEFAULT_PATH_FIELD, FIELDS_TO_OMIT } from './config'
+import { WorkatoConfig, DEFAULT_NAME_FIELD, DEFAULT_PATH_FIELD, FIELDS_TO_OMIT } from './config'
 import extractFieldsFilter from './filters/extract_fields'
 import fieldReferencesFilter from './filters/field_references'
 import { WORKATO } from './constants'
@@ -57,7 +57,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       this.client,
       {
         fetch: config.fetch,
-        apiDefinitions: config.apiDefinitions ?? { endpoints: DEFAULT_ENDPOINTS },
+        apiDefinitions: config.apiDefinitions,
       },
       filterCreators,
     )
@@ -67,7 +67,7 @@ export default class WorkatoAdapter implements AdapterOperations {
   private async getElements(): Promise<Element[]> {
     return getAllElements({
       adapterName: WORKATO,
-      endpoints: this.userConfig.apiDefinitions?.endpoints ?? DEFAULT_ENDPOINTS,
+      endpoints: this.userConfig.apiDefinitions.endpoints,
       includeEndpoints: this.userConfig.fetch.includeEndpoints,
       client: this.client,
       nestedFieldFinder: returnFullEntry,

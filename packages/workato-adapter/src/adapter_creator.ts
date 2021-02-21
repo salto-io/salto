@@ -23,6 +23,7 @@ import WorkatoAdapter from './adapter'
 import {
   UsernameTokenCredentials, Credentials, usernameTokenCredentialsType,
 } from './auth'
+import changeValidator from './change_validator'
 import {
   configType, WorkatoConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_ENDPOINTS,
 } from './config'
@@ -41,20 +42,21 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 )
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): WorkatoConfig => {
+  const configValue = config?.value ?? {}
   const apiDefinitions: elementUtils.ducktype.AdapterApiConfig = _.defaults(
-    {}, config?.value?.apiDefinitions, { endpoints: DEFAULT_ENDPOINTS }
+    {}, configValue.apiDefinitions, { endpoints: DEFAULT_ENDPOINTS }
   )
 
   const adapterConfig: { [K in keyof Required<WorkatoConfig>]: WorkatoConfig[K] } = {
-    client: config?.value?.client,
-    fetch: config?.value?.fetch,
+    client: configValue.client,
+    fetch: configValue.fetch,
     apiDefinitions,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
 
-  Object.keys(config?.value ?? {})
+  Object.keys(configValue)
     .filter(k => !Object.keys(adapterConfig).includes(k))
     .forEach(k => log.debug('Unknown config property was found: %s', k))
   return adapterConfig
@@ -84,4 +86,7 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  deployModifiers: {
+    changeValidator,
+  },
 }

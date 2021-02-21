@@ -84,7 +84,18 @@ describe('Extract fields filter', () => {
           includeEndpoints: ['connection', 'recipe'],
         },
         apiDefinitions: {
-          endpoints: DEFAULT_ENDPOINTS,
+          endpoints: {
+            ...DEFAULT_ENDPOINTS,
+            nonexistentType: {
+              request: {
+                url: '/something',
+              },
+              translation: {
+                fieldsToOmit: ['last_run_at', 'job_succeeded_count', 'job_failed_count', 'created_at', 'updated_at'],
+                fieldsToExtract: ['code'],
+              },
+            },
+          },
         },
       },
     }) as FilterType

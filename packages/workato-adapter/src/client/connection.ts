@@ -22,10 +22,10 @@ const BASE_URL = 'https://www.workato.com/api'
 export const validateCredentials = async (
   _creds: Credentials, conn: clientUtils.APIConnection,
 ): Promise<AccountId> => {
-  const user = await conn.get('/users/me')
-  // TODO confirm the user id is good enough (doesn't seem to have an account id beyond that)
-  // TODO https://docs.workato.com/oem/oem-api/managed-users.html#get-customer-account in OEM API
-  return user.data.company_name ?? user.data.id
+  await conn.get('/users/me')
+  // there is no good stable account id in workato, so we default to empty string to avoid
+  // preventing users from refreshing their credentials in the SaaS.
+  return ''
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (

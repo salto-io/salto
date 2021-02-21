@@ -122,7 +122,7 @@ describe('adapter creator', () => {
       'config',
       usernameTokenCredentialsType,
       { username: 'user123', token: 'token456' },
-    ))).toEqual('user123')
+    ))).toEqual('')
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 })

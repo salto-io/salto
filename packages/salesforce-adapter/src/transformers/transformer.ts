@@ -180,6 +180,8 @@ export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
   ['FlexiPage', 'LightningPage'],
   ['FlexiPageRegion', 'LightningPageRegion'],
   ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],
+  ['Territory2', 'Territory2Metadata'],
+  ['Territory2Model', 'Territory2ModelMetadata'],
 ])
 
 export class Types {
@@ -737,7 +739,9 @@ export class Types {
   }
 
   public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
-    const updatedName = METADATA_TYPES_TO_RENAME.get(name) ?? name
+    const updatedName = customObject
+      ? name
+      : METADATA_TYPES_TO_RENAME.get(name) ?? name
     return (customObject && this.getElemIdFunc && serviceIds)
       ? this.getElemIdFunc(SALESFORCE, serviceIds, naclCase(updatedName))
       : new ElemID(SALESFORCE, naclCase(updatedName))

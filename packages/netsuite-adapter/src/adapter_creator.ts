@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
-import NetsuiteClient, { Credentials } from './client/client'
+import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 import { configType, NetsuiteConfig } from './config'
 import {
@@ -33,6 +33,7 @@ import {
   SKIP_LIST,
 } from './constants'
 import { validateParameters } from './query'
+import { Credentials } from './client/credentials'
 
 const log = logger(module)
 const { makeArray } = collections.array

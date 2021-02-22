@@ -39,17 +39,12 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_SDF_CONCURRENCY, NetsuiteClientConfig,
 } from '../config'
 import { NetsuiteQuery, ObjectID } from '../query'
+import { Credentials } from './credentials'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const { withTimeout } = promises.timeout
 const log = logger(module)
-
-export type Credentials = {
-  accountId: string
-  tokenId: string
-  tokenSecret: string
-}
 
 export type NetsuiteClientOpts = {
   credentials: Credentials

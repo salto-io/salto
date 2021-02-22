@@ -20,7 +20,6 @@ import {
   isInstanceElement, DeployResult, Values, isStaticFile, StaticFile,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
-import { Credentials } from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
@@ -31,6 +30,7 @@ import {
   TRANSACTION_COLUMN_CUSTOM_FIELD, TYPES_TO_SKIP, WORKFLOW,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
+import { Credentials } from '../src/client/credentials'
 
 const { makeArray } = collections.array
 

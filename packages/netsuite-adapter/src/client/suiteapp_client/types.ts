@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
 import { Credentials } from '../credentials'
 
@@ -32,7 +33,7 @@ export const SUITE_QL_RESULTS_SCHEMA = {
 
 export type SuiteQLResults = {
   hasMore: boolean
-  items: Record<string, unknown>[]
+  items: Values[]
 }
 
 export const SAVED_SEARCH_RESULTS_SCHEMA = {
@@ -60,13 +61,13 @@ export const SAVED_SEARCH_RESULTS_SCHEMA = {
 
 export type SavedSearchSuccessResults = {
   status: 'success'
-  results: Record<string, unknown>[]
+  results: Values[]
 }
 
 export type SavedSearchErrorResults = {
   status: 'error'
   message: string
-  error?: Record<string, unknown>
+  error?: Values
 }
 
 export const isError = (results: SavedSearchResults): results is SavedSearchErrorResults =>

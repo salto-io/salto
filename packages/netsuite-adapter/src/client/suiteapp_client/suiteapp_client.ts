@@ -20,6 +20,7 @@ import axios from 'axios'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { Values } from '@salto-io/adapter-api'
 import { Credentials } from '../credentials'
 import { HttpMethod, isError, SavedSearchQuery, SavedSearchResults, SavedSearchSuccessResults,
   SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA } from './types'
@@ -50,14 +51,14 @@ export class SuiteAppClient {
   }
 
   public async runSuiteQL(query: string):
-    Promise<Record<string, unknown>[] | undefined> {
+    Promise<Values[] | undefined> {
     let hasMore = true
-    const items: Record<string, unknown>[] = []
+    const items: Values[] = []
     for (let offset = 0; hasMore; offset += PAGE_SIZE) {
       try {
         // eslint-disable-next-line no-await-in-loop
         const results = await this.sendSuiteQLRequest(query, offset, PAGE_SIZE)
-        // For some reason, a "link" field with empty array is returned regardless
+        // For some reason, a "links" field with empty array is returned regardless
         // to the SELECT values in the query.
         items.push(...results.items.map(item => _.omit(item, ['links'])))
         hasMore = results.hasMore
@@ -70,9 +71,9 @@ export class SuiteAppClient {
   }
 
   public async runSavedSearchQuery(query: SavedSearchQuery):
-    Promise<Record<string, unknown>[] | undefined> {
+    Promise<Values[] | undefined> {
     let hasMore = true
-    const items: Record<string, unknown>[] = []
+    const items: Values[] = []
     for (let offset = 0; hasMore; offset += PAGE_SIZE) {
       try {
         // eslint-disable-next-line no-await-in-loop

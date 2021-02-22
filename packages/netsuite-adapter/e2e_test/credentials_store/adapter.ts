@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
-import NetsuiteClient, { Credentials } from '../../src/client/client'
+import { Credentials } from '../../src/client/credentials'
+import NetsuiteClient from '../../src/client/client'
 
 type Args = {
   accountId: string

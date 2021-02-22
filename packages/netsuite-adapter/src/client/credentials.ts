@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { default } from './src/adapter'
-export { adapter } from './src/adapter_creator'
-export { credsLease } from './e2e_test/adapter'
-export { Credentials } from './src/client/credentials'
+export type Credentials = {
+  accountId: string
+  tokenId: string
+  tokenSecret: string
+}

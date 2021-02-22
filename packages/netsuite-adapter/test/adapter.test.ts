@@ -15,7 +15,7 @@
 */
 
 import {
-  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement,
+  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement, FetchOptions,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -33,7 +33,7 @@ import {
 } from '../src/client/client'
 import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
-import { mockGetElemIdFunc } from './utils'
+import { mockGetElemIdFunc, MockInterface } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
 
 jest.mock('../src/config', () => ({
@@ -80,6 +80,10 @@ describe('Adapter', () => {
     getElemIdFunc: mockGetElemIdFunc,
   })
 
+  const mockFetchOpts: MockInterface<FetchOptions> = {
+    progressReporter: { reportProgress: jest.fn() },
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
     client.listInstances = jest.fn().mockResolvedValue([])
@@ -124,7 +128,7 @@ describe('Adapter', () => {
         elements: [customTypeInfo],
         failedToFetchAllAtOnce: false,
       })
-      const { elements, isPartial } = await netsuiteAdapter.fetch()
+      const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
@@ -171,12 +175,12 @@ describe('Adapter', () => {
       })
 
       it('isPartial should be true', async () => {
-        const { isPartial } = await adapter.fetch()
+        const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeTruthy()
       })
 
       it('should match the types that match fetchTarget and not in typesToSkip', async () => {
-        await adapter.fetch()
+        await adapter.fetch(mockFetchOpts)
 
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
@@ -185,7 +189,7 @@ describe('Adapter', () => {
       })
 
       it('should match the files that match fetchTarget and not in filePathRegexSkipList', async () => {
-        await adapter.fetch()
+        await adapter.fetch(mockFetchOpts)
 
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
@@ -198,14 +202,14 @@ describe('Adapter', () => {
       client.getCustomObjects = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
-      await expect(netsuiteAdapter.fetch()).rejects.toThrow()
+      await expect(netsuiteAdapter.fetch(mockFetchOpts)).rejects.toThrow()
     })
 
     it('should fail when importFileCabinetContent fails', async () => {
       client.importFileCabinetContent = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
-      await expect(netsuiteAdapter.fetch()).rejects.toThrow()
+      await expect(netsuiteAdapter.fetch(mockFetchOpts)).rejects.toThrow()
     })
 
     it('should ignore instances of unknown type', async () => {
@@ -217,18 +221,18 @@ describe('Adapter', () => {
         elements: [customTypeInfo],
         failedToFetchAllAtOnce: false,
       })
-      const { elements } = await netsuiteAdapter.fetch()
+      const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(elements).toHaveLength(getAllTypes().length)
     })
 
     it('should call filters by their order', async () => {
-      await netsuiteAdapter.fetch()
+      await netsuiteAdapter.fetch(mockFetchOpts)
       expect(onFetchMock).toHaveBeenNthCalledWith(1, 1)
       expect(onFetchMock).toHaveBeenNthCalledWith(2, 2)
     })
 
     it('should call getCustomObjects with query that only matches types that are not in typesToSkip', async () => {
-      await netsuiteAdapter.fetch()
+      await netsuiteAdapter.fetch(mockFetchOpts)
       const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
       expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
@@ -237,7 +241,7 @@ describe('Adapter', () => {
     it('should return only the elements when having no config changes', async () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
-      const fetchResult = await netsuiteAdapter.fetch()
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], config)
       expect(fetchResult.updatedConfig).toBeUndefined()
     })
@@ -251,7 +255,7 @@ describe('Adapter', () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
-      const fetchResult = await netsuiteAdapter.fetch()
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['/path/to/file'], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
@@ -264,7 +268,7 @@ describe('Adapter', () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
-      const fetchResult = await netsuiteAdapter.fetch()
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })

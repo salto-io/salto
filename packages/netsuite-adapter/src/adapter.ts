@@ -15,7 +15,7 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource,
+  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource, FetchOptions,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -109,7 +109,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Fetch configuration elements: objects, types and instances for the given Netsuite account.
    * Account credentials were given in the constructor.
    */
-  public async fetch(): Promise<FetchResult> {
+  public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     const deprecatedSkipList = buildNetsuiteQuery({
       types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
@@ -127,13 +127,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
     const {
-      elements: customObjects,
-      failedToFetchAllAtOnce,
-    } = await getCustomObjectsResult
-    const {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,
     } = await importFileCabinetResult
+    progressReporter.reportProgress({ message: 'Finished fetching file cabinet instances. Fetching custom object instances' })
+
+    const {
+      elements: customObjects,
+      failedToFetchAllAtOnce,
+    } = await getCustomObjectsResult
+    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
     const customizationInfos = [...customObjects, ...fileCabinetContent]
     const instances = customizationInfos.map(customizationInfo => {
@@ -145,6 +148,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const isPartial = this.fetchTarget !== undefined
 
+    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
     await this.runFiltersOnFetch(elements, this.elementsSource, isPartial)
     const updatedConfig = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedFilePaths,
       this.userConfig)

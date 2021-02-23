@@ -37,14 +37,20 @@ export type SuiteQLResults = {
 }
 
 export const SAVED_SEARCH_RESULTS_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+  },
+}
+
+export type SavedSearchResults = Values[]
+
+export const RESTLET_RESULTS_SCHEMA = {
   anyOf: [{
     type: 'object',
     properties: {
       status: { const: 'success' },
-      results: {
-        type: 'array',
-        items: { type: 'object' },
-      },
+      results: {},
     },
     required: ['status', 'results'],
   }, {
@@ -59,21 +65,22 @@ export const SAVED_SEARCH_RESULTS_SCHEMA = {
   additionalProperties: true,
 }
 
-export type SavedSearchSuccessResults = {
+
+export type RestletSuccessResults = {
   status: 'success'
-  results: Values[]
+  results: unknown
 }
 
-export type SavedSearchErrorResults = {
+export type RestletErrorResults = {
   status: 'error'
   message: string
   error?: Values
 }
 
-export const isError = (results: SavedSearchResults): results is SavedSearchErrorResults =>
+export const isError = (results: RestletResults): results is RestletErrorResults =>
   results.status === 'error'
 
-export type SavedSearchResults = SavedSearchSuccessResults | SavedSearchErrorResults
+export type RestletResults = RestletSuccessResults | RestletErrorResults
 
 
 export type HttpMethod = 'POST' | 'GET'
@@ -89,3 +96,24 @@ export type SavedSearchQuery = {
   columns: string[]
   filters: string[][]
 }
+
+export const SYSTEM_INFORMATION_SCHEME = {
+  type: 'object',
+  properties: {
+    time: { type: 'string' },
+    appVersion: {
+      type: 'array',
+      items: { type: 'number' },
+    },
+  },
+  required: ['time', 'appVersion'],
+  additionalProperties: true,
+}
+
+
+export type SystemInformation = {
+  time: Date
+  appVersion: number[]
+}
+
+export type RestletOperation = 'search' | 'sysInfo'

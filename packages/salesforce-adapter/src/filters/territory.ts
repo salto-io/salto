@@ -13,36 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { isInstanceOfType } from './utils'
 import { isMetadataObjectType, metadataType } from '../transformers/transformer'
 import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE } from '../constants'
 
-const log = logger(module)
-
-const removeCustomFieldsFromType = (elements: Element[], typeName: string): void => {
-  const type = elements
+const removeCustomFieldsFromTypes = (elements: Element[], typeNames: string[]): void => {
+  const elementsOfTypes = elements.filter(elem => typeNames.includes(metadataType(elem)))
+  elementsOfTypes
     .filter(isMetadataObjectType)
-    .find(elem => metadataType(elem) === typeName)
-  if (type === undefined) {
-    log.debug('Type %s not found', typeName)
-    return
-  }
-  delete type.fields.customFields
-
-  const instances = elements.filter(isInstanceOfType(typeName))
-  instances.forEach(inst => {
-    delete inst.value.customFields
-  })
+    .forEach(type => {
+      delete type.fields.customFields
+    })
+  elementsOfTypes
+    .filter(isInstanceElement)
+    .forEach(inst => {
+      delete inst.value.customFields
+    })
 }
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async elements => {
-    // Remove custom field definitions from territory and territory model
-    removeCustomFieldsFromType(elements, TERRITORY2_TYPE)
-    removeCustomFieldsFromType(elements, TERRITORY2_MODEL_TYPE)
+    // Territory2 and Territory2Model support custom fields - these are returned
+    // in a CustomObject with the appropriate name and also in each instance of these types
+    // We remove the fields from the instances to avoid duplication
+    removeCustomFieldsFromTypes(elements, [TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE])
   },
 })
 

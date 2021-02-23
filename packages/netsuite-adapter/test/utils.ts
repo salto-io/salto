@@ -17,3 +17,12 @@ import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 
 export const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
   ElemID => new ElemID(adapterName, name)
+
+export type MockFunction<T extends (...args: never[]) => unknown> =
+  jest.Mock<ReturnType<T>, Parameters<T>>
+
+export type MockInterface<T extends {}> = {
+  [k in keyof T]: T[k] extends (...args: never[]) => unknown
+    ? MockFunction<T[k]>
+    : MockInterface<T[k]>
+}

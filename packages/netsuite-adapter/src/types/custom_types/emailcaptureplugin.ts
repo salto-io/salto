@@ -76,12 +76,12 @@ export const emailcaptureplugin = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
     name: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    }, /* Original description: This field value can be up to 40 characters long. */
+    }, /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */
     scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
@@ -89,11 +89,11 @@ export const emailcaptureplugin = new ObjectType({
       },
     }, /* Original description: This field must reference a .js file. */
     description: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    }, /* Original description: This field value can be up to 999 characters long. */
+    }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {

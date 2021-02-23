@@ -292,6 +292,11 @@ export const customtransactiontype = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    cancloseorder: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
     accounting: {
       type: customtransactiontype_accounting,
       annotations: {

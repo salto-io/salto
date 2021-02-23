@@ -144,6 +144,47 @@ const publisheddashboard_dashboards_dashboard_centercolumn_calendar = new Object
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_calendar)
 
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameterElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameterElemID,
+  annotations: {
+  },
+  fields: {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the scriptcustomfield custom type. */
+    value: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    }, /* Original description: This field accepts values of the custom field type specified in the id. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parametersElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parametersElemID,
+  annotations: {
+  },
+  fields: {
+    parameter: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters)
+
 const publisheddashboard_dashboards_dashboard_centercolumn_customportletElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_customportlet')
 
 const publisheddashboard_dashboards_dashboard_centercolumn_customportlet = new ObjectType({
@@ -161,6 +202,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customportlet = new O
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    parameters: {
+      type: publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters,
+      annotations: {
+      },
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -221,6 +267,129 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customsearch = new Ob
 })
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_customsearch)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshotsElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshotsElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    snapshot: {
+      type: enums.portlet_reportsnapshot_snapshot,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_snapshot. */
+    charttype: {
+      type: enums.portlet_reportsnapshot_charttype,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_charttype. */
+    backgroundtype: {
+      type: enums.portlet_reportsnapshot_backgroundtype,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_backgroundtype. */
+    hierarchylevel: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    charttheme: {
+      type: enums.portlet_reportsnapshot_charttheme,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_charttheme. */
+    periodrange: {
+      type: enums.portlet_reportsnapshot_reportperiodrange,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_reportperiodrange. */
+    daterange: {
+      type: enums.portlet_reportsnapshot_daterange,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+    topx: {
+      type: enums.portlet_reportsnapshot_topx,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_topx. */
+    isgraph: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    compareperiodrange: {
+      type: enums.portlet_reportsnapshot_reportperiodrange,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_reportperiodrange. */
+    comparedaterange: {
+      type: enums.portlet_reportsnapshot_daterange,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+    isnewdaterange: {
+      type: enums.portlet_reportsnapshot_daterange,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+    custom: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    listtopx: {
+      type: enums.portlet_reportsnapshot_topx,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_topx. */
+    graphlayout: {
+      type: enums.portlet_reportsnapshot_graphlayout,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_graphlayout. */
+    orderby: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    orderdesc: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    color: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    customsnapshot: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    comparedranges: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    comparedaterange2: {
+      type: enums.portlet_reportsnapshot_daterange,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots)
 
 const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpi')
 
@@ -404,6 +573,159 @@ const publisheddashboard_dashboards_dashboard_centercolumn_kpireport = new Objec
 })
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_kpireport)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_lastloginElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_lastlogin')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_lastlogin = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_lastloginElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    showlastlogin: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastotherservicelogin: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastuilogin: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastloginip: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastuiloginip: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showcurrentuilogin: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showcurrentuiloginip: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showsuccesstoday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showsuccessthisweek: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showsuccessthismonth: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastfailuretime: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastfailureip: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showfailurestoday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showfailuresthisweek: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showfailuresthismonth: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showpasswordchanged: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showpasswordexpiration: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastmobilelogin: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastmobileloginip: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showmobiletoday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showmobilethisweek: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showmobilethismonth: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastwebservicelogin: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showlastwebserviceloginip: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showwebservicetoday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showwebservicethisweek: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    showwebservicethismonth: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_lastlogin)
 
 const publisheddashboard_dashboards_dashboard_centercolumn_listElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_list')
 
@@ -919,6 +1241,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
       annotations: {
       },
     },
+    enhsnapshots: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots),
+      annotations: {
+      },
+    },
     keyperformanceindicators: {
       type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators),
       annotations: {
@@ -931,6 +1258,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
     },
     kpireport: {
       type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpireport),
+      annotations: {
+      },
+    },
+    lastlogin: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_lastlogin),
       annotations: {
       },
     },
@@ -1139,12 +1471,12 @@ export const publisheddashboard = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpubdashboard’. */
     name: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
-    }, /* Original description: This field value can be up to 30 characters long. */
+    }, /* Original description: This field value can be up to 30 characters long.   This field accepts references to the string custom type. */
     center: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
@@ -1162,11 +1494,11 @@ export const publisheddashboard = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     notes: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 4000,
       },
-    }, /* Original description: This field value can be up to 4000 characters long. */
+    }, /* Original description: This field value can be up to 4000 characters long.   This field accepts references to the string custom type. */
     dashboards: {
       type: publisheddashboard_dashboards,
       annotations: {

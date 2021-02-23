@@ -491,6 +491,16 @@ const customrecordactionscript_scriptdeployments_scriptdeployment = new ObjectTy
       annotations: {
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    showbutton: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    actionlabel: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the string custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
@@ -530,12 +540,12 @@ export const customrecordactionscript = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
     name: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    }, /* Original description: This field value can be up to 40 characters long. */
+    }, /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */
     scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
@@ -543,11 +553,11 @@ export const customrecordactionscript = new ObjectType({
       },
     }, /* Original description: This field must reference a .js file. */
     description: {
-      type: BuiltinTypes.STRING,
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    }, /* Original description: This field value can be up to 999 characters long. */
+    }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
     isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {

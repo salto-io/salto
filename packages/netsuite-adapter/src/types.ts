@@ -22,6 +22,7 @@ import { bankstatementparserplugin, bankstatementparserpluginInnerTypes } from '
 import { bundleinstallationscript, bundleinstallationscriptInnerTypes } from './types/custom_types/bundleinstallationscript'
 import { center, centerInnerTypes } from './types/custom_types/center'
 import { centercategory, centercategoryInnerTypes } from './types/custom_types/centercategory'
+import { centerlink, centerlinkInnerTypes } from './types/custom_types/centerlink'
 import { centertab, centertabInnerTypes } from './types/custom_types/centertab'
 import { clientscript, clientscriptInnerTypes } from './types/custom_types/clientscript'
 import { cmscontenttype, cmscontenttypeInnerTypes } from './types/custom_types/cmscontenttype'
@@ -59,6 +60,7 @@ import { savedcsvimport, savedcsvimportInnerTypes } from './types/custom_types/s
 import { savedsearch, savedsearchInnerTypes } from './types/custom_types/savedsearch'
 import { scheduledscript, scheduledscriptInnerTypes } from './types/custom_types/scheduledscript'
 import { sdfinstallationscript, sdfinstallationscriptInnerTypes } from './types/custom_types/sdfinstallationscript'
+import { secret, secretInnerTypes } from './types/custom_types/secret'
 import { sspapplication, sspapplicationInnerTypes } from './types/custom_types/sspapplication'
 import { sublist, sublistInnerTypes } from './types/custom_types/sublist'
 import { subtab, subtabInnerTypes } from './types/custom_types/subtab'
@@ -86,6 +88,7 @@ export const customTypes: Readonly<Record<string, ObjectType>> = {
   bundleinstallationscript,
   center,
   centercategory,
+  centerlink,
   centertab,
   clientscript,
   cmscontenttype,
@@ -123,6 +126,7 @@ export const customTypes: Readonly<Record<string, ObjectType>> = {
   savedsearch,
   scheduledscript,
   sdfinstallationscript,
+  secret,
   sspapplication,
   sublist,
   subtab,
@@ -145,6 +149,7 @@ const innerCustomTypes: ObjectType[] = [
   ...bundleinstallationscriptInnerTypes,
   ...centerInnerTypes,
   ...centercategoryInnerTypes,
+  ...centerlinkInnerTypes,
   ...centertabInnerTypes,
   ...clientscriptInnerTypes,
   ...cmscontenttypeInnerTypes,
@@ -182,6 +187,7 @@ const innerCustomTypes: ObjectType[] = [
   ...savedsearchInnerTypes,
   ...scheduledscriptInnerTypes,
   ...sdfinstallationscriptInnerTypes,
+  ...secretInnerTypes,
   ...sspapplicationInnerTypes,
   ...sublistInnerTypes,
   ...subtabInnerTypes,

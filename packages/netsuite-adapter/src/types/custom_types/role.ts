@@ -139,38 +139,23 @@ export const role = new ObjectType({
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customrole[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customrole’. */
-    name: {
-      type: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
     centertype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see role_centertype. */
-    issalesrole: {
-      type: BuiltinTypes.BOOLEAN,
+    name: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the string custom type. */
+    tfaduration: {
+      type: enums.tfaduration,
       annotations: {
       },
-    }, /* Original description: The default value is F. */
-    issupportrole: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    iswebserviceonlyrole: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSERVICES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSERVICES must be enabled for this field to appear in your account. */
-    restrictip: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the IPADDRESSRULES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. IPADDRESSRULES must be enabled for this field to appear in your account. */
+    }, /* Original description: This field is mandatory when the tfarequired value is not equal to OFF.   For information about possible values, see tfaduration.   The default value is '0'. */
     employeerestriction: {
       type: enums.role_fullrestrictions,
       annotations: {
@@ -181,16 +166,76 @@ export const role = new ObjectType({
       annotations: {
       },
     }, /* Original description: This field is available when the employeerestriction value is not equal to any of the following lists or values: DEFAULTTOOWN, NONE.   The default value is F. */
+    ispartnerrole: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    issalesrole: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    issupportrole: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    issuerole: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    }, /* Original description: If this field appears in the project, you must reference the ISSUEDB feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ISSUEDB must be enabled for this field to appear in your account. */
     restricttimeandexpenses: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    employeeselectionunrestricted: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    subsidiaryviewingallowed: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account. */
+    subsidiaryoption: {
+      type: enums.rolesubsidiaryoption,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see rolesubsidiaryoption.   The default value is 'ALL'.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account. */
+    issinglesignononly: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    iswebserviceonlyrole: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSERVICES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSERVICES must be enabled for this field to appear in your account. */
     restrictbydevice: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    restrictip: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the IPADDRESSRULES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. IPADDRESSRULES must be enabled for this field to appear in your account. */
+    tfarequired: {
+      type: enums.tfarequired,
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see tfarequired.   The default value is 'OFF'. */
     permissions: {
       type: role_permissions,
       annotations: {

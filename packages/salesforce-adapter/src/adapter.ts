@@ -62,6 +62,7 @@ import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
+import territoryFilter from './filters/territory'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -107,6 +108,7 @@ export const DEFAULT_FILTERS = [
   staticResourceFileExtFilter,
   xmlAttributesFilter,
   profilePathsFilter,
+  territoryFilter,
   elementsUrlFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,

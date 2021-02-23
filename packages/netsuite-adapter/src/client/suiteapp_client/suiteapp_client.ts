@@ -22,8 +22,9 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
 import { Credentials } from '../credentials'
-import { HttpMethod, isError, SavedSearchQuery, SavedSearchResults, SavedSearchSuccessResults,
-  SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA } from './types'
+import { HttpMethod, isError, RestletOperation, RestletResults, RESTLET_RESULTS_SCHEMA,
+  SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters,
+  SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation, SYSTEM_INFORMATION_SCHEME } from './types'
 
 
 const CONSUMER_KEY = '3db2f2ec0bd98c4eee526ea0b8da876d1d739597e50ee593c67c0f2c34294073'
@@ -36,7 +37,7 @@ export class SuiteAppClient {
   private credentials: Credentials
   private callsLimiter: Bottleneck
   private suiteQLUrl: URL
-  private savedSearchUrl: URL
+  private restletUrl: URL
   private ajv: Ajv
 
   constructor(params: SuiteAppClientParameters) {
@@ -45,7 +46,7 @@ export class SuiteAppClient {
 
     const accountIdUrl = params.credentials.accountId.replace('_', '-')
     this.suiteQLUrl = new URL(`https://${accountIdUrl}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql`)
-    this.savedSearchUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_search_restlet&deploy=customdeploy_salto_search_restlet`)
+    this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
   }
@@ -78,8 +79,8 @@ export class SuiteAppClient {
       try {
         // eslint-disable-next-line no-await-in-loop
         const results = await this.sendSavedSearchRequest(query, offset, PAGE_SIZE)
-        items.push(...results.results)
-        hasMore = results.results.length === PAGE_SIZE
+        items.push(...results)
+        hasMore = results.length === PAGE_SIZE
       } catch (error) {
         log.error('Saved search query error', { error })
         return undefined
@@ -88,6 +89,24 @@ export class SuiteAppClient {
     return items
   }
 
+  public async getSystemInformation(): Promise<SystemInformation | undefined> {
+    try {
+      const results = await this.sendRestletRequest('sysInfo')
+
+      if (!this.ajv.validate<{ time: string; appVersion: number[] }>(
+        SYSTEM_INFORMATION_SCHEME,
+        results
+      )) {
+        log.error(`getSystemInformation failed. Got invalid results: ${this.ajv.errorsText()}`)
+        return undefined
+      }
+
+      return { ...results, time: new Date(results.time) }
+    } catch (error) {
+      log.error('error was thrown in getSystemInformation', { error })
+      return undefined
+    }
+  }
 
   private async sendSuiteQLRequest(query: string, offset: number, limit: number):
   Promise<SuiteQLResults> {
@@ -112,27 +131,43 @@ export class SuiteAppClient {
     return response.data
   }
 
-  private async sendSavedSearchRequest(query: SavedSearchQuery, offset: number, limit: number):
-  Promise<SavedSearchSuccessResults> {
+  private async sendRestletRequest(
+    operation: RestletOperation,
+    args: Record<string, unknown> = {}
+  ): Promise<unknown> {
     const response = await this.callsLimiter.schedule(() => axios.post(
-      this.savedSearchUrl.href,
+      this.restletUrl.href,
       {
-        ...query,
-        offset,
-        limit,
+        operation,
+        args,
       },
-      { headers: this.generateHeaders(this.savedSearchUrl, 'POST') },
+      { headers: this.generateHeaders(this.restletUrl, 'POST') },
     ))
 
-    if (!this.ajv.validate<SavedSearchResults>(SAVED_SEARCH_RESULTS_SCHEMA, response.data)) {
-      throw new Error(`Got invalid results from the saved search query: ${this.ajv.errorsText()}`)
+    if (!this.ajv.validate<RestletResults>(RESTLET_RESULTS_SCHEMA, response.data)) {
+      throw new Error(`Got invalid results from a Restlet request: ${this.ajv.errorsText()}`)
     }
 
     if (isError(response.data)) {
-      throw new Error(`Saved search query failed. Message: ${response.data.message}, error ${response.data.error}`)
+      throw new Error(`Restlet request failed. Message: ${response.data.message}, error ${response.data.error}`)
     }
 
-    return response.data
+    return response.data.results
+  }
+
+  private async sendSavedSearchRequest(query: SavedSearchQuery, offset: number, limit: number):
+  Promise<SavedSearchResults> {
+    const results = await this.sendRestletRequest('search', {
+      ...query,
+      offset,
+      limit,
+    })
+
+    if (!this.ajv.validate<SavedSearchResults>(SAVED_SEARCH_RESULTS_SCHEMA, results)) {
+      throw new Error(`Got invalid results from the saved search query: ${this.ajv.errorsText()}`)
+    }
+
+    return results
   }
 
   private generateHeaders(url: URL, method: HttpMethod): Record<string, string> {

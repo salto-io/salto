@@ -21,14 +21,18 @@ import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client
 jest.mock('axios')
 
 describe('SuiteAppClient', () => {
-  const postMock = jest.spyOn(axios, 'post')
-  const client = new SuiteAppClient({
-    credentials: {
-      accountId: 'ACCOUNT_ID',
-      tokenId: 'tokenId',
-      tokenSecret: 'tokenSecret',
-    },
-    callsLimiter: new Bottleneck(),
+  let postMock: jest.SpyInstance
+  let client: SuiteAppClient
+  beforeEach(() => {
+    postMock = jest.spyOn(axios, 'post')
+    client = new SuiteAppClient({
+      credentials: {
+        accountId: 'ACCOUNT_ID',
+        tokenId: 'tokenId',
+        tokenSecret: 'tokenSecret',
+      },
+      callsLimiter: new Bottleneck(),
+    })
   })
 
   describe('runSuiteQL', () => {
@@ -128,13 +132,16 @@ describe('SuiteAppClient', () => {
 
       expect(results).toEqual([{ a: 1 }, { a: 2 }])
       expect(postMock).toHaveBeenCalledWith(
-        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_search_restlet&deploy=customdeploy_salto_search_restlet',
+        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet',
         {
-          type: 'type',
-          columns: [],
-          filters: [],
-          offset: 0,
-          limit: 1000,
+          operation: 'search',
+          args: {
+            type: 'type',
+            columns: [],
+            filters: [],
+            offset: 0,
+            limit: 1000,
+          },
         },
         {
           headers: {
@@ -154,7 +161,17 @@ describe('SuiteAppClient', () => {
           filters: [],
         })).toBeUndefined()
       })
-      it('invalid results', async () => {
+
+      it('invalid saved search results', async () => {
+        postMock.mockResolvedValue({ data: { status: 'success', results: {} } })
+        expect(await client.runSavedSearchQuery({
+          type: 'type',
+          columns: [],
+          filters: [],
+        })).toBeUndefined()
+      })
+
+      it('invalid restlet results', async () => {
         postMock.mockResolvedValue({ data: {} })
         expect(await client.runSavedSearchQuery({
           type: 'type',
@@ -179,7 +196,7 @@ describe('SuiteAppClient', () => {
       postMock.mockImplementation(async (_url, data) => ({
         data: {
           status: 'success',
-          results: items.slice(data.offset, data.offset + data.limit),
+          results: items.slice(data.args.offset, data.args.offset + data.args.limit),
         },
       }))
 
@@ -191,13 +208,16 @@ describe('SuiteAppClient', () => {
 
       expect(results).toEqual(items)
       expect(postMock).toHaveBeenCalledWith(
-        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_search_restlet&deploy=customdeploy_salto_search_restlet',
+        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet',
         {
-          type: 'type',
-          columns: [],
-          filters: [],
-          offset: 0,
-          limit: 1000,
+          operation: 'search',
+          args: {
+            type: 'type',
+            columns: [],
+            filters: [],
+            offset: 0,
+            limit: 1000,
+          },
         },
         {
           headers: {
@@ -207,13 +227,16 @@ describe('SuiteAppClient', () => {
         }
       )
       expect(postMock).toHaveBeenCalledWith(
-        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_search_restlet&deploy=customdeploy_salto_search_restlet',
+        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet',
         {
-          type: 'type',
-          columns: [],
-          filters: [],
-          offset: 1000,
-          limit: 1000,
+          operation: 'search',
+          args: {
+            type: 'type',
+            columns: [],
+            filters: [],
+            offset: 1000,
+            limit: 1000,
+          },
         },
         {
           headers: {
@@ -222,6 +245,49 @@ describe('SuiteAppClient', () => {
           },
         }
       )
+    })
+  })
+
+
+  describe('getSystemInformation', () => {
+    it('successful request should return the results', async () => {
+      postMock.mockResolvedValue({
+        data: {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 2],
+            time: '2021-02-22T18:55:17.949Z',
+          },
+        },
+      })
+
+      const results = await client.getSystemInformation()
+
+      expect(results).toEqual({ appVersion: [0, 1, 2], time: new Date('2021-02-22T18:55:17.949Z') })
+      expect(postMock).toHaveBeenCalledWith(
+        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet',
+        {
+          operation: 'sysInfo',
+          args: {},
+        },
+        {
+          headers: {
+            Authorization: expect.any(String),
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+    })
+
+    describe('request failure', () => {
+      it('exception thrown', async () => {
+        postMock.mockRejectedValue(new Error())
+        expect(await client.getSystemInformation()).toBeUndefined()
+      })
+      it('invalid results', async () => {
+        postMock.mockResolvedValue({ data: { status: 'success', results: {} } })
+        expect(await client.getSystemInformation()).toBeUndefined()
+      })
     })
   })
 })

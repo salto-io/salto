@@ -91,6 +91,9 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
       delete: async (key: K) => {
         delete maps[opts.namespace][key]
       },
+      deleteAll: async () => {
+        maps[opts.namespace] = {} as Record<K, string>
+      },
       get: async (key: K): Promise<T | undefined> => {
         const value = maps[opts.namespace][key]
         return value ? opts.deserialize(value) : undefined

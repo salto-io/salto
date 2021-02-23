@@ -24,15 +24,8 @@ import { AdditionDiff } from '@salto-io/dag'
 import { MergeError, mergeElements } from '../../merger'
 import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
   getNestedStaticFiles } from './nacl_file_update'
-<<<<<<< HEAD
-import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
-import { ElementsSource, RemoteElementSource } from '../elements_source'
-import { ParseResultCache, ParseResultKey } from '../cache'
-=======
 import { parse, SourceRange, ParseResult, SourceMap } from '../../parser'
-import { ElementsSource, RemoteElementSource, createInMemoryElementSource } from '../elements_source'
-import { ParsedNaclFileCache, ParseResultKey } from './parsed_nacl_files_cache'
->>>>>>> 435904a9... New impl no rename and clone
+import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
@@ -42,6 +35,7 @@ import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../
 import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
+import { ParsedNaclFileCache, ParseResultKey } from './parsed_nacl_files_cache'
 
 const { awu, concatAsync } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
@@ -87,21 +81,6 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   load: () => Promise<Change[]>
 }
 
-<<<<<<< HEAD
-export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
-export type ParsedNaclFile = {
-  filename: string
-  elements: Element[]
-  data: RemoteMap<Value, ParsedNaclFileDataKeys>
-  buffer?: string
-}
-
-type ParsedNaclFileMap = {
-  [key: string]: ParsedNaclFile
-}
-
-=======
->>>>>>> 435904a9... New impl no rename and clone
 type NaclFilesState = {
   parsedNaclFiles: ParsedNaclFileCache
   elementsIndex: RemoteMap<string[]>
@@ -192,33 +171,17 @@ const getElementReferenced = async (element: Element): Promise<Set<string>> => {
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
   parseResult: ParseResult
-<<<<<<< HEAD
 ): Promise<ParsedNaclFile> => ({
   filename: naclFile.filename,
   elements: await awu(parseResult.elements).toArray(),
-  data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-    { key: 'timestamp', value: naclFile.timestamp || Date.now() },
-    { key: 'errors', value: parseResult.errors },
-    { key: 'referenced', value: await awu(parseResult.elements).flatMap(getElementReferenced).toArray() },
-  ]),
+  data: {
+    timestamp: naclFile.timestamp ?? Date.now(),
+    errors: parseResult.errors,
+    referenced: await awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
+  },
+  buffer: naclFile.buffer,
+  sourceMap: parseResult.sourceMap,
 })
-=======
-): Promise<ParsedNaclFile> => {
-  const elements = createInMemoryElementSource()
-  await elements.overide(parseResult.elements)
-  return {
-    filename: naclFile.filename,
-    elements,
-    data: {
-      timestamp: naclFile.timestamp ?? Date.now(),
-      errors: parseResult.errors,
-      referenced: await awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
-    },
-    buffer: naclFile.buffer,
-    sourceMap: parseResult.sourceMap,
-  }
-}
->>>>>>> 435904a9... New impl no rename and clone
 
 const parseNaclFile = async (
   naclFile: NaclFile, functions: Functions
@@ -260,7 +223,7 @@ const createNaclFilesState = async (
 ): Promise<NaclFilesState> => ({
   elementsIndex: await remoteMapCreator<string[]>({
     namespace: getRemoteMapNamespace('elements_index', sourceName),
-    serialize: val => JSON.stringify(val),
+    serialize: val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
   }),
   mergeErrors: await remoteMapCreator<MergeError[]>({
@@ -279,7 +242,7 @@ const createNaclFilesState = async (
   parsedNaclFiles: cache,
   referencedIndex: await remoteMapCreator<string[]>({
     namespace: getRemoteMapNamespace('referenced_index', sourceName),
-    serialize: val => JSON.stringify(val),
+    serialize: val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
   }),
 })
@@ -290,35 +253,6 @@ const buildNaclFilesState = async ({
   newNaclFiles: ParsedNaclFile[]
   currentState: NaclFilesState
 }): Promise<buildNaclFilesStateResult> => {
-<<<<<<< HEAD
-  const currentState = existingState ?? {
-    elementsIndex: await remoteMapCreator<string[]>({
-      namespace: getRemoteMapNamespace('elements_index', sourceName),
-      serialize: val => safeJsonStringify(val),
-      deserialize: data => JSON.parse(data),
-    }),
-    mergeErrors: await remoteMapCreator<MergeError[]>({
-      namespace: getRemoteMapNamespace('errors', sourceName),
-      serialize: errors => serialize(errors),
-      deserialize: async data => deserializeMergeErrors(data),
-    }),
-    mergedElements: new RemoteElementSource(await remoteMapCreator<Element>({
-      namespace: getRemoteMapNamespace('merged', sourceName),
-      serialize: element => serialize([element]),
-      deserialize: async data => deserializeSingleElement(
-        data,
-        async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)
-      ),
-    })),
-    parsedNaclFiles: {} as ParsedNaclFileMap,
-    referencedIndex: await remoteMapCreator<string[]>({
-      namespace: getRemoteMapNamespace('referenced_index', sourceName),
-      serialize: val => safeJsonStringify(val),
-      deserialize: data => JSON.parse(data),
-    }),
-  }
-=======
->>>>>>> 435904a9... New impl no rename and clone
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
 
@@ -348,12 +282,7 @@ const buildNaclFilesState = async ({
   }
 
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {
-<<<<<<< HEAD
-    (await naclFile.data.get('referenced') ?? []).forEach((elementFullName: string) => {
-=======
-    (naclFile.data.referenced ?? []).forEach((elemID: ElemID) => {
-      const elementFullName = elemID.getFullName()
->>>>>>> 435904a9... New impl no rename and clone
+    (naclFile.data.referenced ?? []).forEach((elementFullName: string) => {
       referencedIndexAdditions[elementFullName] = referencedIndexAdditions[elementFullName]
         ?? new Set<string>()
       referencedIndexAdditions[elementFullName].add(naclFile.filename)
@@ -365,27 +294,17 @@ const buildNaclFilesState = async ({
       elementsIndexAdditions[elementFullName].add(naclFile.filename)
     })
     relevantElementIDs.push(
-<<<<<<< HEAD
       ...naclFile.elements.map(e => e.elemID),
-      ...currentState.parsedNaclFiles[naclFile.filename]?.elements.map(e => e.elemID) ?? []
+      ...(await currentState.parsedNaclFiles.get(naclFile.filename))?.elements
+        .map(e => e.elemID) ?? [],
     )
 
     newElementsToMerge.push(awu(naclFile.elements))
-    currentState.parsedNaclFiles[naclFile.filename] = naclFile
-=======
-      ...await awu(await naclFile.elements.list()).toArray(),
-      ...await awu(
-        await (await currentState.parsedNaclFiles.get(naclFile.filename))?.elements.list() ?? []
-      ).toArray(),
-    )
-
-    newElementsToMerge.push(await naclFile.elements.getAll())
     // This is temp and should be removed when we change the init flow
     // This happens now cause we get here with ParsedNaclFiles that originate from the cache
     if (values.isDefined(naclFile.buffer)) {
       await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
     }
->>>>>>> 435904a9... New impl no rename and clone
   }
 
   const handleDeletion = async (naclFile: ParsedNaclFile): Promise<void> => {
@@ -393,12 +312,7 @@ const buildNaclFilesState = async ({
     if (oldNaclFile === undefined) {
       return
     }
-<<<<<<< HEAD
-    (await oldNaclFile.data.get('referenced') ?? []).forEach((elementFullName: string) => {
-=======
-    (oldNaclFile.data.referenced ?? []).forEach((elemID: ElemID) => {
-      const elementFullName = elemID.getFullName()
->>>>>>> 435904a9... New impl no rename and clone
+    (oldNaclFile.data.referenced ?? []).forEach((elementFullName: string) => {
       referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
         ?? new Set<string>()
       referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
@@ -409,24 +323,13 @@ const buildNaclFilesState = async ({
         ?? new Set<string>()
       elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
-<<<<<<< HEAD
     relevantElementIDs.push(...oldNaclFile.elements.map(e => e.elemID))
-    delete currentState.parsedNaclFiles[naclFile.filename]
-=======
-    relevantElementIDs.push(...await awu(await oldNaclFile.elements.list()).toArray())
     await currentState.parsedNaclFiles.delete(naclFile.filename)
->>>>>>> 435904a9... New impl no rename and clone
   }
 
   // Add data from new additions
   await awu(Object.values(newParsed)).forEach(async naclFile => {
-<<<<<<< HEAD
-    const isDeletion = await awu(naclFile.elements).isEmpty()
-      && _.isEmpty(await naclFile.data.get('errors'))
-=======
-    const isDeletion = await awu(await naclFile.elements.getAll()).isEmpty()
-      && _.isEmpty(naclFile.data.errors)
->>>>>>> 435904a9... New impl no rename and clone
+    const isDeletion = _.isEmpty(naclFile.elements) && _.isEmpty(naclFile.data.errors)
     if (isDeletion) {
       await handleDeletion(naclFile)
     } else {
@@ -442,16 +345,9 @@ const buildNaclFilesState = async ({
       ).filter((filename: string) => newParsed[filename] === undefined)
 
       return awu(unmodifiedFilesWithElem)
-<<<<<<< HEAD
-        .map(
-          filename => currentState.parsedNaclFiles[filename].elements.find(
-            e => e.elemID.isEqual(elemID)
-          )
-        )
-=======
         .map(async filename =>
-          (await currentState.parsedNaclFiles.get(filename))?.elements.get(elemID))
->>>>>>> 435904a9... New impl no rename and clone
+          (await currentState.parsedNaclFiles.get(filename))?.elements.find(
+            e => e.elemID.isEqual(elemID)))
     }).filter(values.isDefined) as AsyncIterable<Element>
 
   await updateIndex(
@@ -507,33 +403,6 @@ const buildNaclFilesSource = (
 ): NaclFilesSource => {
   const functions: Functions = getFunctions(staticFilesSource)
 
-<<<<<<< HEAD
-  const createNaclFileFromChange = async (
-    filename: string,
-    change: AdditionDiff<Element>,
-    fileData: string,
-  ): Promise<ParsedNaclFile> => {
-    const elements = [
-      (change as AdditionDiff<Element>).data.after,
-    ]
-    const parsed = {
-      filename,
-      elements,
-      data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-        { key: 'referenced', value: await awu(elements).flatMap(getElementReferenced).toArray() },
-        { key: 'errors', value: [] },
-        { key: 'timestamp', value: Date.now() },
-      ]),
-    }
-    const key = cacheResultKey({ filename: parsed.filename,
-      buffer: fileData,
-      timestamp: await parsed.data.get('timestamp') })
-    await cache.put(key, { elements, errors: [] })
-    return parsed
-  }
-
-=======
->>>>>>> 435904a9... New impl no rename and clone
   let state = initState
   const getState = (): Promise<NaclFilesState> => {
     if (_.isUndefined(state)) {
@@ -639,16 +508,16 @@ const buildNaclFilesSource = (
     change: AdditionDiff<Element>,
     fileData: string,
   ): Promise<ParsedNaclFile> => {
-    const elements = createInMemoryElementSource([
+    const elements = [
       (change as AdditionDiff<Element>).data.after,
-    ])
+    ]
     const parsed = {
       filename,
       elements,
       data: {
         timestamp: Date.now(),
         errors: [],
-        referenced: await awu(await elements.getAll()).flatMap(getElementReferenced).toArray(),
+        referenced: await awu(elements).flatMap(getElementReferenced).toArray(),
       },
       buffer: fileData,
     }

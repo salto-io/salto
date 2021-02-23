@@ -413,8 +413,8 @@ describe('workspace', () => {
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
-      expect(changes.map(getChangeElement).map(c => c.elemID.getFullName()))
-        .toEqual(['salesforce.lead', 'multi.loc'])
+      expect(changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
+        .toEqual(['salesforce.lead', 'multi.loc'].sort())
     })
 
     it('should remove from store', async () => {
@@ -486,7 +486,7 @@ describe('workspace', () => {
     })
 
     it('should return the correct changes', async () => {
-      expect(changes).toHaveLength(24)
+      expect(changes).toHaveLength(25)
       expect((changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
       const multiLocChange = changes.find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
@@ -1942,6 +1942,8 @@ describe('workspace', () => {
   describe('hasElementsInEnv', () => {
     let workspace: Workspace
     beforeEach(async () => {
+      const staticFilesSource = mockStaticFilesSource()
+      const remoteMapCreator = persistentMockCreateRemoteMap()
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -1966,9 +1968,13 @@ describe('workspace', () => {
             naclFiles: await naclFilesSource(
               '',
               mockDirStore(),
-              mockParseCache(),
-              mockStaticFilesSource(),
-              mockCreateRemoteMap,
+              createParseResultCache(
+                'name',
+                remoteMapCreator,
+                staticFilesSource,
+              ),
+              staticFilesSource,
+              remoteMapCreator,
             ),
           },
           empty: {
@@ -1996,6 +2002,8 @@ describe('workspace', () => {
   describe('envOfFile', () => {
     let workspace: Workspace
     beforeEach(async () => {
+      const staticFilesSource = mockStaticFilesSource()
+      const remoteMapCreator = persistentMockCreateRemoteMap()
       workspace = await createWorkspace(
         undefined, undefined, undefined, undefined, undefined,
         {
@@ -2003,9 +2011,13 @@ describe('workspace', () => {
             naclFiles: await naclFilesSource(
               '',
               mockDirStore(),
-              mockParseCache(),
-              mockStaticFilesSource(),
-              mockCreateRemoteMap,
+              createParseResultCache(
+                'name',
+                remoteMapCreator,
+                staticFilesSource,
+              ),
+              staticFilesSource,
+              remoteMapCreator,
             ),
           },
           default: {

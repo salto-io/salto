@@ -53,7 +53,7 @@ jest.mock('../../../src/local-workspace/static_files_cache', () => ({
   }),
 }))
 jest.mock('../../../src/local-workspace/remote_map', () => ({
-  ...jest.requireActual('../../../src/local-workspace/remote_map'),
+  ...jest.requireActual<{}>('../../../src/local-workspace/remote_map'),
   createRemoteMapCreator: () => mockRemoteMapCreator,
 }))
 describe('local workspace', () => {

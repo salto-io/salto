@@ -20,7 +20,6 @@ import axios from 'axios'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { Values } from '@salto-io/adapter-api'
 import { Credentials } from '../credentials'
 import { HttpMethod, isError, RestletOperation, RestletResults, RESTLET_RESULTS_SCHEMA,
   SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters,
@@ -52,9 +51,9 @@ export class SuiteAppClient {
   }
 
   public async runSuiteQL(query: string):
-    Promise<Values[] | undefined> {
+    Promise<Record<string, unknown>[] | undefined> {
     let hasMore = true
-    const items: Values[] = []
+    const items: Record<string, unknown>[] = []
     for (let offset = 0; hasMore; offset += PAGE_SIZE) {
       try {
         // eslint-disable-next-line no-await-in-loop
@@ -72,9 +71,9 @@ export class SuiteAppClient {
   }
 
   public async runSavedSearchQuery(query: SavedSearchQuery):
-    Promise<Values[] | undefined> {
+    Promise<Record<string, unknown>[] | undefined> {
     let hasMore = true
-    const items: Values[] = []
+    const items: Record<string, unknown>[] = []
     for (let offset = 0; hasMore; offset += PAGE_SIZE) {
       try {
         // eslint-disable-next-line no-await-in-loop

@@ -135,10 +135,10 @@ describe('diff', () => {
   beforeAll(async () => {
     const { merged } = await mergeElements(awu([singlePathObject, ...elementfragments]))
     allElement = await awu(merged.values()).toArray()
-    singlePathObjMerged = allElement[0].clone()
-    multiPathObjMerged = allElement[2].clone()
-    singlePathInstMerged = allElement[1].clone()
-    multiPathInstMerged = allElement[3].clone()
+    multiPathObjMerged = allElement[0].clone()
+    multiPathInstMerged = allElement[2].clone()
+    singlePathObjMerged = allElement[1].clone()
+    singlePathInstMerged = allElement[3].clone()
   })
 
   describe('with no changes', () => {

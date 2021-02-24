@@ -21,7 +21,7 @@ const { awu } = collections.asynciterable
 describe('remote map', () => {
   describe('in memory', () => {
     let inMemRemoteMap: RemoteMap<string, string>
-    const testKey1 = 'testKey'
+    const testKey1 = 'atestKey'
     const testVal1 = 'data'
     const testKey2 = 'key2'
     const testVal2 = 'data2'

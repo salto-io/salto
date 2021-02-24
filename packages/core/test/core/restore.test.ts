@@ -131,14 +131,10 @@ describe('restore', () => {
   beforeAll(async () => {
     const { merged } = await mergeElements(awu([singlePathObject, ...elementfragments]))
     allElement = await awu(merged.values()).toArray()
-    // singlePathObjMerged = allElement[0].clone()
-    // multiPathObjMerged = allElement[1].clone()
-    // singlePathInstMerged = allElement[2].clone()
-    // multiPathInstMerged = allElement[3].clone()
-    singlePathObjMerged = allElement[0].clone()
-    multiPathObjMerged = allElement[2].clone()
-    singlePathInstMerged = allElement[1].clone()
+    multiPathObjMerged = allElement[0].clone()
+    singlePathObjMerged = allElement[2].clone()
     multiPathInstMerged = allElement[3].clone()
+    singlePathInstMerged = allElement[4].clone()
     index = new remoteMap.InMemoryRemoteMap(await getElementsPathHints(elementfragments))
   })
 

@@ -389,9 +389,9 @@ describe('Nacl Files Source', () => {
               { action: 'modify', data: objType2 },
               { action: 'modify', data: objType1 },
             ])
-            expect(currentElements).toEqual([objType2.before, objType1.before])
+            expect(currentElements).toEqual([objType1.before, objType2.before])
             expect(await awu(await naclFileSourceWithFragments.getAll()).toArray())
-              .toEqual([objType2.after, objType1.after])
+              .toEqual([objType1.after, objType2.after])
           })
         })
       })

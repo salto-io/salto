@@ -107,6 +107,9 @@ const mockCreateRemoteMap = async <T, K extends string = string>(
     delete: async (key: K) => {
       delete data[key]
     },
+    deleteAll: async () => {
+      data = {} as Record<K, string>
+    },
     get: async (key: K): Promise<T | undefined> => {
       const value = data[key]
       return value ? opts.deserialize(value) : undefined

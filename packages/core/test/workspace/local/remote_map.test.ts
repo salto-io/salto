@@ -50,7 +50,6 @@ const createMap = async (namespace: string): Promise<rm.RemoteMap<Element>> =>
   createRemoteMapCreator(DB_LOCATION)({
     namespace,
     batchInterval: 1000,
-    LRUSize: 500,
     serialize: elem => serialize([elem]),
     deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
   })
@@ -100,6 +99,15 @@ describe('test operations on remote db', () => {
       expect(await remoteMap.get(elemID)).toBeDefined()
       await remoteMap.delete(elemID)
       expect(await remoteMap.get(elemID)).toBeUndefined()
+    })
+
+    it('should delete all elements chosen when deleting all', async () => {
+      await remoteMap.setAll(createAsyncIterable(elements))
+      await remoteMap.deleteAll(awu(createAsyncIterable(elements.slice(1))).map(entry => entry.key))
+      const res = await awu(remoteMap.values()).toArray()
+      expect(res.map(elem => elem.elemID.getFullName())).toEqual(
+        elements.slice(0, 1).map(elem => elem.elemID.getFullName())
+      )
     })
   })
 

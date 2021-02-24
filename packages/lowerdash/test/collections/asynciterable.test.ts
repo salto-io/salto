@@ -22,8 +22,9 @@ const {
   findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
   filterAsync, flattenAsync, awu, isEmptyAsync, peekAsync, takeAsync,
   zipSortedAsync, someAsync, everyAsync, forEachAsync, groupByAsync,
-  keyByAsync,
+  keyByAsync, iterateTogether,
 } = asynciterable
+type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
 
 describe('asynciterable', () => {
   describe('findAsync', () => {
@@ -306,6 +307,55 @@ describe('asynciterable', () => {
       expect(
         await everyAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n !== 3))
       ).toBe(false)
+    })
+  })
+
+  describe('iterateTogether', () => {
+    let firstIter: AsyncIterable<number>
+    let secondIter: AsyncIterable<number>
+    const cmp = (num1: number, num2: number): number => {
+      if (num1 < num2) {
+        return -1
+      }
+      if (num1 > num2) {
+        return 1
+      }
+      return 0
+    }
+    beforeEach(() => {
+      firstIter = awu([0, 1, 3, 4, 5, 8])
+      secondIter = awu([0, 4, 5, 7, 9])
+    })
+    const expectBeforeAfterEquals = (array1: BeforeAfter<number>[],
+      array2: BeforeAfter<number>[]): void => {
+      expect(array1.length).toEqual(array2.length)
+      for (let i = 0; i < array1.length; i += 1) {
+        expect(array1[i].before).toEqual(array2[i].before)
+        expect(array1[i].after).toEqual(array2[i].after)
+      }
+    }
+    it('should order key-value pairs correctly', async () => {
+      const result = await awu(await iterateTogether(firstIter, secondIter, cmp)).toArray()
+      const expected = [
+        { before: 0, after: 0 },
+        { before: 1, after: undefined },
+        { before: 3, after: undefined },
+        { before: 4, after: 4 },
+        { before: 5, after: 5 },
+        { before: undefined, after: 7 },
+        { before: 8, after: undefined },
+        { before: undefined, after: 9 },
+      ]
+      expectBeforeAfterEquals(result, expected)
+      const resultReversed = await awu(await iterateTogether(secondIter, firstIter, cmp)).toArray()
+      expectBeforeAfterEquals(resultReversed,
+        expected.map(ba => ({ before: ba.after, after: ba.before })))
+    })
+    it('should throw exception if iterator unsorted', async () => {
+      await expect(awu(await iterateTogether(awu(firstIter), awu([1, 0]), cmp)).toArray()).rejects
+        .toEqual(new Error('Runtime Error: iterators must be sorted'))
+      await expect(awu(await iterateTogether(awu([0, 5, 1]), secondIter, cmp)).toArray()).rejects
+        .toEqual(new Error('Runtime Error: iterators must be sorted'))
     })
   })
 

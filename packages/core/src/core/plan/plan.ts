@@ -19,7 +19,7 @@ import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
-  Value, isReferenceExpression, compareSpecialValues,
+  Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -34,7 +34,8 @@ import {
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
 
-const { awu } = collections.asynciterable
+const { awu, iterateTogether } = collections.asynciterable
+type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
 const { resolve, resolveReferenceExpression } = expressions
 
 const log = logger(module)
@@ -102,7 +103,9 @@ const compareValuesAndLazyResolveRefs = async (
 
   return _.isEqual(first, second)
 }
-
+/**
+ * Check if 2 nodes in the DAG are equals or not
+ */
 const isEqualsNode = async (
   node1: ChangeDataType | undefined,
   node2: ChangeDataType | undefined,
@@ -204,9 +207,9 @@ const addDifferentElements = (
     }
   }
 
-  const addElementsNodes = async (id: ElemID): Promise<void> => {
-    const beforeElement = await before.get(id)
-    const afterElement = await after.get(id)
+  const addElementsNodes = async (comparison: BeforeAfter<ChangeDataType>): Promise<void> => {
+    const beforeElement = comparison.before
+    const afterElement = comparison.after
     if (!isVariable(beforeElement) && !isVariable(afterElement)) {
       await addNodeIfDifferent(beforeElement, afterElement)
     }
@@ -220,15 +223,40 @@ const addDifferentElements = (
       )
     )
   }
-
-  await awu(await before.list())
-    .concat(await after.list())
-    .filter(async id => _.every(
-      await Promise.all(
-        topLevelFilters.map(filter => filter(id))
-      )
-    ))
-    .forEach(addElementsNodes)
+  const isSpecialId = (id: string): boolean => (BuiltinTypesByFullName[id] !== undefined
+    || elementSource.shouldResolveAsContainerType(id))
+  /**
+   * Ids that represent types or containers need to be handled separately,
+   * because they would not necessary be included in getAll.
+   */
+  const handleSpecialIds = async (
+    elementPair: BeforeAfter<ChangeDataType>
+  ): Promise<BeforeAfter<ChangeDataType>> => {
+    if (elementPair.before && isSpecialId(elementPair.before.elemID.getFullName())) {
+      return { before: elementPair.before, after: await after.get(elementPair.before.elemID) }
+    }
+    if (elementPair.after && isSpecialId(elementPair.after.elemID.getFullName())) {
+      return { before: await before.get(elementPair.after.elemID), after: elementPair.after }
+    }
+    return elementPair
+  }
+  const getFilteredElements = async (source: elementSource.ElementsSource):
+    Promise<AsyncIterable<ChangeDataType>> =>
+    (await awu(await source.getAll()).filter(async elem =>
+      _.every(await Promise.all(
+        topLevelFilters.map(filter => filter(elem.elemID))
+      )))) as AsyncIterable<ChangeDataType>
+  const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => {
+    if (e1.elemID.getFullName() < e2.elemID.getFullName()) {
+      return -1
+    }
+    if (e1.elemID.getFullName() > e2.elemID.getFullName()) {
+      return 1
+    }
+    return 0
+  }
+  await awu(iterateTogether(await getFilteredElements(before), await getFilteredElements(after),
+    cmp)).map(handleSpecialIds).forEach(addElementsNodes)
   return outputGraph
 }, 'add nodes to graph with action %s for %d elements')
 

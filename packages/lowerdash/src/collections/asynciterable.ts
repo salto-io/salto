@@ -258,6 +258,57 @@ export const everyAsync = async<T>(
   func: (t: T) => Thenable<unknown>
 ): Promise<boolean> => !(await someAsync(itr, async t => !(await func(t))))
 
+export type BeforeAfter<T> = {
+  before: T | undefined
+  after: T | undefined
+}
+
+export async function *iterateTogether<T>(before: AsyncIterable<T>,
+  after: AsyncIterable<T>, cmp: (obj1: T, obj2: T) => number): AsyncIterable<BeforeAfter<T>> {
+  const beforeIterator = before[Symbol.asyncIterator]()
+  const afterIterator = after[Symbol.asyncIterator]()
+  const nextDefinedValue = async (
+    iter: AsyncIterator<T>,
+    curValue: T | undefined = undefined,
+  ): Promise<T | undefined> => {
+    const next = await iter.next()
+    if (next.done) {
+      return undefined
+    }
+    if (curValue && cmp(curValue, next.value) !== -1) {
+      throw new Error('Runtime Error: iterators must be sorted')
+    }
+    return next.value
+  }
+  let currentBefore = await nextDefinedValue(beforeIterator)
+  let currentAfter = await nextDefinedValue(afterIterator)
+  while (!(currentBefore === undefined && currentAfter === undefined)) {
+    if (currentBefore === undefined) {
+      yield { before: undefined, after: currentAfter }
+      // eslint-disable-next-line no-await-in-loop
+      currentAfter = await nextDefinedValue(afterIterator, currentAfter)
+    } else if (currentAfter === undefined) {
+      yield { before: currentBefore, after: undefined }
+      // eslint-disable-next-line no-await-in-loop
+      currentBefore = await nextDefinedValue(beforeIterator, currentBefore)
+    } else if (cmp(currentBefore, currentAfter) < 0) {
+      yield { before: currentBefore, after: undefined }
+      // eslint-disable-next-line no-await-in-loop
+      currentBefore = await nextDefinedValue(beforeIterator, currentBefore)
+    } else if (cmp(currentBefore, currentAfter) > 0) {
+      yield { before: undefined, after: currentAfter }
+      // eslint-disable-next-line no-await-in-loop
+      currentAfter = await nextDefinedValue(afterIterator, currentAfter)
+    } else {
+      yield { before: currentBefore, after: currentAfter }
+      // eslint-disable-next-line no-await-in-loop
+      currentAfter = await nextDefinedValue(afterIterator, currentAfter)
+      // eslint-disable-next-line no-await-in-loop
+      currentBefore = await nextDefinedValue(beforeIterator, currentBefore)
+    }
+  }
+}
+
 const uniquify = <T, K>(vals: ThenableIterable<T>, toSetType: (val: T) => K): AsyncIterable<T> => {
   const uniques = new Set<K>()
   return filterAsync(vals, val => {

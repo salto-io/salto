@@ -15,7 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { hash, collections } from '@salto-io/lowerdash'
+import { hash, collections, values } from '@salto-io/lowerdash'
 import { SourceMap, ParseError } from '../../parser'
 import { ContentType } from '../dir_store'
 import { serialize, deserialize } from '../../serializer/elements'
@@ -115,14 +115,6 @@ const getErrors = async (
   })
 )
 
-const getCacheFilesList = async (
-  cacheName: string,
-  remoteMapCreator: RemoteMapCreator,
-): Promise<string[]> => {
-  const metadata = await getMetadata(cacheName, remoteMapCreator)
-  return awu(metadata.keys()).toArray()
-}
-
 const getCacheSources = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
@@ -150,48 +142,15 @@ const getCacheSources = async (
   })),
 })
 
-
-const getFileMatadata = async (
-  filename: string,
-  cacheName: string,
-  remoteMapCreator: RemoteMapCreator,
-): Promise<FileCacheMetdata | undefined> => {
-  const metadata = await getMetadata(cacheName, remoteMapCreator)
-  return metadata.get(filename)
-}
-const doesFileExist = async (
-  filename: string,
-  cacheName: string,
-  remoteMapCreator: RemoteMapCreator,
-): Promise<boolean> =>
-  ((await getFileMatadata(filename, cacheName, remoteMapCreator)) !== undefined)
-
 const copyAllSourcesToNewName = async (
-  oldName: string,
-  newName: string,
-  remoteMapCreator: RemoteMapCreator,
-  staticFilesSource: StaticFilesSource,
+  oldCacheSources: CacheSources,
+  newCacheSources: CacheSources,
 ): Promise<void> => {
-  const oldCacheSources = await getCacheSources(oldName, remoteMapCreator, staticFilesSource)
-  const newCacheSources = await getCacheSources(newName, remoteMapCreator, staticFilesSource)
   await newCacheSources.errors.setAll(oldCacheSources.errors.entries())
   await newCacheSources.referenced.setAll(oldCacheSources.referenced.entries())
   await newCacheSources.elements.setAll(oldCacheSources.elements.entries())
   await newCacheSources.metadata.setAll(oldCacheSources.metadata.entries())
   await newCacheSources.sourceMap.setAll(oldCacheSources.sourceMap.entries())
-}
-
-const clearAllSources = async (
-  cacheName: string,
-  remoteMapCreator: RemoteMapCreator,
-  staticFilesSource: StaticFilesSource,
-): Promise<void> => {
-  const cacheSources = await getCacheSources(
-    cacheName,
-    remoteMapCreator,
-    staticFilesSource
-  )
-  await awu(Object.values(cacheSources)).forEach(async source => source.clear())
 }
 
 export const createParseResultCache = (
@@ -201,13 +160,14 @@ export const createParseResultCache = (
 ): ParsedNaclFileCache => {
   // To allow renames
   let actualCacheName = cacheName
+  let cacheSources = getCacheSources(
+    actualCacheName,
+    remoteMapCreator,
+    staticFilesSource
+  )
   return {
     put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
-      const { metadata, errors, referenced, sourceMap, elements } = await getCacheSources(
-        actualCacheName,
-        remoteMapCreator,
-        staticFilesSource
-      )
+      const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
       await errors.set(value.filename, value.data.errors)
       await referenced.set(value.filename, value.data.referenced)
       if (value.sourceMap !== undefined) {
@@ -222,60 +182,48 @@ export const createParseResultCache = (
       })
     },
     hasValid: async (key: ParseResultKey): Promise<boolean> => {
-      const fileMetadata = await getFileMatadata(key.filename, actualCacheName, remoteMapCreator)
+      const fileMetadata = await (await cacheSources).metadata.get(key.filename)
       if (fileMetadata === undefined) {
         return false
       }
       return isCacheDataRelevant(key, fileMetadata)
     },
-    getAllErrors: async (): Promise<ParseError[]> => {
-      const errorsSources = await getErrors(actualCacheName, remoteMapCreator)
-      return (await awu(errorsSources.values()).toArray()).flat()
-    },
+    getAllErrors: async (): Promise<ParseError[]> =>
+      (await awu((await cacheSources).errors.values()).toArray()).flat(),
     get: async (filename: string): Promise<ParsedNaclFile | undefined> => {
-      if (!(await doesFileExist(filename, actualCacheName, remoteMapCreator))) {
+      const sources = await cacheSources
+      if (!values.isDefined(await sources.metadata.get(filename))) {
         return undefined
       }
       return parseNaclFileFromCacheSources(
-        await getCacheSources(
-          actualCacheName, remoteMapCreator, staticFilesSource,
-        ),
+        sources,
         filename,
       )
     },
-    delete: async (filename: string): Promise<void> => {
-      const cacheSources = await getCacheSources(
-        actualCacheName,
-        remoteMapCreator,
-        staticFilesSource
-      )
-      await awu(Object.values(cacheSources)).forEach(async source => source.delete(filename))
-    },
-    list: async () => getCacheFilesList(actualCacheName, remoteMapCreator),
-    clear: async () => clearAllSources(actualCacheName, remoteMapCreator, staticFilesSource),
+    delete: async (filename: string): Promise<void> =>
+      (awu(Object.values(await cacheSources)).forEach(async source => source.delete(filename))),
+    list: async () => awu((await cacheSources).metadata.keys()).toArray(),
+    clear: async () =>
+      awu(Object.values((await cacheSources))).forEach(async source => source.clear()),
     rename: async (newName: string) => {
-      const oldName = actualCacheName
       // Clearing leftover data in sources with the same name as the new one
       // Before copying the current cache data to it
-      await clearAllSources(newName, remoteMapCreator, staticFilesSource)
-      await copyAllSourcesToNewName(
-        oldName,
+      const newCacheSources = await getCacheSources(
         newName,
-        remoteMapCreator,
-        staticFilesSource,
-      )
-      await clearAllSources(oldName, remoteMapCreator, staticFilesSource)
-      actualCacheName = newName
-    },
-    flush: async () => {
-      const cacheSources = await getCacheSources(
-        actualCacheName,
         remoteMapCreator,
         staticFilesSource
       )
-      await awu(Object.values(cacheSources)).forEach(async source => source.flush())
+      await awu(Object.values(newCacheSources)).forEach(async source => source.clear())
+      const oldCacheSources = await cacheSources
+      await copyAllSourcesToNewName(
+        oldCacheSources,
+        newCacheSources,
+      )
+      await awu(Object.values(oldCacheSources)).forEach(async source => source.clear())
+      actualCacheName = newName
+      cacheSources = Promise.resolve(newCacheSources)
     },
-    // This is not right cause it will use the same remoteMaps
+    flush: async () => awu(Object.values((await cacheSources))).forEach(source => source.flush()),
     clone: (): ParsedNaclFileCache =>
       createParseResultCache(cacheName, remoteMapCreator, staticFilesSource.clone()),
   }

@@ -100,7 +100,7 @@ export const getNaclFilesSourceParams = (
   }
 }
 
-const loadNaclFileSource = (
+const loadNaclFileSource = async (
   sourceBaseDir: string,
   cacheBaseDir: string,
   sourceName: string,

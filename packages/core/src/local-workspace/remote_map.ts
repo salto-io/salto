@@ -89,7 +89,7 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>> {
   }
 }
 
-const dbConnections: Record<string, rocksdb> = {}
+const dbConnections: Record<string, Promise<rocksdb>> = {}
 
 export const createRemoteMapCreator = (location: string):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
@@ -217,15 +217,18 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     return awu(aggregatedIterable([tempKeyIter, keyIter]))
       .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
   }
-
+  const getOpebDBConnection = async (loc: string): Promise<rocksdb> => {
+    const newDb = rocksdb(loc)
+    await promisify(newDb.open.bind(newDb))()
+    return newDb
+  }
   const createDBIfNotCreated = async (loc: string): Promise<void> => {
     if (!(loc in dbConnections)) {
-      db = rocksdb(loc)
-      dbConnections[loc] = db
-      await promisify(db.open.bind(db))()
+      dbConnections[loc] = getOpebDBConnection(loc)
+      db = await dbConnections[loc]
       await clearImpl(TEMP_PREFIX)
     } else {
-      db = dbConnections[loc]
+      db = await dbConnections[loc]
     }
   }
   await createDBIfNotCreated(location)

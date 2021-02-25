@@ -287,7 +287,7 @@ const buildNaclFilesState = async ({
         ?? new Set<string>()
       referencedIndexAdditions[elementFullName].add(naclFile.filename)
     })
-    await awu(await naclFile.elements).forEach(element => {
+    await awu(naclFile.elements).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexAdditions[elementFullName] = elementsIndexAdditions[elementFullName]
         ?? new Set<string>()
@@ -317,7 +317,7 @@ const buildNaclFilesState = async ({
         ?? new Set<string>()
       referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
-    await awu(await oldNaclFile.elements).forEach(element => {
+    await awu(oldNaclFile.elements).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName]
         ?? new Set<string>()
@@ -414,7 +414,10 @@ const buildNaclFilesSource = (
   const buildInitState = async (): Promise<buildNaclFilesStateResult> => {
     const modifiedNaclFiles: NaclFile[] = []
     const parsedNaclFilesFromCache: ParsedNaclFile[] = []
-
+    // The sourceName '' is a temp hack
+    if (sourceName === '') {
+      await cache.clear()
+    }
     const cacheFilenames = await cache.list()
     const naclFilenames = await naclFilesStore.list()
 
@@ -422,11 +425,11 @@ const buildNaclFilesSource = (
     await awu(fileNames).forEach(async filename => {
       const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
       const cacheVal = await cache.get(filename)
-      if (cacheVal !== undefined) {
+      if (cacheVal !== undefined && sourceName !== '') {
         parsedNaclFilesFromCache.push(cacheVal)
       }
       const cacheHasValidVal = await cache.hasValid(cacheResultKey(naclFile))
-      if (!cacheHasValidVal) {
+      if (!cacheHasValidVal || sourceName === '') {
         modifiedNaclFiles.push(naclFile)
       }
     })
@@ -716,7 +719,7 @@ const buildNaclFilesSource = (
     clone: () => buildNaclFilesSource(
       sourceName,
       naclFilesStore.clone(),
-      cache.clone(),
+      cache, // cache.clone(),
       staticFilesSource.clone(),
       remoteMapCreator,
       state,

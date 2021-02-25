@@ -26,15 +26,9 @@ describe('ParsedNaclFileCache', () => {
   // This is the "DB" for the cache and it is currently emptied per each "it"
   let remoteMaps: Record<string, InMemoryRemoteMap<Value, string>> = {}
   const inMemoryRemoteMapsCreator = async <T, K extends string = string>(
-    opts: CreateRemoteMapParams<T>,
-  ): Promise<RemoteMap<T, K>> => {
-    const existingRemoteMapInNamespace = remoteMaps[opts.namespace]
-    if (existingRemoteMapInNamespace === undefined) {
-      const newRemoteMap = new InMemoryRemoteMap<T, K>()
-      remoteMaps[opts.namespace] = newRemoteMap
-    }
-    return remoteMaps[opts.namespace] as InMemoryRemoteMap<T, K>
-  }
+    _opts: CreateRemoteMapParams<T>,
+  ): Promise<RemoteMap<T, K>> =>
+    (new InMemoryRemoteMap<T, K>())
   let cache: ParsedNaclFileCache
   const sourceMap = new SourceMap()
 

@@ -35,7 +35,7 @@ describe('Nacl Files Source', () => {
   let mockedStaticFilesSource: StaticFilesSource
   const mockDirStoreGet = jest.fn()
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockDirStore = {
       list: () => Promise.resolve([]),
       isEmpty: () => Promise.resolve(false),

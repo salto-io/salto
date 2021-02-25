@@ -73,8 +73,6 @@ salesforce {
         },
         {
           metadataType = "EmailTemplate"
-          name = "Marketo.*"
-          namespace = ""
         },
         {
           metadataType = "StandardValueSet"

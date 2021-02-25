@@ -61,7 +61,6 @@ salesforce {
         },
         {
           metadataType = "EmailTemplate"
-          name = "MarketoEmailTemplates.*"
         },
         {
           metadataType = "StandardValueSet"

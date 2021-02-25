@@ -71,10 +71,10 @@ describe('workspace local config', () => {
         "ReportFolder",
         "Dashboard",
         "DashboardFolder",
+        "EmailTemplate",
     ]
     instancesRegexSkippedList = [
         "^ConnectedApp.CPQIntegrationUserApp$",
-        "^EmailTemplate.MarketoEmailTemplates",
     ]
     maxItemsInRetrieveRequest = 2500
     client = {

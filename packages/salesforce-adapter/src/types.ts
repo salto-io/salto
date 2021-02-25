@@ -393,11 +393,7 @@ export const configType = new ObjectType({
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
               { metadataType: 'SiteDotCom' },
-              {
-                metadataType: 'EmailTemplate',
-                name: 'Marketo.*',
-                namespace: '',
-              },
+              { metadataType: 'EmailTemplate' },
               {
                 metadataType: 'StandardValueSet',
                 name: '^(AddressCountryCode)|(AddressStateCode)$',

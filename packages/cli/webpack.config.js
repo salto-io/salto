@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2020 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,6 @@
 */
 const path = require('path');
 const webpack = require('webpack');
-
 module.exports = {
   mode: 'development', // production minifaction results in bad error stacks
   target: 'node',
@@ -24,6 +23,7 @@ module.exports = {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
   },
+  context: path.resolve(__dirname),
   module: {
     rules: [
       {
@@ -42,11 +42,16 @@ module.exports = {
       {
         test: /@oracle\/suitecloud-cli-localserver-command/i,
         use: 'null-loader'
-      }
+      },
     ],
   },
+  resolve: {
+	alias: {
+		'nexe-natives$': path.resolve(__dirname, './nexe-natives-adapted'),
+	},
+  },
   node: {
-    __dirname: true,
+    __dirname: false,
     __filename: true,
   },
   stats: {
@@ -57,6 +62,7 @@ module.exports = {
   externals: {
     vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
                                 // caused by requestretry which depends on an old version of es6-promise
+    '../../node_moduels/rocksdb/package.json': '../../node_moduels/rocksdb/package.json',
   },
   plugins: [
     new webpack.EnvironmentPlugin({

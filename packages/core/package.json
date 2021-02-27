@@ -49,12 +49,15 @@
     "levelup": "^4.4.0",
     "lodash": "^4.17.19",
     "lru-cache": "^6.0.0",
+    "nexe-natives": "^1.0.2",
     "pietile-eventemitter": "^1.0.0",
     "readdirp": "^3.1.1",
+    "rimraf": "^3.0.0",
     "rocksdb": "^4.1.0",
     "semver": "^7.3.2",
     "uuid": "^3.3.3",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "xtend": "^4.0.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",

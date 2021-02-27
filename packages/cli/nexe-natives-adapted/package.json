@@ -1,0 +1,36 @@
+{
+  "name": "nexe-natives",
+  "version": "1.0.2",
+  "description": "Support modules with natives within NEXE builds",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.7.4",
+    "@babel/preset-env": "^7.7.4",
+    "babel-eslint": "^10.0.3",
+    "babel-preset-env": "^1.7.0",
+    "eslint": "^5.3.0",
+    "eslint-config-airbnb": "^17.0.x",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.17.0"
+  },
+  "engines": {
+    "node": ">=12.14"
+  },
+  "homepage": "https://github.com/nmarus/nexe-natives",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nmarus/nexe-natives.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nmarus/nexe-natives/issues"
+  },
+  "keywords": [
+    "nexe",
+    "native",
+    "natives"
+  ],
+  "author": "Nick Marus <nmarus@gmail.com>",
+  "license": "MIT"
+}

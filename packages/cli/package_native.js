@@ -37,6 +37,7 @@ const resources = [
   ...fontFiles.values(),
   '../../node_modules/@salto-io/suitecloud-cli/src/metadata/*.json',
   '../../node_modules/@salto-io/suitecloud-cli/src/templates/**',
+  '../../node_modules/rocksdb/**',
 ]
 
 const BASE_NEXE_CONFIG = {
@@ -55,11 +56,13 @@ const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
   })
 
 const handleError = err => {
-  console.error(err.stack || err);
-  if (err.details) {
-    console.error(err.details);
+  if (err) {
+  	console.error(err.stack || err);
+  	if (err.details) {
+    	console.error(err.details);
+  	}
+  	process.exit(2)
   }
-  process.exit(2)
 }
 
 const doWebpack = (config) => new Promise((resolve, reject) => {

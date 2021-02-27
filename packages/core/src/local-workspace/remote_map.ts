@@ -13,14 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import rocksdb from 'rocksdb'
+import path from 'path'
 import { promisify } from 'util'
 import * as fileUtils from '@salto-io/file'
 import LRU from 'lru-cache'
 import uuidv4 from 'uuid/v4'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
+import type rocksdb from 'rocksdb'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let rocksdbImpl: any
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+  rocksdbImpl = require('nexe-natives')(require.resolve('rocksdb'),
+    { localPath: path.join(__dirname, '../', '.externals'), name: 'rocksdb' })
+} catch (error) {
+  // eslint-disable-next-line no-console
+  console.error(error)
+  // eslint-disable-next-line global-require
+  rocksdbImpl = require('rocksdb')
+}
 const { asynciterable } = collections
 const { awu } = asynciterable
 const { withLimitedConcurrency } = promises.array
@@ -250,7 +263,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   })
 
   const getOpebDBConnection = async (loc: string): Promise<rocksdb> => {
-    const newDb = rocksdb(loc)
+    const newDb = rocksdbImpl(loc)
     await promisify(newDb.open.bind(newDb))()
     return newDb
   }

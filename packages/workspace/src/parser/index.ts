@@ -17,3 +17,4 @@ export { parse, SourceRange, parseElemID, tokenizeContent, Token } from './parse
 export { ParseResult, ParseError } from './types'
 export { dumpElements, dumpElemID, dumpValues } from './dump'
 export { SourceMap } from './source_map'
+export { Functions } from './functions'

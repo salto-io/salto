@@ -36,4 +36,12 @@ describe('RemoteElementSource', () => {
       expect(() => elemSource.rename('test')).toThrow()
     })
   })
+  describe('isEmpty', () => {
+    it('should return false when there are elements', async () => {
+      expect(await elemSource.isEmpty()).toEqual(false)
+    })
+    it('should return true when there are no elements', async () => {
+      expect(await createInMemoryElementSource([]).isEmpty()).toEqual(true)
+    })
+  })
 })

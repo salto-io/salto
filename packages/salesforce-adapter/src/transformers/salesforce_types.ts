@@ -220,17 +220,6 @@ export const allMissingSubTypes = [
     path: [...subTypesPath, 'Holidays'],
   }),
   new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'OrganizationSettingsDetail'),
-    fields: {
-      settingName: { type: BuiltinTypes.STRING },
-      settingValue: { type: BuiltinTypes.STRING },
-    },
-    annotations: {
-      [METADATA_TYPE]: 'OrganizationSettingsDetail',
-    },
-    path: [...subTypesPath, 'OrganizationSettingsDetail'],
-  }),
-  new ObjectType({
     // taken from https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_configuration_tags
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {

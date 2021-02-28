@@ -16,11 +16,12 @@
 import {
   FetchResult, AdapterOperations, DeployResult, Element,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils, logDuration } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
+import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import { WorkatoConfig, DEFAULT_NAME_FIELD, DEFAULT_PATH_FIELD, FIELDS_TO_OMIT } from './config'
+import { WorkatoConfig } from './config'
 import extractFieldsFilter from './filters/extract_fields'
 import fieldReferencesFilter from './filters/field_references'
 import { WORKATO } from './constants'
@@ -67,16 +68,12 @@ export default class WorkatoAdapter implements AdapterOperations {
   private async getElements(): Promise<Element[]> {
     return getAllElements({
       adapterName: WORKATO,
-      endpoints: this.userConfig.apiDefinitions.endpoints,
-      includeEndpoints: this.userConfig.fetch.includeEndpoints,
+      types: this.userConfig.apiDefinitions.types,
+      includeTypes: this.userConfig.fetch.includeTypes,
       client: this.client,
       nestedFieldFinder: returnFullEntry,
       computeGetArgs: simpleGetArgs,
-      defaultExtractionFields: {
-        fieldsToOmit: FIELDS_TO_OMIT,
-        nameField: DEFAULT_NAME_FIELD,
-        pathField: DEFAULT_PATH_FIELD,
-      },
+      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
     })
   }
 

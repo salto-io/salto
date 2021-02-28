@@ -21,7 +21,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG, DEFAULT_ENDPOINTS, API_DEFINITIONS_CONFIG } from '../src/config'
+import { configType, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
 
 type MockReply = {
   url: string
@@ -64,7 +64,7 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeEndpoints: [...Object.keys(DEFAULT_ENDPOINTS)].sort(),
+                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
               },
             }
           ),
@@ -103,11 +103,11 @@ describe('adapter', () => {
           'workato.recipe.instance.pubsub_recipe_412@s',
           'workato.recipe.instance.test_recipe_321@s',
           'workato.recipe__code',
-          'workato.recipe__code.instance.new_email__New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_s@uuuuuuuuuuuuuum',
-          'workato.recipe__code.instance.receive_request__test_recipe_321_s@uuuuum',
-          'workato.recipe__code.instance.subscribe_to_topic__pubsub_recipe_412_s@uuuuuum',
-          'workato.recipe__code.instance.updated_custom_object__New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss@uuuuuuuuuuuuuuuuuuum',
-          'workato.recipe__code.instance.updated_object____________New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_ssssssssssssss_00010sssssssssss_00010sssss@uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuumuu',
+          'workato.recipe__code.instance.New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_s__new_email@uuuuuuuuuuumuuu',
+          'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss__updated_custom_object@uuuuuuuuuuuuuuumuuuu',
+          'workato.recipe__code.instance.__________New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_ssssssssssssss_00010sssssssssss_00010sssss__updated_object@uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuumuuuuu',
+          'workato.recipe__code.instance.pubsub_recipe_412_s__subscribe_to_topic@uumuuuu',
+          'workato.recipe__code.instance.test_recipe_321_s__receive_request@uumuuu',
           'workato.recipe__code__block',
           'workato.recipe__code__block__block',
           'workato.recipe__code__block__block__dynamicPickListSelection',
@@ -207,8 +207,8 @@ describe('adapter', () => {
         })
         const recipeCodeReference = recipe?.value.code
         expect(recipeCodeReference).toBeInstanceOf(ReferenceExpression)
-        expect((recipeCodeReference as ReferenceExpression).elemId.getFullName()).toEqual('workato.recipe__code.instance.updated_custom_object__New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss@uuuuuuuuuuuuuuuuuuum')
-        const recipeCode = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.updated_custom_object__New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss@uuuuuuuuuuuuuuuuuuum')
+        expect((recipeCodeReference as ReferenceExpression).elemId.getFullName()).toEqual('workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss__updated_custom_object@uuuuuuuuuuuuuuumuuuu')
+        const recipeCode = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss__updated_custom_object@uuuuuuuuuuuuuuumuuuu')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.value).toEqual({
           number: 0,
@@ -245,7 +245,7 @@ describe('adapter', () => {
     })
 
     describe('endpoint overrides', () => {
-      it('should fetch only the relevant endpoints', async () => {
+      it('should fetch only the relevant types', async () => {
         const { elements } = await adapter.operations({
           credentials: new InstanceElement(
             'config',
@@ -257,10 +257,10 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeEndpoints: ['connection'],
+                includeTypes: ['connection'],
               },
               [API_DEFINITIONS_CONFIG]: {
-                endpoints: {
+                types: {
                   connection: {
                     request: {
                       url: '/connections',
@@ -301,7 +301,7 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeEndpoints: [...Object.keys(DEFAULT_ENDPOINTS)].sort(),
+              includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
             },
           }
         ),

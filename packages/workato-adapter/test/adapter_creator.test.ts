@@ -52,10 +52,10 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeEndpoints: [],
+            includeTypes: [],
           },
           apiDefinitions: {
-            endpoints: {},
+            types: {},
           },
         },
       ),
@@ -72,10 +72,10 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeEndpoints: [],
+            includeTypes: [],
           },
           apiDefinitions: {
-            endpoints: {},
+            types: {},
           },
           somethingElse: {},
         },
@@ -93,13 +93,13 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeEndpoints: [
+            includeTypes: [
               'a',
               'b',
             ],
           },
           apiDefinitions: {
-            endpoints: {
+            types: {
               c: {
                 request: {
                   url: '/c',
@@ -110,7 +110,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid endpoint names in fetch: a,b'))
+    })).toThrow(new Error('Invalid type names in fetch: a,b'))
   })
 
   it('should validate credentials using createConnection', async () => {

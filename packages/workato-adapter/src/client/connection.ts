@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { AccountId } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 
 const BASE_URL = 'https://www.workato.com/api'

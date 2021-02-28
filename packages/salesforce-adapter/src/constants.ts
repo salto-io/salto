@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 

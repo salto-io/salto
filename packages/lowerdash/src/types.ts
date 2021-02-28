@@ -36,6 +36,9 @@ export type KeysOfExtendingType<T, U> = { [K in keyof T]: U extends T[K] ? K : n
 
 export type ValueOf<T> = T[keyof T]
 
+// makes specific fields required
+export type PickyRequired<T, K extends keyof T> = T & Required<Pick<T, K>>
+
 /*
 
 --- Bean ---

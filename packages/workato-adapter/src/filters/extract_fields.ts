@@ -18,20 +18,30 @@ import {
   InstanceElement, isObjectType, ElemID, isInstanceElement, ReferenceExpression, ObjectType,
   Element,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-utils'
+import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { WORKATO } from '../constants'
 import { FilterCreator } from '../filter'
-import { API_DEFINITIONS_CONFIG, DEFAULT_NAME_FIELD } from '../config'
+import { API_DEFINITIONS_CONFIG } from '../config'
 
 const log = logger(module)
 const { generateType, toInstance, toNestedTypeName } = elementUtils.ducktype
 
-const convertStringToObject = (inst: InstanceElement, fieldsToExtract: string[]): void => {
+const convertStringToObject = (
+  inst: InstanceElement,
+  standaloneFields: configUtils.StandaloneFieldConfigType[],
+): void => {
+  const fieldsByPath = _.keyBy(standaloneFields, ({ fieldName }) => fieldName)
   inst.value = _.mapValues(inst.value, (fieldValue, fieldName) => {
-    if (fieldsToExtract.includes(fieldName)) {
+    const standaloneFieldDef = fieldsByPath[fieldName]
+    if (standaloneFieldDef !== undefined) {
       try {
-        const val = (_.isString(fieldValue) && fieldValue.startsWith('{')
+        // arrays are not supported yet
+        const val = ((
+          _.isString(fieldValue)
+          && standaloneFieldDef.parseJSON
+          && fieldValue.startsWith('{')
+        )
           ? JSON.parse(fieldValue)
           : fieldValue)
         return val
@@ -49,14 +59,20 @@ const addFieldTypeAndInstances = ({
   fieldName,
   type,
   instances,
-  defaultNameField,
+  transformationConfigByType,
+  transformationDefaultConfig,
 }: {
   typeName: string
   fieldName: string
   type: ObjectType
   instances: InstanceElement[]
-  defaultNameField: string
+  transformationConfigByType: Record<string, configUtils.TransformationConfig>
+  transformationDefaultConfig: configUtils.TransformationDefaultConfig
 }): Element[] => {
+  if (type.fields[fieldName] === undefined) {
+    log.info('type %s field %s does not exist (maybe it is not populated by any of the instances), not extracting field', type.elemID.name, fieldName)
+    return []
+  }
   const instancesWithValues = instances.filter(inst => inst.value[fieldName] !== undefined)
   if (!instancesWithValues.map(inst => inst.value[fieldName]).every(_.isObjectLike)) {
     log.error('not all values for type %s field %s are objects, not extracting field', type.elemID.name, fieldName)
@@ -76,12 +92,13 @@ const addFieldTypeAndInstances = ({
 
   instancesWithValues.forEach((inst, index) => {
     const fieldInstance = toInstance({
-      adapterName: WORKATO,
       entry: inst.value[fieldName],
       type: fieldType.type,
-      nameField: defaultNameField,
       defaultName: `unnamed_${index}`, // TODO improve
-      nameSuffix: inst.elemID.name,
+      parent: inst,
+      nestName: true,
+      transformationConfigByType,
+      transformationDefaultConfig,
     })
     if (fieldInstance === undefined) {
       // cannot happen
@@ -94,6 +111,58 @@ const addFieldTypeAndInstances = ({
   return elements
 }
 
+const extractFields = ({
+  elements,
+  transformationConfigByType,
+  transformationDefaultConfig,
+}: {
+  elements: Element[]
+  transformationConfigByType: Record<string, configUtils.TransformationConfig>
+  transformationDefaultConfig: configUtils.TransformationDefaultConfig
+}): Element[] => {
+  const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.getFullName())
+  const allInstancesbyType = _.groupBy(
+    elements.filter(isInstanceElement),
+    e => e.type.elemID.getFullName()
+  )
+
+  const newElements: Element[] = []
+
+  const typesWithStandaloneFields = _.pickBy(
+    _.mapValues(
+      transformationConfigByType,
+      typeDef => typeDef.standaloneFields,
+    ),
+    standaloneFields => !_.isEmpty(standaloneFields),
+  ) as Record<string, configUtils.StandaloneFieldConfigType[]>
+
+  Object.entries(typesWithStandaloneFields).forEach(([typeName, standaloneFields]) => {
+    const type = allTypes[new ElemID(WORKATO, typeName).getFullName()]
+    if (type === undefined) {
+      log.error('could not find type %s', typeName)
+      return
+    }
+    const instances = allInstancesbyType[type.elemID.getFullName()] ?? []
+
+    // first convert the fields to the right structure
+    instances.forEach(inst => convertStringToObject(inst, standaloneFields))
+
+    // now extract the field data to its own type and instances, and replace the original
+    // value with a reference to the newly-generate instance
+    standaloneFields.forEach(fieldDef => {
+      newElements.push(...addFieldTypeAndInstances({
+        typeName,
+        fieldName: fieldDef.fieldName,
+        type,
+        instances,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      }))
+    })
+  })
+  return newElements
+}
+
 /**
  * Extract fields to their own types based on the configuration.
  * For each of these fields, extract the values into separate instances and convert the values
@@ -101,43 +170,18 @@ const addFieldTypeAndInstances = ({
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
-    const typesWithFieldsToExtract = _.pickBy(
-      _.mapValues(
-        config[API_DEFINITIONS_CONFIG].endpoints,
-        endpoint => endpoint.translation?.fieldsToExtract,
-      ),
-      fieldsToExtract => !_.isEmpty(fieldsToExtract),
-    ) as Record<string, string[]>
+    const transformationConfigByType = _.pickBy(
+      _.mapValues(config[API_DEFINITIONS_CONFIG].types, def => def.transformation),
+      def => def !== undefined,
+    ) as Record<string, configUtils.TransformationConfig>
+    const transformationDefaultConfig = config[API_DEFINITIONS_CONFIG].typeDefaults.transformation
 
-    const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.getFullName())
-    const allInstancesbyType = _.groupBy(
-      elements.filter(isInstanceElement),
-      e => e.type.elemID.getFullName()
-    )
-
-    Object.entries(typesWithFieldsToExtract).forEach(([typeName, fieldsToExtract]) => {
-      const type = allTypes[new ElemID(WORKATO, typeName).getFullName()]
-      if (type === undefined) {
-        log.error('could not find type %s', typeName)
-        return
-      }
-      const instances = allInstancesbyType[type.elemID.getFullName()] ?? []
-
-      // first convert the fields to the right structure
-      instances.forEach(inst => convertStringToObject(inst, fieldsToExtract))
-
-      // now extract the field data to its own type and instances, and replace the original
-      // value with a reference to the newly-generate instance
-      fieldsToExtract.forEach(fieldName => {
-        elements.push(...addFieldTypeAndInstances({
-          typeName,
-          fieldName,
-          type,
-          instances,
-          defaultNameField: DEFAULT_NAME_FIELD,
-        }))
-      })
-    })
+    const allNewElements = extractFields({
+      elements,
+      transformationConfigByType,
+      transformationDefaultConfig,
+    }).flat()
+    elements.push(...allNewElements)
   },
 })
 

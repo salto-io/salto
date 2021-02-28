@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
-import { PathIndex } from '../path_index'
-import { RemoteMap } from '../remote_map'
+import { PathIndex, Path } from '../path_index'
+import { RemoteMap, RemoteMapCreator } from '../remote_map'
+import { serialize, deserializeSingleElement } from '../../serializer/elements'
 
 export type StateMetadataKey = 'version' | 'hash'
 
@@ -41,3 +43,32 @@ export interface State extends ElementsSource {
   setHash(hash: string): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
 }
+
+
+export const createStateNamespace = (envName: string, namespace: string): string =>
+  `state-${envName}-${namespace}`
+
+export const buildStateData = async (envName: string, remoteMapCreator: RemoteMapCreator):
+Promise<StateData> => ({
+  elements: new RemoteElementSource(await remoteMapCreator<Element>({
+    namespace: createStateNamespace(envName, 'elements'),
+    serialize: elem => serialize([elem]),
+    // TODO: I don't think we should add reviver here but I need to think about it more
+    deserialize: deserializeSingleElement,
+  })),
+  pathIndex: await remoteMapCreator<Path[]>({
+    namespace: createStateNamespace(envName, 'path_index'),
+    serialize: paths => safeJsonStringify(paths),
+    deserialize: async data => JSON.parse(data),
+  }),
+  servicesUpdateDate: await remoteMapCreator<Date>({
+    namespace: createStateNamespace(envName, 'service_update_date'),
+    serialize: date => date.toISOString(),
+    deserialize: async data => new Date(data),
+  }),
+  saltoMetadata: await remoteMapCreator<string, 'version'>({
+    namespace: createStateNamespace(envName, 'salto_metadata'),
+    serialize: data => data,
+    deserialize: async data => data,
+  }),
+})

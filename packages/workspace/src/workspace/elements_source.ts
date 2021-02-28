@@ -33,6 +33,7 @@ export interface ElementsSource {
   rename(name: string): Promise<void>
   set(element: Element): Promise<void>
   delete(id: ElemID): Promise<void>
+  isEmpty(): Promise<boolean>
 }
 
 export const shouldResolveAsContainerType = (elemName: string): boolean =>
@@ -135,6 +136,10 @@ export class RemoteElementSource implements ElementsSource {
   // eslint-disable-next-line class-methods-use-this
   rename(_name: string): Promise<void> {
     throw new Error('Method not implemented.')
+  }
+
+  async isEmpty(): Promise<boolean> {
+    return this.elements.isEmpty()
   }
 }
 

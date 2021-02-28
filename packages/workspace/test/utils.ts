@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { Value, StaticFile, calculateStaticFileHash, ObjectType, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
@@ -162,9 +163,10 @@ export const mockCreateRemoteMap = async <T, K extends string = string>(
     keys: (): AsyncIterable<K> => toAsyncIterable(Object.keys(data) as unknown as K[]),
     values: (): AsyncIterable<T> =>
       awu(Object.values(data)).map(async v => opts.deserialize(v as string)),
-    flush: (): Promise<void> => Promise.resolve(undefined),
+    flush: (): Promise<boolean> => Promise.resolve(true),
     revert: (): Promise<void> => Promise.resolve(undefined),
     close: (): Promise<void> => Promise.resolve(undefined),
+    isEmpty: (): Promise<boolean> => Promise.resolve(_.isEmpty(data)),
   }
 }
 

@@ -17,10 +17,9 @@ import rocksdb from 'rocksdb'
 import { promisify } from 'util'
 import * as fileUtils from '@salto-io/file'
 import LRU from 'lru-cache'
+import uuidv4 from 'uuid/v4'
 import { remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import uuidv4 from 'uuid/v4'
-
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -155,7 +154,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     batchInsertIterator: AsyncIterable<remoteMap.RemoteMapEntry<string, string>>,
     temp = true,
     operation = SET_OPERATION,
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     let i = 0
     let batch = db.batch()
     for await (const entry of batchInsertIterator) {
@@ -174,6 +173,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     if (i % batchInterval !== 0) {
       await promisify(batch.write.bind(batch))()
     }
+    return i > 0
   }
   const setAllImpl = async (
     elementsEntries: AsyncIterable<remoteMap.RemoteMapEntry<T, K>>,
@@ -195,12 +195,14 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       .map(async entry => deserialize(entry.value))
   }
 
-  const entriesImpl = (iterationOpts?: remoteMap.IterationOpts):
+  const entriesImpl = (iterationOpts?: remoteMap.IterationOpts, persistent = true, temp = true):
   AsyncIterable<remoteMap.RemoteMapEntry<T, K>> => {
     const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
-    const tempIter = createTempIterator(opts)
-    const iter = createPersistentIterator(opts)
-    return awu(aggregatedIterable([tempIter, iter]))
+    const iters = [
+      ...(temp ? [createTempIterator(opts)] : []),
+      ...(persistent ? [createPersistentIterator(opts)] : []),
+    ]
+    return awu(aggregatedIterable(iters))
       .map(async entry => ({ key: entry.key as K, value: await deserialize(entry.value) }))
   }
 
@@ -274,10 +276,11 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     },
     keys: keysImpl,
     flush: async () => {
-      await batchUpdate(awu(aggregatedIterable(
+      const res = await batchUpdate(awu(aggregatedIterable(
         [createTempIterator({ keys: true, values: true })]
       )), false)
       await clearImpl(tempKeyPrefix)
+      return res
     },
     revert: async () => {
       cache.reset()
@@ -307,6 +310,12 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
         return val !== undefined
       }
       return hasKeyImpl(keyToTempDBKey(key)) || hasKeyImpl(keyToDBKey(key))
+    },
+    isEmpty: async (): Promise<boolean> => {
+      if (cache.length > 0) {
+        return false
+      }
+      return awu(keysImpl({ first: 1 })).isEmpty()
     },
   }
 }

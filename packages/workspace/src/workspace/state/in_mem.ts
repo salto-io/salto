@@ -38,6 +38,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     delete: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
     set: async (element: Element): Promise<void> => (await stateData()).elements.set(element),
     remove: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
+    isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
     override: async (elements: AsyncIterable<Element>, services?: string[]): Promise<void> => {
       const data = await stateData()
       const newServices = services ?? await awu(data.servicesUpdateDate.keys()).toArray()

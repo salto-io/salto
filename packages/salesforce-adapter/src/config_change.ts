@@ -139,6 +139,7 @@ export const getConfigFromConfigChanges = (
       configType,
       _.pickBy({
         fetch: _.pickBy({
+          ...(currentConfig.fetch ?? {}),
           metadata: {
             ...currentConfig.fetch?.metadata,
             exclude: [

@@ -154,7 +154,11 @@ const convertDeprecatedFetchParameters = (
     ? convertDeprecatedDataConf(deprecatedFetchParameters.dataManagement)
     : fetchParameters?.data
 
-  const updatedFetchParameters = _.pickBy({ metadata, data }, values.isDefined)
+  const updatedFetchParameters = _.pickBy({
+    ...(fetchParameters ?? {}),
+    metadata,
+    data,
+  }, values.isDefined)
   return _.isEmpty(updatedFetchParameters) ? undefined : updatedFetchParameters
 }
 

@@ -36,6 +36,7 @@ describe('Config Changes', () => {
           defaultIdFields: ['Name'],
         },
       },
+      fetchAllCustomSettings: true,
     },
   }
   const cloneOfCurrentConfig = { ...currentConfig }

@@ -37,6 +37,7 @@ describe('deprecated config', () => {
           defaultIdFields: ['Name'],
         },
       },
+      fetchAllCustomSettings: true,
     },
   }
   describe('convert from old options to new options', () => {

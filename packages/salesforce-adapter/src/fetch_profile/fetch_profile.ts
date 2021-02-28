@@ -22,14 +22,17 @@ import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './met
 export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
   readonly dataManagement?: DataManagement
+  readonly shouldFetchAllCustomSettings: () => boolean
 }
 
 export const buildFetchProfile = ({
   metadata = {},
   data,
+  fetchAllCustomSettings,
 }: FetchParameters): FetchProfile => ({
   metadataQuery: buildMetadataQuery(metadata),
   dataManagement: data && buildDataManagement(data),
+  shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
 })
 
 export const validateFetchParameters = (

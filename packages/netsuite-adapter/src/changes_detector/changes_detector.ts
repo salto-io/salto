@@ -40,6 +40,10 @@ export const DETECTORS = [
 
 const getChangedInternalIds = async (client: SuiteAppClient, dateRange: DateRange):
 Promise<Set<number> | undefined> => {
+  // Note that the internal id is NOT unique cross types and different instances
+  // of different type might have the same internal id. Due the a bug in the saved
+  // search api in Netsuite we can't get the type of the record from SystemNote.
+  // This might results fetching an instance that was not modified (but supposed to be pretty rare).
   const results = await client.runSavedSearchQuery({
     type: 'systemnote',
     filters: [

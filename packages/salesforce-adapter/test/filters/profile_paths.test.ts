@@ -46,6 +46,11 @@ describe('profile paths filter', () => {
     }))
   })
 
+  it('should not run query when we do not fetch profiles', async () => {
+    await filter.onFetch([])
+    expect(connection.query).not.toHaveBeenCalled()
+  })
+
   it('should replace profile instance path', async () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'

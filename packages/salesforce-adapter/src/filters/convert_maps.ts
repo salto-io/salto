@@ -16,7 +16,7 @@
 
 import _ from 'lodash'
 import {
-  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement, isInstanceElement,
+  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement,
   Values, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, isMapType,
   isListType,
 } from '@salto-io/adapter-api'
@@ -26,6 +26,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
+import { isInstanceOfType } from './utils'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -307,14 +308,6 @@ export const getInstanceChanges = (
     .filter(change => metadataType(getChangeElement(change)) === targetMetadataType)
 )
 
-export const findInstancesToConvert = (
-  elements: Element[],
-  targetMetadataType: string,
-): InstanceElement[] => {
-  const instances = elements.filter(isInstanceElement)
-  return instances.filter(e => metadataType(e) === targetMetadataType)
-}
-
 /**
  * Convert certain instances' fields into maps, so that they are easier to view,
  * could be referenced, and can be split across multiple files.
@@ -326,7 +319,7 @@ const filter: FilterCreator = ({ config }) => ({
         return
       }
 
-      const instancesToConvert = findInstancesToConvert(elements, targetMetadataType)
+      const instancesToConvert = elements.filter(isInstanceOfType(targetMetadataType))
       if (instancesToConvert.length === 0) {
         return
       }

@@ -348,10 +348,7 @@ export const loadWorkspace = async (
         ...errorsFromSource.merge,
         ...(await awu(resolvedElements.errors.values()).flat().toArray()),
       ],
-      validation: await validateElements(
-        await awu(await resolvedElements.merged.getAll()).toArray(),
-        resolvedElements.merged
-      ),
+      validation: validationErrors,
     })
   }
 

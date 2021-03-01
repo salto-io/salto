@@ -15,16 +15,18 @@
 */
 import _ from 'lodash'
 import {
-  InstanceElement, isObjectType, ElemID, isInstanceElement, ReferenceExpression, ObjectType,
+  InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType,
   Element,
 } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { WORKATO } from '../constants'
 import { FilterCreator } from '../filter'
 import { API_DEFINITIONS_CONFIG } from '../config'
 
 const log = logger(module)
+const { isDefined } = lowerdashValues
 const { generateType, toInstance, toNestedTypeName } = elementUtils.ducktype
 
 const convertStringToObject = (
@@ -36,15 +38,16 @@ const convertStringToObject = (
     const standaloneFieldDef = fieldsByPath[fieldName]
     if (standaloneFieldDef !== undefined) {
       try {
-        // arrays are not supported yet
-        const val = ((
-          _.isString(fieldValue)
-          && standaloneFieldDef.parseJSON
-          && fieldValue.startsWith('{')
-        )
-          ? JSON.parse(fieldValue)
-          : fieldValue)
-        return val
+        const shouldParseJson = _.isString(fieldValue) && standaloneFieldDef.parseJSON
+        if (shouldParseJson) {
+          if (fieldValue.startsWith('{')) {
+            return JSON.parse(fieldValue)
+          }
+          // arrays are not supported yet
+          log.warn('not parsing json from inst %s %s, value: %s',
+            inst.elemID.getFullName(), fieldName, fieldValue)
+        }
+        return fieldValue
       } catch (e) {
         log.error('failed to convert field %s to JSON. Error: %s, value: %o, stack: %o',
           fieldName, e, fieldValue, e.stack)
@@ -120,7 +123,7 @@ const extractFields = ({
   transformationConfigByType: Record<string, configUtils.TransformationConfig>
   transformationDefaultConfig: configUtils.TransformationDefaultConfig
 }): Element[] => {
-  const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.getFullName())
+  const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
   const allInstancesbyType = _.groupBy(
     elements.filter(isInstanceElement),
     e => e.type.elemID.getFullName()
@@ -137,7 +140,7 @@ const extractFields = ({
   ) as Record<string, configUtils.StandaloneFieldConfigType[]>
 
   Object.entries(typesWithStandaloneFields).forEach(([typeName, standaloneFields]) => {
-    const type = allTypes[new ElemID(WORKATO, typeName).getFullName()]
+    const type = allTypes[typeName]
     if (type === undefined) {
       log.error('could not find type %s', typeName)
       return
@@ -172,8 +175,8 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
     const transformationConfigByType = _.pickBy(
       _.mapValues(config[API_DEFINITIONS_CONFIG].types, def => def.transformation),
-      def => def !== undefined,
-    ) as Record<string, configUtils.TransformationConfig>
+      isDefined,
+    )
     const transformationDefaultConfig = config[API_DEFINITIONS_CONFIG].typeDefaults.transformation
 
     const allNewElements = extractFields({

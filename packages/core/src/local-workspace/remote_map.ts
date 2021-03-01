@@ -15,6 +15,7 @@
 */
 import rocksdb from 'rocksdb'
 import { promisify } from 'util'
+import * as fileUtils from '@salto-io/file'
 import LRU from 'lru-cache'
 import { remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -96,6 +97,9 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   { namespace, batchInterval = 1000, serialize, deserialize }:
   remoteMap.CreateRemoteMapParams<T>
 ): Promise<remoteMap.RemoteMap<T, K>> => {
+  if (!await fileUtils.exists(location)) {
+    await fileUtils.mkdirp(location)
+  }
   if (!/^[a-z0-9-_/]+$/i.test(namespace)) {
     throw new Error(
       `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`

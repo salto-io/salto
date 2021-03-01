@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { createConnection } from './connection'
 import { WORKATO } from '../constants'
 import { Credentials } from '../auth'

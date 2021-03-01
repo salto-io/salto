@@ -1,0 +1,179 @@
+/*
+*                      Copyright 2021 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/*
+*                      Copyright 2021 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createTransformationConfigTypes, validateTransoformationConfig } from '../../src/config'
+
+describe('config_transformation', () => {
+  describe('createTransformationConfigTypes', () => {
+    it('should return default config type when no custom fields were added', () => {
+      const { transformation, transformationDefault } = createTransformationConfigTypes('myAdapter')
+      expect(Object.keys(transformation.fields)).toHaveLength(6)
+      expect(Object.keys(transformation.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(transformation.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeUndefined()
+      const idFieldsType = transformation.fields.idFields.type as ListType
+      expect(idFieldsType).toBeInstanceOf(ListType)
+      const idFieldsTypeInner = idFieldsType.innerType
+      expect(idFieldsTypeInner).toEqual(BuiltinTypes.STRING)
+
+      expect(Object.keys(transformationDefault.fields)).toHaveLength(6)
+      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(transformationDefault.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toEqual(
+        true
+      )
+      const idFieldsDefaultType = transformationDefault.fields.idFields.type as ListType
+      expect(idFieldsDefaultType).toBeInstanceOf(ListType)
+      const idFieldsTypeDefaultInner = idFieldsType.innerType
+      expect(idFieldsTypeDefaultInner).toEqual(BuiltinTypes.STRING)
+    })
+
+    it('should include additional fields when added', () => {
+      const { transformation, transformationDefault } = createTransformationConfigTypes(
+        'myAdapter',
+        { a: { type: BuiltinTypes.STRING } },
+      )
+      expect(Object.keys(transformation.fields)).toHaveLength(7)
+      expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(transformation.fields.a.type).toEqual(BuiltinTypes.STRING)
+      expect(Object.keys(transformationDefault.fields)).toHaveLength(7)
+      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(transformationDefault.fields.a.type).toEqual(BuiltinTypes.STRING)
+    })
+  })
+
+  describe('validateTransoformationConfig', () => {
+    it('should validate successfully when values are valid', () => {
+      expect(() => validateTransoformationConfig(
+        'PATH',
+        {
+          idFields: ['a', 'b', 'c'],
+        },
+        {
+          t1: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            fieldsToOmit: [
+              { fieldName: 'abc' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            standaloneFields: [
+              { fieldName: 'abc' },
+            ],
+          },
+          t2: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+          },
+        },
+      )).not.toThrow()
+    })
+    it('should fail if there are conflicts between field entries in the default config', () => {
+      expect(() => validateTransoformationConfig(
+        'PATH',
+        {
+          idFields: ['a', 'b', 'c'],
+          fieldsToOmit: [
+            { fieldName: 'abc', fieldType: 'something' },
+            { fieldName: 'abc', fieldType: 'something' },
+            { fieldName: 'abc' },
+          ],
+        },
+        {
+          t1: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            fieldsToOmit: [
+              { fieldName: 'abc' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            standaloneFields: [
+              { fieldName: 'abc' },
+            ],
+          },
+          t2: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+          },
+        },
+      )).toThrow(new Error('Duplicate fieldsToOmit params found in PATH default config: abc'))
+    })
+    it('should fail if there are conflicts between field entries for specific types', () => {
+      expect(() => validateTransoformationConfig(
+        'PATH',
+        {
+          idFields: ['a', 'b', 'c'],
+          fieldsToOmit: [
+            { fieldName: 'abc', fieldType: 'something' },
+          ],
+        },
+        {
+          t1: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+              { fieldName: 'abc', fieldType: 'something' },
+            ],
+            fieldsToOmit: [
+              { fieldName: 'abc' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            standaloneFields: [
+              { fieldName: 'abc' },
+            ],
+          },
+          t2: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            fieldsToOmit: [
+              { fieldName: 'ghi' },
+              { fieldName: 'ghi' },
+            ],
+          },
+          t3: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+          },
+        },
+      )).toThrow(new Error('Duplicate fieldTypeOverrides params found in PATH for the following types: t1'))
+    })
+  })
+})

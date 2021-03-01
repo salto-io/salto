@@ -1,0 +1,67 @@
+{
+  "name": "@salto-io/adapter-components",
+  "version": "0.2.5",
+  "license": "Apache-2.0",
+  "description": "Salto Adapter Components",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto_monorepo"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src",
+    "index.ts"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clean-ts": "../../build_utils/clean-old-ts.sh",
+    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
+    "test": "jest",
+    "clean": "rm -rf ./dist .eslintcache",
+    "clean-ts-test": "yarn clean-old-ts && yarn test",
+    "watch-test": "yarn tsc-watch --onSuccess 'yarn run clean-ts-test'",
+    "build-ts": "tsc -b",
+    "watch-ts": "tsc -b -w",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn lint --fix"
+  },
+  "dependencies": {
+    "@salto-io/adapter-api": "0.2.5",
+    "@salto-io/adapter-utils": "0.2.5",
+    "@salto-io/logging": "0.2.5",
+    "@salto-io/lowerdash": "0.2.5",
+    "axios": "^0.21.1",
+    "axios-retry": "^3.1.9",
+    "bottleneck": "^2.19.5",
+    "lodash": "^4.17.19",
+    "wu": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.20",
+    "@types/lodash": "^4.14.133",
+    "@types/node": "^12.7.1",
+    "@types/shelljs": "^0.7.8",
+    "@types/supertest": "^2.0.4",
+    "@types/wu": "^2.1.40",
+    "@typescript-eslint/eslint-plugin": "2.31.0",
+    "@typescript-eslint/parser": "2.31.0",
+    "axios-mock-adapter": "^1.19.0",
+    "eslint": "^6.2.2",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-header": "^3.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "jest": "^26.6.3",
+    "jest-circus": "^26.6.3",
+    "jest-junit": "^12.0.0",
+    "tsc-watch": "^2.2.1",
+    "typescript": "3.9.3"
+  }
+}

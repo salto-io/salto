@@ -20,7 +20,3 @@ export * from './src/decorators'
 export * from './src/deploy'
 export * from './src/compare'
 export * from './src/element_source'
-
-export * as client from './src/client'
-export * as elements from './src/elements'
-export * as filterUtils from './src/filter_utils'

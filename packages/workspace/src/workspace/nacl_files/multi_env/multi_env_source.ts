@@ -144,6 +144,7 @@ const buildMultiEnvSource = (
       merged.values(),
       new RemoteElementSource(merged)
     ))
+    await elements.flush()
     return {
       elements,
       mergeErrors: errors,

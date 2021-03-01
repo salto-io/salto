@@ -322,4 +322,28 @@ describe('select elements recursively', () => {
       }))))
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool')])
   })
+  it('should just return element id if validateDeterminedSelectors is false', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
+    ]).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      }))))
+    expect(elementIds).toEqual([ElemID
+      .fromFullName('mockAdapter.test.instance.mockInstance.thispropertydoesntexist')])
+  })
+  it('should not return non-existant element id if validateDeterminedSelectors is true', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
+      'mockAdapter.test.field.strMap',
+    ]).validSelectors
+    const elementIds = (await selectElementIdsByTraversal(selectors,
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      })), false, true))
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
+  })
 })

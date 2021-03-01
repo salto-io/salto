@@ -368,7 +368,8 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getSourceRanges: (elemID: ElemID) => naclFilesSource.getSourceRanges(elemID),
     listNaclFiles: () => naclFilesSource.listNaclFiles(),
     getElementIdsBySelectors: async (selectors: ElementSelector[],
-      commonOnly = false) => naclFilesSource.getElementIdsBySelectors(selectors, commonOnly),
+      commonOnly = false, validateElementIdsExist = false) => naclFilesSource
+      .getElementIdsBySelectors(selectors, commonOnly, validateElementIdsExist),
     getElementReferencedFiles: id => naclFilesSource.getElementReferencedFiles(id),
     getElementNaclFiles: id => naclFilesSource.getElementNaclFiles(id),
     getTotalSize: () => naclFilesSource.getTotalSize(),

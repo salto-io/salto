@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
-import detector from '../../src/changes_detector/changes_detectors/custom_list'
+import { customListDetector as detector } from '../../src/changes_detector/changes_detectors/custom_type'
 import { Change } from '../../src/changes_detector/types'
 
 describe('custom_list', () => {
